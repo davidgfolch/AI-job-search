@@ -9,7 +9,7 @@ UNDERLINE = '\033[4m'
 __RESET = '\033[0m'
 
 
-def green(text: str):
+def green(*text: str):
     return GREEN + ''.join(text) + __RESET
 
 

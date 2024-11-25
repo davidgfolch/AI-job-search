@@ -26,9 +26,14 @@ from seleniumLinkedinSelectors import (
 load_dotenv()
 
 
-USER_EMAIL = os.environ.get("USER_EMAIL")
-USER_PWD = os.environ.get("USER_PWD")
+USER_EMAIL = os.environ.get("LINKEDIN_EMAIL")
+USER_PWD = os.environ.get("LINKEDIN_PWD")
 JOBS_SEARCH = os.environ.get("JOBS_SEARCH")
+
+if not USER_EMAIL or not USER_PWD or not JOBS_SEARCH:
+    print(yellow('Please read README.md first'))
+    print(yellow('Set up .venv file with USER_EMAIL, USER_PWD & JOBS_SEARCH'))
+    exit()
 
 remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
 # Spain if you need other make a manual search and get your country code
@@ -128,8 +133,8 @@ def scrollJobsList(idx):
 
 
 def printPage(page, totalPages, keywords):
-    print(green(f'Starting page {page} of {
-          totalPages} search={keywords} {"-"*100}'))
+    print(green(f'Starting page {page} of {totalPages} ',
+                f'search={keywords} {"-"*100}'))
 
 
 def clickNextPage(retry=True):
