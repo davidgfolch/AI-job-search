@@ -1,7 +1,9 @@
 import math
+import os
 import time
 from urllib.parse import quote
 import re
+from dotenv import load_dotenv
 import markdownify
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.terminalColor import green, red, yellow
@@ -21,16 +23,21 @@ from seleniumLinkedinSelectors import (
     CSS_SEL_NEXT_PAGE_BUTTON,
     CSS_SEL_MESSAGES_HIDE)
 
+load_dotenv()
+
+
+USER_EMAIL = os.environ.get("USER_EMAIL")
+USER_PWD = os.environ.get("USER_PWD")
+JOBS_SEARCH = os.environ.get("JOBS_SEARCH")
 
 remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
 # Spain if you need other make a manual search and get your country code
 location = '105646813'
 f_TPR = 'r86400'  # last 24 hours
-
-JOBS_X_PAGE = 25
 # Set to True to stop selenium driver navigating if any error occurs
 DEBUG = False
 
+JOBS_X_PAGE = 25
 
 print('seleniumLinkedin init')
 selenium = None
@@ -47,14 +54,10 @@ def run(seleniumUtil: SeleniumUtil):
         print(yellow('Waiting for LinkedIn to redirect to feed page...',
                      '(Maybe you need to solve a security filter first)'))
         selenium.waitUntilPageIs('https://www.linkedin.com/feed/', 60)
-        # TODO: parametrizable via command line or config file
         # TODO: save search keywords in DB
         # TODO: additionally set search ranking?
-        searchJobs('java')
-        searchJobs('python')
-        searchJobs('scala')
-        searchJobs('clojure')
-        searchJobs('senior software engineer')
+        for keywords in JOBS_SEARCH.split(','):
+            searchJobs(keywords.strip())
     finally:
         mysql.close()
 
@@ -94,21 +97,22 @@ def replaceIndex(cssSelector: str, idx: int):
     return cssSelector.replace('##idx##', str(idx))
 
 
-def getTotalResults(keywords: str) -> int:
+def getTotalResultsFromHeader(keywords: str) -> int:
     total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-    print('-'*150)
-    print(join(f'{total} total results for search: {keywords}',
-               f'(remote={remote}, location={location}, last={f_TPR})'))
-    print('-'*150)
+    print(green('-'*150))
+    print(green(join(f'{total} total results for search: {keywords}',
+                     f'(remote={remote}, location={location}, last={f_TPR})')))
+    print(green('-'*150))
     return int(total)
 
 
-def showTotals(keywords, totalResults, currentItem):
+def summarize(keywords, totalResults, currentItem):
     print('-'*150)
-    print(f'Loaded {currentItem} of {totalResults} total results for ',
-          f'search: {keywords} ',
+    print(f'Loaded {currentItem} of {totalResults} total results for',
+          f'search: {keywords}',
           f'(remote={remote} location={location} last={f_TPR})')
     print('-'*150)
+    print()
 
 
 def scrollJobsList(idx):
@@ -124,7 +128,8 @@ def scrollJobsList(idx):
 
 
 def printPage(page, totalPages, keywords):
-    print(f'Starting page {page} of {totalPages} search={keywords} {"-"*100}')
+    print(green(f'Starting page {page} of {
+          totalPages} search={keywords} {"-"*100}'))
 
 
 def clickNextPage(retry=True):
@@ -174,7 +179,7 @@ def searchJobs(keywords: str):
             return
         selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE,
                                       'Could not collapse messages')
-        totalResults = getTotalResults(keywords)
+        totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
@@ -184,7 +189,7 @@ def searchJobs(keywords: str):
                 if currentItem >= totalResults:
                     break  # exit for
                 currentItem += 1
-                print(f'pg {page} job {idx} - ', end='')
+                print(green(f'pg {page} job {idx} - '), end='')
                 loadAndProcessRow(idx)
             if currentItem >= totalResults:
                 break  # exit while
@@ -193,7 +198,7 @@ def searchJobs(keywords: str):
             page += 1
             printPage(page, totalPages, keywords)
             selenium.waitUntilPageIsLoaded()
-        showTotals(keywords, totalResults, currentItem)
+        summarize(keywords, totalResults, currentItem)
     except Exception as ex:
         debug(red(f'ERROR: {ex}'))
 
