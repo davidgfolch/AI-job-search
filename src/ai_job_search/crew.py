@@ -5,7 +5,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
 from ai_job_search.terminalColor import red, yellow
-import ai_job_search.tools.mysqlUtil as mysqlUtil
+from ai_job_search.tools.mysqlUtil import MysqlUtil
 
 
 LLM_CONFIG = LLM(model="ollama/llama3.2",
@@ -19,7 +19,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     @start()
     def processRows(self):
         try:
-            mysqlUtil.connect()
+            mysqlUtil = MysqlUtil()
             crew = AiJobSearch().crew()
             for job in mysqlUtil.getJobsForAiEnrichment():
                 id = job[0]

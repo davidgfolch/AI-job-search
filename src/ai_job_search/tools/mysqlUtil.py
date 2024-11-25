@@ -65,7 +65,7 @@ class MysqlUtil:
 
     def updateFromAI(self, id, company, paramsDict: dict, deep=0):
         try:
-            params = self.maxLen(self.emptyToNone(
+            params = maxLen(emptyToNone(
                 (paramsDict['salary'],
                  paramsDict['required_technologies'],
                  paramsDict['optional_technologies'],
