@@ -1,5 +1,6 @@
 from ai_job_search.terminalColor import green, red, yellow
 from ai_job_search.tools.mysqlUtil import MysqlUtil
+import streamlit as st
 
 
 # TODO: Jobs list (sort, search, pagination, select)
@@ -8,4 +9,5 @@ from ai_job_search.tools.mysqlUtil import MysqlUtil
 # TODO: Check jobs still exists by id
 # TODO: Find duplicated jobs!!!!! and link each other
 
-streamlit
+st.write('Hello')
+# st.table()

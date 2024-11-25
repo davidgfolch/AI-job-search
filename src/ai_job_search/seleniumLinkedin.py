@@ -22,9 +22,6 @@ from seleniumLinkedinSelectors import (
     CSS_SEL_MESSAGES_HIDE)
 
 
-USER_EMAIL = "davidgfolch@gmail.com"
-USER_PWD = "43694524lL1973"
-
 remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
 # Spain if you need other make a manual search and get your country code
 location = '105646813'

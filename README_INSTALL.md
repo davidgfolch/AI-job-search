@@ -10,8 +10,10 @@
 ## Pre setup
 
 ```bash
-    sudo apt install python3.10-venv
+    sudo apt install python3.11
+    sudo apt install python3.11-venv
     python -m ensurepip --upgrade
     python -m venv .venv
     pip install crewai crewai-tools linkedin-api ....
+    pip freeze
 ```
