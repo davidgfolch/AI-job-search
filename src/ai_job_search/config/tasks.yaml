@@ -1,0 +1,25 @@
+researcher:
+  description: >
+    From the job offer description in the Markdown bellow extract the following information:
+    - Salary or salary range.
+    - Required technologies: languages, frameworks, libraries, etc. separated by commas.
+    - Optional technologies: languages, frameworks, libraries, etc. separated by commas.
+    - Relocation: only set to 1 when relocation is specified and required for the job, otherwise set to 0.
+    - Business sector: the business sector of the final client of the job offer if specified.
+    - Required languages: the required languages to be spoken in the job offer if specified.
+    
+    For each field, if information is not found in text just return an empty string.
+    
+    Markdown:
+
+    {markdown}
+  expected_output: >
+    A pretty-printed json object with the following fields:
+    - salary as string
+    - required_technologies as string
+    - optional_technologies as string
+    - relocation as boolean
+    - business_sector as string
+    - required_languages as string
+  agent: researcher_agent
+  verbose: true

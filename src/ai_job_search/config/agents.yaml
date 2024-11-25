@@ -1,0 +1,9 @@
+researcher_agent:
+  role: >
+    Markdown text searcher for required information.
+  goal: >
+    Just return the task result
+  backstory: >
+
+  verbose: true
+
