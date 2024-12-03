@@ -15,7 +15,7 @@ QRY_SELECT_JOBS_FOR_ENRICHMENT = """
 SELECT id, title, markdown, company
 FROM jobs
 WHERE not ai_enriched and not (ignored or discarded or closed)
-ORDER BY RAND()"""
+ORDER BY created desc"""
 QRY_UPDATE_JOBS_WITH_AI = """
 UPDATE jobs SET
     salary=%s,
@@ -116,6 +116,8 @@ class MysqlUtil:
                           'retry with column value None'))
                 paramsDict[failColumn] = None
                 self.updateFromAI(paramsDict, deep+1)
+            else:
+                raise ex
 
     def executeAndCommit(self, query, params=()) -> int:
         with self.cursor() as c:

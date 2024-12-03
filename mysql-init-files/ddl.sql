@@ -28,6 +28,7 @@ ALTER TABLE jobs ADD `modified` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 -- ai enrich fields
 ALTER TABLE jobs ADD ai_enriched BOOLEAN default 0;
+ALTER TABLE jobs ADD ai_enrich_error varchar(500);
 ALTER TABLE jobs ADD salary varchar(200);
 ALTER TABLE jobs ADD required_technologies varchar(1000);
 ALTER TABLE jobs ADD optional_technologies varchar(1000);

@@ -72,9 +72,16 @@ SEARCH_COLUMNS = ['title', 'company', 'client', 'markdown']
 SEARCH_INPUT_HELP = f"""
 Enter search concepts (for {','.join(SEARCH_COLUMNS)})  separated by commas
  (note text between commas are mysql regex)"""
-# def tableOnChange():
-#     value = getStateOrDefault('jobsListTable')
-#     st.info(f'tableOnChange = {value}')
+
+
+STYLE_JOBS_TABLE = """
+    <style>
+        .st-key-jobsListTable .stDataFrame > *,
+        .st-key-jobsListTable .stDataFrame > div > * {
+            background-color: darkcyan;
+        }
+    </style>
+    """
 
 
 def onTableChange():
@@ -276,6 +283,7 @@ def view():
         'whereFilter': DEFAULT_SQL_FILTER
     })
     try:
+        st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
         (salary, search, filters, boolFilters,
          boolNotFilters, order) = formFilter()
         query = getJobListQuery(salary, search, filters,

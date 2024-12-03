@@ -5,7 +5,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
 from ai_job_search.terminalColor import red, yellow
-from ai_job_search.tools.mysqlUtil import MysqlUtil
+from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 
 
 LLM_CONFIG = LLM(model="ollama/llama3.2",
@@ -43,10 +43,17 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 # poner output_json=JobTaskOutputModel
                 # FIXME: relocation AI NO funciona bien
                 # TODO: check ai_enrichment error and flag into database with enrichment error
-                result: dict[str, str] = rawToJson(crew_output.raw)
-                if result is not None:
-                    validateResult(result)
-                    mysqlUtil.updateFromAI(id, company, result)
+                try:
+                    result: dict[str, str] = rawToJson(crew_output.raw)
+                    if result is not None:
+                        validateResult(result)
+                        mysqlUtil.updateFromAI(id, company, result)
+                except Exception as ex:
+                    MAX_AI_ENRICH_ERROR = 500
+                    params = {'ai_enrich_error': str(ex)[:MAX_AI_ENRICH_ERROR],
+                              'ai_enriched': True}
+                    query, params = updateFieldsQuery([id], params)
+                    mysqlUtil.executeAndCommit(query, params)
             print(yellow(''*60))
             print(yellow('ALL ROWS PROCESSES!'))
             print(yellow(''*60))
@@ -86,12 +93,12 @@ def rawToJson(raw) -> dict[str, str]:
         raw = re.sub(r'[*]+(.+)', r'\1', raw)
         lastCurlyBracesIdx = raw.rfind('}')
         if lastCurlyBracesIdx > 0:
-            raw = raw[0, lastCurlyBracesIdx]
+            raw = raw[0:lastCurlyBracesIdx+1]
         return dict(json.loads(f'{raw}'))
     except Exception as ex:
-        print(red('Error info: could not parse raw as json: ',
-                  f'{ex} in json -> {raw}'))
-        return None
+        msg = f'Error info: could not parse raw as json: {ex} in json -> {raw}'
+        print(red(msg))
+        raise Exception(msg)
 
 
 def validateResult(result: dict[str, str]):
@@ -134,6 +141,6 @@ class AiJobSearch:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
-            # response_format: 
+            # response_format:
             verbose=True,
         )

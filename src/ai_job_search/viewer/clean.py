@@ -36,7 +36,7 @@ def gotoPage(page, selectedRows):
 
 
 def getAllIds(selectedRows, dropFirstByGroup=False, plainIdsStr=True):
-    rows = list(selectedRows.iloc[row][IDS_IDX]
+    rows = list(selectedRows.iloc[row].iloc[IDS_IDX]
                 for row in range(len(selectedRows)))
     if len(rows) == 0:
         return None

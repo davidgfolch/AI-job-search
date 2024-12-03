@@ -74,3 +74,6 @@ from (select count(*) as counter,
     ) as r
 where r.counter>1
 order by r.counter desc, r.title, r.company, r.max_created desc
+
+
+select ai_enrich_error where ai_enrich_error is not null;
