@@ -18,20 +18,21 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
 
     @start()
     def processRows(self):
+        mysqlUtil = MysqlUtil()
         try:
-            mysqlUtil = MysqlUtil()
             crew = AiJobSearch().crew()
             for job in mysqlUtil.getJobsForAiEnrichment():
                 id = job[0]
                 title = job[1]
                 company = job[3]
-                markdown = re.sub(r'( *\n){2,}', '\n',
+                markdown = re.sub(r'( *[\n\r]){2,}', '\n',
                                   # DB markdown blob decoding
                                   job[2].decode("utf-8"),
                                   re.MULTILINE)
-                crew_output: CrewOutput = crew.kickoff(inputs={
-                    "markdown": f'# {title} \n {markdown}',
-                })
+                crew_output: CrewOutput = crew.kickoff(
+                    inputs={
+                        "markdown": f'# {title} \n {markdown}',
+                    })
                 # if crew_output.json_dict:
                 #   json.dumps(crew_output.json_dict)
                 # if crew_output.pydantic:
@@ -41,6 +42,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 # piense demasiado, mas AI, más lento, en la Task hay que
                 # poner output_json=JobTaskOutputModel
                 # FIXME: relocation AI NO funciona bien
+                # TODO: check ai_enrichment error and flag into database with enrichment error
                 result: dict[str, str] = rawToJson(crew_output.raw)
                 if result is not None:
                     validateResult(result)
@@ -71,17 +73,23 @@ def rawToJson(raw) -> dict[str, str]:
     try:
         IM = re.I | re.M
         # remove invalid scapes
-        raw = re.sub(r'\\([#&-|])', r'\1', raw, flags=re.M)
-        # remove Agent Thought
-        raw = re.sub(r'\nThought:(.*\n)*', '', raw, flags=IM)
+        raw = re.sub(r'[\\]+(["#&->|])', r'\1', raw, flags=re.M)
+        # remove Agent Thought or Note
+        raw = re.sub(r'\n(Thought|Note):(.*\n)*', '', raw, flags=IM)
         # remove json prefix
         raw = re.sub(r'json *object *', '', raw, flags=IM)
         raw = re.sub(r'("relocation": *)(\d+)', r'\1"\2"', raw, flags=IM)
+        raw = re.sub(r'("relocation": *)("yes")', r'\1"1"', raw, flags=IM)
         raw = re.sub(r'("relocation": *)(true)', r'\1"1"', raw, flags=IM)
         raw = re.sub(r'("relocation": *)(false)', r'\1"0"', raw, flags=IM)
+        raw = re.sub(r'(```)', '', raw, flags=IM)
+        raw = re.sub(r'[*]+(.+)', r'\1', raw)
+        lastCurlyBracesIdx = raw.rfind('}')
+        if lastCurlyBracesIdx > 0:
+            raw = raw[0, lastCurlyBracesIdx]
         return dict(json.loads(f'{raw}'))
     except Exception as ex:
-        print(red('Error: could not parse raw as json: ',
+        print(red('Error info: could not parse raw as json: ',
                   f'{ex} in json -> {raw}'))
         return None
 
@@ -126,5 +134,6 @@ class AiJobSearch:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
+            # response_format: 
             verbose=True,
         )

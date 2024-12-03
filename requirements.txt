@@ -1,4 +1,4 @@
-# Editable install with no version control (ai_job_search==0.1.0)
+-e git+https://github.com/davidgfolch/AI-job-search.git@e06e9d11e76c96c6271646b0ceb2639fb4e6d82f#egg=ai_job_search
 aiohappyeyeballs==2.4.3
 aiohttp==3.11.2
 aiosignal==1.3.1
@@ -123,6 +123,7 @@ mpmath==1.3.0
 multidict==6.1.0
 mypy-extensions==1.0.0
 mysql-connector-python==9.1.0
+mysqlclient==2.2.6
 narwhals==1.14.2
 nest-asyncio==1.6.0
 networkx==3.4.2

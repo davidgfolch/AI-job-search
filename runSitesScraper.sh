@@ -1,2 +1,2 @@
 #!/bin/bash
-.venv/bin/python src/ai_job_search/main_populateDb.py
+.venv/bin/python src/ai_job_search/selenium_main.py

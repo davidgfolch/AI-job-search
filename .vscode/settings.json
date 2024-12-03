@@ -1,6 +1,10 @@
 {
     "cSpell.words": [
         "crewai",
-        "markdownify"
+        "DATAFRAME",
+        "iloc",
+        "markdownify",
+        "RLIKE",
+        "Streamlit"
     ]
 }

@@ -13,7 +13,7 @@ select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING 
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 
 
-select * from jobs;
+select * from jobs order by created asc;
 
 update jobs set ai_enriched =0, salary=NULL, required_technologies =null, optional_technologies =null,relocation =null,business_sector =null, required_languages=null; 
 
@@ -23,5 +23,54 @@ select title, markdown from jobs where salary is null and required_technologies 
 
 delete from jobs where salary is null and required_technologies is null and optional_technologies is null
 
+select * from jobs where required_technologies rlike '(java|python|scala,clojure)';
+
+select id from jobs where title = 'Remote Coding Expertise for AI Training - Tier 3 Non US'
+
+select * from jobs where  DATE(created) < DATE_SUB(CURDATE(), INTERVAL 7 DAY) and not (seen or `like` or ignored or applied or discarded or closed or  
+interview_rh or interview or interview_tech or interview_technical_test or interview_technical_test_done)
+
+select r.counter, r.ids, r.title, r.company
+from (select count(*) as counter, GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',') as ids, title, company 
+		from jobs 
+		where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 7 DAY) and not (seen or `like` or ignored or applied or discarded or closed or
+				interview_rh or interview or interview_tech or interview_technical_test or interview_technical_test_done)
+		group by title, company
+	) as r
+where r.counter>1
+order by r.counter desc
+
+delete from jobs where id in (2426 , 2308)
+
+select title, company from jobs where id in (8505, 8518)
+
+select title, company from jobs where id = 8505
+
+select id, title, company from jobs where jobId = 4081331701
+
+update jobs set salary=NULL where 
+salary LIKE '%Salary range not specified%' or
+salary like '%Salario a convenir%' or 
+salary like '%Not specified%' or 
+salary like '%No salary information%'
+
+update jobs set
+applied = 1,
+comments ='Applied in https://job-boards.greenhouse.io/outlier/jobs/4490427005?gh_src=e2e12c345us'
+where id = 4147
 
 
+select r.counter, r.ids, r.title, r.company, r.max_created, created_ids
+from (select count(*) as counter,
+            GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',') as ids,
+            max(created) as max_created,
+            GROUP_CONCAT(CAST(created as CHAR(50)) SEPARATOR ',') as created_ids,
+            title, company
+        from jobs
+        where not (seen or `like` or ignored or applied or discarded or
+                    closed or interview_rh or interview or interview_tech or
+                    interview_technical_test or interview_technical_test_done)
+        group by title, company
+    ) as r
+where r.counter>1
+order by r.counter desc, r.title, r.company, r.max_created desc

@@ -1,13 +1,17 @@
-from ai_job_search.terminalColor import green, red, yellow
-from ai_job_search.tools.mysqlUtil import MysqlUtil
 import streamlit as st
+from ai_job_search.viewer.clean import clean
+from ai_job_search.viewer.stUtil import PAGE_CLEAN, PAGE_STATE_KEY, PAGE_VIEW
+from ai_job_search.viewer.viewAndEdit import view
 
 
-# TODO: Jobs list (sort, search, pagination, select)
-# TODO: ACTIONS ON ALL SELECTED ITEMS: Easy Apply, ignore
-# TODO: View job detail
-# TODO: Check jobs still exists by id
-# TODO: Find duplicated jobs!!!!! and link each other
+st.set_page_config(layout='wide', page_title="ai job search")
 
-st.write('Hello')
-# st.table()
+PAGES_ROUTER = {
+    PAGE_VIEW: view,
+    PAGE_CLEAN: clean
+}
+
+selectedPageFnc = st.sidebar.selectbox("AI job search pages",
+                                       PAGES_ROUTER.keys(),
+                                       key=PAGE_STATE_KEY)
+PAGES_ROUTER[selectedPageFnc]()
