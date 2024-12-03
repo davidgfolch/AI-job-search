@@ -34,6 +34,8 @@ ai_enriched,relocation,easyApply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
 company,client,markdown,business_sector,required_languages,location,url,created,
 comments,{DB_FIELDS_BOOL}"""
+DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
+company,client,business_sector,required_languages,comments"""
 # FILTERS
 RLIKE = '(java[^script]|python|scala|clojure)'
 DEFAULT_SQL_FILTER = f"""
@@ -61,6 +63,7 @@ DETAIL_FORMAT = """
 LIST_VISIBLE_COLUMNS = stripFields(VISIBLE_COLUMNS)
 FIELDS = stripFields(DB_FIELDS)
 FIELDS_BOOL = stripFields(DB_FIELDS_BOOL)
+FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 FIELDS_SORTED = sortFields(DB_FIELDS, 'id,' + VISIBLE_COLUMNS).split(',')
 DEFAULT_NOT_FILTERS = stripFields('seen,ignored,applied,discarded,closed')
 

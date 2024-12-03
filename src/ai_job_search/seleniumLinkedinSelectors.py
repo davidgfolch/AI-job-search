@@ -2,6 +2,8 @@
 
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading div.jobs-search-results-list__subtitle'
 CSS_SEL_MESSAGES_HIDE = 'aside[id="msg-overlay"] header > div.msg-overlay-bubble-header__controls > button'
+CSS_SEL_GLOBAL_ALERT_HIDE = 'div.artdeco-global-alert section.artdeco-global-alert__body button.artdeco-global-alert__dismiss'
+
 
 # LIST
 CSS_SEL_NO_RESULTS = 'div.jobs-search-no-results-banner'

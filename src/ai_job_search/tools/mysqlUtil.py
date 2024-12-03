@@ -123,6 +123,15 @@ class MysqlUtil:
             self.conn.commit()
             return c.rowcount
 
+    def executeAllAndCommit(self, queries: list[dict[str, any]]) -> int:
+        rowCount = 0
+        with self.cursor() as c:
+            for query in queries:
+                c.execute(query['query'], query.get('params', ()))
+                rowCount += c.rowcount
+            self.conn.commit()
+            return rowCount
+
     def fetchAll(self, query: str):
         with self.cursor() as c:
             c.execute(query)

@@ -10,6 +10,7 @@ from ai_job_search.terminalColor import green, red, yellow
 from seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from seleniumLinkedinSelectors import (
+    CSS_SEL_GLOBAL_ALERT_HIDE,
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
     CSS_SEL_JOB_HEADER,
@@ -182,6 +183,8 @@ def searchJobs(keywords: str):
         selenium.waitUntilPageIsLoaded()
         if not checkResults(keywords, url):
             return
+        selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE,
+                                      'Could close global alert')
         selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE,
                                       'Could not collapse messages')
         totalResults = getTotalResultsFromHeader(keywords)

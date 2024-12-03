@@ -68,14 +68,14 @@ class SeleniumUtil:
     def waitAndClick_noError(self, cssSel: str, msg: str):
         try:
             self.waitAndClick(cssSel)
-        except NoSuchElementException as ex:
+        except Exception as ex:
             print(f'{msg}, exception {ex}')
 
     def scrollIntoView_noError(self, cssSel: str):
         try:
             self.scrollIntoView(cssSel)
             return True
-        except NoSuchElementException:
+        except Exception:
             print(yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
             return False
 
