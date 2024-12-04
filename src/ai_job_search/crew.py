@@ -43,17 +43,17 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 # poner output_json=JobTaskOutputModel
                 # FIXME: relocation AI NO funciona bien
                 # TODO: check ai_enrichment error and flag into database with enrichment error
-                try:
-                    result: dict[str, str] = rawToJson(crew_output.raw)
-                    if result is not None:
-                        validateResult(result)
-                        mysqlUtil.updateFromAI(id, company, result)
-                except Exception as ex:
-                    MAX_AI_ENRICH_ERROR = 500
-                    params = {'ai_enrich_error': str(ex)[:MAX_AI_ENRICH_ERROR],
-                              'ai_enriched': True}
-                    query, params = updateFieldsQuery([id], params)
-                    mysqlUtil.executeAndCommit(query, params)
+                # try:
+                result: dict[str, str] = rawToJson(crew_output.raw)
+                if result is not None:
+                    validateResult(result)
+                    mysqlUtil.updateFromAI(id, company, result)
+                # except Exception as ex:
+                #     MAX_AI_ENRICH_ERROR = 500
+                #     params = {'ai_enrich_error': str(ex)[:MAX_AI_ENRICH_ERROR],
+                #               'ai_enriched': True}
+                #     query, params = updateFieldsQuery([id], params)
+                #     mysqlUtil.executeAndCommit(query, params)
             print(yellow(''*60))
             print(yellow('ALL ROWS PROCESSES!'))
             print(yellow(''*60))
@@ -80,7 +80,8 @@ def rawToJson(raw) -> dict[str, str]:
     try:
         IM = re.I | re.M
         # remove invalid scapes
-        raw = re.sub(r'[\\]+(["#&->|])', r'\1', raw, flags=re.M)
+        # TODO: REMOVE OR CHANGE UNICODE \u00f3
+        raw = re.sub(r'[\\]+([`#&->|])', r'\1', raw, flags=re.M)
         # remove Agent Thought or Note
         raw = re.sub(r'\n(Thought|Note):(.*\n)*', '', raw, flags=IM)
         # remove json prefix

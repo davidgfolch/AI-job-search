@@ -7,12 +7,12 @@ from viewer.stUtil import (KEY_SELECTED_IDS, PAGE_STATE_KEY, PAGE_VIEW,
                            getStateOrDefault, setState, stripFields)
 from tools.mysqlUtil import (MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 
-QUERY_DESCRIPTION = """Show all repeated job offers by `title,company`,
-where `user didn't change states`:
-\nseen,like,ignored,applied,discarded,closed,interview_rh,interview,
-interview_tech,interview_technical_test,interview_technical_test_done"""
+QUERY_DESCRIPTION = """Show all repeated job offers by `title,company`
+ (excluding Joppy "company")"""
 COLUMNS = stripFields('Counter,Ids,Title,Company')
 IDS_IDX = 1
+# TODO: HARCODED != Joppy because it could be many companies
+# TODO: Make it configurable? in .venv file for ex. partial where filter
 SELECT_DUPLICATED = """
 select r.counter, r.ids, r.title, r.company
 from (select count(*) as counter,
@@ -20,9 +20,7 @@ from (select count(*) as counter,
             max(created) as max_created,  -- to delete all, but last
             title, company
         from jobs
-        where not (seen or `like` or ignored or applied or discarded or
-                    closed or interview_rh or interview or interview_tech or
-                    interview_technical_test or interview_technical_test_done)
+        where company != 'Joppy'
         group by title, company
     ) as r
 where r.counter>1
@@ -114,6 +112,7 @@ def clean():
                 0, "Sel", getStateOrDefault('selectAll', False))
             rows = st.data_editor(dfWithSelections, use_container_width=True,
                                   hide_index=True,
+                                  key='cleanJobsListTable',
                                   column_config={'Ids': None}, height=400)
             selectedRows = df[rows.Sel]
             totalSelectedRows = len(selectedRows)

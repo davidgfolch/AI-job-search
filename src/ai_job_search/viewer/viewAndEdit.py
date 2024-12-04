@@ -107,7 +107,13 @@ def table(df: DataFrame, fieldsSorted, visibleColumns):
     preSelectedRows = getStateOrDefault('preSelectedRows', {})
     dfWithSelections.insert(0, "Sel", False)
     for row in preSelectedRows:
-        dfWithSelections.loc[dfWithSelections.index[row], 'Sel'] = True
+        try:
+            rowIdx = dfWithSelections.index[row]
+        except IndexError:
+            # Fails when some previously selected row are deleted
+            pass
+        if rowIdx and rowIdx < len(dfWithSelections):
+            dfWithSelections.loc[dfWithSelections.index[row], 'Sel'] = True
     # https://docs.streamlit.io/develop/api-reference/data/st.data_editor
     editedDf = st.data_editor(
         dfWithSelections,

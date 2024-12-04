@@ -183,8 +183,8 @@ def searchJobs(keywords: str):
         selenium.waitUntilPageIsLoaded()
         if not checkResults(keywords, url):
             return
-        selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE,
-                                      'Could close global alert')
+        # selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE,
+        #                               'Could close global alert')
         selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE,
                                       'Could not collapse messages')
         totalResults = getTotalResultsFromHeader(keywords)
