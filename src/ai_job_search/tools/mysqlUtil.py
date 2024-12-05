@@ -23,7 +23,7 @@ UPDATE jobs SET
     optional_technologies=%s,
     relocation=%s,
     business_sector=%s,
-    required_languages=%s,terminalColor
+    required_languages=%s,
     ai_enriched=1
 WHERE id=%s"""
 QRY_SELECT_JOBS_VIEWER = """
