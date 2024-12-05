@@ -2,8 +2,8 @@ import re
 import streamlit as st
 import pandas as pd
 from ai_job_search.viewer.viewAndEdit import DB_FIELDS_BOOL, DB_FIELDS_MERGE
-from ai_job_search.viewer.viewUtil import formatSql
-from viewer.stUtil import (KEY_SELECTED_IDS, PAGE_STATE_KEY, PAGE_VIEW,
+from ai_job_search.viewer.util.viewUtil import formatSql
+from ai_job_search.viewer.util.stUtil import (KEY_SELECTED_IDS, PAGE_STATE_KEY, PAGE_VIEW,
                            getStateOrDefault, setState, stripFields)
 from tools.mysqlUtil import (MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 

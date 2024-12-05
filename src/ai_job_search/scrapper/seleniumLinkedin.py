@@ -6,11 +6,11 @@ import re
 from dotenv import load_dotenv
 import markdownify
 from selenium.common.exceptions import NoSuchElementException
-from ai_job_search.terminalColor import green, red, yellow
-from seleniumUtil import SeleniumUtil
+from ai_job_search.tools.terminalColor import green, red, yellow
+from .seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import MysqlUtil
-from seleniumLinkedinSelectors import (
-    CSS_SEL_GLOBAL_ALERT_HIDE,
+from .selectors.linkedinSelectors import (
+    # CSS_SEL_GLOBAL_ALERT_HIDE,
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
     CSS_SEL_JOB_HEADER,
@@ -238,6 +238,10 @@ def processRow(idx, retry=True):
         url = getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
         jobId = getJobId(url)
         html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+        # TODO: from bs4 import BeautifulSoup
+        # html = BeautifulSoup(html)  # exclude_encodings
+        # mdText = markdownify.markdownify(html)
+        # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#options
         md = markdownify.markdownify(html)
         # easyApply: there are 2 buttons
         ea = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0

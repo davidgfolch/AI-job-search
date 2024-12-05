@@ -1,8 +1,8 @@
 import re
 import pandas as pd
 from pandas.core.frame import DataFrame
-from ai_job_search.viewer.viewUtil import (formatSql, mapDetailForm)
-from viewer.stUtil import (
+from ai_job_search.viewer.util.viewUtil import (formatSql, mapDetailForm)
+from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, checkAndInput,
     getAndFilter, getSelectedRowsIds, getStateOrDefault, initStates,
     pillsValuesToDict, scapeLatex, setFieldValue, setState,
@@ -107,13 +107,9 @@ def table(df: DataFrame, fieldsSorted, visibleColumns):
     preSelectedRows = getStateOrDefault('preSelectedRows', {})
     dfWithSelections.insert(0, "Sel", False)
     for row in preSelectedRows:
-        try:
+        if len(dfWithSelections.index) > row:
             rowIdx = dfWithSelections.index[row]
-        except IndexError:
-            # Fails when some previously selected row are deleted
-            pass
-        if rowIdx and rowIdx < len(dfWithSelections):
-            dfWithSelections.loc[dfWithSelections.index[row], 'Sel'] = True
+            dfWithSelections.loc[rowIdx, 'Sel'] = True
     # https://docs.streamlit.io/develop/api-reference/data/st.data_editor
     editedDf = st.data_editor(
         dfWithSelections,

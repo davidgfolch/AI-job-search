@@ -6,7 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-from ai_job_search.terminalColor import yellow
+from ai_job_search.tools.terminalColor import yellow
 
 
 driver = None

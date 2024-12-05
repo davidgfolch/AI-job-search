@@ -4,7 +4,7 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
-from ai_job_search.terminalColor import red, yellow
+from ai_job_search.tools.terminalColor import red, yellow
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 
 
@@ -93,13 +93,13 @@ def rawToJson(raw) -> dict[str, str]:
         raw = re.sub(r'(```)', '', raw, flags=IM)
         raw = re.sub(r'[*]+(.+)', r'\1', raw)
         lastCurlyBracesIdx = raw.rfind('}')
-        if lastCurlyBracesIdx > 0:
+        if lastCurlyBracesIdx > 0 and lastCurlyBracesIdx + 1 < len(raw):
             raw = raw[0:lastCurlyBracesIdx+1]
         return dict(json.loads(f'{raw}'))
     except Exception as ex:
         msg = f'Error info: could not parse raw as json: {ex} in json -> {raw}'
         print(red(msg))
-        raise Exception(msg)
+        raise Exception from msg
 
 
 def validateResult(result: dict[str, str]):

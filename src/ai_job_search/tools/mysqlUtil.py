@@ -3,7 +3,7 @@ from typing import Any
 import mysql.connector
 from mysql.connector import Error
 
-from ai_job_search.terminalColor import red, yellow
+from ai_job_search.tools.terminalColor import red, yellow
 
 DB_NAME = 'jobs'
 QRY_FIND_JOB_BY_ID = """
@@ -23,7 +23,7 @@ UPDATE jobs SET
     optional_technologies=%s,
     relocation=%s,
     business_sector=%s,
-    required_languages=%s,
+    required_languages=%s,terminalColor
     ai_enriched=1
 WHERE id=%s"""
 QRY_SELECT_JOBS_VIEWER = """

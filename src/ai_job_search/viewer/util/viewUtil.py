@@ -1,6 +1,6 @@
 import re
 
-from ai_job_search.viewer.stUtil import setState
+from ai_job_search.viewer.util.stUtil import setState
 
 
 def mapDetailForm(jobData, fieldsBool):
