@@ -1,11 +1,10 @@
 import math
-import os
 import time
 from urllib.parse import quote
 import re
-from dotenv import load_dotenv
 import markdownify
 from selenium.common.exceptions import NoSuchElementException
+from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import green, red, yellow
 from .seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import MysqlUtil
@@ -24,17 +23,8 @@ from .selectors.linkedinSelectors import (
     CSS_SEL_NEXT_PAGE_BUTTON,
     CSS_SEL_MESSAGES_HIDE)
 
-load_dotenv()
 
-
-USER_EMAIL = os.environ.get("LINKEDIN_EMAIL")
-USER_PWD = os.environ.get("LINKEDIN_PWD")
-JOBS_SEARCH = os.environ.get("JOBS_SEARCH")
-
-if not USER_EMAIL or not USER_PWD or not JOBS_SEARCH:
-    print(yellow('Please read README.md first'))
-    print(yellow('Set up .venv file with USER_EMAIL, USER_PWD & JOBS_SEARCH'))
-    exit()
+USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("LINKEDIN")
 
 remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
 # Spain if you need other make a manual search and get your country code
