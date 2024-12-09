@@ -3,8 +3,9 @@ import streamlit as st
 import pandas as pd
 from ai_job_search.viewer.viewAndEdit import DB_FIELDS_BOOL, DB_FIELDS_MERGE
 from ai_job_search.viewer.util.viewUtil import formatSql
-from ai_job_search.viewer.util.stUtil import (KEY_SELECTED_IDS, PAGE_STATE_KEY, PAGE_VIEW,
-                           getState, setState, stripFields)
+from ai_job_search.viewer.util.stUtil import (
+    KEY_SELECTED_IDS, PAGE_STATE_KEY, PAGE_VIEW_IDX,
+    getState, setState, stripFields)
 from tools.mysqlUtil import (MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 
 QUERY_DESCRIPTION = """Show all repeated job offers by `title,company`
@@ -55,32 +56,31 @@ def merge(selectedRows):
     colsArr = stripFields(cols)
     mysql = MysqlUtil()
     try:
-        for ids in rows:
-            query = SELECT_FOR_MERGE.format(
-                **{'ids': ids,
-                   'cols': cols})
-            st.code(formatSql(query), 'sql')
-            merged = {}
-            for row in mysql.fetchAll(query):
-                for idx, f in enumerate(colsArr):
-                    if idx >= 3 and row[idx]:
-                        merged.setdefault(f, row[idx])
-                id = getFieldValue(row, colsArr, 'id')
-            st.write(f'`{getFieldValue(row, colsArr, "title")}`',
-                     '-',
-                     f'`{getFieldValue(row, colsArr, "company")}`',
-                     merged)
-            query, params = updateFieldsQuery([id], merged)
-            st.code(query, 'sql')
-            queries = [{'query': query, 'params': params}]
-            idsArr = removeNewestId(ids)
-            query = deleteJobsQuery(idsArr)
-            st.code(query, 'sql')
-            queries.append({'query': query})
-            affectedRows = mysql.executeAllAndCommit(queries)
-            st.write(f'Affected rows (update & delete): {affectedRows}')
-            st.divider()
-
+        with st.container(height=400):
+            for ids in rows:
+                query = SELECT_FOR_MERGE.format(
+                    **{'ids': ids,
+                       'cols': cols})
+                st.code(formatSql(query), 'sql')
+                merged = {}
+                for row in mysql.fetchAll(query):
+                    for idx, f in enumerate(colsArr):
+                        if idx >= 3 and row[idx]:
+                            merged.setdefault(f, row[idx])
+                    id = getFieldValue(row, colsArr, 'id')
+                st.write(f'`{getFieldValue(row, colsArr, "title")}`',
+                         '-',
+                         f'`{getFieldValue(row, colsArr, "company")}`',
+                         merged)
+                query, params = updateFieldsQuery([id], merged)
+                st.code(query, 'sql')
+                queries = [{'query': query, 'params': params}]
+                idsArr = removeNewestId(ids)
+                query = deleteJobsQuery(idsArr)
+                st.code(query, 'sql')
+                queries.append({'query': query})
+                affectedRows = mysql.executeAllAndCommit(queries)
+                st.write(f'Affected rows (update & delete): {affectedRows}')
     finally:
         mysql.close()
 
@@ -128,7 +128,7 @@ def clean():
                       kwargs={'selectedRows': selectedRows},
                       type='primary', disabled=disabled)
             c1.button('View', on_click=gotoPage,
-                      kwargs={'page': PAGE_VIEW,
+                      kwargs={'page': PAGE_VIEW_IDX,
                               'selectedRows': selectedRows},
                       type='primary', disabled=disabled)
             if not disabled:

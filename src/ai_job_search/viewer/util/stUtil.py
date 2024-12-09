@@ -8,7 +8,14 @@ import streamlit as st
 PAGE_STATE_KEY = 'selectedPage'
 PAGE_VIEW = "View & manage"
 PAGE_CLEAN = "Clean data"
+PAGE_VIEW_IDX = 0
+PAGE_CLEAN_IDX = 1
 KEY_SELECTED_IDS = 'selectedIds'
+
+PAGES = {
+    PAGE_VIEW_IDX: PAGE_VIEW,
+    PAGE_CLEAN_IDX: PAGE_CLEAN,
+}
 
 
 # States
@@ -92,11 +99,13 @@ def scapeLatex(dictionary: dict):
 def getAndFilter(pills, value):
     if not pills:
         return ''
-    filters = ' and '.join(list(map(lambda f: f'{f}', pills)))
-    if filters:
+    fields = list(map(lambda f: f'{f}', pills))
+    if len(fields) > 0:
         if not value:
+            filters = ' or '.join(fields)
             return f' and not ({filters})'
         else:
+            filters = ' and '.join(fields)
             return f' and ({filters})'
     return ''
 

@@ -6,6 +6,8 @@ select count(*) from jobs WHERE ai_enriched
 union all
 select count(*) from jobs;
 
+select count(*) from jobs;
+
 select title, company, location, url, markdown , salary, required_technologies, business_sector, optional_technologies, relocation
 from jobs WHERE ai_enriched;
 

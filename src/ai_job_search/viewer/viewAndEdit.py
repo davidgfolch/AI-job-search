@@ -4,9 +4,9 @@ from pandas.core.frame import DataFrame
 from ai_job_search.viewer.util.viewUtil import (formatSql, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, checkAndInput, checkAndPills,
-    getAndFilter, getBoolKeyName, getSelectedRowsIds, getStateBool, getState, getStateBoolValue, initStates,
-    pillsValuesToDict, scapeLatex, setFieldValue, setState,
-    sortFields, stripFields)
+    getAndFilter, getBoolKeyName, getSelectedRowsIds, getStateBool, getState,
+    getStateBoolValue, initStates, pillsValuesToDict, scapeLatex,
+    setFieldValue, setState, sortFields, stripFields)
 from tools.mysqlUtil import (
     MysqlUtil, QRY_SELECT_COUNT_JOBS, QRY_SELECT_JOBS_VIEWER, deleteJobsQuery,
     updateFieldsQuery)
@@ -15,7 +15,8 @@ from streamlit.column_config import CheckboxColumn
 # from streamlit_js_eval import streamlit_js_eval
 
 
-# TODO: Table scroll memory: when selecting a row below the visible scroll, a rerun is fired and the table looses the scroll position
+# TODO: Table scroll memory: when selecting a row below the visible scroll, a
+#  rerun is fired and the table looses the scroll position
 # TODO: Check jobs still exists by id
 
 HEIGHT = 300
@@ -166,12 +167,9 @@ def getColumnTranslated(c):
 def removeFiltersInNotFilters():
     if getStateBoolValue(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
         values: list = getState(FF_KEY_BOOL_FIELDS)
-        st.write('values -> ', values)
         notValues: list = getState(FF_KEY_BOOL_NOT_FIELDS)
-        st.write('notValues -> ', notValues)
         # list comprehension
         notValues = [notVal for notVal in notValues if notVal not in values]
-        st.write('notValues2 -> ', notValues)
         return notValues
     return getState(FF_KEY_BOOL_NOT_FIELDS)
 
@@ -320,7 +318,8 @@ def view():
         col1, col2 = st.columns(2)
         with col1:
             with st.expander("View generated sql"):
-                # TODO: sqlparse.format(sql, reindent=True, keyword_case='upper')`
+                # TODO: sqlparse.format(sql, reindent=True,
+                #  keyword_case='upper')`
                 st.code(formatSql(query, False), 'sql',
                         wrap_lines=True, line_numbers=True)
             df = pd.DataFrame(mysql.fetchAll(query), columns=FIELDS)
