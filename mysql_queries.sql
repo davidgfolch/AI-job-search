@@ -13,7 +13,9 @@ select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING 
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 
 
-select * from jobs order by created asc;
+select * from jobs where jobs.web_page='Linkedin' order by created DESC;
+
+update jobs set web_page='Linkedin' where url like '%linkedin%';
 
 update jobs set ai_enriched =0, salary=NULL, required_technologies =null, optional_technologies =null,relocation =null,business_sector =null, required_languages=null; 
 
@@ -26,6 +28,8 @@ delete from jobs where salary is null and required_technologies is null and opti
 select * from jobs where required_technologies rlike '(java|python|scala,clojure)';
 
 select id from jobs where title = 'Remote Coding Expertise for AI Training - Tier 3 Non US'
+
+select * from jobs where url like '%glassdoor%'
 
 select * from jobs where  DATE(created) < DATE_SUB(CURDATE(), INTERVAL 7 DAY) and not (seen or `like` or ignored or applied or discarded or closed or  
 interview_rh or interview or interview_tech or interview_technical_test or interview_technical_test_done)
@@ -75,5 +79,10 @@ from (select count(*) as counter,
 where r.counter>1
 order by r.counter desc, r.title, r.company, r.max_created desc
 
+select title, company, applied, modified from jobs where applied order by modified desc;
 
-select ai_enrich_error where ai_enrich_error is not null;
+select ai_enrich_error from jobs where ai_enrich_error is not null;
+
+update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
+
+update jobs set ignored = true where (ignored is null or ignored = FALSE) and (company = 'Refonte Learning' or company = 'Refonte Technologies');

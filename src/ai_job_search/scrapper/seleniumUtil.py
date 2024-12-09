@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import TimeoutException
 
 from ai_job_search.tools.terminalColor import yellow
 
@@ -57,6 +57,10 @@ class SeleniumUtil:
         method = EC.element_to_be_clickable
         WebDriverWait(driver, timeout).until(method, self.getElm(cssSel))
 
+    def waitUntil_presenceLocatedElement(self, cssSel: str, timeout: int = 10):
+        method = EC.presence_of_element_located
+        WebDriverWait(driver, timeout).until(method, self.getElm(cssSel))
+
     def waitAndClick(self, cssSel: str, timeout: int = 10,
                      scrollIntoView: bool = False):
         """ scrollIntoView, waits to be clickable & click"""
@@ -76,8 +80,10 @@ class SeleniumUtil:
             self.scrollIntoView(cssSel)
             return True
         except Exception:
-            print(yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
+            print(
+                yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
             return False
+
 
     def waitUntilFoundMany(self, cssSel: str, items: int, concept: str = '',
                            timeout: int = 5, retry: int = 4):
@@ -88,7 +94,7 @@ class SeleniumUtil:
             except TimeoutException as ex:
                 found = len(self.getElms(cssSel))
                 print(
-                    f'waitUntilFound {concept}, len after exception: {found}')
+                    f'waitUntilFound: {concept}, len after exception: {found}')
                 if retry > 1:
                     print(f'waitUntilFound {concept} retrying...')
                     retry -= 1

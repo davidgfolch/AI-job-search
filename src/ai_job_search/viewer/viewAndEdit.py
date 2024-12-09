@@ -3,8 +3,8 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 from ai_job_search.viewer.util.viewUtil import (formatSql, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
-    KEY_SELECTED_IDS, checkAndInput,
-    getAndFilter, getSelectedRowsIds, getStateOrDefault, initStates,
+    KEY_SELECTED_IDS, checkAndInput, checkAndPills,
+    getAndFilter, getBoolKeyName, getSelectedRowsIds, getStateBool, getState, getStateBoolValue, initStates,
     pillsValuesToDict, scapeLatex, setFieldValue, setState,
     sortFields, stripFields)
 from tools.mysqlUtil import (
@@ -24,7 +24,13 @@ HEIGHT = 300
 # def sqlConn():
 #     return MysqlUtil()
 
-
+# FORM FILTER KEYS
+FF_KEY_BOOL_FIELDS = 'boolFieldsFilter'
+FF_KEY_BOOL_NOT_FIELDS = 'boolFieldsNotFilter'
+FF_KEY_SEARCH = 'searchFilter'
+FF_KEY_SALARY = 'salaryFilter'
+FF_KEY_WHERE = 'whereFilter'
+FF_KEY_ORDER = 'selectOrder'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """
 salary,title,company,client,required_technologies,created"""
@@ -32,7 +38,7 @@ DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,relocation,easyApply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
-company,client,markdown,business_sector,required_languages,location,url,created,
+web_page,company,client,markdown,business_sector,required_languages,location,url,created,
 comments,{DB_FIELDS_BOOL}"""
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
 company,client,business_sector,required_languages,comments"""
@@ -48,6 +54,7 @@ DEFAULT_ORDER = "created desc"
 DETAIL_FORMAT = """
 ## [{title}]({url})
 
+- Source: `{web_page}`
 - Company: `{company}`
 - Client: `{client}`
 - Salary: `{salary}`
@@ -85,9 +92,9 @@ STYLE_JOBS_TABLE = """
 
 
 def onTableChange():
-    selected = getStateOrDefault('jobsListTable')
-    if getStateOrDefault('singleSelect'):
-        lastSelected = getStateOrDefault('lastSelected')
+    selected = getState('jobsListTable')
+    if getState('singleSelect'):
+        lastSelected = getState('lastSelected')
         if lastSelected and selected and selected != lastSelected:
             lastSelectedRows = lastSelected['edited_rows']
             selectedRows = selected['edited_rows']
@@ -104,7 +111,7 @@ def onTableChange():
 # https://docs.streamlit.io/develop/tutorials/elements/dataframe-row-selections
 def table(df: DataFrame, fieldsSorted, visibleColumns):
     dfWithSelections = df.copy()
-    preSelectedRows = getStateOrDefault('preSelectedRows', {})
+    preSelectedRows = getState('preSelectedRows', {})
     dfWithSelections.insert(0, "Sel", False)
     for row in preSelectedRows:
         if len(dfWithSelections.index) > row:
@@ -156,11 +163,25 @@ def getColumnTranslated(c):
     return re.sub(r'[_-]', ' ', c)
 
 
-def getJobListQuery(salary, search, filters, boolFilters,
-                    boolNotFilters, order):
-    isSalaryFilter, salaryRegexFilter = salary
-    isWhereFilter, filters = filters
-    where = f'({filters})' if isWhereFilter and filters else '1=1'
+def removeFiltersInNotFilters():
+    if getStateBoolValue(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
+        values: list = getState(FF_KEY_BOOL_FIELDS)
+        st.write('values -> ', values)
+        notValues: list = getState(FF_KEY_BOOL_NOT_FIELDS)
+        st.write('notValues -> ', notValues)
+        # list comprehension
+        notValues = [notVal for notVal in notValues if notVal not in values]
+        st.write('notValues2 -> ', notValues)
+        return notValues
+    return getState(FF_KEY_BOOL_NOT_FIELDS)
+
+
+def getJobListQuery():
+    filters = getState(FF_KEY_WHERE)
+    where = '1=1'
+    if getStateBool(FF_KEY_WHERE) and filters:
+        where = f'({filters})'
+    search = getState(FF_KEY_SEARCH)
     if search:
         searchArr = search.split(',')
         if len(searchArr) > 1:
@@ -170,15 +191,19 @@ def getJobListQuery(salary, search, filters, boolFilters,
             searchFilter = f"like '%{search}%'"
         searchFilter = ' or '.join(
             {f'{col} {searchFilter}' for col in SEARCH_COLUMNS})
-        where += f" and ({searchFilter})"
-    where += getAndFilter(boolFilters, True)
-    where += getAndFilter(boolNotFilters, False)
-    if isSalaryFilter & len(salaryRegexFilter.strip()) > 0:
-        where += f' and salary rlike "{salaryRegexFilter}"'
+        where += f"\n and ({searchFilter})"
+    salaryRegexFilter = getState(FF_KEY_SALARY)
+    if getStateBool(FF_KEY_SALARY) and salaryRegexFilter:
+        where += f'\n and salary rlike "{salaryRegexFilter}"'
+    if getStateBool(FF_KEY_BOOL_FIELDS):
+        where += '\n' + getAndFilter(getState(FF_KEY_BOOL_FIELDS), True)
+    if getStateBool(FF_KEY_BOOL_NOT_FIELDS):
+        notValues = removeFiltersInNotFilters()
+        where += '\n' + getAndFilter(notValues, False)
     params = {
         'selectFields': sortFields(DB_FIELDS, 'id,' + VISIBLE_COLUMNS),
         'where': where,
-        'order': DEFAULT_ORDER if not order else order
+        'order': getState(FF_KEY_ORDER, DEFAULT_ORDER)
     }
     return QRY_SELECT_JOBS_VIEWER.format(**params)
 
@@ -186,39 +211,34 @@ def getJobListQuery(salary, search, filters, boolFilters,
 def formFilter():
     formFilterByIdsSetup()
     with st.expander('Search filters'):
-        with st.container(border=1):
-            boolFilters = st.pills('Status filter', FIELDS_BOOL,
-                                   selection_mode='multi',
-                                   key='boolFieldsFilter')
-            boolNotFilters = st.pills('Status NOT filter', FIELDS_BOOL,
-                                      selection_mode='multi',
-                                      default=DEFAULT_NOT_FILTERS,
-                                      key='boolFieldsNotFilter')
-            col1, col2 = st.columns(2)
-            with col1:
-                search = st.text_input(
-                    SEARCH_INPUT_HELP, '', key='searchFilter')
-            with col2:
-                salary = checkAndInput("Salary regular expression",
-                                       'isSalFilter', 'salaryFilter')
-            filters = checkAndInput("SQL where filters",
-                                    'isWhereFilter', 'whereFilter')
-            order = st.text_input('Sort by columns', key='selectOrder')
-    return salary, search, filters, boolFilters, boolNotFilters, order
+        with st.container():
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                c1.text_input(SEARCH_INPUT_HELP, '', key=FF_KEY_SEARCH)
+            with c2:
+                checkAndInput("Salary regular expression", FF_KEY_SALARY)
+            c3.text_input('Sort by columns', key=FF_KEY_ORDER)
+            c1, c2 = st.columns(2)
+            with c1:
+                checkAndPills('Status filter', FIELDS_BOOL, FF_KEY_BOOL_FIELDS)
+            with c2:
+                checkAndPills('Status NOT filter', FIELDS_BOOL,
+                              FF_KEY_BOOL_NOT_FIELDS)
+            checkAndInput("SQL where filters", FF_KEY_WHERE)
 
 
 def formFilterByIdsSetup():
-    selectedIds = getStateOrDefault(KEY_SELECTED_IDS)
+    selectedIds = getState(KEY_SELECTED_IDS)
     if selectedIds and len(selectedIds) > 0:  # clean page entry point
         st.info(f'Selected ids: {selectedIds}')
-        setState('boolFieldsFilter', [])
-        setState('boolFieldsNotFilter', [])
-        setState('searchFilter', '')
-        setState('isSalFilter', False)
-        setState('isWhereFilter', True)
-        setState('whereFilter',
+        setState(getBoolKeyName(FF_KEY_BOOL_FIELDS), False)
+        setState(getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS), False)
+        setState(FF_KEY_SEARCH, '')
+        setState(getBoolKeyName(FF_KEY_SALARY), False)
+        setState(getBoolKeyName(FF_KEY_WHERE), True)
+        setState(FF_KEY_WHERE,
                  ' or '.join({f'id={id}' for id in selectedIds.split(',')}))
-        setState('selectOrder', "company, title, created desc")
+        setState(FF_KEY_ORDER, "company, title, created desc")
         setState(KEY_SELECTED_IDS, None)
 
 
@@ -235,7 +255,7 @@ def detailFormSubmit():
         if len(ids) > 1:  # for several rows just fields not None or empty
             fieldsValues = {k: v for k, v in fieldsValues.items() if v}
         query, params = updateFieldsQuery(ids, fieldsValues)
-        st.code(formatSql(query), 'sql')
+        st.code(formatSql(query, False), 'sql')
         mysql = MysqlUtil()
         result = mysql.executeAndCommit(query, params)
         mysql.close()
@@ -278,24 +298,30 @@ def view():
     # mysql = sqlConn()
     mysql = MysqlUtil()
     initStates({
-        'isSalFilter': True,
-        'isWhereFilter': True,
-        'selectOrder': DEFAULT_ORDER,
-        'salaryFilter': DEFAULT_SALARY_REGEX_FILTER,
-        'whereFilter': DEFAULT_SQL_FILTER
+        getBoolKeyName(FF_KEY_BOOL_FIELDS): True,
+        getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS): True,
+        FF_KEY_BOOL_NOT_FIELDS: DEFAULT_NOT_FILTERS,
+        FF_KEY_ORDER: DEFAULT_ORDER,
+        getBoolKeyName(FF_KEY_SALARY): True,
+        FF_KEY_SALARY: DEFAULT_SALARY_REGEX_FILTER,
+        getBoolKeyName(FF_KEY_WHERE): True,
+        FF_KEY_WHERE: DEFAULT_SQL_FILTER
     })
+    if getStateBool(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
+        res = removeFiltersInNotFilters()
+        if res:
+            setState(FF_KEY_BOOL_NOT_FIELDS, res)
     try:
         st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
-        (salary, search, filters, boolFilters,
-         boolNotFilters, order) = formFilter()
-        query = getJobListQuery(salary, search, filters,
-                                boolFilters, boolNotFilters, order)
+        formFilter()
+        query = getJobListQuery()
         totalResults = mysql.count(QRY_SELECT_COUNT_JOBS)
         jobData = None
         col1, col2 = st.columns(2)
         with col1:
             with st.expander("View generated sql"):
-                st.code(formatSql(query), 'sql',
+                # TODO: sqlparse.format(sql, reindent=True, keyword_case='upper')`
+                st.code(formatSql(query, False), 'sql',
                         wrap_lines=True, line_numbers=True)
             df = pd.DataFrame(mysql.fetchAll(query), columns=FIELDS)
             filterResCnt = len(df.index)

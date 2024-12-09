@@ -2,8 +2,9 @@ import math
 import time
 from urllib.parse import quote
 import re
-import markdownify
 from selenium.common.exceptions import NoSuchElementException
+from ai_job_search.scrapper import baseScrapper
+from ai_job_search.scrapper.baseScrapper import htmlToMarkdown, join, validate
 from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import green, red, yellow
 from .seleniumUtil import SeleniumUtil
@@ -16,8 +17,8 @@ from .selectors.linkedinSelectors import (
     CSS_SEL_NO_RESULTS,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
     CSS_SEL_JOB_LI_IDX,
-    CSS_SEL_SUBTITLE,
-    CSS_SEL_CAPTION,
+    CSS_SEL_COMPANY,
+    CSS_SEL_LOCATION,
     LI_JOB_TITLE_CSS_SUFFIX,
     CSS_SEL_JOB_LINK,
     CSS_SEL_NEXT_PAGE_BUTTON,
@@ -41,7 +42,7 @@ mysql = None
 
 
 def run(seleniumUtil: SeleniumUtil):
-    """Login, process jobs search paginated list results"""
+    """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
     try:
@@ -67,7 +68,6 @@ def login():
     except Exception as e:
         print(e)
     selenium.waitAndClick('form button[type=submit]')
-    return selenium
 
 
 def getUrl(keywords):
@@ -222,23 +222,20 @@ def processRow(idx, retry=True):
     try:
         liPrefix = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
         title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
-        company = selenium.getText(f'{liPrefix} {CSS_SEL_SUBTITLE}')
-        location = selenium.getText(f'{liPrefix} {CSS_SEL_CAPTION}')
+        company = selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
+        location = selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
         selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
         url = getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
         jobId = getJobId(url)
         html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        # TODO: from bs4 import BeautifulSoup
-        # html = BeautifulSoup(html)  # exclude_encodings
-        # mdText = markdownify.markdownify(html)
-        # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#options
-        md = markdownify.markdownify(html)
+        md = htmlToMarkdown(html)
         # easyApply: there are 2 buttons
-        ea = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
+        easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
         print(f'{jobId}, {title}, {company}, {location}, ',
-              f'easyApply={ea} - ', end='')
-        if validate(title, url, company, md):
-            if mysql.insert((jobId, title, company, location, url, md, ea)):
+              f'easyApply={easyApply} - ', end='')
+        if validate(title, url, company, md, DEBUG):
+            if mysql.insert((jobId, title, company, location, url, md,
+                             easyApply, 'Linkedin')):
                 print(green('INSERTED!'), end='')
         elif retry:
             print(yellow('waiting 10 secs... & retrying... '))
@@ -250,26 +247,5 @@ def processRow(idx, retry=True):
     print()
 
 
-def validate(title: str, url: str, company: str, markdown: str):
-    if not (title.strip() and url and company and
-            re.sub(r'\n', '', markdown, re.MULTILINE).strip()):
-        markdown = markdown.split('\n')[0]
-        debug("validate -> " +
-              red('ERROR: One or more required fields are empty, ',
-                  'NOT inserting into DB:',
-                  f'title={title}, company={company}, ',
-                  f'location={location},  markdown={markdown}...') +
-              yellow(f' -> Url: {url}'))
-        return False
-    return True
-
-
 def debug(msg: str = ''):
-    if DEBUG:
-        input(f" (debug active) {msg}, press a key")
-    else:
-        print(msg, end='')
-
-
-def join(*str: str) -> str:
-    return ''.join(str)
+    baseScrapper.debug(DEBUG, msg)

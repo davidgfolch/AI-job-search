@@ -26,13 +26,14 @@ def mapDetailForm(jobData, fieldsBool):
 def regexSubs(txt: str, regExs: list[(re.Pattern, re.Pattern)]):
     res = txt
     for r in regExs:
-        res = re.sub(r[0], r[1], res)
+        if r:
+            res = re.sub(r[0], r[1], res)
     return res
 
 
-def formatSql(query):
+def formatSql(query, formatAndsOrs=True):
     return regexSubs(query, [
         (r',(?!= )', r', '),
-        (r'( and | or )', r'\n\t\1'),
+        (r'(?!=and)(?!=or) (and|or) ', r'\n\t \1 ') if formatAndsOrs else None,
         (r'\n+', r'\n')
     ])

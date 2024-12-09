@@ -23,6 +23,7 @@ ALTER TABLE jobs ADD closed BOOLEAN default 0;
 ALTER TABLE jobs ADD client varchar(200);
 ALTER TABLE jobs ADD flagged BOOLEAN default 0;
 
+ALTER TABLE jobs ADD web_page varchar(100);
 
 ALTER TABLE jobs ADD `modified` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 

@@ -9,8 +9,8 @@ DB_NAME = 'jobs'
 QRY_FIND_JOB_BY_ID = """
 SELECT * FROM jobs WHERE jobId = %s"""
 QRY_INSERT = """
-INSERT INTO jobs (jobId,title,company,location,url,markdown,easyApply)
-          values (%s,%s,%s,%s,%s,%s,%s)"""
+INSERT INTO jobs (jobId,title,company,location,url,markdown,easyApply,web_page)
+          values (%s,%s,%s,%s,%s,%s,%s,%s)"""
 QRY_SELECT_JOBS_FOR_ENRICHMENT = """
 SELECT id, title, markdown, company
 FROM jobs

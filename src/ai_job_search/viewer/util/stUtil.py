@@ -1,3 +1,4 @@
+from functools import reduce
 import re
 from pandas import DataFrame
 import streamlit as st
@@ -17,12 +18,26 @@ def initStates(keyValue: dict):
             st.session_state[k] = keyValue[k]
 
 
-def getState(key: str):
-    return st.session_state[key]
+def getState(key: str, default=None):
+    value = st.session_state.get(key, default)
+    if (isinstance(value, DataFrame) and len(value)) or value:
+        if isinstance(value, str):
+            if len(value.strip()) > 0:
+                return value
+        else:
+            return value
+    return default
 
 
-def getStateOrDefault(key: str, default=None):
-    return st.session_state.get(key, default)
+def getStateBool(*keys: str, default=False) -> bool:
+    return reduce(
+        lambda x, y: x and y,
+        (st.session_state.get(getBoolKeyName(key), default) for key in keys))
+
+
+def getStateBoolValue(*keys: str):
+    return reduce(lambda x, y: x and y,
+                  (getStateBool(key) and getState(key) for key in keys))
 
 
 def setState(key: str, value):
@@ -47,7 +62,7 @@ def sortFields(fields: str, sortFields: str):
 
 
 def setFieldValue(fieldsValues, key, default=None, setEmpty: bool = False):
-    value = getStateOrDefault(key, default)
+    value = getState(key, default)
     isStr = isinstance(value, str)
     strHasLen = not isStr or (isStr and len(value.strip()) > 0)
     if setEmpty or (value and strHasLen):
@@ -55,14 +70,14 @@ def setFieldValue(fieldsValues, key, default=None, setEmpty: bool = False):
 
 
 def pillsValuesToDict(key, fields):
-    value = getStateOrDefault(key, None)
+    value = getState(key, None)
     if value:
         return {fields[i]: fields[i] in value for i in range(len(fields))}
     return {}
 
 
 def getSelectedRowsIds(key):
-    selectedRows: DataFrame = getStateOrDefault(key, None)
+    selectedRows: DataFrame = getState(key, None)
     return list(selectedRows.iloc[idx]['id'] for idx in range(len(selectedRows)))
 
 
@@ -75,8 +90,15 @@ def scapeLatex(dictionary: dict):
 
 
 def getAndFilter(pills, value):
-    filters = ' and '.join(list(map(lambda f: f'{f}={value}', pills)))
-    return f' and ({filters})' if filters else ''
+    if not pills:
+        return ''
+    filters = ' and '.join(list(map(lambda f: f'{f}', pills)))
+    if filters:
+        if not value:
+            return f' and not ({filters})'
+        else:
+            return f' and ({filters})'
+    return ''
 
 
 # Components
@@ -84,10 +106,22 @@ def checkboxNoLabel(label, key):
     return st.checkbox(label, key=key, label_visibility='collapsed')
 
 
-def checkAndInput(label: str, checkKey: str, inputKey: str):
-    c1, c2 = st.columns([1, 90], vertical_alignment="bottom")
+def getBoolKeyName(key: str):
+    return f'is{key.capitalize()}'
+
+
+def checkAndInput(label: str, key: str):
+    c1, c2 = st.columns([1, 90], vertical_alignment="top")
     with c1:
-        res1 = checkboxNoLabel(label, checkKey)
+        enabled = checkboxNoLabel(label, getBoolKeyName(key))
     with c2:
-        res2 = st.text_input(label, key=inputKey, disabled=not res1)
-    return res1, res2
+        st.text_input(label, key=key, disabled=not enabled)
+
+
+def checkAndPills(label, fields: list[str], key: str):
+    c1, c2 = st.columns([1, 90], vertical_alignment="top")
+    with c1:
+        enabled = checkboxNoLabel(label, getBoolKeyName(key))
+    with c2:
+        st.pills(label, fields, key=key,
+                 selection_mode='multi', disabled=not enabled)

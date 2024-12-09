@@ -5,7 +5,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
 from ai_job_search.tools.terminalColor import red, yellow
-from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
+from ai_job_search.tools.mysqlUtil import MysqlUtil
 
 
 LLM_CONFIG = LLM(model="ollama/llama3.2",
@@ -25,7 +25,8 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 id = job[0]
                 title = job[1]
                 company = job[3]
-                markdown = re.sub(r'( *[\n\r]){2,}', '\n',
+                # TODO: REMOVE regex repl. moved to htmlToMarkdown() 5/12
+                markdown = re.sub(r'(\s*(\n|\n\r|\r\n|\r)){2,}', '\n\n',
                                   # DB markdown blob decoding
                                   job[2].decode("utf-8"),
                                   re.MULTILINE)
@@ -76,11 +77,12 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     #     return "retry"
 
 
-def rawToJson(raw) -> dict[str, str]:
+def rawToJson(raw: str) -> dict[str, str]:
     try:
         IM = re.I | re.M
         # remove invalid scapes
         # TODO: REMOVE OR CHANGE UNICODE \u00f3
+        raw = raw.replace('\$', '$')  # dont remove \$ ignore the warning
         raw = re.sub(r'[\\]+([`#&->|])', r'\1', raw, flags=re.M)
         # remove Agent Thought or Note
         raw = re.sub(r'\n(Thought|Note):(.*\n)*', '', raw, flags=IM)
@@ -95,11 +97,12 @@ def rawToJson(raw) -> dict[str, str]:
         lastCurlyBracesIdx = raw.rfind('}')
         if lastCurlyBracesIdx > 0 and lastCurlyBracesIdx + 1 < len(raw):
             raw = raw[0:lastCurlyBracesIdx+1]
+        elif lastCurlyBracesIdx == -1:  # sometimes LLM forgets to close }
+            raw += '}'
         return dict(json.loads(f'{raw}'))
     except Exception as ex:
         msg = f'Error info: could not parse raw as json: {ex} in json -> {raw}'
         print(red(msg))
-        raise Exception from msg
 
 
 def validateResult(result: dict[str, str]):

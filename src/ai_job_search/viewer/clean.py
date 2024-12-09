@@ -4,7 +4,7 @@ import pandas as pd
 from ai_job_search.viewer.viewAndEdit import DB_FIELDS_BOOL, DB_FIELDS_MERGE
 from ai_job_search.viewer.util.viewUtil import formatSql
 from ai_job_search.viewer.util.stUtil import (KEY_SELECTED_IDS, PAGE_STATE_KEY, PAGE_VIEW,
-                           getStateOrDefault, setState, stripFields)
+                           getState, setState, stripFields)
 from tools.mysqlUtil import (MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 
 QUERY_DESCRIPTION = """Show all repeated job offers by `title,company`
@@ -109,7 +109,7 @@ def clean():
         if len(df) > 0:
             dfWithSelections = df.copy()
             dfWithSelections.insert(
-                0, "Sel", getStateOrDefault('selectAll', False))
+                0, "Sel", getState('selectAll', False))
             rows = st.data_editor(dfWithSelections, use_container_width=True,
                                   hide_index=True,
                                   key='cleanJobsListTable',
