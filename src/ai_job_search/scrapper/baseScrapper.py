@@ -16,10 +16,9 @@ def htmlToMarkdown(html: str):
 
     # html = BeautifulSoup(html)  # exclude_encodings
     # md = convertSoup(html)
-    # print(yellow('>>>>>>> Markdown with previous beautifulSoup clean <<<<<<<'))
+    # print(yellow('>>> Markdown with previous beautifulSoup clean <<<'))
     # print(green(md))
-    md = markdownify.markdownify(removeBlankLines(html))
-    return md
+    return removeBlankLines(markdownify.markdownify(html))
 
 
 def removeBlankLines(html: str):

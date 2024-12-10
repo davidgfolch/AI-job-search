@@ -54,10 +54,10 @@ FIELDS_SORTED = sortFields(DB_FIELDS, 'id,' + VISIBLE_COLUMNS).split(',')
 DEFAULT_NOT_FILTERS = stripFields('seen,ignored,applied,discarded,closed')
 
 
-SEARCH_COLUMNS = ['title', 'company', 'client', 'markdown']
+SEARCH_COLUMNS = ['title', 'company', 'client', 'markdown', 'comments']
 SEARCH_INPUT_HELP = f"""
-Enter search concepts (for {','.join(SEARCH_COLUMNS)})  separated by commas
- (note text between commas are mysql regex)"""
+Search in {'/'.join(SEARCH_COLUMNS)}, enter search concepts
+ (plain text or separated by commas to use mysql regex)"""
 
 
 STYLE_JOBS_TABLE = """
