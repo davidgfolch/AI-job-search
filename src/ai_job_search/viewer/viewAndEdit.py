@@ -106,6 +106,8 @@ def onTableChange():
             else:
                 value = list(last ^ current)
             setState('preSelectedRows', value)
+        else:
+            setState('preSelectedRows', [0])
     setState('lastSelected', selected)
 
 

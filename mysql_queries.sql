@@ -8,6 +8,8 @@ select count(*) from jobs;
 
 select count(*) from jobs;
 
+select * from jobs WHERE not ai_enriched and not ignored;
+
 select title, company, location, url, markdown , salary, required_technologies, business_sector, optional_technologies, relocation
 from jobs WHERE ai_enriched;
 
