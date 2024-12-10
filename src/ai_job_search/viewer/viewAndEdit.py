@@ -1,12 +1,20 @@
 import re
 import pandas as pd
 from pandas.core.frame import DataFrame
-from ai_job_search.viewer.util.viewUtil import (formatSql, mapDetailForm)
+from ai_job_search.viewer.util.viewUtil import (
+    getValuesAsDict, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
-    KEY_SELECTED_IDS, checkAndInput, checkAndPills,
-    getAndFilter, getBoolKeyName, getSelectedRowsIds, getStateBool, getState,
+    KEY_SELECTED_IDS, checkAndInput, checkAndPills, formatSql,
+    getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds, getStateBool, getState,
     getStateBoolValue, initStates, pillsValuesToDict, scapeLatex,
-    setFieldValue, setState, sortFields, stripFields)
+    setFieldValue, setState, sortFields)
+from ai_job_search.viewer.viewAndEditConstants import (
+    DB_FIELDS, DEFAULT_NOT_FILTERS, DEFAULT_ORDER, DEFAULT_SALARY_REGEX_FILTER,
+    DEFAULT_SQL_FILTER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
+    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_ORDER, FF_KEY_SALARY, FF_KEY_SEARCH,
+    FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT,
+    LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS, SEARCH_INPUT_HELP, STYLE_JOBS_TABLE,
+    VISIBLE_COLUMNS)
 from tools.mysqlUtil import (
     MysqlUtil, QRY_SELECT_COUNT_JOBS, QRY_SELECT_JOBS_VIEWER, deleteJobsQuery,
     updateFieldsQuery)
@@ -19,78 +27,9 @@ from streamlit.column_config import CheckboxColumn
 #  rerun is fired and the table looses the scroll position
 # TODO: Check jobs still exists by id
 
-HEIGHT = 300
-
 # @st.cache_resource
 # def sqlConn():
 #     return MysqlUtil()
-
-# FORM FILTER KEYS
-FF_KEY_BOOL_FIELDS = 'boolFieldsFilter'
-FF_KEY_BOOL_NOT_FIELDS = 'boolFieldsNotFilter'
-FF_KEY_SEARCH = 'searchFilter'
-FF_KEY_SALARY = 'salaryFilter'
-FF_KEY_WHERE = 'whereFilter'
-FF_KEY_ORDER = 'selectOrder'
-# COLUMNS (MYSQL & DATAFRAME)
-VISIBLE_COLUMNS = """
-salary,title,company,client,required_technologies,created"""
-DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
-interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
-ai_enriched,relocation,easyApply"""
-DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
-web_page,company,client,markdown,business_sector,required_languages,location,url,created,
-comments,{DB_FIELDS_BOOL}"""
-DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-company,client,business_sector,required_languages,comments"""
-# FILTERS
-RLIKE = '(java[^script]|python|scala|clojure)'
-DEFAULT_SQL_FILTER = f"""
-required_technologies rlike '{RLIKE}'
- or title rlike '{RLIKE}'
- or markdown rlike '{RLIKE}'"""
-DEFAULT_SALARY_REGEX_FILTER = "([€$] *[0-9]{2,}|[0-9]{2,} *[€$])"
-DEFAULT_ORDER = "created desc"
-# DETAIL FORMAT
-DETAIL_FORMAT = """
-## [{title}]({url})
-
-- Source: `{web_page}`
-- Company: `{company}`
-- Client: `{client}`
-- Salary: `{salary}`
-- Skills
-  - Required: `{required_technologies}`
-  - Optional: `{optional_technologies}`
-
-`{created}` - `{createdTime}`
-
-{markdown}
-"""
-
-LIST_VISIBLE_COLUMNS = stripFields(VISIBLE_COLUMNS)
-FIELDS = stripFields(DB_FIELDS)
-FIELDS_BOOL = stripFields(DB_FIELDS_BOOL)
-FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
-FIELDS_SORTED = sortFields(DB_FIELDS, 'id,' + VISIBLE_COLUMNS).split(',')
-DEFAULT_NOT_FILTERS = stripFields('seen,ignored,applied,discarded,closed')
-
-
-SEARCH_COLUMNS = ['title', 'company', 'client', 'markdown']
-SEARCH_INPUT_HELP = f"""
-Enter search concepts (for {','.join(SEARCH_COLUMNS)})  separated by commas
- (note text between commas are mysql regex)"""
-
-
-STYLE_JOBS_TABLE = """
-    <style>
-        .st-key-jobsListTable .stDataFrame > *,
-        .st-key-jobsListTable .stDataFrame > div > * {
-            background-color: darkcyan;
-        }
-    </style>
-    """
-
 
 def onTableChange():
     selected = getState('jobsListTable')
@@ -135,17 +74,6 @@ def table(df: DataFrame, fieldsSorted, visibleColumns):
     return selectedRows
 
 
-def getValuesAsDict(series):
-    res = {}
-    for idx, f in enumerate(FIELDS_SORTED):
-        value = series.iloc[idx]
-        if f == 'markdown' or f == 'comments':
-            res[f] = value.decode('utf-8') if value else value
-        else:
-            res[f] = value.strip() if isinstance(value, str) else value
-    return res
-
-
 def getTableColsConfig(fields, visibleColumns, selector=True):
     # https://docs.streamlit.io/develop/api-reference/data/st.column_config
     cfg = {}
@@ -160,10 +88,6 @@ def getTableColsConfig(fields, visibleColumns, selector=True):
         else:
             cfg[idx+2] = None
     return cfg
-
-
-def getColumnTranslated(c):
-    return re.sub(r'[_-]', ' ', c)
 
 
 def removeFiltersInNotFilters():
@@ -271,8 +195,9 @@ def detailForm(jobData):
         c1, c2 = st.columns([10, 1])
         with c1:
             st.pills('Status form', FIELDS_BOOL,
-                     selection_mode='multi',
                      default=boolFieldsValues,
+                     format_func=lambda c: getColumnTranslated(c),
+                     selection_mode='multi',
                      label_visibility='collapsed',
                      key='statusFields')
         with c2:
@@ -344,7 +269,7 @@ def view():
                       type="primary")
             if totalSelected == 1:
                 selected = selectedRows.iloc[0]
-                jobData = getValuesAsDict(selected)
+                jobData = getValuesAsDict(selected, FIELDS_SORTED)
                 detailForm(jobData)
         with col2:
             with st.container():

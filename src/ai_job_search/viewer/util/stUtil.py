@@ -51,7 +51,7 @@ def setState(key: str, value):
     st.session_state[key] = value
 
 
-# Fields processings
+# Fields processing
 def stripFields(fields: str) -> list[str]:
     return list(map(lambda c: re.sub('\n', '', c.strip()), fields.split(',')))
 
@@ -85,7 +85,8 @@ def pillsValuesToDict(key, fields):
 
 def getSelectedRowsIds(key):
     selectedRows: DataFrame = getState(key, None)
-    return list(selectedRows.iloc[idx]['id'] for idx in range(len(selectedRows)))
+    return list(
+        selectedRows.iloc[idx]['id'] for idx in range(len(selectedRows)))
 
 
 def scapeLatex(dictionary: dict):
@@ -133,4 +134,26 @@ def checkAndPills(label, fields: list[str], key: str):
         enabled = checkboxNoLabel(label, getBoolKeyName(key))
     with c2:
         st.pills(label, fields, key=key,
+                 format_func=lambda c: getColumnTranslated(c),
                  selection_mode='multi', disabled=not enabled)
+
+
+def getColumnTranslated(c):
+    return re.sub(r'[_-]', ' ', c).capitalize()
+
+
+# Sql format
+def formatSql(query, formatAndsOrs=True):
+    return regexSubs(query, [
+        (r',(?!= )', r', '),
+        (r'(?!=and)(?!=or) (and|or) ', r'\n\t \1 ') if formatAndsOrs else None,
+        (r'\n+', r'\n')
+    ])
+
+
+def regexSubs(txt: str, regExs: list[(re.Pattern, re.Pattern)]):
+    res = txt
+    for r in regExs:
+        if r:
+            res = re.sub(r[0], r[1], res)
+    return res

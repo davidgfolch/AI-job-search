@@ -1,11 +1,11 @@
 import re
 import streamlit as st
 import pandas as pd
-from ai_job_search.viewer.viewAndEdit import DB_FIELDS_BOOL, DB_FIELDS_MERGE
-from ai_job_search.viewer.util.viewUtil import formatSql
 from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, PAGE_STATE_KEY, PAGE_VIEW_IDX,
-    getState, setState, stripFields)
+    getState, setState, stripFields, formatSql)
+from ai_job_search.viewer.viewAndEditConstants import (
+    DB_FIELDS_BOOL, DB_FIELDS_MERGE)
 from tools.mysqlUtil import (MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 
 QUERY_DESCRIPTION = """Show all repeated job offers by `title,company`

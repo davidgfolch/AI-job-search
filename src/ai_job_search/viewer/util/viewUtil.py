@@ -1,4 +1,4 @@
-import re
+from pandas import DataFrame
 
 from ai_job_search.viewer.util.stUtil import setState
 
@@ -23,17 +23,12 @@ def mapDetailForm(jobData, fieldsBool):
             salary, company, client)
 
 
-def regexSubs(txt: str, regExs: list[(re.Pattern, re.Pattern)]):
-    res = txt
-    for r in regExs:
-        if r:
-            res = re.sub(r[0], r[1], res)
+def getValuesAsDict(series: DataFrame, fields):
+    res = {}
+    for idx, f in enumerate(fields):
+        value = series.iloc[idx]
+        if f == 'markdown' or f == 'comments':
+            res[f] = value.decode('utf-8') if value else value
+        else:
+            res[f] = value.strip() if isinstance(value, str) else value
     return res
-
-
-def formatSql(query, formatAndsOrs=True):
-    return regexSubs(query, [
-        (r',(?!= )', r', '),
-        (r'(?!=and)(?!=or) (and|or) ', r'\n\t \1 ') if formatAndsOrs else None,
-        (r'\n+', r'\n')
-    ])

@@ -5,7 +5,9 @@
         "DATAFRAME",
         "dotenv",
         "glassdoor",
+        "HARCODED",
         "iloc",
+        "Joppy",
         "markdownify",
         "RLIKE",
         "Streamlit"
