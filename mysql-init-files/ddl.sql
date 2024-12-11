@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     UNIQUE KEY (jobId)
     ) ENGINE=InnoDB
 
-ALTER TABLE jobs ADD easyApply BOOLEAN default 0;
+ALTER TABLE jobs ADD easy_apply BOOLEAN default 0;
+--ALTER TABLE jobs CHANGE easyApply easy_apply BOOLEAN default 0;
 ALTER TABLE jobs ADD closed BOOLEAN default 0;
 ALTER TABLE jobs ADD client varchar(200);
 ALTER TABLE jobs ADD flagged BOOLEAN default 0;
@@ -50,3 +51,16 @@ ALTER TABLE jobs ADD interview_technical_test BOOLEAN default 0;
 ALTER TABLE jobs ADD interview_technical_test_done BOOLEAN default 0;
 ALTER TABLE jobs ADD contacts varchar(1000);
 ALTER TABLE jobs ADD comments blob;
+
+-- Indexes
+ALTER TABLE jobs ADD INDEX title_index (title);
+ALTER TABLE jobs ADD INDEX company_index (company);
+ALTER TABLE jobs ADD INDEX client_index (client);
+-- ALTER TABLE jobs ADD INDEX markdown_index (markdown);
+-- ALTER TABLE jobs ADD INDEX comments_index (comments);
+ALTER TABLE jobs ADD INDEX salary_index (salary);
+ALTER TABLE jobs ADD INDEX ignored_index (ignored);
+ALTER TABLE jobs ADD INDEX seen_index (seen);
+ALTER TABLE jobs ADD INDEX applied_index (applied);
+ALTER TABLE jobs ADD INDEX discarded_index (discarded);
+ALTER TABLE jobs ADD INDEX closed_index (closed);

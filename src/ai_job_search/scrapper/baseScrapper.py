@@ -22,7 +22,7 @@ def htmlToMarkdown(html: str):
 
 
 def removeBlankLines(html: str):
-    return re.sub(r'(\s*(\n|\n\r|\r\n|\r)){2,}', '\n\n', html, re.M)
+    return re.sub(r'(\s*(\n|\n\r|\r\n)+(\n|\n\r|\r\n)+)', '\n\n', html, re.M)
 
 
 def validate(title: str, url: str, company: str, markdown: str,

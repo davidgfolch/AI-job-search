@@ -1,5 +1,5 @@
 import streamlit as st
-from ai_job_search.viewer.clean import clean
+from ai_job_search.viewer.cleaner import clean
 from ai_job_search.viewer.util.stUtil import (
     PAGE_STATE_KEY, PAGES, initStates)
 from ai_job_search.viewer.viewAndEdit import view

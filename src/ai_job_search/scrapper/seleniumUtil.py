@@ -25,8 +25,9 @@ class SeleniumUtil:
     def loadPage(self, url: str):
         driver.get(url)
 
-    def waitUntilPageIs(self, url: str, timeout: int = 10):
-        WebDriverWait(driver, timeout).until(lambda d: d.current_url == url)
+    def waitUntilPageUrlContains(self, url: str, timeout: int = 10):
+        WebDriverWait(driver, timeout).until(
+            lambda d: str(d.current_url).find(url) >= 0)
 
     def getElm(self, cssSel: str):
         return driver.find_element(By.CSS_SELECTOR, cssSel)
@@ -84,7 +85,6 @@ class SeleniumUtil:
                 yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
             return False
 
-
     def waitUntilFoundMany(self, cssSel: str, items: int, concept: str = '',
                            timeout: int = 5, retry: int = 4):
         while True:
@@ -109,6 +109,9 @@ class SeleniumUtil:
 
     def getAttr(self, cssSel: str, attr: str) -> str:
         return self.getElm(cssSel).get_attribute(attr)
+
+    def back(self):
+        driver.back()
 
     # def close(self):
     #     driver.close()

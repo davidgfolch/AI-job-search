@@ -43,7 +43,7 @@ def run(seleniumUtil: SeleniumUtil):
         mysql = MysqlUtil()
         login()
         print(yellow('Waiting for Glassdoor to redirect after login...'))
-        selenium.waitUntilPageIs(
+        selenium.waitUntilPageUrlContains(
             'https://www.glassdoor.es/Empleo/index.htm', 60)
         for url in JOBS_SEARCH.split('\n'):
             searchJobs(url)
@@ -267,7 +267,7 @@ def processRow(idx, retry=True):
     # easyApply: there are 2 buttons
     easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
     print(f'{jobId}, {title}, {company}, {location}, ',
-          f'easyApply={easyApply} - ', end='')
+          f'easy_apply={easyApply} - ', end='')
     if validate(title, url, company, md, DEBUG):
         if mysql.insert((jobId, title, company, location, url, md,
                          easyApply, 'Glassdoor')):

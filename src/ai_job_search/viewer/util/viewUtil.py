@@ -1,6 +1,7 @@
 from pandas import DataFrame
 
-from ai_job_search.viewer.util.stUtil import setState
+from ai_job_search.viewer.util.stUtil import scapeLatex, setState
+from ai_job_search.viewer.viewAndEditConstants import DETAIL_FORMAT
 
 
 def mapDetailForm(jobData, fieldsBool):
@@ -32,3 +33,12 @@ def getValuesAsDict(series: DataFrame, fields):
         else:
             res[f] = value.strip() if isinstance(value, str) else value
     return res
+
+
+def formatDetail(jobData):
+    data = scapeLatex(jobData)
+    data['createdTime'] = data['created'].time()
+    data['created'] = data['created'].date()
+    data = {k: (data[k] if data[k] else '?')
+            for k in data.keys()}
+    return DETAIL_FORMAT.format(**data)

@@ -3,6 +3,8 @@ import re
 from pandas import DataFrame
 import streamlit as st
 
+from ai_job_search.tools.mysqlUtil import getColumnTranslated
+
 
 # Application pages & state keys
 PAGE_STATE_KEY = 'selectedPage'
@@ -112,8 +114,8 @@ def getAndFilter(pills, value):
 
 
 # Components
-def checkboxNoLabel(label, key):
-    return st.checkbox(label, key=key, label_visibility='collapsed')
+def checkboxFilter(label, filterkey):
+    return st.checkbox(label, key=getBoolKeyName(filterkey))
 
 
 def getBoolKeyName(key: str):
@@ -121,25 +123,22 @@ def getBoolKeyName(key: str):
 
 
 def checkAndInput(label: str, key: str):
-    c1, c2 = st.columns([1, 90], vertical_alignment="top")
-    with c1:
-        enabled = checkboxNoLabel(label, getBoolKeyName(key))
-    with c2:
-        st.text_input(label, key=key, disabled=not enabled)
+    with st.container(border=1):
+        enabled = checkboxFilter(label, key)
+        st.text_input(label, key=key, disabled=not enabled,
+                      label_visibility='collapsed')
 
 
 def checkAndPills(label, fields: list[str], key: str):
-    c1, c2 = st.columns([1, 90], vertical_alignment="top")
-    with c1:
-        enabled = checkboxNoLabel(label, getBoolKeyName(key))
-    with c2:
-        st.pills(label, fields, key=key,
-                 format_func=lambda c: getColumnTranslated(c),
-                 selection_mode='multi', disabled=not enabled)
-
-
-def getColumnTranslated(c):
-    return re.sub(r'[_-]', ' ', c).capitalize()
+    with st.container(border=1):
+        c1, c2 = st.columns([4, 25], vertical_alignment="top")
+        with c1:
+            enabled = checkboxFilter(label, key)
+        with c2:
+            st.pills(label, fields, key=key,
+                     format_func=lambda c: getColumnTranslated(c),
+                     selection_mode='multi', disabled=not enabled,
+                     label_visibility='collapsed')
 
 
 # Sql format

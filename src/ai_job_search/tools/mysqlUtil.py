@@ -9,7 +9,7 @@ DB_NAME = 'jobs'
 QRY_FIND_JOB_BY_ID = """
 SELECT * FROM jobs WHERE jobId = %s"""
 QRY_INSERT = """
-INSERT INTO jobs (jobId,title,company,location,url,markdown,easyApply,web_page)
+INSERT INTO jobs (jobId,title,company,location,url,markdown,easy_apply,web_page)
           values (%s,%s,%s,%s,%s,%s,%s,%s)"""
 QRY_SELECT_JOBS_FOR_ENRICHMENT = """
 SELECT id, title, markdown, company
@@ -145,11 +145,22 @@ class MysqlUtil:
             c.execute(qry)
             return c.fetchall()[0][0]
 
+    def getTableDdlColumnNames(self, table):
+        """Returns table DDL column names in same order than
+          select * from table"""
+        columns = self.fetchAll(f'SHOW COLUMNS FROM `{table}`')
+        # get column name (idx=0) and translate
+        columns = [c[0] for c in columns]
+        columns = [getColumnTranslated(c) for c in columns]
+        return columns
+
     def close(self):
         self.conn.close()
 
 
 # static methods
+def getColumnTranslated(c):
+    return re.sub(r'[_-]', ' ', c).capitalize()
 
 
 def updateFieldsQuery(ids: list, fieldsValues: dict):

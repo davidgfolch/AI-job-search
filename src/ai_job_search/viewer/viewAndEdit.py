@@ -1,18 +1,17 @@
-import re
 import pandas as pd
 from pandas.core.frame import DataFrame
 from ai_job_search.viewer.util.viewUtil import (
-    getValuesAsDict, mapDetailForm)
+    formatDetail, getValuesAsDict, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, checkAndInput, checkAndPills, formatSql,
-    getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds, getStateBool, getState,
-    getStateBoolValue, initStates, pillsValuesToDict, scapeLatex,
+    getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds,
+    getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
     setFieldValue, setState, sortFields)
 from ai_job_search.viewer.viewAndEditConstants import (
-    DB_FIELDS, DEFAULT_NOT_FILTERS, DEFAULT_ORDER, DEFAULT_SALARY_REGEX_FILTER,
-    DEFAULT_SQL_FILTER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
-    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_ORDER, FF_KEY_SALARY, FF_KEY_SEARCH,
-    FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT,
+    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
+    DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
+    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_DAYS_OLD, FF_KEY_ORDER, FF_KEY_SALARY,
+    FF_KEY_SEARCH, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT,
     LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS, SEARCH_INPUT_HELP, STYLE_JOBS_TABLE,
     VISIBLE_COLUMNS)
 from tools.mysqlUtil import (
@@ -119,6 +118,10 @@ def getJobListQuery():
     salaryRegexFilter = getState(FF_KEY_SALARY)
     if getStateBool(FF_KEY_SALARY) and salaryRegexFilter:
         where += f'\n and salary rlike "{salaryRegexFilter}"'
+    daysOldFilter = getState(FF_KEY_DAYS_OLD)
+    if getStateBool(FF_KEY_DAYS_OLD) and daysOldFilter:
+        where += '\n and DATE(created) >='
+        where += f'     DATE_SUB(CURDATE(), INTERVAL {daysOldFilter} DAY)'
     if getStateBool(FF_KEY_BOOL_FIELDS):
         where += '\n' + getAndFilter(getState(FF_KEY_BOOL_FIELDS), True)
     if getStateBool(FF_KEY_BOOL_NOT_FIELDS):
@@ -136,12 +139,14 @@ def formFilter():
     formFilterByIdsSetup()
     with st.expander('Search filters'):
         with st.container():
-            c1, c2, c3 = st.columns(3)
+            c1, c2, c3, c4 = st.columns([6, 1, 3, 3])
             with c1:
                 c1.text_input(SEARCH_INPUT_HELP, '', key=FF_KEY_SEARCH)
             with c2:
+                checkAndInput('Days old', FF_KEY_DAYS_OLD)
+            with c3:
                 checkAndInput("Salary regular expression", FF_KEY_SALARY)
-            c3.text_input('Sort by columns', key=FF_KEY_ORDER)
+            c4.text_input('Sort by columns', key=FF_KEY_ORDER)
             c1, c2 = st.columns(2)
             with c1:
                 checkAndPills('Status filter', FIELDS_BOOL, FF_KEY_BOOL_FIELDS)
@@ -159,6 +164,7 @@ def formFilterByIdsSetup():
         setState(getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS), False)
         setState(FF_KEY_SEARCH, '')
         setState(getBoolKeyName(FF_KEY_SALARY), False)
+        setState(getBoolKeyName(FF_KEY_DAYS_OLD), False)
         setState(getBoolKeyName(FF_KEY_WHERE), True)
         setState(FF_KEY_WHERE,
                  ' or '.join({f'id={id}' for id in selectedIds.split(',')}))
@@ -224,12 +230,15 @@ def view():
     mysql = MysqlUtil()
     initStates({
         getBoolKeyName(FF_KEY_BOOL_FIELDS): True,
+        FF_KEY_BOOL_FIELDS: DEFAULT_BOOL_FILTERS,
         getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS): True,
         FF_KEY_BOOL_NOT_FIELDS: DEFAULT_NOT_FILTERS,
         FF_KEY_ORDER: DEFAULT_ORDER,
-        getBoolKeyName(FF_KEY_SALARY): True,
+        getBoolKeyName(FF_KEY_SALARY): False,
         FF_KEY_SALARY: DEFAULT_SALARY_REGEX_FILTER,
-        getBoolKeyName(FF_KEY_WHERE): True,
+        getBoolKeyName(FF_KEY_DAYS_OLD): True,
+        FF_KEY_DAYS_OLD: DEFAULT_DAYS_OLD,
+        getBoolKeyName(FF_KEY_WHERE): False,
         FF_KEY_WHERE: DEFAULT_SQL_FILTER
     })
     if getStateBool(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
@@ -274,21 +283,19 @@ def view():
         with col2:
             with st.container():
                 if totalSelected > 1:
-                    # FIXME: BAD SOLUTION, if fields changed
-                    config = {f: None for f in FIELDS}
-                    config['salary'] = 'Salary'
-                    config['required_technologies'] = 'Title'
-                    config['optional_technologies'] = 'Company'
+                    # FIXME: BAD SOLUTION, if fields order changed in query
+                    config = {f: None for f in FIELDS} | {
+                        'salary': 'Salary',
+                        'required_technologies': 'Title',
+                        'optional_technologies': 'Company',
+                    }
                     st.dataframe(selectedRows,  # column_order=FIELDS,
                                  hide_index=True,
                                  use_container_width=True,
                                  column_config=config)
                     detailForm(jobData)
                 if totalSelected == 1:
-                    data = scapeLatex(jobData)
-                    data['createdTime'] = data['created'].time()
-                    data['created'] = data['created'].date()
-                    st.markdown(DETAIL_FORMAT.format(**data))
+                    st.markdown(formatDetail(jobData))
                 else:
                     st.warning("Select one job only to see job detail.")
     except InterruptedError as ex:
