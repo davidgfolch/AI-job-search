@@ -1,7 +1,9 @@
 import streamlit as st
-from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery, updateFieldsQuery
+from ai_job_search.tools.mysqlUtil import (
+    MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 # from ai_job_search.viewer.util.cleanUtil import getFieldValue, removeNewestId
-from ai_job_search.viewer.util.cleanUtil import getAllIds, getFieldValue, removeNewestId
+from ai_job_search.viewer.util.cleanUtil import (
+    getAllIds, getFieldValue, removeNewestId)
 from ai_job_search.viewer.util.stUtil import formatSql, stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL, DB_FIELDS_MERGE)
@@ -25,7 +27,9 @@ from (select count(*) as counter,
     ) as r
 where r.counter>1
 order by r.counter desc, r.title, r.company, r.max_created desc"""
-DELETE_BY_IDS = 'delete from jobs where id in ({ids})'
+SELECT_FOR_MERGE = """select {cols}
+    from jobs where id in ({ids})
+    order by created asc"""
 
 
 def actionButton(stContainer, selectedRows, disabled):
@@ -37,11 +41,9 @@ def actionButton(stContainer, selectedRows, disabled):
 
 def merge(selectedRows):
     rows = getAllIds(selectedRows, IDS_IDX, plainIdsStr=False)
-    SELECT_FOR_MERGE = """select {cols}
-        from jobs where id in ({ids})
-        order by created asc"""
-    cols = f'id, title, company,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
+    cols = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
     colsArr = stripFields(cols)
+    colCompanyIdx = colsArr.index('title')
     mysql = MysqlUtil()
     try:
         with st.container(height=400):
@@ -53,7 +55,7 @@ def merge(selectedRows):
                 merged = {}
                 for row in mysql.fetchAll(query):
                     for idx, f in enumerate(colsArr):
-                        if idx >= 3 and row[idx]:
+                        if idx > colCompanyIdx and row[idx]:
                             merged.setdefault(f, row[idx])
                     id = getFieldValue(row, colsArr, 'id')
                 st.write(f'`{getFieldValue(row, colsArr, "title")}`',

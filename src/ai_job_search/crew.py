@@ -83,7 +83,7 @@ def rawToJson(raw: str) -> dict[str, str]:
         # remove invalid scapes
         # TODO: REMOVE OR CHANGE UNICODE \u00f3
         raw = raw.replace('\$', '$')  # dont remove \$ ignore the warning
-        raw = re.sub(r'[\\]+([`#&->|])', r'\1', raw, flags=re.M)
+        raw = re.sub(r'[\\]+([`#&->_|])', r'\1', raw, flags=re.M)
         # remove Agent Thought or Note
         raw = re.sub(r'\n(Thought|Note):(.*\n)*', '', raw, flags=IM)
         # remove json prefix
