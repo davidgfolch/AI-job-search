@@ -194,9 +194,7 @@ def detailFormSubmit():
         st.info('Nothing to save.')
 
 
-def detailForm(jobData):
-    (boolFieldsValues, comments,
-     salary, company, client) = mapDetailForm(jobData, FIELDS_BOOL)
+def detailForm(boolFieldsValues, comments, salary, company, client):
     with st.form('statusForm'):
         c1, c2 = st.columns([10, 1])
         with c1:
@@ -267,6 +265,11 @@ def view():
                 st.warning('No results found for filter.')
                 selectedRows = []
             totalSelected = len(selectedRows)
+            if totalSelected == 1:
+                selected = selectedRows.iloc[0]
+                jobData = getValuesAsDict(selected, FIELDS_SORTED)
+                (boolFieldsValues, comments, salary,
+                 company, client) = mapDetailForm(jobData, FIELDS_BOOL)
             c1, c2, c3 = st.columns([14, 4, 3], vertical_alignment='center')
             c1.write(''.join([
                 f'{filterResCnt}/{totalResults} filtered/total results,',
@@ -277,9 +280,7 @@ def view():
                       on_click=deleteSelectedRows,
                       type="primary")
             if totalSelected == 1:
-                selected = selectedRows.iloc[0]
-                jobData = getValuesAsDict(selected, FIELDS_SORTED)
-                detailForm(jobData)
+                detailForm(boolFieldsValues, comments, salary, company, client)
         with col2:
             with st.container():
                 if totalSelected > 1:
@@ -293,7 +294,10 @@ def view():
                                  hide_index=True,
                                  use_container_width=True,
                                  column_config=config)
-                    detailForm(jobData)
+                    (boolFieldsValues, comments, salary,
+                     company, client) = mapDetailForm(jobData, FIELDS_BOOL)
+                    detailForm(boolFieldsValues, comments,
+                               salary, company, client)
                 if totalSelected == 1:
                     st.markdown(formatDetail(jobData))
                 else:
