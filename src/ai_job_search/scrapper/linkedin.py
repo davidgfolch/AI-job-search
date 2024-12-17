@@ -1,34 +1,43 @@
 import math
 import time
+from urllib.parse import quote
 import re
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
-from ai_job_search.scrapper.baseScrapper import htmlToMarkdown, join, validate
+from ai_job_search.scrapper.baseScrapper import htmlToMarkdown, join, printScrapperTitle, validate
 from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import green, red, yellow
 from .seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import MysqlUtil
-from .selectors.infojobsSelectors import (
+from .selectors.linkedinSelectors import (
+    # CSS_SEL_GLOBAL_ALERT_HIDE,
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
-    CSS_SEL_JOB_REQUIREMENTS,
+    CSS_SEL_JOB_HEADER,
+    CSS_SEL_NO_RESULTS,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
+    CSS_SEL_JOB_LI_IDX,
     CSS_SEL_COMPANY,
     CSS_SEL_LOCATION,
-    CSS_SEL_JOB_TITLE,
+    LI_JOB_TITLE_CSS_SUFFIX,
     CSS_SEL_JOB_LINK,
     CSS_SEL_NEXT_PAGE_BUTTON,
-    LOGIN_PAGE)
+    CSS_SEL_MESSAGES_HIDE)
 
 
-USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
+USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("LINKEDIN")
 
+remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
+# Spain if you need other make a manual search and get your country code
+location = '105646813'
+f_TPR = 'r86400'  # last 24 hours
 # Set to True to stop selenium driver navigating if any error occurs
-DEBUG = True
+DEBUG = False
 
+WEB_PAGE = 'Linkedin'
 JOBS_X_PAGE = 25
 
-print('seleniumInfojobs init')
+print('seleniumLinkedin init')
 selenium = None
 mysql = None
 
@@ -37,14 +46,15 @@ def run(seleniumUtil: SeleniumUtil):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
+    printScrapperTitle('LinkedIn')
     try:
         mysql = MysqlUtil()
         login()
-        # selenium.waitUntilPageContains(
-        #     'https://accounts.infojobs.net/security/accounts/login/run', 60)
-        selenium.waitUntilPageUrlContains(
-            'https://www.infojobs.net/error404.xhtml', 60)
-        input(yellow('Solve a security filter and press a key...'))
+        print(yellow('Waiting for LinkedIn to redirect to feed page...',
+                     '(Maybe you need to solve a security filter first)'))
+        selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)
+        # TODO: save search keywords in DB
+        # TODO: additionally set search ranking?
         for keywords in JOBS_SEARCH.split(','):
             searchJobs(keywords.strip())
     finally:
@@ -52,26 +62,33 @@ def run(seleniumUtil: SeleniumUtil):
 
 
 def login():
+    selenium.loadPage('https://www.linkedin.com/login')
+    selenium.sendKeys('#username', USER_EMAIL)
+    selenium.sendKeys('#password', USER_PWD)
     try:
-        selenium.loadPage(LOGIN_PAGE)
-        selenium.sendKeys('#email', USER_EMAIL)
-        selenium.sendKeys('#id-password', USER_PWD)
-        selenium.scrollIntoView('#didomi-notice-agree-button > span')
-        selenium.waitAndClick('#didomi-notice-agree-button > span')
-        selenium.waitAndClick('#idSubmitButton')
-    except Exception as ex:
-        print(ex)
-        debug('Login did not work')
+        selenium.checkboxUnselect('div.remember_me__opt_in input')
+    except Exception as e:
+        print(e)
+    selenium.waitAndClick('form button[type=submit]')
 
 
 def getUrl(keywords):
-    return join('https://www.infojobs.net/jobsearch/search-results/list.xhtml',
-                f'?keyword={keywords}&searchByType=country&teleworkingIds=2',
-                '&segmentId=&page=1&sortBy=PUBLICATION_DATE',
-                '&onlyForeignCountry=false&countryIds=17&sinceDate=_7_DAYS')
-    # '&'.join([
-    #     f'keywords={quote(keywords)}', f'f_WT={remote}',
-    #     f'geoId={location}', f'f_TPR={f_TPR}']))
+    return join('https://www.linkedin.com/jobs/search/?',
+                '&'.join([
+                    f'keywords={quote(keywords)}', f'f_WT={remote}',
+                    f'geoId={location}', f'f_TPR={f_TPR}']))
+
+
+def checkResults(keywords: str, url: str):
+    noResultElm = selenium.getElms(CSS_SEL_NO_RESULTS)
+    if len(noResultElm) > 0:
+        print(Exception(
+            join('No results for job search on linkedIn for',
+                 f'keywords={keywords}', f'remote={remote}',
+                 f'location={location}', f'old={f_TPR}', f'URL {url}')))
+        debug(f'checkResults -> no results for search={keywords}')
+        return False
+    return True
 
 
 def replaceIndex(cssSelector: str, idx: int):
@@ -81,8 +98,8 @@ def replaceIndex(cssSelector: str, idx: int):
 def getTotalResultsFromHeader(keywords: str) -> int:
     total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
     print(green('-'*150))
-    print(green(join(f'{total} total results for search: {keywords}')))
-    #  f'(remote={remote}, location={location}, last={f_TPR})')))
+    print(green(join(f'{total} total results for search: {keywords}',
+                     f'(remote={remote}, location={location}, last={f_TPR})')))
     print(green('-'*150))
     return int(total)
 
@@ -90,8 +107,8 @@ def getTotalResultsFromHeader(keywords: str) -> int:
 def summarize(keywords, totalResults, currentItem):
     print('-'*150)
     print(f'Loaded {currentItem} of {totalResults} total results for',
-          f'search: {keywords}')
-    #   f'(remote={remote} location={location} last={f_TPR})')
+          f'search: {keywords}',
+          f'(remote={remote} location={location} last={f_TPR})')
     print('-'*150)
     print()
 
@@ -109,7 +126,7 @@ def scrollJobsList(idx):
 
 
 def printPage(page, totalPages, keywords):
-    print(green(f'Starting page {page} of {totalPages} ',
+    print(green(f'{WEB_PAGE} Starting page {page} of {totalPages} ',
                 f'search={keywords} {"-"*100}'))
 
 
@@ -128,22 +145,23 @@ def clickNextPage(retry=True):
         return False
 
 
-def loadJobDetail(jobExists: bool, cssSel):
+def loadJobDetail(jobExists: bool, idx: int, cssSel):
     # first job in page loads automatically
     # if job exists in DB no need to load details (rate limit)
-    if jobExists:
+    if jobExists or idx == 1:
         return
     print(yellow('loading...'), end='')
     selenium.waitAndClick(cssSel)
 
 
-def jobExistsInDB(url):
+def jobExistsInDB(cssSel):
+    url = selenium.getAttr(cssSel, 'href')
     jobId = getJobId(url)
     return (jobId, mysql.getJob(jobId) is not None)
 
 
 def getJobId(url: str):
-    return re.sub(r'.+/of-([^?/]+).*', r'\1', url)
+    return re.sub(r'.*/jobs/view/([^/]+)/.*', r'\1', url)
 
 
 def getJobUrlShort(url: str):
@@ -155,6 +173,12 @@ def searchJobs(keywords: str):
         url = getUrl(keywords)
         selenium.loadPage(url)
         selenium.waitUntilPageIsLoaded()
+        if not checkResults(keywords, url):
+            return
+        # selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE,
+        #                               'Could close global alert')
+        selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE,
+                                      'Could not collapse messages')
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
@@ -180,31 +204,32 @@ def searchJobs(keywords: str):
 
 
 def loadAndProcessRow(idx):
-    loaded = False
     try:
         cssSel = scrollJobsList(idx)
-        url = selenium.getAttr(cssSel, 'href')
-        jobId, jobExists = jobExistsInDB(url)
-        loadJobDetail(jobExists, cssSel)
-        loaded = not jobExists
+        jobId, jobExists = jobExistsInDB(cssSel)
+        loadJobDetail(jobExists, idx, cssSel)
     except NoSuchElementException as ex:
         debug("NoSuchElement in loadAndProcessRow " +
               red(f'ERROR (loadJob): {ex}'))
     if jobExists:
         print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
-    elif loaded:
-        processRow(idx, url)
-        selenium.back()
+    else:
+        processRow(idx)
 
 
-def processRow(idx, url, retry=True):
+def processRow(idx, retry=True):
+    # TODO: CSS_SEL_JOB_CLOSED -> No longer accepting applications
+    # https://www.linkedin.com/jobs/view/4057715315/
+    # TODO: AI -> Language ignore (german f.ex.)
     try:
-        title = selenium.getText(CSS_SEL_JOB_TITLE)
-        company = selenium.getText(CSS_SEL_COMPANY)
-        location = selenium.getText(CSS_SEL_LOCATION)
+        liPrefix = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
+        title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
+        company = selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
+        location = selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
+        selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
+        url = getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
         jobId = getJobId(url)
-        html = selenium.getHtml(CSS_SEL_JOB_REQUIREMENTS)
-        html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+        html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
         md = htmlToMarkdown(html)
         # easyApply: there are 2 buttons
         easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
@@ -212,12 +237,12 @@ def processRow(idx, url, retry=True):
               f'easy_apply={easyApply} - ', end='')
         if validate(title, url, company, md, DEBUG):
             if mysql.insert((jobId, title, company, location, url, md,
-                             easyApply, 'Infojobs')):  # TODO: move to declaration in all scrappers
+                             easyApply, WEB_PAGE)):
                 print(green('INSERTED!'), end='')
         elif retry:
             print(yellow('waiting 10 secs... & retrying... '))
             time.sleep(10)
-            processRow(idx, url, retry=False)
+            processRow(idx, retry=False)
             return
     except Exception as ex:
         debug('processRow Exception -> ' + red(f'ERROR: {ex}'))

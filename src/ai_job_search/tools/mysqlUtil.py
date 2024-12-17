@@ -94,7 +94,7 @@ class MysqlUtil:
                  paramsDict['business_sector'],
                  paramsDict['required_languages'],
                  id)),
-                # TODO: get mysql DDL varchar sizes
+                # TODO: get mysql DDL metadata varchar sizes
                 (200, 1000, 1000, None, 1000, 1000, None))
             with self.cursor() as c:
                 c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
@@ -134,9 +134,9 @@ class MysqlUtil:
             self.conn.commit()
             return rowCount
 
-    def fetchAll(self, query: str):
+    def fetchAll(self, query: str, params=None):
         with self.cursor() as c:
-            c.execute(query)
+            c.execute(query, params)
             return c.fetchall()
 
     def count(self, query: str, params: dict = {'where': '1=1'}):

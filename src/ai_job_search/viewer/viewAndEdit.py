@@ -1,5 +1,6 @@
 import pandas as pd
 from pandas.core.frame import DataFrame
+from ai_job_search.scrapper import glassdoorExtraInfo
 from ai_job_search.viewer.util.viewUtil import (
     formatDetail, getValuesAsDict, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
@@ -8,7 +9,8 @@ from ai_job_search.viewer.util.stUtil import (
     getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
     setFieldValue, setState, sortFields)
 from ai_job_search.viewer.viewAndEditConstants import (
-    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
+    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS,
+    DEFAULT_ORDER,
     DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_DAYS_OLD, FF_KEY_ORDER, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT,
@@ -214,6 +216,10 @@ def detailForm(boolFieldsValues, comments, salary, company, client):
         st.text_input("Client", client, key='client')
 
 
+def getCompanySalary(company, id):
+    glassdoorExtraInfo.run(company, id)
+
+
 def deleteSelectedRows():
     ids = getSelectedRowsIds('selectedRows')
     if len(ids) > 0:
@@ -274,6 +280,11 @@ def view():
             c1.write(''.join([
                 f'{filterResCnt}/{totalResults} filtered/total results,',
                 f' {totalSelected} selected']))
+            if totalSelected == 1:
+                id = jobData['id']
+                c2.button('Get company salary in Glassdoor',
+                          on_click=getCompanySalary,
+                          args=[company, id])
             c2.toggle('Single select', key='singleSelect')
             c3.button('Delete', 'deleteButton',
                       disabled=totalSelected < 1,

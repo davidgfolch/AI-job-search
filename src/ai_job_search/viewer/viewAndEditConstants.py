@@ -1,3 +1,4 @@
+from ai_job_search.scrapper.util import getEnv
 from ai_job_search.viewer.util.stUtil import sortFields, stripFields
 
 
@@ -16,19 +17,19 @@ VISIBLE_COLUMNS = """
 salary,title,company,client,required_technologies,created"""
 DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
-ai_enriched,relocation,easy_apply"""
+ai_enriched,scrapper_enriched,relocation,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
 web_page,company,client,markdown,business_sector,required_languages,location,url,created,
 comments,{DB_FIELDS_BOOL}"""
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
 company,client,business_sector,required_languages,comments"""
 # FILTERS
-RLIKE = '(java[^script]|python|scala|clojure)'
+RLIKE = getEnv('WHERE_FILTER_REGEX')
 DEFAULT_SQL_FILTER = f"""
 required_technologies rlike '{RLIKE}'
  or title rlike '{RLIKE}'
  or markdown rlike '{RLIKE}'"""
-DEFAULT_SALARY_REGEX_FILTER = "([€$] *[0-9]{2,}|[0-9]{2,} *[€$])"
+DEFAULT_SALARY_REGEX_FILTER = getEnv('SALARY_FILTER_REGEX')
 DEFAULT_DAYS_OLD = "1"
 DEFAULT_ORDER = "created desc"
 # DETAIL FORMAT

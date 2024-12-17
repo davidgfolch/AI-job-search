@@ -14,3 +14,7 @@ def getAndCheckEnvVars(site: str):
         print(yellow('Set up .venv file with email pwd & search params.'))
         exit()
     return mail, pwd, search
+
+
+def getEnv(key: str):
+    return os.environ.get(key)

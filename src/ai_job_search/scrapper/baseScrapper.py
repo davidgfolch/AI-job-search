@@ -1,11 +1,18 @@
 
+from functools import reduce
 import re
 
 # from bs4 import BeautifulSoup
 # from markdownify import MarkdownConverter
 import markdownify
 
-from ai_job_search.tools.terminalColor import red, yellow
+from ai_job_search.tools.terminalColor import green, red, yellow
+
+
+def printScrapperTitle(scrapper: str):
+    print(green('-'*100))
+    print(green(f'RUNNING {scrapper} scrapper'))
+    print(green('-'*100))
 
 
 def htmlToMarkdown(html: str):
@@ -28,9 +35,7 @@ def removeBlankLines(html: str):
 
 def validate(title: str, url: str, company: str, markdown: str,
              debugFlag: bool):
-    if not (title.strip() and url and company and
-            re.sub(r'\n', '', markdown, re.M).strip()):
-        markdown = markdown.split('\n')[0]
+    if not hasLen(title, url, company, markdown):
         debug(debugFlag, "validate -> " +
               red('ERROR: One or more required fields are empty, ',
                   f'NOT inserting into DB: title={title}, company={company}, ',
@@ -40,9 +45,18 @@ def validate(title: str, url: str, company: str, markdown: str,
     return True
 
 
+def hasLen(*texts: str):
+    return reduce(lambda a, b: a and b,
+                  [t and len(removeBlanks(t)) > 0 for t in texts])
+
+
+def removeBlanks(text):
+    return re.sub(r'[\n\b]+', '', text, re.M).strip()
+
+
 def debug(debug: bool, msg: str = ''):
     if debug:
-        input(f" (debug active) {msg}, press a key")
+        input(yellow(f" (debug active) {msg}, press a key"))
     else:
         print(msg, end='')
 
