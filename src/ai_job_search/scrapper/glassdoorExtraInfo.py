@@ -1,10 +1,11 @@
-import time
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.glassdoor import login
+from ai_job_search.scrapper.selectors.glassdoorExtraInfoSelectors import (
+    CSS_SEL_ROLES_COL, CSS_SEL_SALARY_COL)
 from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import red, yellow
 from ai_job_search.viewer.util.stUtil import stripFields
-from ai_job_search.scrapper.seleniumUtil import SeleniumUtil
+from ai_job_search.scrapper.seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import (MysqlUtil, updateFieldsQuery)
 
 DEBUG = False
@@ -27,6 +28,7 @@ ORDER BY created desc"""
 # TODO: move to .env
 # https://www.glassdoor.es/Sueldo/knowmad-mood-Sueldos-E297765.htm
 ROLES_MATCHING = ['Senior Software Engineer',
+                  'Software Engineer',
                   'Ingeniero De Software',
                   'Arquitecto De Software',
                   'Software Architect']
@@ -42,47 +44,86 @@ mysql = None
 def run(company: str, overwriteSalaryId=None):
     """Login into glassdoor and get salaries for jobs"""
     global selenium, mysql
-    selenium = SeleniumUtil()
+    selenium = None
     try:
         mysql = MysqlUtil()
         # TODO: COULD NOT PROCESS IN BATCH, AFTER SOME REQUESTS APPEARS A
         # SECURITY FILTER ANTI-ROBOT
         if (company):
+            selenium = SeleniumUtil()
             login(selenium)
             processCompany(company, overwriteSalaryId)  # row[0]
         else:
             rows = mysql.fetchAll(QRY_SELECT_JOBS_FOR_SCRAPPER_ENRICHMENT)
             if len(rows) > 0:
-                login(selenium)
-                time.sleep(2)
-                for idx, row in enumerate(rows):
+                for row in rows:
                     try:
+                        selenium = SeleniumUtil()
+                        login(selenium)
+                        sleep(2, 3)
                         processCompany(row[0], overwriteSalaryId)
                     except Exception as ex:
                         debug(f'ERROR In processCompany(): {ex}')
                         if DEBUG:
                             raise ex
-                    if idx % 5 == 0:
+                    finally:
                         selenium.close()
-                        selenium = SeleniumUtil()
-                        login(selenium)
     except Exception as ex:
         debug(f'Exception {ex}')
         raise ex
     finally:
         mysql.close()
-        selenium.close()
+        if selenium is not None:
+            selenium.close()
 
 
 def processCompany(company, overwriteSalaryId):
     params = {'company': company}
     print(yellow(f'company = {company}'))
+    # # click Companies -> li 2
+    # url = 'https://www.glassdoor.es/Opiniones/index.htm'
+    # if selenium.getUrl() != url:
+    #     print(f'loading glassdoor page {url}...')
+    #     selenium.loadPage(url)
+    #     sleep(1, 2)
+    # print('click companies...')
+    # selenium.waitAndClick(CSS_SEL_COMPANIES)
+    # print('search company...')
+    # sleep(1, 2)
+    # selenium.sendKeys(CSS_SEL_COMPANY_SEARCH, company)
+    # selenium.waitAndClick(CSS_SEL_COMPANY_SEARCH_BUTTON)
+    # sleep(1, 2)
+    # elms = selenium.getElms('div#salaries a')
+    # if len(elms) == 0:
+    #     print(red("Could not find Salaries tab",
+    #           yellow(" Solve security filter, and press a key...")))
+    #     input()
+    #     print(QRY_UPDATE_SCRAPPER_ENRICHED_FLAG)
+    #     mysql.executeAndCommit(QRY_UPDATE_SCRAPPER_ENRICHED_FLAG, params)
+    #     return
+    # elms = selenium.waitAndClick('div#salaries a')
+    # sleep(5, 6)
+
+    # uriCompany = quote(company)
+    # # url = f"https://www.glassdoor.es/Reviews/{uriCompany}-reviews-SRCH_KE0,10.htm"
+    # url = f"https://www.glassdoor.com/Salary/{uriCompany}-Salaries-E2603649.htm"
+    # selenium.loadPage(url)
+    # selenium.waitUntilPageIsLoaded()
+    # sleep(1, 2)
+    # CSS_SEL_EMPLOYER = "p[class*=employer-header_employerHeader]"
+    # selenium.waitUntil_presenceLocatedElement(CSS_SEL_EMPLOYER, 30)
+    # employer = selenium.getText(CSS_SEL_EMPLOYER)
+    # if not employer or employer.find(company) == -1:
+    #     debug(yellow(f'Company page not loaded for {company}, ',
+    #                  f'current is {employer}... IGNORING!'))
+    #     return
+
     # click Companies -> li 2
     url = 'https://www.glassdoor.es/Opiniones/index.htm'
     if selenium.getUrl() != url:
         print(f'loading glassdor page {url}...')
         selenium.loadPage(url)
-        time.sleep(1)
+        sleep(1, 2)
     print('click companies...')
     selenium.waitAndClick(
         '.contentMenu__contentMenuStyles__contentMenuContainer > li:nth-child(2) > a')
@@ -91,7 +132,7 @@ def processCompany(company, overwriteSalaryId):
         '#companyAutocomplete-companyDiscover-employerSearch', company)
     selenium.waitAndClick(
         '.companySearch__CompanySearchContainerStyles__container button')
-    time.sleep(1)
+    sleep(1, 2)
     elms = selenium.getElms('div#salaries a')
     if len(elms) == 0:
         print(red("Could not find Salaries tab"))
@@ -99,15 +140,16 @@ def processCompany(company, overwriteSalaryId):
         mysql.executeAndCommit(QRY_UPDATE_SCRAPPER_ENRICHED_FLAG, params)
         return
     elms = selenium.waitAndClick('div#salaries a')
-    time.sleep(5)
+    sleep(5, 6)
+
+    selenium.waitUntil_presenceLocatedElement(CSS_SEL_ROLES_COL, 30)
     elms = selenium.getElms('#onetrust-accept-btn-handler')
     if len(elms) > 0:
         print('cookies click...')
         elms[0].click()
     # note salary table is in its section, many other sections may appear
-    print('get salaries rows...')
-    cssSelTableRows = 'section.salarylist_SalaryListContainer__6rbaC > table > tbody > tr'
-    roleListElms = selenium.getElms(f'{cssSelTableRows} > td:nth-child(1) > a')
+    debug('get salaries rows...')
+    roleListElms = selenium.getElms(CSS_SEL_ROLES_COL)
     debug('before getting roles')
     roleElms = [elm for elm in roleListElms]
     roles = []
@@ -116,26 +158,28 @@ def processCompany(company, overwriteSalaryId):
             roles.append(roleElm.text)
         except Exception as ex:
             print(ex)
-    print('roles found', roles)
+    debug(f'roles found {roles}')
     found = findFirstInList(roles, ROLES_MATCHING)
     if found:
         idx, role = found
-        print('found role', role)
-        cssSelSalary = f'{cssSelTableRows} td:nth-child(2) p.salarylist_total-pay-range__ECY78'
-        salariesElms = selenium.getElms(cssSelSalary)
+        debug(f'found role {role}')
+        salariesElms = selenium.getElms(CSS_SEL_SALARY_COL)
         salary = salariesElms[idx].text
-        print(SELECT_ALL_FROM_COMPANY)
         if overwriteSalaryId:
-            rows = mysql.fetchAll(
-                f"select * from jobs where id={overwriteSalaryId}")
+            query = f"select * from jobs where id={overwriteSalaryId}"
+            print(query)
+            rows = mysql.fetchAll(query)
             processRow(rows[0], company, role, salary)
         else:
+            print(SELECT_ALL_FROM_COMPANY)
             rows = mysql.fetchAll(SELECT_ALL_FROM_COMPANY, params)
             total = len(rows)
             print(f'Jobs to update: {total}')
             for row in rows:
                 processRow(row, company, role, salary)
         print()
+        return
+    print(yellow('NO matching role found'))
 
 
 def processRow(row, company, role, salary):
@@ -145,7 +189,7 @@ def processRow(row, company, role, salary):
     if not isinstance(comments, str):
         comments = baseScrapper.join(
             comments.decode('utf-8'), '\n') if comments else ''
-    comments += 'Salary scrapped from Glassdoor: '+selenium.getUrl()
+    comments += ' Salary scrapped from Glassdoor: '+selenium.getUrl()
     params = {'scrapper_enriched': 1,
               'salary': f'From glassdoor: {role} - {salary}',
               'comments': comments}
@@ -155,7 +199,8 @@ def processRow(row, company, role, salary):
         print(yellow(f"UPDATED salary & comments for: {company} - {title}"))
     else:
         print(QRY_UPDATE_SCRAPPER_ENRICHED_FLAG)
-        mysql.executeAndCommit(QRY_UPDATE_SCRAPPER_ENRICHED_FLAG, params)
+        mysql.executeAndCommit(QRY_UPDATE_SCRAPPER_ENRICHED_FLAG,
+                               {'company': company})
 
 
 def findFirstInList(list: list[str], keywords: list[str]):

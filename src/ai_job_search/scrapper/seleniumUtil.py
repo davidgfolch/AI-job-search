@@ -62,8 +62,10 @@ class SeleniumUtil:
             return driverOverride.find_elements(By.CSS_SELECTOR, cssSel)
         return driver.find_elements(By.CSS_SELECTOR, cssSel)
 
-    def sendKeys(self, cssSel: str, value: str, keyByKeyTime=None):
+    def sendKeys(self, cssSel: str, value: str, keyByKeyTime=None, clear=True):
         elm = self.getElm(cssSel)
+        if clear:
+            elm.clear()
         if keyByKeyTime:
             for c in value:
                 elm.send_keys(c)
@@ -151,7 +153,7 @@ class SeleniumUtil:
         driver.back()
 
     def close(self):
-        driver.close()
+        driver.quit()
 
 
 def sleep(ini: float, end: float, disable=False):

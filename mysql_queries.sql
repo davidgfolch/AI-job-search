@@ -90,3 +90,7 @@ select ai_enrich_error from jobs where ai_enrich_error is not null;
 update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
 
 update jobs set ignored = true where (ignored is null or ignored = FALSE) and (company = 'Refonte Learning' or company = 'Refonte Technologies');
+
+update jobs set comments=null, scrapper_enriched=0
+where scrapper_enriched and comments like '%Salary scrapped from Glassdoor: https://www.glassdoor.com/Salary/Braintrust%'
+or salary like '%From glassdoor: Sr. Software Engineer - $136K-$185K%';
