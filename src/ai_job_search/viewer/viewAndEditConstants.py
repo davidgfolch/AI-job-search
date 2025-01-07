@@ -34,7 +34,7 @@ DEFAULT_DAYS_OLD = "1"
 DEFAULT_ORDER = "created desc"
 # DETAIL FORMAT
 DETAIL_FORMAT = """
-## [{title}]({url})
+## [{title}]({url}) ({id})
 
 - Source: `{web_page}`
 - Company: `{company}`

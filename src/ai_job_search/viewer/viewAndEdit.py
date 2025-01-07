@@ -216,8 +216,8 @@ def detailForm(boolFieldsValues, comments, salary, company, client):
         st.text_input("Client", client, key='client')
 
 
-def getCompanySalary(company, id):
-    glassdoorExtraInfo.run(company, id)
+# def getCompanySalary(company, id):
+#     glassdoorExtraInfo.run(company, id)
 
 
 def deleteSelectedRows():
@@ -280,11 +280,11 @@ def view():
             c1.write(''.join([
                 f'{filterResCnt}/{totalResults} filtered/total results,',
                 f' {totalSelected} selected']))
-            if totalSelected == 1:
-                id = jobData['id']
-                c2.button('Get company salary in Glassdoor',
-                          on_click=getCompanySalary,
-                          args=[company, id])
+            # if totalSelected == 1:
+            #     id = jobData['id']
+            #     c2.button('Get company salary in Glassdoor',
+            #               on_click=getCompanySalary,
+            #               args=[company, id])
             c2.toggle('Single select', key='singleSelect')
             c3.button('Delete', 'deleteButton',
                       disabled=totalSelected < 1,

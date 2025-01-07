@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from ai_job_search.viewer.clean import deleteOld, mergeDuplicateds
+from ai_job_search.viewer.clean import (
+    ignoreInternships, mergeDuplicateds)
 from ai_job_search.viewer.util.cleanUtil import (getAllIds, gotoPage)
 from ai_job_search.viewer.util.stUtil import (PAGE_VIEW_IDX, getState)
 from tools.mysqlUtil import (MysqlUtil)
@@ -12,11 +13,17 @@ QUERIES = [
      'sql': mergeDuplicateds.SELECT,
      'idsIndex': mergeDuplicateds.IDS_IDX,
      'actionButtonFnc': mergeDuplicateds.actionButton},
-    {'info': deleteOld.INFO,
-     'dfCols': deleteOld.COLUMNS,
-     'sql': deleteOld.SELECT,
-     'idsIndex': deleteOld.IDS_IDX,
-     'actionButtonFnc': deleteOld.actionButton}
+    {'info': ignoreInternships.INFO,
+     'dfCols': ignoreInternships.COLUMNS,
+     'sql': ignoreInternships.SELECT,
+     'idsIndex': ignoreInternships.IDS_IDX,
+     'actionButtonFnc': ignoreInternships.actionButton}
+    #  ,
+    # {'info': deleteOld.INFO,
+    #  'dfCols': deleteOld.COLUMNS,
+    #  'sql': deleteOld.SELECT,
+    #  'idsIndex': deleteOld.IDS_IDX,
+    #  'actionButtonFnc': deleteOld.actionButton}
 ]
 
 

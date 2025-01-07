@@ -4,7 +4,8 @@ from urllib.parse import quote
 import re
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
-from ai_job_search.scrapper.baseScrapper import htmlToMarkdown, join, printScrapperTitle, validate
+from ai_job_search.scrapper.baseScrapper import (
+    htmlToMarkdown, join, printHR, printPage, printScrapperTitle, validate)
 from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import green, red, yellow
 from .seleniumUtil import SeleniumUtil
@@ -97,19 +98,19 @@ def replaceIndex(cssSelector: str, idx: int):
 
 def getTotalResultsFromHeader(keywords: str) -> int:
     total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-    print(green('-'*150))
+    printHR(green)
     print(green(join(f'{total} total results for search: {keywords}',
                      f'(remote={remote}, location={location}, last={f_TPR})')))
-    print(green('-'*150))
+    printHR(green)
     return int(total)
 
 
 def summarize(keywords, totalResults, currentItem):
-    print('-'*150)
+    printHR()
     print(f'Loaded {currentItem} of {totalResults} total results for',
           f'search: {keywords}',
           f'(remote={remote} location={location} last={f_TPR})')
-    print('-'*150)
+    printHR()
     print()
 
 
@@ -123,11 +124,6 @@ def scrollJobsList(idx):
             selenium.scrollIntoView_noError(cssSel)
     selenium.waitUntilClickable(cssSel)
     return cssSel
-
-
-def printPage(page, totalPages, keywords):
-    print(green(f'{WEB_PAGE} Starting page {page} of {totalPages} ',
-                f'search={keywords} {"-"*100}'))
 
 
 def clickNextPage(retry=True):
@@ -183,7 +179,7 @@ def searchJobs(keywords: str):
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
-        printPage(page, totalPages, keywords)
+        printPage(WEB_PAGE, page, totalPages, keywords)
         while True:
             for idx in range(1, JOBS_X_PAGE+1):
                 if currentItem >= totalResults:
@@ -196,7 +192,7 @@ def searchJobs(keywords: str):
             if not clickNextPage():
                 break  # exit while
             page += 1
-            printPage(page, totalPages, keywords)
+            printPage(WEB_PAGE, page, totalPages, keywords)
             selenium.waitUntilPageIsLoaded()
         summarize(keywords, totalResults, currentItem)
     except Exception as ex:

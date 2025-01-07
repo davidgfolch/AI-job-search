@@ -6,7 +6,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, join, printScrapperTitle, validate)
+    htmlToMarkdown, join, printHR, printPage, printScrapperTitle, validate)
 from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import green, red, yellow
 from .seleniumUtil import SeleniumUtil, sleep
@@ -31,7 +31,7 @@ from .selectors.infojobsSelectors import (
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 
 # Set to True to stop selenium driver navigating if any error occurs
-DEBUG = False
+DEBUG = True
 
 WEB_PAGE = 'Infojobs'
 JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults
@@ -50,13 +50,13 @@ def run():
     try:
         selenium = SeleniumUtil()
         mysql = MysqlUtil()
-        login()
-        securityFilter()
-        selenium.waitUntilPageUrlContains(
-            'https://www.infojobs.net/error404.xhtml', 60)
-        input(yellow('Solve a security filter and press a key...'))
-        for keywords in JOBS_SEARCH.split(','):
-            searchJobs(keywords.strip())
+        # login()
+        # securityFilter()
+        # selenium.waitUntilPageUrlContains(
+        # 'https://www.infojobs.net/error404.xhtml', 60)
+        # input(yellow('Solve a security filter and press a key...'))
+        for i, keywords in enumerate(JOBS_SEARCH.split(',')):
+            searchJobs(i, keywords.strip())
     finally:
         mysql.close()
         selenium.close()
@@ -69,10 +69,7 @@ def login():
     selenium.loadPage(LOGIN_PAGE)
     disableWait = LOGIN_WAIT_DISABLE
     sleep(4, 6, disableWait)
-    selenium.scrollIntoView('#didomi-notice-agree-button > span')
-    sleep(2, 6, disableWait)
-    selenium.waitAndClick('#didomi-notice-agree-button > span')
-    sleep(2, 6, disableWait)
+    acceptCookies()
     selenium.sendKeys('#email', USER_EMAIL,
                       keyByKeyTime=None if disableWait else (0.01, 0.1))
     sleep(2, 6, disableWait)
@@ -82,11 +79,23 @@ def login():
     selenium.waitAndClick('#idSubmitButton')
 
 
+def acceptCookies():
+    selenium.scrollIntoView('#didomi-notice-agree-button > span')
+    sleep(2, 6)
+    selenium.waitAndClick('#didomi-notice-agree-button > span')
+    sleep(2, 6)
+
+
 def securityFilter():
     selenium.waitUntilPageIsLoaded()
+    sleep(4, 4)
+    # selenium.waitUntil_presenceLocatedElement(CSS_SEL_SECURITY_FILTER1)
     # contacta con nosotros
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER1)
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER2)
+    input(yellow('Solve a security filter and press a key...'))
+    sleep(4, 4)
+    acceptCookies()
 
 
 def getUrl(keywords):
@@ -102,17 +111,17 @@ def replaceIndex(cssSelector: str, idx: int):
 
 def getTotalResultsFromHeader(keywords: str) -> int:
     total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-    print(green('-'*150))
+    printHR()
     print(green(join(f'{total} total results for search: {keywords}')))
-    print(green('-'*150))
+    printHR()
     return int(total)
 
 
 def summarize(keywords, totalResults, currentItem):
-    print('-'*150)
+    printHR()
     print(f'Loaded {currentItem} of {totalResults} total results for',
           f'search: {keywords}')
-    print('-'*150)
+    printHR()
     print()
 
 
@@ -164,18 +173,24 @@ def getJobUrlShort(url: str):
     return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
 
 
-def searchJobs(keywords: str):
+def searchJobs(index: int, keywords: str):
     try:
         url = getUrl(keywords)
         selenium.loadPage(url)
         selenium.waitUntilPageIsLoaded()
+        if index == 0:
+            securityFilter()
+            selenium.waitUntilPageUrlContains(
+                'https://www.infojobs.net/jobsearch/search-results', 60)
+            # selenium.loadPage(url)
+            # selenium.waitUntilPageIsLoaded()
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 0
         currentItem = 0
         while currentItem < totalResults:
             page += 1
-            printPage(page, totalPages, keywords)
+            printPage(WEB_PAGE, page, totalPages, keywords)
             idx = 0
             while idx < JOBS_X_PAGE and currentItem < totalResults:
                 print(green(f'pg {page} job {idx+1} - '), end='')
@@ -190,10 +205,8 @@ def searchJobs(keywords: str):
                 else:
                     break  # exit while
         summarize(keywords, totalResults, currentItem)
-    except Exception as ex:
-        if DEBUG:
-            raise ex
-        debug(red(f'ERROR: {ex}'))
+    except Exception:
+        debug(exception=True)
 
 
 def getJobLinkElement(idx):
@@ -261,15 +274,12 @@ def processRow(url):
 
 def getCompany():
     elms = selenium.getElms(CSS_SEL_COMPANY)
-    if len(elms) > 0:
+    # TODO: extract text.isEmpty() is all project
+    if len(elms) > 0 and elms[0].text.strip() != '':
+        print(f'company={elms[0].text}')
         return elms[0].text
     return selenium.getText(CSS_SEL_COMPANY2)
 
 
-def printPage(page, totalPages, keywords):
-    print(green(f'{WEB_PAGE} Starting page {page} of {totalPages} ',
-                f'search={keywords} {"-"*100}'))
-
-
-def debug(msg: str = ''):
-    baseScrapper.debug(DEBUG, msg)
+def debug(msg: str = '', exception=False):
+    baseScrapper.debug(DEBUG, msg, exception)

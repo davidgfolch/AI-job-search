@@ -1,11 +1,12 @@
 import json
 import re
+import traceback
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
 from ai_job_search.tools.terminalColor import red, yellow
-from ai_job_search.tools.mysqlUtil import MysqlUtil
+from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 
 
 LLM_CONFIG = LLM(model="ollama/llama3.2",
@@ -22,39 +23,42 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
         try:
             crew = AiJobSearch().crew()
             for job in mysqlUtil.getJobsForAiEnrichment():
-                id = job[0]
-                title = job[1]
-                company = job[3]
-                # TODO: REMOVE regex repl. moved to htmlToMarkdown() 5/12
-                markdown = re.sub(r'(\s*(\n|\n\r|\r\n|\r)){2,}', '\n\n',
-                                  # DB markdown blob decoding
-                                  job[2].decode("utf-8"),
-                                  re.MULTILINE)
-                crew_output: CrewOutput = crew.kickoff(
-                    inputs={
-                        "markdown": f'# {title} \n {markdown}',
-                    })
-                # if crew_output.json_dict:
-                #   json.dumps(crew_output.json_dict)
-                # if crew_output.pydantic:
-                #     crew_output.pydantic
+                try:
+                    id = job[0]
+                    title = job[1]
+                    company = job[3]
+                    # TODO: REMOVE regex repl. moved to htmlToMarkdown() 5/12
+                    markdown = re.sub(r'(\s*(\n|\n\r|\r\n|\r)){2,}', '\n\n',
+                                      # DB markdown blob decoding
+                                      job[2].decode("utf-8"),
+                                      re.MULTILINE)
+                    crew_output: CrewOutput = crew.kickoff(
+                        inputs={
+                            "markdown": f'# {title} \n {markdown}',
+                        })
+                    # if crew_output.json_dict:
+                    #   json.dumps(crew_output.json_dict)
+                    # if crew_output.pydantic:
+                    #     crew_output.pydantic
 
-                # TODO: Version crew_output.json_dict hace que el agente
-                # piense demasiado, mas AI, más lento, en la Task hay que
-                # poner output_json=JobTaskOutputModel
-                # FIXME: relocation AI NO funciona bien
-                # TODO: check ai_enrichment error and flag into database with enrichment error
-                # try:
-                result: dict[str, str] = rawToJson(crew_output.raw)
-                if result is not None:
-                    validateResult(result)
-                    mysqlUtil.updateFromAI(id, company, result)
-                # except Exception as ex:
-                #     MAX_AI_ENRICH_ERROR = 500
-                #     params = {'ai_enrich_error': str(ex)[:MAX_AI_ENRICH_ERROR],
-                #               'ai_enriched': True}
-                #     query, params = updateFieldsQuery([id], params)
-                #     mysqlUtil.executeAndCommit(query, params)
+                    # TODO: Version crew_output.json_dict hace que el agente
+                    # piense demasiado, mas AI, más lento, en la Task hay que
+                    # poner output_json=JobTaskOutputModel
+                    # FIXME: relocation AI NO funciona bien
+                    # TODO: check ai_enrichment error and flag into database with enrichment error
+                    # try:
+                    result: dict[str, str] = rawToJson(crew_output.raw)
+                    if result is not None:
+                        validateResult(result)
+                        mysqlUtil.updateFromAI(id, company, result)
+                except Exception as ex:
+                    print(red(traceback.format_exc()))
+                    print(yellow("Skipping! (ai_enrich_error set in DB)"))
+                    MAX_AI_ENRICH_ERROR = 500
+                    params = {'ai_enrich_error': str(ex)[:MAX_AI_ENRICH_ERROR],
+                              'ai_enriched': True}
+                    query, params = updateFieldsQuery([id], params)
+                    mysqlUtil.executeAndCommit(query, params)
             print(yellow(''*60))
             print(yellow('ALL ROWS PROCESSES!'))
             print(yellow(''*60))

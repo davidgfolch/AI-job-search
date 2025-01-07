@@ -95,6 +95,10 @@ class SeleniumUtil:
         method = EC.presence_of_element_located
         WebDriverWait(driver, timeout).until(method, self.getElm(cssSel))
 
+    def waitUntilTitleIs(self, title: str, timeout: int = 10):
+        method = EC.title_is
+        WebDriverWait(driver, timeout).until(method, title)
+
     def waitAndClick(self, cssSel: str, timeout: int = 10,
                      scrollIntoView: bool = False):
         """ scrollIntoView, waits to be clickable & click"""

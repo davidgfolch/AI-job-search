@@ -2,6 +2,8 @@
 LOGIN_PAGE = 'https://www.infojobs.net/candidate/candidate-login/candidate-login.xhtml'
 
 CSS_SEL_SECURITY_FILTER1 = 'body > div > div > div > div > div > div > p:nth-child(3) > span.break > a'
+# CSS_SEL_SECURITY_FILTER1 = 'body > div > div > div > div > div > div > p:nth-child(3) > span.break > a'
+CSS_SEL_SECURITY_FILTER1 = '#captcha-box span.geetest_radar_tip_content'
 CSS_SEL_SECURITY_FILTER2 = '#captcha-box > div > div.geetest_wait'
 
 
@@ -16,8 +18,8 @@ CSS_SEL_NEXT_PAGE_BUTTON = 'div.ij-SearchListingPageContent-main > main ul.sui-M
 
 # JOB DETAIL (IN LIST CLICK)
 CSS_SEL_JOB_TITLE = '#prefijoPuesto'
-CSS_SEL_COMPANY = '#main-wrapper div.heading-addons > div > div.content-type-text > a'
-CSS_SEL_COMPANY2 = '#main-wrapper div.heading-addons a'
+CSS_SEL_COMPANY = '#main-wrapper div.heading-addons a'
+CSS_SEL_COMPANY2 = '#main-wrapper div.heading-addons > div > div.content-type-text > a'
 CSS_SEL_LOCATION = '#prefijoPoblacion'
 
 CSS_SEL_JOB_DETAIL = 'div.row div.panel-canvas'

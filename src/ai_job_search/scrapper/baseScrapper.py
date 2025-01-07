@@ -1,6 +1,7 @@
 
 from functools import reduce
 import re
+import traceback
 
 # from bs4 import BeautifulSoup
 # from markdownify import MarkdownConverter
@@ -10,9 +11,22 @@ from ai_job_search.tools.terminalColor import green, red, yellow
 
 
 def printScrapperTitle(scrapper: str):
-    print(green('-'*100))
+    printHR(green)
     print(green(f'RUNNING {scrapper} scrapper'))
-    print(green('-'*100))
+    printHR(green)
+
+
+def printPage(webPage, page, totalPages, keywords):
+    print(green(f'{webPage} Starting page {page} of {totalPages} ',
+                f'search={keywords}'))
+    printHR(green)
+
+
+def printHR(colorFnc=None):
+    if colorFnc:
+        print(colorFnc('-'*150))
+    else:
+        print('-'*150)
 
 
 def htmlToMarkdown(html: str):
@@ -54,11 +68,20 @@ def removeBlanks(text):
     return re.sub(r'[\n\b]+', '', text, re.M).strip()
 
 
-def debug(debug: bool, msg: str = ''):
+def debug(debug: bool, msg: str = '', exception=False):
     if debug:
-        input(yellow(f" (debug active) {msg}, press a key"))
+        msg = f" (debug active) {msg}, press a key"
+        if exception:
+            print(yellow(msg))
+            input(red(traceback.format_exc()))
+        else:
+            input(red(msg))
     else:
-        print(msg, end='')
+        if exception:
+            print(yellow(msg))
+            print(red(traceback.format_exc()))
+        else:
+            print(red(msg), end='')
 
 
 def join(*str: str) -> str:

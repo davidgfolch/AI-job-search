@@ -5,7 +5,7 @@ import traceback
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, printScrapperTitle, validate)
+    htmlToMarkdown, printHR, printPage, printScrapperTitle, validate)
 from ai_job_search.scrapper.util import getAndCheckEnvVars, getEnv
 from ai_job_search.tools.terminalColor import green, red, yellow
 from .seleniumUtil import SeleniumUtil, sleep
@@ -81,24 +81,18 @@ def login(selenium: SeleniumUtil):
 
 def getTotalResultsFromHeader(keywords: str) -> int:
     total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-    print(green('-'*150))
+    printHR(green)
     print(green(f'{total} total results for search: {keywords}'))
-    print(green('-'*150))
+    printHR(green)
     return int(total)
 
 
 def summarize(keywords, totalResults, currentItem):
-    print('-'*150)
+    printHR()
     print(f'Loaded {currentItem} of {totalResults} total results for',
           f'search: {keywords}')
-    print('-'*150)
+    printHR()
     print()
-
-
-def printPage(page, totalPages, keywords):
-    print(green(f'{WEB_PAGE} Starting page {page} of {totalPages} ',
-                f'search={keywords}'))
-    print("-"*100)
 
 
 def clickNextPage(retry=True):
@@ -142,7 +136,7 @@ def searchJobs(url: str):
             currentItem = 0
             while currentItem < totalResults:
                 page += 1
-                printPage(page, totalPages, keywords)
+                printPage(WEB_PAGE, page, totalPages, keywords)
                 idx = 0
                 while idx < JOBS_X_PAGE and currentItem < totalResults:
                     print(green(f'pg {page} job {idx + 1} - '), end='')

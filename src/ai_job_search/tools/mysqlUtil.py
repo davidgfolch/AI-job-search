@@ -3,6 +3,7 @@ from typing import Any
 import mysql.connector
 from mysql.connector import Error
 
+from ai_job_search.scrapper.baseScrapper import printHR
 from ai_job_search.tools.terminalColor import red, yellow
 
 DB_NAME = 'jobs'
@@ -103,7 +104,7 @@ class MysqlUtil:
                     print(
                         yellow(f'Inserted into DB (company={company}): ',
                                f'{params}'))
-                    print(yellow('-'*150))
+                    printHR(yellow)
                 else:
                     error(Exception('No rows affected'))
         except mysql.connector.Error as ex:
