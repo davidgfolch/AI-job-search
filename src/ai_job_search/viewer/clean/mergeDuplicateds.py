@@ -13,8 +13,6 @@ INFO = """Show all repeated job offers by `title,company`
  (excluding Joppy "company")"""
 COLUMNS = stripFields('Counter,Ids,Title,Company')
 IDS_IDX = 1
-# TODO: HARCODED != Joppy because it could be many companies
-# TODO: Make it configurable? in .venv file for ex. partial where filter
 SELECT = """
 select r.counter, r.ids, r.title, r.company
 from (select count(*) as counter,
@@ -22,7 +20,7 @@ from (select count(*) as counter,
             max(created) as max_created,  -- to delete all, but last
             title, company
         from jobs
-        where company != 'Joppy'
+        -- where company != 'Joppy'
         group by title, company
     ) as r
 where r.counter>1

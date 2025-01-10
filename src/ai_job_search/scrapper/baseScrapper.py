@@ -39,12 +39,7 @@ def htmlToMarkdown(html: str):
     # md = convertSoup(html)
     # print(yellow('>>> Markdown with previous beautifulSoup clean <<<'))
     # print(green(md))
-    return removeBlankLines(markdownify.markdownify(html))
-
-
-def removeBlankLines(html: str):
-    return re.sub(r'(\s*)(\n|\n\r|\r\n)+(\n|\n\r|\r\n)+', r'\1\n\n',
-                  html, re.M)
+    return markdownify.markdownify(html)
 
 
 def validate(title: str, url: str, company: str, markdown: str,

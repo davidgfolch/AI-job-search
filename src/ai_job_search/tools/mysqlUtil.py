@@ -22,7 +22,6 @@ UPDATE jobs SET
     salary=%s,
     required_technologies=%s,
     optional_technologies=%s,
-    relocation=%s,
     business_sector=%s,
     required_languages=%s,
     ai_enriched=1
@@ -91,12 +90,11 @@ class MysqlUtil:
                  # TODO: Change to required_skills, optional_skills
                  paramsDict['required_technologies'],
                  paramsDict['optional_technologies'],
-                 paramsDict['relocation'],
                  paramsDict['business_sector'],
                  paramsDict['required_languages'],
                  id)),
                 # TODO: get mysql DDL metadata varchar sizes
-                (200, 1000, 1000, None, 1000, 1000, None))
+                (200, 1000, 1000, 1000, 1000, None))
             with self.cursor() as c:
                 c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
                 self.conn.commit()
@@ -161,7 +159,7 @@ class MysqlUtil:
 
 # static methods
 def getColumnTranslated(c):
-    return re.sub(r'[_-]', ' ', c).capitalize()
+    return re.sub(r'`', '', re.sub(r'[_-]', ' ', c)).capitalize()
 
 
 def updateFieldsQuery(ids: list, fieldsValues: dict):

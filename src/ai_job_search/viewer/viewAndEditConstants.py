@@ -17,7 +17,7 @@ VISIBLE_COLUMNS = """
 salary,title,company,client,required_technologies,created"""
 DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
-ai_enriched,scrapper_enriched,relocation,easy_apply"""
+ai_enriched,scrapper_enriched,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
 web_page,company,client,markdown,business_sector,required_languages,location,url,created,
 comments,{DB_FIELDS_BOOL}"""

@@ -9,9 +9,7 @@ IDS_IDX = 0
 SELECT = """
 select id,title,company,created
 from jobs
-where title rlike '\b(internship|intern)\b' or
-        markdown rlike '\b(internship|intern)\b' or
-        company rlike 'Refonte.*' and
+where LOWER(title) rlike 'internship' and
         not (ignored or applied)
 order by created desc
 """

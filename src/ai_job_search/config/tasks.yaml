@@ -4,7 +4,6 @@ researcher:
     - Salary or salary range.
     - Required technologies: languages, frameworks, libraries, etc. separated by commas.
     - Optional technologies: languages, frameworks, libraries, etc. separated by commas.
-    - Relocation: when relocation is specified and required for the job set as true boolean, false otherwise.
     - Business sector: the business sector of the final client of the job offer if specified.
     - Required languages: the required languages to be spoken in the job offer if specified, including the language the job offer is written with.
     
@@ -20,7 +19,6 @@ researcher:
       "salary": "",
       "required_technologies": "",
       "optional_technologies": "",
-      "relocation": False,
       "business_sector": "",
       "required_languages": ""
     }}

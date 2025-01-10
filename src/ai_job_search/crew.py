@@ -27,7 +27,6 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     id = job[0]
                     title = job[1]
                     company = job[3]
-                    # TODO: REMOVE regex repl. moved to htmlToMarkdown() 5/12
                     markdown = re.sub(r'(\s*(\n|\n\r|\r\n|\r)){2,}', '\n\n',
                                       # DB markdown blob decoding
                                       job[2].decode("utf-8"),
@@ -44,7 +43,6 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     # TODO: Version crew_output.json_dict hace que el agente
                     # piense demasiado, mas AI, más lento, en la Task hay que
                     # poner output_json=JobTaskOutputModel
-                    # FIXME: relocation AI NO funciona bien
                     # TODO: check ai_enrichment error and flag into database with enrichment error
                     # try:
                     result: dict[str, str] = rawToJson(crew_output.raw)
@@ -94,10 +92,6 @@ def rawToJson(raw: str) -> dict[str, str]:
         raw = re.sub(r'\n(Thought|Note):(.*\n)*', '', raw, flags=IM)
         # remove json prefix
         raw = re.sub(r'json *object *', '', raw, flags=IM)
-        raw = re.sub(r'("relocation": *)(\d+)', r'\1"\2"', raw, flags=IM)
-        raw = re.sub(r'("relocation": *)("yes")', r'\1"1"', raw, flags=IM)
-        raw = re.sub(r'("relocation": *)(true)', r'\1"1"', raw, flags=IM)
-        raw = re.sub(r'("relocation": *)(false)', r'\1"0"', raw, flags=IM)
         raw = re.sub(r'(```)', '', raw, flags=IM)
         raw = re.sub(r'[*]+(.+)', r'\1', raw)
         lastCurlyBracesIdx = raw.rfind('}')
@@ -112,11 +106,6 @@ def rawToJson(raw: str) -> dict[str, str]:
 
 
 def validateResult(result: dict[str, str]):
-    relocation = result.get('relocation', 0)
-    if re.match('.*relocation.*', relocation, re.I):
-        result['relocation'] = 1
-    elif relocation != 1:
-        result['relocation'] = 0
     opTechs = result.get('optional_technologies', None)
     if not opTechs:
         result['optional_technologies'] = None

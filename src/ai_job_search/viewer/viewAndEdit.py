@@ -1,6 +1,5 @@
 import pandas as pd
 from pandas.core.frame import DataFrame
-from ai_job_search.scrapper import glassdoorExtraInfo
 from ai_job_search.viewer.util.viewUtil import (
     formatDetail, getValuesAsDict, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
@@ -155,7 +154,7 @@ def formFilter():
             with c2:
                 checkAndPills('Status NOT filter', FIELDS_BOOL,
                               FF_KEY_BOOL_NOT_FIELDS)
-            checkAndInput("SQL where filters", FF_KEY_WHERE)
+            checkAndInput("SQL where filters", FF_KEY_WHERE, [10, 90])
 
 
 def formFilterByIdsSetup():
