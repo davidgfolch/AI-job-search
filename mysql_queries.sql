@@ -90,10 +90,10 @@ order by r.counter desc, r.title, r.company, r.max_created desc
 select title, company, applied, modified from jobs where applied order by modified desc;
 
 select ai_enrich_error from jobs where ai_enrich_error is not null;
+update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
 
 select id, title, company from jobs where company like '%GT Motive Spain%';
 
-update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
 
 update jobs set ignored = true where (ignored is null or ignored = FALSE) and (company = 'Refonte Learning' or company = 'Refonte Technologies');
 

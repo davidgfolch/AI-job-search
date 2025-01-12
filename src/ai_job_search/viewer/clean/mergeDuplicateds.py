@@ -9,8 +9,7 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL, DB_FIELDS_MERGE)
 
 
-INFO = """Show all repeated job offers by `title,company`
- (excluding Joppy "company")"""
+INFO = "Show all repeated job offers by `title,company`"
 COLUMNS = stripFields('Counter,Ids,Title,Company')
 IDS_IDX = 1
 SELECT = """

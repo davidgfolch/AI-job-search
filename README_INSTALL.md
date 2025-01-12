@@ -25,6 +25,6 @@ If problems found installing mysqlclient library for Streamlit, follow this:
     sudo apt install python3.11
     sudo apt install python3.11-venv
     python -m ensurepip --upgrade
-    pip install crewai crewai-tools linkedin-api ....
-    # pip freeze
+    pip install crewai crewai-tools ....
+    # python -m pip freeze > requirements.txt
 ```

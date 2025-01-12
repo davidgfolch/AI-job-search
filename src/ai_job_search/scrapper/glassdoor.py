@@ -5,9 +5,9 @@ import traceback
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, printHR, printPage, printScrapperTitle, validate)
+    htmlToMarkdown, printPage, printScrapperTitle, validate)
 from ai_job_search.scrapper.util import getAndCheckEnvVars, getEnv
-from ai_job_search.tools.terminalColor import green, red, yellow
+from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from ai_job_search.scrapper.selectors.glassdoorSelectors import (

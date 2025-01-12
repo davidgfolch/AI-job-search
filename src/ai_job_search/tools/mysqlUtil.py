@@ -3,14 +3,14 @@ from typing import Any
 import mysql.connector
 from mysql.connector import Error
 
-from ai_job_search.scrapper.baseScrapper import printHR
-from ai_job_search.tools.terminalColor import red, yellow
+from ai_job_search.tools.terminalColor import printHR, red, yellow
 
 DB_NAME = 'jobs'
 QRY_FIND_JOB_BY_ID = """
 SELECT * FROM jobs WHERE jobId = %s"""
 QRY_INSERT = """
-INSERT INTO jobs (jobId,title,company,location,url,markdown,easy_apply,web_page)
+INSERT INTO jobs (
+    jobId,title,company,location,url,markdown,easy_apply,web_page)
           values (%s,%s,%s,%s,%s,%s,%s,%s)"""
 QRY_SELECT_JOBS_FOR_ENRICHMENT = """
 SELECT id, title, markdown, company

@@ -7,7 +7,7 @@ import traceback
 # from markdownify import MarkdownConverter
 import markdownify
 
-from ai_job_search.tools.terminalColor import green, red, yellow
+from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 
 
 def printScrapperTitle(scrapper: str):
@@ -20,13 +20,6 @@ def printPage(webPage, page, totalPages, keywords):
     print(green(f'{webPage} Starting page {page} of {totalPages} ',
                 f'search={keywords}'))
     printHR(green)
-
-
-def printHR(colorFnc=None):
-    if colorFnc:
-        print(colorFnc('-'*150))
-    else:
-        print('-'*150)
 
 
 def htmlToMarkdown(html: str):

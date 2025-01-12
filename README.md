@@ -28,6 +28,8 @@ cp .env.example .env
 
 Then edit your `.env` file.
 
+> NOTE: AiEnricher using OPENAI_API_KEY or GEMINI_API_KEY is not tested.
+
 ## Lifecycle
 
 Run bash scripts in separate terminals:
@@ -51,7 +53,9 @@ Run bash scripts in separate terminals:
 
 ### Clean data (viewer)
 
-Duplicated jobs will be created in database if the jobId is different, `./run_4_Viewer.sh` & click on `Clean data` button to merge old jobs states & comments into the last one (grouping jobs by title-company).
+Duplicated jobs will be created in database if the jobId is different, `./run_4_Viewer.sh` & click on `Clean data` button to merge old jobs states & comments into the last one (grouping jobs by title-company) & deleting older ones.
+
+> NOTE: is a good practice to Clean duplicated job offers before AiEnricher.
 
 ## Scrapers
 

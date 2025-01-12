@@ -19,3 +19,10 @@ def yellow(*text: str):
 
 def red(*text: str):
     return RED + ''.join(text) + __RESET
+
+
+def printHR(colorFnc=None):
+    if colorFnc:
+        print(colorFnc('-'*150))
+    else:
+        print('-'*150)

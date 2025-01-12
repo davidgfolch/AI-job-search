@@ -1,17 +1,39 @@
 import json
+import os
 import re
 import traceback
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
-from ai_job_search.tools.terminalColor import red, yellow
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+import litellm
+from ai_job_search.tools import stopWatch
+from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 
+load_dotenv()
 
-LLM_CONFIG = LLM(model="ollama/llama3.2",
-                 base_url="http://localhost:11434",
-                 temperature=0)
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+
+if OPENAI_API_KEY:
+    model = "o1-preview-2024-09-12"  # gpt-3.5-turbo,  gpt-4o-mini
+    LLM_CFG = LLM(model=model,
+                  base_url="https://api.openai.com/v1",
+                  api_key=OPENAI_API_KEY,
+                  temperature=0)
+elif GEMINI_API_KEY:
+    # TODO: README: gcloud auth application-default login
+    LLM_CFG = ChatGoogleGenerativeAI(model='gemini-1.5-flash',
+                                     verbose=True,
+                                     temperature=0,
+                                     goggle_api_key=GEMINI_API_KEY)
+else:
+    LLM_CFG = LLM(model="ollama/llama3.2",
+                  base_url="http://localhost:11434",
+                  temperature=0)
 
 
 class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
@@ -23,11 +45,14 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
         try:
             crew = AiJobSearch().crew()
             for job in mysqlUtil.getJobsForAiEnrichment():
+                stopWatch.start()
                 try:
                     id = job[0]
                     title = job[1]
                     company = job[3]
-                    markdown = re.sub(r'(\s*(\n|\n\r|\r\n|\r)){2,}', '\n\n',
+                    printHR()
+                    print(f'Job id={id}, title={title}, company={company}')
+                    markdown = re.sub(r'(\s*(\n|\n\r|\r\n|\r)){3,}', '\n\n',
                                       # DB markdown blob decoding
                                       job[2].decode("utf-8"),
                                       re.MULTILINE)
@@ -39,16 +64,17 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     #   json.dumps(crew_output.json_dict)
                     # if crew_output.pydantic:
                     #     crew_output.pydantic
-
                     # TODO: Version crew_output.json_dict hace que el agente
                     # piense demasiado, mas AI, más lento, en la Task hay que
                     # poner output_json=JobTaskOutputModel
-                    # TODO: check ai_enrichment error and flag into database with enrichment error
-                    # try:
                     result: dict[str, str] = rawToJson(crew_output.raw)
                     if result is not None:
                         validateResult(result)
                         mysqlUtil.updateFromAI(id, company, result)
+                except litellm.RateLimitError:
+                    print(red(traceback.format_exc()))
+                    print(yellow("RATE LIMIT ERROR!"))
+                    exit(-1)
                 except Exception as ex:
                     print(red(traceback.format_exc()))
                     print(yellow("Skipping! (ai_enrich_error set in DB)"))
@@ -57,6 +83,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                               'ai_enriched': True}
                     query, params = updateFieldsQuery([id], params)
                     mysqlUtil.executeAndCommit(query, params)
+                stopWatch.end()
             print(yellow(''*60))
             print(yellow('ALL ROWS PROCESSES!'))
             print(yellow(''*60))
@@ -87,7 +114,7 @@ def rawToJson(raw: str) -> dict[str, str]:
         raw = raw.replace('\$', '$')  # dont remove \$ ignore the warning
         raw = re.sub(r'[\\]+([`#&->_|])', r'\1', raw, flags=re.M)
         # replace " inside json values
-        # TODO: raw = re.sub(r' *".+": *"(.+)" *(, *|\})', r'\1', raw, flags=re.M)
+        # TODO:raw=re.sub(r' *".+": *"(.+)" *(, *|\})', r'\1', raw, flags=re.M)
         # remove Agent Thought or Note
         raw = re.sub(r'\n(Thought|Note):(.*\n)*', '', raw, flags=IM)
         # remove json prefix
@@ -121,7 +148,7 @@ class AiJobSearch:
     def researcher_agent(self) -> Agent:
         config = self.agents_config['researcher_agent']
         result = Agent(
-            llm=LLM_CONFIG,
+            llm=LLM_CFG,
             config=config,
             result_as_answer=True,
             verbose=False)

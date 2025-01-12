@@ -6,9 +6,9 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, join, printHR, printPage, printScrapperTitle, validate)
+    htmlToMarkdown, join, printPage, printScrapperTitle, validate)
 from ai_job_search.scrapper.util import getAndCheckEnvVars
-from ai_job_search.tools.terminalColor import green, red, yellow
+from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from .selectors.infojobsSelectors import (
@@ -260,6 +260,7 @@ def processRow(url):
     # implement tree visitor for a.href (and img.src)
     # https://stackoverflow.com/questions/54920208/python-markdown-how-can-i-config-base-url-for-media-when-markdown-string-into-h
     md = htmlToMarkdown(html)
+    md = postProcessMarkdown(md)
     # easyApply: there are 2 buttons
     easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
     print(f'{jobId}, {title}, {company}, {location}, ',
@@ -270,6 +271,16 @@ def processRow(url):
             print(green('INSERTED!'), end='')
             return True
     return False
+
+
+def postProcessMarkdown(md):
+    txt = re.sub(r'\[([^\]]+)\]\(/ofertas-trabajo[^\)]+\)', r'\1', md)
+    txt = re.sub(r'[\\]+-', '-', txt)
+    txt = re.sub(r'[\\]+\.', '.', txt)
+    txt = re.sub(r'-\n', '\n', txt)
+    txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
+    txt = re.sub(r'[-*] #', '#', txt)
+    return txt
 
 
 def getCompany():
