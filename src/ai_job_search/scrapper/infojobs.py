@@ -12,7 +12,6 @@ from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from .selectors.infojobsSelectors import (
-    CSS_SEL_COMPANY2,
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
     CSS_SEL_JOB_LI,
@@ -248,10 +247,11 @@ def loadAndProcessRow(idx, retry=True):
     return False
 
 
-def processRow(url):
+def processRow(url, retry=True):
     # try:
     title = selenium.getText(CSS_SEL_JOB_TITLE)
-    company = getCompany()
+    company = selenium.getText(CSS_SEL_COMPANY)
+    # company = selenium.getText(CSS_SEL_COMPANY2)
     location = selenium.getText(CSS_SEL_LOCATION)
     jobId = getJobId(url)
     html = selenium.getHtml(CSS_SEL_JOB_REQUIREMENTS)
@@ -270,6 +270,8 @@ def processRow(url):
                         easyApply, WEB_PAGE)):
             print(green('INSERTED!'), end='')
             return True
+    if retry:
+        return processRow(url, False)
     return False
 
 
@@ -281,15 +283,6 @@ def postProcessMarkdown(md):
     txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
     txt = re.sub(r'[-*] #', '#', txt)
     return txt
-
-
-def getCompany():
-    elms = selenium.getElms(CSS_SEL_COMPANY)
-    # TODO: extract text.isEmpty() is all project
-    if len(elms) > 0 and elms[0].text.strip() != '':
-        print(f'company={elms[0].text}')
-        return elms[0].text
-    return selenium.getText(CSS_SEL_COMPANY2)
 
 
 def debug(msg: str = '', exception=False):

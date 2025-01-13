@@ -18,8 +18,7 @@ CSS_SEL_NEXT_PAGE_BUTTON = 'div.ij-SearchListingPageContent-main > main ul.sui-M
 
 # JOB DETAIL (IN LIST CLICK)
 CSS_SEL_JOB_TITLE = '#prefijoPuesto'
-CSS_SEL_COMPANY = '#main-wrapper div.heading-addons a'
-CSS_SEL_COMPANY2 = '#main-wrapper div.heading-addons > div > div.content-type-text > a'
+CSS_SEL_COMPANY = '#main-wrapper div.heading-addons a.link'
 CSS_SEL_LOCATION = '#prefijoPoblacion'
 
 CSS_SEL_JOB_DETAIL = 'div.row div.panel-canvas'
