@@ -97,9 +97,9 @@ select id, title, company from jobs where company like '%GT Motive Spain%';
 
 update jobs set ignored = true where (ignored is null or ignored = FALSE) and (company = 'Refonte Learning' or company = 'Refonte Technologies');
 
-update jobs set comments=null, scrapper_enriched=0
-where scrapper_enriched and comments like '%Salary scrapped from Glassdoor: https://www.glassdoor.com/Salary/Braintrust%'
-or salary like '%From glassdoor: Sr. Software Engineer - $136K-$185K%';
+-- update jobs set comments=null, scrapper_enriched=0
+-- where scrapper_enriched and comments like '%Salary scrapped from Glassdoor: https://www.glassdoor.com/Salary/Braintrust%'
+-- or salary like '%From glassdoor: Sr. Software Engineer - $136K-$185K%';
 
 update jobs set salary=null, scrapper_enriched=0
 where salary = 'From glassdoor: Sr. Software Engineer - $136K-$185K';

@@ -38,7 +38,7 @@ ALTER TABLE jobs ADD business_sector varchar(1000);
 ALTER TABLE jobs ADD required_languages varchar(1000);
 
 -- scrapper enrich fields
-ALTER TABLE jobs ADD scrapper_enriched BOOLEAN default 0;
+-- ALTER TABLE jobs ADD scrapper_enriched BOOLEAN default 0;
 
 -- search process
 ALTER TABLE jobs ADD ignored BOOLEAN default 0;

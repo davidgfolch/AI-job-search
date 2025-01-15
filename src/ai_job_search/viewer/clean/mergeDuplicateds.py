@@ -40,6 +40,7 @@ def merge(selectedRows):
     rows = getAllIds(selectedRows, IDS_IDX, plainIdsStr=False)
     cols = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
     colsArr = stripFields(cols)
+    colsArr.remove('closed')
     colCompanyIdx = colsArr.index('title')
     mysql = MysqlUtil()
     try:
