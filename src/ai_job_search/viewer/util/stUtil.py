@@ -114,26 +114,28 @@ def getAndFilter(pills, value):
 
 
 # Components
-def checkboxFilter(label, filterkey):
-    return st.checkbox(label, key=getBoolKeyName(filterkey))
+def checkboxFilter(label, filterKey, container=st):
+    return container.checkbox(label, key=getBoolKeyName(filterKey))
 
 
 def getBoolKeyName(key: str):
     return f'is{key.capitalize()}'
 
 
-def checkAndInput(label: str, key: str, inColumns=None):
-    with st.container(border=1):
-        if not inColumns:
-            enabled = checkboxFilter(label, key)
-            st.text_input(label, key=key, disabled=not enabled,
-                          label_visibility='collapsed')
-        else:
-            c1, c2 = st.columns(inColumns, vertical_alignment="top")
-            with c1:
-                enabled = checkboxFilter(label, key)
-            c2.text_input(label, key=key, disabled=not enabled,
-                          label_visibility='collapsed')
+def checkAndInput(label: str, key: str, inColumns=None, withContainer=True):
+    c = st
+    if withContainer:
+        c = st.container(border=1)
+    if not inColumns:
+        enabled = checkboxFilter(label, key, c)
+        c.text_input(label, key=key, disabled=not enabled,
+                     label_visibility='collapsed')
+    else:
+        c1, c2 = c.columns(inColumns, vertical_alignment="top")
+        with c1:
+            enabled = checkboxFilter(label, key, c)
+        c2.text_input(label, key=key, disabled=not enabled,
+                      label_visibility='collapsed')
 
 
 def checkAndPills(label, fields: list[str], key: str):

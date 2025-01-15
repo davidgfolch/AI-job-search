@@ -30,6 +30,8 @@ from streamlit.column_config import CheckboxColumn
 # @st.cache_resource
 # def sqlConn():
 #     return MysqlUtil()
+SHOW_SQL = False
+
 
 def onTableChange():
     selected = getState('jobsListTable')
@@ -144,9 +146,10 @@ def formFilter():
             with c1:
                 c1.text_input(SEARCH_INPUT_HELP, '', key=FF_KEY_SEARCH)
             with c2:
-                checkAndInput('Days old', FF_KEY_DAYS_OLD)
+                checkAndInput('Days old', FF_KEY_DAYS_OLD, withContainer=False)
             with c3:
-                checkAndInput("Salary regular expression", FF_KEY_SALARY)
+                checkAndInput("Salary regular expression",
+                              FF_KEY_SALARY, withContainer=False)
             c4.text_input('Sort by columns', key=FF_KEY_ORDER)
             c1, c2 = st.columns(2)
             with c1:
@@ -154,7 +157,7 @@ def formFilter():
             with c2:
                 checkAndPills('Status NOT filter', FIELDS_BOOL,
                               FF_KEY_BOOL_NOT_FIELDS)
-            checkAndInput("SQL where filters", FF_KEY_WHERE, [10, 90])
+            checkAndInput("SQL where filters", FF_KEY_WHERE, [10, 90], False)
 
 
 def formFilterByIdsSetup():
@@ -186,7 +189,8 @@ def detailFormSubmit():
         if len(ids) > 1:  # for several rows just fields not None or empty
             fieldsValues = {k: v for k, v in fieldsValues.items() if v}
         query, params = updateFieldsQuery(ids, fieldsValues)
-        st.code(formatSql(query, False), 'sql')
+        if SHOW_SQL:
+            st.code(formatSql(query, False), 'sql')
         mysql = MysqlUtil()
         result = mysql.executeAndCommit(query, params)
         mysql.close()
@@ -223,7 +227,8 @@ def deleteSelectedRows():
     ids = getSelectedRowsIds('selectedRows')
     if len(ids) > 0:
         query = deleteJobsQuery(ids)
-        st.code(query, 'sql')
+        if SHOW_SQL:
+            st.code(query, 'sql')
         res = MysqlUtil().executeAndCommit(query)
         st.info(f'{res} job(s) deleted.  Ids: {ids}')
 
@@ -256,11 +261,10 @@ def view():
         jobData = None
         col1, col2 = st.columns(2)
         with col1:
-            with st.expander("View generated sql"):
-                # TODO: sqlparse.format(sql, reindent=True,
-                #  keyword_case='upper')`
-                st.code(formatSql(query, False), 'sql',
-                        wrap_lines=True, line_numbers=True)
+            if SHOW_SQL:
+                with st.expander("View generated sql"):
+                    st.code(formatSql(query, False), 'sql',
+                            wrap_lines=True, line_numbers=True)
             df = pd.DataFrame(mysql.fetchAll(query), columns=FIELDS)
             filterResCnt = len(df.index)
             if filterResCnt > 0:
