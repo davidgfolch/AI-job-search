@@ -53,6 +53,14 @@ def setState(key: str, value):
     st.session_state[key] = value
 
 
+def setMessageInfo(msg: str):
+    setState('messageInfo', msg)
+
+
+def getMessageInfo():
+    return getState('messageInfo')
+
+
 # Fields processing
 def stripFields(fields: str) -> list[str]:
     return list(map(lambda c: re.sub('\n', '', c.strip()), fields.split(',')))

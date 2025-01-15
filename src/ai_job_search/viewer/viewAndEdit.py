@@ -6,7 +6,7 @@ from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, checkAndInput, checkAndPills, formatSql,
     getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds,
     getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
-    setFieldValue, setState, sortFields)
+    setFieldValue, setMessageInfo, setState, sortFields)
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS,
     DEFAULT_ORDER,
@@ -194,9 +194,22 @@ def detailFormSubmit():
         mysql = MysqlUtil()
         result = mysql.executeAndCommit(query, params)
         mysql.close()
-        st.info(f'{result} row(s) updated.')
+        setMessageInfo(f'{result} row(s) updated.')
     else:
-        st.info('Nothing to save.')
+        setMessageInfo('Nothing to save.')
+
+
+def markAsIgnored():
+    ids = getSelectedRowsIds('selectedRows')
+    if not ids or len(ids) < 1:
+        return
+    query, params = updateFieldsQuery(ids, {'ignored': True})
+    if SHOW_SQL:
+        st.code(formatSql(query, False), 'sql')
+    mysql = MysqlUtil()
+    result = mysql.executeAndCommit(query, params)
+    mysql.close()
+    setMessageInfo(f'{result} row(s) ignored.')
 
 
 def detailForm(boolFieldsValues, comments, salary, company, client):
@@ -275,12 +288,15 @@ def view():
                 jobData = getValuesAsDict(selected, FIELDS_SORTED)
                 (boolFieldsValues, comments, salary,
                  company, client) = mapDetailForm(jobData, FIELDS_BOOL)
-            c1, c2, c3 = st.columns([14, 4, 3], vertical_alignment='center')
+            c1, c2, c3, c4 = st.columns([14, 3, 4, 3],
+                                        vertical_alignment='center')
             c1.write(''.join([
                 f'{filterResCnt}/{totalResults} filtered/total results,',
                 f' {totalSelected} selected']))
-            c2.toggle('Single select', key='singleSelect')
-            c3.button('Delete', 'deleteButton',
+            c2.button('Ignore', 'Mark as ignored and Save',
+                      on_click=markAsIgnored)
+            c3.toggle('Single select', key='singleSelect')
+            c4.button('Delete', 'deleteButton',
                       disabled=totalSelected < 1,
                       on_click=deleteSelectedRows,
                       type="primary")

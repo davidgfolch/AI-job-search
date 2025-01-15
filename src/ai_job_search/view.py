@@ -1,7 +1,7 @@
 import streamlit as st
 from ai_job_search.viewer.cleaner import clean
 from ai_job_search.viewer.util.stUtil import (
-    PAGE_STATE_KEY, PAGES)
+    PAGE_STATE_KEY, PAGES, getMessageInfo)
 from ai_job_search.viewer.viewAndEdit import view
 
 
@@ -10,7 +10,8 @@ PAGES_MAP = {
     0: view,
     1: clean
 }
-selected = st.segmented_control(
+c1, c2 = st.columns([10, 40])
+selected = c1.segmented_control(
     label="Menu",
     options=PAGES.keys(),
     format_func=lambda i: PAGES[i],
@@ -19,6 +20,9 @@ selected = st.segmented_control(
     default=0,
     key=PAGE_STATE_KEY
 )
+messageInfo = getMessageInfo()
+if messageInfo:
+    c2.info(messageInfo)
 if selected is not None:
     selected = PAGES_MAP[selected]
     selected()
