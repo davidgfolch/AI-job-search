@@ -12,9 +12,10 @@ FF_KEY_SALARY = 'salaryFilter'
 FF_KEY_DAYS_OLD = 'daysOldFilter'
 FF_KEY_WHERE = 'whereFilter'
 FF_KEY_ORDER = 'selectOrder'
+FF_KEY_SINGLE_SELECT = 'singleSelect'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """
-salary,title,company,client,required_technologies,created"""
+salary,title,company,created"""
 DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,easy_apply"""
@@ -29,7 +30,7 @@ DEFAULT_SQL_FILTER = f"""
 required_technologies rlike '{RLIKE}'
  or title rlike '{RLIKE}'
  or markdown rlike '{RLIKE}'"""
-DEFAULT_SALARY_REGEX_FILTER = getEnv('SALARY_FILTER_REGEX')
+DEFAULT_SALARY_REGEX_FILTER = "[0-9]{2,}"
 DEFAULT_DAYS_OLD = "1"
 DEFAULT_ORDER = "created desc"
 # DETAIL FORMAT
@@ -64,11 +65,20 @@ Search in {'/'.join(SEARCH_COLUMNS)}, enter search concepts
  (plain text or separated by commas to use mysql regex)"""
 
 
+# CHANGES PRIMARY TABLE COLOR
 STYLE_JOBS_TABLE = """
     <style>
         .st-key-jobsListTable .stDataFrame > *,
         .st-key-jobsListTable .stDataFrame > div > * {
             background-color: darkcyan;
+        }
+    </style>
+    """
+# REMOVES VERTICAL SPACE IN FORM FILTER CHECK+INPUT
+STYLE_FILTER_FORM = """
+    <style>
+        div[data-testid=stExpanderDetails] .stColumn .stVerticalBlock {
+            gap: 0rem;
         }
     </style>
     """

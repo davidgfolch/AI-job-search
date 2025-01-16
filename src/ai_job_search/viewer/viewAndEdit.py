@@ -12,7 +12,7 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DEFAULT_ORDER,
     DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_DAYS_OLD, FF_KEY_ORDER, FF_KEY_SALARY,
-    FF_KEY_SEARCH, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT,
+    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT,
     LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS, SEARCH_INPUT_HELP, STYLE_JOBS_TABLE,
     VISIBLE_COLUMNS)
 from tools.mysqlUtil import (
@@ -35,7 +35,7 @@ SHOW_SQL = False
 
 def onTableChange():
     selected = getState('jobsListTable')
-    if getState('singleSelect'):
+    if getState(FF_KEY_SINGLE_SELECT):
         lastSelected = getState('lastSelected')
         if lastSelected and selected and selected != lastSelected:
             lastSelectedRows = lastSelected['edited_rows']
@@ -256,7 +256,8 @@ def view():
         getBoolKeyName(FF_KEY_DAYS_OLD): True,
         FF_KEY_DAYS_OLD: DEFAULT_DAYS_OLD,
         getBoolKeyName(FF_KEY_WHERE): False,
-        FF_KEY_WHERE: DEFAULT_SQL_FILTER
+        FF_KEY_WHERE: DEFAULT_SQL_FILTER,
+        FF_KEY_SINGLE_SELECT: True
     })
     if getStateBool(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
         res = removeFiltersInNotFilters()
@@ -295,7 +296,7 @@ def view():
                 f' {totalSelected} selected']))
             c2.button('Ignore', 'Mark as ignored and Save',
                       on_click=markAsIgnored)
-            c3.toggle('Single select', key='singleSelect')
+            c3.toggle('Single select', key=FF_KEY_SINGLE_SELECT)
             c4.button('Delete', 'deleteButton',
                       disabled=totalSelected < 1,
                       on_click=deleteSelectedRows,
