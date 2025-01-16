@@ -121,15 +121,29 @@ def rawToJson(raw: str) -> dict[str, str]:
         raw = re.sub(r'json *object *', '', raw, flags=IM)
         raw = re.sub(r'(```)', '', raw, flags=IM)
         raw = re.sub(r'[*]+(.+)', r'\1', raw)
-        lastCurlyBracesIdx = raw.rfind('}')
-        if lastCurlyBracesIdx > 0 and lastCurlyBracesIdx + 1 < len(raw):
-            raw = raw[0:lastCurlyBracesIdx+1]
-        elif lastCurlyBracesIdx == -1:  # sometimes LLM forgets to close }
-            raw += '}'
+        raw = fixJsonEndCurlyBraces(raw)
+        raw = fixJsonInvalidAttribute(raw)
         return dict(json.loads(f'{raw}'))
     except Exception as ex:
         msg = f'Error info: could not parse raw as json: {ex} in json -> {raw}'
         print(red(msg))
+
+
+def fixJsonInvalidAttribute(raw):
+    # fixes LLM invalid json
+    # example: "salary": "£80,000–£100,000" + "significant equity",
+    return re.sub(r'" \+ "', ' + ', raw)
+
+
+def fixJsonEndCurlyBraces(raw):
+    idx = raw.rfind('}')
+    if idx > 0 and idx + 1 < len(raw):
+        # remove extra text after }
+        return raw[0:idx+1]
+    if idx == -1:
+        # sometimes LLM forgets to close }
+        return raw + '}'
+    return raw
 
 
 def validateResult(result: dict[str, str]):
