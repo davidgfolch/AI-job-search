@@ -12,9 +12,9 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DEFAULT_ORDER,
     DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_DAYS_OLD, FF_KEY_ORDER, FF_KEY_SALARY,
-    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT,
-    LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS, SEARCH_INPUT_HELP, STYLE_JOBS_TABLE,
-    VISIBLE_COLUMNS)
+    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL,
+    FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS,
+    SEARCH_INPUT_HELP, STYLE_JOBS_TABLE, VISIBLE_COLUMNS)
 from tools.mysqlUtil import (
     MysqlUtil, QRY_SELECT_COUNT_JOBS, QRY_SELECT_JOBS_VIEWER, deleteJobsQuery,
     updateFieldsQuery)
@@ -199,11 +199,11 @@ def detailFormSubmit():
         setMessageInfo('Nothing to save.')
 
 
-def markAsIgnored():
+def markAs(boolField: str):
     ids = getSelectedRowsIds('selectedRows')
     if not ids or len(ids) < 1:
         return
-    query, params = updateFieldsQuery(ids, {'ignored': True})
+    query, params = updateFieldsQuery(ids, {boolField: True})
     if SHOW_SQL:
         st.code(formatSql(query, False), 'sql')
     mysql = MysqlUtil()
@@ -289,15 +289,22 @@ def view():
                 jobData = getValuesAsDict(selected, FIELDS_SORTED)
                 (boolFieldsValues, comments, salary,
                  company, client) = mapDetailForm(jobData, FIELDS_BOOL)
-            c1, c2, c3, c4 = st.columns([14, 3, 4, 3],
-                                        vertical_alignment='center')
+            c1, c2, c3, c4, c5 = st.columns([13, 3, 3, 5, 3],
+                                            vertical_alignment='center')
             c1.write(''.join([
                 f'{filterResCnt}/{totalResults} filtered/total results,',
                 f' {totalSelected} selected']))
-            c2.button('Ignore', 'Mark as ignored and Save',
-                      on_click=markAsIgnored)
-            c3.toggle('Single select', key=FF_KEY_SINGLE_SELECT)
-            c4.button('Delete', 'deleteButton',
+            c2.button('Ignore',
+                      help='Mark as ignored and Save',
+                      kwargs={'boolField': 'ignored'},
+                      on_click=markAs)
+            c3.button('Seen',
+                      help='Mark as Seen and Save',
+                      kwargs={'boolField': 'seen'},
+                      on_click=markAs)
+            c4.toggle('Single select', key=FF_KEY_SINGLE_SELECT)
+            c5.button('Delete', 'deleteButton',
+                      help='Delete selected job(s)',
                       disabled=totalSelected < 1,
                       on_click=deleteSelectedRows,
                       type="primary")
@@ -322,6 +329,18 @@ def view():
                                salary, company, client)
                 if totalSelected == 1:
                     st.markdown(formatDetail(jobData))
+                    st.divider()
+                    c1, c2, _ = st.columns([4, 3, 30])
+                    c1.button('Ignore',
+                              help='Mark as ignored and Save',
+                              key='ignore2',
+                              kwargs={'boolField': 'ignored'},
+                              on_click=markAs)
+                    c2.button('Seen',
+                              help='Mark as Seen and Save',
+                              key='seen2',
+                              kwargs={'boolField': 'seen'},
+                              on_click=markAs)
                 else:
                     st.warning("Select one job only to see job detail.")
     except InterruptedError as ex:

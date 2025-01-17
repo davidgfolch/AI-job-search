@@ -1,3 +1,4 @@
+import re
 from pandas import DataFrame
 
 from ai_job_search.viewer.util.stUtil import scapeLatex, setState
@@ -41,4 +42,21 @@ def formatDetail(jobData):
     data['created'] = data['created'].date()
     data = {k: (data[k] if data[k] else '?')
             for k in data.keys()}
+    data = scapeTilde(data)
     return DETAIL_FORMAT.format(**data)
+
+
+def scapeTilde(data):
+    # - Source: `{web_page}`
+    # - Company: `{company}`
+    # - Client: `{client}`
+    # - Salary: `{salary}`
+    # - Skills
+    #   - Required: `{required_technologies}`
+    #   - Optional: `{optional_technologies}`
+    DETAIL_SCAPED_FIELDS = ['company', 'client', 'salary',
+                            'required_technologies', 'optional_technologies']
+    return {k: (re.sub('`', "'", data[k])
+                if k in DETAIL_SCAPED_FIELDS
+                else data[k])
+            for k in data.keys()}

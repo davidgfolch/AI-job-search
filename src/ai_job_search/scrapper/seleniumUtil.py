@@ -12,17 +12,18 @@ from ai_job_search.tools.terminalColor import yellow
 
 
 driver = None
+action = None
 
 
 class SeleniumUtil:
 
     def __init__(self):
-        global driver
+        global driver, action
         print('selenium driver init')
         options = webdriver.ChromeOptions()
         options.add_argument("--start-maximized")
         options.add_argument("start-maximized")
-        # TODO: Couldn't avoid Security fitlers for Infojobs & Glassdoor
+        # TODO: Couldn't avoid Security filters for Infojobs & Glassdoor
         # options.add_experimental_option("excludeSwitches", ["enable-automation"])
         # options.add_experimental_option('useAutomationExtension', False)
         # driver = webdriver.Chrome(options=options)  # , executable_path=r'C:\WebDrivers\chromedriver.exe')
@@ -38,6 +39,7 @@ class SeleniumUtil:
         driver = webdriver.Chrome(options=options)
         driver.execute_script(
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        action = webdriver.ActionChains(driver)
 
         print(f'selenium driver init driver={driver}')
 
@@ -64,6 +66,7 @@ class SeleniumUtil:
 
     def sendKeys(self, cssSel: str, value: str, keyByKeyTime=None, clear=True):
         elm = self.getElm(cssSel)
+        self.moveToElement(elm)
         if clear:
             elm.clear()
         if keyByKeyTime:
@@ -75,6 +78,7 @@ class SeleniumUtil:
 
     def checkboxUnselect(self, cssSel: str):
         checkbox = self.getElm(cssSel)
+        self.moveToElement(checkbox)
         if checkbox.is_selected():
             driver.execute_script("arguments[0].click();", checkbox)
 
@@ -86,6 +90,7 @@ class SeleniumUtil:
     def scrollIntoView(self, cssSel: str | WebElement):
         elm = self.getElm(cssSel) if isinstance(cssSel, str) else cssSel
         driver.execute_script("arguments[0].scrollIntoView();", elm)
+        self.moveToElement(elm)
 
     def waitUntilClickable(self, cssSel: str, timeout: int = 10):
         method = EC.element_to_be_clickable
@@ -105,7 +110,9 @@ class SeleniumUtil:
         if scrollIntoView:
             self.scrollIntoView(cssSel)
         self.waitUntilClickable(cssSel, timeout)
-        self.getElm(cssSel).click()
+        elm = self.getElm(cssSel)
+        self.moveToElement(elm)
+        elm.click()
 
     def waitAndClick_noError(self, cssSel: str, msg: str, showException=True):
         try:
@@ -124,6 +131,10 @@ class SeleniumUtil:
             print(
                 yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
             return False
+
+    def moveToElement(self, elm: WebElement):
+        action.move_to_element(elm)
+        action.perform()
 
     def waitUntilFoundMany(self, cssSel: str, items: int, concept: str = '',
                            timeout: int = 5, retry: int = 4):
