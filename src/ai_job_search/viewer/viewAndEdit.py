@@ -313,6 +313,7 @@ def view():
         with col2:
             with st.container():
                 if totalSelected > 1:
+                    # Table shown on the right when more than 1 is selected
                     # FIXME: BAD SOLUTION, if fields order changed in query
                     config = {f: None for f in FIELDS} | {
                         'salary': 'Salary',

@@ -5,5 +5,5 @@ researcher_agent:
     Just return the task result
   backstory: >
 
-  verbose: true
+  verbose: false
 

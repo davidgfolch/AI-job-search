@@ -33,7 +33,12 @@ select count(*) from jobs
 
 select * from jobs where not ignored and not applied and DATE(created) < DATE_SUB(CURDATE(), INTERVAL 1 DAY) and comments is null
 
-select * from jobs where required_technologies rlike '(java|python|scala,clojure)';
+select * from jobs where required_technologies rlike '(java|python|scala|clojure)';
+L|
+select id, title, company, markdown, created from jobs 
+update jobs set ignored=true  
+where title rlike '(SAP|ABAP|HANA|COBOL|DevOps)' and not (ignored or applied or closed)
+order by created desc;
 
 select id from jobs where title = 'Remote Coding Expertise for AI Training - Tier 3 Non US'
 
@@ -92,7 +97,12 @@ select title, company, applied, modified from jobs where applied order by modifi
 select ai_enrich_error from jobs where ai_enrich_error is not null;
 update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
 
-select id, title, company from jobs where company like '%GT Motive Spain%';
+update jobs set ai_enriched=False, salary=null where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 6 HOUR);
+
+update jobs set salary=null where salary = 'Salario no disponible' or salary = 'Paquete retributivo muy competitivo acorde a la valía del candidato'
+or salary = 'Salario a convenir';
+
+select id, title, company, markdown from jobs where company like '%Aaron%' and title like 'Java spark%' and applied;
 
 
 update jobs set ignored = true where (ignored is null or ignored = FALSE) and (company = 'Refonte Learning' or company = 'Refonte Technologies');

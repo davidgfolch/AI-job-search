@@ -1,20 +1,20 @@
 researcher:
   description: >
     From the job offer description in the Markdown bellow extract the following information:
-    - Salary or salary range.
+    - Salary or salary range amount(s) if specified.
     - Required technologies: languages, frameworks, libraries, etc. separated by commas.
     - Optional technologies: languages, frameworks, libraries, etc. separated by commas.
     - Business sector: the business sector of the final client of the job offer if specified.
     - Required languages: the required languages to be spoken in the job offer if specified, including the language the job offer is written with.
     
-    For each field, if information is not found in text just return an empty string or false if boolean.
+    For each field, if no information is found in Markdown, just return an empty string.
     
     Markdown:
 
     {markdown}
   expected_output: >
-    Just a valid json object (don't include any type of comments).
-    The json object must have the following fields and structure:
+    Just a valid json object.
+    The json output must have the following fields and structure:
     {{
       "salary": "",
       "required_technologies": "",
