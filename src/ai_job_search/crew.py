@@ -147,6 +147,12 @@ def fixJsonEndCurlyBraces(raw):
 
 
 def validateResult(result: dict[str, str]):
+    salary = result.get('salary')
+    if salary:  # infojobs
+        if salary == 'Salario no disponible':
+            result.update('salary', None)
+        elif salary.startswith('Salario: '):
+            result.update('salary', re.sub('Salario: ', '', salary))
     opTechs = result.get('optional_technologies', None)
     if not opTechs:
         result['optional_technologies'] = None

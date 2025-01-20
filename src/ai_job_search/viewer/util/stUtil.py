@@ -1,9 +1,14 @@
 from functools import reduce
+import os
 import re
+from dotenv import load_dotenv
 from pandas import DataFrame
 import streamlit as st
 
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
+
+load_dotenv()
+SHOW_SQL = os.environ.get('SHOW_SQL', True)
 
 
 # Application pages & state keys
@@ -173,3 +178,11 @@ def regexSubs(txt: str, regExs: list[(re.Pattern, re.Pattern)]):
         if r:
             res = re.sub(r[0], r[1], res)
     return res
+
+
+def showCodeSql(sql, format=False):
+    if SHOW_SQL:
+        if format:
+            st.code(formatSql(sql), 'sql')
+        else:
+            st.code(sql, 'sql')

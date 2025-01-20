@@ -4,7 +4,6 @@ from ai_job_search.viewer.util.stUtil import (
     PAGE_STATE_KEY, PAGES, getMessageInfo)
 from ai_job_search.viewer.viewAndEdit import view
 
-
 st.set_page_config(layout='wide', page_title="ai job search")
 PAGES_MAP = {
     0: view,

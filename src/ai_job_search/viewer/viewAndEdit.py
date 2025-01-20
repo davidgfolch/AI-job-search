@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 import pandas as pd
 from pandas.core.frame import DataFrame
 from ai_job_search.viewer.util.viewUtil import (
@@ -6,7 +8,7 @@ from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, checkAndInput, checkAndPills, formatSql,
     getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds,
     getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
-    setFieldValue, setMessageInfo, setState, sortFields)
+    setFieldValue, setMessageInfo, setState, showCodeSql, sortFields)
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS,
     DEFAULT_ORDER,
@@ -30,7 +32,9 @@ from streamlit.column_config import CheckboxColumn
 # @st.cache_resource
 # def sqlConn():
 #     return MysqlUtil()
-SHOW_SQL = False
+
+load_dotenv()
+SHOW_SQL = os.environ.get('SHOW_SQL', True)
 
 
 def onTableChange():
@@ -189,8 +193,7 @@ def detailFormSubmit():
         if len(ids) > 1:  # for several rows just fields not None or empty
             fieldsValues = {k: v for k, v in fieldsValues.items() if v}
         query, params = updateFieldsQuery(ids, fieldsValues)
-        if SHOW_SQL:
-            st.code(formatSql(query, False), 'sql')
+        showCodeSql(formatSql(query, False))
         mysql = MysqlUtil()
         result = mysql.executeAndCommit(query, params)
         mysql.close()
@@ -204,8 +207,7 @@ def markAs(boolField: str):
     if not ids or len(ids) < 1:
         return
     query, params = updateFieldsQuery(ids, {boolField: True})
-    if SHOW_SQL:
-        st.code(formatSql(query, False), 'sql')
+    showCodeSql(formatSql(query, False))
     mysql = MysqlUtil()
     result = mysql.executeAndCommit(query, params)
     mysql.close()
@@ -236,8 +238,7 @@ def deleteSelectedRows():
     ids = getSelectedRowsIds('selectedRows')
     if len(ids) > 0:
         query = deleteJobsQuery(ids)
-        if SHOW_SQL:
-            st.code(query, 'sql')
+        showCodeSql(query)
         res = MysqlUtil().executeAndCommit(query)
         st.info(f'{res} job(s) deleted.  Ids: {ids}')
 
@@ -315,10 +316,12 @@ def view():
                 if totalSelected > 1:
                     # Table shown on the right when more than 1 is selected
                     # FIXME: BAD SOLUTION, if fields order changed in query
+                    # check DB_FIELDS
                     config = {f: None for f in FIELDS} | {
                         'salary': 'Salary',
-                        'required_technologies': 'Title',
-                        'optional_technologies': 'Company',
+                        'title': 'Title',
+                        'required_technologies': 'Company',
+                        'optional_technologies': 'Created',
                     }
                     st.dataframe(selectedRows,  # column_order=FIELDS,
                                  hide_index=True,
