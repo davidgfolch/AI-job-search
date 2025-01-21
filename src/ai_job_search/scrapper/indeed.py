@@ -11,7 +11,7 @@ from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
-from .selectors.infojobsSelectors import (
+from .selectors.indeedSelectors import (
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
     CSS_SEL_JOB_LI,
@@ -27,17 +27,17 @@ from .selectors.infojobsSelectors import (
     LOGIN_PAGE)
 
 
-USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
+USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INDEED")
 
 # Set to True to stop selenium driver navigating if any error occurs
 DEBUG = True
 
-WEB_PAGE = 'Infojobs'
-JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults
+WEB_PAGE = 'Indeed'
+JOBS_X_PAGE = 15
 
 LOGIN_WAIT_DISABLE = True
 
-print('Infojobs scrapper init')
+print('Indeed scrapper init')
 selenium = None
 mysql = None
 
@@ -45,15 +45,10 @@ mysql = None
 def run():
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
-    printScrapperTitle('Infojobs')
+    printScrapperTitle('Indeed')
     try:
         selenium = SeleniumUtil()
         mysql = MysqlUtil()
-        # login()
-        # securityFilter()
-        # selenium.waitUntilPageUrlContains(
-        # 'https://www.infojobs.net/error404.xhtml', 60)
-        # input(yellow('Solve a security filter and press a key...'))
         for i, keywords in enumerate(JOBS_SEARCH.split(',')):
             searchJobs(i, keywords.strip())
     finally:
@@ -61,47 +56,10 @@ def run():
         selenium.close()
 
 
-def login():
-    # FIXME: AVOID ROBOT SECURITY FILTER, example with BeautifulSoup:
-    # FIXME: https://github.com/ander-elkoroaristizabal/InfojobsScraper
-    # slow write login to avoid security robot filter don't work
-    selenium.loadPage(LOGIN_PAGE)
-    disableWait = LOGIN_WAIT_DISABLE
-    sleep(4, 6, disableWait)
-    acceptCookies()
-    selenium.sendKeys('#email', USER_EMAIL,
-                      keyByKeyTime=None if disableWait else (0.01, 0.1))
-    sleep(2, 6, disableWait)
-    selenium.sendKeys('#id-password', USER_PWD,
-                      keyByKeyTime=None if disableWait else (0.03, 0.6))
-    sleep(2, 6, disableWait)
-    selenium.waitAndClick('#idSubmitButton')
-
-
-def acceptCookies():
-    selenium.scrollIntoView('#didomi-notice-agree-button > span')
-    sleep(2, 6)
-    selenium.waitAndClick('#didomi-notice-agree-button > span')
-    sleep(2, 6)
-
-
-def securityFilter():
-    selenium.waitUntilPageIsLoaded()
-    sleep(4, 4)
-    # selenium.waitUntil_presenceLocatedElement(CSS_SEL_SECURITY_FILTER1)
-    # contacta con nosotros
-    selenium.waitAndClick(CSS_SEL_SECURITY_FILTER1)
-    selenium.waitAndClick(CSS_SEL_SECURITY_FILTER2)
-    input(yellow('Solve a security filter and press a key...'))
-    sleep(4, 4)
-    acceptCookies()
-
-
 def getUrl(keywords):
-    return join('https://www.infojobs.net/jobsearch/search-results/list.xhtml',
-                f'?keyword={keywords}&searchByType=country&teleworkingIds=2',
-                '&segmentId=&page=1&sortBy=PUBLICATION_DATE',
-                '&onlyForeignCountry=false&countryIds=17&sinceDate=_7_DAYS')
+    return join('https://es.indeed.com/jobs',
+                f'?q={keywords}&l=Espa%C3%B1a&fromage=1',
+                '&sc=0kf%253Aattr(DSQF7)%253B&sort=date')
 
 
 def replaceIndex(cssSelector: str, idx: int):
@@ -130,11 +88,7 @@ def scrollJobsList(idx):
         while i <= idx:
             # in last page could not exist
             li = selenium.getElms(CSS_SEL_JOB_LI)[i]
-            if not selenium.scrollIntoView_noError(li):
-                print(yellow(' waiting 5 secs... & retrying... '), end='')
-                time.sleep(5)
-                li = selenium.getElms(CSS_SEL_JOB_LI)[i]
-                selenium.scrollIntoView_noError(li)
+            selenium.scrollIntoView_noError(li)
             i += 1
 
 
@@ -165,11 +119,16 @@ def jobExistsInDB(url):
 
 
 def getJobId(url: str):
-    return re.sub(r'.+/of-([^?/]+).*', r'\1', url)
+    return re.sub(r'.+\?.*jk=([^&]+).*', r'\1', url)
 
 
 def getJobUrlShort(url: str):
     return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
+
+
+def acceptCookies():
+    selenium.waitAndClick_noError(
+        '#onetrust-accept-btn-handler', 'Could not accept cookies')
 
 
 def searchJobs(index: int, keywords: str):
@@ -177,32 +136,30 @@ def searchJobs(index: int, keywords: str):
         url = getUrl(keywords)
         selenium.loadPage(url)
         selenium.waitUntilPageIsLoaded()
-        if index == 0:
-            securityFilter()
-            selenium.waitUntilPageUrlContains(
-                'https://www.infojobs.net/jobsearch/search-results', 60)
-            # selenium.loadPage(url)
-            # selenium.waitUntilPageIsLoaded()
-        totalResults = getTotalResultsFromHeader(keywords)
-        totalPages = math.ceil(totalResults / JOBS_X_PAGE)
+        time.sleep(2)
+        # NOTE: totalResults could be like +400, +50
+        # totalResults = getTotalResultsFromHeader(keywords)
+        # totalPages = math.ceil(totalResults / JOBS_X_PAGE)
+        acceptCookies()
         page = 0
         currentItem = 0
-        while currentItem < totalResults:
+        totalResults = 0
+        while True:
             page += 1
-            printPage(WEB_PAGE, page, totalPages, keywords)
+            printPage(WEB_PAGE, page, '?', keywords)
             idx = 0
-            while idx < JOBS_X_PAGE and currentItem < totalResults:
+            while idx < JOBS_X_PAGE:
                 print(green(f'pg {page} job {idx+1} - '), end='')
+                totalResults += 1
                 if loadAndProcessRow(idx):
                     currentItem += 1
                 print()
                 idx += 1
-            if currentItem < totalResults:
-                if clickNextPage():
-                    selenium.waitUntilPageIsLoaded()
-                    time.sleep(5)
-                else:
-                    break  # exit while
+            if clickNextPage():
+                selenium.waitUntilPageIsLoaded()
+                time.sleep(5)
+            else:
+                break  # exit while
         summarize(keywords, totalResults, currentItem)
     except Exception:
         debug(exception=True)
@@ -214,27 +171,29 @@ def getJobLinkElement(idx):
 
 
 def loadAndProcessRow(idx, retry=True):
-    processed = False
+    ignore = True
     jobExists = False
     try:
         scrollJobsList(idx)
-        # pagination not always contains all JOBS_X_PAGE
         jobLinkElm: WebElement = getJobLinkElement(idx)
         url = jobLinkElm.get_attribute('href')
         jobId, jobExists = jobExistsInDB(url)
+        # clean url just with jobId param
+        url = f'https://es.indeed.com/viewjob?jk={jobId}'
         if jobExists:
             print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
                   end='')
             return True
         loadJobDetail(jobExists, jobLinkElm)
-        processed = True
+        time.sleep(3)
+        ignore = False
     except IndexError as ex:
         print(yellow("WARNING: could not get all items per page, that's ",
                      f"expected because not always has {JOBS_X_PAGE}: {ex}"))
     except Exception as ex:
         print(red(f'ERROR: {ex}'))
         debug(red(traceback.format_exc()))
-    if processed:
+    if not ignore:
         if not processRow(url):
             print(red('Validation failed'))
             return loadAndProcessRow(idx, False)
@@ -249,11 +208,13 @@ def loadAndProcessRow(idx, retry=True):
 
 def processRow(url, retry=True):
     # try:
-    title = selenium.getText(CSS_SEL_JOB_TITLE)
+    title = selenium.getText(CSS_SEL_JOB_TITLE).removesuffix('\n- job post')
     company = selenium.getText(CSS_SEL_COMPANY)
     # company = selenium.getText(CSS_SEL_COMPANY2)
     location = selenium.getText(CSS_SEL_LOCATION)
     jobId = getJobId(url)
+    selenium.scrollIntoView(CSS_SEL_JOB_REQUIREMENTS)
+    selenium.waitUntil_presenceLocatedElement(CSS_SEL_JOB_REQUIREMENTS)
     html = selenium.getHtml(CSS_SEL_JOB_REQUIREMENTS)
     html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
     # TODO: Infojobs  "Conocimientos necesarios" are relative url links,

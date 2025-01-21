@@ -34,7 +34,7 @@ DEBUG = True
 WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
 
-print('seleniumGlassdoor init')
+print('Glassdoor scrapper init')
 selenium = None
 mysql = None
 

@@ -38,7 +38,7 @@ DEBUG = False
 WEB_PAGE = 'Linkedin'
 JOBS_X_PAGE = 25
 
-print('seleniumLinkedin init')
+print('Linkedin scrapper init')
 selenium = None
 mysql = None
 
