@@ -4,7 +4,7 @@ from ai_job_search.tools.mysqlUtil import (
 # from ai_job_search.viewer.util.cleanUtil import getFieldValue, removeNewestId
 from ai_job_search.viewer.util.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
-from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
+from ai_job_search.viewer.util.stUtil import formatSql, showCodeSql, stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL, DB_FIELDS_MERGE)
 
@@ -40,8 +40,8 @@ def merge(selectedRows):
     rows = getAllIds(selectedRows, IDS_IDX, plainIdsStr=False)
     cols = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
     colsArr = stripFields(cols)
-    colsArrMerge = colsArr
-    (colsArrMerge.remove(col) for col in ['id,title,company'])
+    colsArr.remove('closed')
+    colCompanyIdx = colsArr.index('title')
     mysql = MysqlUtil()
     try:
         with st.container(height=400):
@@ -52,21 +52,21 @@ def merge(selectedRows):
                 showCodeSql(query, True)
                 merged = {}
                 for row in mysql.fetchAll(query):
-                    for idx, col in enumerate(colsArrMerge):
-                        if row[idx]:
-                            merged.setdefault(col, row[idx])
+                    for idx, f in enumerate(colsArr):
+                        if idx > colCompanyIdx and row[idx]:
+                            merged.setdefault(f, row[idx])
                     id = getFieldValue(row, colsArr, 'id')
                 st.write(f'`{getFieldValue(row, colsArr, "title")}`',
                          '-',
                          f'`{getFieldValue(row, colsArr, "company")}`',
                          merged)
-                queryUpdate, params = updateFieldsQuery([id], merged)
-                showCodeSql(queryUpdate)
-                queries = [{'query': queryUpdate, 'params': params}]
+                updateQry, params = updateFieldsQuery([id], merged)
+                showCodeSql(updateQry)
+                queries = [{'query': updateQry, 'params': params}]
                 idsArr = removeNewestId(ids)
-                queryDelete = deleteJobsQuery(idsArr)
-                showCodeSql(queryDelete)
-                queries.append({'query': queryDelete})
+                deleteQry = deleteJobsQuery(idsArr)
+                showCodeSql(deleteQry)
+                queries.append({'query': deleteQry})
                 affectedRows = mysql.executeAllAndCommit(queries)
                 st.write(f'Affected rows (update & delete): {affectedRows}')
     finally:
