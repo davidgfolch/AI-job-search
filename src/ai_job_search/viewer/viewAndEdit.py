@@ -247,6 +247,7 @@ def view():
     # mysql = sqlConn()
     mysql = MysqlUtil()
     initStates({
+        FF_KEY_SEARCH: '',
         getBoolKeyName(FF_KEY_BOOL_FIELDS): True,
         FF_KEY_BOOL_FIELDS: DEFAULT_BOOL_FILTERS,
         getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS): True,

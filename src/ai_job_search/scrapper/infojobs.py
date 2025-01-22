@@ -7,8 +7,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, join, printPage, printScrapperTitle, validate)
-from ai_job_search.scrapper.util import getAndCheckEnvVars
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
+from ai_job_search.tools.util import getAndCheckEnvVars
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from .selectors.infojobsSelectors import (
@@ -147,6 +147,8 @@ def clickNextPage(retry=True):
         return True
     except NoSuchElementException:
         if retry:
+            # FIXME: implement as decorator:
+            # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
             debug("retry clickNextPage")
             return clickNextPage(False)
         return False

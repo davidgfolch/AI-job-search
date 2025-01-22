@@ -1,7 +1,7 @@
 import streamlit as st
 from ai_job_search.viewer.cleaner import clean
 from ai_job_search.viewer.util.stUtil import (
-    PAGE_STATE_KEY, PAGES, getMessageInfo)
+    PAGE_STATE_KEY, PAGES, getMessageInfo, printSessionState)
 from ai_job_search.viewer.viewAndEdit import view
 
 st.set_page_config(layout='wide', page_title="ai job search")
@@ -27,3 +27,6 @@ if selected is not None:
     selected()
 else:
     view()
+
+
+printSessionState()

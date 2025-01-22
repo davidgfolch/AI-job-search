@@ -147,6 +147,8 @@ class SeleniumUtil:
                 print(
                     f'waitUntilFound: {concept}, len after exception: {found}')
                 if retry > 1:
+                    # FIXME: implement as decorator:
+                    # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
                     print(f'waitUntilFound {concept} retrying...')
                     retry -= 1
                 else:

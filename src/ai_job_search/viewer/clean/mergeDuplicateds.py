@@ -4,7 +4,7 @@ from ai_job_search.tools.mysqlUtil import (
 # from ai_job_search.viewer.util.cleanUtil import getFieldValue, removeNewestId
 from ai_job_search.viewer.util.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
-from ai_job_search.viewer.util.stUtil import formatSql, showCodeSql, stripFields
+from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL, DB_FIELDS_MERGE)
 

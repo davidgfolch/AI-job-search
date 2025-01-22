@@ -6,8 +6,8 @@ from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, printPage, printScrapperTitle, validate)
-from ai_job_search.scrapper.util import getAndCheckEnvVars, getEnv
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
+from ai_job_search.tools.util import getAndCheckEnvVars, getEnv
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from ai_job_search.scrapper.selectors.glassdoorSelectors import (
@@ -104,6 +104,8 @@ def clickNextPage(retry=True):
         selenium.waitUntilPageIsLoaded()
     except NoSuchElementException as ex:
         if retry:
+            # FIXME: implement as decorator:
+            # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
             debug("retry clickNextPage")
             sleep(0.5, 1.5)
             return clickNextPage(False)

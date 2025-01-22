@@ -6,6 +6,7 @@ from pandas import DataFrame
 import streamlit as st
 
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
+from ai_job_search.tools.util import toBool
 
 load_dotenv()
 SHOW_SQL = os.environ.get('SHOW_SQL', True)
@@ -27,9 +28,21 @@ PAGES = {
 
 # States
 def initStates(keyValue: dict):
-    for k in keyValue.keys():
-        if k not in st.session_state:
-            st.session_state[k] = keyValue[k]
+    if st.query_params.keys():
+        for k in st.query_params.keys():
+            if re.fullmatch(r'is([A-Z][a-z]+)+', k):
+                st.session_state[k] = toBool(st.query_params[k])
+            else:
+                st.session_state[k] = st.query_params[k]
+    else:
+        for k in keyValue.keys():
+            if k not in st.session_state:
+                st.session_state[k] = keyValue[k]
+
+
+def printSessionState():
+    with st.expander("StreamLite session state"):
+        st.write(st.session_state)
 
 
 def getState(key: str, default=None):
@@ -132,7 +145,7 @@ def checkboxFilter(label, filterKey, container=st):
 
 
 def getBoolKeyName(key: str):
-    return f'is{key.capitalize()}'
+    return f'is{key.title()}'
 
 
 def checkAndInput(label: str, key: str, inColumns=None, withContainer=True):

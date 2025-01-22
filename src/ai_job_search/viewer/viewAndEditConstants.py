@@ -1,4 +1,4 @@
-from ai_job_search.scrapper.util import getEnv
+from ai_job_search.tools.util import getEnv
 from ai_job_search.viewer.util.stUtil import sortFields, stripFields
 
 
@@ -39,11 +39,8 @@ DETAIL_FORMAT = """
 
 - Source: `{web_page}`
 - Company: `{company}`
-- Client: `{client}`
-- Salary: `{salary}`
-- Skills
-  - Required: `{required_technologies}`
-  - Optional: `{optional_technologies}`
+"""
+DETAIL_FORMAT2 = """
 
 `{created}` - `{createdTime}`
 

@@ -86,12 +86,12 @@ class MysqlUtil:
     def updateFromAI(self, id, company, paramsDict: dict, deep=0):
         try:
             params = maxLen(emptyToNone(
-                (paramsDict['salary'],
+                (paramsDict.get('salary', None),
                  # TODO: Change to required_skills, optional_skills
-                 paramsDict['required_technologies'],
-                 paramsDict['optional_technologies'],
-                 paramsDict['business_sector'],
-                 paramsDict['required_languages'],
+                 paramsDict.get('required_technologies', None),
+                 paramsDict.get('optional_technologies', None),
+                 paramsDict.get('business_sector', None),
+                 paramsDict.get('required_languages', None),
                  id)),
                 # TODO: get mysql DDL metadata varchar sizes
                 (200, 1000, 1000, 1000, 1000, None))
@@ -110,7 +110,7 @@ class MysqlUtil:
             if deep > len(paramsDict.keys):
                 return
             failColumn = re.sub(REGEX_INCORRECT_VALUE_FOR_COL, r'\2', str(ex))
-            if failColumn:
+            if failColumn:  # FIXME: implement as decorator: https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
                 print(red(f'Found incorrect value for column {failColumn}, ',
                           'retry with column value None'))
                 paramsDict[failColumn] = None

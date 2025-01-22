@@ -12,6 +12,7 @@ import litellm
 from ai_job_search.tools import stopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
+from ai_job_search.tools.util import hasLen
 
 load_dotenv()
 
@@ -150,9 +151,11 @@ def validateResult(result: dict[str, str]):
     salary = result.get('salary')
     if salary:  # infojobs
         if salary == 'Salario no disponible':
-            result.update('salary', None)
-        elif salary.startswith('Salario: '):
-            result.update('salary', re.sub('Salario: ', '', salary))
+            result.update({'salary': None})
+        elif hasLen(
+                re.finditer(regex := r'^(sueldo|salarios?)[: ]+(.+)',
+                            salary, flags=re.I)):
+            result.update({'salary': re.sub(regex, r'\2', salary, flags=re.I)})
     opTechs = result.get('optional_technologies', None)
     if not opTechs:
         result['optional_technologies'] = None

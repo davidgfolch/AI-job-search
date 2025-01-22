@@ -2,7 +2,7 @@ import re
 from pandas import DataFrame
 
 from ai_job_search.viewer.util.stUtil import scapeLatex, setState
-from ai_job_search.viewer.viewAndEditConstants import DETAIL_FORMAT
+from ai_job_search.viewer.viewAndEditConstants import DETAIL_FORMAT, DETAIL_FORMAT2
 
 
 def mapDetailForm(jobData, fieldsBool):
@@ -40,10 +40,28 @@ def formatDetail(jobData):
     data = scapeLatex(jobData)
     data['createdTime'] = data['created'].time()
     data['created'] = data['created'].date()
-    data = {k: (data[k] if data[k] else '?')
+    data = {k: (data[k] if data[k] else None)
             for k in data.keys()}
     data = scapeTilde(data)
-    return DETAIL_FORMAT.format(**data)
+    str = DETAIL_FORMAT.format(**data)
+    str += fmtDetailOpField(data, 'client')
+    str += fmtDetailOpField(data, 'salary')
+    reqSkills = fmtDetailOpField(data, 'required_technologies', 'Required', 2)
+    opSkills = fmtDetailOpField(data, 'optional_technologies', 'Optional', 2)
+    if reqSkills + opSkills != '':
+        str += ''.join(["- Skills\n", reqSkills, opSkills])
+    if val := data.get('comments'):
+        str += f'- Comments:\n    ***{val}***\n'
+    str += DETAIL_FORMAT2.format(**data)
+    return str
+
+
+def fmtDetailOpField(data: dict, key: str, label: str = None, level=0) -> str:
+    value = data.get(key)
+    if value is None:
+        return ''
+    label = key.capitalize() if label is None else label
+    return f'{" "* level}- {label}: `{data.get(key)}`\n'
 
 
 def scapeTilde(data):
@@ -57,6 +75,6 @@ def scapeTilde(data):
     DETAIL_SCAPED_FIELDS = ['company', 'client', 'salary',
                             'required_technologies', 'optional_technologies']
     return {k: (re.sub('`', "'", data[k])
-                if k in DETAIL_SCAPED_FIELDS
+                if k in DETAIL_SCAPED_FIELDS and data.get(k) is not None
                 else data[k])
             for k in data.keys()}
