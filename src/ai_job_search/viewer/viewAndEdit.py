@@ -228,7 +228,9 @@ def detailForm(boolFieldsValues, comments, salary, company, client):
             st.form_submit_button('Save', 'Save changes in job(s)',
                                   type='primary',
                                   on_click=detailFormSubmit)
-        st.text_area("Comments", comments, key='comments')
+        rows = 5 if comments is None else len(comments.split('\n'))
+        rows = rows if rows > 4 else 5
+        st.text_area("Comments", comments, key='comments', height=rows*20)
         st.text_input("Salary", salary, key='salary')
         st.text_input("Company", company, key='company')
         st.text_input("Client", client, key='client')
@@ -333,7 +335,7 @@ def view():
                     detailForm(boolFieldsValues, comments,
                                salary, company, client)
                 if totalSelected == 1:
-                    st.markdown(formatDetail(jobData))
+                    formatDetail(jobData)
                     st.divider()
                     c1, c2, _ = st.columns([4, 3, 30])
                     c1.button('Ignore',

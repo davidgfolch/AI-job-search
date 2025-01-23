@@ -59,6 +59,7 @@ def merge(selectedRows):
                 st.write(f'`{getFieldValue(row, colsArr, "title")}`',
                          '-',
                          f'`{getFieldValue(row, colsArr, "company")}`',
+                         f' (ids={ids})',
                          merged)
                 updateQry, params = updateFieldsQuery([id], merged)
                 showCodeSql(updateQry)

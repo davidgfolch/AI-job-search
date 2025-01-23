@@ -1,7 +1,8 @@
+from functools import reduce
+import re
 from ai_job_search.tools.terminalColor import yellow
 import os
 from typing import Iterator
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -23,12 +24,21 @@ def getAndCheckEnvVars(site: str):
     return mail, pwd, search
 
 
-def getEnv(key: str):
-    return os.environ.get(key)
+def getEnv(key: str, default=None):
+    return os.environ.get(key, default)
 
 
 def hasLen(iter: Iterator):
     return any(True for _ in iter)
+
+
+def hasLenAnyTest(*texts: str):
+    return reduce(lambda a, b: a and b,
+                  [t and len(removeBlanks(t)) > 0 for t in texts])
+
+
+def removeBlanks(text):
+    return re.sub(r'[\n\b]+', '', text, re.M).strip()
 
 
 def toBool(str: str) -> bool:

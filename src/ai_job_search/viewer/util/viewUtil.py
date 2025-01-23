@@ -1,4 +1,5 @@
 import re
+import streamlit as st
 from pandas import DataFrame
 
 from ai_job_search.viewer.util.stUtil import scapeLatex, setState
@@ -50,10 +51,11 @@ def formatDetail(jobData):
     opSkills = fmtDetailOpField(data, 'optional_technologies', 'Optional', 2)
     if reqSkills + opSkills != '':
         str += ''.join(["- Skills\n", reqSkills, opSkills])
+    st.markdown(str)
     if val := data.get('comments'):
-        str += f'- Comments:\n    ***{val}***\n'
-    str += DETAIL_FORMAT2.format(**data)
-    return str
+        with st.expander('Comments'):
+            st.markdown(val)
+    st.markdown(DETAIL_FORMAT2.format(**data))
 
 
 def fmtDetailOpField(data: dict, key: str, label: str = None, level=0) -> str:

@@ -1,5 +1,4 @@
 
-from functools import reduce
 import re
 import traceback
 
@@ -8,6 +7,7 @@ import traceback
 import markdownify
 
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
+from ai_job_search.tools.util import hasLenAnyTest
 
 
 def printScrapperTitle(scrapper: str):
@@ -32,12 +32,21 @@ def htmlToMarkdown(html: str):
     # md = convertSoup(html)
     # print(yellow('>>> Markdown with previous beautifulSoup clean <<<'))
     # print(green(md))
-    return markdownify.markdownify(html)
+    md = markdownify.markdownify(html)
+    return removeInvalidScapes(md)
+
+
+def removeInvalidScapes(md: str) -> str:
+    # remove invalid scapes
+    # TODO: REMOVE OR CHANGE UNICODE \u00f3
+    md = md.replace('\$', '$')  # dont remove \$ ignore the warning
+    md = re.sub(r'[\\]+(?!=a-z)', '', md, flags=re.M)
+    return md
 
 
 def validate(title: str, url: str, company: str, markdown: str,
              debugFlag: bool):
-    if not hasLen(title, url, company, markdown):
+    if not hasLenAnyTest(title, url, company, markdown):
         debug(debugFlag, "validate -> " +
               red('ERROR: One or more required fields are empty, ',
                   f'NOT inserting into DB: title={title}, company={company}, ',
@@ -45,15 +54,6 @@ def validate(title: str, url: str, company: str, markdown: str,
               yellow(f' -> Url: {url}'))
         return False
     return True
-
-
-def hasLen(*texts: str):
-    return reduce(lambda a, b: a and b,
-                  [t and len(removeBlanks(t)) > 0 for t in texts])
-
-
-def removeBlanks(text):
-    return re.sub(r'[\n\b]+', '', text, re.M).strip()
 
 
 def debug(debug: bool, msg: str = '', exception=False):

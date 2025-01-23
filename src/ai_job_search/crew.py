@@ -110,10 +110,6 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
 def rawToJson(raw: str) -> dict[str, str]:
     try:
         IM = re.I | re.M
-        # remove invalid scapes
-        # TODO: REMOVE OR CHANGE UNICODE \u00f3
-        raw = raw.replace('\$', '$')  # dont remove \$ ignore the warning
-        raw = re.sub(r'[\\]+([`#&->_|])', r'\1', raw, flags=re.M)
         # replace " inside json values
         # TODO:raw=re.sub(r' *".+": *"(.+)" *(, *|\})', r'\1', raw, flags=re.M)
         # remove Agent Thought or Note
@@ -122,6 +118,7 @@ def rawToJson(raw: str) -> dict[str, str]:
         raw = re.sub(r'json *object *', '', raw, flags=IM)
         raw = re.sub(r'(```)', '', raw, flags=IM)
         raw = re.sub(r'[*]+(.+)', r'\1', raw)
+        raw = re.sub(r'(.+)",",', r'\1",', raw)
         raw = fixJsonEndCurlyBraces(raw)
         raw = fixJsonInvalidAttribute(raw)
         return dict(json.loads(f'{raw}'))

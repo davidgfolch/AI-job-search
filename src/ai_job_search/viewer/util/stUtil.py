@@ -1,15 +1,14 @@
 from functools import reduce
-import os
 import re
-from dotenv import load_dotenv
 from pandas import DataFrame
 import streamlit as st
 
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
-from ai_job_search.tools.util import toBool
+from ai_job_search.tools.util import getEnv, toBool
 
-load_dotenv()
-SHOW_SQL = os.environ.get('SHOW_SQL', True)
+
+SHOW_SQL = toBool(getEnv('SHOW_SQL', True))
+print(f"SHOW_SQL={SHOW_SQL} {type(SHOW_SQL)}")
 
 
 # Application pages & state keys
