@@ -218,9 +218,6 @@ def processRow(url, retry=True):
     selenium.waitUntil_presenceLocatedElement(CSS_SEL_JOB_REQUIREMENTS)
     html = selenium.getHtml(CSS_SEL_JOB_REQUIREMENTS)
     html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-    # TODO: Infojobs  "Conocimientos necesarios" are relative url links,
-    # implement tree visitor for a.href (and img.src)
-    # https://stackoverflow.com/questions/54920208/python-markdown-how-can-i-config-base-url-for-media-when-markdown-string-into-h
     md = htmlToMarkdown(html)
     md = postProcessMarkdown(md)
     # easyApply: there are 2 buttons

@@ -6,6 +6,12 @@ import ai_job_search.scrapper.glassdoor as glassdoor
 import ai_job_search.scrapper.infojobs as infojobs
 from ai_job_search.tools.terminalColor import red, yellow
 
+
+# FIXME: Implement scrapper by url in view and/or console
+# f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-SRCH_IL.0,6_IC2664239_KO7,21.htm?jl=1009607227015&srs=JV_APPLYPANE
+# taking site id to check if already exists in db
+# this could be an alternative way to add jobs in sites like glassdoor because of cloudflare security filter
+# TODO: technoempleo scrapper
 SCRAPPERS = {'LinkedIn': linkedIn,
              'Glassdoor': glassdoor,
              'Infojobs': infojobs,
