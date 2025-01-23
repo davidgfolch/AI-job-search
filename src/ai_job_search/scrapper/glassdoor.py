@@ -29,7 +29,7 @@ SITE = "GLASSDOOR"
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars(SITE)
 JOBS_SEARCH_BASE_URL = getEnv(f'{SITE}_JOBS_SEARCH_BASE_URL')
 
-DEBUG = True
+DEBUG = False
 
 WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
@@ -118,7 +118,8 @@ def getJobId(url: str):
                   url, flags=re.I)
 
 
-def searchJobs(url: str):
+def searchJobs(url: str, retry=0):
+    global selenium
     try:
         keywords = url.split('/')
         keywords = keywords[len(keywords)-1:]
@@ -148,6 +149,15 @@ def searchJobs(url: str):
                 if currentItem < totalResults:
                     clickNextPage()
             summarize(keywords, totalResults, currentItem)
+    except NoSuchElementException:
+        debug(red(traceback.format_exc()))
+        if retry < 10:
+            # Cloudflare filter retrying with new selenium driver
+            debug(yellow(f"Retry {retry} -> Retrying the above error",
+                         "reinitializing selenium"))
+            selenium.close()
+            selenium = SeleniumUtil()
+            searchJobs(url, retry+1)
     except Exception:
         debug(red(traceback.format_exc()))
 
