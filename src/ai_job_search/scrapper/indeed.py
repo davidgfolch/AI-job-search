@@ -20,10 +20,7 @@ from .selectors.indeedSelectors import (
     CSS_SEL_LOCATION,
     CSS_SEL_JOB_TITLE,
     CSS_SEL_JOB_LINK,
-    CSS_SEL_NEXT_PAGE_BUTTON,
-    CSS_SEL_SECURITY_FILTER1,
-    CSS_SEL_SECURITY_FILTER2,
-    LOGIN_PAGE)
+    CSS_SEL_NEXT_PAGE_BUTTON)
 
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INDEED")
@@ -107,7 +104,7 @@ def clickNextPage(retry=True):
         return False
 
 
-def loadJobDetail(jobExists: bool, jobLinkElm: WebElement):
+def loadJobDetail(jobLinkElm: WebElement):
     # first job in page loads automatically
     # if job exists in DB no need to load details (rate limit)
     print(yellow('loading...'), end='')
@@ -120,11 +117,9 @@ def jobExistsInDB(url):
 
 
 def getJobId(url: str):
+    # https://es.indeed.com/pagead/clk?mo=r&ad=-6NYlbfkN0DbIyHopYNdPLgRYRG2FgnuJLz47mHLRnOVu2tY5XDnoTjm_t8c6thoU-53yYOVZJvZ76je_lq6KA-XAY92iGBEMkipCfXteoPVubXE4FHTfqx4Mf-6MhfZkK7YUu3yrI-z9JQE9pLO-djt1tFqNEtTK3NWMfyT0Ezmoj_8NOLQUumiyZsw8Hx3ykr2qLxPszYw1XYJLwKKdex1K0FkeMDl4M6poEhp9eoiIfvPBH-AGSl0J7kFrvnVDF5Cb6Dvrlcnad3Mvu-SvAvFBTP1OaSrIZMPkRPObPTtGFXsV0HO6KsqJx5bZwuzWhmu1B5dPhpGeEgMXWo0Cn3Bgc8D5VSbTCXIQDkq9i_5JDzpYeBo1uKtvyrS2lWXnCL9UNcz5eh8zDD8MU8-Pqk0vZPYzeaSWFWNqCidqZ9zcmNjFzMZdXdxTtOmr4lEs4GN__YlU0NBlGiq59uMCMRzFV93FcxbAC4oGzgFodV4uXx4dRB7zVAjTPLFlvNgsPUm6kHt7nDOe40xbCXB6STQc6axaa1tP1bRbfXH6sb6X8B_CK_kHRiPQ0omUdYa8RGGEtycz41lWTLwP1CT2zUOn64fuP3bIOeW9lPQFUW_Hi0n7r-KmA==&xkcb=SoCR6_M32Jfx9pTm350LbzkdCdPP&camk=nUmJqO2E8rjUsDRVvlAvpw==&p=0&fvj=0&vjs=3
+    # https://es.indeed.com/pagead/clk?mo=r&ad=-6NYlbfkN0DbIyHopYNdPLgRYRG2FgnuJLz47mHLRnOVu2tY5XDnoTjm_t8c6thoU-53yYOVZJvZ76je_lq6KA-XAY92iGBEMkipCfXteoPVubXE4FHTfqx4Mf-6MhfZkK7YUu3yrI-z9JQE9pLO-djt1tFqNEtTK3NWMfyT0Ezmoj_8NOLQUumiyZsw8Hx3ykr2qLxPszYw1XYJLwKKdex1K0FkeMDl4M6poEhp9eoiIfvPBH-AGSl0J7kFrvnVDF5Cb6Dvrlcnad3Mvu-SvAvFBTP1OaSrIZMPkRPObPTtGFXsV0HO6KsqJx5bZwuzWhmu1B5dPhpGeEgMXWo0Cn3Bgc8D5VSbTCXIQDkq9i_5JDzpYeBo1uKtvyrS2lWXnCL9UNcz5eh8zDD8MU8-Pqk0vZPYzeaSWFWNqCidqZ9zcmNjFzMZdXdxTtOmr4lEs4GN__YlU0NBlGiq59uMCMRzFV93FcxbAC4oGzgFodV4uXx4dRB7zVAjTPLFlvNgsPUm6kHt7nDOe40xbCXB6STQc6axaa1tP1bRbfXH6sb6X8B_CK_kHRiPQ0omUdYa8RGGEtycz41lWTLwP1CT2zUOn64fuP3bIOeW9lPQFUW_Hi0n7r-KmA==&xkcb=SoCR6_M32Jfx9pTm350LbzkdCdPP&camk=nUmJqO2E8rjUsDRVvlAvpw==&p=0&fvj=0&vjs=3&tk=1ii9bvhamkhjt8e0&jsa=9049&oc=1&sal=0
     return re.sub(r'.+\?.*jk=([^&]+).*', r'\1', url)
-
-
-def getJobUrlShort(url: str):
-    return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
 
 
 def acceptCookies():
@@ -222,13 +217,15 @@ def processRow(url, retry=True):
     md = postProcessMarkdown(md)
     # easyApply: there are 2 buttons
     easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-    print(f'{jobId}, {title}, {company}, {location}, ',
+    print(f'{jobId}, {title}, {company}, {location}, {url}',
           f'easy_apply={easyApply} - ', end='')
     if validate(title, url, company, md, DEBUG):
         if mysql.insert((jobId, title, company, location, url, md,
                         easyApply, WEB_PAGE)):
             print(green('INSERTED!'), end='')
             return True
+        else:
+            debug(exception=True)
     if retry:
         return processRow(url, False)
     return False

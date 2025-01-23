@@ -68,6 +68,9 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     # TODO: Version crew_output.json_dict hace que el agente
                     # piense demasiado, mas AI, más lento, en la Task hay que
                     # poner output_json=JobTaskOutputModel
+                    # TODO: TRY structured outputs with ollama or langchain?
+                    # https://ollama.com/blog/structured-outputs
+                    # https://python.langchain.com/docs/how_to/structured_output/
                     result: dict[str, str] = rawToJson(crew_output.raw)
                     if result is not None:
                         validateResult(result)
