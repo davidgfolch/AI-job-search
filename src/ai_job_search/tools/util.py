@@ -32,9 +32,8 @@ def hasLen(iter: Iterator):
     return any(True for _ in iter)
 
 
-def hasLenAnyTest(*texts: str):
-    return reduce(lambda a, b: a and b,
-                  [t and len(removeBlanks(t)) > 0 for t in texts])
+def hasLenAnyText(*texts: str) -> list[bool]:
+    return [t is not None and len(removeBlanks(t)) > 0 for t in texts]
 
 
 def removeBlanks(text):

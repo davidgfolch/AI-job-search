@@ -32,9 +32,11 @@ elif GEMINI_API_KEY:
                                      temperature=0,
                                      goggle_api_key=GEMINI_API_KEY)
 else:
-    LLM_CFG = LLM(model="ollama/llama3.2",
-                  base_url="http://localhost:11434",
-                  temperature=0)
+    LLM_CFG = LLM(
+        model="ollama/llama3.2",
+        # model="ollama/deepseek-r1:8b",  # no GPU inference
+        base_url="http://localhost:11434",
+        temperature=0)
 
 
 class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
@@ -44,8 +46,10 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     def processRows(self):
         mysqlUtil = MysqlUtil()
         try:
+            count, jobs = mysqlUtil.getJobsForAiEnrichment()
+            print(f'{count} jobs to be ai_enriched...')
             crew = AiJobSearch().crew()
-            for job in mysqlUtil.getJobsForAiEnrichment():
+            for idx, job in enumerate(jobs):
                 stopWatch.start()
                 try:
                     id = job[0]
@@ -88,6 +92,10 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     query, params = updateFieldsQuery([id], params)
                     mysqlUtil.executeAndCommit(query, params)
                 stopWatch.end()
+                print(yellow(f'Total processed jobs: {idx+1}/{count}'))
+                print()
+                print()
+
             print(yellow(''*60))
             print(yellow('ALL ROWS PROCESSES!'))
             print(yellow(''*60))

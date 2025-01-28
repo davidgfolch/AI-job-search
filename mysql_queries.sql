@@ -21,7 +21,19 @@ select * from jobs where jobs.web_page='Linkedin' order by created DESC;
 
 update jobs set web_page='Linkedin' where url like '%linkedin%';
 
-update jobs set ai_enriched =0, salary=NULL, required_technologies =null, optional_technologies =null,business_sector =null, required_languages=null; 
+
+select ai_enrich_error from jobs where ai_enrich_error is not null;
+update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
+
+update jobs set ai_enriched=False, salary=null where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 6 HOUR);
+
+SELECT url FROM jobs WHERE web_page='Indeed';
+update jobs set ai_enriched=0, ai_enrich_error=null WHERE web_page='Indeed';
+
+select title, created, ai_enriched, ai_enrich_error, salary, required_technologies, optional_technologies
+from jobs
+/*update jobs set ai_enriched =0, ai_enrich_error=NULL, salary=NULL, required_technologies =null, optional_technologies =null*/
+where DATE(created) > DATE_SUB(CURDATE(), INTERVAL 12 HOUR) and ai_enriched and salary is not null;
 
 select * from jobs where not (required_technologies like '%Java%' or required_technologies like '%Python%' or required_technologies like '%Scala%' or required_technologies like '%Clojure%');
 
@@ -34,7 +46,7 @@ select count(*) from jobs
 select * from jobs where not ignored and not applied and DATE(created) < DATE_SUB(CURDATE(), INTERVAL 1 DAY) and comments is null
 
 select * from jobs where required_technologies rlike '(java|python|scala|clojure)';
-L|
+
 select id, title, company, markdown, created from jobs 
 update jobs set ignored=true  
 where title rlike '(SAP|ABAP|HANA|COBOL|DevOps)' and not (ignored or applied or closed)
@@ -61,9 +73,10 @@ delete from jobs where id in (2426 , 2308)
 
 select title, company from jobs where id in (8505, 8518)
 
-select * from jobs where id = 18104
+select * from jobs where id = 30652
 
 select id, title, company from jobs where jobId = 4081331701
+select id, title, company, markdown from jobs where id = 32998;
 
 update jobs set salary=NULL where 
 salary LIKE '%Salary range not specified%' or
@@ -94,13 +107,22 @@ order by r.counter desc, r.title, r.company, r.max_created desc
 
 select title, company, applied, modified from jobs where applied order by modified desc;
 
-select ai_enrich_error from jobs where ai_enrich_error is not null;
-update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
-
-update jobs set ai_enriched=False, salary=null where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 6 HOUR);
-
 update jobs set salary=null where salary = 'Salario no disponible' or salary = 'Paquete retributivo muy competitivo acorde a la valía del candidato'
 or salary = 'Salario a convenir';
+
+/* View total # applied job offers and total # of them closed or discarded*/
+select
+	(select count(jobId) from jobs where applied and not discarded and not closed) as 'applied and not discarded or closed',
+	(select count(jobId) from jobs where applied and (discarded or closed)) as 'applied discarded or closed';
+/* View applied job offers by company, followed by applied and closed or discarded ones */
+select j1.id, j1.title, j1.company as applied, j2.company as c2, isnull(j2.company) as closedOrDiscarded
+from jobs j1 
+left join jobs j2 on j2.id=j1.id and not j2.closed and not j2.discarded
+where j1.applied
+order by closedOrDiscarded, j1.company;
+
+
+select distinct(company) from jobs where applied and not discarded and not closed;
 
 select id, title, company, markdown from jobs where company like '%Aaron%' and title like 'Java spark%' and applied;
 
@@ -117,3 +139,12 @@ where salary = 'From glassdoor: Sr. Software Engineer - $136K-$185K';
 select comments from jobs 
 where comments like '%From glassdoor: Sr. Software Engineer - $136K-$185K%';
 
+UPDATE jobs SET company='Aditelsa'
+WHERE id=31097
+
+select id,  title, salary, required_technologies, optional_technologies, 
+company, client, comments, flagged, `like`, ignored, seen, applied, discarded, closed, 
+interview_rh, interview, interview_tech, interview_technical_test, interview_technical_test_done, 
+ai_enriched, easy_apply
+    from jobs where id in (30755, 31097)
+    order by created asc

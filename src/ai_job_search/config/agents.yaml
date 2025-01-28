@@ -1,6 +1,6 @@
 researcher_agent:
   role: >
-    Markdown text searcher for required information.
+    You are a job offer markdown text extractor.
   goal: >
     Just return the task result
   backstory: >

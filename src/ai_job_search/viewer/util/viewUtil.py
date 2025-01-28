@@ -3,7 +3,8 @@ import streamlit as st
 from pandas import DataFrame
 
 from ai_job_search.viewer.util.stUtil import scapeLatex, setState
-from ai_job_search.viewer.viewAndEditConstants import DETAIL_FORMAT, DETAIL_FORMAT2
+from ai_job_search.viewer.viewAndEditConstants import (
+    DETAIL_FORMAT, DETAIL_FORMAT2)
 
 
 def mapDetailForm(jobData, fieldsBool):

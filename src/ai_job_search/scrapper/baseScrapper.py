@@ -7,7 +7,7 @@ import traceback
 import markdownify
 
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
-from ai_job_search.tools.util import hasLenAnyTest
+from ai_job_search.tools.util import hasLenAnyText
 
 
 def printScrapperTitle(scrapper: str):
@@ -46,12 +46,13 @@ def removeInvalidScapes(md: str) -> str:
 
 def validate(title: str, url: str, company: str, markdown: str,
              debugFlag: bool):
-    if not hasLenAnyTest(title, url, company, markdown):
-        debug(debugFlag, "validate -> " +
-              red('ERROR: One or more required fields are empty, ',
-                  f'NOT inserting into DB: title={title}, company={company}, ',
-                  f'markdown={markdown}...') +
-              yellow(f' -> Url: {url}'))
+    fields = ['title', 'url', 'company', 'markdown']
+    validations = hasLenAnyText(title, url, company, markdown)
+    if 0 in validations:
+        for i, v in enumerate(validations):
+            debug(debugFlag, "validate -> " +
+                  red(f'ERROR: empty required field {fields[i]}, ') +
+                  yellow(f' -> Url: {url} '))
         return False
     return True
 

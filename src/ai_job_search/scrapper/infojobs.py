@@ -30,7 +30,7 @@ from .selectors.infojobsSelectors import (
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 
 # Set to True to stop selenium driver navigating if any error occurs
-DEBUG = True
+DEBUG = False
 
 WEB_PAGE = 'Infojobs'
 JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults

@@ -12,6 +12,11 @@ QRY_INSERT = """
 INSERT INTO jobs (
     jobId,title,company,location,url,markdown,easy_apply,web_page)
           values (%s,%s,%s,%s,%s,%s,%s,%s)"""
+QRY_COUNT_JOBS_FOR_ENRICHMENT = """
+SELECT count(id)
+FROM jobs
+WHERE not ai_enriched and not (ignored or discarded or closed)
+ORDER BY created desc"""
 QRY_SELECT_JOBS_FOR_ENRICHMENT = """
 SELECT id, title, markdown, company
 FROM jobs
@@ -22,8 +27,6 @@ UPDATE jobs SET
     salary=%s,
     required_technologies=%s,
     optional_technologies=%s,
-    business_sector=%s,
-    required_languages=%s,
     ai_enriched=1
 WHERE id=%s"""
 QRY_SELECT_JOBS_VIEWER = """
@@ -78,8 +81,10 @@ class MysqlUtil:
     def getJobsForAiEnrichment(self):
         try:
             with self.cursor() as c:
+                c.execute(QRY_COUNT_JOBS_FOR_ENRICHMENT)
+                count = c.fetchone()[0]
                 c.execute(QRY_SELECT_JOBS_FOR_ENRICHMENT)
-                return c.fetchall()
+                return count, c.fetchall()
         except mysql.connector.Error as ex:
             error(ex)
 
@@ -90,11 +95,9 @@ class MysqlUtil:
                  # TODO: Change to required_skills, optional_skills
                  paramsDict.get('required_technologies', None),
                  paramsDict.get('optional_technologies', None),
-                 paramsDict.get('business_sector', None),
-                 paramsDict.get('required_languages', None),
                  id)),
                 # TODO: get mysql DDL metadata varchar sizes
-                (200, 1000, 1000, 1000, 1000, None))
+                (200, 1000, 1000, None))
             with self.cursor() as c:
                 c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
                 self.conn.commit()
@@ -169,7 +172,7 @@ def updateFieldsQuery(ids: list, fieldsValues: dict):
     for field in fieldsValues.keys():
         query += f'{field}=%({field})s,'
     query = query[:len(query)-1] + '\n'
-    query += 'WHERE ' + idsFilter(ids)
+    query += 'WHERE id ' + inFilter(ids)
     return query, fieldsValues
 
 
@@ -177,7 +180,7 @@ def deleteJobsQuery(ids: list[str]):
     if len(ids) < 1:
         return
     query = 'DELETE FROM jobs '
-    query += 'WHERE ' + idsFilter(ids)
+    query += 'WHERE id ' + inFilter(ids)
     return query
 
 
@@ -208,8 +211,6 @@ def maxLen(params: tuple[Any], maxLens: tuple[int]):
         map(lambda p: mapParam(p), zip(params, maxLens, strict=True)))
 
 
-def idsFilter(ids: list):
-    idsFilter = []
-    for id in ids:
-        idsFilter.append(f'id={int(id)}')
-    return ' or '.join(idsFilter)
+def inFilter(ids: list[int]):
+    idsFilter = ','.join([str(id) for id in ids])
+    return f' in ({idsFilter})'

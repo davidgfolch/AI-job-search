@@ -14,10 +14,12 @@ from ai_job_search.scrapper.selectors.glassdoorSelectors import (
     CSS_SEL_COMPANY2,
     CSS_SEL_COOKIES_ACCEPT,
     CSS_SEL_DIALOG_CLOSE,
+    CSS_SEL_INPUT_PASS,
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
     CSS_SEL_JOB_LI,
     CSS_SEL_NEXT_PAGE_BUTTON,
+    CSS_SEL_PASSWORD_SUBMIT,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
     CSS_SEL_COMPANY,
     CSS_SEL_LOCATION,
@@ -46,10 +48,7 @@ def run():
     try:
         selenium = SeleniumUtil()
         mysql = MysqlUtil()
-        login(selenium)
-        print(yellow('Waiting for Glassdoor to redirect after login...'))
-        selenium.waitUntilPageUrlContains(
-            'https://www.glassdoor.es/Empleo/index.htm', 60)
+        login()
         for search in JOBS_SEARCH.split('|~|'):
             url = JOBS_SEARCH_BASE_URL.format(**{'search': search})
             print(yellow('Search list URL ', url))
@@ -59,21 +58,22 @@ def run():
         selenium.close()
 
 
-def login(selenium: SeleniumUtil):
+def login():
     try:
         selenium.loadPage('https://www.glassdoor.es/index.htm')
         selenium.sendKeys('#inlineUserEmail', USER_EMAIL)
         selenium.waitAndClick('.emailButton > button[type=submit]')
         selenium.waitUntilPageIsLoaded()
         time.sleep(1)
-        CSS_SEL_PASSWORD_SUBMIT = 'form button[type=submit]'
         # 'login password slider wait'
         selenium.waitUntilClickable(CSS_SEL_PASSWORD_SUBMIT)
         selenium.waitUntil_presenceLocatedElement(CSS_SEL_PASSWORD_SUBMIT)
-        CSS_SEL_INPUT_PASS = 'form input#inlineUserPassword'
         selenium.waitUntil_presenceLocatedElement(CSS_SEL_INPUT_PASS)
         selenium.sendKeys(CSS_SEL_INPUT_PASS, USER_PWD)
         selenium.waitAndClick(CSS_SEL_PASSWORD_SUBMIT)
+        print(yellow('Waiting for Glassdoor to redirect after login...'))
+        selenium.waitUntilPageUrlContains(
+            'https://www.glassdoor.es/Empleo/index.htm', 60)
     except Exception as ex:
         debug(red(traceback.format_exc()))
         raise ex
@@ -149,17 +149,16 @@ def searchJobs(url: str, retry=0):
                 if currentItem < totalResults:
                     clickNextPage()
             summarize(keywords, totalResults, currentItem)
-    except NoSuchElementException:
+    except Exception:
         debug(red(traceback.format_exc()))
-        if retry < 10:
+        if retry < 3:
             # Cloudflare filter retrying with new selenium driver
             debug(yellow(f"Retry {retry} -> Retrying the above error",
                          "reinitializing selenium"))
             selenium.close()
             selenium = SeleniumUtil()
+            login()
             searchJobs(url, retry+1)
-    except Exception:
-        debug(red(traceback.format_exc()))
 
 
 def loadAndProcessRow(idx, retry=True):

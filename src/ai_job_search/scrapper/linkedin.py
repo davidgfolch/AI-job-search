@@ -43,10 +43,10 @@ selenium = None
 mysql = None
 
 
-def run(seleniumUtil: SeleniumUtil):
+def run():
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
-    selenium = seleniumUtil
+    selenium = SeleniumUtil()
     printScrapperTitle('LinkedIn')
     try:
         mysql = MysqlUtil()
@@ -60,6 +60,7 @@ def run(seleniumUtil: SeleniumUtil):
             searchJobs(keywords.strip())
     finally:
         mysql.close()
+        selenium.close()
 
 
 def login():

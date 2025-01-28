@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from ai_job_search.viewer.clean import (
-    ignoreInternships, mergeDuplicateds)
+    deleteOld, ignoreInternships, mergeDuplicateds)
 from ai_job_search.viewer.util.cleanUtil import (getAllIds, gotoPage)
 from ai_job_search.viewer.util.stUtil import (PAGE_VIEW_IDX, getState)
 from tools.mysqlUtil import (MysqlUtil)
@@ -17,25 +17,26 @@ QUERIES = [
      'dfCols': ignoreInternships.COLUMNS,
      'sql': ignoreInternships.SELECT,
      'idsIndex': ignoreInternships.IDS_IDX,
-     'actionButtonFnc': ignoreInternships.actionButton}
-    #  ,
-    # {'info': deleteOld.INFO,
-    #  'dfCols': deleteOld.COLUMNS,
-    #  'sql': deleteOld.SELECT,
-    #  'idsIndex': deleteOld.IDS_IDX,
-    #  'actionButtonFnc': deleteOld.actionButton}
+     'actionButtonFnc': ignoreInternships.actionButton},
+    {'info': deleteOld.INFO,
+     'dfCols': deleteOld.COLUMNS,
+     'sql': deleteOld.SELECT,
+     'idsIndex': deleteOld.IDS_IDX,
+     'actionButtonFnc': deleteOld.actionButton}
 ]
 
 
 def clean():
     mysql = MysqlUtil()
     try:
-        processIdx = st.selectbox("Select what to clean",
+        c1, c2 = st.columns([5, 5])
+        processIdx = c1.selectbox("Select what to clean",
                                   range(0, len(QUERIES)),
                                   format_func=lambda i: QUERIES[i]['info'],
+                                  label_visibility='collapsed',
                                   key='selectedCleanProcess')
         query = QUERIES[processIdx]['sql']
-        with st.expander('Sql query details'):
+        with c2.expander('Sql query details'):
             fmtQuery = QUERIES[processIdx]['sql'].strip()
             if st.toggle('Edit query'):
                 query = st.text_area('Query', query, key='cleanSelectQuery',

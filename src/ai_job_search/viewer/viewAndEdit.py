@@ -13,7 +13,8 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS,
     DEFAULT_ORDER,
     DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
-    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_DAYS_OLD, FF_KEY_ORDER, FF_KEY_SALARY,
+    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_DAYS_OLD, FF_KEY_MAXIMIZE_LIST,
+    FF_KEY_ORDER, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL,
     FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS,
     SEARCH_INPUT_HELP, STYLE_JOBS_TABLE, VISIBLE_COLUMNS)
@@ -72,7 +73,7 @@ def table(df: DataFrame, fieldsSorted, visibleColumns):
         # column_order=fieldSorted,
         on_change=onTableChange,
         column_config=getTableColsConfig(fieldsSorted, visibleColumns),
-        height=HEIGHT,
+        height=getState(FF_KEY_MAXIMIZE_LIST, HEIGHT),
         key='jobsListTable',
     )
     selectedRows = df[editedDf.Sel]
@@ -261,7 +262,8 @@ def view():
         FF_KEY_DAYS_OLD: DEFAULT_DAYS_OLD,
         getBoolKeyName(FF_KEY_WHERE): False,
         FF_KEY_WHERE: DEFAULT_SQL_FILTER,
-        FF_KEY_SINGLE_SELECT: True
+        FF_KEY_SINGLE_SELECT: True,
+        FF_KEY_MAXIMIZE_LIST: HEIGHT
     })
     if getStateBool(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
         res = removeFiltersInNotFilters()
@@ -293,25 +295,29 @@ def view():
                 jobData = getValuesAsDict(selected, FIELDS_SORTED)
                 (boolFieldsValues, comments, salary,
                  company, client) = mapDetailForm(jobData, FIELDS_BOOL)
-            c1, c2, c3, c4, c5 = st.columns([13, 3, 3, 5, 3],
-                                            vertical_alignment='center')
-            c1.write(''.join([
+            c = st.columns([11, 3, 3, 3, 1, 5, 5],
+                           vertical_alignment='center')
+            c[0].write(''.join([
                 f'{filterResCnt}/{totalResults} filtered/total results,',
                 f' {totalSelected} selected']))
-            c2.button('Ignore',
-                      help='Mark as ignored and Save',
-                      kwargs={'boolField': 'ignored'},
-                      on_click=markAs)
-            c3.button('Seen',
-                      help='Mark as Seen and Save',
-                      kwargs={'boolField': 'seen'},
-                      on_click=markAs)
-            c4.toggle('Single select', key=FF_KEY_SINGLE_SELECT)
-            c5.button('Delete', 'deleteButton',
-                      help='Delete selected job(s)',
-                      disabled=totalSelected < 1,
-                      on_click=deleteSelectedRows,
-                      type="primary")
+            c[1].button('Ignore',
+                        help='Mark as ignored and Save',
+                        kwargs={'boolField': 'ignored'},
+                        on_click=markAs)
+            c[2].button('Seen',
+                        help='Mark as Seen and Save',
+                        kwargs={'boolField': 'seen'},
+                        on_click=markAs)
+            c[3].button('Delete', 'deleteButton',
+                        help='Delete selected job(s)',
+                        disabled=totalSelected < 1,
+                        on_click=deleteSelectedRows,
+                        type="primary")
+            c[4].write('|')
+            c[5].toggle('Single select', key=FF_KEY_SINGLE_SELECT)
+            c[6].number_input('Heigh', key=FF_KEY_MAXIMIZE_LIST,
+                              value=HEIGHT, step=100,
+                              label_visibility='collapsed', )
             if totalSelected == 1:
                 detailForm(boolFieldsValues, comments, salary, company, client)
         with col2:

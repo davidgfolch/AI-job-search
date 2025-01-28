@@ -20,7 +20,4 @@ def end():
     timeElapsed = end-startTime
     times.append(timeElapsed)
     print(f'Time elapsed: {timeElapsed} secs.')
-    print(yellow(f'Total processed jobs: {len(times)}'))
     print(yellow(f'Media time elapsed: {statistics.median(times)}'))
-    print()
-    print()

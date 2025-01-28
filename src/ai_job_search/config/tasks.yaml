@@ -1,15 +1,13 @@
 researcher:
   description: >
-    From the job offer description in the Markdown bellow extract the following information:
-    - Salary or salary range amount(s) if specified.
+    Extract the information fields from the job offer input in markdown format:
+    - Salary or salary range amount: if specified.
     - Required technologies: languages, frameworks, libraries, etc. separated by commas.
     - Optional technologies: languages, frameworks, libraries, etc. separated by commas.
-    - Business sector: the business sector of the final client of the job offer if specified.
-    - Required languages: the required languages to be spoken in the job offer if specified, including the language the job offer is written with.
     
     For each field, if no information is found in Markdown, just return an empty string.
     
-    Markdown:
+    Job offer:
 
     {markdown}
   expected_output: >
@@ -18,9 +16,7 @@ researcher:
     {{
       "salary": "",
       "required_technologies": "",
-      "optional_technologies": "",
-      "business_sector": "",
-      "required_languages": ""
+      "optional_technologies": ""
     }}
   agent: researcher_agent
   verbose: true

@@ -13,6 +13,7 @@ FF_KEY_DAYS_OLD = 'daysOldFilter'
 FF_KEY_WHERE = 'whereFilter'
 FF_KEY_ORDER = 'selectOrder'
 FF_KEY_SINGLE_SELECT = 'singleSelect'
+FF_KEY_MAXIMIZE_LIST = 'maximizeList'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """
 salary,title,company,created"""
@@ -20,10 +21,10 @@ DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
-web_page,company,client,markdown,business_sector,required_languages,location,url,created,
+web_page,company,client,markdown,location,url,created,
 comments,{DB_FIELDS_BOOL}"""
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-company,client,business_sector,required_languages,comments"""
+company,client,comments"""
 # FILTERS
 RLIKE = getEnv('WHERE_FILTER_REGEX')
 DEFAULT_SQL_FILTER = f"""

@@ -4,6 +4,8 @@ from ai_job_search.viewer.util.stUtil import (
     PAGE_STATE_KEY, PAGES, getMessageInfo, printSessionState)
 from ai_job_search.viewer.viewAndEdit import view
 
+DEBUG = False
+
 st.set_page_config(layout='wide', page_title="ai job search")
 PAGES_MAP = {
     0: view,
@@ -28,5 +30,5 @@ if selected is not None:
 else:
     view()
 
-
-printSessionState()
+if DEBUG:
+    printSessionState()

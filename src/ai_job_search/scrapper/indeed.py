@@ -180,7 +180,7 @@ def loadAndProcessRow(idx, retry=True):
             print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
                   end='')
             return True
-        loadJobDetail(jobExists, jobLinkElm)
+        loadJobDetail(jobLinkElm)
         time.sleep(3)
         ignore = False
     except IndexError as ex:
