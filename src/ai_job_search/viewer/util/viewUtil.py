@@ -3,8 +3,7 @@ import streamlit as st
 from pandas import DataFrame
 
 from ai_job_search.viewer.util.stUtil import scapeLatex, setState
-from ai_job_search.viewer.viewAndEditConstants import (
-    DETAIL_FORMAT, DETAIL_FORMAT2)
+from ai_job_search.viewer.viewAndEditConstants import DETAIL_FORMAT
 
 
 def mapDetailForm(jobData, fieldsBool):
@@ -38,10 +37,20 @@ def getValuesAsDict(series: DataFrame, fields):
     return res
 
 
-def formatDetail(jobData):
+def formatDateTime(data: dict):
+    for f in ['created', 'modified']:
+        data[f'{f}Time'] = data[f].time()
+        data[f] = data[f].date()
+    if data['created'] == data['modified']:
+        data['modified'] = None
+        if data['createdTime'] == data['modifiedTime']:
+            data['modifiedTime'] = None
+    data['modified'] = ' - '.join([str(x) for x in [data['modified'], data['modifiedTime']] if x is not None])
+
+
+def formatDetail(jobData: dict):
     data = scapeLatex(jobData)
-    data['createdTime'] = data['created'].time()
-    data['created'] = data['created'].date()
+    formatDateTime(jobData)
     data = {k: (data[k] if data[k] else None)
             for k in data.keys()}
     data = scapeTilde(data)
@@ -54,9 +63,9 @@ def formatDetail(jobData):
         str += ''.join(["- Skills\n", reqSkills, opSkills])
     st.markdown(str)
     if val := data.get('comments'):
-        with st.expander('Comments'):
+        with st.expander('Comments', expanded=True):
             st.markdown(val)
-    st.markdown(DETAIL_FORMAT2.format(**data))
+    st.markdown(data['markdown'])
 
 
 def fmtDetailOpField(data: dict, key: str, label: str = None, level=0) -> str:

@@ -21,8 +21,7 @@ selected = c1.segmented_control(
     default=0,
     key=PAGE_STATE_KEY
 )
-messageInfo = getMessageInfo()
-if messageInfo:
+if messageInfo := getMessageInfo():
     c2.info(messageInfo)
 if selected is not None:
     selected = PAGES_MAP[selected]

@@ -75,7 +75,10 @@ def setMessageInfo(msg: str):
 
 
 def getMessageInfo():
-    return getState('messageInfo')
+    msg = getState('messageInfo')
+    if msg:
+        st.session_state.pop('messageInfo')
+    return msg
 
 
 # Fields processing

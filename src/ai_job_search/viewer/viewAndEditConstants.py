@@ -21,7 +21,7 @@ DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
-web_page,company,client,markdown,location,url,created,
+web_page,company,client,markdown,location,url,created,modified,
 comments,{DB_FIELDS_BOOL}"""
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
 company,client,comments"""
@@ -40,12 +40,8 @@ DETAIL_FORMAT = """
 
 - Source: `{web_page}`
 - Company: `{company}`
-"""
-DETAIL_FORMAT2 = """
-
-`{created}` - `{createdTime}`
-
-{markdown}
+- Created: `{created}` - `{createdTime}`
+ Modified: `{modified}`
 """
 
 LIST_VISIBLE_COLUMNS = stripFields(VISIBLE_COLUMNS)

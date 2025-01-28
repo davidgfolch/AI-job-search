@@ -212,7 +212,7 @@ def markAs(boolField: str):
     mysql = MysqlUtil()
     result = mysql.executeAndCommit(query, params)
     mysql.close()
-    setMessageInfo(f'{result} row(s) ignored.')
+    setMessageInfo(f'{result} row(s) marked as **{boolField.upper()}**.')
 
 
 def detailForm(boolFieldsValues, comments, salary, company, client):
@@ -247,7 +247,6 @@ def deleteSelectedRows():
 
 
 def view():
-    # mysql = sqlConn()
     mysql = MysqlUtil()
     initStates({
         FF_KEY_SEARCH: '',
