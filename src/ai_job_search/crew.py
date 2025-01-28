@@ -9,6 +9,7 @@ from crewai.crews.crew_output import CrewOutput
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 import litellm
+import openai
 from ai_job_search.tools import stopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
@@ -33,7 +34,8 @@ elif GEMINI_API_KEY:
                                      goggle_api_key=GEMINI_API_KEY)
 else:
     LLM_CFG = LLM(
-        model="ollama/llama3.2",
+        # model="ollama/llama3.2",
+        model="ollama/nuextract",
         # model="ollama/deepseek-r1:8b",  # no GPU inference
         base_url="http://localhost:11434",
         temperature=0)
@@ -79,10 +81,8 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     if result is not None:
                         validateResult(result)
                         mysqlUtil.updateFromAI(id, company, result)
-                except litellm.RateLimitError:
-                    print(red(traceback.format_exc()))
-                    print(yellow("RATE LIMIT ERROR!"))
-                    exit(-1)
+                except litellm.RateLimitError | openai.APIStatusError as e:
+                    raise e
                 except Exception as ex:
                     print(red(traceback.format_exc()))
                     print(yellow("Skipping! (ai_enrich_error set in DB)"))
