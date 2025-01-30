@@ -10,20 +10,20 @@ from ai_job_search.viewer.viewAndEditConstants import (
 
 
 INFO = "Show all repeated job offers by `title,company`"
-COLUMNS = stripFields('Counter,Ids,Title,Company')
+COLUMNS = stripFields('Counter,Ids,Title,Company,Web Page')
 IDS_IDX = 1
 SELECT = """
-select r.counter, r.ids, r.title, r.company
+select r.counter, r.ids, r.title, r.company, r.web_page
 from (select count(*) as counter,
             GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',') as ids,
             max(created) as max_created,  -- to delete all, but last
-            title, company
+            title, company, web_page
         from jobs
         -- where company != 'Joppy'
-        group by title, company
+        group by title, company, web_page
     ) as r
 where r.counter>1
-order by r.counter desc, r.title, r.company, r.max_created desc"""
+order by r.title, r.company, r.web_page, r.max_created desc"""
 SELECT_FOR_MERGE = """select {cols}
     from jobs where id in ({ids})
     order by created asc"""

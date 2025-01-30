@@ -88,13 +88,15 @@ class MysqlUtil:
         except mysql.connector.Error as ex:
             error(ex)
 
-    def updateFromAI(self, id, company, paramsDict: dict, deep=0):
+    # FIXME: CHANGE required_technologies & optional_technoloties with required_skills & opt_skills
+    def updateFromAI(self, id, company, paramsDict: dict,
+                     deprecatedName='technologies', deep=0):
         try:
             params = maxLen(emptyToNone(
                 (paramsDict.get('salary', None),
                  # TODO: Change to required_skills, optional_skills
-                 paramsDict.get('required_technologies', None),
-                 paramsDict.get('optional_technologies', None),
+                 paramsDict.get(f'required_{deprecatedName}', None),
+                 paramsDict.get(f'optional_{deprecatedName}', None),
                  id)),
                 # TODO: get mysql DDL metadata varchar sizes
                 (200, 1000, 1000, None))
@@ -117,7 +119,7 @@ class MysqlUtil:
                 print(red(f'Found incorrect value for column {failColumn}, ',
                           'retry with column value None'))
                 paramsDict[failColumn] = None
-                self.updateFromAI(paramsDict, deep+1)
+                self.updateFromAI(id, company, paramsDict, deprecatedName, deep+1)
             else:
                 raise ex
 

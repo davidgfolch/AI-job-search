@@ -119,11 +119,11 @@ def getSelectedRowsIds(key):
         selectedRows.iloc[idx]['id'] for idx in range(len(selectedRows)))
 
 
-def scapeLatex(dictionary: dict):
+def scapeLatex(dictionary: dict, keys: list[str]):
     """Scape Latex symbols for Streamlit markdown"""
     for key in dictionary.keys():
-        if (key == 'markdown'):
-            dictionary[key] = re.sub(r'[$]', '\\$', dictionary[key])
+        if key in keys:
+            dictionary[key] = re.sub('\$', '\$', dictionary[key])
     return dictionary
 
 

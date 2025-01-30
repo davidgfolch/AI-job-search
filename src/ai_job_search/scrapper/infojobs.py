@@ -237,11 +237,14 @@ def loadAndProcessRow(idx, retry=True):
         print(red(f'ERROR: {ex}'))
         debug(red(traceback.format_exc()))
     if processed:
-        if not processRow(url):
-            print(red('Validation failed'))
-            return loadAndProcessRow(idx, False)
-        selenium.back()
-        return True
+        try:
+            if not processRow(url):
+                print(red('Validation failed'))
+                return loadAndProcessRow(idx, False)
+            selenium.back()
+            return True
+        except Exception:
+            debug(red(traceback.format_exc()))
     if retry:
         print(yellow('waiting 5 secs... & retrying... '), end='')
         time.sleep(5)

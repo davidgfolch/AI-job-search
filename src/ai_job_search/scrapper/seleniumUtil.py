@@ -2,6 +2,7 @@ import random
 import time
 from typing import List
 from selenium import webdriver
+# import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,6 +11,28 @@ from selenium.common.exceptions import TimeoutException
 
 from ai_job_search.tools.terminalColor import yellow
 
+# Rotating User-Agents to avoid Cloudflare security filter
+# TODO: Keep list updated, last update 30/ene/2025
+DESKTOP_USER_AGENTS = list(
+    filter(lambda line: len(line) > 0 and not line.startswith('#'), """
+# Chrome
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+# Mozilla Firefox
+Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0
+Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0
+# Microsoft Edge
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0
+# Safari
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15
+# Opera
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/120.0.0.0
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/120.0.0.0
+""".split('\n')))
 
 driver = None
 action = None
@@ -20,9 +43,10 @@ class SeleniumUtil:
     def __init__(self):
         global driver, action
         print('selenium driver init')
-        options = webdriver.ChromeOptions()
-        options.add_argument("--start-maximized")
-        options.add_argument("start-maximized")
+        print(DESKTOP_USER_AGENTS)
+        opts = webdriver.ChromeOptions()
+        opts.add_argument("--start-maximized")
+        opts.add_argument("start-maximized")
         # TODO: Couldn't avoid Security filters for Infojobs & Glassdoor
         # options.add_experimental_option("excludeSwitches", ["enable-automation"])
         # options.add_experimental_option('useAutomationExtension', False)
@@ -32,15 +56,16 @@ class SeleniumUtil:
         # print(driver.execute_script("return navigator.userAgent;"))
 
         # https://www.zenrows.com/blog/selenium-avoid-bot-detection#disable-automation-indicator-webdriver-flags
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option(
-            "excludeSwitches", ["enable-automation"])
-        options.add_experimental_option("useAutomationExtension", False)
-        driver = webdriver.Chrome(options=options)
+        opts.add_argument("--disable-blink-features=AutomationControlled")
+        opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+        opts.add_experimental_option("useAutomationExtension", False)
+        userAgent = random.choice(DESKTOP_USER_AGENTS)
+        print(yellow(f'Using user-agent={userAgent}'))
+        opts.add_argument(f"user-agent={userAgent}")
+        driver = webdriver.Chrome(options=opts)
         driver.execute_script(
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         action = webdriver.ActionChains(driver)
-
         print(f'selenium driver init driver={driver}')
 
     def loadPage(self, url: str):
@@ -53,7 +78,9 @@ class SeleniumUtil:
         WebDriverWait(driver, timeout).until(
             lambda d: str(d.current_url).find(url) >= 0)
 
-    def getElm(self, cssSel: str):
+    def getElm(self, cssSel: str | WebElement):
+        if isinstance(cssSel, WebElement):
+            return cssSel
         return driver.find_element(By.CSS_SELECTOR, cssSel)
 
     def getElmOf(self, elm: WebElement, cssSel: str):
@@ -64,7 +91,8 @@ class SeleniumUtil:
             return driverOverride.find_elements(By.CSS_SELECTOR, cssSel)
         return driver.find_elements(By.CSS_SELECTOR, cssSel)
 
-    def sendKeys(self, cssSel: str, value: str, keyByKeyTime=None, clear=True):
+    def sendKeys(self, cssSel: str, value: str, keyByKeyTime=None | tuple[int],
+                 clear=True):
         elm = self.getElm(cssSel)
         self.moveToElement(elm)
         if clear:
@@ -92,7 +120,7 @@ class SeleniumUtil:
         driver.execute_script("arguments[0].scrollIntoView();", elm)
         self.moveToElement(elm)
 
-    def waitUntilClickable(self, cssSel: str, timeout: int = 10):
+    def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
         method = EC.element_to_be_clickable
         WebDriverWait(driver, timeout).until(method, self.getElm(cssSel))
 
@@ -104,7 +132,7 @@ class SeleniumUtil:
         method = EC.title_is
         WebDriverWait(driver, timeout).until(method, title)
 
-    def waitAndClick(self, cssSel: str, timeout: int = 10,
+    def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10,
                      scrollIntoView: bool = False):
         """ scrollIntoView, waits to be clickable & click"""
         if scrollIntoView:

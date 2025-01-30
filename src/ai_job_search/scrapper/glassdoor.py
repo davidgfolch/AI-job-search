@@ -61,15 +61,19 @@ def run():
 def login():
     try:
         selenium.loadPage('https://www.glassdoor.es/index.htm')
+        time.sleep(10)
         selenium.sendKeys('#inlineUserEmail', USER_EMAIL)
+        sleep(2, 5)
         selenium.waitAndClick('.emailButton > button[type=submit]')
+        sleep(2, 5)
         selenium.waitUntilPageIsLoaded()
-        time.sleep(1)
+        sleep(1, 2)
         # 'login password slider wait'
         selenium.waitUntilClickable(CSS_SEL_PASSWORD_SUBMIT)
         selenium.waitUntil_presenceLocatedElement(CSS_SEL_PASSWORD_SUBMIT)
         selenium.waitUntil_presenceLocatedElement(CSS_SEL_INPUT_PASS)
         selenium.sendKeys(CSS_SEL_INPUT_PASS, USER_PWD)
+        sleep(1, 2)
         selenium.waitAndClick(CSS_SEL_PASSWORD_SUBMIT)
         print(yellow('Waiting for Glassdoor to redirect after login...'))
         selenium.waitUntilPageUrlContains(
@@ -100,6 +104,7 @@ def clickNextPage(retry=True):
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
     try:
+        sleep(1, 2)
         selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
         selenium.waitUntilPageIsLoaded()
     except NoSuchElementException as ex:
@@ -107,7 +112,7 @@ def clickNextPage(retry=True):
             # FIXME: implement as decorator:
             # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
             debug("retry clickNextPage")
-            sleep(0.5, 1.5)
+            sleep(1, 2)
             return clickNextPage(False)
         raise ex
 
@@ -127,13 +132,14 @@ def searchJobs(url: str, retry=0):
         selenium.waitUntilPageIsLoaded()
         totalResults = getTotalResultsFromHeader(keywords)
         if totalResults > 0:
+            sleep(1, 2)
             selenium.waitAndClick_noError(
                 CSS_SEL_DIALOG_CLOSE, 'Could not close dialog', False)
-            sleep(0.5, 1.5)
+            sleep(1, 2)
             selenium.waitAndClick_noError(
                 CSS_SEL_COOKIES_ACCEPT,
                 'Could not click accept cookies', False)
-            sleep(0.5, 1.5)
+            sleep(1, 2)
             totalPages = math.ceil(totalResults / JOBS_X_PAGE)
             page = 0
             currentItem = 0
@@ -174,7 +180,7 @@ def loadAndProcessRow(idx, retry=True):
         debug(red(traceback.format_exc()))
         if retry:
             sleep(5, 6)
-            loadAndProcessRow(idx, liElm, False)
+            loadAndProcessRow(idx, False)
             return
         else:
             raise ex
@@ -195,7 +201,7 @@ def scrollJobsList(idx, liElm):
         return
     if idx < JOBS_X_PAGE-3:  # scroll to job link
         # in last page could not exist
-        sleep(0.5, 1.5)
+        sleep(1, 2)
         if not selenium.scrollIntoView_noError(liElm):
             print(yellow(' waiting 5 secs... & retrying... '), end='')
             time.sleep(5)
@@ -212,7 +218,7 @@ def loadJobDetail(liElm):
     print(yellow('loading... '), end='')
     href = selenium.getAttrOf(liElm, LI_JOB_TITLE_CSS_SUFFIX, 'href')
     selenium.loadPage(href)
-    sleep(0.5, 1.5)
+    time.sleep(10)
 
 
 def processRow(retry=3):

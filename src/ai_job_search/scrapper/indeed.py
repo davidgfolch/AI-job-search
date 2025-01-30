@@ -8,7 +8,7 @@ from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, join, printPage, printScrapperTitle, validate)
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars
-from .seleniumUtil import SeleniumUtil
+from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from .selectors.indeedSelectors import (
     CSS_SEL_JOB_DESCRIPTION,
@@ -79,13 +79,16 @@ def summarize(keywords, totalResults, currentItem):
 
 
 def scrollJobsList(idx):
-    if idx < JOBS_X_PAGE-3:  # scroll to job link
-        i = 0
-        while i <= idx:
+    # if idx < JOBS_X_PAGE-3:  # scroll to job link
+    #     i = idx
+    #     while i <= idx:
             # in last page could not exist
-            li = selenium.getElms(CSS_SEL_JOB_LI)[i]
-            selenium.scrollIntoView_noError(li)
-            i += 1
+    debug("before scrollJobsList")
+    li = selenium.getElms(CSS_SEL_JOB_LI)[idx]
+    selenium.scrollIntoView_noError(li)
+    sleep(0.5, 1)
+    # i += 1
+    debug("after scrollJobsList")
 
 
 def clickNextPage(retry=True):
@@ -93,6 +96,7 @@ def clickNextPage(retry=True):
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
     try:
+        sleep(1, 2)
         selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
         return True
     except NoSuchElementException:
@@ -108,7 +112,9 @@ def loadJobDetail(jobLinkElm: WebElement):
     # first job in page loads automatically
     # if job exists in DB no need to load details (rate limit)
     print(yellow('loading...'), end='')
-    jobLinkElm.click()
+    sleep(2, 4)
+    selenium.waitAndClick(jobLinkElm)
+    sleep(9, 11)
 
 
 def jobExistsInDB(url):
@@ -131,8 +137,8 @@ def searchJobs(index: int, keywords: str):
     try:
         url = getUrl(keywords)
         selenium.loadPage(url)
+        time.sleep(10)
         selenium.waitUntilPageIsLoaded()
-        time.sleep(2)
         # NOTE: totalResults could be like +400, +50
         # totalResults = getTotalResultsFromHeader(keywords)
         # totalPages = math.ceil(totalResults / JOBS_X_PAGE)
@@ -153,7 +159,7 @@ def searchJobs(index: int, keywords: str):
                 idx += 1
             if clickNextPage():
                 selenium.waitUntilPageIsLoaded()
-                time.sleep(5)
+                sleep(5, 6)
             else:
                 break  # exit while
         summarize(keywords, totalResults, currentItem)
@@ -174,6 +180,7 @@ def loadAndProcessRow(idx, retry=True):
         jobLinkElm: WebElement = getJobLinkElement(idx)
         url = jobLinkElm.get_attribute('href')
         jobId, jobExists = jobExistsInDB(url)
+        debug("after jobExistsInDB")
         # clean url just with jobId param
         url = f'https://es.indeed.com/viewjob?jk={jobId}'
         if jobExists:
@@ -181,11 +188,10 @@ def loadAndProcessRow(idx, retry=True):
                   end='')
             return True
         loadJobDetail(jobLinkElm)
-        time.sleep(3)
         ignore = False
     except IndexError as ex:
         print(yellow("WARNING: could not get all items per page, that's ",
-                     f"expected because not always has {JOBS_X_PAGE}: {ex}"))
+                     f"expected because not always has {JOBS_X_PAGE} pages: {ex}"))
     except Exception as ex:
         print(red(f'ERROR: {ex}'))
         debug(red(traceback.format_exc()))
@@ -194,6 +200,7 @@ def loadAndProcessRow(idx, retry=True):
             print(red('Validation failed'))
             return loadAndProcessRow(idx, False)
         selenium.back()
+        sleep(1, 2)
         return True
     if retry:
         print(yellow('waiting 5 secs... & retrying... '), end='')
@@ -210,6 +217,7 @@ def processRow(url, retry=True):
     location = selenium.getText(CSS_SEL_LOCATION)
     jobId = getJobId(url)
     selenium.scrollIntoView(CSS_SEL_JOB_REQUIREMENTS)
+    sleep(1, 2)
     selenium.waitUntil_presenceLocatedElement(CSS_SEL_JOB_REQUIREMENTS)
     html = selenium.getHtml(CSS_SEL_JOB_REQUIREMENTS)
     html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)

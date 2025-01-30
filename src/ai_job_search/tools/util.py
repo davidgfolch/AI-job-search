@@ -44,3 +44,7 @@ def toBool(str: str) -> bool:
     if str is None:
         return False
     return str.lower() in ['true', '1', 'yes']
+
+
+def removeExtraEmptyLines(txt: str) -> str:
+    return re.sub(r'\n{3,}', '\n\n', re.sub(r'\s+\n', '\n', txt))

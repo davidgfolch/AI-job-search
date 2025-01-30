@@ -13,7 +13,7 @@ import openai
 from ai_job_search.tools import stopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
-from ai_job_search.tools.util import hasLen
+from ai_job_search.tools.util import hasLen, removeExtraEmptyLines
 
 load_dotenv()
 
@@ -34,8 +34,8 @@ elif GEMINI_API_KEY:
                                      goggle_api_key=GEMINI_API_KEY)
 else:
     LLM_CFG = LLM(
-        # model="ollama/llama3.2",
-        model="ollama/nuextract",
+        model="ollama/llama3.2",
+        # model="ollama/nuextract",  # hangs on local ollama
         # model="ollama/deepseek-r1:8b",  # no GPU inference
         base_url="http://localhost:11434",
         temperature=0)
@@ -58,12 +58,11 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     title = job[1]
                     company = job[3]
                     printHR()
-                    print(f'Job id={id}, title={title}, company={company}')
-                    markdown = re.sub(r'(\s*(\n|\n\r|\r\n|\r)){3,}', '\n\n',
-                                      # DB markdown blob decoding
-                                      job[2].decode("utf-8"),
-                                      re.MULTILINE)
-                    crew_output: CrewOutput = crew.kickoff(
+                    print(
+                        yellow(f'Job {idx+1}/{count} id={id}, title={title}, company={company}'))
+                    # DB markdown blob decoding
+                    markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
+                    crewOutput: CrewOutput = crew.kickoff(
                         inputs={
                             "markdown": f'# {title} \n {markdown}',
                         })
@@ -77,10 +76,11 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     # TODO: TRY structured outputs with ollama or langchain?
                     # https://ollama.com/blog/structured-outputs
                     # https://python.langchain.com/docs/how_to/structured_output/
-                    result: dict[str, str] = rawToJson(crew_output.raw)
+                    result: dict[str, str] = rawToJson(crewOutput.raw)
                     if result is not None:
                         validateResult(result)
-                        mysqlUtil.updateFromAI(id, company, result)
+                        mysqlUtil.updateFromAI(
+                            id, company, result, 'technologies')
                 except litellm.RateLimitError | openai.APIStatusError as e:
                     raise e
                 except Exception as ex:
@@ -119,32 +119,44 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
 
 
 def rawToJson(raw: str) -> dict[str, str]:
+    res = raw
     try:
         IM = re.I | re.M
-        # replace " inside json values
-        # TODO:raw=re.sub(r' *".+": *"(.+)" *(, *|\})', r'\1', raw, flags=re.M)
         # remove Agent Thought or Note
-        raw = re.sub(r'\n(Thought|Note):(.*\n)*', '', raw, flags=IM)
+        res = re.sub(r'\n(Thought|Note):(.*\n)*', '', res, flags=IM)
         # remove json prefix
-        raw = re.sub(r'json *object *', '', raw, flags=IM)
-        raw = re.sub(r'(```)', '', raw, flags=IM)
-        raw = re.sub(r'[*]+(.+)', r'\1', raw)
-        raw = re.sub(r'(.+)",",', r'\1",', raw)
-        raw = fixJsonEndCurlyBraces(raw)
-        raw = fixJsonInvalidAttribute(raw)
+        res = re.sub(r'json *object *', '', res, flags=IM)
+        res = re.sub(r'(```)', '', res, flags=IM)
+        res = fixJsonStartCurlyBraces(res)
+        res = fixJsonEndCurlyBraces(res)
+        res = fixJsonInvalidAttribute(res)
+        res = fixInvalidUnicode(res)
         return dict(json.loads(f'{raw}'))
     except Exception as ex:
-        msg = f'Error info: could not parse raw as json: {ex} in json -> {raw}'
-        print(red(msg))
+        print(red(traceback.format_exc()))
+        print(red(f'Could not parse json after clean it: {ex}'))
+        print(red(f'Json after clean:\n{res}'))
+        print(yellow(f'Original json:\n{raw}'))
+
+
+def fixInvalidUnicode(res):
+    # fix invalid unicode
+    res = re.sub('\\\\u00ai', '\u00ad', res)  # á
+    res = re.sub('\\\\u00f3', '\u00ed', res)  # í
+    return res
 
 
 def fixJsonInvalidAttribute(raw):
-    # fixes LLM invalid json
-    # example: "salary": "£80,000–£100,000" + "significant equity",
-    return re.sub(r'" \+ "', ' + ', raw)
+    """Fixes LLM invalid json value, f.ex.:
+    "salary": "xx" + "yy",
+    "salary": "xx",",
+    """
+    raw = re.sub(r'" \+ "', ' + ', raw)
+    return re.sub(r'(.+)",",', r'\1",', raw)
 
 
 def fixJsonEndCurlyBraces(raw):
+    raw = re.sub('"[)\\\\]', '"}', raw)
     idx = raw.rfind('}')
     if idx > 0 and idx + 1 < len(raw):
         # remove extra text after }
@@ -152,6 +164,14 @@ def fixJsonEndCurlyBraces(raw):
     if idx == -1:
         # sometimes LLM forgets to close }
         return raw + '}'
+    return raw
+
+
+def fixJsonStartCurlyBraces(raw):
+    idx = raw.rfind('{')
+    if idx > 0 and idx + 1 < len(raw):
+        # remove extra text before {
+        return raw[idx:]
     return raw
 
 

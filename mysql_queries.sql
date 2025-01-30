@@ -10,8 +10,10 @@ select count(*) from jobs;
 
 select * from jobs WHERE not ai_enriched and not ignored;
 
-select title, company, location, url, markdown , salary, required_technologies, business_sector, optional_technologies
-from jobs WHERE ai_enriched;
+select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
+-- update jobs set ai_enriched=0
+-- WHERE ai_enriched and required_technologies like '%\\\\u%';
+where id=35482
 
 select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
@@ -24,8 +26,7 @@ update jobs set web_page='Linkedin' where url like '%linkedin%';
 
 select ai_enrich_error from jobs where ai_enrich_error is not null;
 update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
-
-update jobs set ai_enriched=False, salary=null where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 6 HOUR);
+update jobs set ai_enriched=False where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 24 HOUR) and salary is null;
 
 SELECT url FROM jobs WHERE web_page='Indeed';
 update jobs set ai_enriched=0, ai_enrich_error=null WHERE web_page='Indeed';

@@ -1,6 +1,6 @@
 researcher:
   description: >
-    Extract the information fields from the job offer input in markdown format:
+    Extract the information fields from the job offer (below):
     - Salary or salary range amount: if specified.
     - Required technologies: languages, frameworks, libraries, etc. separated by commas.
     - Optional technologies: languages, frameworks, libraries, etc. separated by commas.
