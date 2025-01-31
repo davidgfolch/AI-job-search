@@ -2,7 +2,7 @@ import random
 import time
 from typing import List
 from selenium import webdriver
-# import undetected_chromedriver as uc
+# TODO: import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
@@ -91,8 +91,8 @@ class SeleniumUtil:
             return driverOverride.find_elements(By.CSS_SELECTOR, cssSel)
         return driver.find_elements(By.CSS_SELECTOR, cssSel)
 
-    def sendKeys(self, cssSel: str, value: str, keyByKeyTime=None | tuple[int],
-                 clear=True):
+    def sendKeys(self, cssSel: str, value: str,
+                 keyByKeyTime: None | tuple[int] = None, clear=True):
         elm = self.getElm(cssSel)
         self.moveToElement(elm)
         if clear:
