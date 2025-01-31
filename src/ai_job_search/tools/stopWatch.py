@@ -14,6 +14,12 @@ def start():
     startTime = time.time()
 
 
+def elapsed():
+    end = time.time()
+    elapsed = end-startTime
+    print(yellow(f'Time elapsed: {elapsed} secs.', end='\r'))
+
+
 def end():
     global times
     end = time.time()

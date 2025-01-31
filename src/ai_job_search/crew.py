@@ -8,7 +8,6 @@ from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-import litellm
 import openai
 from ai_job_search.tools import stopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
@@ -16,6 +15,7 @@ from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 from ai_job_search.tools.util import hasLen, removeExtraEmptyLines
 
 load_dotenv()
+MAX_AI_ENRICH_ERROR_LEN = 500
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
@@ -47,6 +47,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     @start()
     def processRows(self):
         mysqlUtil = MysqlUtil()
+        jobErrors = set[tuple[int, str]]()
         try:
             count, jobs = mysqlUtil.getJobsForAiEnrichment()
             print(f'{count} jobs to be ai_enriched...')
@@ -66,28 +67,27 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                         inputs={
                             "markdown": f'# {title} \n {markdown}',
                         })
+                    # TODO: Version crew_output.json_dict hace que el agente
+                    # piense demasiado, mas AI, más lento, en la Task hay que
+                    # poner output_json=JobTaskOutputModel
                     # if crew_output.json_dict:
                     #   json.dumps(crew_output.json_dict)
                     # if crew_output.pydantic:
                     #     crew_output.pydantic
-                    # TODO: Version crew_output.json_dict hace que el agente
-                    # piense demasiado, mas AI, más lento, en la Task hay que
-                    # poner output_json=JobTaskOutputModel
-                    # TODO: TRY structured outputs with ollama or langchain?
-                    # https://ollama.com/blog/structured-outputs
-                    # https://python.langchain.com/docs/how_to/structured_output/
                     result: dict[str, str] = rawToJson(crewOutput.raw)
                     if result is not None:
                         validateResult(result)
                         mysqlUtil.updateFromAI(
                             id, company, result, 'technologies')
-                except litellm.RateLimitError | openai.APIStatusError as e:
+                except openai.APIStatusError as e:
+                    jobErrors.add((id, f'{title} - {company}: {e}'))
                     raise e
                 except Exception as ex:
                     print(red(traceback.format_exc()))
-                    print(yellow("Skipping! (ai_enrich_error set in DB)"))
-                    MAX_AI_ENRICH_ERROR = 500
-                    params = {'ai_enrich_error': str(ex)[:MAX_AI_ENRICH_ERROR],
+                    print(yellow(f"Skipping id={id}! (ai_enrich_error set in DB)"))
+                    jobErrors.add((id, f'{title} - {company}: {ex}'))
+                    aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
+                    params = {'ai_enrich_error': aiEnrichError,
                               'ai_enriched': True}
                     query, params = updateFieldsQuery([id], params)
                     mysqlUtil.executeAndCommit(query, params)
@@ -96,6 +96,9 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 print()
                 print()
 
+            if jobErrors:
+                print(red(f'Total job errors: {len(jobErrors)}'))
+                [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
             print(yellow(''*60))
             print(yellow('ALL ROWS PROCESSES!'))
             print(yellow(''*60))
@@ -131,17 +134,38 @@ def rawToJson(raw: str) -> dict[str, str]:
         res = fixJsonEndCurlyBraces(res)
         res = fixJsonInvalidAttribute(res)
         res = fixInvalidUnicode(res)
-        return dict(json.loads(f'{raw}'))
+        return dict(json.loads(f'{res}'))
+    except json.JSONDecodeError as ex:
+        if idx := ex.msg.find('Invalid \\uXXXX escape:') > -1:
+            try:
+                res = res[0:idx-1]
+                res += re.sub(r'\\(u[0-9a-fA-F]{4})', '\\\\\1', res[idx:idx+6])
+                if len(res) > idx+6:
+                    res += res[idx+7:len(res)-1]
+                print(yellow(f'Replaced invalid unicode\'s in json:\n{res}'))
+                return dict(json.loads(f'{res}'))
+            except Exception as ex:
+                printJsonException(ex)
+                raise ex
+        else:
+            raise ex
     except Exception as ex:
-        print(red(traceback.format_exc()))
-        print(red(f'Could not parse json after clean it: {ex}'))
-        print(red(f'Json after clean:\n{res}'))
-        print(yellow(f'Original json:\n{raw}'))
+        printJsonException(ex)
+        raise ex
+
+
+def printJsonException(ex: Exception, res: str, raw: str) -> None:
+    print(red(traceback.format_exc()))
+    print(red(f'Could not parse json after clean it: {ex}'))
+    print(red(f'Json after clean:\n{res}'))
+    print(yellow(f'Original json:\n{raw}'))
+    raise ex
 
 
 def fixInvalidUnicode(res):
     # fix invalid unicode
     res = re.sub('\\\\u00ai', '\u00ad', res)  # á
+    res = re.sub('\\\\u00f3', '\u00ed', res)  # í
     res = re.sub('\\\\u00f3', '\u00ed', res)  # í
     return res
 

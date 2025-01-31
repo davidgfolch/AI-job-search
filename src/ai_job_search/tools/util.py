@@ -1,4 +1,3 @@
-from functools import reduce
 import re
 from ai_job_search.tools.terminalColor import yellow
 import os

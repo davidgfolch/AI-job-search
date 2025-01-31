@@ -1,8 +1,5 @@
 import sys
-from ai_job_search.scrapper import indeed
-import ai_job_search.scrapper.linkedin as linkedIn
-import ai_job_search.scrapper.glassdoor as glassdoor
-import ai_job_search.scrapper.infojobs as infojobs
+from ai_job_search.scrapper import (linkedin, indeed,infojobs,glassdoor)
 from ai_job_search.tools.terminalColor import red, yellow
 
 
@@ -11,10 +8,11 @@ from ai_job_search.tools.terminalColor import red, yellow
 # taking site id to check if already exists in db
 # this could be an alternative way to add jobs in sites like glassdoor because of cloudflare security filter
 # TODO: technoempleo scrapper
-SCRAPPERS: dict = {'Linkedin': linkedIn,
-                   'Infojobs': infojobs,
+SCRAPPERS: dict = {'Linkedin': linkedin,
                    'Glassdoor': glassdoor,
-                   'Indeed': indeed}
+                   'Infojobs': infojobs,
+                   # FIXME: 'Indeed': indeed, -> Cloudflare filter
+                   }
 
 args = sys.argv
 print('Scrapper init')
