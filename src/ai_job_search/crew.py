@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import re
@@ -59,8 +60,10 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     title = job[1]
                     company = job[3]
                     printHR()
+                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     print(
-                        yellow(f'Job {idx+1}/{count} id={id}, title={title}, company={company}'))
+                        yellow(f'Job {idx+1}/{count} Started at: {now} ->',
+                               f' id={id}, title={title}, company={company}'))
                     # DB markdown blob decoding
                     markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
                     crewOutput: CrewOutput = crew.kickoff(
@@ -176,6 +179,8 @@ def fixJsonInvalidAttribute(raw):
     "salary": "xx",",
     """
     raw = re.sub(r'" \+ "', ' + ', raw)
+    # {"salary": "$\text{Salary determined by the market and your experience} \\\$", 
+    raw = re.sub(r'"[$]\\text\{([^\}]+)\} \\\\\\\$"', r'\1', raw)
     return re.sub(r'(.+)",",', r'\1",', raw)
 
 

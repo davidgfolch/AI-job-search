@@ -112,7 +112,7 @@ class MysqlUtil:
                     error(Exception('No rows affected'))
         except mysql.connector.Error as ex:
             error(ex, f' -> params = {params}')
-            if deep > len(paramsDict.keys):
+            if deep > len(paramsDict.keys()):
                 return
             failColumn = re.sub(REGEX_INCORRECT_VALUE_FOR_COL, r'\2', str(ex))
             if failColumn:  # FIXME: implement as decorator: https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py

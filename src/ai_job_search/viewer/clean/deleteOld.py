@@ -9,8 +9,8 @@ IDS_IDX = 0
 SELECT = """
 select id,title,company,comments,created
 from jobs
-where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 60 DAY) and
-    (not applied and ignored) and comments is null
+where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 50 DAY) and
+    not applied and ignored and comments is null
 order by created desc
 """
 
