@@ -16,15 +16,13 @@ FF_KEY_SINGLE_SELECT = 'singleSelect'
 FF_KEY_MAXIMIZE_LIST = 'maximizeList'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """
-salary,title,company,created"""
+salary,title,company"""
 DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
 web_page,company,client,markdown,location,url,created,modified,
 comments,{DB_FIELDS_BOOL}"""
-DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-company,client,comments"""
 # FILTERS
 RLIKE = getEnv('WHERE_FILTER_REGEX')
 DEFAULT_SQL_FILTER = f"""
@@ -47,7 +45,6 @@ DETAIL_FORMAT = """
 LIST_VISIBLE_COLUMNS = stripFields(VISIBLE_COLUMNS)
 FIELDS = stripFields(DB_FIELDS)
 FIELDS_BOOL = stripFields(DB_FIELDS_BOOL)
-FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 FIELDS_SORTED = sortFields(DB_FIELDS, 'id,' + VISIBLE_COLUMNS).split(',')
 DEFAULT_BOOL_FILTERS = stripFields('ai_enriched')
 DEFAULT_NOT_FILTERS = stripFields('seen,ignored,applied,discarded,closed')

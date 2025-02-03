@@ -3,14 +3,13 @@ from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery
 from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
 
 
-INFO = 'Delete oldest ignored jobs'
-COLUMNS = stripFields('Id,Title,Company,Applied,Created')
+INFO = 'Delete jobs (>50 day old and not applied)'
+COLUMNS = stripFields('Id,Title,Company,Created')
 IDS_IDX = 0
 SELECT = """
-select id,title,company,comments,created
+select id,title,company,created
 from jobs
-where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 50 DAY) and
-    not applied and ignored and comments is null
+where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 40 DAY) and not applied
 order by created desc
 """
 

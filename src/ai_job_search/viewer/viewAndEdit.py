@@ -73,6 +73,7 @@ def table(df: DataFrame, fieldsSorted, visibleColumns):
         # column_order=fieldSorted,
         on_change=onTableChange,
         column_config=getTableColsConfig(fieldsSorted, visibleColumns),
+        use_container_width=True,
         height=getState(FF_KEY_MAXIMIZE_LIST, HEIGHT),
         key='jobsListTable',
     )
@@ -329,7 +330,6 @@ def view():
                         'salary': 'Salary',
                         'title': 'Title',
                         'required_technologies': 'Company',
-                        'optional_technologies': 'Created',
                     }
                     st.dataframe(selectedRows,  # column_order=FIELDS,
                                  hide_index=True,
