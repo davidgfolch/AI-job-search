@@ -31,7 +31,7 @@ SITE = "GLASSDOOR"
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars(SITE)
 JOBS_SEARCH_BASE_URL = getEnv(f'{SITE}_JOBS_SEARCH_BASE_URL')
 
-DEBUG = False
+DEBUG = True
 
 WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
@@ -64,7 +64,7 @@ def login():
         time.sleep(10)
         selenium.sendKeys('#inlineUserEmail', USER_EMAIL)
         sleep(2, 5)
-        selenium.waitAndClick('.emailButton > button[type=submit]')
+        selenium.waitAndClick('.emailButton button[type=submit]')
         sleep(2, 5)
         selenium.waitUntilPageIsLoaded()
         sleep(1, 2)
