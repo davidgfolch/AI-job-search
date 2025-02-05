@@ -8,7 +8,8 @@ from ai_job_search.tools.terminalColor import red, yellow
 
 def retry(retries: int = 5, delay: float = 2,
           exception: Exception = Exception,
-          stackStrace: bool = True) -> Callable:
+          stackStrace: bool = True,
+          exceptionFnc: Callable = None) -> Callable:
     """
     Attempt to call a function, if it fails, try again with a specified delay.
 
@@ -33,6 +34,8 @@ def retry(retries: int = 5, delay: float = 2,
                                  f' -> Retry {i}/{retries}...'))
                     if stackStrace:
                         print(red(traceback.format_exc()))
+                    if exceptionFnc is not None:
+                        exceptionFnc()
                     sleep(delay)
         return wrapper
 
