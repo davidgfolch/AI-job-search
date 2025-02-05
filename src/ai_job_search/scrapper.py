@@ -1,5 +1,5 @@
 import sys
-from ai_job_search.scrapper import (linkedin, indeed,infojobs,glassdoor)
+from ai_job_search.scrapper import (linkedin, indeed, infojobs, glassdoor)
 from ai_job_search.tools.terminalColor import red, yellow
 
 
@@ -11,7 +11,7 @@ from ai_job_search.tools.terminalColor import red, yellow
 SCRAPPERS: dict = {'Linkedin': linkedin,
                    'Glassdoor': glassdoor,
                    'Infojobs': infojobs,
-                   # FIXME: 'Indeed': indeed, -> Cloudflare filter
+                   # FIXME: 'Indeed': indeed, -> Cloudflare filter HARDCORE!
                    }
 
 args = sys.argv

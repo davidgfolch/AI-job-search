@@ -1,14 +1,14 @@
 import math
 import time
 import re
-import traceback
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, join, printPage, printScrapperTitle, validate)
-from ai_job_search.tools.terminalColor import green, printHR, red, yellow
+from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars
+from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from .selectors.infojobsSelectors import (
@@ -124,37 +124,36 @@ def summarize(keywords, totalResults, currentItem):
     print()
 
 
+def scrollToBottom():
+    """ pre scroll to bottom to force load of li's """
+    print("scrollToBottom... ", end='')
+    # this this can contain "pagination" or "Nueva busqueda" when no pagination exists
+    selenium.scrollIntoView(
+        'div.ij-SearchListingPageContent-main main > div')
+    sleep(3, 3)
+
+
+@retry(retries=2, delay=5)
 def scrollJobsList(idx):
-    if idx < JOBS_X_PAGE-3:  # scroll to job link
-        i = 0
-        while i <= idx:
-            # in last page could not exist
-            li = selenium.getElms(CSS_SEL_JOB_LI)[i]
-            if not selenium.scrollIntoView_noError(li):
-                print(yellow(' waiting 5 secs... & retrying... '), end='')
-                time.sleep(5)
-                li = selenium.getElms(CSS_SEL_JOB_LI)[i]
-                selenium.scrollIntoView_noError(li)
-            i += 1
+    lis = selenium.getElms(CSS_SEL_JOB_LI)
+    if (idx >= len(lis)):
+        scrollToBottom()
+        lis = selenium.getElms(CSS_SEL_JOB_LI)
+    for i in range(0, idx+1):
+        li = lis[i]
+        selenium.scrollIntoView(li)
 
 
-def clickNextPage(retry=True):
+@retry(exception=NoSuchElementException, raiseException=False)
+def clickNextPage():
     """Click on next to load next page.
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
-    try:
-        selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
-        return True
-    except NoSuchElementException:
-        if retry:
-            # FIXME: implement as decorator:
-            # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
-            debug("retry clickNextPage")
-            return clickNextPage(False)
-        return False
+    selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
+    return True
 
 
-def loadJobDetail(jobExists: bool, jobLinkElm: WebElement):
+def loadJobDetail(jobLinkElm: WebElement):
     # first job in page loads automatically
     # if job exists in DB no need to load details (rate limit)
     print(yellow('loading...'), end='')
@@ -215,7 +214,8 @@ def getJobLinkElement(idx):
     return selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
 
 
-def loadAndProcessRow(idx, retry=True):
+@retry(retries=1, delay=5, raiseException=False)
+def loadAndProcessRow(idx) -> bool:
     processed = False
     jobExists = False
     try:
@@ -228,31 +228,22 @@ def loadAndProcessRow(idx, retry=True):
             print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
                   end='')
             return True
-        loadJobDetail(jobExists, jobLinkElm)
+        loadJobDetail(jobLinkElm)
         processed = True
     except IndexError as ex:
-        print(yellow("WARNING: could not get all items per page, that's ",
+        debug(yellow("WARNING: could not get all items per page, that's ",
                      f"expected because not always has {JOBS_X_PAGE}: {ex}"))
-    except Exception as ex:
-        print(red(f'ERROR: {ex}'))
-        debug(red(traceback.format_exc()))
     if processed:
-        try:
-            if not processRow(url):
-                print(red('Validation failed'))
-                return loadAndProcessRow(idx, False)
+        if not processRow(url):
             selenium.back()
-            return True
-        except Exception:
-            debug(red(traceback.format_exc()))
-    if retry:
-        print(yellow('waiting 5 secs... & retrying... '), end='')
-        time.sleep(5)
-        return loadAndProcessRow(idx, False)
-    return False
+            raise ValueError('Validation failed')
+        selenium.back()
+    return processed
 
 
-def processRow(url, retry=True):
+@retry()
+def processRow(url):
+    sleep(5, 6)
     # try:
     title = selenium.getText(CSS_SEL_JOB_TITLE)
     company = selenium.getText(CSS_SEL_COMPANY)
@@ -275,8 +266,6 @@ def processRow(url, retry=True):
                         easyApply, WEB_PAGE)):
             print(green('INSERTED!'), end='')
             return True
-    if retry:
-        return processRow(url, False)
     return False
 
 

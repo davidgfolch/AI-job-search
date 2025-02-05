@@ -1,5 +1,4 @@
 import math
-import time
 from urllib.parse import quote
 import re
 from selenium.common.exceptions import NoSuchElementException
@@ -8,6 +7,7 @@ from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, join, printPage, printScrapperTitle, validate)
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars
+from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from .selectors.linkedinSelectors import (
@@ -119,29 +119,28 @@ def scrollJobsList(idx):
     cssSel = replaceIndex(CSS_SEL_JOB_LINK, idx)
     if idx < JOBS_X_PAGE-3:  # scroll to job link
         # in last page could not exist
-        if not selenium.scrollIntoView_noError(cssSel):
-            print(yellow(' waiting 10 secs... & retrying... '))
-            time.sleep(10)
-            selenium.scrollIntoView_noError(cssSel)
+        scrollJobListRetry(cssSel)
     selenium.waitUntilClickable(cssSel)
     return cssSel
 
 
-def clickNextPage(retry=True):
+def scrollToBottom():
+    selenium.scrollIntoView('#jobs-search-results-footer')
+
+
+@retry(stackStrace=False, exceptionFnc=scrollToBottom)
+def scrollJobListRetry(cssSel):
+    selenium.scrollIntoView(cssSel)
+
+
+@retry(exception=NoSuchElementException, raiseException=False)
+def clickNextPage():
     """Click on next to load next page.
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
-    try:
-        selenium.waitAndClick(
-            CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
-        return True
-    except NoSuchElementException:
-        if retry:
-            # FIXME: implement as decorator:
-            # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
-            debug("retry clickNextPage")
-            clickNextPage(False)
-        return False
+    selenium.waitAndClick(
+        CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
+    return True
 
 
 def loadJobDetail(jobExists: bool, idx: int, cssSel):
@@ -203,6 +202,7 @@ def searchJobs(keywords: str):
 
 
 def loadAndProcessRow(idx):
+    jobExists = False
     try:
         cssSel = scrollJobsList(idx)
         jobId, jobExists = jobExistsInDB(cssSel)
@@ -216,10 +216,10 @@ def loadAndProcessRow(idx):
         processRow(idx)
 
 
-def processRow(idx, retry=True):
+@retry(exception=ValueError)
+def processRow(idx):
     # TODO: CSS_SEL_JOB_CLOSED -> No longer accepting applications
     # https://www.linkedin.com/jobs/view/4057715315/
-    # TODO: AI -> Language ignore (german f.ex.)
     try:
         liPrefix = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
         title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
@@ -238,11 +238,10 @@ def processRow(idx, retry=True):
             if mysql.insert((jobId, title, company, location, url, md,
                              easyApply, WEB_PAGE)):
                 print(green('INSERTED!'), end='')
-        elif retry:
-            print(yellow('waiting 10 secs... & retrying... '))
-            time.sleep(10)
-            processRow(idx, retry=False)
-            return
+        else:
+            raise ValueError('Validation failed')
+    except ValueError as e:
+        raise e
     except Exception as ex:
         debug('processRow Exception -> ' + red(f'ERROR: {ex}'))
     print()

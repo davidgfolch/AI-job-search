@@ -12,6 +12,7 @@ CSS_SEL_NEXT_PAGE_BUTTON = 'nav[role=navigation] > ul > li > a[data-testid="pagi
 
 # JOB DETAIL (IN LIST CLICK)
 CSS_SEL_JOB_TITLE = 'div.jobsearch-JobInfoHeader-title-container h2'
+CSS_SEL_JOB_TITLE2 = 'h2[data-testid="simpler-jobTitle"]'
 
 CSS_SEL_COMPANY = 'div[data-company-name="true"] > span > a'
 CSS_SEL_LOCATION = 'div[data-testid="inlineHeader-companyLocation"]'

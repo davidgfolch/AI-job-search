@@ -7,8 +7,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-
 from ai_job_search.tools.terminalColor import yellow
 
 # Rotating User-Agents to avoid Cloudflare security filter
@@ -33,6 +31,8 @@ Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, lik
 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/120.0.0.0
 Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/120.0.0.0
 """.split('\n')))
+
+SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end',  behavior: 'smooth' });"
 
 driver = None
 action = None
@@ -117,8 +117,9 @@ class SeleniumUtil:
 
     def scrollIntoView(self, cssSel: str | WebElement):
         elm = self.getElm(cssSel) if isinstance(cssSel, str) else cssSel
-        driver.execute_script("arguments[0].scrollIntoView();", elm)
-        self.moveToElement(elm)
+        driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)
+        self.waitUntilClickable(cssSel)
+        # self.moveToElement(elm)
 
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
         method = EC.element_to_be_clickable
@@ -163,24 +164,6 @@ class SeleniumUtil:
     def moveToElement(self, elm: WebElement):
         action.move_to_element(elm)
         action.perform()
-
-    def waitUntilFoundMany(self, cssSel: str, items: int, concept: str = '',
-                           timeout: int = 5, retry: int = 4):
-        while True:
-            try:
-                WebDriverWait(driver, timeout).until(
-                    lambda d: len(self.getElms(cssSel, d)) == items)
-            except TimeoutException as ex:
-                found = len(self.getElms(cssSel))
-                print(
-                    f'waitUntilFound: {concept}, len after exception: {found}')
-                if retry > 1:
-                    # FIXME: implement as decorator:
-                    # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
-                    print(f'waitUntilFound {concept} retrying...')
-                    retry -= 1
-                else:
-                    raise ex
 
     def getHtml(self, cssSel: str) -> str:
         return self.getAttr(cssSel, 'innerHTML')

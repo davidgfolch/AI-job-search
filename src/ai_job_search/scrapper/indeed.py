@@ -8,6 +8,7 @@ from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, join, printPage, printScrapperTitle, validate)
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars
+from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import MysqlUtil
 from .selectors.indeedSelectors import (
@@ -82,7 +83,7 @@ def scrollJobsList(idx):
     # if idx < JOBS_X_PAGE-3:  # scroll to job link
     #     i = idx
     #     while i <= idx:
-            # in last page could not exist
+    # in last page could not exist
     debug("before scrollJobsList")
     li = selenium.getElms(CSS_SEL_JOB_LI)[idx]
     selenium.scrollIntoView_noError(li)
@@ -91,21 +92,14 @@ def scrollJobsList(idx):
     debug("after scrollJobsList")
 
 
-def clickNextPage(retry=True):
+@retry(exception=NoSuchElementException, raiseException=False)
+def clickNextPage():
     """Click on next to load next page.
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
-    try:
-        sleep(1, 2)
-        selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
-        return True
-    except NoSuchElementException:
-        if retry:
-            # FIXME: implement as decorator:
-            # https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
-            debug("retry clickNextPage")
-            return clickNextPage(False)
-        return False
+    sleep(1, 2)
+    selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
+    return True
 
 
 def loadJobDetail(jobLinkElm: WebElement):
@@ -172,7 +166,8 @@ def getJobLinkElement(idx):
     return selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
 
 
-def loadAndProcessRow(idx, retry=True):
+@retry(raiseException=False)
+def loadAndProcessRow(idx):
     ignore = True
     jobExists = False
     try:
@@ -202,15 +197,11 @@ def loadAndProcessRow(idx, retry=True):
         selenium.back()
         sleep(1, 2)
         return True
-    if retry:
-        print(yellow('waiting 5 secs... & retrying... '), end='')
-        time.sleep(5)
-        return loadAndProcessRow(idx, False)
     return False
 
 
-def processRow(url, retry=True):
-    # try:
+@retry(raiseException=False)
+def processRow(url):
     title = selenium.getText(CSS_SEL_JOB_TITLE).removesuffix('\n- job post')
     company = selenium.getText(CSS_SEL_COMPANY)
     # company = selenium.getText(CSS_SEL_COMPANY2)
@@ -234,8 +225,6 @@ def processRow(url, retry=True):
             return True
         else:
             debug(exception=True)
-    if retry:
-        return processRow(url, False)
     return False
 
 

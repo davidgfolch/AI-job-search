@@ -32,7 +32,7 @@ SITE = "GLASSDOOR"
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars(SITE)
 JOBS_SEARCH_BASE_URL = getEnv(f'{SITE}_JOBS_SEARCH_BASE_URL')
 
-DEBUG = True
+DEBUG = False
 
 WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
@@ -174,7 +174,7 @@ def loadAndProcessRow(idx):
     else:
         try:
             sleep(0.5, 1.5)
-            processRow(idx)
+            processRow()
         finally:
             sleep(0.5, 1.5)
             selenium.back()
@@ -201,10 +201,9 @@ def loadJobDetail(liElm):
     print(yellow('loading... '), end='')
     href = selenium.getAttrOf(liElm, LI_JOB_TITLE_CSS_SUFFIX, 'href')
     selenium.loadPage(href)
-    time.sleep(10)
 
 
-@retry()
+@retry(stackStrace=DEBUG)
 def processRow():
     title = selenium.getText(CSS_SEL_JOB_TITLE)
     company = selenium.getElms(CSS_SEL_COMPANY)

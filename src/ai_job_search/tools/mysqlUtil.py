@@ -115,7 +115,8 @@ class MysqlUtil:
             if deep > len(paramsDict.keys()):
                 return
             failColumn = re.sub(REGEX_INCORRECT_VALUE_FOR_COL, r'\2', str(ex))
-            if failColumn:  # FIXME: implement as decorator: https://github.com/indently/five_decorators/blob/main/decorators/001_retry.py
+            # FIXME: implement with @retry (needs refactor) or get bbdd meta-data before inserting
+            if failColumn:
                 print(red(f'Found incorrect value for column {failColumn}, ',
                           'retry with column value None'))
                 paramsDict[failColumn] = None
