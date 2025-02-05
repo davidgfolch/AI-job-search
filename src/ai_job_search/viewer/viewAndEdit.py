@@ -10,11 +10,11 @@ from ai_job_search.viewer.util.stUtil import (
     getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
     setFieldValue, setMessageInfo, setState, showCodeSql, sortFields)
 from ai_job_search.viewer.viewAndEditConstants import (
-    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS,
-    DEFAULT_ORDER,
+    COLUMNS_WIDTH, DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD,
+    DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
     DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
-    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_DAYS_OLD, FF_KEY_MAXIMIZE_LIST,
-    FF_KEY_ORDER, FF_KEY_SALARY,
+    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_DAYS_OLD,
+    FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL,
     FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS,
     SEARCH_INPUT_HELP, STYLE_JOBS_TABLE, VISIBLE_COLUMNS)
@@ -74,7 +74,7 @@ def table(df: DataFrame, fieldsSorted, visibleColumns):
         on_change=onTableChange,
         column_config=getTableColsConfig(fieldsSorted, visibleColumns),
         use_container_width=True,
-        height=getState(FF_KEY_MAXIMIZE_LIST, HEIGHT),
+        height=getState(FF_KEY_LIST_HEIGHT, HEIGHT),
         key='jobsListTable',
     )
     selectedRows = df[editedDf.Sel]
@@ -263,7 +263,7 @@ def view():
         getBoolKeyName(FF_KEY_WHERE): False,
         FF_KEY_WHERE: DEFAULT_SQL_FILTER,
         FF_KEY_SINGLE_SELECT: True,
-        FF_KEY_MAXIMIZE_LIST: HEIGHT
+        FF_KEY_LIST_HEIGHT: HEIGHT
     })
     if getStateBool(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
         res = removeFiltersInNotFilters()
@@ -275,7 +275,8 @@ def view():
         query = getJobListQuery()
         totalResults = mysql.count(QRY_SELECT_COUNT_JOBS)
         jobData = None
-        col1, col2 = st.columns(2)
+        columnsWidth = getState(FF_KEY_COLUMNS_WIDTH, 0.5)
+        col1, col2 = st.columns([columnsWidth, 1-columnsWidth])
         with col1:
             if SHOW_SQL:
                 with st.expander("View generated sql"):
@@ -295,28 +296,33 @@ def view():
                 jobData = getValuesAsDict(selected, FIELDS_SORTED)
                 (boolFieldsValues, comments, salary,
                  company, client) = mapDetailForm(jobData, FIELDS_BOOL)
-            c = st.columns([11, 3, 3, 3, 1, 5, 5],
+            st.write(''.join([
+                f'{totalSelected} selected ',
+                f'({filterResCnt} filtered, ',
+                f'{totalResults} total)',
+            ]))
+            c = st.columns([3, 3, 3, 1, 5, 5, 5],
                            vertical_alignment='center')
-            c[0].write(''.join([
-                f'{filterResCnt}/{totalResults} filtered/total results,',
-                f' {totalSelected} selected']))
-            c[1].button('Ignore',
+            c[0].button('Ignore',
                         help='Mark as ignored and Save',
                         kwargs={'boolField': 'ignored'},
                         on_click=markAs)
-            c[2].button('Seen',
+            c[1].button('Seen',
                         help='Mark as Seen and Save',
                         kwargs={'boolField': 'seen'},
                         on_click=markAs)
-            c[3].button('Delete', 'deleteButton',
+            c[2].button('Delete', 'deleteButton',
                         help='Delete selected job(s)',
                         disabled=totalSelected < 1,
                         on_click=deleteSelectedRows,
                         type="primary")
-            c[4].write('|')
-            c[5].toggle('Single select', key=FF_KEY_SINGLE_SELECT)
-            c[6].number_input('Heigh', key=FF_KEY_MAXIMIZE_LIST,
+            c[3].write('|')
+            c[4].toggle('Single select', key=FF_KEY_SINGLE_SELECT)
+            c[5].number_input('Heigh', key=FF_KEY_LIST_HEIGHT,
                               value=HEIGHT, step=100,
+                              label_visibility='collapsed', )
+            c[6].number_input('Columns width', key=FF_KEY_COLUMNS_WIDTH,
+                              value=COLUMNS_WIDTH, step=0.1,
                               label_visibility='collapsed', )
             if totalSelected == 1:
                 detailForm(boolFieldsValues, comments, salary, company, client)

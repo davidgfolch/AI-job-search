@@ -3,6 +3,7 @@ from ai_job_search.viewer.util.stUtil import sortFields, stripFields
 
 
 HEIGHT = 300
+COLUMNS_WIDTH: float = 0.5
 
 # FORM FILTER KEYS
 FF_KEY_BOOL_FIELDS = 'boolFieldsFilter'
@@ -13,7 +14,8 @@ FF_KEY_DAYS_OLD = 'daysOldFilter'
 FF_KEY_WHERE = 'whereFilter'
 FF_KEY_ORDER = 'selectOrder'
 FF_KEY_SINGLE_SELECT = 'singleSelect'
-FF_KEY_MAXIMIZE_LIST = 'maximizeList'
+FF_KEY_LIST_HEIGHT = 'listHeight'
+FF_KEY_COLUMNS_WIDTH = 'columnsWidth'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """
 salary,title,company"""
