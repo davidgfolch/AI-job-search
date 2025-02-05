@@ -4,7 +4,7 @@ CSS_SEL_PASSWORD_SUBMIT = 'form button[type=submit]'
 CSS_SEL_INPUT_PASS = 'form input#inlineUserPassword'
 
 #
-CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div#left-column > div > h1'
+CSS_SEL_SEARCH_RESULT_TOTAL = 'div#left-column h1'
 CSS_SEL_COOKIES_ACCEPT = 'button#onetrust-accept-btn-handler'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'CSS_SEL_GLOBAL_ALERT_HIDE'
 CSS_SEL_DIALOG_CLOSE = 'div[data-test="Modal-content"] button[data-test=job-alert-modal-close]'

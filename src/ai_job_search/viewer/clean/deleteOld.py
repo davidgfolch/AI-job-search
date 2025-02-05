@@ -2,14 +2,14 @@ import streamlit as st
 from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery
 from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
 
-
-INFO = 'Delete jobs (>50 day old and not applied)'
+DAYS = 40
+INFO = f'Delete jobs (older than {DAYS} days and not applied)'
 COLUMNS = stripFields('Id,Title,Company,Created')
 IDS_IDX = 0
-SELECT = """
+SELECT = f"""
 select id,title,company,created
 from jobs
-where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 40 DAY) and not applied
+where DATE(created) < DATE_SUB(CURDATE(), INTERVAL {DAYS} DAY) and not applied
 order by created desc
 """
 
