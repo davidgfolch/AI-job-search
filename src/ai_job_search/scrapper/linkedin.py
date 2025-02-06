@@ -128,7 +128,7 @@ def scrollToBottom():
     selenium.scrollIntoView('#jobs-search-results-footer')
 
 
-@retry(stackStrace=False, exceptionFnc=scrollToBottom)
+@retry(exceptionFnc=scrollToBottom)
 def scrollJobListRetry(cssSel):
     selenium.scrollIntoView(cssSel)
 

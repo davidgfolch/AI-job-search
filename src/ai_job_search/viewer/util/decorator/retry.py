@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import wraps
 import traceback
 from typing import Callable, Any
@@ -6,9 +7,16 @@ from time import sleep
 from ai_job_search.tools.terminalColor import red, yellow
 
 
-def retry(retries: int = 5, delay: float = 2,
+class ShowStackTrace(Enum):
+    ALWAYS = 1
+    LAST_RETRY = 2
+    NEVER = 3
+
+
+def retry(retries: int = 5,
+          delay: float = 2,
           exception: Exception = Exception,
-          stackStrace: bool = True,
+          stackStrace: ShowStackTrace = ShowStackTrace.LAST_RETRY,
           exceptionFnc: Callable = None,
           raiseException: bool = True) -> Callable:
     """
