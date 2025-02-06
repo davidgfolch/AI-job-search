@@ -7,7 +7,7 @@ from time import sleep
 from ai_job_search.tools.terminalColor import red, yellow
 
 
-class ShowStackTrace(Enum):
+class StackTrace(Enum):
     ALWAYS = 1
     LAST_RETRY = 2
     NEVER = 3
@@ -16,7 +16,7 @@ class ShowStackTrace(Enum):
 def retry(retries: int = 5,
           delay: float = 2,
           exception: Exception = Exception,
-          stackStrace: ShowStackTrace = ShowStackTrace.LAST_RETRY,
+          stackStrace: StackTrace = StackTrace.LAST_RETRY,
           exceptionFnc: Callable = None,
           raiseException: bool = True) -> Callable:
     """
@@ -41,14 +41,14 @@ def retry(retries: int = 5,
                     if i == retries + 1:
                         if raiseException:
                             raise e
-                        if stackStrace:
+                        if stackStrace != StackTrace.NEVER:
                             print(red(traceback.format_exc()))
                         else:
                             print(red(e))
                         return False
                     print(yellow(f'Error calling function {fnc.__name__}()',
                                  f' -> Retry {i}/{retries}...'))
-                    if stackStrace:
+                    if stackStrace == StackTrace.ALWAYS:
                         print(red(traceback.format_exc()))
                     if exceptionFnc is not None:
                         exceptionFnc()
