@@ -88,7 +88,11 @@ def gotoPage(page, ids):
     setState(PAGE_STATE_KEY, page)
 
 
-def gotoPageByUrl(page, linkText, ids, autoSelectFirst=True):
-    return f'[{linkText}](/?{KEY_SELECTED_IDS}={ids}' + \
-        f'&{PAGE_STATE_KEY}={page}' + \
-        [f'&{FF_KEY_PRESELECTED_ROWS}=0)' if autoSelectFirst else '']
+def gotoPageByUrl(page: int, linkText: str, ids: str, autoSelectFirst=True):
+    print(f'ids type = {type(ids)}')
+    if isinstance(ids, list):
+        ids = ','.join([str(id) for id in ids])
+        print(f'ids type = {type(ids)}')
+    markdownUrl = f'[{linkText}](/?{KEY_SELECTED_IDS}={ids}&{PAGE_STATE_KEY}={page}'
+    markdownUrl += (f'&{FF_KEY_PRESELECTED_ROWS}=0' if autoSelectFirst else '') + ')'
+    return markdownUrl
