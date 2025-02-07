@@ -1,13 +1,13 @@
 import re
-from typing import Any
+from typing import Any, Dict, Sequence, TypeVar, Union
 import mysql.connector
 from mysql.connector import Error
 
 from ai_job_search.tools.terminalColor import printHR, red, yellow
 
 DB_NAME = 'jobs'
-QRY_FIND_JOB_BY_ID = """
-SELECT * FROM jobs WHERE jobId = %s"""
+QRY_FIND_JOB_BY_JOB_ID = """
+SELECT id,jobId FROM jobs WHERE jobId = %s"""
 QRY_INSERT = """
 INSERT INTO jobs (
     jobId,title,company,location,url,markdown,easy_apply,web_page)
@@ -17,10 +17,15 @@ SELECT count(id)
 FROM jobs
 WHERE not ai_enriched and not (ignored or discarded or closed)
 ORDER BY created desc"""
-QRY_SELECT_JOBS_FOR_ENRICHMENT = """
-SELECT id, title, markdown, company
+QRY_FIND_JOBS_IDS_FOR_ENRICHMENT = """
+SELECT id
 FROM jobs
 WHERE not ai_enriched and not (ignored or discarded or closed)
+ORDER BY created desc"""
+QRY_FIND_JOB_FOR_ENRICHMENT = """
+SELECT id, title, markdown, company
+FROM jobs
+WHERE id=%s and not ai_enriched and not (ignored or discarded or closed)
 ORDER BY created desc"""
 QRY_UPDATE_JOBS_WITH_AI = """
 UPDATE jobs SET
@@ -37,8 +42,10 @@ ORDER BY {order}"""
 QRY_SELECT_COUNT_JOBS = """
 SELECT count(*)
 FROM jobs
-WHERE {where}
 """
+SELECT_APPLIED_JOB_IDS_BY_COMPANY = """select id from jobs
+ where applied and lower(company) like '%{company}%' and id != {id}"""
+
 
 ERROR_PREFIX = 'MysqlError: '
 REGEX_INCORRECT_VALUE_FOR_COL = re.compile(
@@ -70,25 +77,26 @@ class MysqlUtil:
             error(ex, end='')
             return False
 
-    def getJob(self, jobId: int):
+    T = TypeVar("T")  # T = TypeVar("T", bound="List")
+
+    def count(self, query: str, params: Union[Sequence[T], Dict[str, T]] = ()):
         try:
             with self.cursor() as c:
-                c.execute(QRY_FIND_JOB_BY_ID, [jobId])
+                c.execute(query, params)
+                return c.fetchone()[0]
+        except mysql.connector.Error as ex:
+            error(ex)
+
+    def fetchOne(self, query: str, id: int):
+        try:
+            with self.cursor() as c:
+                c.execute(query, [id])
                 return c.fetchone()
         except mysql.connector.Error as ex:
             error(ex)
 
-    def getJobsForAiEnrichment(self):
-        try:
-            with self.cursor() as c:
-                c.execute(QRY_COUNT_JOBS_FOR_ENRICHMENT)
-                count = c.fetchone()[0]
-                c.execute(QRY_SELECT_JOBS_FOR_ENRICHMENT)
-                return count, c.fetchall()
-        except mysql.connector.Error as ex:
-            error(ex)
-
-    # FIXME: CHANGE required_technologies & optional_technoloties with required_skills & opt_skills
+    # FIXME: CHANGE required_technologies & optional_technoloties with
+    # required_skills & opt_skills
     def updateFromAI(self, id, company, paramsDict: dict,
                      deprecatedName='technologies', deep=0):
         try:
@@ -143,12 +151,6 @@ class MysqlUtil:
         with self.cursor() as c:
             c.execute(query, params)
             return c.fetchall()
-
-    def count(self, query: str, params: dict = {'where': '1=1'}):
-        qry = query.format(**params)
-        with self.cursor() as c:
-            c.execute(qry)
-            return c.fetchall()[0][0]
 
     def getTableDdlColumnNames(self, table):
         """Returns table DDL column names in same order than
@@ -217,3 +219,7 @@ def maxLen(params: tuple[Any], maxLens: tuple[int]):
 def inFilter(ids: list[int]):
     idsFilter = ','.join([str(id) for id in ids])
     return f' in ({idsFilter})'
+
+
+def binaryColumnIgnoreCase(col: str) -> str:
+    return f'CONVERT({col} USING utf8mb4) COLLATE utf8mb4_0900_ai_ci'

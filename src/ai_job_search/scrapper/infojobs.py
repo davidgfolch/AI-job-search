@@ -51,9 +51,6 @@ def run():
         mysql = MysqlUtil()
         # login()
         # securityFilter()
-        # selenium.waitUntilPageUrlContains(
-        # 'https://www.infojobs.net/error404.xhtml', 60)
-        # input(yellow('Solve a security filter and press a key...'))
         for i, keywords in enumerate(JOBS_SEARCH.split(',')):
             searchJobs(i, keywords.strip())
     finally:
@@ -78,7 +75,10 @@ def login():
     selenium.waitAndClick('#idSubmitButton')
 
 
+@retry(retries=100, delay=5, exception=NoSuchElementException)
 def acceptCookies():
+    print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
+    sleep(4, 4)
     selenium.scrollIntoView('#didomi-notice-agree-button > span')
     sleep(2, 6)
     selenium.waitAndClick('#didomi-notice-agree-button > span')
@@ -88,12 +88,8 @@ def acceptCookies():
 def securityFilter():
     selenium.waitUntilPageIsLoaded()
     sleep(4, 4)
-    # selenium.waitUntil_presenceLocatedElement(CSS_SEL_SECURITY_FILTER1)
-    # contacta con nosotros
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER1)
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER2)
-    input(yellow('Solve a security filter and press a key...'))
-    sleep(4, 4)
     acceptCookies()
 
 
@@ -127,7 +123,8 @@ def summarize(keywords, totalResults, currentItem):
 def scrollToBottom():
     """ pre scroll to bottom to force load of li's """
     print("scrollToBottom... ", end='')
-    # this this can contain "pagination" or "Nueva busqueda" when no pagination exists
+    # this this can contain "pagination" or "Nueva busqueda"
+    # when no pagination exists
     selenium.scrollIntoView(
         'div.ij-SearchListingPageContent-main main > div')
     sleep(3, 3)

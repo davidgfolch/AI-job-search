@@ -1,8 +1,10 @@
 import streamlit as st
 from pandas import DataFrame, Timestamp
 
-from ai_job_search.viewer.util.stUtil import scapeLatex, setState
-from ai_job_search.viewer.viewAndEditConstants import DETAIL_FORMAT
+from ai_job_search.viewer.util.stUtil import (
+    KEY_SELECTED_IDS, PAGE_STATE_KEY, scapeLatex, setState)
+from ai_job_search.viewer.viewAndEditConstants import (
+    DETAIL_FORMAT, FF_KEY_PRESELECTED_ROWS)
 
 
 def mapDetailForm(jobData, fieldsBool):
@@ -80,3 +82,13 @@ def fmtDetailOpField(data: dict, key: str, label: str = None, level=0) -> str:
     value = scapeLatex({key: data.get(key)}, key).get(key)
     return f'{" "* level}- {label}: :green[{value}]\n'
 
+
+def gotoPage(page, ids):
+    setState(KEY_SELECTED_IDS, ids)
+    setState(PAGE_STATE_KEY, page)
+
+
+def gotoPageByUrl(page, linkText, ids, autoSelectFirst=True):
+    return f'[{linkText}](/?{KEY_SELECTED_IDS}={ids}' + \
+        f'&{PAGE_STATE_KEY}={page}' + \
+        [f'&{FF_KEY_PRESELECTED_ROWS}=0)' if autoSelectFirst else '']

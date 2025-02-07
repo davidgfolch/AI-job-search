@@ -21,6 +21,14 @@ def red(*text: str):
     return RED + ''.join(text) + __RESET
 
 
+def blue(*text: str):
+    return BLUE + ''.join(text) + __RESET
+
+
+def cyan(*text: str):
+    return CYAN + ''.join(text) + __RESET
+
+
 def printHR(colorFnc=None):
     if colorFnc:
         print(colorFnc('-'*150))

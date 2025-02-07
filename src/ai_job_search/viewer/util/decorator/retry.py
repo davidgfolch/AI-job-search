@@ -47,7 +47,8 @@ def retry(retries: int = 5,
                             print(red(e))
                         return False
                     print(yellow(f'Error calling function {fnc.__name__}()',
-                                 f' -> Retry {i}/{retries}...'))
+                                 f' -> Retry {i}/{retries}... '),
+                          end='', flush=True)
                     if stackStrace == StackTrace.ALWAYS:
                         print(red(traceback.format_exc()))
                     if exceptionFnc is not None:

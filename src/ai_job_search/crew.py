@@ -12,7 +12,9 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 import openai
 from ai_job_search.tools import stopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
-from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
+from ai_job_search.tools.mysqlUtil import (
+    QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
+    QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
 from ai_job_search.tools.util import hasLen, removeExtraEmptyLines
 
 load_dotenv()
@@ -50,13 +52,22 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
         mysqlUtil = MysqlUtil()
         jobErrors = set[tuple[int, str]]()
         try:
-            count, jobs = mysqlUtil.getJobsForAiEnrichment()
+            print('Getting job ids...')
+            count = mysqlUtil.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
+            if count == 0:
+                return
+            jobIds = [row[0] for row in mysqlUtil.fetchAll(
+                QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
             print(f'{count} jobs to be ai_enriched...')
+            print(yellow(f'{jobIds}'))
             crew = AiJobSearch().crew()
-            for idx, job in enumerate(jobs):
+            for idx, id in enumerate(jobIds):
                 stopWatch.start()
                 try:
-                    id = job[0]
+                    job = mysqlUtil.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)
+                    if job is None:
+                        print(f'Job id={id} not found in database, skipping')
+                        continue
                     title = job[1]
                     company = job[3]
                     printHR()
@@ -87,13 +98,18 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                     raise e
                 except Exception as ex:
                     print(red(traceback.format_exc()))
-                    print(yellow(f"Skipping id={id}! (ai_enrich_error set in DB)"))
                     jobErrors.add((id, f'{title} - {company}: {ex}'))
                     aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
                     params = {'ai_enrich_error': aiEnrichError,
                               'ai_enriched': True}
                     query, params = updateFieldsQuery([id], params)
-                    mysqlUtil.executeAndCommit(query, params)
+                    count = mysqlUtil.executeAndCommit(query, params)
+                    if count == 0:
+                        print(yellow(f"ai_enrich_error set, id={id}"))
+                    else:
+                        print(
+                            red(f"could not update ai_enrich_error, id={id}"))
+
                 stopWatch.end()
                 print(yellow(f'Total processed jobs: {idx+1}/{count}'))
                 print()
@@ -179,7 +195,7 @@ def fixJsonInvalidAttribute(raw):
     "salary": "xx",",
     """
     raw = re.sub(r'" \+ "', ' + ', raw)
-    # {"salary": "$\text{Salary determined by the market and your experience} \\\$", 
+    # {"salary": "$\text{Salary determined by the market and your experience} \\\$",
     raw = re.sub(r'"[$]\\text\{([^\}]+)\} \\\\\\\$"', r'\1', raw)
     return re.sub(r'(.+)",",', r'\1",', raw)
 
@@ -226,6 +242,7 @@ class AiJobSearch:
 
     @agent
     def researcher_agent(self) -> Agent:
+        print('Creating agent')
         config = self.agents_config['researcher_agent']
         result = Agent(
             llm=LLM_CFG,
@@ -236,6 +253,7 @@ class AiJobSearch:
 
     @task
     def researcher_task(self) -> Task:
+        print('Creating task')
         config = self.tasks_config['researcher']
         return Task(config=config)
         # ,output_json=JobTaskOutputModel
@@ -243,6 +261,7 @@ class AiJobSearch:
     @crew
     def crew(self) -> Crew:
         """Creates the AiJobSearch crew"""
+        print('Creating the AiJobSearch crew')
         return Crew(
             agents=self.agents,
             tasks=self.tasks,

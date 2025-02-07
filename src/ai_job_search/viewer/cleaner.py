@@ -2,8 +2,9 @@ import streamlit as st
 import pandas as pd
 from ai_job_search.viewer.clean import (
     deleteOld, ignoreInternships, mergeDuplicateds)
-from ai_job_search.viewer.util.cleanUtil import (getAllIds, gotoPage)
+from ai_job_search.viewer.util.cleanUtil import (getAllIds)
 from ai_job_search.viewer.util.stUtil import (PAGE_VIEW_IDX, getState)
+from ai_job_search.viewer.util.viewUtil import gotoPage
 from tools.mysqlUtil import (MysqlUtil)
 
 
@@ -74,8 +75,7 @@ def clean():
             QUERIES[processIdx]['actionButtonFnc'](c1, selectedRows, disabled)
             c1.button('View', on_click=gotoPage,
                       kwargs={'page': PAGE_VIEW_IDX,
-                              'selectedRows': selectedRows,
-                              'idsIndex': idsIndex},
+                              'ids': getAllIds(selectedRows, idsIndex)},
                       type='primary', disabled=disabled)
             if not disabled:
                 c2.dataframe(selectedRows, hide_index=True,

@@ -15,6 +15,7 @@ FF_KEY_WHERE = 'whereFilter'
 FF_KEY_ORDER = 'selectOrder'
 FF_KEY_SINGLE_SELECT = 'singleSelect'
 FF_KEY_LIST_HEIGHT = 'listHeight'
+FF_KEY_PRESELECTED_ROWS = 'preSelectedRows'
 FF_KEY_COLUMNS_WIDTH = 'columnsWidth'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """

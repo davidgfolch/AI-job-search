@@ -4,11 +4,7 @@ from pandas import DataFrame
 import streamlit as st
 
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
-from ai_job_search.tools.util import getEnv, toBool
-
-
-SHOW_SQL = toBool(getEnv('SHOW_SQL', True))
-print(f"SHOW_SQL={SHOW_SQL} {type(SHOW_SQL)}")
+from ai_job_search.tools.util import SHOW_SQL, toBool
 
 
 # Application pages & state keys
@@ -30,13 +26,13 @@ def initStates(keyValue: dict):
     if st.query_params.keys():
         for k in st.query_params.keys():
             if re.fullmatch(r'is([A-Z][a-z]+)+', k):
-                st.session_state[k] = toBool(st.query_params[k])
+                setStateNoError(k, toBool(st.query_params[k]))
             else:
-                st.session_state[k] = st.query_params[k]
+                setStateNoError(k, st.query_params[k])
     else:
         for k in keyValue.keys():
             if k not in st.session_state:
-                st.session_state[k] = keyValue[k]
+                setStateNoError(k, keyValue[k])
 
 
 def printSessionState():
@@ -68,6 +64,13 @@ def getStateBoolValue(*keys: str):
 
 def setState(key: str, value):
     st.session_state[key] = value
+
+
+def setStateNoError(key: str, value):
+    try:
+        st.session_state[key] = value
+    except Exception:
+        pass
 
 
 def setMessageInfo(msg: str):

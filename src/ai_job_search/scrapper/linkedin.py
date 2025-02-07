@@ -1,15 +1,20 @@
 import math
+import traceback
 from urllib.parse import quote
 import re
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, join, printPage, printScrapperTitle, validate)
-from ai_job_search.tools.terminalColor import green, printHR, red, yellow
-from ai_job_search.tools.util import getAndCheckEnvVars
+from ai_job_search.tools.terminalColor import (
+    blue, cyan, green, printHR, red, yellow)
+from ai_job_search.tools.util import (
+    AUTOMATIC_REPEATED_JOBS_MERGE, getAndCheckEnvVars, removeNewLines)
+from ai_job_search.viewer.clean.mergeDuplicateds import IDS_IDX, SELECT, merge
 from ai_job_search.viewer.util.decorator.retry import retry
+from ai_job_search.viewer.util.stUtil import SHOW_SQL
 from .seleniumUtil import SeleniumUtil
-from ai_job_search.tools.mysqlUtil import MysqlUtil
+from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.linkedinSelectors import (
     # CSS_SEL_GLOBAL_ALERT_HIDE,
     CSS_SEL_JOB_DESCRIPTION,
@@ -48,8 +53,8 @@ def run():
     global selenium, mysql
     selenium = SeleniumUtil()
     printScrapperTitle('LinkedIn')
+    mysql = MysqlUtil()
     try:
-        mysql = MysqlUtil()
         login()
         print(yellow('Waiting for LinkedIn to redirect to feed page...',
                      '(Maybe you need to solve a security filter first)'))
@@ -119,7 +124,7 @@ def scrollJobsList(idx):
     cssSel = replaceIndex(CSS_SEL_JOB_LINK, idx)
     if idx < JOBS_X_PAGE-3:  # scroll to job link
         # in last page could not exist
-        scrollJobListRetry(cssSel)
+        scrollJobsListRetry(cssSel)
     selenium.waitUntilClickable(cssSel)
     return cssSel
 
@@ -129,7 +134,7 @@ def scrollToBottom():
 
 
 @retry(exceptionFnc=scrollToBottom)
-def scrollJobListRetry(cssSel):
+def scrollJobsListRetry(cssSel):
     selenium.scrollIntoView(cssSel)
 
 
@@ -155,7 +160,7 @@ def loadJobDetail(jobExists: bool, idx: int, cssSel):
 def jobExistsInDB(cssSel):
     url = selenium.getAttr(cssSel, 'href')
     jobId = getJobId(url)
-    return (jobId, mysql.getJob(jobId) is not None)
+    return (jobId, mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
 
 
 def getJobId(url: str):
@@ -181,20 +186,25 @@ def searchJobs(keywords: str):
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
-        printPage(WEB_PAGE, page, totalPages, keywords)
         while True:
+            errors = 0
+            printPage(WEB_PAGE, page, totalPages, keywords)
             for idx in range(1, JOBS_X_PAGE+1):
                 if currentItem >= totalResults:
                     break  # exit for
                 currentItem += 1
                 print(green(f'pg {page} job {idx} - '), end='')
-                loadAndProcessRow(idx)
+                ok = loadAndProcessRow(idx)
+                errors += 0 if ok else 1
+                if errors > 1:  # exit page loop, some pages has less items
+                    break
+            if AUTOMATIC_REPEATED_JOBS_MERGE:
+                mergeDuplicatedJobs()
             if currentItem >= totalResults:
                 break  # exit while
             if not clickNextPage():
                 break  # exit while
             page += 1
-            printPage(WEB_PAGE, page, totalPages, keywords)
             selenium.waitUntilPageIsLoaded()
         summarize(keywords, totalResults, currentItem)
     except Exception as ex:
@@ -209,11 +219,13 @@ def loadAndProcessRow(idx):
         loadJobDetail(jobExists, idx, cssSel)
     except NoSuchElementException as ex:
         debug("NoSuchElement in loadAndProcessRow " +
-              red(f'ERROR (loadJob): {ex}'))
+              red(f'ERROR (loadJob): {ex.msg}'))
+        return False
     if jobExists:
         print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
     else:
         processRow(idx)
+    return True
 
 
 @retry(exception=ValueError)
@@ -249,3 +261,24 @@ def processRow(idx):
 
 def debug(msg: str = ''):
     baseScrapper.debug(DEBUG, msg)
+
+
+def mergeDuplicatedJobs():
+    try:
+        rows = [row[IDS_IDX] for row in mysql.fetchAll(SELECT)]
+        if len(rows) == 0:
+            return
+        printHR(cyan)
+        print(cyan('Merging duplicated jobs (into the last created one) ',
+                   'and deleting older ones...'))
+        printHR(cyan)
+        for generatorResult in merge(rows):
+            for line in generatorResult:
+                if arr := line.get('arr', None):
+                    print(cyan(*[removeNewLines(f'{a}') for a in arr]))
+                if txt := line.get('query', None) and SHOW_SQL:
+                    print(blue(removeNewLines(txt)))
+                if txt := line.get('text', None):
+                    print(blue(removeNewLines(txt)))
+    except Exception:
+        print(red(traceback.format_exc()))

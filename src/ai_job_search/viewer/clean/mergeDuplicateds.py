@@ -9,7 +9,7 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL)
 
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-company,client,comments"""
+company,client,comments,created"""
 FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 
 INFO = "Show all repeated job offers by `title,company`"
@@ -30,48 +30,65 @@ order by r.title, r.company, r.web_page, r.max_created desc"""
 SELECT_FOR_MERGE = """select {cols}
     from jobs where id in ({ids})
     order by created asc"""
+COLS = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
+COLS_ARR = stripFields(COLS)
+COLS_ARR.remove('closed')
+COL_COMPANY_IDX = COLS_ARR.index('title')
 
 
 def actionButton(stContainer, selectedRows, disabled):
     stContainer.button('Merge & Delete old duplicated in selection',
-                       on_click=merge,
+                       on_click=mergeStreamlitWrapper,
                        kwargs={'selectedRows': selectedRows},
                        type='primary', disabled=disabled)
 
 
-def merge(selectedRows):
+def mergeStreamlitWrapper(selectedRows):
     rows = getAllIds(selectedRows, IDS_IDX, plainIdsStr=False)
-    cols = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
-    colsArr = stripFields(cols)
-    colsArr.remove('closed')
-    colCompanyIdx = colsArr.index('title')
+    with st.container(height=400):
+        for generatorResult in merge(rows):
+            for line in generatorResult:
+                if arr := line.get('arr', None):
+                    [st.write(a) for a in arr]
+                if txt := line.get('query', None):
+                    showCodeSql(txt, True)
+                if txt := line.get('text', None):
+                    st.write(txt)
+
+
+def merge(rows):
     mysql = MysqlUtil()
     try:
-        with st.container(height=400):
-            for ids in rows:
-                query = SELECT_FOR_MERGE.format(
-                    **{'ids': ids,
-                       'cols': cols})
-                showCodeSql(query, True)
-                merged = {}
-                for row in mysql.fetchAll(query):
-                    for idx, f in enumerate(colsArr):
-                        if idx > colCompanyIdx and row[idx]:
-                            merged.setdefault(f, row[idx])
-                    id = getFieldValue(row, colsArr, 'id')
-                st.write(f'`{getFieldValue(row, colsArr, "title")}`',
-                         '-',
-                         f'`{getFieldValue(row, colsArr, "company")}`',
-                         f' (ids={ids})',
-                         merged)
-                updateQry, params = updateFieldsQuery([id], merged)
-                showCodeSql(updateQry)
-                queries = [{'query': updateQry, 'params': params}]
-                idsArr = removeNewestId(ids)
-                deleteQry = deleteJobsQuery(idsArr)
-                showCodeSql(deleteQry)
-                queries.append({'query': deleteQry})
-                affectedRows = mysql.executeAllAndCommit(queries)
-                st.write(f'Affected rows (update & delete): {affectedRows}')
+        for ids in rows:
+            query = SELECT_FOR_MERGE.format(
+                **{'ids': ids,
+                    'cols': COLS})
+            id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
+            updateQry, params = updateFieldsQuery([id], merged)
+            queries = [{'query': updateQry, 'params': params}]
+            idsArr = removeNewestId(ids)
+            deleteQry = deleteJobsQuery(idsArr)
+            queries.append({'query': deleteQry})
+            affectedRows = mysql.executeAllAndCommit(queries)
+            yield [{'arr': out, 'query': query}] + queries + [{
+                'text': f'Affected rows (update & delete): {affectedRows}'}]
+
     finally:
         mysql.close()
+
+
+def mergeJobDuplicates(rows, ids):
+    merged: dict = {}
+    for row in rows:
+        for colIdx, f in enumerate(COLS_ARR):
+            if colIdx > COL_COMPANY_IDX and row[colIdx]:
+                if f != 'created' or \
+                        f == 'created' and merged.get(f, None) is None:
+                    merged.setdefault(f, row[colIdx])
+        id = getFieldValue(row, COLS_ARR, 'id')
+        out = [' '.join([f'`{getFieldValue(row, COLS_ARR, "title")}`',
+                        '-',
+                         f'`{getFieldValue(row, COLS_ARR, "company")}`',
+                         f' (ids={ids})']),
+               merged]
+    return id, merged, out

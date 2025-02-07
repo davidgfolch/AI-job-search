@@ -1,11 +1,11 @@
-import os
-from dotenv import load_dotenv
 import pandas as pd
 from pandas.core.frame import DataFrame
+from ai_job_search.tools.util import SHOW_SQL
 from ai_job_search.viewer.util.viewUtil import (
-    formatDetail, getValuesAsDict, mapDetailForm)
+    formatDetail, getValuesAsDict, gotoPageByUrl, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
-    KEY_SELECTED_IDS, checkAndInput, checkAndPills, formatSql,
+    KEY_SELECTED_IDS, PAGE_VIEW_IDX, checkAndInput,
+    checkAndPills, formatSql,
     getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds,
     getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
     setFieldValue, setMessageInfo, setState, showCodeSql, sortFields)
@@ -14,13 +14,13 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
     DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_DAYS_OLD,
-    FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY,
+    FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL,
     FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS,
     SEARCH_INPUT_HELP, STYLE_JOBS_TABLE, VISIBLE_COLUMNS)
 from tools.mysqlUtil import (
-    MysqlUtil, QRY_SELECT_COUNT_JOBS, QRY_SELECT_JOBS_VIEWER, deleteJobsQuery,
-    updateFieldsQuery)
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY, MysqlUtil, QRY_SELECT_COUNT_JOBS, QRY_SELECT_JOBS_VIEWER,
+    binaryColumnIgnoreCase, deleteJobsQuery, updateFieldsQuery)
 import streamlit as st
 from streamlit.column_config import CheckboxColumn
 # from streamlit_js_eval import streamlit_js_eval
@@ -34,8 +34,8 @@ from streamlit.column_config import CheckboxColumn
 # def sqlConn():
 #     return MysqlUtil()
 
-load_dotenv()
-SHOW_SQL = os.environ.get('SHOW_SQL', True)
+
+mysql = None
 
 
 def onTableChange():
@@ -51,18 +51,19 @@ def onTableChange():
                 value = current
             else:
                 value = list(last ^ current)
-            setState('preSelectedRows', value)
+            setState(FF_KEY_PRESELECTED_ROWS, value)
         else:
-            setState('preSelectedRows', [0])
+            setState(FF_KEY_PRESELECTED_ROWS, [0])
     setState('lastSelected', selected)
 
 
 # https://docs.streamlit.io/develop/tutorials/elements/dataframe-row-selections
 def table(df: DataFrame, fieldsSorted, visibleColumns):
     dfWithSelections = df.copy()
-    preSelectedRows = getState('preSelectedRows', {})
+    preSelectedRows = getState(FF_KEY_PRESELECTED_ROWS, [])
     dfWithSelections.insert(0, "Sel", False)
     for row in preSelectedRows:
+        row = int(row)
         if len(dfWithSelections.index) > row:
             rowIdx = dfWithSelections.index[row]
             dfWithSelections.loc[rowIdx, 'Sel'] = True
@@ -118,11 +119,12 @@ def getJobListQuery():
         searchArr = search.split(',')
         if len(searchArr) > 1:
             searchArr = '|'.join({f"{s.strip()}" for s in searchArr})
-            searchFilter = f'rlike "({searchArr})"'
+            searchFilter = f'rlike "({searchArr.lower()})"'
         else:
-            searchFilter = f"like '%{search}%'"
+            searchFilter = f"like '%{search.lower()}%'"
         searchFilter = ' or '.join(
-            {f'{col} {searchFilter}' for col in SEARCH_COLUMNS})
+            {f'{binaryColumnIgnoreCase(col)} {searchFilter}'
+             for col in SEARCH_COLUMNS})
         where += f"\n and ({searchFilter})"
     salaryRegexFilter = getState(FF_KEY_SALARY)
     if getStateBool(FF_KEY_SALARY) and salaryRegexFilter:
@@ -248,6 +250,7 @@ def deleteSelectedRows():
 
 
 def view():
+    global mysql
     mysql = MysqlUtil()
     initStates({
         FF_KEY_SEARCH: '',
@@ -346,6 +349,7 @@ def view():
                     detailForm(boolFieldsValues, comments,
                                salary, company, client)
                 if totalSelected == 1:
+                    addCompanyAppliedJobsInfo(jobData)
                     formatDetail(jobData)
                     st.divider()
                     c1, c2, _ = st.columns([4, 3, 30])
@@ -364,3 +368,16 @@ def view():
     except InterruptedError as ex:
         mysql.close()
         raise ex
+
+
+def addCompanyAppliedJobsInfo(jobData):
+    params = {'company': str(jobData['company']).lower(),
+              'id':  str(jobData['id'])}
+    rows = mysql.fetchAll(
+        SELECT_APPLIED_JOB_IDS_BY_COMPANY.format(**params))
+    ids = ','.join([str(r[0]) for r in rows])
+    if len(ids) > 0:
+        jobData['company'] += ' ' + gotoPageByUrl(
+            PAGE_VIEW_IDX,
+            f'-> Company already applied ({ids})',
+            ids)
