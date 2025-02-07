@@ -10,7 +10,7 @@ from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars
 from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil, sleep
-from ai_job_search.tools.mysqlUtil import MysqlUtil
+from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.infojobsSelectors import (
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
@@ -162,7 +162,7 @@ def loadJobDetail(jobLinkElm: WebElement):
 
 def jobExistsInDB(url):
     jobId = getJobId(url)
-    return (jobId, mysql.getJob(jobId) is not None)
+    return (jobId, mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
 
 
 def getJobId(url: str):
