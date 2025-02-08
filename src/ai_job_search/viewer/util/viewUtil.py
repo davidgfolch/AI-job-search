@@ -69,10 +69,8 @@ def gotoPage(page, ids):
 
 
 def gotoPageByUrl(page: int, linkText: str, ids: str, autoSelectFirst=True):
-    print(f'ids type = {type(ids)}')
     if isinstance(ids, list):
         ids = ','.join([str(id) for id in ids])
-        print(f'ids type = {type(ids)}')
     markdownUrl = f'[{linkText}](/?' + \
         '&'.join([f'{KEY_SELECTED_IDS}={ids}',
                   f'{PAGE_STATE_KEY}={page}'])
