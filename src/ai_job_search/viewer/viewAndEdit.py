@@ -19,7 +19,9 @@ from ai_job_search.viewer.viewAndEditConstants import (
     FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS,
     SEARCH_INPUT_HELP, STYLE_JOBS_TABLE, VISIBLE_COLUMNS)
 from tools.mysqlUtil import (
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY, MysqlUtil, QRY_SELECT_COUNT_JOBS, QRY_SELECT_JOBS_VIEWER,
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY,
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, MysqlUtil, QRY_SELECT_COUNT_JOBS,
+    QRY_SELECT_JOBS_VIEWER,
     binaryColumnIgnoreCase, deleteJobsQuery, updateFieldsQuery)
 import streamlit as st
 from streamlit.column_config import CheckboxColumn
@@ -373,11 +375,19 @@ def view():
 def addCompanyAppliedJobsInfo(jobData):
     params = {'company': str(jobData['company']).lower(),
               'id':  str(jobData['id'])}
-    rows = mysql.fetchAll(
-        SELECT_APPLIED_JOB_IDS_BY_COMPANY.format(**params))
+    query = SELECT_APPLIED_JOB_IDS_BY_COMPANY
+    # For Joppy offers check also client
+    # (client should be manually set by the user)
+    company = jobData['company']
+    if params['company'] == 'joppy' and jobData['client']:
+        query += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
+        client = str(jobData['client']).lower()
+        params |= {'client': client}
+        company = jobData['client']
+    rows = mysql.fetchAll(query.format(**params))
     ids = ','.join([str(r[0]) for r in rows])
     if len(ids) > 0:
         jobData['company'] += ' ' + gotoPageByUrl(
             PAGE_VIEW_IDX,
-            f'-> Company already applied ({ids})',
+            f':point_right: :warning: already applied {company} ({ids})',
             ids)

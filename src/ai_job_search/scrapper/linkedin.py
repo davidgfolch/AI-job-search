@@ -1,18 +1,16 @@
 import math
-import traceback
 from urllib.parse import quote
 import re
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, join, printPage, printScrapperTitle, validate)
+    htmlToMarkdown, join, mergeDuplicatedJobs, printPage,
+    printScrapperTitle, validate)
 from ai_job_search.tools.terminalColor import (
-    blue, cyan, green, printHR, red, yellow)
-from ai_job_search.tools.util import (
-    AUTOMATIC_REPEATED_JOBS_MERGE, getAndCheckEnvVars, removeNewLines)
-from ai_job_search.viewer.clean.mergeDuplicateds import IDS_IDX, SELECT, merge
+    green, printHR, red, yellow)
+from ai_job_search.tools.util import getAndCheckEnvVars
+from ai_job_search.viewer.clean.mergeDuplicates import SELECT
 from ai_job_search.viewer.util.decorator.retry import retry
-from ai_job_search.viewer.util.stUtil import SHOW_SQL
 from .seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.linkedinSelectors import (
@@ -198,8 +196,7 @@ def searchJobs(keywords: str):
                 errors += 0 if ok else 1
                 if errors > 1:  # exit page loop, some pages has less items
                     break
-            if AUTOMATIC_REPEATED_JOBS_MERGE:
-                mergeDuplicatedJobs()
+            mergeDuplicatedJobs(getDuplicatedJobs)
             if currentItem >= totalResults:
                 break  # exit while
             if not clickNextPage():
@@ -209,6 +206,10 @@ def searchJobs(keywords: str):
         summarize(keywords, totalResults, currentItem)
     except Exception as ex:
         debug(red(f'ERROR: {ex}'))
+
+
+def getDuplicatedJobs():
+    return mysql.fetchAll(SELECT)
 
 
 def loadAndProcessRow(idx):
@@ -261,24 +262,3 @@ def processRow(idx):
 
 def debug(msg: str = ''):
     baseScrapper.debug(DEBUG, msg)
-
-
-def mergeDuplicatedJobs():
-    try:
-        rows = [row[IDS_IDX] for row in mysql.fetchAll(SELECT)]
-        if len(rows) == 0:
-            return
-        printHR(cyan)
-        print(cyan('Merging duplicated jobs (into the last created one) ',
-                   'and deleting older ones...'))
-        printHR(cyan)
-        for generatorResult in merge(rows):
-            for line in generatorResult:
-                if arr := line.get('arr', None):
-                    print(cyan(*[removeNewLines(f'{a}') for a in arr]))
-                if txt := line.get('query', None) and SHOW_SQL:
-                    print(blue(removeNewLines(txt)))
-                if txt := line.get('text', None):
-                    print(blue(removeNewLines(txt)))
-    except Exception:
-        print(red(traceback.format_exc()))

@@ -1,13 +1,14 @@
 import math
 import time
 import re
-import traceback
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, printPage, printScrapperTitle, validate)
-from ai_job_search.tools.terminalColor import green, printHR, red, yellow
+    htmlToMarkdown, mergeDuplicatedJobs, printPage, printScrapperTitle,
+    validate)
+from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars, getEnv
+from ai_job_search.viewer.clean.mergeDuplicates import SELECT
 from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
@@ -60,28 +61,24 @@ def run():
 
 
 def login():
-    try:
-        selenium.loadPage('https://www.glassdoor.es/index.htm')
-        time.sleep(10)
-        selenium.sendKeys('#inlineUserEmail', USER_EMAIL)
-        sleep(2, 5)
-        selenium.waitAndClick('.emailButton button[type=submit]')
-        sleep(2, 5)
-        selenium.waitUntilPageIsLoaded()
-        sleep(1, 2)
-        # 'login password slider wait'
-        selenium.waitUntilClickable(CSS_SEL_PASSWORD_SUBMIT)
-        selenium.waitUntil_presenceLocatedElement(CSS_SEL_PASSWORD_SUBMIT)
-        selenium.waitUntil_presenceLocatedElement(CSS_SEL_INPUT_PASS)
-        selenium.sendKeys(CSS_SEL_INPUT_PASS, USER_PWD)
-        sleep(1, 2)
-        selenium.waitAndClick(CSS_SEL_PASSWORD_SUBMIT)
-        print(yellow('Waiting for Glassdoor to redirect after login...'))
-        selenium.waitUntilPageUrlContains(
-            'https://www.glassdoor.es/Empleo/index.htm', 60)
-    except Exception as ex:
-        debug(red(traceback.format_exc()))
-        raise ex
+    selenium.loadPage('https://www.glassdoor.es/index.htm')
+    time.sleep(10)
+    selenium.sendKeys('#inlineUserEmail', USER_EMAIL)
+    sleep(2, 5)
+    selenium.waitAndClick('.emailButton button[type=submit]')
+    sleep(2, 5)
+    selenium.waitUntilPageIsLoaded()
+    sleep(1, 2)
+    # 'login password slider wait'
+    selenium.waitUntilClickable(CSS_SEL_PASSWORD_SUBMIT)
+    selenium.waitUntil_presenceLocatedElement(CSS_SEL_PASSWORD_SUBMIT)
+    selenium.waitUntil_presenceLocatedElement(CSS_SEL_INPUT_PASS)
+    selenium.sendKeys(CSS_SEL_INPUT_PASS, USER_PWD)
+    sleep(1, 2)
+    selenium.waitAndClick(CSS_SEL_PASSWORD_SUBMIT)
+    print(yellow('Waiting for Glassdoor to redirect after login...'))
+    selenium.waitUntilPageUrlContains(
+        'https://www.glassdoor.es/Empleo/index.htm', 60)
 
 
 @retry()
@@ -116,6 +113,7 @@ def getJobId(url: str):
                   url, flags=re.I)
 
 
+@retry()
 def reInitSeleniumAndLogin():
     global selenium
     # Cloudflare filter retrying with new selenium driver
@@ -158,7 +156,12 @@ def searchJobs(url: str):
                 idx += 1
             if currentItem < totalResults:
                 clickNextPage()
+            mergeDuplicatedJobs(getDuplicatedJobs)
         summarize(keywords, totalResults, currentItem)
+
+
+def getDuplicatedJobs():
+    return mysql.fetchAll(SELECT)
 
 
 @retry()

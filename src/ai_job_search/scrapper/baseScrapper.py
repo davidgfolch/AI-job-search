@@ -6,8 +6,11 @@ import traceback
 # from markdownify import MarkdownConverter
 import markdownify
 
-from ai_job_search.tools.terminalColor import green, printHR, red, yellow
-from ai_job_search.tools.util import hasLenAnyText
+from ai_job_search.tools.terminalColor import (
+    blue, cyan, green, printHR, red, yellow)
+from ai_job_search.tools.util import (
+    AUTOMATIC_REPEATED_JOBS_MERGE, SHOW_SQL, hasLenAnyText, removeNewLines)
+from ai_job_search.viewer.clean.mergeDuplicates import IDS_IDX, merge
 
 
 def printScrapperTitle(scrapper: str):
@@ -75,3 +78,27 @@ def debug(debug: bool, msg: str = '', exception=False):
 
 def join(*str: str) -> str:
     return ''.join(str)
+
+
+def mergeDuplicatedJobs(fncGetDuplicatedJobs):
+    if not AUTOMATIC_REPEATED_JOBS_MERGE:
+        return
+    try:
+        rows = fncGetDuplicatedJobs()
+        if len(rows) == 0:
+            return
+        rows = [row[IDS_IDX] for row in rows]
+        printHR(cyan)
+        print(cyan('Merging duplicated jobs (into the last created one) ',
+                   'and deleting older ones...'))
+        printHR(cyan)
+        for generatorResult in merge(rows):
+            for line in generatorResult:
+                if arr := line.get('arr', None):
+                    print(cyan(*[removeNewLines(f'{a}') for a in arr]))
+                if txt := line.get('query', None) and SHOW_SQL:
+                    print(blue(removeNewLines(txt)))
+                if txt := line.get('text', None):
+                    print(blue(removeNewLines(txt)))
+    except Exception:
+        print(red(traceback.format_exc()))

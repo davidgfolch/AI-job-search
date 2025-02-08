@@ -45,6 +45,7 @@ FROM jobs
 """
 SELECT_APPLIED_JOB_IDS_BY_COMPANY = """select id from jobs
  where applied and lower(company) like '%{company}%' and id != {id}"""
+SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT = """ and client like '%{client}%'"""
 
 
 ERROR_PREFIX = 'MysqlError: '
