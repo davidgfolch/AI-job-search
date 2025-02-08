@@ -2,21 +2,23 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 from ai_job_search.tools.util import SHOW_SQL
 from ai_job_search.viewer.util.viewUtil import (
-    formatDetail, getValuesAsDict, gotoPageByUrl, mapDetailForm)
+    fmtDetailOpField, formatDateTime, getValuesAsDict, gotoPageByUrl,
+    mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, PAGE_VIEW_IDX, checkAndInput,
     checkAndPills, formatSql,
     getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds,
     getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
-    setFieldValue, setMessageInfo, setState, showCodeSql, sortFields)
+    scapeLatex, setFieldValue, setMessageInfo, setState, showCodeSql,
+    sortFields)
 from ai_job_search.viewer.viewAndEditConstants import (
     COLUMNS_WIDTH, DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD,
     DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
-    DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS,
-    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_DAYS_OLD,
-    FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
-    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL,
-    FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS,
+    DEFAULT_SALARY_REGEX_FILTER, DEFAULT_SQL_FILTER, DETAIL_FORMAT,
+    FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH,
+    FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS,
+    FF_KEY_SALARY, FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS,
+    FIELDS_BOOL, FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS, SEARCH_COLUMNS,
     SEARCH_INPUT_HELP, STYLE_JOBS_TABLE, VISIBLE_COLUMNS)
 from tools.mysqlUtil import (
     SELECT_APPLIED_JOB_IDS_BY_COMPANY,
@@ -391,3 +393,31 @@ def addCompanyAppliedJobsInfo(jobData):
             PAGE_VIEW_IDX,
             f':point_right: :warning: already applied {company} ({ids})',
             ids)
+
+
+def formatDetail(jobData: dict):
+    data = scapeLatex(jobData, 'markdown')
+    formatDateTime(jobData)
+    data = {k: (data[k] if data[k] else None)
+            for k in data.keys()}
+    str = DETAIL_FORMAT.format(**data)
+    str += fmtDetailOpField(data, 'client')
+    reqSkills = fmtDetailOpField(data, 'required_technologies', 'Required', 2)
+    opSkills = fmtDetailOpField(data, 'optional_technologies', 'Optional', 2)
+    if reqSkills + opSkills != '':
+        str += ''.join(["- Skills\n", reqSkills, opSkills])
+    st.markdown(str, unsafe_allow_html=True)
+    salary = fmtDetailOpField(data, 'salary')
+    if salary != '':
+        c1, c2 = st.columns(2)
+        c1.write(salary)
+        c2.button('', icon='🗑️',
+                  on_click=deleteSalary, kwargs={'id': jobData['id']})
+    if val := data.get('comments'):
+        with st.expander('Comments', expanded=True):
+            st.markdown(val)
+    st.markdown(data['markdown'])
+
+
+def deleteSalary(id):
+    mysql.executeAndCommit(f'update jobs set salary=null where id = {id}', {})

@@ -38,11 +38,10 @@ DEFAULT_ORDER = "created desc"
 # DETAIL FORMAT
 DETAIL_FORMAT = """
 ## [{title}]({url}) ({id})
-
-- Source: :green[{web_page}]
+- Source: :green[{web_page}] <span style="font-size: small">
+(created :green[{created}] :green[{createdTime}] updated: :green[{modified}])
+</span>
 - Company: :green[{company}]
-- Created: :green[{created}] :green[{createdTime}]
- Modified: :green[{modified}]
 """
 
 LIST_VISIBLE_COLUMNS = stripFields(VISIBLE_COLUMNS)
