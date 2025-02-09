@@ -2,7 +2,7 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 from ai_job_search.tools.util import SHOW_SQL
 from ai_job_search.viewer.util.viewUtil import (
-    fmtDetailOpField, formatDateTime, getValuesAsDict, gotoPageByUrl,
+    fmtDetailOpField, formatDateTime, getValueAsDict, gotoPageByUrl,
     mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, PAGE_VIEW_IDX, checkAndInput,
@@ -10,7 +10,7 @@ from ai_job_search.viewer.util.stUtil import (
     getAndFilter, getBoolKeyName, getColumnTranslated, getSelectedRowsIds,
     getStateBool, getState, getStateBoolValue, initStates, pillsValuesToDict,
     scapeLatex, setFieldValue, setMessageInfo, setState, showCodeSql,
-    sortFields)
+    stripFields)
 from ai_job_search.viewer.viewAndEditConstants import (
     COLUMNS_WIDTH, DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD,
     DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
@@ -143,7 +143,7 @@ def getJobListQuery():
         notValues = removeFiltersInNotFilters()
         where += '\n' + getAndFilter(notValues, False)
     params = {
-        'selectFields': sortFields(DB_FIELDS, 'id,' + VISIBLE_COLUMNS),
+        'selectFields': 'id,' + VISIBLE_COLUMNS,
         'where': where,
         'order': getState(FF_KEY_ORDER, DEFAULT_ORDER)
     }
@@ -289,7 +289,8 @@ def view():
                 with st.expander("View generated sql"):
                     st.code(formatSql(query, False), 'sql',
                             wrap_lines=True, line_numbers=True)
-            df = pd.DataFrame(mysql.fetchAll(query), columns=FIELDS)
+            df = pd.DataFrame(mysql.fetchAll(query), columns=[
+                              'id'] + LIST_VISIBLE_COLUMNS)
             filterResCnt = len(df.index)
             if filterResCnt > 0:
                 selectedRows: DataFrame = table(
@@ -300,7 +301,13 @@ def view():
             totalSelected = len(selectedRows)
             if totalSelected == 1:
                 selected = selectedRows.iloc[0]
-                jobData = getValuesAsDict(selected, FIELDS_SORTED)
+                id = int(selected[0])
+                jobData = mysql.fetchOne(
+                    f"select {DB_FIELDS} from jobs where id=%s", id)
+                fieldsArr = stripFields(DB_FIELDS)
+                jobData = {
+                    f'{fieldsArr[idx]}': getValueAsDict(fieldsArr[idx], data)
+                    for idx, data in enumerate(jobData)}
                 (boolFieldsValues, comments, salary,
                  company, client) = mapDetailForm(jobData, FIELDS_BOOL)
             st.write(''.join([

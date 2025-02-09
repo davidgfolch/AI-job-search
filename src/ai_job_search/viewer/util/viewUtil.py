@@ -30,11 +30,14 @@ def getValuesAsDict(series: DataFrame, fields):
     res = {}
     for idx, f in enumerate(fields):
         value = series.iloc[idx]
-        if f == 'markdown' or f == 'comments':
-            res[f] = value.decode('utf-8') if value else value
-        else:
-            res[f] = value.strip() if isinstance(value, str) else value
+        res[f] = getValueAsDict(f, value)
     return res
+
+
+def getValueAsDict(f, value):
+    if f == 'markdown' or f == 'comments':
+        return value.decode('utf-8') if value else value
+    return value.strip() if isinstance(value, str) else value
 
 
 def formatDateTime(data: dict):
