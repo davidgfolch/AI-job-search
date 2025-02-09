@@ -388,11 +388,12 @@ def addCompanyAppliedJobsInfo(jobData):
         company = jobData['client']
     rows = mysql.fetchAll(query.format(**params))
     ids = ','.join([str(r[0]) for r in rows])
+    dates = ' '.join(['  📅 '+str(r[1].date()) for r in rows])
     if len(ids) > 0:
         jobData['company'] += ' ' + gotoPageByUrl(
             PAGE_VIEW_IDX,
-            f':point_right: :warning: already applied {company} ({ids})',
-            ids)
+            f':point_right: :warning: already applied {company}',
+            ids) + dates
 
 
 def formatDetail(jobData: dict):
