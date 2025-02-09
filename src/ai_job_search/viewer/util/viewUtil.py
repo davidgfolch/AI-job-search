@@ -1,4 +1,5 @@
-from pandas import DataFrame, Timestamp
+import datetime
+from pandas import DataFrame
 
 from ai_job_search.viewer.util.stUtil import (
     KEY_SELECTED_IDS, PAGE_STATE_KEY, scapeLatex, setState)
@@ -42,7 +43,7 @@ def getValueAsDict(f, value):
 
 def formatDateTime(data: dict):
     for f in ['created', 'modified']:
-        if isinstance(data[f], Timestamp):
+        if isinstance(data[f], datetime.datetime):
             data[f'{f}Time'] = f'🕑 {data[f].time()}'
             data[f] = f'📅 {data[f].date()}'
         else:

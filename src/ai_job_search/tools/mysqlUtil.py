@@ -43,7 +43,7 @@ QRY_SELECT_COUNT_JOBS = """
 SELECT count(*)
 FROM jobs
 """
-SELECT_APPLIED_JOB_IDS_BY_COMPANY = """select id from jobs
+SELECT_APPLIED_JOB_IDS_BY_COMPANY = """select id, created from jobs
  where applied and lower(company) like '%{company}%' and id != {id}"""
 SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT = """ and client like '%{client}%'"""
 

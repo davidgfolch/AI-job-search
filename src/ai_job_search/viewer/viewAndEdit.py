@@ -301,7 +301,7 @@ def view():
             totalSelected = len(selectedRows)
             if totalSelected == 1:
                 selected = selectedRows.iloc[0]
-                id = int(selected[0])
+                id = int(selected.iloc[0])
                 jobData = mysql.fetchOne(
                     f"select {DB_FIELDS} from jobs where id=%s", id)
                 fieldsArr = stripFields(DB_FIELDS)
@@ -397,10 +397,12 @@ def addCompanyAppliedJobsInfo(jobData):
     ids = ','.join([str(r[0]) for r in rows])
     dates = ' '.join(['  📅 '+str(r[1].date()) for r in rows])
     if len(ids) > 0:
-        jobData['company'] += ' ' + gotoPageByUrl(
+        jobData['company'] += ' <span style="font-size: small">' + \
+            ':point_right: :warning: ' + \
+            gotoPageByUrl(
             PAGE_VIEW_IDX,
-            f':point_right: :warning: already applied {company}',
-            ids) + dates
+            f'already applied {company}',
+            ids) + f' on {dates}</span>'
 
 
 def formatDetail(jobData: dict):
