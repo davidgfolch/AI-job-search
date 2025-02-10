@@ -289,7 +289,12 @@ def view():
                 with st.expander("View generated sql"):
                     st.code(formatSql(query, False), 'sql',
                             wrap_lines=True, line_numbers=True)
-            df = pd.DataFrame(mysql.fetchAll(query), columns=[
+            try:
+                res = mysql.fetchAll(query)
+            except Exception as e:
+                showCodeSql(query, True)
+                raise e
+            df = pd.DataFrame(res, columns=[
                               'id'] + LIST_VISIBLE_COLUMNS)
             filterResCnt = len(df.index)
             if filterResCnt > 0:

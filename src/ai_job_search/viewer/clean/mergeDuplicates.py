@@ -9,7 +9,7 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL)
 
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-company,client,comments,created"""
+ai_enriched,ai_enrich_error, company,client,comments,created"""
 FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 
 INFO = "Show all repeated job offers by `title,company`"

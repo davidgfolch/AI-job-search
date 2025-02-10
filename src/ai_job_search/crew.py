@@ -52,75 +52,77 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
         mysqlUtil = MysqlUtil()
         jobErrors = set[tuple[int, str]]()
         try:
-            print('Getting job ids...')
-            count = mysqlUtil.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
-            if count == 0:
-                return
-            jobIds = [row[0] for row in mysqlUtil.fetchAll(
-                QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
-            print(f'{count} jobs to be ai_enriched...')
-            print(yellow(f'{jobIds}'))
-            crew = AiJobSearch().crew()
-            for idx, id in enumerate(jobIds):
-                stopWatch.start()
-                try:
-                    job = mysqlUtil.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)
-                    if job is None:
-                        print(f'Job id={id} not found in database, skipping')
-                        continue
-                    title = job[1]
-                    company = job[3]
-                    printHR()
-                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    print(
-                        yellow(f'Job {idx+1}/{count} Started at: {now} ->',
-                               f' id={id}, title={title}, company={company}'))
-                    # DB markdown blob decoding
-                    markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
-                    crewOutput: CrewOutput = crew.kickoff(
-                        inputs={
-                            "markdown": f'# {title} \n {markdown}',
-                        })
-                    # TODO: Version crew_output.json_dict hace que el agente
-                    # piense demasiado, mas AI, más lento, en la Task hay que
-                    # poner output_json=JobTaskOutputModel
-                    # if crew_output.json_dict:
-                    #   json.dumps(crew_output.json_dict)
-                    # if crew_output.pydantic:
-                    #     crew_output.pydantic
-                    result: dict[str, str] = rawToJson(crewOutput.raw)
-                    if result is not None:
-                        validateResult(result)
-                        mysqlUtil.updateFromAI(
-                            id, company, result, 'technologies')
-                except openai.APIStatusError as e:
-                    jobErrors.add((id, f'{title} - {company}: {e}'))
-                    raise e
-                except Exception as ex:
-                    print(red(traceback.format_exc()))
-                    jobErrors.add((id, f'{title} - {company}: {ex}'))
-                    aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
-                    params = {'ai_enrich_error': aiEnrichError,
-                              'ai_enriched': True}
-                    query, params = updateFieldsQuery([id], params)
-                    count = mysqlUtil.executeAndCommit(query, params)
-                    if count == 0:
-                        print(yellow(f"ai_enrich_error set, id={id}"))
-                    else:
+            while True:
+                print('Getting job ids...')
+                count = mysqlUtil.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
+                if count == 0:
+                    print(yellow('All jobs are already AI enriched, bye!'))
+                    return
+                jobIds = [row[0] for row in mysqlUtil.fetchAll(
+                    QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
+                print(f'{count} jobs to be ai_enriched...')
+                print(yellow(f'{jobIds}'))
+                crew = AiJobSearch().crew()
+                for idx, id in enumerate(jobIds):
+                    stopWatch.start()
+                    try:
+                        job = mysqlUtil.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)
+                        if job is None:
+                            print(f'Job id={id} not found in database, skipping')
+                            continue
+                        title = job[1]
+                        company = job[3]
+                        printHR()
+                        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         print(
-                            red(f"could not update ai_enrich_error, id={id}"))
+                            yellow(f'Job {idx+1}/{count} Started at: {now} ->',
+                                f' id={id}, title={title}, company={company}'))
+                        # DB markdown blob decoding
+                        markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
+                        crewOutput: CrewOutput = crew.kickoff(
+                            inputs={
+                                "markdown": f'# {title} \n {markdown}',
+                            })
+                        # TODO: Version crew_output.json_dict hace que el agente
+                        # piense demasiado, mas AI, más lento, en la Task hay que
+                        # poner output_json=JobTaskOutputModel
+                        # if crew_output.json_dict:
+                        #   json.dumps(crew_output.json_dict)
+                        # if crew_output.pydantic:
+                        #     crew_output.pydantic
+                        result: dict[str, str] = rawToJson(crewOutput.raw)
+                        if result is not None:
+                            validateResult(result)
+                            mysqlUtil.updateFromAI(
+                                id, company, result, 'technologies')
+                    except openai.APIStatusError as e:
+                        jobErrors.add((id, f'{title} - {company}: {e}'))
+                        raise e
+                    except Exception as ex:
+                        print(red(traceback.format_exc()))
+                        jobErrors.add((id, f'{title} - {company}: {ex}'))
+                        aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
+                        params = {'ai_enrich_error': aiEnrichError,
+                                'ai_enriched': True}
+                        query, params = updateFieldsQuery([id], params)
+                        count = mysqlUtil.executeAndCommit(query, params)
+                        if count == 0:
+                            print(yellow(f"ai_enrich_error set, id={id}"))
+                        else:
+                            print(
+                                red(f"could not update ai_enrich_error, id={id}"))
 
-                stopWatch.end()
-                print(yellow(f'Total processed jobs: {idx+1}/{count}'))
-                print()
-                print()
+                    stopWatch.end()
+                    print(yellow(f'Total processed jobs: {idx+1}/{count}'))
+                    print()
+                    print()
 
-            if jobErrors:
-                print(red(f'Total job errors: {len(jobErrors)}'))
-                [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
-            print(yellow(''*60))
-            print(yellow('ALL ROWS PROCESSES!'))
-            print(yellow(''*60))
+                if jobErrors:
+                    print(red(f'Total job errors: {len(jobErrors)}'))
+                    [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
+                print(yellow(''*60))
+                print(yellow('ALL ROWS PROCESSES!'))
+                print(yellow(''*60))
         finally:
             mysqlUtil.close()
 
