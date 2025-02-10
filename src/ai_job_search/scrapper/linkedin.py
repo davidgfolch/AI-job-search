@@ -4,12 +4,11 @@ import re
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, join, mergeDuplicatedJobs, printPage,
+    htmlToMarkdown, join, printPage,
     printScrapperTitle, validate)
 from ai_job_search.tools.terminalColor import (
     green, printHR, red, yellow)
 from ai_job_search.tools.util import getAndCheckEnvVars
-from ai_job_search.viewer.clean.mergeDuplicates import SELECT
 from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
@@ -196,7 +195,6 @@ def searchJobs(keywords: str):
                 errors += 0 if ok else 1
                 if errors > 1:  # exit page loop, some pages has less items
                     break
-            mergeDuplicatedJobs(getDuplicatedJobs)
             if currentItem >= totalResults:
                 break  # exit while
             if not clickNextPage():
@@ -206,10 +204,6 @@ def searchJobs(keywords: str):
         summarize(keywords, totalResults, currentItem)
     except Exception as ex:
         debug(red(f'ERROR: {ex}'))
-
-
-def getDuplicatedJobs():
-    return mysql.fetchAll(SELECT)
 
 
 def loadAndProcessRow(idx):

@@ -1,4 +1,7 @@
+import datetime
+import random
 import re
+from time import sleep
 from ai_job_search.tools.terminalColor import yellow
 import os
 from typing import Iterator
@@ -59,3 +62,28 @@ AUTOMATIC_REPEATED_JOBS_MERGE = toBool(
 print(f"SHOW_SQL={SHOW_SQL} {type(SHOW_SQL)}")
 print(f'AUTOMATIC_REPEATED_JOBS_MERGE={AUTOMATIC_REPEATED_JOBS_MERGE}',
       f' {type(AUTOMATIC_REPEATED_JOBS_MERGE)}')
+
+
+def consoleTimer(message: str, timeUnit: str):
+    """timeUnit: 30s|8m|2h"""
+    seconds_per_unit = {"s": 1, "m": 60, "h": 3600}
+    unit = timeUnit[-1]
+    seconds = int(timeUnit[:-1]) * seconds_per_unit[unit]
+    # TODO: spinner abstraction
+    spinners = ["←↖↑↗→↘↓↙", "▁▃▄▅▆▇█▇▆▅▄▃", "▉▊▋▌▍▎▏▎▍▌▋▊▉", "▖▘▝▗",
+                "▌▀▐▄", "┤┘┴└├┌┬┐", "◢◣◤◥", "◰◳◲◱", "◴◷◶◵", "◐◓◑◒",
+                "|/-\\", ".oO@*", "◇◈◆", "⣾⣽⣻⢿⡿⣟⣯⣷",
+                "⡀⡁⡂⡃⡄⡅⡆⡇⡈⡉⡊⡋⡌⡍⡎⡏⡐⡑⡒⡓⡔⡕⡖⡗⡘⡙⡚⡛⡜⡝⡞⡟⡠⡡⡢⡣⡤⡥⡦⡧⡨⡩⡪⡫⡬⡭⡮⡯⡰⡱⡲⡳⡴⡵⡶⡷⡸⡹⡺⡻⡼⡽⡾⡿⢀⢁⢂⢃⢄⢅⢆⢇⢈⢉⢊⢋⢌⢍⢎⢏⢐⢑⢒⢓⢔⢕⢖⢗⢘⢙⢚⢛⢜⢝⢞⢟⢠⢡⢢⢣⢤⢥⢦⢧⢨⢩⢪⢫⢬⢭⢮⢯⢰⢱⢲⢳⢴⢵⢶⢷⢸⢹⢺⢻⢼⢽⢾⢿⣀⣁⣂⣃⣄⣅⣆⣇⣈⣉⣊⣋⣌⣍⣎⣏⣐⣑⣒⣓⣔⣕⣖⣗⣘⣙⣚⣛⣜⣝⣞⣟⣠⣡⣢⣣⣤⣥⣦⣧⣨⣩⣪⣫⣬⣭⣮⣯⣰⣱⣲⣳⣴⣵⣶⣷⣸⣹⣺⣻⣼⣽⣾⣿", "⠁⠂⠄⡀⢀⠠⠐⠈"]
+    spin = spinners[random.randint(0, len(spinners)-1)]
+    tickXSec = 6
+    spinItem = 0
+    for left in range(seconds*tickXSec, 0, -1):
+        spinX = spin[spinItem]*5
+        count = str(datetime.timedelta(seconds=int(left/tickXSec)))
+        print(yellow(
+            message,
+            f"{spinX} I'll retry in {count} {spinX}",
+            f"{' '*10}"),
+            end='\r')
+        spinItem = spinItem+1 if spinItem+1 < len(spin) else 0
+        sleep(1/tickXSec)

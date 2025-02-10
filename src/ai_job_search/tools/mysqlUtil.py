@@ -12,16 +12,14 @@ QRY_INSERT = """
 INSERT INTO jobs (
     jobId,title,company,location,url,markdown,easy_apply,web_page)
           values (%s,%s,%s,%s,%s,%s,%s,%s)"""
-QRY_COUNT_JOBS_FOR_ENRICHMENT = """
-SELECT count(id)
+JOBS_FOR_ENRICHMENT = """
 FROM jobs
-WHERE not ai_enriched and not (ignored or discarded or closed)
+WHERE (ai_enriched IS NULL OR not ai_enriched) and not (ignored or discarded or closed)
 ORDER BY created desc"""
-QRY_FIND_JOBS_IDS_FOR_ENRICHMENT = """
-SELECT id
-FROM jobs
-WHERE not ai_enriched and not (ignored or discarded or closed)
-ORDER BY created desc"""
+QRY_COUNT_JOBS_FOR_ENRICHMENT = f"""
+SELECT count(id) {JOBS_FOR_ENRICHMENT}"""
+QRY_FIND_JOBS_IDS_FOR_ENRICHMENT = f"""
+SELECT id {JOBS_FOR_ENRICHMENT}"""
 QRY_FIND_JOB_FOR_ENRICHMENT = """
 SELECT id, title, markdown, company
 FROM jobs
@@ -129,7 +127,8 @@ class MysqlUtil:
                 print(red(f'Found incorrect value for column {failColumn}, ',
                           'retry with column value None'))
                 paramsDict[failColumn] = None
-                self.updateFromAI(id, company, paramsDict, deprecatedName, deep+1)
+                self.updateFromAI(id, company, paramsDict,
+                                  deprecatedName, deep+1)
             else:
                 raise ex
 

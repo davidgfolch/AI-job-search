@@ -4,11 +4,10 @@ import re
 from selenium.common.exceptions import NoSuchElementException
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, mergeDuplicatedJobs, printPage, printScrapperTitle,
+    htmlToMarkdown, printPage, printScrapperTitle,
     validate)
 from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars, getEnv
-from ai_job_search.viewer.clean.mergeDuplicates import SELECT
 from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
@@ -60,6 +59,7 @@ def run():
         selenium.close()
 
 
+@retry()
 def login():
     selenium.loadPage('https://www.glassdoor.es/index.htm')
     time.sleep(10)
@@ -113,7 +113,6 @@ def getJobId(url: str):
                   url, flags=re.I)
 
 
-@retry()
 def reInitSeleniumAndLogin():
     global selenium
     # Cloudflare filter retrying with new selenium driver
@@ -156,12 +155,7 @@ def searchJobs(url: str):
                 idx += 1
             if currentItem < totalResults:
                 clickNextPage()
-            mergeDuplicatedJobs(getDuplicatedJobs)
         summarize(keywords, totalResults, currentItem)
-
-
-def getDuplicatedJobs():
-    return mysql.fetchAll(SELECT)
 
 
 @retry()

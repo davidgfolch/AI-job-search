@@ -15,7 +15,10 @@ from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
-from ai_job_search.tools.util import hasLen, removeExtraEmptyLines
+from ai_job_search.tools.util import (
+    hasLen, removeExtraEmptyLines, consoleTimer)
+from ai_job_search.viewer.clean.mergeDuplicates import (
+    SELECT, mergeDuplicatedJobs)
 
 load_dotenv()
 MAX_AI_ENRICH_ERROR_LEN = 500
@@ -53,11 +56,14 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
         jobErrors = set[tuple[int, str]]()
         try:
             while True:
-                print('Getting job ids...')
+                print(f'Merging duplicated jobs...{" "*60}', end='\r')
+                mergeDuplicatedJobs(mysqlUtil.fetchAll(SELECT))
+                print(f'Getting job ids...{" "*60}', end='\r')
                 count = mysqlUtil.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
                 if count == 0:
-                    print(yellow('All jobs are already AI enriched, bye!'))
-                    return
+                    consoleTimer("All jobs are already AI enriched, ", '5s')
+                    continue
+                print()
                 jobIds = [row[0] for row in mysqlUtil.fetchAll(
                     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
                 print(f'{count} jobs to be ai_enriched...')
@@ -66,26 +72,31 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 for idx, id in enumerate(jobIds):
                     stopWatch.start()
                     try:
-                        job = mysqlUtil.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)
+                        job = mysqlUtil.fetchOne(
+                            QRY_FIND_JOB_FOR_ENRICHMENT, id)
                         if job is None:
-                            print(f'Job id={id} not found in database, skipping')
+                            print(
+                                f'Job id={id} not found in database, skipping')
                             continue
                         title = job[1]
                         company = job[3]
                         printHR()
-                        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        now = str(datetime.datetime.now())
                         print(
-                            yellow(f'Job {idx+1}/{count} Started at: {now} ->',
-                                f' id={id}, title={title}, company={company}'))
+                            yellow(f'Job {idx+1}/{count} ',
+                                   f'Started at: {now} ->',
+                                   f' id={id}, title={title}, ',
+                                   f'company={company}'))
                         # DB markdown blob decoding
-                        markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
+                        markdown = removeExtraEmptyLines(
+                            job[2].decode("utf-8"))
                         crewOutput: CrewOutput = crew.kickoff(
                             inputs={
                                 "markdown": f'# {title} \n {markdown}',
                             })
-                        # TODO: Version crew_output.json_dict hace que el agente
-                        # piense demasiado, mas AI, más lento, en la Task hay que
-                        # poner output_json=JobTaskOutputModel
+                        # TODO: Version crew_output.json_dict hace que el
+                        # agente piense demasiado, mas AI, más lento, en
+                        # la Task hay que poner output_json=JobTaskOutputModel
                         # if crew_output.json_dict:
                         #   json.dumps(crew_output.json_dict)
                         # if crew_output.pydantic:
@@ -103,14 +114,14 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                         jobErrors.add((id, f'{title} - {company}: {ex}'))
                         aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
                         params = {'ai_enrich_error': aiEnrichError,
-                                'ai_enriched': True}
+                                  'ai_enriched': True}
                         query, params = updateFieldsQuery([id], params)
                         count = mysqlUtil.executeAndCommit(query, params)
                         if count == 0:
                             print(yellow(f"ai_enrich_error set, id={id}"))
                         else:
-                            print(
-                                red(f"could not update ai_enrich_error, id={id}"))
+                            print(red(
+                                f"could not update ai_enrich_error, id={id}"))
 
                     stopWatch.end()
                     print(yellow(f'Total processed jobs: {idx+1}/{count}'))
