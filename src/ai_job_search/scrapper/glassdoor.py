@@ -126,6 +126,7 @@ def reInitSeleniumAndLogin():
 def searchJobs(url: str):
     keywords = url.split('/')
     keywords = keywords[len(keywords)-1:]
+    print(yellow(f'Search keyword={keywords}'))
     print(yellow(f'Loading page {url}'))
     selenium.loadPage(url)
     selenium.waitUntilPageIsLoaded()
@@ -219,9 +220,9 @@ def processRow():
     print(f'{jobId}, {title}, {company}, {location}, ',
           f'easy_apply={easyApply} - ', end='')
     if validate(title, url, company, md, DEBUG):
-        if mysql.insert((jobId, title, company, location, url, md,
-                        easyApply, WEB_PAGE)):
-            print(green('INSERTED!'), end='')
+        if id := mysql.insert((jobId, title, company, location, url, md,
+                               easyApply, WEB_PAGE)):
+            print(green(f'INSERTED {id}!'), end='')
     else:
         raise ValueError('Validation failed')
     print()

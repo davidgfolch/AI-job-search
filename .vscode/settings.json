@@ -7,6 +7,7 @@
         "darkcyan",
         "DATAFRAME",
         "dotenv",
+        "experiencia",
         "genai",
         "glassdoor",
         "HARCODED",
@@ -14,12 +15,19 @@
         "infojobs",
         "Ingeniero",
         "Joppy",
+        "lastrowid",
         "litellm",
         "markdownify",
         "necesarios",
         "onetrust",
+        "remoto",
+        "rgpd",
         "RLIKE",
+        "salarios",
+        "según",
         "Streamlit",
+        "sueldo",
+        "tecnoempleo",
         "webelement"
     ]
 }

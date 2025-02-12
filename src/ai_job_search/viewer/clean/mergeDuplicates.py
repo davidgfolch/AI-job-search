@@ -17,20 +17,20 @@ ai_enriched,ai_enrich_error, company,client,comments,created"""
 FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 
 INFO = "Show all repeated job offers by `title,company`"
-COLUMNS = stripFields('Counter,Ids,Title,Company,Web Page')
+COLUMNS = stripFields('Counter,Ids,Title,Company')
 IDS_IDX = 1
 SELECT = """
-select r.counter, r.ids, r.title, r.company, r.web_page
+select r.counter, r.ids, r.title, r.company
 from (select count(*) as counter,
             GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',') as ids,
             max(created) as max_created,  -- to delete all, but last
-            title, company, web_page
+            title, company
         from jobs
         -- where company != 'Joppy'
-        group by title, company, web_page
+        group by title, company
     ) as r
 where r.counter>1
-order by r.title, r.company, r.web_page, r.max_created desc"""
+order by r.title, r.company, r.max_created desc"""
 SELECT_FOR_MERGE = """select {cols}
     from jobs where id in ({ids})
     order by created asc"""
@@ -100,9 +100,11 @@ def mergeJobDuplicates(rows, ids):
 
 def mergeDuplicatedJobs(rows):
     if not AUTOMATIC_REPEATED_JOBS_MERGE:
+        print('Merging duplicated jobs is disabled, not running.')
         return
     try:
         if len(rows) == 0:
+            print('Merging duplicated jobs, nothing to merge.')
             return
         rows = [row[IDS_IDX] for row in rows]
         printHR(cyan)

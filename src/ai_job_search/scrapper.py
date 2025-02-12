@@ -7,7 +7,8 @@ from ai_job_search.tools.util import consoleTimer
 # FIXME: Implement scrapper by url in view and/or console
 # f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-SRCH_IL.0,6_IC2664239_KO7,21.htm?jl=1009607227015&srs=JV_APPLYPANE
 # taking site id to check if already exists in db
-# this could be an alternative way to add jobs in sites like glassdoor because of cloudflare security filter
+# this could be an alternative way to add jobs in sites like glassdoor because
+# of cloudflare security filter
 # TODO: technoempleo scrapper
 SCRAPPERS: dict = {'Linkedin': linkedin,
                    'Glassdoor': glassdoor,
@@ -17,7 +18,6 @@ SCRAPPERS: dict = {'Linkedin': linkedin,
                    }
 IGNORE_IN_RUN_ALL = [
     indeed,  # FIXME: 'Indeed': indeed, -> Cloudflare filter HARDCORE!
-    tecnoempleo  # TODO: FINISH IMPLEMENTATION
 ]
 
 args = sys.argv
@@ -33,12 +33,13 @@ if len(args) == 1 or starting:
     print(f'Starting at : {startingAt}')
     while True:
         for name, execFnc in SCRAPPERS.items():
-            if execFnc in IGNORE_IN_RUN_ALL or (starting and startingAt != name):
-                print(f'Skipping : {name}, {execFnc}')
+            startAtThis = (starting and startingAt != name)
+            if execFnc in IGNORE_IN_RUN_ALL or startAtThis:
+                print(f'Skipping : {name}')
                 continue
             execFnc.run()
             starting = False
-        consoleTimer("All jobs are already AI enriched, ", '2h')
+        consoleTimer("All jobs are already AI enriched, ", '1h')
 else:
     # Arguments specified in command line
     print(f'Executing specified scrappers: {args[1:]}')

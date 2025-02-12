@@ -7,10 +7,26 @@ import os
 from typing import Iterator
 from dotenv import load_dotenv
 
+
+def getEnvModified() -> float | None:
+    return os.stat('.env').st_ctime if os.stat('.env') else None
+
+
 load_dotenv()
+envLastModified = getEnvModified()
+
+
+def checkEnvReload():
+    global envLastModified
+    if envLastModified == getEnvModified():
+        return
+    print(yellow('Reloading .env'))
+    load_dotenv()
+    envLastModified == getEnvModified()
 
 
 def getAndCheckEnvVars(site: str):
+    checkEnvReload()
     mail = getEnv(f'{site}_EMAIL')
     pwd = getEnv(f'{site}_PWD')
     search = getEnv(f'{site}_JOBS_SEARCH')
@@ -27,6 +43,7 @@ def getAndCheckEnvVars(site: str):
 
 
 def getEnv(key: str, default=None):
+    checkEnvReload()
     return os.environ.get(key, default)
 
 
@@ -62,6 +79,8 @@ AUTOMATIC_REPEATED_JOBS_MERGE = toBool(
 print(f"SHOW_SQL={SHOW_SQL} {type(SHOW_SQL)}")
 print(f'AUTOMATIC_REPEATED_JOBS_MERGE={AUTOMATIC_REPEATED_JOBS_MERGE}',
       f' {type(AUTOMATIC_REPEATED_JOBS_MERGE)}')
+AI_ENRICHMENT_JOB_TIMEOUT_MINUTES = getEnv(
+    'AI_ENRICHMENT_JOB_TIMEOUT_MINUTES', 5)
 
 
 def consoleTimer(message: str, timeUnit: str):
@@ -77,13 +96,16 @@ def consoleTimer(message: str, timeUnit: str):
     spin = spinners[random.randint(0, len(spinners)-1)]
     tickXSec = 6
     spinItem = 0
-    for left in range(seconds*tickXSec, 0, -1):
-        spinX = spin[spinItem]*5
-        count = str(datetime.timedelta(seconds=int(left/tickXSec)))
-        print(yellow(
-            message,
-            f"{spinX} I'll retry in {count} {spinX}",
-            f"{' '*10}"),
-            end='\r')
-        spinItem = spinItem+1 if spinItem+1 < len(spin) else 0
-        sleep(1/tickXSec)
+    try:
+        for left in range(seconds*tickXSec, 0, -1):
+            spinX = spin[spinItem]*5
+            count = str(datetime.timedelta(seconds=int(left/tickXSec)))
+            print(yellow(
+                message,
+                f"{spinX} I'll retry in {count} {spinX}",
+                f"{' '*10}"),
+                end='\r')
+            spinItem = spinItem+1 if spinItem+1 < len(spin) else 0
+            sleep(1/tickXSec)
+    finally:
+        print()

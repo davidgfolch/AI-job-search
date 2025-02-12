@@ -8,6 +8,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from ai_job_search.tools.terminalColor import yellow
+from ai_job_search.viewer.util.decorator.retry import retry
 
 # Rotating User-Agents to avoid Cloudflare security filter
 # TODO: Keep list updated, last update 30/ene/2025
@@ -68,6 +69,7 @@ class SeleniumUtil:
         action = webdriver.ActionChains(driver)
         print(f'selenium driver init driver={driver}')
 
+    @retry()
     def loadPage(self, url: str):
         driver.get(url)
 
@@ -143,14 +145,16 @@ class SeleniumUtil:
         self.moveToElement(elm)
         elm.click()
 
-    def waitAndClick_noError(self, cssSel: str, msg: str, showException=True):
+    def waitAndClick_noError(self, cssSel: str, msg: str, showException=True) -> bool:
         try:
             self.waitAndClick(cssSel)
+            return True
         except Exception as ex:
             if showException:
                 print(f'{msg}, exception {ex}')
             else:
                 print(f'{msg}')
+            return False
 
     def scrollIntoView_noError(self, cssSel: str | WebElement):
         try:
@@ -168,7 +172,7 @@ class SeleniumUtil:
     def getHtml(self, cssSel: str) -> str:
         return self.getAttr(cssSel, 'innerHTML')
 
-    def getText(self, cssSel: str) -> str:
+    def getText(self, cssSel: str | WebElement) -> str:
         return self.getElm(cssSel).text
 
     def getAttr(self, cssSel: str, attr: str) -> str:

@@ -32,7 +32,6 @@ DEFAULT_SQL_FILTER = f"""
 required_technologies rlike '{RLIKE}'
  or title rlike '{RLIKE}'
  or markdown rlike '{RLIKE}'"""
-DEFAULT_SALARY_REGEX_FILTER = "[0-9]{2,}"
 DEFAULT_DAYS_OLD = "1"
 DEFAULT_ORDER = "created desc"
 # DETAIL FORMAT

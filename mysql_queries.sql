@@ -2,7 +2,7 @@ select count(*) from jobs where salary is not null and trim(salary)!=''
 union all
 select count(*) from jobs;
 
-select count(*) from jobs WHERE ai_enriched
+select count(*) from jobs WHERE ai_enriched=False
 union all
 select count(*) from jobs;
 
@@ -11,20 +11,22 @@ select count(*) from jobs;
 select * from jobs WHERE not ai_enriched and not ignored;
 
 -- select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
-update jobs set ai_enriched=1, comments='AI enrichment hangs on this job'
+-- TODO: 
+update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
 -- WHERE ai_enriched and required_technologies like '%\\\\u%';
-where id=37781
+where id=43652
 
 select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 
 
-select * from jobs where jobs.web_page='Linkedin' order by created DESC;
+select * from jobs where jobs.web_page='Tecnoempleo' order by created DESC;
+delete from jobs where jobs.web_page='Tecnoempleo';
 
 update jobs set web_page='Linkedin' where url like '%linkedin%';
 
 
-select ai_enrich_error from jobs where ai_enrich_error is not null;
+select id, ai_enriched, ai_enrich_error from jobs where ai_enrich_error is not null;
 update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
 update jobs set ai_enriched=False where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 24 HOUR);
 

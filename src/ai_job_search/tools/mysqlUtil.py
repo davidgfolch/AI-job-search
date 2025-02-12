@@ -14,7 +14,8 @@ INSERT INTO jobs (
           values (%s,%s,%s,%s,%s,%s,%s,%s)"""
 JOBS_FOR_ENRICHMENT = """
 FROM jobs
-WHERE (ai_enriched IS NULL OR not ai_enriched) and not (ignored or discarded or closed)
+WHERE (ai_enriched IS NULL OR not ai_enriched) and
+not (ignored or discarded or closed)
 ORDER BY created desc"""
 QRY_COUNT_JOBS_FOR_ENRICHMENT = f"""
 SELECT count(id) {JOBS_FOR_ENRICHMENT}"""
@@ -54,6 +55,7 @@ REGEX_INCORRECT_VALUE_FOR_COL = re.compile(
 class MysqlUtil:
 
     def __init__(self):
+        print('Init MysqlUtil, create connection...')
         self.conn = mysql.connector.connect(
             user='root', password='rootPass', database='jobs',
             # pool_name='jobsPool',
@@ -61,20 +63,21 @@ class MysqlUtil:
         )
 
     def __exit__(self):
+        print('Exiting MysqlUtil, close connection...')
         self.conn.close()
 
     def cursor(self):
         return self.conn.cursor()
 
-    def insert(self, params) -> bool:
+    def insert(self, params) -> int | None:
         try:
             with self.cursor() as c:
                 c.execute(QRY_INSERT, params)
                 self.conn.commit()
-            return True
+            return c.lastrowid
         except Error as ex:
             error(ex, end='')
-            return False
+            return None
 
     T = TypeVar("T")  # T = TypeVar("T", bound="List")
 
@@ -122,7 +125,8 @@ class MysqlUtil:
             if deep > len(paramsDict.keys()):
                 return
             failColumn = re.sub(REGEX_INCORRECT_VALUE_FOR_COL, r'\2', str(ex))
-            # FIXME: implement with @retry (needs refactor) or get bbdd meta-data before inserting
+            # FIXME: implement with @retry (needs refactor) or get bbdd
+            # meta-data before inserting
             if failColumn:
                 print(red(f'Found incorrect value for column {failColumn}, ',
                           'retry with column value None'))
@@ -162,6 +166,7 @@ class MysqlUtil:
         return columns
 
     def close(self):
+        print('MysqlUtil close connection...')
         self.conn.close()
 
 

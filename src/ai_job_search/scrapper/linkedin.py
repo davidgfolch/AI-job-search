@@ -170,7 +170,9 @@ def getJobUrlShort(url: str):
 
 def searchJobs(keywords: str):
     try:
+        print(yellow(f'Search keyword={keywords}'))
         url = getUrl(keywords)
+        print(yellow(f'Loading page {url}'))
         selenium.loadPage(url)
         selenium.waitUntilPageIsLoaded()
         if not checkResults(keywords, url):
@@ -242,9 +244,9 @@ def processRow(idx):
         print(f'{jobId}, {title}, {company}, {location}, ',
               f'easy_apply={easyApply} - ', end='')
         if validate(title, url, company, md, DEBUG):
-            if mysql.insert((jobId, title, company, location, url, md,
-                             easyApply, WEB_PAGE)):
-                print(green('INSERTED!'), end='')
+            if id := mysql.insert((jobId, title, company, location, url, md,
+                                   easyApply, WEB_PAGE)):
+                print(green(f'INSERTED {id}!'), end='')
         else:
             raise ValueError('Validation failed')
     except ValueError as e:

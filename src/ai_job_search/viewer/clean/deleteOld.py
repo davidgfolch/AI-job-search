@@ -7,9 +7,13 @@ INFO = f'Delete jobs (older than {DAYS} days and not applied)'
 COLUMNS = stripFields('Id,Title,Company,Created')
 IDS_IDX = 0
 SELECT = f"""
+
 select id,title,company,created
 from jobs
-where DATE(created) < DATE_SUB(CURDATE(), INTERVAL {DAYS} DAY) and not applied
+where DATE(created) < DATE_SUB(CURDATE(), INTERVAL {DAYS} DAY) and
+(applied is null or applied=0) and
+(ignored is null or ignored=0) and
+(seen is null or seen=0)
 order by created desc
 """
 

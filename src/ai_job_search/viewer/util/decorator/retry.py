@@ -26,7 +26,7 @@ def retry(retries: int = 5,
     - delay: The delay (in seconds) between each function retry
     - stackTrace: Show stackTrace if error raises
     - exceptionFnc: function to execute if exception occurs
-    - raiseException: if not raiseException just returns false
+    - raiseException: if not raiseException just returns false on exception
     """
     if retries < 1 or delay <= 0:
         raise ValueError('@retry retries should be >= 1 and delay > 0')

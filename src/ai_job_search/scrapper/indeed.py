@@ -129,7 +129,9 @@ def acceptCookies():
 
 def searchJobs(index: int, keywords: str):
     try:
+        print(yellow(f'Search keyword={keywords}'))
         url = getUrl(keywords)
+        print(yellow(f'Loading page {url}'))
         selenium.loadPage(url)
         time.sleep(10)
         selenium.waitUntilPageIsLoaded()
@@ -219,9 +221,9 @@ def processRow(url):
     print(f'{jobId}, {title}, {company}, {location}, {url}',
           f'easy_apply={easyApply} - ', end='')
     if validate(title, url, company, md, DEBUG):
-        if mysql.insert((jobId, title, company, location, url, md,
-                        easyApply, WEB_PAGE)):
-            print(green('INSERTED!'), end='')
+        if id := mysql.insert((jobId, title, company, location, url, md,
+                               easyApply, WEB_PAGE)):
+            print(green(f'INSERTED {id}!'), end='')
             return True
         else:
             debug(exception=True)

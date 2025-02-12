@@ -16,7 +16,8 @@ from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
 from ai_job_search.tools.util import (
-    hasLen, removeExtraEmptyLines, consoleTimer)
+    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, hasLen, removeExtraEmptyLines,
+    consoleTimer)
 from ai_job_search.viewer.clean.mergeDuplicates import (
     SELECT, mergeDuplicatedJobs)
 
@@ -45,6 +46,7 @@ else:
         # model="ollama/deepseek-r1:8b",  # no GPU inference
         base_url="http://localhost:11434",
         temperature=0)
+mysql = None
 
 
 class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
@@ -52,108 +54,76 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
 
     @start()
     def processRows(self):
-        mysqlUtil = MysqlUtil()
-        jobErrors = set[tuple[int, str]]()
-        try:
-            while True:
-                print(f'Merging duplicated jobs...{" "*60}', end='\r')
-                mergeDuplicatedJobs(mysqlUtil.fetchAll(SELECT))
-                print(f'Getting job ids...{" "*60}', end='\r')
-                count = mysqlUtil.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
+        global mysql
+        while True:
+            try:
+                mysql = MysqlUtil()
+                mergeDuplicatedJobs(mysql.fetchAll(SELECT))
+                count = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
                 if count == 0:
-                    consoleTimer("All jobs are already AI enriched, ", '5s')
+                    consoleTimer("All jobs are already AI enriched, ", '1m')
                     continue
-                print()
-                jobIds = [row[0] for row in mysqlUtil.fetchAll(
-                    QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
                 print(f'{count} jobs to be ai_enriched...')
-                print(yellow(f'{jobIds}'))
-                crew = AiJobSearch().crew()
-                for idx, id in enumerate(jobIds):
-                    stopWatch.start()
-                    try:
-                        job = mysqlUtil.fetchOne(
-                            QRY_FIND_JOB_FOR_ENRICHMENT, id)
-                        if job is None:
-                            print(
-                                f'Job id={id} not found in database, skipping')
-                            continue
-                        title = job[1]
-                        company = job[3]
-                        printHR()
-                        now = str(datetime.datetime.now())
-                        print(
-                            yellow(f'Job {idx+1}/{count} ',
-                                   f'Started at: {now} ->',
-                                   f' id={id}, title={title}, ',
-                                   f'company={company}'))
-                        # DB markdown blob decoding
-                        markdown = removeExtraEmptyLines(
-                            job[2].decode("utf-8"))
-                        crewOutput: CrewOutput = crew.kickoff(
-                            inputs={
-                                "markdown": f'# {title} \n {markdown}',
-                            })
-                        # TODO: Version crew_output.json_dict hace que el
-                        # agente piense demasiado, mas AI, más lento, en
-                        # la Task hay que poner output_json=JobTaskOutputModel
-                        # if crew_output.json_dict:
-                        #   json.dumps(crew_output.json_dict)
-                        # if crew_output.pydantic:
-                        #     crew_output.pydantic
-                        result: dict[str, str] = rawToJson(crewOutput.raw)
-                        if result is not None:
-                            validateResult(result)
-                            mysqlUtil.updateFromAI(
-                                id, company, result, 'technologies')
-                    except openai.APIStatusError as e:
-                        jobErrors.add((id, f'{title} - {company}: {e}'))
-                        raise e
-                    except Exception as ex:
-                        print(red(traceback.format_exc()))
-                        jobErrors.add((id, f'{title} - {company}: {ex}'))
-                        aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
-                        params = {'ai_enrich_error': aiEnrichError,
-                                  'ai_enriched': True}
-                        query, params = updateFieldsQuery([id], params)
-                        count = mysqlUtil.executeAndCommit(query, params)
-                        if count == 0:
-                            print(yellow(f"ai_enrich_error set, id={id}"))
-                        else:
-                            print(red(
-                                f"could not update ai_enrich_error, id={id}"))
-
-                    stopWatch.end()
-                    print(yellow(f'Total processed jobs: {idx+1}/{count}'))
-                    print()
-                    print()
-
-                if jobErrors:
-                    print(red(f'Total job errors: {len(jobErrors)}'))
-                    [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
+                self.enrichJobs(count)
                 print(yellow(''*60))
                 print(yellow('ALL ROWS PROCESSES!'))
                 print(yellow(''*60))
-        finally:
-            mysqlUtil.close()
+            finally:
+                mysql.close()
 
-    # @router(generate_shakespeare_x_post)
-    # def evaluate_x_post(self):
-    #     if self.state.retry_count > 3:
-    #         return "max_retry_exceeded"
-    #     result = XPostReviewCrew().crew().kickoff(
-    # inputs={"x_post": self.state.x_post})
-    #     self.state.valid = result["valid"]
-    #     self.state.feedback = result["feedback"]
-    #     print("valid", self.state.valid)
-    #     print("feedback", self.state.feedback)
-    #     self.state.retry_count += 1
-    #     if self.state.valid:
-    #         return "complete"
-    #     return "retry"
+    def enrichJobs(self, count):
+        jobErrors = set[tuple[int, str]]()
+        jobIds = [row[0] for row in mysql.fetchAll(
+            QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
+        print(yellow(f'{jobIds}'))
+        crew: Crew = AiJobSearch().crew()
+        for idx, id in enumerate(jobIds):
+            stopWatch.start()
+            try:
+                job = mysql.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)
+                if job is None:
+                    print(f'Job id={id} not found in database, skipping')
+                    continue
+                title = job[1]
+                company = job[3]
+                printHR()
+                now = str(datetime.datetime.now())
+                print(yellow(f'Job {idx+1}/{count} Started at: {now} ->',
+                             f' id={id}, title={title}, company={company}'))
+                # DB markdown blob decoding
+                markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
+                crewOutput: CrewOutput = crew.kickoff(
+                    inputs={"markdown": f'# {title} \n {markdown}'})
+                result: dict[str, str] = rawToJson(crewOutput.raw)
+                if result is not None:
+                    validateResult(result)
+                    mysql.updateFromAI(id, company, result, 'technologies')
+            except openai.APIStatusError as e:
+                jobErrors.add((id, f'{title} - {company}: {e}'))
+                raise e
+            except Exception as ex:
+                print(red(traceback.format_exc()))
+                jobErrors.add((id, f'{title} - {company}: {ex}'))
+                aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
+                params = {'ai_enrich_error': aiEnrichError,
+                          'ai_enriched': True}
+                query, params = updateFieldsQuery([id], params)
+                count = mysql.executeAndCommit(query, params)
+                if count == 0:
+                    print(yellow(f"ai_enrich_error set, id={id}"))
+                else:
+                    print(red(f"could not update ai_enrich_error, id={id}"))
+            stopWatch.end()
+            print(yellow(f'Total processed jobs: {idx+1}/{count}'))
+            print()
+            print()
+        if jobErrors:
+            print(red(f'Total job errors: {len(jobErrors)}'))
+            [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
 
 
 def rawToJson(raw: str) -> dict[str, str]:
+    # FIXME: unit test this fnc
     res = raw
     try:
         IM = re.I | re.M
@@ -168,19 +138,15 @@ def rawToJson(raw: str) -> dict[str, str]:
         res = fixInvalidUnicode(res)
         return dict(json.loads(f'{res}'))
     except json.JSONDecodeError as ex:
-        if idx := ex.msg.find('Invalid \\uXXXX escape:') > -1:
+        if ex.msg.find('Invalid \\uXXXX escape:') > -1:
             try:
-                res = res[0:idx-1]
-                res += re.sub(r'\\(u[0-9a-fA-F]{4})', '\\\\\1', res[idx:idx+6])
-                if len(res) > idx+6:
-                    res += res[idx+7:len(res)-1]
+                res = re.sub(r'\\(u[0-9a-f]{4})', '\\\\\1', res, re.I)
                 print(yellow(f'Replaced invalid unicode\'s in json:\n{res}'))
                 return dict(json.loads(f'{res}'))
             except Exception as ex:
                 printJsonException(ex)
                 raise ex
-        else:
-            raise ex
+        raise ex
     except Exception as ex:
         printJsonException(ex)
         raise ex
@@ -208,7 +174,8 @@ def fixJsonInvalidAttribute(raw):
     "salary": "xx",",
     """
     raw = re.sub(r'" \+ "', ' + ', raw)
-    # {"salary": "$\text{Salary determined by the market and your experience} \\\$",
+    # {"salary":
+    # "$\text{Salary determined by the market and your experience} \\\$",
     raw = re.sub(r'"[$]\\text\{([^\}]+)\} \\\\\\\$"', r'\1', raw)
     return re.sub(r'(.+)",",', r'\1",', raw)
 
@@ -216,11 +183,9 @@ def fixJsonInvalidAttribute(raw):
 def fixJsonEndCurlyBraces(raw):
     raw = re.sub('"[)\\\\]', '"}', raw)
     idx = raw.rfind('}')
-    if idx > 0 and idx + 1 < len(raw):
-        # remove extra text after }
+    if idx > 0 and idx + 1 < len(raw):  # remove extra text after }
         return raw[0:idx+1]
-    if idx == -1:
-        # sometimes LLM forgets to close }
+    if idx == -1:  # sometimes LLM forgets to close }
         return raw + '}'
     return raw
 
@@ -236,12 +201,14 @@ def fixJsonStartCurlyBraces(raw):
 def validateResult(result: dict[str, str]):
     salary = result.get('salary')
     if salary:  # infojobs
-        if salary == 'Salario no disponible':
+        if re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
+            print(yellow(f'Removing no numbers salary: {salary}'))
             result.update({'salary': None})
-        elif hasLen(
-                re.finditer(regex := r'^(sueldo|salarios?)[: ]+(.+)',
-                            salary, flags=re.I)):
-            result.update({'salary': re.sub(regex, r'\2', salary, flags=re.I)})
+        else:
+            regex = r'^(sueldo|salarios?|\(?según experiencia\)?)[: ]+(.+)'
+            if hasLen(re.finditer(regex, salary, flags=re.I)):
+                result.update(
+                    {'salary': re.sub(regex, r'\2', salary, flags=re.I)})
     opTechs = result.get('optional_technologies', None)
     if not opTechs:
         result['optional_technologies'] = None
@@ -255,20 +222,25 @@ class AiJobSearch:
 
     @agent
     def researcher_agent(self) -> Agent:
-        print('Creating agent')
+        print('Creating agent:',
+              f'timeout (minutes)={AI_ENRICHMENT_JOB_TIMEOUT_MINUTES}')
         config = self.agents_config['researcher_agent']
         result = Agent(
             llm=LLM_CFG,
             config=config,
             result_as_answer=True,
-            verbose=False)
+            verbose=True,
+            max_iter=1,
+            # max_rpm=1,
+            max_execution_time=AI_ENRICHMENT_JOB_TIMEOUT_MINUTES * 60)
         return result
 
     @task
     def researcher_task(self) -> Task:
         print('Creating task')
         config = self.tasks_config['researcher']
-        return Task(config=config)
+        return Task(config=config,
+                    verbose=True)
         # ,output_json=JobTaskOutputModel
 
     @crew
