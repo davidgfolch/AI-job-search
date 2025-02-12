@@ -12,7 +12,7 @@ PAGES_MAP = {
     1: clean
 }
 c1, c2 = st.columns([10, 40])
-selected = c1.segmented_control(
+selectedView = c1.segmented_control(
     label="Menu",
     options=PAGES.keys(),
     format_func=lambda i: PAGES[i],
@@ -23,9 +23,9 @@ selected = c1.segmented_control(
 )
 if messageInfo := getMessageInfo():
     c2.info(messageInfo)
-if selected is not None:
-    selected = PAGES_MAP[selected]
-    selected()
+if selectedView is not None:
+    selectedView = PAGES_MAP[selectedView]
+    selectedView()
 else:
     view()
 

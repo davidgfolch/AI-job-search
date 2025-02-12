@@ -62,7 +62,10 @@ class MysqlUtil:
             # pool_size=3,
         )
 
-    def __exit__(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
         print('Exiting MysqlUtil, close connection...')
         self.conn.close()
 

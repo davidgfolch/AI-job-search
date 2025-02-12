@@ -19,6 +19,7 @@ where id=43652
 select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 
+select * from jobs where jobs.company='Michael Page' and applied order by created DESC;
 
 select * from jobs where jobs.web_page='Tecnoempleo' order by created DESC;
 delete from jobs where jobs.web_page='Tecnoempleo';
@@ -49,6 +50,11 @@ delete from jobs where not ignored and not applied and DATE(created) > DATE_SUB(
 select count(*) from jobs
 
 select * from jobs where not ignored and not applied and DATE(created) < DATE_SUB(CURDATE(), INTERVAL 1 DAY) and comments is null
+
+select id, created, title, applied, ignored
+from jobs where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 10 DAY) and applied is null or applied=False;
+select * from jobs where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 40 DAY) and not applied and not ignored;
+
 
 select * from jobs where required_technologies rlike '(java|python|scala|clojure)';
 
@@ -110,7 +116,7 @@ from (select count(*) as counter,
 where r.counter>1
 order by r.counter desc, r.title, r.company, r.max_created desc
 
-select title, company, applied, modified from jobs where applied order by modified desc;
+select title, company, applied, modified from jobs where applied order by modified desc limit 1;
 
 update jobs set salary=null where salary = 'Salario no disponible' or salary = 'Paquete retributivo muy competitivo acorde a la valía del candidato'
 or salary = 'Salario a convenir';
