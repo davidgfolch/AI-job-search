@@ -23,8 +23,8 @@ def mapDetailForm(jobData, fieldsBool):
                          jobData.get(f, False) else None,
                          fieldsBool)
         boolFieldsValues = list(filter(lambda x: x, boolMapper))
-    return (boolFieldsValues, comments if comments else '',
-            salary, company, client)
+    comments = comments if comments else ''
+    return boolFieldsValues, comments, salary, company, client
 
 
 def getValuesAsDict(series: DataFrame, fields):
