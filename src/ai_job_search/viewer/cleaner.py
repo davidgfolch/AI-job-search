@@ -1,28 +1,28 @@
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 import pandas as pd
 from ai_job_search.viewer.clean import (
     deleteOld, ignoreInternships, mergeDuplicates)
+from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
 from ai_job_search.viewer.util.cleanUtil import (getAllIds)
-from ai_job_search.viewer.util.stUtil import (PAGE_VIEW_IDX, getState)
+from ai_job_search.viewer.util.stUtil import (
+    PAGE_VIEW_IDX, getState, showCodeSql)
 from ai_job_search.viewer.util.viewUtil import gotoPage
 from tools.mysqlUtil import (MysqlUtil)
 
 
-QUERIES = [
+PROCESS_CONFIG = [
     {'info': mergeDuplicates.INFO,
      'dfCols': mergeDuplicates.COLUMNS,
      'sql': mergeDuplicates.SELECT,
-     'idsIndex': mergeDuplicates.IDS_IDX,
      'actionButtonFnc': mergeDuplicates.actionButton},
     {'info': ignoreInternships.INFO,
      'dfCols': ignoreInternships.COLUMNS,
      'sql': ignoreInternships.SELECT,
-     'idsIndex': ignoreInternships.IDS_IDX,
      'actionButtonFnc': ignoreInternships.actionButton},
     {'info': deleteOld.INFO,
      'dfCols': deleteOld.COLUMNS,
      'sql': deleteOld.SELECT,
-     'idsIndex': deleteOld.IDS_IDX,
      'actionButtonFnc': deleteOld.actionButton}
 ]
 
@@ -31,56 +31,73 @@ def clean():
     mysql = MysqlUtil()
     try:
         c1, c2 = st.columns([5, 5])
-        processIdx = c1.selectbox("Select what to clean",
-                                  range(0, len(QUERIES)),
-                                  format_func=lambda i: QUERIES[i]['info'],
-                                  label_visibility='collapsed',
-                                  key='selectedCleanProcess')
-        query = QUERIES[processIdx]['sql']
-        with c2.expander('Sql query details'):
-            fmtQuery = QUERIES[processIdx]['sql'].strip()
-            if st.toggle('Edit query'):
-                query = st.text_area('Query', query, key='cleanSelectQuery',
-                                     height=300)
-            st.code(query if query else fmtQuery, 'sql')
-        res = mysql.fetchAll(query)
-        if len(res) > 0:
-            if len(res[0]) == len(QUERIES[processIdx]['dfCols']):
-                df = pd.DataFrame(mysql.fetchAll(query),
-                                  columns=QUERIES[processIdx]['dfCols'])
-            else:
-                df = pd.DataFrame(mysql.fetchAll(query),
-                                  columns=mysql.getTableDdlColumnNames('jobs'))
-            dfWithSelections = df.copy()
-            dfWithSelections.insert(
-                0, "Sel", getState('selectAll', False))
-            rows = st.data_editor(dfWithSelections, use_container_width=True,
-                                  hide_index=True,
-                                  key='cleanJobsListTable',
-                                  column_config={'Ids': None}, height=400)
-            selectedRows = df[rows.Sel]
-            totalSelectedRows = len(selectedRows)
-            idsIndex = QUERIES[processIdx]['idsIndex']
-            ids = getAllIds(selectedRows, idsIndex)
-            total = len(getAllIds(rows, idsIndex))
-            totalSelectedIds = len(ids.split(',')) if ids else 0
-            if totalSelectedRows == totalSelectedIds:
-                st.write(f'{totalSelectedIds}/{total} selected/total jobs ')
-            else:
-                st.write(f'{totalSelectedIds}/{total} selected/total jobs ',
-                         f'({totalSelectedRows} selected rows)')
-            c1, c2 = st.columns([3, 20])
-            disabled = totalSelectedIds < 1
-            c1.button('Select all', key='selectAll', type='primary')
-            QUERIES[processIdx]['actionButtonFnc'](c1, selectedRows, disabled)
-            c1.button('View', on_click=gotoPage,
-                      kwargs={'page': PAGE_VIEW_IDX,
-                              'ids': getAllIds(selectedRows, idsIndex)},
-                      type='primary', disabled=disabled)
-            if not disabled:
-                c2.dataframe(selectedRows, hide_index=True,
-                             use_container_width=True)
+        idx = c1.selectbox("Select what to clean",
+                           range(0, len(PROCESS_CONFIG)),
+                           format_func=lambda i: PROCESS_CONFIG[i]['info'],
+                           label_visibility='collapsed',
+                           key='selectedCleanProcess')
+        cnf = PROCESS_CONFIG[idx]
+        query = showQuery(c2, cnf['sql'])
+        rows = mysql.fetchAll(query)
+        if len(rows) > 0:
+            rows, selectedRows = table(mysql, cnf, rows)
+            totalSelectedIds = tableSummary(cnf, rows, selectedRows)
+            actionButtons(cnf, selectedRows, totalSelectedIds)
         else:
             st.warning('No results found for query.')
     finally:
         mysql.close()
+
+
+def table(mysql, cnf, res):
+    queryCols = cnf['dfCols']
+    columns = queryCols if len(res[0]) == len(queryCols) \
+        else mysql.getTableDdlColumnNames('jobs')
+    df = pd.DataFrame(res, columns=columns)
+    dfWithSelections = df.copy()
+    dfWithSelections.insert(0, "Sel", getState('selectAll', False))
+    rows = st.data_editor(dfWithSelections, use_container_width=True,
+                          hide_index=True, key='cleanJobsListTable',
+                          column_config={'Ids': None}, height=400)
+    selectedRows = df[rows.Sel]
+    return rows, selectedRows
+
+
+def actionButtons(cnf, selectedRows, totalSelectedIds):
+    c1, c2 = st.columns([3, 20])
+    disabled = totalSelectedIds < 1
+    c1.button('Select all', key='selectAll', type='primary')
+    cnf['actionButtonFnc'](c1, selectedRows, disabled)
+    c1.button('View', on_click=gotoPage,
+              kwargs={'page': PAGE_VIEW_IDX,
+                      'ids': getAllIds(selectedRows)},
+              type='primary', disabled=disabled)
+    if not disabled:
+        c2.dataframe(selectedRows, hide_index=True,
+                     use_container_width=True)
+
+
+def tableSummary(cnf, rows, selectedRows):
+    totalSelectedIds = countIds(selectedRows, True)
+    totalSelectedRows = len(selectedRows)
+    totalRows = len(rows)
+    total = countIds(rows)
+    txt = [f':green[{totalSelectedIds}/{total} JOBS selected/total]']
+    if totalRows != total:
+        txt.append(
+            f' :blue[({totalSelectedRows}/{totalRows} ROWS selected/total)]')
+    st.write(*txt)
+    return totalSelectedIds
+
+
+def countIds(rows: pd.DataFrame, selection=False):
+    ids = getAllIds(rows)
+    return len(ids.split(',')) if ids else 0
+
+
+def showQuery(container: DeltaGenerator, q: str):
+    with container.expander('Sql query details'):
+        if st.toggle('Edit query'):
+            q = st.text_area('Query', q, key='cleanSelectQuery', height=300)
+        showCodeSql(q, True)
+    return q

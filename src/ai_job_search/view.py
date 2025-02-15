@@ -1,10 +1,11 @@
 import streamlit as st
 from ai_job_search.viewer.cleaner import clean
+from ai_job_search.viewer.util.stStateUtil import printSessionState
 from ai_job_search.viewer.util.stUtil import (
-    PAGE_STATE_KEY, PAGES, getMessageInfo, printSessionState)
+    PAGE_STATE_KEY, PAGES, getMessageInfo)
 from ai_job_search.viewer.viewAndEdit import view
 
-DEBUG = False
+DEBUG = True
 
 st.set_page_config(layout='wide', page_title="ai job search")
 PAGES_MAP = {

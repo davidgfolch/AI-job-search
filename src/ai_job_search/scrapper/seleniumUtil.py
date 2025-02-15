@@ -46,8 +46,9 @@ class SeleniumUtil:
         print('selenium driver init')
         print(DESKTOP_USER_AGENTS)
         opts = webdriver.ChromeOptions()
-        opts.add_argument("--start-maximized")
-        opts.add_argument("start-maximized")
+        # opts.add_argument("--start-maximized")
+        # opts.add_argument("start-maximized")
+        opts.add_argument("--window-size=1920,900")
         # TODO: Couldn't avoid Security filters for Infojobs & Glassdoor
         # options.add_experimental_option("excludeSwitches", ["enable-automation"])
         # options.add_experimental_option('useAutomationExtension', False)

@@ -1,10 +1,11 @@
 import pandas as pd
 from ai_job_search.tools.util import SHOW_SQL, getEnv
+from ai_job_search.viewer.util.stStateUtil import initStates
 from ai_job_search.viewer.util.viewUtil import (
     getValueAsDict, gotoPageByUrl, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
     PAGE_VIEW_IDX, formatSql, getBoolKeyName, getColumnTranslated,
-    getState, initStates, showCodeSql, stripFields)
+    getState, showCodeSql, stripFields)
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD,
     DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
@@ -72,7 +73,7 @@ def view():
                     addCompanyAppliedJobsInfo(jobData)
                     formatDetail(jobData)
                     detailForSingleSelection()
-                else:
+                elif filterResCnt > 0:
                     st.warning("Select one job only to see job detail.")
 
 

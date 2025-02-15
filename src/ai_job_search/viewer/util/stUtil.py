@@ -1,10 +1,14 @@
-from functools import reduce
 import re
 from pandas import DataFrame
 import streamlit as st
-
+from streamlit.delta_generator import DeltaGenerator
+# TODO: modal -> try from streamlit_modal import Modal ??
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
-from ai_job_search.tools.util import SHOW_SQL, toBool
+from ai_job_search.tools.sqlUtil import formatSql
+from ai_job_search.tools.util import SHOW_SQL
+from ai_job_search.viewer.util.historyUtil import historyButton
+from ai_job_search.viewer.util.stStateUtil import (
+    getBoolKeyName, getState, setState)
 
 
 # Application pages & state keys
@@ -19,58 +23,6 @@ PAGES = {
     PAGE_VIEW_IDX: PAGE_VIEW,
     PAGE_CLEAN_IDX: PAGE_CLEAN,
 }
-
-
-# States
-def initStates(keyValue: dict):
-    if st.query_params.keys():
-        for k in st.query_params.keys():
-            if re.fullmatch(r'is([A-Z][a-z]+)+', k):
-                setStateNoError(k, toBool(st.query_params[k]))
-            else:
-                setStateNoError(k, st.query_params[k])
-    else:
-        for k in keyValue.keys():
-            if k not in st.session_state:
-                setStateNoError(k, keyValue[k])
-
-
-def printSessionState():
-    with st.expander("StreamLite session state"):
-        st.write(st.session_state)
-
-
-def getState(key: str, default=None):
-    value = st.session_state.get(key, default)
-    if (isinstance(value, DataFrame) and len(value)) or value:
-        if isinstance(value, str):
-            if len(value.strip()) > 0:
-                return value
-        else:
-            return value
-    return default
-
-
-def getStateBool(*keys: str, default=False) -> bool:
-    return reduce(
-        lambda x, y: x and y,
-        (st.session_state.get(getBoolKeyName(key), default) for key in keys))
-
-
-def getStateBoolValue(*keys: str):
-    return reduce(lambda x, y: x and y,
-                  (getStateBool(key) and getState(key) for key in keys))
-
-
-def setState(key: str, value):
-    st.session_state[key] = value
-
-
-def setStateNoError(key: str, value):
-    try:
-        st.session_state[key] = value
-    except Exception:
-        pass
 
 
 def setMessageInfo(msg: str):
@@ -130,43 +82,26 @@ def scapeLatex(dictionary: dict, keys: list[str]):
     return dictionary
 
 
-def getAndFilter(pills, value):
-    if not pills:
-        return ''
-    fields = list(map(lambda f: f'{f}', pills))
-    if len(fields) > 0:
-        if not value:
-            filters = ' or '.join(fields)
-            return f' and not ({filters})'
-        else:
-            filters = ' and '.join(fields)
-            return f' and ({filters})'
-    return ''
-
-
 # Components
-def checkboxFilter(label, filterKey, container=st):
+def checkboxFilter(label, filterKey, container: DeltaGenerator = st):
     return container.checkbox(label, key=getBoolKeyName(filterKey))
 
 
-def getBoolKeyName(key: str):
-    return f'is{key.title()}'
-
-
-def checkAndInput(label: str, key: str, inColumns=None, withContainer=True):
-    c = st
-    if withContainer:
-        c = st.container(border=1)
+def checkAndInput(label: str, key: str, inColumns=None, withContainer=True,
+                  withHistory=False):
+    c = st.container(border=1) if withContainer else st
     if not inColumns:
         enabled = checkboxFilter(label, key, c)
-        c.text_input(label, key=key, disabled=not enabled,
-                     label_visibility='collapsed')
+        col = c.columns([90, 10], vertical_alignment="top")
+        col[0].text_input(label, key=key, disabled=not enabled,
+                          label_visibility='collapsed')
+        historyButton(key, withHistory, col[1])
     else:
-        c1, c2 = c.columns(inColumns, vertical_alignment="top")
-        with c1:
-            enabled = checkboxFilter(label, key, c)
-        c2.text_input(label, key=key, disabled=not enabled,
-                      label_visibility='collapsed')
+        c = c.columns(inColumns, vertical_alignment="top")
+        enabled = checkboxFilter(label, key, c[0])
+        c[1].text_input(label, key=key, disabled=not enabled,
+                        label_visibility='collapsed')
+        historyButton(key, withHistory, c[2])
 
 
 def checkAndPills(label, fields: list[str], key: str):
@@ -179,23 +114,6 @@ def checkAndPills(label, fields: list[str], key: str):
                      format_func=lambda c: getColumnTranslated(c),
                      selection_mode='multi', disabled=not enabled,
                      label_visibility='collapsed')
-
-
-# Sql format
-def formatSql(query, formatAndsOrs=True):
-    return regexSubs(query, [
-        (r',(?!= )', r', '),
-        (r'(?!=and)(?!=or) (and|or) ', r'\n\t \1 ') if formatAndsOrs else None,
-        (r'\n+', r'\n')
-    ])
-
-
-def regexSubs(txt: str, regExs: list[(re.Pattern, re.Pattern)]):
-    res = txt
-    for r in regExs:
-        if r:
-            res = re.sub(r[0], r[1], res)
-    return res
 
 
 def showCodeSql(sql, format=False):

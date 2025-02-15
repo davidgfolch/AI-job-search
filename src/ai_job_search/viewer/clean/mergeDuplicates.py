@@ -6,6 +6,7 @@ from ai_job_search.tools.mysqlUtil import (
 from ai_job_search.tools.terminalColor import blue, cyan, printHR, red
 from ai_job_search.tools.util import (
     AUTOMATIC_REPEATED_JOBS_MERGE, SHOW_SQL, removeNewLines)
+from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
 from ai_job_search.viewer.util.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
 from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
@@ -16,9 +17,8 @@ DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
 ai_enriched,ai_enrich_error, company,client,comments,created"""
 FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 
-INFO = "Show all repeated job offers by `title,company`"
+INFO = "Merge duplicated jobs by `title,company`"
 COLUMNS = stripFields('Counter,Ids,Title,Company')
-IDS_IDX = 1
 SELECT = """
 select r.counter, r.ids, r.title, r.company
 from (select count(*) as counter,
@@ -48,7 +48,7 @@ def actionButton(stContainer, selectedRows, disabled):
 
 
 def mergeStreamlitWrapper(selectedRows):
-    rows = getAllIds(selectedRows, IDS_IDX, plainIdsStr=False)
+    rows = getAllIds(selectedRows, plainIdsStr=False)
     with st.container(height=400):
         for generatorResult in merge(rows):
             for line in generatorResult:
@@ -106,7 +106,8 @@ def mergeDuplicatedJobs(rows):
         if len(rows) == 0:
             print('Merging duplicated jobs, nothing to merge.')
             return
-        rows = [row[IDS_IDX] for row in rows]
+        idsIdx = getIdsIndex(rows)
+        rows = [row[idsIdx] for row in rows]
         printHR(cyan)
         print(cyan('Merging duplicated jobs (into the last created one) ',
                    'and deleting older ones...'))

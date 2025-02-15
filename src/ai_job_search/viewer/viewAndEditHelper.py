@@ -3,10 +3,12 @@ from streamlit.column_config import CheckboxColumn
 from pandas import DataFrame
 from ai_job_search.tools.mysqlUtil import (
     QRY_SELECT_JOBS_VIEWER, binaryColumnIgnoreCase, getColumnTranslated)
+from ai_job_search.tools.sqlUtil import getAndFilter
+from ai_job_search.viewer.util.stStateUtil import (
+    getStateBool, getStateBoolValue, setState)
 from ai_job_search.viewer.util.stUtil import (
-    KEY_SELECTED_IDS, checkAndInput, checkAndPills, getAndFilter,
-    getBoolKeyName, getState, getStateBool, getStateBoolValue, scapeLatex,
-    setState)
+    KEY_SELECTED_IDS, checkAndInput, checkAndPills,
+    getBoolKeyName, getState, scapeLatex)
 from ai_job_search.viewer.util.viewUtil import fmtDetailOpField, formatDateTime
 from ai_job_search.viewer.viewAndEditConstants import (
     COLUMNS_WIDTH, DEFAULT_ORDER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
@@ -23,18 +25,19 @@ def getJobListQuery():
     where = '1=1'
     if getStateBool(FF_KEY_WHERE) and filters:
         where = f'({filters})'
-    search = getState(FF_KEY_SEARCH)
-    if search:
-        searchArr = search.split(',')
-        if len(searchArr) > 1:
-            searchArr = '|'.join({f"{s.strip()}" for s in searchArr})
-            searchFilter = f'rlike "({searchArr.lower()})"'
-        else:
-            searchFilter = f"like '%{search.lower()}%'"
-        searchFilter = ' or '.join(
-            {f'{binaryColumnIgnoreCase(col)} {searchFilter}'
-             for col in SEARCH_COLUMNS})
-        where += f"\n and ({searchFilter})"
+    if getState(getBoolKeyName(FF_KEY_SEARCH)):
+        search = getState(FF_KEY_SEARCH)
+        if search:
+            searchArr = search.split(',')
+            if len(searchArr) > 1:
+                searchArr = '|'.join({f"{s.strip()}" for s in searchArr})
+                searchFilter = f'rlike "({searchArr.lower()})"'
+            else:
+                searchFilter = f"like '%{search.lower()}%'"
+            searchFilter = ' or '.join(
+                {f'{binaryColumnIgnoreCase(col)} {searchFilter}'
+                 for col in SEARCH_COLUMNS})
+            where += f"\n and ({searchFilter})"
     salaryRegexFilter = getState(FF_KEY_SALARY)
     if getStateBool(FF_KEY_SALARY) and salaryRegexFilter:
         where += f'\n and salary rlike "{salaryRegexFilter}"'
@@ -101,6 +104,7 @@ def getTableColsConfig(fields, visibleColumns, selector=True):
     for idx, c in enumerate(fields):
         if idx > 0 and c in visibleColumns:
             cfg[idx+2] = st.column_config.Column(
+                # TODO: configurable columns width
                 label=getColumnTranslated(c), width='medium')
         else:
             cfg[idx+2] = None
@@ -127,20 +131,25 @@ def formFilter():
         with st.container():
             c1, c2, c3, c4 = st.columns([6, 1, 3, 3])
             with c1:
-                c1.text_input(SEARCH_INPUT_HELP, '', key=FF_KEY_SEARCH)
+                checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH,
+                              withContainer=False, withHistory=True)
             with c2:
-                checkAndInput('Days old', FF_KEY_DAYS_OLD, withContainer=False)
+                checkAndInput('Days old', FF_KEY_DAYS_OLD,
+                              withContainer=False)
             with c3:
-                checkAndInput("Salary regular expression",
-                              FF_KEY_SALARY, withContainer=False)
-            c4.text_input('Sort by columns', key=FF_KEY_ORDER)
+                checkAndInput("Salary regular expression", FF_KEY_SALARY,
+                              withContainer=False, withHistory=True)
+            with c4:
+                checkAndInput('Sort by columns', FF_KEY_ORDER,
+                              withContainer=False, withHistory=True)
             c1, c2 = st.columns(2)
             with c1:
                 checkAndPills('Status filter', FIELDS_BOOL, FF_KEY_BOOL_FIELDS)
             with c2:
                 checkAndPills('Status NOT filter', FIELDS_BOOL,
                               FF_KEY_BOOL_NOT_FIELDS)
-            checkAndInput("SQL where filters", FF_KEY_WHERE, [10, 90], False)
+            checkAndInput("SQL where filters", FF_KEY_WHERE,
+                          withContainer=False, withHistory=True)
 
 
 def formFilterByIdsSetup():
@@ -155,7 +164,7 @@ def formFilterByIdsSetup():
         setState(getBoolKeyName(FF_KEY_WHERE), True)
         setState(FF_KEY_WHERE,
                  ' or '.join({f'id={id}' for id in selectedIds.split(',')}))
-        setState(FF_KEY_ORDER, "company, title, created desc")
+        setState(FF_KEY_ORDER, "modified desc")
         setState(KEY_SELECTED_IDS, None)
 
 
@@ -164,21 +173,22 @@ def tableFooter(totalResults, filterResCnt, totalSelected):
         f'selected ({filterResCnt} filtered, ' + \
         f'{totalResults} total)</p>'
     st.write(totals, unsafe_allow_html=True)
-    c = st.columns([3, 3, 3, 1, 5, 5, 5], vertical_alignment='center')
-    c[0].button('Ignore', help='Mark as ignored and Save',
-                kwargs={'boolField': 'ignored'}, on_click=markAs)
-    c[1].button('Seen', help='Mark as Seen and Save',
-                kwargs={'boolField': 'seen'}, on_click=markAs)
-    c[2].button('Delete', 'deleteButton', help='Delete selected job(s)',
-                disabled=totalSelected < 1,
-                on_click=deleteSelectedRows, type="primary")
-    c[3].write('|')
-    c[4].toggle('Single select', key=FF_KEY_SINGLE_SELECT)
-    c[5].number_input('Heigh', key=FF_KEY_LIST_HEIGHT, value=HEIGHT, step=100,
-                      label_visibility='collapsed')
-    c[6].number_input('Columns width', key=FF_KEY_COLUMNS_WIDTH,
-                      value=COLUMNS_WIDTH, step=0.1,
-                      label_visibility='collapsed')
+    if filterResCnt > 0:
+        c = st.columns([3, 3, 3, 1, 5, 5, 5], vertical_alignment='center')
+        c[0].button('Ignore', help='Mark as ignored and Save',
+                    kwargs={'boolField': 'ignored'}, on_click=markAs)
+        c[1].button('Seen', help='Mark as Seen and Save',
+                    kwargs={'boolField': 'seen'}, on_click=markAs)
+        c[2].button('Delete', 'deleteButton', help='Delete selected job(s)',
+                    disabled=totalSelected < 1,
+                    on_click=deleteSelectedRows, type="primary")
+        c[3].write('|')
+        c[4].toggle('Single select', key=FF_KEY_SINGLE_SELECT)
+        c[5].number_input('Heigh', key=FF_KEY_LIST_HEIGHT,
+                          step=100, label_visibility='collapsed')
+        c[6].number_input('Columns width', key=FF_KEY_COLUMNS_WIDTH,
+                          value=COLUMNS_WIDTH, step=0.1,
+                          label_visibility='collapsed')
 
 
 def formatDetail(jobData: dict):

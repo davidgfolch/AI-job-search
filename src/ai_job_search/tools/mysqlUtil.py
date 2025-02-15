@@ -230,4 +230,6 @@ def inFilter(ids: list[int]):
 
 
 def binaryColumnIgnoreCase(col: str) -> str:
-    return f'CONVERT({col} USING utf8mb4) COLLATE utf8mb4_0900_ai_ci'
+    if col in ['comments', 'markdown']:
+        return f'CONVERT({col} USING utf8mb4) COLLATE utf8mb4_0900_ai_ci'
+    return col

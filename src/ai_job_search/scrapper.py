@@ -39,7 +39,7 @@ if len(args) == 1 or starting:
                 continue
             execFnc.run()
             starting = False
-        consoleTimer("All jobs are already AI enriched, ", '1h')
+        consoleTimer("All jobs are already AI enriched, ", '2h')
 else:
     # Arguments specified in command line
     print(f'Executing specified scrappers: {args[1:]}')
