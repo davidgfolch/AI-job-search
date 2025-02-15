@@ -2,23 +2,48 @@ import sys
 from ai_job_search.scrapper import (
     linkedin, indeed, infojobs, glassdoor, tecnoempleo)
 from ai_job_search.tools.terminalColor import red, yellow
-from ai_job_search.tools.util import consoleTimer
+from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds
 
 # FIXME: Implement scrapper by url in view and/or console
-# f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-SRCH_IL.0,6_IC2664239_KO7,21.htm?jl=1009607227015&srs=JV_APPLYPANE
+# f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-
+# SRCH_IL.0,6_IC2664239_KO7,21.htm?jl=1009607227015&srs=JV_APPLYPANE
 # taking site id to check if already exists in db
 # this could be an alternative way to add jobs in sites like glassdoor because
 # of cloudflare security filter
-# TODO: technoempleo scrapper
-SCRAPPERS: dict = {'Linkedin': linkedin,
-                   'Glassdoor': glassdoor,
-                   'Infojobs': infojobs,
-                   'Tecnoempleo': tecnoempleo,
-                   'Indeed': indeed,
-                   }
-IGNORE_IN_RUN_ALL = [
-    indeed,  # FIXME: 'Indeed': indeed, -> Cloudflare filter HARDCORE!
-]
+SCRAPPERS: dict = {
+    'Linkedin': {
+        'function': linkedin.run,
+        'timer': '1h'},
+    'Glassdoor': {
+        'function': glassdoor.run,
+        'timer': '3h'},
+    'Infojobs': {
+        'function': infojobs.run,
+        'timer': '2h'},
+    'Tecnoempleo': {
+        'function': tecnoempleo.run,
+        'timer': '2h'},
+    'Indeed': {
+        'function': indeed.run,
+        'timer': '3h',
+        'ignoreAutoRun': True
+    },
+}
+executionsTimes = {}
+
+
+def timeExpired():
+    last = executionsTimes.get(name, None)
+    if last:
+        lapsed = getDatetimeNow()-last
+        timeoutSeconds = getSeconds(properties['timer'])
+        print(f'{name} last execution time={last} ',
+              f'lapsed={lapsed} timeoutSeconds={timeoutSeconds}')
+        if lapsed + 1 <= timeoutSeconds:
+            return False
+    executionsTimes[name] = getDatetimeNow()
+    return True
+
 
 args = sys.argv
 print('Scrapper init')
@@ -32,20 +57,23 @@ if len(args) == 1 or starting:
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
     print(f'Starting at : {startingAt}')
     while True:
-        for name, execFnc in SCRAPPERS.items():
+        for name, properties in SCRAPPERS.items():
             startAtThis = (starting and startingAt != name)
-            if execFnc in IGNORE_IN_RUN_ALL or startAtThis:
-                print(f'Skipping : {name}')
-                continue
-            execFnc.run()
-            starting = False
-        consoleTimer("All jobs are already AI enriched, ", '2h')
+            if timeExpired():
+                execFunction = properties['function']
+                if properties.get('ignoreAutoRun', False) or startAtThis:
+                    print(f'Skipping : {name}')
+                    continue
+                execFunction()
+                starting = False
+        consoleTimer(
+            "Waiting for next scrapping execution trigger, ", '1s')
 else:
     # Arguments specified in command line
     print(f'Executing specified scrappers: {args[1:]}')
     for arg in args[1:]:
         if SCRAPPERS.get(arg.capitalize()):
-            SCRAPPERS.get(arg.capitalize()).run()
+            SCRAPPERS.get(arg.capitalize())['function']()
         else:
             print(red(f"Invalid scrapper web page name {arg}"))
             print(yellow(

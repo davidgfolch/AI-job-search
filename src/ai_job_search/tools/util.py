@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 import random
 import re
 from time import sleep
@@ -85,27 +85,54 @@ AI_ENRICHMENT_JOB_TIMEOUT_MINUTES = getEnv(
 
 def consoleTimer(message: str, timeUnit: str):
     """timeUnit: 30s|8m|2h"""
+    seconds = getSeconds(timeUnit)
+    spinner = Spinner()
+    try:
+        for left in range(seconds*spinner.tickXSec, 0, -1):
+            spinnerStr = spinner.generate()
+            timeLeft = str(timedelta(
+                seconds=int(left/spinner.tickXSec)))
+            print(yellow(message,
+                         f"{spinnerStr} I'll retry in {timeLeft} {spinnerStr}",
+                         f"{' '*10}"),
+                  end='\r')
+            spinner.nextTick()
+            sleep(1/spinner.tickXSec)
+    finally:
+        print()
+
+
+def getSeconds(timeUnit: str):
+    """timeUnit: 30s|8m|2h"""
     seconds_per_unit = {"s": 1, "m": 60, "h": 3600}
     unit = timeUnit[-1]
     seconds = int(timeUnit[:-1]) * seconds_per_unit[unit]
-    # TODO: spinner abstraction
-    spinners = ["←↖↑↗→↘↓↙", "▁▃▄▅▆▇█▇▆▅▄▃", "▉▊▋▌▍▎▏▎▍▌▋▊▉", "▖▘▝▗",
-                "▌▀▐▄", "┤┘┴└├┌┬┐", "◢◣◤◥", "◰◳◲◱", "◴◷◶◵", "◐◓◑◒",
-                "|/-\\", ".oO@*", "◇◈◆", "⣾⣽⣻⢿⡿⣟⣯⣷",
-                "⡀⡁⡂⡃⡄⡅⡆⡇⡈⡉⡊⡋⡌⡍⡎⡏⡐⡑⡒⡓⡔⡕⡖⡗⡘⡙⡚⡛⡜⡝⡞⡟⡠⡡⡢⡣⡤⡥⡦⡧⡨⡩⡪⡫⡬⡭⡮⡯⡰⡱⡲⡳⡴⡵⡶⡷⡸⡹⡺⡻⡼⡽⡾⡿⢀⢁⢂⢃⢄⢅⢆⢇⢈⢉⢊⢋⢌⢍⢎⢏⢐⢑⢒⢓⢔⢕⢖⢗⢘⢙⢚⢛⢜⢝⢞⢟⢠⢡⢢⢣⢤⢥⢦⢧⢨⢩⢪⢫⢬⢭⢮⢯⢰⢱⢲⢳⢴⢵⢶⢷⢸⢹⢺⢻⢼⢽⢾⢿⣀⣁⣂⣃⣄⣅⣆⣇⣈⣉⣊⣋⣌⣍⣎⣏⣐⣑⣒⣓⣔⣕⣖⣗⣘⣙⣚⣛⣜⣝⣞⣟⣠⣡⣢⣣⣤⣥⣦⣧⣨⣩⣪⣫⣬⣭⣮⣯⣰⣱⣲⣳⣴⣵⣶⣷⣸⣹⣺⣻⣼⣽⣾⣿", "⠁⠂⠄⡀⢀⠠⠐⠈"]
-    spin = spinners[random.randint(0, len(spinners)-1)]
+    return seconds
+
+
+def getDatetimeNow() -> int:
+    return int(datetime.now().timestamp())
+
+
+class Spinner():
+    SPINNERS = [
+        "←↖↑↗→↘↓↙", "▁▃▄▅▆▇█▇▆▅▄▃", "▉▊▋▌▍▎▏▎▍▌▋▊▉", "▖▘▝▗",
+        "▌▀▐▄", "┤┘┴└├┌┬┐", "◢◣◤◥", "◰◳◲◱", "◴◷◶◵", "◐◓◑◒",
+        "|/-\\", ".oO@*", "◇◈◆", "⣾⣽⣻⢿⡿⣟⣯⣷",
+        "⡀⡁⡂⡃⡄⡅⡆⡇⡈⡉⡊⡋⡌⡍⡎⡏⡐⡑⡒⡓⡔⡕⡖⡗⡘⡙⡚⡛⡜⡝⡞⡟⡠⡡⡢⡣⡤⡥⡦⡧⡨⡩⡪⡫⡬⡭⡮⡯⡰⡱⡲⡳⡴⡵⡶⡷⡸⡹⡺⡻⡼⡽⡾⡿⢀⢁⢂" +
+        "⢃⢄⢅⢆⢇⢈⢉⢊⢋⢌⢍⢎⢏⢐⢑⢒⢓⢔⢕⢖⢗⢘⢙⢚⢛⢜⢝⢞⢟⢠⢡⢢⢣⢤⢥⢦⢧⢨⢩⢪⢫⢬⢭⢮⢯⢰⢱⢲⢳⢴⢵⢶⢷⢸⢹⢺⢻⢼⢽⢾⢿⣀⣁⣂⣃⣄⣅" +
+        "⣆⣇⣈⣉⣊⣋⣌⣍⣎⣏⣐⣑⣒⣓⣔⣕⣖⣗⣘⣙⣚⣛⣜⣝⣞⣟⣠⣡⣢⣣⣤⣥⣦⣧⣨⣩⣪⣫⣬⣭⣮⣯⣰⣱⣲⣳⣴⣵⣶⣷⣸⣹⣺⣻⣼⣽⣾⣿", "⠁⠂⠄⡀⢀" +
+        "⠠⠐⠈"]
     tickXSec = 6
     spinItem = 0
-    try:
-        for left in range(seconds*tickXSec, 0, -1):
-            spinX = spin[spinItem]*5
-            count = str(datetime.timedelta(seconds=int(left/tickXSec)))
-            print(yellow(
-                message,
-                f"{spinX} I'll retry in {count} {spinX}",
-                f"{' '*10}"),
-                end='\r')
-            spinItem = spinItem+1 if spinItem+1 < len(spin) else 0
-            sleep(1/tickXSec)
-    finally:
-        print()
+    spinner = None
+
+    def __init__(self):
+        self.spinner = self.SPINNERS[random.randint(0, len(self.SPINNERS)-1)]
+
+    def nextTick(self):
+        self.spinItem = self.spinItem + \
+            1 if self.spinItem+1 < len(self.spinner) else 0
+
+    def generate(self):
+        return self.spinner[self.spinItem]*5
