@@ -1,29 +1,25 @@
-
-
 import statistics
 import time
 
 from ai_job_search.tools.terminalColor import yellow
 
-times = []
-startTime = time.time()
 
+class StopWatch:
+    def __init__(self):
+        self.times = []
+        self.startTime = None
 
-def start():
-    global startTime
-    startTime = time.time()
+    def start(self):
+        self.startTime = time.time()
 
+    def elapsed(self):
+        end = time.time()
+        elapsed = end-self.startTime
+        print(yellow(f'Time elapsed: {elapsed} secs.'), end='\r')
 
-def elapsed():
-    end = time.time()
-    elapsed = end-startTime
-    print(yellow(f'Time elapsed: {elapsed} secs.', end='\r'))
-
-
-def end():
-    global times
-    end = time.time()
-    timeElapsed = end-startTime
-    times.append(timeElapsed)
-    print(f'Time elapsed: {timeElapsed} secs.')
-    print(yellow(f'Media time elapsed: {statistics.median(times)}'))
+    def end(self):
+        end = time.time()
+        timeElapsed = end-self.startTime
+        self.times.append(timeElapsed)
+        print(f'Time elapsed: {timeElapsed} secs.')
+        print(yellow(f'Media time elapsed: {statistics.median(self.times)}'))

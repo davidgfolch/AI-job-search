@@ -74,6 +74,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
             QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
         print(yellow(f'{jobIds}'))
         crew: Crew = AiJobSearch().crew()
+        stopWatch = stopWatch.StopWatch()
         for idx, id in enumerate(jobIds):
             stopWatch.start()
             try:
