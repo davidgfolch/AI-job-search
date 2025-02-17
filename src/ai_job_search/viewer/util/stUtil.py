@@ -11,20 +11,6 @@ from ai_job_search.viewer.util.stStateUtil import (
     getBoolKeyName, getState, setState)
 
 
-# Application pages & state keys
-PAGE_STATE_KEY = 'selectedPage'
-PAGE_VIEW = "View & manage"
-PAGE_CLEAN = "Clean data"
-PAGE_VIEW_IDX = 0
-PAGE_CLEAN_IDX = 1
-KEY_SELECTED_IDS = 'selectedIds'
-
-PAGES = {
-    PAGE_VIEW_IDX: PAGE_VIEW,
-    PAGE_CLEAN_IDX: PAGE_CLEAN,
-}
-
-
 def setMessageInfo(msg: str):
     setState('messageInfo', msg)
 
@@ -83,8 +69,8 @@ def scapeLatex(dictionary: dict, keys: list[str]):
 
 
 # Components
-def checkboxFilter(label, filterKey, container: DeltaGenerator = st):
-    return container.checkbox(label, key=getBoolKeyName(filterKey))
+def checkboxFilter(label, key, container: DeltaGenerator = st):
+    return container.checkbox(label, key=getBoolKeyName(key))
 
 
 def checkAndInput(label: str, key: str, inColumns=None, withContainer=True,

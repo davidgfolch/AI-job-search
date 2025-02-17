@@ -70,6 +70,13 @@ class SeleniumUtil:
         action = webdriver.ActionChains(driver)
         print(f'selenium driver init driver={driver}')
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        print('Exiting SeleniumUtil, close driver...')
+        driver.close()
+
     @retry()
     def loadPage(self, url: str):
         driver.get(url)

@@ -1,10 +1,13 @@
 import datetime
 from pandas import DataFrame
-
 from ai_job_search.viewer.util.stUtil import (
-    KEY_SELECTED_IDS, PAGE_STATE_KEY, scapeLatex, setState)
+    scapeLatex, setState)
 from ai_job_search.viewer.viewAndEditConstants import (
+    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY,
     FF_KEY_PRESELECTED_ROWS)
+from ai_job_search.viewer.viewConstants import PAGE_STATE_KEY
+
+KEY_SELECTED_IDS = 'selectedIds'
 
 
 def mapDetailForm(jobData, fieldsBool):
@@ -15,10 +18,10 @@ def mapDetailForm(jobData, fieldsBool):
                                              jobData['salary'],
                                              jobData['company'],
                                              jobData['client'])
-        setState('comments', comments)
-        setState('salary', salary)
-        setState('company', company)
-        setState('client', client)
+        setState(F_KEY_COMMENTS, comments)
+        setState(F_KEY_SALARY, salary)
+        setState(F_KEY_COMPANY, company)
+        setState(F_KEY_CLIENT, client)
         boolMapper = map(lambda f: f if
                          jobData.get(f, False) else None,
                          fieldsBool)

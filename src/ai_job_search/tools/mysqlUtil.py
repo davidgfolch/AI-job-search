@@ -168,10 +168,6 @@ class MysqlUtil:
         columns = [getColumnTranslated(c) for c in columns]
         return columns
 
-    def close(self):
-        print('MysqlUtil close connection...')
-        self.conn.close()
-
 
 # static methods
 def getColumnTranslated(c):

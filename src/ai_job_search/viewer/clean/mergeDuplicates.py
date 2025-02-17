@@ -6,7 +6,6 @@ from ai_job_search.tools.mysqlUtil import (
 from ai_job_search.tools.terminalColor import blue, cyan, printHR, red
 from ai_job_search.tools.util import (
     AUTOMATIC_REPEATED_JOBS_MERGE, SHOW_SQL, removeNewLines)
-from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
 from ai_job_search.viewer.util.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
 from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
@@ -61,8 +60,7 @@ def mergeStreamlitWrapper(selectedRows):
 
 
 def merge(rows):
-    mysql = MysqlUtil()
-    try:
+    with MysqlUtil() as mysql:
         for ids in rows:
             query = SELECT_FOR_MERGE.format(
                 **{'ids': ids,
@@ -76,9 +74,6 @@ def merge(rows):
             affectedRows = mysql.executeAllAndCommit(queries)
             yield [{'arr': out, 'query': query}] + queries + [{
                 'text': f'Affected rows (update & delete): {affectedRows}'}]
-
-    finally:
-        mysql.close()
 
 
 def mergeJobDuplicates(rows, ids):
@@ -106,7 +101,7 @@ def mergeDuplicatedJobs(rows):
         if len(rows) == 0:
             print('Merging duplicated jobs, nothing to merge.')
             return
-        idsIdx = getIdsIndex(rows)
+        idsIdx = 1
         rows = [row[idsIdx] for row in rows]
         printHR(cyan)
         print(cyan('Merging duplicated jobs (into the last created one) ',

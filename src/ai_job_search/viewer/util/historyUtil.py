@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
-import pandas
 from pandas import DataFrame, Series
-from ai_job_search.viewer.util.stStateUtil import getState, setState
+from ai_job_search.viewer.util.stStateUtil import (
+    getBoolKeyName, getState, setState)
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
@@ -21,13 +21,13 @@ def historyButton(key: str, history: bool, container: DeltaGenerator = st):
 
 @st.dialog("Field history", width='large')
 def fieldHistory(key):
-    data = pandas.DataFrame(getState(getHistoryKey(key)))
-    data.insert(0, "Sel", False)
-    res = st.data_editor(data=data,
+    df = DataFrame(getState(getHistoryKey(key)))
+    df.insert(0, "Sel", False)
+    st.write(f'File storage: :green[{getFileName(key)}]')
+    res = st.data_editor(data=df,
                          #  column_config={'Sel': None, 'value': None},
                          width=600, use_container_width=True, hide_index=True,
-                         key=key+'_history_table',
-                         )
+                         key=key+'_history_table')
     historyOnChange(key, res)
 
 
@@ -39,6 +39,7 @@ def historyOnChange(key: str, df: DataFrame):
             selected: Series = df["0"]
             selected = selected.values[0]
             setState(key, selected)
+            setState(getBoolKeyName(key), True)
             st.rerun()
 
 

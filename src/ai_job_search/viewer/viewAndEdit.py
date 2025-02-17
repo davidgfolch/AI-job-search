@@ -1,23 +1,26 @@
-import pandas as pd
+from pandas import DataFrame
 from ai_job_search.tools.util import SHOW_SQL, getEnv
 from ai_job_search.viewer.util.stStateUtil import initStates
 from ai_job_search.viewer.util.viewUtil import (
     getValueAsDict, gotoPageByUrl, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
-    PAGE_VIEW_IDX, formatSql, getBoolKeyName, getColumnTranslated,
+    formatSql, getBoolKeyName, getColumnTranslated,
     getState, showCodeSql, stripFields)
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD,
     DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
-    DEFAULT_SQL_FILTER, FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS,
-    FF_KEY_COLUMNS_WIDTH, FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER,
-    FF_KEY_SALARY, FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS,
-    FIELDS_BOOL, FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS,
+    DEFAULT_SQL_FILTER,
+    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY,
+    FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH,
+    FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY,
+    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE,
+    FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS,
     STYLE_JOBS_TABLE)
 from ai_job_search.viewer.viewAndEditEvents import (detailFormSubmit)
 from ai_job_search.viewer.viewAndEditHelper import (
     detailForSingleSelection, formFilter, formatDetail, getJobListQuery, table,
     tableFooter)
+from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 from tools.mysqlUtil import (
     SELECT_APPLIED_JOB_IDS_BY_COMPANY,
     SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, MysqlUtil, QRY_SELECT_COUNT_JOBS)
@@ -96,13 +99,13 @@ def detailForm(jobData):
         rows = 5 if comments is None else len(comments.split('\n'))
         rows = rows if rows > 4 else 5
         height = rows*28 if rows*28 < 600 else 600
-        st.text_area("Comments", comments, key='comments', height=height)
-        st.text_input("Salary", salary, key='salary')
-        st.text_input("Company", company, key='company')
-        st.text_input("Client", client, key='client')
+        st.text_area("Comments", comments, key=F_KEY_COMMENTS, height=height)
+        st.text_input("Salary", salary, key=F_KEY_SALARY)
+        st.text_input("Company", company, key=F_KEY_COMPANY)
+        st.text_input("Client", client, key=F_KEY_CLIENT)
 
 
-def getJobData(selectedRows):
+def getJobData(selectedRows: DataFrame):
     selected = selectedRows.iloc[0]
     id = int(selected.iloc[0])
     jobData = mysql.fetchOne(f"select {DB_FIELDS} from jobs where id=%s", id)
@@ -123,10 +126,11 @@ def tableView():
     except Exception as e:
         showCodeSql(query, True)
         raise e
-    df = pd.DataFrame(res, columns=['id'] + LIST_VISIBLE_COLUMNS)
+    df = DataFrame(res, columns=['id'] + LIST_VISIBLE_COLUMNS)
     filterResCnt = len(df.index)
     if filterResCnt > 0:
         selectedRows = table(df, FIELDS_SORTED, LIST_VISIBLE_COLUMNS)
+        # selectedRows = tableV2(df, FIELDS_SORTED, LIST_VISIBLE_COLUMNS)
     else:
         st.warning('No results found for filter.')
         selectedRows = []
@@ -168,7 +172,5 @@ def addCompanyAppliedJobsInfo(jobData):
     if len(ids) > 0:
         jobData['company'] += ' <span style="font-size: small">' + \
             ':point_right: :warning: ' + \
-            gotoPageByUrl(
-            PAGE_VIEW_IDX,
-            f'already applied {company}',
-            ids) + f' on {dates}</span>'
+            gotoPageByUrl(PAGE_VIEW_IDX, f'already applied {company}', ids) + \
+            f' on {dates}</span>'

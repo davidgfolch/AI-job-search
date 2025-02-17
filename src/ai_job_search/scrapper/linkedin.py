@@ -48,10 +48,8 @@ mysql = None
 def run():
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
-    selenium = SeleniumUtil()
     printScrapperTitle('LinkedIn')
-    mysql = MysqlUtil()
-    try:
+    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
         login()
         print(yellow('Waiting for LinkedIn to redirect to feed page...',
                      '(Maybe you need to solve a security filter first)'))
@@ -60,9 +58,6 @@ def run():
         # TODO: additionally set search ranking?
         for keywords in JOBS_SEARCH.split(','):
             searchJobs(keywords.strip())
-    finally:
-        mysql.close()
-        selenium.close()
 
 
 def login():

@@ -46,17 +46,12 @@ def run():
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     printScrapperTitle('Glassdoor')
-    try:
-        selenium = SeleniumUtil()
-        mysql = MysqlUtil()
+    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
         login()
         for search in JOBS_SEARCH.split('|~|'):
             url = JOBS_SEARCH_BASE_URL.format(**{'search': search})
             print(yellow('Search list URL ', url))
             searchJobs(url)
-    finally:
-        mysql.close()
-        selenium.close()
 
 
 @retry()

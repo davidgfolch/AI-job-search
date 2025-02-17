@@ -43,19 +43,14 @@ mysql = None
 def run():
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
-    selenium = SeleniumUtil()
     printScrapperTitle('Tecnoempleo')
-    mysql = MysqlUtil()
-    try:
+    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
         login()
         print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
         selenium.waitUntilPageUrlContains(
             'https://www.tecnoempleo.com/profesionales/candidat.php', 60)
         for keywords in JOBS_SEARCH.split(','):
             searchJobs(keywords.strip())
-    finally:
-        mysql.close()
-        selenium.close()
 
 
 def login():

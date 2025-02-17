@@ -3,11 +3,11 @@ from streamlit.delta_generator import DeltaGenerator
 import pandas as pd
 from ai_job_search.viewer.clean import (
     deleteOld, ignoreInternships, mergeDuplicates)
-from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
 from ai_job_search.viewer.util.cleanUtil import (getAllIds)
 from ai_job_search.viewer.util.stUtil import (
-    PAGE_VIEW_IDX, getState, showCodeSql)
+    getState, showCodeSql)
 from ai_job_search.viewer.util.viewUtil import gotoPage
+from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 from tools.mysqlUtil import (MysqlUtil)
 
 
@@ -28,8 +28,7 @@ PROCESS_CONFIG = [
 
 
 def clean():
-    mysql = MysqlUtil()
-    try:
+    with MysqlUtil() as mysql:
         c1, c2 = st.columns([5, 5])
         idx = c1.selectbox("Select what to clean",
                            range(0, len(PROCESS_CONFIG)),
@@ -45,8 +44,6 @@ def clean():
             actionButtons(cnf, selectedRows, totalSelectedIds)
         else:
             st.warning('No results found for query.')
-    finally:
-        mysql.close()
 
 
 def table(mysql, cnf, res):

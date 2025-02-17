@@ -46,16 +46,11 @@ def run():
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     printScrapperTitle('Infojobs')
-    try:
-        selenium = SeleniumUtil()
-        mysql = MysqlUtil()
+    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
         # login()
         # securityFilter()
         for i, keywords in enumerate(JOBS_SEARCH.split(',')):
             searchJobs(i, keywords.strip())
-    finally:
-        mysql.close()
-        selenium.close()
 
 
 def login():
