@@ -10,7 +10,7 @@ from crewai.crews.crew_output import CrewOutput
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 import openai
-from ai_job_search.tools import stopWatch
+from ai_job_search.tools.stopWatch import StopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
@@ -74,7 +74,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
             QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
         print(yellow(f'{jobIds}'))
         crew: Crew = AiJobSearch().crew()
-        stopWatch = stopWatch.StopWatch()
+        stopWatch = StopWatch()
         for idx, id in enumerate(jobIds):
             stopWatch.start()
             try:
