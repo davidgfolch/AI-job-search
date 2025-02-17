@@ -5,6 +5,7 @@ from ai_job_search.viewer.util.stUtil import (
     formatSql, getSelectedRowsIds, getState, pillsValuesToDict, setFieldValue,
     setMessageInfo, setState, showCodeSql)
 from ai_job_search.viewer.viewAndEditConstants import (
+    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY,
     FF_KEY_PRESELECTED_ROWS, FF_KEY_SINGLE_SELECT, FIELDS_BOOL)
 
 
@@ -58,10 +59,10 @@ def detailFormSubmit():
     if not ids or len(ids) < 1:
         return
     fieldsValues = pillsValuesToDict('statusFields', FIELDS_BOOL)
-    setFieldValue(fieldsValues, 'comments', None, len(ids) == 1)
-    setFieldValue(fieldsValues, 'salary', None, len(ids) == 1)
-    setFieldValue(fieldsValues, 'company', None, len(ids) == 1)
-    setFieldValue(fieldsValues, 'client', None, len(ids) == 1)
+    setFieldValue(fieldsValues, F_KEY_COMMENTS, None, len(ids) == 1)
+    setFieldValue(fieldsValues, F_KEY_SALARY, None, len(ids) == 1)
+    setFieldValue(fieldsValues, F_KEY_COMPANY, None, len(ids) == 1)
+    setFieldValue(fieldsValues, F_KEY_CLIENT, None, len(ids) == 1)
     if fieldsValues:
         if len(ids) > 1:  # for several rows just fields not None or empty
             fieldsValues = {k: v for k, v in fieldsValues.items() if v}

@@ -84,7 +84,7 @@ delete from jobs where id in (2426 , 2308)
 
 select title, company from jobs where id in (8505, 8518)
 
-select * from jobs where id = 37855
+select * from jobs where id = 57927
 
 select id, title, company from jobs where jobId = 4081331701
 select id, title, company, markdown from jobs where id = 32998;
@@ -159,3 +159,14 @@ interview_rh, interview, interview_tech, interview_technical_test, interview_tec
 ai_enriched, easy_apply
     from jobs where id in (30755, 31097)
     order by created asc
+    
+-- Statistics
+SELECT CONVERT(created,DATE) as createdDate, CONVERT(created,TIME) as createdTime from jobs order by created;
+select s.createdDate, s.createdTime
+from (SELECT CONVERT(created,DATE) as createdDate, CONVERT(created,TIME) as createdTime from jobs order by created) as s
+group by createdDate;
+ 
+ SELECT CONVERT(created,TIME) as timeCreated, count(*) as total
+from jobs
+group by timeCreated
+order by timeCreated

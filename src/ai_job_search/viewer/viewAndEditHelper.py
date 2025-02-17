@@ -1,4 +1,6 @@
+from typing import List
 import streamlit as st
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from streamlit.column_config import CheckboxColumn
 from pandas import DataFrame
 from ai_job_search.tools.mysqlUtil import (
@@ -7,9 +9,10 @@ from ai_job_search.tools.sqlUtil import getAndFilter
 from ai_job_search.viewer.util.stStateUtil import (
     getStateBool, getStateBoolValue, setState)
 from ai_job_search.viewer.util.stUtil import (
-    KEY_SELECTED_IDS, checkAndInput, checkAndPills,
+    checkAndInput, checkAndPills,
     getBoolKeyName, getState, scapeLatex)
-from ai_job_search.viewer.util.viewUtil import fmtDetailOpField, formatDateTime
+from ai_job_search.viewer.util.viewUtil import (
+    KEY_SELECTED_IDS, fmtDetailOpField, formatDateTime)
 from ai_job_search.viewer.viewAndEditConstants import (
     COLUMNS_WIDTH, DEFAULT_ORDER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_DAYS_OLD,
@@ -69,7 +72,7 @@ def removeFiltersInNotFilters():
 
 
 # https://docs.streamlit.io/develop/tutorials/elements/dataframe-row-selections
-def table(df: DataFrame, fieldsSorted, visibleColumns) -> DataFrame:
+def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
     dfWithSelections = df.copy()
     preSelectedRows = getState(FF_KEY_PRESELECTED_ROWS, [])
     dfWithSelections.insert(0, "Sel", False)
@@ -84,7 +87,7 @@ def table(df: DataFrame, fieldsSorted, visibleColumns) -> DataFrame:
         hide_index=True,
         # column_order=fieldSorted,
         on_change=onTableChange,
-        column_config=getTableColsConfig(fieldsSorted, visibleColumns),
+        column_config=getTableColsConfig(columnsOrder, visibleColumns),
         use_container_width=True,
         height=getState(FF_KEY_LIST_HEIGHT, HEIGHT),
         key='jobsListTable',
@@ -92,6 +95,59 @@ def table(df: DataFrame, fieldsSorted, visibleColumns) -> DataFrame:
     selectedRows = df[editedDf.Sel]
     setState('selectedRows', selectedRows)
     return selectedRows
+
+
+def tableV2(df: DataFrame, columnsOrder: List[str], visibleColumns: List[str]) -> DataFrame:
+    # 1. Filtrar columnas existentes
+    cols = df.columns.tolist()
+    columnsOrder = [col for col in columnsOrder if col in cols]
+    visibleColumns = [col for col in visibleColumns if col in cols]
+
+    # 2. Reordenar y filtrar columnas
+    df = df[columnsOrder]  # Reordenar según fieldsSorted
+    df = df[visibleColumns]  # Filtrar columnas visibles
+
+    # 3. Configurar la grilla
+    gb = GridOptionsBuilder.from_dataframe(df)
+
+    # 4. Configurar columnas (ancho, etiquetas, etc.)
+    for col in df.columns:
+        gb.configure_column(
+            col,
+            # Traducir nombres de columnas
+            header_name=getColumnTranslated(col),
+            width=200  # Ajusta el ancho según necesidades
+        )
+
+    # 5. Selección de filas con un click
+    gb.configure_selection(
+        selection_mode="multiple",  # 'single' para selección única
+        use_checkbox=False,  # True para mostrar checkboxes
+        pre_selected_rows=getState(FF_KEY_PRESELECTED_ROWS, []),
+    )
+
+    grid_options = gb.build()
+
+    # 6. Renderizar la tabla
+    grid_response = AgGrid(
+        df,
+        gridOptions=grid_options,
+        height=getState(FF_KEY_LIST_HEIGHT, HEIGHT),
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        key='jobsListTable',
+        allow_unsafe_jmespath=True
+    )
+
+    # 7. Obtener filas seleccionadas
+    selected_rows = grid_response["selected_rows"]
+    # selected_df = DataFrame(selected_rows).drop(
+    #     columns=['_selectedRowNodeInfo'])
+    selected_df = DataFrame(selected_rows)
+
+    # 8. Actualizar estado
+    setState('selectedRows', selected_df)
+
+    return selected_df
 
 
 def getTableColsConfig(fields, visibleColumns, selector=True):

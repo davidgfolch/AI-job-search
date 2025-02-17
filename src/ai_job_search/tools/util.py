@@ -70,7 +70,10 @@ def removeExtraEmptyLines(txt: str) -> str:
 
 
 def removeNewLines(txt: str) -> str:
-    return txt.replace('\n', ' ').replace('\r', '')
+    try:
+        return txt.replace('\n', ' ').replace('\r', '')
+    except Exception:
+        return str(txt)
 
 
 SHOW_SQL = toBool(getEnv('SHOW_SQL', True))

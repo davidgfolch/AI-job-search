@@ -56,8 +56,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     def processRows(self):
         global mysql
         while True:
-            try:
-                mysql = MysqlUtil()
+            with MysqlUtil() as mysql:
                 mergeDuplicatedJobs(mysql.fetchAll(SELECT))
                 count = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
                 if count == 0:
@@ -68,8 +67,6 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 print(yellow(''*60))
                 print(yellow('ALL ROWS PROCESSES!'))
                 print(yellow(''*60))
-            finally:
-                mysql.close()
 
     def enrichJobs(self, count):
         jobErrors = set[tuple[int, str]]()

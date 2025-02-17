@@ -37,8 +37,6 @@ def timeExpired():
     if last:
         lapsed = getDatetimeNow()-last
         timeoutSeconds = getSeconds(properties['timer'])
-        print(f'{name} last execution time={last} ',
-              f'lapsed={lapsed} timeoutSeconds={timeoutSeconds}')
         if lapsed + 1 <= timeoutSeconds:
             return False
     executionsTimes[name] = getDatetimeNow()
@@ -67,7 +65,7 @@ if len(args) == 1 or starting:
                 execFunction()
                 starting = False
         consoleTimer(
-            "Waiting for next scrapping execution trigger, ", '1s')
+            "Waiting for next scrapping execution trigger, ", '10m')
 else:
     # Arguments specified in command line
     print(f'Executing specified scrappers: {args[1:]}')
