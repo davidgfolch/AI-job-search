@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import re
 from pandas import DataFrame, Series
 from ai_job_search.viewer.util.stStateUtil import (
     getBoolKeyName, getState, setState)
@@ -8,26 +9,32 @@ from streamlit.delta_generator import DeltaGenerator
 
 
 def historyButton(key: str, history: bool, container: DeltaGenerator = st):
-    if history:
+    if history and len(loadHistoryFromFile(key)) > 0:
         help = addToHistory(key)
-        help = '(Empty)' if not help else ', '.join(
-            [f':blue[{h}]' if idx % 2 == 0 else f':green[{h}]'
-             for idx, h in enumerate(help)])
+        help = buttonTooltip(help)
         container.button(':clipboard:', help=help,
                          key=key+'_historyButton',
                          on_click=fieldHistory,
                          kwargs={'key': key})
 
 
+def buttonTooltip(help):
+    helpStr = '(Empty)' if not help else ', '.join(
+        [f':blue[{h}]' if idx % 2 == 0 else f':green[{h}]'
+         for idx, h in enumerate(help)])
+    if len(helpStr) > 300:
+        helpStr = f'{len(help)} items in field history'
+    return helpStr
+
+
 @st.dialog("Field history", width='large')
 def fieldHistory(key):
-    df = DataFrame(getState(getHistoryKey(key)))
+    df = DataFrame(loadHistoryFromFile(key))
     df.insert(0, "Sel", False)
     st.write(f'File storage: :green[{getFileName(key)}]')
     res = st.data_editor(data=df,
                          #  column_config={'Sel': None, 'value': None},
-                         width=600, use_container_width=True, hide_index=True,
-                         key=key+'_history_table')
+                         width=600, use_container_width=True, hide_index=True)
     historyOnChange(key, res)
 
 
@@ -44,28 +51,31 @@ def historyOnChange(key: str, df: DataFrame):
 
 
 def addToHistory(key: str):
-    historyKey = getHistoryKey(key)
-    history: set = getState(historyKey, set())
-    if not history or len(history) == 0:
-        history = loadHistoryFromFile(key)
     value = getState(key)
+    history = loadHistoryFromFile(key)
+    if not validValue(value):
+        return history
     if value and value not in history:
+        history = set(history)
         history.add(value.replace('\n', ''))
         saveHistoryToFile(key, history)
-    setState(historyKey, history)
-    return getState(historyKey)
+    return history
+
+
+def validValue(value: str):
+    return value and len(re.findall(f'id *= *[0-9+]', value, re.I | re.M)) == 0
 
 
 def getHistoryKey(key):
     return key + '_history'
 
 
-def loadHistoryFromFile(key) -> set:
+def loadHistoryFromFile(key) -> list:
     fName = getFileName(key)
     if os.path.isfile(fName):
-        res = set(line.strip() for line in open(fName))
-        return res
-    return set()
+        with open(fName) as f:
+            return sortedList(set(line.strip() for line in f.readlines()))
+    return []
 
 
 def getFileName(key):
@@ -76,4 +86,8 @@ def saveHistoryToFile(key, values: set) -> set:
     fName = Path(getFileName(key))
     fName.parent.mkdir(exist_ok=True, parents=True)
     with open(fName, 'w+') as output:
-        output.writelines(v + '\n' for v in values)
+        output.writelines(v + '\n' for v in sortedList(values))
+
+
+def sortedList(values: set) -> list:
+    return sorted(list(values), key=lambda x: x.lower())

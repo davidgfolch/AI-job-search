@@ -30,7 +30,7 @@ interview_rh,interview,interview_tech,interview_technical_test,interview_technic
 ai_enriched,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
 web_page,company,client,markdown,location,url,created,modified,
-comments,{DB_FIELDS_BOOL}"""
+comments,{DB_FIELDS_BOOL},ai_enrich_error"""
 # FILTERS
 RLIKE = getEnv('WHERE_FILTER_REGEX')
 DEFAULT_SQL_FILTER = f"""

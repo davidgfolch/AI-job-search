@@ -16,7 +16,7 @@ from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
 from ai_job_search.tools.util import (
-    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, hasLen, removeExtraEmptyLines,
+    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, getEnv, hasLen, removeExtraEmptyLines,
     consoleTimer)
 from ai_job_search.viewer.clean.mergeDuplicates import (
     SELECT, mergeDuplicatedJobs)
@@ -133,7 +133,7 @@ def rawToJson(raw: str) -> dict[str, str]:
         res = fixJsonStartCurlyBraces(res)
         res = fixJsonEndCurlyBraces(res)
         res = fixJsonInvalidAttribute(res)
-        res = fixInvalidUnicode(res)
+        # res = fixInvalidUnicode(res)
         return dict(json.loads(f'{res}'))
     except json.JSONDecodeError as ex:
         if ex.msg.find('Invalid \\uXXXX escape:') > -1:
@@ -158,12 +158,11 @@ def printJsonException(ex: Exception, res: str, raw: str) -> None:
     raise ex
 
 
-def fixInvalidUnicode(res):
-    # fix invalid unicode
-    res = re.sub('\\\\u00ai', '\u00ad', res)  # á
-    res = re.sub('\\\\u00f3', '\u00ed', res)  # í
-    res = re.sub('\\\\u00f3', '\u00ed', res)  # í
-    return res
+# def fixInvalidUnicode(res):
+#     res = re.sub('\\\\u00ai', '\u00ad', res)  # á
+#     res = re.sub('\\\\u00f3', '\u00ed', res)  # í
+#     res = re.sub('\\\\u00f3', '\u00ed', res)  # í
+#     return res
 
 
 def fixJsonInvalidAttribute(raw):
@@ -220,8 +219,9 @@ class AiJobSearch:
 
     @agent
     def researcher_agent(self) -> Agent:
+        timeout = getEnv(AI_ENRICHMENT_JOB_TIMEOUT_MINUTES)
         print('Creating agent:',
-              f'timeout (minutes)={AI_ENRICHMENT_JOB_TIMEOUT_MINUTES}')
+              f'timeout (minutes)={timeout}')
         config = self.agents_config['researcher_agent']
         result = Agent(
             llm=LLM_CFG,
@@ -230,7 +230,7 @@ class AiJobSearch:
             verbose=True,
             max_iter=1,
             # max_rpm=1,
-            max_execution_time=AI_ENRICHMENT_JOB_TIMEOUT_MINUTES * 60)
+            max_execution_time=timeout * 60)
         return result
 
     @task

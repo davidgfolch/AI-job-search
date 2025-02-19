@@ -10,7 +10,7 @@ from ai_job_search.scrapper.baseScrapper import (
 from ai_job_search.tools.terminalColor import (
     green, printHR, yellow)
 from ai_job_search.tools.util import getAndCheckEnvVars
-from ai_job_search.viewer.util.decorator.retry import retry
+from ai_job_search.tools.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.tecnoempleoSelectors import (

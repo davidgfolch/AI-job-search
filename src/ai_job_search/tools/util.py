@@ -8,8 +8,14 @@ from typing import Iterator
 from dotenv import load_dotenv
 
 
+SHOW_SQL = 'SHOW_SQL'
+AUTOMATIC_REPEATED_JOBS_MERGE = 'AUTOMATIC_REPEATED_JOBS_MERGE'
+AI_ENRICHMENT_JOB_TIMEOUT_MINUTES = 'AI_ENRICHMENT_JOB_TIMEOUT_MINUTES'
+
+
 def getEnvModified() -> float | None:
-    return os.stat('.env').st_ctime if os.stat('.env') else None
+    x = os.stat('.env').st_ctime if os.stat('.env') else None
+    return x
 
 
 load_dotenv()
@@ -18,11 +24,12 @@ envLastModified = getEnvModified()
 
 def checkEnvReload():
     global envLastModified
-    if envLastModified == getEnvModified():
+    modified = envLastModified == getEnvModified()
+    if modified:
         return
     print(yellow('Reloading .env'))
-    load_dotenv()
-    envLastModified == getEnvModified()
+    load_dotenv(override=True)
+    envLastModified = getEnvModified()
 
 
 def getAndCheckEnvVars(site: str):
@@ -42,9 +49,17 @@ def getAndCheckEnvVars(site: str):
     return mail, pwd, search
 
 
-def getEnv(key: str, default=None):
+def getEnv(key: str, default: str = None) -> str:
     checkEnvReload()
-    return os.environ.get(key, default)
+    v = os.environ.get(key, default)
+    print(f'getEnv({key})={v}')
+    return v
+
+
+def getEnvBool(key: str, default: bool = False) -> bool:
+    v = (getEnv(key, default).lower() == "true")
+    print(f'getEnvBool({key})={v}')
+    return v
 
 
 def hasLen(iter: Iterator):
@@ -74,16 +89,6 @@ def removeNewLines(txt: str) -> str:
         return txt.replace('\n', ' ').replace('\r', '')
     except Exception:
         return str(txt)
-
-
-SHOW_SQL = toBool(getEnv('SHOW_SQL', True))
-AUTOMATIC_REPEATED_JOBS_MERGE = toBool(
-    getEnv('AUTOMATIC_REPEATED_JOBS_MERGE', True))
-print(f"SHOW_SQL={SHOW_SQL} {type(SHOW_SQL)}")
-print(f'AUTOMATIC_REPEATED_JOBS_MERGE={AUTOMATIC_REPEATED_JOBS_MERGE}',
-      f' {type(AUTOMATIC_REPEATED_JOBS_MERGE)}')
-AI_ENRICHMENT_JOB_TIMEOUT_MINUTES = getEnv(
-    'AI_ENRICHMENT_JOB_TIMEOUT_MINUTES', 5)
 
 
 def consoleTimer(message: str, timeUnit: str):

@@ -1,5 +1,5 @@
 from pandas import DataFrame
-from ai_job_search.tools.util import SHOW_SQL, getEnv
+from ai_job_search.tools.util import SHOW_SQL, getEnv, getEnvBool
 from ai_job_search.viewer.util.stStateUtil import initStates
 from ai_job_search.viewer.util.viewUtil import (
     getValueAsDict, gotoPageByUrl, mapDetailForm)
@@ -21,7 +21,7 @@ from ai_job_search.viewer.viewAndEditHelper import (
     detailForSingleSelection, formFilter, formatDetail, getJobListQuery, table,
     tableFooter)
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
-from tools.mysqlUtil import (
+from ai_job_search.tools.mysqlUtil import (
     SELECT_APPLIED_JOB_IDS_BY_COMPANY,
     SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, MysqlUtil, QRY_SELECT_COUNT_JOBS)
 import streamlit as st
@@ -117,7 +117,7 @@ def getJobData(selectedRows: DataFrame):
 
 def tableView():
     query = getJobListQuery()
-    if SHOW_SQL:
+    if getEnvBool(SHOW_SQL):
         with st.expander("View generated sql"):
             st.code(formatSql(query, False), 'sql',
                     wrap_lines=True, line_numbers=True)

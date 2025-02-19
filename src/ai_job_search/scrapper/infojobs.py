@@ -8,7 +8,7 @@ from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, join, printPage, printScrapperTitle, validate)
 from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars
-from ai_job_search.viewer.util.decorator.retry import retry
+from ai_job_search.tools.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.infojobsSelectors import (
@@ -33,13 +33,14 @@ USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 DEBUG = False
 
 WEB_PAGE = 'Infojobs'
+LIST_URL='https://www.infojobs.net/jobsearch/search-results/list.xhtml'
 JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults
 
-LOGIN_WAIT_DISABLE = True
+LOGIN_WAIT_DISABLE = False
 
 print('Infojobs scrapper init')
-selenium = None
-mysql = None
+selenium: SeleniumUtil = None
+mysql: MysqlUtil = None
 
 
 def run():
@@ -67,7 +68,7 @@ def login():
     selenium.sendKeys('#id-password', USER_PWD,
                       keyByKeyTime=None if disableWait else (0.03, 0.6))
     sleep(2, 6, disableWait)
-    selenium.waitAndClick('#idSubmitButton')
+    selenium.waitAndClick('#idSubmitButton', scrollIntoView=True)
 
 
 @retry(retries=100, delay=5, exception=NoSuchElementException)
@@ -89,7 +90,7 @@ def securityFilter():
 
 
 def getUrl(keywords):
-    return join('https://www.infojobs.net/jobsearch/search-results/list.xhtml',
+    return join(LIST_URL,
                 f'?keyword={keywords}&searchByType=country&teleworkingIds=2',
                 '&segmentId=&page=1&sortBy=PUBLICATION_DATE',
                 '&onlyForeignCountry=false&countryIds=17&sinceDate=_7_DAYS')
@@ -168,10 +169,8 @@ def getJobUrlShort(url: str):
 def searchJobs(index: int, keywords: str):
     try:
         print(yellow(f'Search keyword={keywords}'))
-        url = getUrl(keywords)
-        print(yellow(f'Loading page {url}'))
-        selenium.loadPage(url)
-        selenium.waitUntilPageIsLoaded()
+        loadSearchPageByUrl(keywords)
+        # loadSearchPageManually(keywords)
         if index == 0:
             securityFilter()
             selenium.waitUntilPageUrlContains(
@@ -203,6 +202,34 @@ def searchJobs(index: int, keywords: str):
         debug(exception=True)
 
 
+def loadSearchPageByUrl(keywords):
+    url = getUrl(keywords)
+    print(yellow(f'Loading page {url}'))
+    selenium.loadPage(url)
+    selenium.waitUntilPageIsLoaded()
+
+
+def loadSearchPageManually(keywords):
+    url = 'https://www.infojobs.net/candidate/my-infojobs.xhtml'
+    # selenium.loadPage(url)
+    # selenium.waitUntilPageIsLoaded()
+    selenium.waitUntilPageUrlContains(url)
+    selenium.sendKeys('form search #keyword-autocomplete', keywords)
+    selenium.waitAndClick('form search .sui-AtomButton')
+    selenium.waitUntilPageIsLoaded()
+    selenium.waitUntilPageUrlContains(LIST_URL)
+    SIDEBAR_FILTERS = '.ij-Container .ij-SearchListingPageContent-main .ij-SearchListingPageContent-filters .ij-SidebarFilter-form-filters '
+    # selenium.waitAndClick(f'{SIDEBAR_FILTERS} label[for=sort-by--PUBLICATION_DATE-b7e051d0-edc0-11ef-b448-8f936fb01bee]')
+    selenium.waitAndClick(f'{SIDEBAR_FILTERS} fieldset#sort_by_date_b7e051d0-edc0-11ef-b448-8f936fb01bee label[for=sort-by--PUBLICATION_DATE-b7e051d0-edc0-11ef-b448-8f936fb01bee]')
+    selenium.waitUntilPageIsLoaded()
+    # selenium.waitAndClick(f'{SIDEBAR_FILTERS} fieldset#sort_by_date_b7e051d0-edc0-11ef-b448-8f936fb01bee label[for=radio-date--_24_HOURS-aeb62b60-edc1-11ef-b448-8f936fb01bee]')
+    selenium.waitAndClick(f'{SIDEBAR_FILTERS} label[for=radio-date--_24_HOURS-aeb62b60-edc1-11ef-b448-8f936fb01bee]')
+    selenium.waitUntilPageIsLoaded()
+    selenium.waitAndClick(f'{SIDEBAR_FILTERS} input#check-teleworking--2')
+    selenium.waitUntilPageIsLoaded()
+    
+
+
 def getJobLinkElement(idx):
     liElm = selenium.getElms(CSS_SEL_JOB_LI)[idx]
     return selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
@@ -213,25 +240,27 @@ def loadAndProcessRow(idx) -> bool:
     processed = False
     jobExists = False
     try:
-        scrollJobsList(idx)
-        # pagination not always contains all JOBS_X_PAGE
-        jobLinkElm: WebElement = getJobLinkElement(idx)
-        url = jobLinkElm.get_attribute('href')
-        jobId, jobExists = jobExistsInDB(url)
-        if jobExists:
-            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
-                  end='')
-            return True
-        loadJobDetail(jobLinkElm)
-        processed = True
-    except IndexError as ex:
-        debug(yellow("WARNING: could not get all items per page, that's ",
-                     f"expected because not always has {JOBS_X_PAGE}: {ex}"))
-    if processed:
-        if not processRow(url):
+        try:
+            scrollJobsList(idx)
+            # pagination not always contains all JOBS_X_PAGE
+            jobLinkElm: WebElement = getJobLinkElement(idx)
+            url = jobLinkElm.get_attribute('href')
+            jobId, jobExists = jobExistsInDB(url)
+            if jobExists:
+                print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
+                    end='')
+                return True
+            loadJobDetail(jobLinkElm)
+            processed = True
+        except IndexError as ex:
+            debug(yellow("WARNING: could not get all items per page, that's ",
+                        f"expected because not always has {JOBS_X_PAGE}: {ex}"))
+        if processed:
+            if not processRow(url):
+                raise ValueError('Validation failed')
+    finally:
+        if LIST_URL not in selenium.getUrl():
             selenium.back()
-            raise ValueError('Validation failed')
-        selenium.back()
     return processed
 
 

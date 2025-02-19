@@ -6,9 +6,9 @@ from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
     htmlToMarkdown, printPage, printScrapperTitle,
     validate)
+from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars, getEnv
-from ai_job_search.viewer.util.decorator.retry import retry
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from ai_job_search.scrapper.selectors.glassdoorSelectors import (

@@ -38,10 +38,9 @@ def htmlToMarkdown(html: str):
 
 
 def removeInvalidScapes(md: str) -> str:
-    # remove invalid scapes
-    # TODO: REMOVE OR CHANGE UNICODE \u00f3
     md = md.replace('\$', '$')  # dont remove \$ ignore the warning
-    md = re.sub(r'[\\]+(?!=a-z)', '', md, flags=re.M)
+    # remove all backslash NOT unicode \uxxxx
+    md = re.sub(r'[\\]+(?!=u)', '', md, flags=re.M)
     return md
 
 

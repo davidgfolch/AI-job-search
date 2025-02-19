@@ -5,7 +5,8 @@ from ai_job_search.tools.mysqlUtil import (
 # from ai_job_search.viewer.util.cleanUtil import getFieldValue, removeNewestId
 from ai_job_search.tools.terminalColor import blue, cyan, printHR, red
 from ai_job_search.tools.util import (
-    AUTOMATIC_REPEATED_JOBS_MERGE, SHOW_SQL, removeNewLines)
+    AUTOMATIC_REPEATED_JOBS_MERGE, SHOW_SQL, getEnvBool,
+    removeNewLines)
 from ai_job_search.viewer.util.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
 from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
@@ -94,7 +95,7 @@ def mergeJobDuplicates(rows, ids):
 
 
 def mergeDuplicatedJobs(rows):
-    if not AUTOMATIC_REPEATED_JOBS_MERGE:
+    if not getEnvBool(AUTOMATIC_REPEATED_JOBS_MERGE):
         print('Merging duplicated jobs is disabled, not running.')
         return
     try:
@@ -111,7 +112,7 @@ def mergeDuplicatedJobs(rows):
             for line in generatorResult:
                 if arr := line.get('arr', None):
                     print(cyan(*[removeNewLines(f'{a}') for a in arr]))
-                if txt := line.get('query', None) and SHOW_SQL:
+                if txt := line.get('query', None) and getEnvBool(SHOW_SQL):
                     print(blue(removeNewLines(txt)))
                 if txt := line.get('text', None):
                     print(blue(removeNewLines(txt)))

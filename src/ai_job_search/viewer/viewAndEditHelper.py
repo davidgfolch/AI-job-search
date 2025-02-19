@@ -240,7 +240,8 @@ def tableFooter(totalResults, filterResCnt, totalSelected):
                     on_click=deleteSelectedRows, type="primary")
         c[3].write('|')
         c[4].toggle('Single select', key=FF_KEY_SINGLE_SELECT)
-        c[5].number_input('Heigh', key=FF_KEY_LIST_HEIGHT,
+        c[5].number_input('Height', key=FF_KEY_LIST_HEIGHT,
+                          value=HEIGHT,
                           step=100, label_visibility='collapsed')
         c[6].number_input('Columns width', key=FF_KEY_COLUMNS_WIDTH,
                           value=COLUMNS_WIDTH, step=0.1,
@@ -258,6 +259,8 @@ def formatDetail(jobData: dict):
     opSkills = fmtDetailOpField(data, 'optional_technologies', 'Optional', 2)
     if reqSkills + opSkills != '':
         str += ''.join(["- Skills\n", reqSkills, opSkills])
+    if error := jobData.get('ai_enrich_error', None):
+        str += f'- :red[AI enrich error:] {error}'
     st.markdown(str, unsafe_allow_html=True)
     salary = fmtDetailOpField(data, 'salary')
     if salary != '':

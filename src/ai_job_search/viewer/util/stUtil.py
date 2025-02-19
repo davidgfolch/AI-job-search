@@ -5,7 +5,7 @@ from streamlit.delta_generator import DeltaGenerator
 # TODO: modal -> try from streamlit_modal import Modal ??
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
 from ai_job_search.tools.sqlUtil import formatSql
-from ai_job_search.tools.util import SHOW_SQL
+from ai_job_search.tools.util import SHOW_SQL, getEnvBool
 from ai_job_search.viewer.util.historyUtil import historyButton
 from ai_job_search.viewer.util.stStateUtil import (
     getBoolKeyName, getState, setState)
@@ -103,7 +103,7 @@ def checkAndPills(label, fields: list[str], key: str):
 
 
 def showCodeSql(sql, format=False):
-    if SHOW_SQL:
+    if getEnvBool(SHOW_SQL):
         if format:
             st.code(formatSql(sql), 'sql')
         else:
