@@ -108,3 +108,8 @@ def showCodeSql(sql, format=False):
             st.code(formatSql(sql), 'sql')
         else:
             st.code(sql, 'sql')
+
+
+def reloadButton():
+    if st.button("Reload"):
+        st.rerun()

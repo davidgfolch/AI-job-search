@@ -22,7 +22,7 @@ def onTableChange():
                 value = current
             else:
                 value = list(last ^ current)
-            setState(FF_KEY_PRESELECTED_ROWS, value)
+            setState(FF_KEY_PRESELECTED_ROWS, list(value))
         else:
             setState(FF_KEY_PRESELECTED_ROWS, [0])
     setState('lastSelected', selected)

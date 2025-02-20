@@ -97,6 +97,18 @@ def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
     return selectedRows
 
 
+def selectNext():
+    rows: set = getState(FF_KEY_PRESELECTED_ROWS, [])
+    if len(rows) == 1:
+        setState(FF_KEY_PRESELECTED_ROWS, [rows[0]+1])
+
+
+def selectPrevious():
+    rows: set = getState(FF_KEY_PRESELECTED_ROWS, [])
+    if len(rows) == 1 and rows[0] >= 0:
+        setState(FF_KEY_PRESELECTED_ROWS, [rows[0]-1])
+
+
 def tableV2(df: DataFrame, columnsOrder: List[str], visibleColumns: List[str]) -> DataFrame:
     # 1. Filtrar columnas existentes
     cols = df.columns.tolist()
@@ -224,28 +236,57 @@ def formFilterByIdsSetup():
         setState(KEY_SELECTED_IDS, None)
 
 
+def inColumns(columns: list[tuple], kwargs):
+    """ columns: [ (size_int, lambda c: c.button(xxxx), (size_int, lambda c: c.button(xxxx), ...]"""
+    c = st.columns([col[0] for col in columns], **kwargs)
+    for idx, col in enumerate(columns):
+        col[1](c[idx])
+
+
 def tableFooter(totalResults, filterResCnt, totalSelected):
     totals = f'<p style="text-align:right">{totalSelected} ' + \
         f'selected ({filterResCnt} filtered, ' + \
         f'{totalResults} total)</p>'
     st.write(totals, unsafe_allow_html=True)
     if filterResCnt > 0:
-        c = st.columns([3, 3, 3, 1, 5, 5, 5], vertical_alignment='center')
-        c[0].button('Ignore', help='Mark as ignored and Save',
-                    kwargs={'boolField': 'ignored'}, on_click=markAs)
-        c[1].button('Seen', help='Mark as Seen and Save',
-                    kwargs={'boolField': 'seen'}, on_click=markAs)
-        c[2].button('Delete', 'deleteButton', help='Delete selected job(s)',
-                    disabled=totalSelected < 1,
-                    on_click=deleteSelectedRows, type="primary")
-        c[3].write('|')
-        c[4].toggle('Single select', key=FF_KEY_SINGLE_SELECT)
-        c[5].number_input('Height', key=FF_KEY_LIST_HEIGHT,
-                          value=HEIGHT,
-                          step=100, label_visibility='collapsed')
-        c[6].number_input('Columns width', key=FF_KEY_COLUMNS_WIDTH,
-                          value=COLUMNS_WIDTH, step=0.1,
-                          label_visibility='collapsed')
+        columns = \
+            [(3, lambda c: c.button('Ignore',
+                                    help='Mark as ignored and Save',
+                                    kwargs={'boolField': 'ignored'},
+                                    on_click=markAs)),
+             (3, lambda c: c.button('Seen',
+                                    help='Mark as Seen and Save',
+                                    kwargs={'boolField': 'seen'},
+                                    on_click=markAs)),
+             (3, lambda c: c.button('Delete', 'deleteButton',
+                                    help='Delete selected job(s)',
+                                    disabled=totalSelected < 1,
+                                    on_click=deleteSelectedRows,
+                                    type="primary")),
+             (1, lambda c: c.button('<', 'prevButton',
+                                    help='Select & see previous job',
+                                    disabled=filterResCnt < 1,
+                                    on_click=selectPrevious,
+                                    type="primary")),
+             (1, lambda c: c.button('&gt;', 'nextButton',
+                                    help='Select & see next job',
+                                    disabled=filterResCnt < 1,
+                                    on_click=selectNext,
+                                    type="primary")),
+             (1, lambda c: c.write('|')),
+             (5, lambda c: c.toggle('Single select',
+                                    key=FF_KEY_SINGLE_SELECT)),
+             (5, lambda c: c.number_input('Height', key=FF_KEY_LIST_HEIGHT,
+                                          value=HEIGHT, step=100,
+                                          label_visibility='collapsed')),
+             (5, lambda c: c.number_input('Columns width',
+                                          key=FF_KEY_COLUMNS_WIDTH,
+                                          value=COLUMNS_WIDTH, step=0.1,
+                                          label_visibility='collapsed'))
+
+             ]
+        inColumns(kwargs={'vertical_alignment': 'center'},
+                  columns=columns)
 
 
 def formatDetail(jobData: dict):
