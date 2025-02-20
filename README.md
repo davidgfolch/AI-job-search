@@ -1,15 +1,16 @@
 # AI Job Search
 
-Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor.
+Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor, Tecnoempleo...
 
 - Selenium sites scrappers to store in local database.
   - Be aware of Anti Robot Security Filters (**ARSF**)
-    - LinkedIn works fine, but it will show **ARSF** randomly.
-    - Infojobs works fine, but it will show **ARSF** always after login.
+    - LinkedIn works fine.
+    - Infojobs works fine, but it will show **ARSF** at the beginning of scrape.
     - Glassdoor could show **ARSF** "all the time", just re-run
+    - Tecnoempleo works fine.
+    - Indeed **ARSF** all the time (DISABLED)
 - OPTIONAL: Artificial intelligence to enrich the job offer with structured information (salary, required technologies, ...).
   - You will need a [local Ollama installation](https://github.com/davidgfolch/OpenAI-local-ollama-chat/blob/main/README_OLLAMA.md).
-- Selenium Glassdoor scrapper to get salary ranges for company/role.
 - User interface to see, organize, edit & clean jobs in database
 
 ## Prerequisites
@@ -59,6 +60,8 @@ Duplicated jobs will be created in database if the jobId is different, `./run_4_
 
 ## Scrapers
 
+The automatic scrapper (execution with no parameters) keeps running in a infinite loop in console.  Different timeouts can be configured in `scrapper.py`
+
 To avoid RATE LIMITS security filters, job search's are limited to last 24 hours only (sorting newest first), so scrappers must run each day to not miss job offers.
 
 | KNOWN PROBLEMS | Solution |
@@ -103,6 +106,6 @@ DEBUG = False
 
 ## AI enricher (optional)
 
-This will run LLM filling some extra fields from the job offer.
+This will run LLM filling some extra fields from the job offer (salary, required_technologies, ...).  Using CrewAI framework (using local Ollama LLM by default).
 
-Using CrewAI framework (using local Ollama LLM by default).
+The automatic bash script keeps running in a infinite loop in console, waiting for jobs not `ai_enriched` in database.  Automatic jobs merge is executed before enrichment to save inference time, it merges the ai enriched structured data for same job `title` and `company`.

@@ -58,24 +58,21 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
         while True:
             with MysqlUtil() as mysql:
                 mergeDuplicatedJobs(mysql.fetchAll(SELECT))
-                count = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
-                if count == 0:
+                total = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
+                if total == 0:
                     consoleTimer("All jobs are already AI enriched, ", '1m')
                     continue
-                print(f'{count} jobs to be ai_enriched...')
-                self.enrichJobs(count)
+                print(f'{total} jobs to be ai_enriched...')
+                self.enrichJobs(total)
                 print(yellow(''*60))
                 print(yellow('ALL ROWS PROCESSES!'))
                 print(yellow(''*60))
 
-    def enrichJobs(self, count):
+    def enrichJobs(self, total):
         jobErrors = set[tuple[int, str]]()
-        jobIds = [row[0] for row in mysql.fetchAll(
-            QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
-        print(yellow(f'{jobIds}'))
         crew: Crew = AiJobSearch().crew()
         stopWatch = StopWatch()
-        for idx, id in enumerate(jobIds):
+        for idx, id in enumerate(getJobIdsList()):
             stopWatch.start()
             try:
                 job = mysql.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)
@@ -86,7 +83,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 company = job[3]
                 printHR()
                 now = str(datetime.datetime.now())
-                print(yellow(f'Job {idx+1}/{count} Started at: {now} ->',
+                print(yellow(f'Job {idx+1}/{total} Started at: {now} ->',
                              f' id={id}, title={title}, company={company}'))
                 # DB markdown blob decoding
                 markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
@@ -112,12 +109,19 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 else:
                     print(red(f"could not update ai_enrich_error, id={id}"))
             stopWatch.end()
-            print(yellow(f'Total processed jobs: {idx+1}/{count}'))
+            print(yellow(f'Total processed jobs: {idx+1}/{total}'))
             print()
             print()
         if jobErrors:
             print(red(f'Total job errors: {len(jobErrors)}'))
             [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
+
+
+def getJobIdsList() -> list[int]:
+    jobIds = [row[0]
+              for row in mysql.fetchAll(QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
+    print(yellow(f'{jobIds}'))
+    return jobIds
 
 
 def rawToJson(raw: str) -> dict[str, str]:
@@ -133,22 +137,23 @@ def rawToJson(raw: str) -> dict[str, str]:
         res = fixJsonStartCurlyBraces(res)
         res = fixJsonEndCurlyBraces(res)
         res = fixJsonInvalidAttribute(res)
+        # repl \& or \. (...) by & or .
+        res = re.sub(r'\\([&.*-+#])', r'\1', res, re.I | re.M)
         # res = fixInvalidUnicode(res)
-        return dict(json.loads(f'{res}'))
-    except json.JSONDecodeError as ex:
-        if ex.msg.find('Invalid \\uXXXX escape:') > -1:
-            try:
-                res = re.sub(r'\\(u[0-9a-f]{4})', '\\\\\1', res, re.I)
-                print(yellow(f'Replaced invalid unicode\'s in json:\n{res}'))
-                return dict(json.loads(f'{res}'))
-            except Exception as ex:
-                printJsonException(ex)
-                raise ex
-        raise ex
+        return dict(json.loads(f'{res}', cls=LazyDecoder))
     except Exception as ex:
-        printJsonException(ex)
+        printJsonException(ex, res, raw)
         raise ex
 
+class LazyDecoder(json.JSONDecoder):
+    def decode(self, s, **kwargs):
+        regex_replacements = [
+            (re.compile(r'([^\\])\\([^\\])'), r'\1\\\\\2'),
+            (re.compile(r',(\s*])'), r'\1'),
+        ]
+        for regex, replacement in regex_replacements:
+            s = regex.sub(replacement, s)
+        return super().decode(s, **kwargs)
 
 def printJsonException(ex: Exception, res: str, raw: str) -> None:
     print(red(traceback.format_exc()))
@@ -206,9 +211,16 @@ def validateResult(result: dict[str, str]):
             if hasLen(re.finditer(regex, salary, flags=re.I)):
                 result.update(
                     {'salary': re.sub(regex, r'\2', salary, flags=re.I)})
-    opTechs = result.get('optional_technologies', None)
-    if not opTechs:
-        result['optional_technologies'] = None
+    listsToString(result, ['required_technologies', 'optional_technologies'])
+
+
+def listsToString(result: dict[str, str], fields: list[str]):
+    for f in fields:
+        value = result.get(f, None)
+        if not value:
+            result[f] = None
+        elif isinstance(value, list):
+            result[f] = ','.join(value)
 
 
 @CrewBase

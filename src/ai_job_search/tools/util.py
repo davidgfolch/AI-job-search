@@ -52,13 +52,11 @@ def getAndCheckEnvVars(site: str):
 def getEnv(key: str, default: str = None) -> str:
     checkEnvReload()
     v = os.environ.get(key, default)
-    print(f'getEnv({key})={v}')
     return v
 
 
 def getEnvBool(key: str, default: bool = False) -> bool:
     v = (getEnv(key, default).lower() == "true")
-    print(f'getEnvBool({key})={v}')
     return v
 
 
