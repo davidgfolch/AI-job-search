@@ -1,16 +1,16 @@
-from typing import List
 import streamlit as st
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+# from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from streamlit.column_config import CheckboxColumn
 from pandas import DataFrame
 from ai_job_search.tools.mysqlUtil import (
     QRY_SELECT_JOBS_VIEWER, binaryColumnIgnoreCase, getColumnTranslated)
 from ai_job_search.tools.sqlUtil import getAndFilter
+from ai_job_search.viewer.util.stComponents import (
+    checkAndInput, checkAndPills, sessionStateButtons)
 from ai_job_search.viewer.util.stStateUtil import (
-    getStateBool, getStateBoolValue, setState)
+    getBoolKeyName, getStateBool, getStateBoolValue, setState)
 from ai_job_search.viewer.util.stUtil import (
-    checkAndInput, checkAndPills,
-    getBoolKeyName, getState, scapeLatex)
+    getState, inColumns, scapeLatex)
 from ai_job_search.viewer.util.viewUtil import (
     KEY_SELECTED_IDS, fmtDetailOpField, formatDateTime)
 from ai_job_search.viewer.viewAndEditConstants import (
@@ -109,57 +109,44 @@ def selectPrevious():
         setState(FF_KEY_PRESELECTED_ROWS, [rows[0]-1])
 
 
-def tableV2(df: DataFrame, columnsOrder: List[str], visibleColumns: List[str]) -> DataFrame:
-    # 1. Filtrar columnas existentes
-    cols = df.columns.tolist()
-    columnsOrder = [col for col in columnsOrder if col in cols]
-    visibleColumns = [col for col in visibleColumns if col in cols]
-
-    # 2. Reordenar y filtrar columnas
-    df = df[columnsOrder]  # Reordenar según fieldsSorted
-    df = df[visibleColumns]  # Filtrar columnas visibles
-
-    # 3. Configurar la grilla
-    gb = GridOptionsBuilder.from_dataframe(df)
-
-    # 4. Configurar columnas (ancho, etiquetas, etc.)
-    for col in df.columns:
-        gb.configure_column(
-            col,
-            # Traducir nombres de columnas
-            header_name=getColumnTranslated(col),
-            width=200  # Ajusta el ancho según necesidades
-        )
-
-    # 5. Selección de filas con un click
-    gb.configure_selection(
-        selection_mode="multiple",  # 'single' para selección única
-        use_checkbox=False,  # True para mostrar checkboxes
-        pre_selected_rows=getState(FF_KEY_PRESELECTED_ROWS, []),
-    )
-
-    grid_options = gb.build()
-
-    # 6. Renderizar la tabla
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        height=getState(FF_KEY_LIST_HEIGHT, HEIGHT),
-        update_mode=GridUpdateMode.SELECTION_CHANGED,
-        key='jobsListTable',
-        allow_unsafe_jmespath=True
-    )
-
-    # 7. Obtener filas seleccionadas
-    selected_rows = grid_response["selected_rows"]
-    # selected_df = DataFrame(selected_rows).drop(
-    #     columns=['_selectedRowNodeInfo'])
-    selected_df = DataFrame(selected_rows)
-
-    # 8. Actualizar estado
-    setState('selectedRows', selected_df)
-
-    return selected_df
+# TODO: NEW TABLE
+# def tableV2(df: DataFrame, columnsOrder: List[str],
+#             visibleColumns: List[str]) -> DataFrame:
+#     # 1. Filtrar columnas existentes
+#     cols = df.columns.tolist()
+#     columnsOrder = [col for col in columnsOrder if col in cols]
+#     visibleColumns = [col for col in visibleColumns if col in cols]
+#     # 2. Reordenar y filtrar columnas
+#     df = df[columnsOrder]  # Reordenar según fieldsSorted
+#     df = df[visibleColumns]  # Filtrar columnas visibles
+#     # 3. Configurar la grilla
+#     gb = GridOptionsBuilder.from_dataframe(df)
+#     # 4. Configurar columnas (ancho, etiquetas, etc.)
+#     for col in df.columns:
+#         gb.configure_column(col,
+#                             header_name=getColumnTranslated(col),
+#                             width=200)  # Ajusta el ancho según necesidades
+#     # 5. Selección de filas con un click
+#     gb.configure_selection(
+#         selection_mode="multiple",  # 'single' para selección única
+#         use_checkbox=False,  # True para mostrar checkboxes
+#         pre_selected_rows=getState(FF_KEY_PRESELECTED_ROWS, []))
+#     grid_options = gb.build()
+#     # 6. Renderizar la tabla
+#     grid_response = AgGrid(df,
+#                            gridOptions=grid_options,
+#                            height=getState(FF_KEY_LIST_HEIGHT, HEIGHT),
+#                            update_mode=GridUpdateMode.SELECTION_CHANGED,
+#                            key='jobsListTable',
+#                            allow_unsafe_jmespath=True)
+#     # 7. Obtener filas seleccionadas
+#     selected_rows = grid_response["selected_rows"]
+#     # selected_df = DataFrame(selected_rows).drop(
+#     #     columns=['_selectedRowNodeInfo'])
+#     selected_df = DataFrame(selected_rows)
+#     # 8. Actualizar estado
+#     setState('selectedRows', selected_df)
+#     return selected_df
 
 
 def getTableColsConfig(fields, visibleColumns, selector=True):
@@ -195,6 +182,7 @@ def formFilter():
         if res := removeFiltersInNotFilters():
             setState(FF_KEY_BOOL_NOT_FIELDS, res)
     formFilterByIdsSetup()
+    sessionStateButtons()
     with st.expander('Search filters'):
         inColumns([
             (6, lambda _: checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH,
@@ -216,7 +204,8 @@ def formFilter():
              FIELDS_BOOL, FF_KEY_BOOL_NOT_FIELDS))
         ])
         checkAndInput("SQL where filters", FF_KEY_WHERE,
-                      withContainer=False, withHistory=True)
+                      withContainer=False,
+                      withHistory=True)
 
 
 def formFilterByIdsSetup():
@@ -233,16 +222,6 @@ def formFilterByIdsSetup():
                  ' or '.join({f'id={id}' for id in selectedIds.split(',')}))
         setState(FF_KEY_ORDER, "modified desc")
         setState(KEY_SELECTED_IDS, None)
-
-
-def inColumns(columns: list[tuple], kwargs={}):
-    """ columns: [
-      (size_int, lambda _: st.button(xxxx),
-      (size_int, lambda _: fncUsingStreamlitCompoenents(xxxx), ...]"""
-    c = st.columns([col[0] for col in columns], **kwargs)
-    for idx, col in enumerate(columns):
-        with c[idx]:
-            col[1](c[idx])
 
 
 def tableFooter(totalResults, filterResCnt, totalSelected):

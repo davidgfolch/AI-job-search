@@ -3,7 +3,8 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery
 from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
-from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
+from ai_job_search.viewer.util.stComponents import showCodeSql
+from ai_job_search.viewer.util.stUtil import stripFields
 
 DAYS = 10
 DAYS2 = 20

@@ -1,14 +1,9 @@
 import re
 from pandas import DataFrame
 import streamlit as st
-from streamlit.delta_generator import DeltaGenerator
 # TODO: modal -> try from streamlit_modal import Modal ??
-from ai_job_search.tools.mysqlUtil import getColumnTranslated
-from ai_job_search.tools.sqlUtil import formatSql
-from ai_job_search.tools.util import SHOW_SQL, getEnvBool
-from ai_job_search.viewer.util.historyUtil import historyButton
 from ai_job_search.viewer.util.stStateUtil import (
-    getBoolKeyName, getState, setState)
+    getState, setState)
 
 
 def setMessageInfo(msg: str):
@@ -68,48 +63,11 @@ def scapeLatex(dictionary: dict, keys: list[str]):
     return dictionary
 
 
-# Components
-def checkboxFilter(label, key, container: DeltaGenerator = st):
-    return container.checkbox(label, key=getBoolKeyName(key))
-
-
-def checkAndInput(label: str, key: str, inColumns=None, withContainer=True,
-                  withHistory=False):
-    c = st.container(border=1) if withContainer else st
-    if not inColumns:
-        enabled = checkboxFilter(label, key, c)
-        col = c.columns([90, 10], vertical_alignment="top")
-        col[0].text_input(label, key=key, disabled=not enabled,
-                          label_visibility='collapsed')
-        historyButton(key, withHistory, col[1])
-    else:
-        c = c.columns(inColumns, vertical_alignment="top")
-        enabled = checkboxFilter(label, key, c[0])
-        c[1].text_input(label, key=key, disabled=not enabled,
-                        label_visibility='collapsed')
-        historyButton(key, withHistory, c[2])
-
-
-def checkAndPills(label, fields: list[str], key: str):
-    with st.container(border=1):
-        c1, c2 = st.columns([4, 25], vertical_alignment="top")
-        with c1:
-            enabled = checkboxFilter(label, key)
-        with c2:
-            st.pills(label, fields, key=key,
-                     format_func=lambda c: getColumnTranslated(c),
-                     selection_mode='multi', disabled=not enabled,
-                     label_visibility='collapsed')
-
-
-def showCodeSql(sql, format=False, showSql=False):
-    if showSql or getEnvBool(SHOW_SQL):
-        if format:
-            st.code(formatSql(sql), 'sql')
-        else:
-            st.code(sql, 'sql')
-
-
-def reloadButton():
-    if st.button("Reload"):
-        st.rerun()
+def inColumns(columns: list[tuple], kwargs={}):
+    """ columns: [
+      (size_int, lambda _: st.button(xxxx),
+      (size_int, lambda _: fncUsingStreamlitCompoenents(xxxx), ...]"""
+    c = st.columns([col[0] for col in columns], **kwargs)
+    for idx, col in enumerate(columns):
+        with c[idx]:
+            col[1](c[idx])

@@ -1,9 +1,10 @@
+import json
 import re
 from pandas import DataFrame
 import streamlit as st
 from functools import reduce
 
-from ai_job_search.tools.util import toBool
+from ai_job_search.tools.util import createFolder, listFiles, toBool
 
 
 def initStates(keyValue: dict):
@@ -59,3 +60,39 @@ def setStateNoError(key: str, value):
 
 def getBoolKeyName(key: str):
     return f'is{key.title()}'
+
+
+def saveSession(name: str):
+    path = createFolder(getSessionFileName(name))
+    with open(path, 'w') as f:
+        session: dict = st.session_state.to_dict()
+        for k in list(session.keys()):
+            if session[k] is None or \
+                    isinstance(session[k], DataFrame) or \
+                    str(k) == 'jobsListTable' or \
+                    str(k).endswith('Button'):  # incl. _historyButton
+                session.pop(k)
+        st.write(session)
+        f.write(json.dumps(session, default=lambda o: None))
+
+
+def loadSession(name: str):
+    path = createFolder(getSessionFileName(name))
+    with open(path, 'r') as f:
+        session: dict = json.loads(''.join(f.readlines()))
+        st.session_state.clear()
+        for k, v in session.items():
+            st.session_state[k] = v
+
+
+def getSessionFileName(name: str) -> str:
+    if name.endswith('.json'):
+        return f'.stSessionState/{name}'
+    return f'.stSessionState/{name}.json'
+
+
+def listSessionFiles(removeExtension=True) -> str:
+    files = listFiles('.stSessionState')
+    if removeExtension:
+        return [f.replace('.json', '') for f in files]
+    return files

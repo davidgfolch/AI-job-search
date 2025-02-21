@@ -1,11 +1,12 @@
 from pandas import DataFrame
+from ai_job_search.tools.sqlUtil import formatSql
 from ai_job_search.tools.util import SHOW_SQL, getEnv, getEnvBool
-from ai_job_search.viewer.util.stStateUtil import initStates
+from ai_job_search.viewer.util.stComponents import showCodeSql
+from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, initStates
 from ai_job_search.viewer.util.viewUtil import (
     getValueAsDict, gotoPageByUrl, mapDetailForm)
 from ai_job_search.viewer.util.stUtil import (
-    formatSql, getBoolKeyName, getColumnTranslated,
-    getState, showCodeSql, stripFields)
+    getState, stripFields)
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD,
     DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
@@ -23,7 +24,8 @@ from ai_job_search.viewer.viewAndEditHelper import (
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 from ai_job_search.tools.mysqlUtil import (
     SELECT_APPLIED_JOB_IDS_BY_COMPANY,
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, MysqlUtil, QRY_SELECT_COUNT_JOBS)
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, MysqlUtil, QRY_SELECT_COUNT_JOBS,
+    getColumnTranslated)
 import streamlit as st
 
 # from streamlit_js_eval import streamlit_js_eval

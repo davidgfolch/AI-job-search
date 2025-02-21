@@ -1,4 +1,5 @@
 import traceback
+from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
 from ai_job_search.tools.mysqlUtil import (
     MysqlUtil, deleteJobsQuery, updateFieldsQuery)
@@ -8,7 +9,8 @@ from ai_job_search.tools.util import (
     removeNewLines)
 from ai_job_search.viewer.clean.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
-from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
+from ai_job_search.viewer.util.stComponents import showCodeSql
+from ai_job_search.viewer.util.stUtil import stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL)
 
@@ -39,7 +41,7 @@ COLS_ARR.remove('closed')
 COL_COMPANY_IDX = COLS_ARR.index('title')
 
 
-def actionButton(stContainer, selectedRows, disabled):
+def actionButton(stContainer: DeltaGenerator, selectedRows, disabled):
     stContainer.button('Merge & Delete old duplicated in selection',
                        on_click=mergeStreamlitWrapper,
                        kwargs={'selectedRows': selectedRows},

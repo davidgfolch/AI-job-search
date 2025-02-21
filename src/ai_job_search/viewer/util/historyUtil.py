@@ -1,7 +1,7 @@
 import os
-from pathlib import Path
 import re
 from pandas import DataFrame, Series
+from ai_job_search.tools.util import createFolder
 from ai_job_search.viewer.util.stStateUtil import (
     getBoolKeyName, getState, setState)
 import streamlit as st
@@ -63,7 +63,7 @@ def addToHistory(key: str):
 
 
 def validValue(value: str):
-    return value and len(re.findall(f'id *= *[0-9+]', value, re.I | re.M)) == 0
+    return value and len(re.findall('id *= *[0-9+]', value, re.I | re.M)) == 0
 
 
 def getHistoryKey(key):
@@ -83,9 +83,8 @@ def getFileName(key):
 
 
 def saveHistoryToFile(key, values: set) -> set:
-    fName = Path(getFileName(key))
-    fName.parent.mkdir(exist_ok=True, parents=True)
-    with open(fName, 'w+') as output:
+    path = createFolder(getFileName(key))
+    with open(path, 'w+') as output:
         output.writelines(v + '\n' for v in sortedList(values))
 
 

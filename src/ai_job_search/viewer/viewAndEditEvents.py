@@ -1,10 +1,12 @@
 import streamlit as st
 from ai_job_search.tools.mysqlUtil import (
     deleteJobsQuery, updateFieldsQuery)
+from ai_job_search.tools.sqlUtil import formatSql
 from ai_job_search.viewer.streamlitConn import mysql
+from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import (
-    formatSql, getSelectedRowsIds, getState, pillsValuesToDict, setFieldValue,
-    setMessageInfo, setState, showCodeSql)
+    getSelectedRowsIds, getState, pillsValuesToDict, setFieldValue,
+    setMessageInfo, setState)
 from ai_job_search.viewer.viewAndEditConstants import (
     F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY,
     FF_KEY_PRESELECTED_ROWS, FF_KEY_SINGLE_SELECT, FIELDS_BOOL)
@@ -49,7 +51,8 @@ def deleteSelectedRows():
 
 
 def deleteSalary(id):
-    mysql().executeAndCommit(f'update jobs set salary=null where id = {id}', {})
+    mysql() \
+        .executeAndCommit(f'update jobs set salary=null where id = {id}', {})
 
 
 def formDetailSubmit():

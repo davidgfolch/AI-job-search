@@ -1,3 +1,5 @@
+from pathlib import Path
+from os.path import isfile, join
 from datetime import datetime, timedelta
 import random
 import re
@@ -142,3 +144,13 @@ class Spinner():
 
     def generate(self):
         return self.spinner[self.spinItem]*5
+
+
+def createFolder(filename: str) -> Path:
+    path = Path(filename)
+    path.parent.mkdir(exist_ok=True, parents=True)
+    return path
+
+
+def listFiles(folder: str) -> list[str]:
+    return [f for f in os.listdir(folder) if isfile(join(folder, f))]

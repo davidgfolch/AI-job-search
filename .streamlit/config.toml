@@ -1,3 +1,6 @@
+[runner]
+enforceSerializableSessionState = true
+
 [theme]
 base="dark"
 primaryColor="#4174ff"

@@ -4,8 +4,8 @@ import pandas as pd
 from ai_job_search.viewer.clean import (
     deleteOld, ignoreInternships, mergeDuplicates)
 from ai_job_search.viewer.clean.cleanUtil import getAllIds
-from ai_job_search.viewer.util.stUtil import (
-    getState, showCodeSql)
+from ai_job_search.viewer.util.stComponents import showCodeSql
+from ai_job_search.viewer.util.stUtil import (getState)
 from ai_job_search.viewer.util.viewUtil import gotoPage
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 from tools.mysqlUtil import (MysqlUtil)
