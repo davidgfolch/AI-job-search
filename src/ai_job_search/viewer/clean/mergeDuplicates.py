@@ -2,12 +2,11 @@ import traceback
 import streamlit as st
 from ai_job_search.tools.mysqlUtil import (
     MysqlUtil, deleteJobsQuery, updateFieldsQuery)
-# from ai_job_search.viewer.util.cleanUtil import getFieldValue, removeNewestId
 from ai_job_search.tools.terminalColor import blue, cyan, printHR, red
 from ai_job_search.tools.util import (
     AUTOMATIC_REPEATED_JOBS_MERGE, SHOW_SQL, getEnvBool,
     removeNewLines)
-from ai_job_search.viewer.util.cleanUtil import (
+from ai_job_search.viewer.clean.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
 from ai_job_search.viewer.util.stUtil import showCodeSql, stripFields
 from ai_job_search.viewer.viewAndEditConstants import (

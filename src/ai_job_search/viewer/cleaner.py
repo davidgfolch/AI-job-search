@@ -3,7 +3,7 @@ from streamlit.delta_generator import DeltaGenerator
 import pandas as pd
 from ai_job_search.viewer.clean import (
     deleteOld, ignoreInternships, mergeDuplicates)
-from ai_job_search.viewer.util.cleanUtil import (getAllIds)
+from ai_job_search.viewer.clean.cleanUtil import getAllIds
 from ai_job_search.viewer.util.stUtil import (
     getState, showCodeSql)
 from ai_job_search.viewer.util.viewUtil import gotoPage
@@ -96,5 +96,5 @@ def showQuery(container: DeltaGenerator, q: str):
     with container.expander('Sql query details'):
         if st.toggle('Edit query'):
             q = st.text_area('Query', q, key='cleanSelectQuery', height=300)
-        showCodeSql(q, True)
+        showCodeSql(q, True, True)
     return q

@@ -102,8 +102,8 @@ def checkAndPills(label, fields: list[str], key: str):
                      label_visibility='collapsed')
 
 
-def showCodeSql(sql, format=False):
-    if getEnvBool(SHOW_SQL):
+def showCodeSql(sql, format=False, showSql=False):
+    if showSql or getEnvBool(SHOW_SQL):
         if format:
             st.code(formatSql(sql), 'sql')
         else:

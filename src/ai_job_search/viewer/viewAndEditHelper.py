@@ -291,7 +291,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected):
                   columns=columns)
 
 
-def formatDetail(jobData: dict):
+def showDetail(jobData: dict):
     data = scapeLatex(jobData, ['markdown', 'title'])
     formatDateTime(jobData)
     data = {k: (data[k] if data[k] else None)

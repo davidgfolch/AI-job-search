@@ -56,10 +56,13 @@ class MysqlUtil:
 
     def __init__(self):
         print('Init MysqlUtil, create connection...')
+        # https://dev.mysql.com/doc/connector-python/en/connector-python-connectargs.html
         self.conn = mysql.connector.connect(
             user='root', password='rootPass', database='jobs',
             # pool_name='jobsPool',
-            # pool_size=3,
+            # pool_size=20,
+            # connection_timeout=10,
+            # get_warnings=True
         )
 
     def __enter__(self):

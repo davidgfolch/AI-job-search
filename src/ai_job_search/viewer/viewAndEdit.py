@@ -18,7 +18,7 @@ from ai_job_search.viewer.viewAndEditConstants import (
     STYLE_JOBS_TABLE)
 from ai_job_search.viewer.viewAndEditEvents import (detailFormSubmit)
 from ai_job_search.viewer.viewAndEditHelper import (
-    detailForSingleSelection, formFilter, formatDetail, getJobListQuery, table,
+    detailForSingleSelection, formFilter, showDetail, getJobListQuery, table,
     tableFooter)
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 from ai_job_search.tools.mysqlUtil import (
@@ -74,7 +74,7 @@ def view():
                     detailForMultipleSelection(selectedRows, jobData)
                 elif totalSelected == 1:
                     addCompanyAppliedJobsInfo(jobData)
-                    formatDetail(jobData)
+                    showDetail(jobData)
                     detailForSingleSelection()
                 elif filterResCnt > 0:
                     st.warning("Select one job only to see job detail.")
