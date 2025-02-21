@@ -1,13 +1,11 @@
 import datetime
 import json
-import os
 import re
 import traceback
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
-from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 import openai
 from ai_job_search.tools.stopWatch import StopWatch
@@ -21,11 +19,10 @@ from ai_job_search.tools.util import (
 from ai_job_search.viewer.clean.mergeDuplicates import (
     SELECT, mergeDuplicatedJobs)
 
-load_dotenv()
 MAX_AI_ENRICH_ERROR_LEN = 500
 
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+OPENAI_API_KEY = getEnv('OPENAI_API_KEY')
+GEMINI_API_KEY = getEnv('GEMINI_API_KEY')
 
 if OPENAI_API_KEY:
     model = "o1-preview-2024-09-12"  # gpt-3.5-turbo,  gpt-4o-mini
