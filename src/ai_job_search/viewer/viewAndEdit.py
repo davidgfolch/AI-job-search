@@ -16,10 +16,10 @@ from ai_job_search.viewer.viewAndEditConstants import (
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE,
     FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS,
     STYLE_JOBS_TABLE)
-from ai_job_search.viewer.viewAndEditEvents import (detailFormSubmit)
+from ai_job_search.viewer.viewAndEditEvents import (formDetailSubmit)
 from ai_job_search.viewer.viewAndEditHelper import (
-    detailForSingleSelection, formFilter, showDetail, getJobListQuery, table,
-    tableFooter)
+    detailForSingleSelection, formFilter, inColumns, showDetail,
+    getJobListQuery, table, tableFooter)
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 from ai_job_search.tools.mysqlUtil import (
     SELECT_APPLIED_JOB_IDS_BY_COMPANY,
@@ -67,11 +67,11 @@ def view():
             tableFooter(totalResults, filterResCnt, totalSelected)
             if totalSelected == 1:
                 jobData = getJobData(selectedRows)
-                detailForm(jobData)
+                formDetail(jobData)
         with col2:
             with st.container():
                 if totalSelected > 1:
-                    detailForMultipleSelection(selectedRows, jobData)
+                    formDetailForMultipleSelection(selectedRows, jobData)
                 elif totalSelected == 1:
                     addCompanyAppliedJobsInfo(jobData)
                     showDetail(jobData)
@@ -80,22 +80,22 @@ def view():
                     st.warning("Select one job only to see job detail.")
 
 
-def detailForm(jobData):
+def formDetail(jobData):
     boolFieldsValues, comments, salary, company, client = \
         mapDetailForm(jobData, FIELDS_BOOL)
     with st.form('statusForm'):
-        c1, c2 = st.columns([10, 1])
-        with c1:
-            st.pills('Status form', FIELDS_BOOL,
-                     default=boolFieldsValues,
-                     format_func=lambda c: getColumnTranslated(c),
-                     selection_mode='multi',
-                     label_visibility='collapsed',
-                     key='statusFields')
-        with c2:
-            st.form_submit_button('Save', 'Save changes in job(s)',
-                                  type='primary',
-                                  on_click=detailFormSubmit)
+        inColumns([
+            (10, lambda _: st.pills(
+                'Status form', FIELDS_BOOL,
+                default=boolFieldsValues,
+                format_func=lambda c: getColumnTranslated(c),
+                selection_mode='multi',
+                label_visibility='collapsed',
+                key='statusFields')),
+            (1, lambda _: st.form_submit_button(
+                'Save', 'Save changes in job(s)',
+                type='primary',
+                on_click=formDetailSubmit))])
         rows = 5 if comments is None else len(comments.split('\n'))
         rows = rows if rows > 4 else 5
         height = rows*28 if rows*28 < 600 else 600
@@ -138,7 +138,7 @@ def tableView():
     return filterResCnt, selectedRows, totalSelected
 
 
-def detailForMultipleSelection(selectedRows, jobData):
+def formDetailForMultipleSelection(selectedRows, jobData):
     # Table shown on the right when more than 1 is selected
     # FIXME: BAD SOLUTION, if fields order changed in query
     # check DB_FIELDS
@@ -151,7 +151,7 @@ def detailForMultipleSelection(selectedRows, jobData):
                  hide_index=True,
                  use_container_width=True,
                  column_config=config)
-    detailForm(jobData)
+    formDetail(jobData)
 
 
 def addCompanyAppliedJobsInfo(jobData):

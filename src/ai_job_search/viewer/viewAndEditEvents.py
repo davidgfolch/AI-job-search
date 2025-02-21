@@ -52,7 +52,7 @@ def deleteSalary(id):
     mysql().executeAndCommit(f'update jobs set salary=null where id = {id}', {})
 
 
-def detailFormSubmit():
+def formDetailSubmit():
     ids = getSelectedRowsIds('selectedRows')
     if not ids or len(ids) < 1:
         return

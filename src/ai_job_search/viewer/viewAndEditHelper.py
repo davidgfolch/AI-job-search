@@ -196,28 +196,27 @@ def formFilter():
             setState(FF_KEY_BOOL_NOT_FIELDS, res)
     formFilterByIdsSetup()
     with st.expander('Search filters'):
-        with st.container():
-            c1, c2, c3, c4 = st.columns([6, 1, 3, 3])
-            with c1:
-                checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH,
-                              withContainer=False, withHistory=True)
-            with c2:
-                checkAndInput('Days old', FF_KEY_DAYS_OLD,
-                              withContainer=False)
-            with c3:
-                checkAndInput("Salary regular expression", FF_KEY_SALARY,
-                              withContainer=False, withHistory=True)
-            with c4:
-                checkAndInput('Sort by columns', FF_KEY_ORDER,
-                              withContainer=False, withHistory=True)
-            c1, c2 = st.columns(2)
-            with c1:
-                checkAndPills('Status filter', FIELDS_BOOL, FF_KEY_BOOL_FIELDS)
-            with c2:
-                checkAndPills('Status NOT filter', FIELDS_BOOL,
-                              FF_KEY_BOOL_NOT_FIELDS)
-            checkAndInput("SQL where filters", FF_KEY_WHERE,
-                          withContainer=False, withHistory=True)
+        inColumns([
+            (6, lambda _: checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH,
+                                        withContainer=False,
+                                        withHistory=True)),
+            (1, lambda _: checkAndInput('Days old', FF_KEY_DAYS_OLD,
+                                        withContainer=False)),
+            (3, lambda _: checkAndInput("Salary regular expression",
+                                        FF_KEY_SALARY,
+                                        withContainer=False,
+                                        withHistory=True)),
+            (3, lambda _: checkAndInput('Sort by columns', FF_KEY_ORDER,
+                                        withContainer=False,
+                                        withHistory=True))])
+        inColumns([
+            (1, lambda _: checkAndPills(
+                'Status filter', FIELDS_BOOL, FF_KEY_BOOL_FIELDS)),
+            (1, lambda _: checkAndPills('Status NOT filter',
+             FIELDS_BOOL, FF_KEY_BOOL_NOT_FIELDS))
+        ])
+        checkAndInput("SQL where filters", FF_KEY_WHERE,
+                      withContainer=False, withHistory=True)
 
 
 def formFilterByIdsSetup():
@@ -236,11 +235,14 @@ def formFilterByIdsSetup():
         setState(KEY_SELECTED_IDS, None)
 
 
-def inColumns(columns: list[tuple], kwargs):
-    """ columns: [ (size_int, lambda c: c.button(xxxx), (size_int, lambda c: c.button(xxxx), ...]"""
+def inColumns(columns: list[tuple], kwargs={}):
+    """ columns: [
+      (size_int, lambda _: st.button(xxxx),
+      (size_int, lambda _: fncUsingStreamlitCompoenents(xxxx), ...]"""
     c = st.columns([col[0] for col in columns], **kwargs)
     for idx, col in enumerate(columns):
-        col[1](c[idx])
+        with c[idx]:
+            col[1](c[idx])
 
 
 def tableFooter(totalResults, filterResCnt, totalSelected):
@@ -250,41 +252,41 @@ def tableFooter(totalResults, filterResCnt, totalSelected):
     st.write(totals, unsafe_allow_html=True)
     if filterResCnt > 0:
         columns = \
-            [(3, lambda c: c.button('Ignore',
-                                    help='Mark as ignored and Save',
-                                    kwargs={'boolField': 'ignored'},
-                                    disabled=totalSelected < 1,
-                                    on_click=markAs)),
-             (3, lambda c: c.button('Seen',
-                                    help='Mark as Seen and Save',
-                                    kwargs={'boolField': 'seen'},
-                                    disabled=totalSelected < 1,
-                                    on_click=markAs)),
-             (3, lambda c: c.button('Delete', 'deleteButton',
-                                    help='Delete selected job(s)',
-                                    disabled=totalSelected < 1,
-                                    on_click=deleteSelectedRows,
-                                    type="primary")),
-             (1, lambda c: c.button('<', 'prevButton',
-                                    help='Select & see previous job',
-                                    disabled=filterResCnt < 1,
-                                    on_click=selectPrevious,
-                                    type="primary")),
-             (1, lambda c: c.button('&gt;', 'nextButton',
-                                    help='Select & see next job',
-                                    disabled=filterResCnt < 1,
-                                    on_click=selectNext,
-                                    type="primary")),
-             (1, lambda c: c.write('|')),
-             (5, lambda c: c.toggle('Single select',
-                                    key=FF_KEY_SINGLE_SELECT)),
-             (5, lambda c: c.number_input('Height', key=FF_KEY_LIST_HEIGHT,
-                                          value=HEIGHT, step=100,
-                                          label_visibility='collapsed')),
-             (5, lambda c: c.number_input('Columns width',
-                                          key=FF_KEY_COLUMNS_WIDTH,
-                                          value=COLUMNS_WIDTH, step=0.1,
-                                          label_visibility='collapsed'))
+            [(3, lambda _: st.button('Ignore',
+                                     help='Mark as ignored and Save',
+                                     kwargs={'boolField': 'ignored'},
+                                     disabled=totalSelected < 1,
+                                     on_click=markAs)),
+             (3, lambda _: st.button('Seen',
+                                     help='Mark as Seen and Save',
+                                     kwargs={'boolField': 'seen'},
+                                     disabled=totalSelected < 1,
+                                     on_click=markAs)),
+             (3, lambda _: st.button('Delete', 'deleteButton',
+                                     help='Delete selected job(s)',
+                                     disabled=totalSelected < 1,
+                                     on_click=deleteSelectedRows,
+                                     type="primary")),
+             (1, lambda _: st.button('<', 'prevButton',
+                                     help='Select & see previous job',
+                                     disabled=filterResCnt < 1,
+                                     on_click=selectPrevious,
+                                     type="primary")),
+             (1, lambda _: st.button('&gt;', 'nextButton',
+                                     help='Select & see next job',
+                                     disabled=filterResCnt < 1,
+                                     on_click=selectNext,
+                                     type="primary")),
+             (1, lambda _: st.write('|')),
+             (5, lambda _: st.toggle('Single select',
+                                     key=FF_KEY_SINGLE_SELECT)),
+             (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT,
+                                           value=HEIGHT, step=100,
+                                           label_visibility='collapsed')),
+             (5, lambda _: st.number_input('Columns width',
+                                           key=FF_KEY_COLUMNS_WIDTH,
+                                           value=COLUMNS_WIDTH, step=0.1,
+                                           label_visibility='collapsed'))
 
              ]
         inColumns(kwargs={'vertical_alignment': 'center'},
