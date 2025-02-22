@@ -7,14 +7,14 @@ CSS_SEL_SECURITY_FILTER1 = '#captcha-box span.geetest_radar_tip_content'
 CSS_SEL_SECURITY_FILTER2 = '#captcha-box > div > div.geetest_wait'
 
 
-CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.ij-TemplateAdsPage-mainContainer > div.ij-SearchListingPageContent-heading > div.ij-Box.ij-SearchListingPageContent-heading-title > h1'
+CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.ij-TemplateAdsPage-mainContainer div.ij-SearchListingPageContent-heading div.ij-Box.ij-SearchListingPageContent-heading-title h1'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'div.ij-SearchListingPageContent-heading h1'
 
 
 # LIST
-CSS_SEL_JOB_LI = 'div.ij-SearchListingPageContent-main main > ul > li > .sui-AtomCard'
+CSS_SEL_JOB_LI = 'html body div#app div.sui-Layout-MediaQuery div.ij-Box.ij-Container.ij-Container-wrapper.ij-Container-centered.ij-TemplateAdsPage div.ij-Box.ij-Container.ij-Container-container.ij-TemplateAdsPage-mainContainer main.ij-Box.ij-TemplateAdsPage-main div.ij-Box.ij-SearchListingPageContent-main div.ij-Box.ij-TemplateAdsPage-row.ij-SearchListingPageContent-list ul.ij-List.ij-List--vertical.ij-List--spaced li.ij-List-item div.sui-AtomCard.sui-AtomCard-link.sui-AtomCard--rounded-l div.sui-AtomCard-info'
 CSS_SEL_JOB_LINK = 'div.ij-OfferCardContent-description h2 > a'
-CSS_SEL_NEXT_PAGE_BUTTON = 'div.ij-SearchListingPageContent-main > main ul.sui-MoleculePagination > li > button:has(svg)'
+CSS_SEL_NEXT_PAGE_BUTTON = 'html body div#app div.sui-Layout-MediaQuery div.ij-Box.ij-Container.ij-Container-wrapper.ij-Container-centered.ij-TemplateAdsPage div.ij-Box.ij-Container.ij-Container-container.ij-TemplateAdsPage-mainContainer main.ij-Box.ij-TemplateAdsPage-main div.ij-Box.ij-SearchListingPageContent-main div.ij-Box.ij-TemplateAdsPage-row.ij-SearchListingPageContent-list div.ij-Box.ij-TemplateAdsPage-row div.ij-ComponentPagination ul.sui-MoleculePagination li.sui-MoleculePagination-item button.sui-AtomButton.sui-AtomButton--primary.sui-AtomButton--flat.sui-AtomButton--center'
 
 # JOB DETAIL (IN LIST CLICK)
 CSS_SEL_JOB_TITLE = '#prefijoPuesto'

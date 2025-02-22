@@ -6,8 +6,8 @@ from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import stripFields
 
-DAYS = 10
-DAYS2 = 20
+DAYS = 15
+DAYS2 = 25
 INFO = f'Delete jobs (older than {DAYS} days and not applied)'
 COLUMNS = stripFields('Id,Title,Company,Created')
 SELECT = f"""

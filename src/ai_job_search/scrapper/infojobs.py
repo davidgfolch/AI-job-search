@@ -33,7 +33,7 @@ USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 DEBUG = False
 
 WEB_PAGE = 'Infojobs'
-LIST_URL='https://www.infojobs.net/jobsearch/search-results/list.xhtml'
+LIST_URL = 'https://www.infojobs.net/jobsearch/search-results/list.xhtml'
 JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults
 
 LOGIN_WAIT_DISABLE = False
@@ -121,8 +121,8 @@ def scrollToBottom():
     print("scrollToBottom... ", end='')
     # this this can contain "pagination" or "Nueva busqueda"
     # when no pagination exists
-    selenium.scrollIntoView(
-        'div.ij-SearchListingPageContent-main main > div')
+    # selenium.scrollIntoView('div.ij-SearchListingPageContent-main main > div')
+    selenium.scrollToBottom()
     sleep(3, 3)
 
 
@@ -220,14 +220,15 @@ def loadSearchPageManually(keywords):
     selenium.waitUntilPageUrlContains(LIST_URL)
     SIDEBAR_FILTERS = '.ij-Container .ij-SearchListingPageContent-main .ij-SearchListingPageContent-filters .ij-SidebarFilter-form-filters '
     # selenium.waitAndClick(f'{SIDEBAR_FILTERS} label[for=sort-by--PUBLICATION_DATE-b7e051d0-edc0-11ef-b448-8f936fb01bee]')
-    selenium.waitAndClick(f'{SIDEBAR_FILTERS} fieldset#sort_by_date_b7e051d0-edc0-11ef-b448-8f936fb01bee label[for=sort-by--PUBLICATION_DATE-b7e051d0-edc0-11ef-b448-8f936fb01bee]')
+    selenium.waitAndClick(
+        f'{SIDEBAR_FILTERS} fieldset#sort_by_date_b7e051d0-edc0-11ef-b448-8f936fb01bee label[for=sort-by--PUBLICATION_DATE-b7e051d0-edc0-11ef-b448-8f936fb01bee]')
     selenium.waitUntilPageIsLoaded()
     # selenium.waitAndClick(f'{SIDEBAR_FILTERS} fieldset#sort_by_date_b7e051d0-edc0-11ef-b448-8f936fb01bee label[for=radio-date--_24_HOURS-aeb62b60-edc1-11ef-b448-8f936fb01bee]')
-    selenium.waitAndClick(f'{SIDEBAR_FILTERS} label[for=radio-date--_24_HOURS-aeb62b60-edc1-11ef-b448-8f936fb01bee]')
+    selenium.waitAndClick(
+        f'{SIDEBAR_FILTERS} label[for=radio-date--_24_HOURS-aeb62b60-edc1-11ef-b448-8f936fb01bee]')
     selenium.waitUntilPageIsLoaded()
     selenium.waitAndClick(f'{SIDEBAR_FILTERS} input#check-teleworking--2')
     selenium.waitUntilPageIsLoaded()
-    
 
 
 def getJobLinkElement(idx):
@@ -235,7 +236,7 @@ def getJobLinkElement(idx):
     return selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
 
 
-@retry(retries=1, delay=5, raiseException=False)
+@retry(retries=1, delay=5, raiseException=True)
 def loadAndProcessRow(idx) -> bool:
     processed = False
     jobExists = False
@@ -248,13 +249,13 @@ def loadAndProcessRow(idx) -> bool:
             jobId, jobExists = jobExistsInDB(url)
             if jobExists:
                 print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
-                    end='')
+                      end='')
                 return True
             loadJobDetail(jobLinkElm)
             processed = True
         except IndexError as ex:
             debug(yellow("WARNING: could not get all items per page, that's ",
-                        f"expected because not always has {JOBS_X_PAGE}: {ex}"))
+                         f"expected because not always has {JOBS_X_PAGE}: {ex}"))
         if processed:
             if not processRow(url):
                 raise ValueError('Validation failed')

@@ -125,6 +125,9 @@ class SeleniumUtil:
             lambda driver: driver.execute_script(
                 'return document.readyState;') == 'complete')
 
+    def scrollToBottom(self):
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
     def scrollIntoView(self, cssSel: str | WebElement):
         elm = self.getElm(cssSel) if isinstance(cssSel, str) else cssSel
         driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)

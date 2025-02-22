@@ -65,7 +65,7 @@ def sessionStateButtons():
     options: list = listSessionFiles()
     options.append('(New)')
     with st.container(border=1):
-        c = st.columns([86, 7, 7], vertical_alignment='bottom')
+        c = st.columns([50, 5, 5, 40], vertical_alignment='bottom')
         selected = c[0].selectbox("Filters configurations",
                                   options,
                                   format_func=lambda i: os.path.split(i)[1],
@@ -77,6 +77,6 @@ def sessionStateButtons():
                 'stateFile', label_visibility='collapsed',
                 placeholder='new file name')
         kwargs = {'name': selected}
-        c[1].button('Save filters', on_click=saveSession, kwargs=kwargs)
-        c[2].button('Load filters', on_click=loadSession, kwargs=kwargs,
+        c[1].button('Save', on_click=saveSession, kwargs=kwargs)
+        c[2].button('Load', on_click=loadSession, kwargs=kwargs,
                     disabled=new)
