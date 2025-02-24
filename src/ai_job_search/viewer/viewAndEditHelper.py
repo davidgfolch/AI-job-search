@@ -75,6 +75,8 @@ def removeFiltersInNotFilters():
 def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
     dfWithSelections = df.copy()
     preSelectedRows = getState(FF_KEY_PRESELECTED_ROWS, [])
+    if len(preSelectedRows) == 1:
+        setState(FF_KEY_SINGLE_SELECT, 1)
     dfWithSelections.insert(0, "Sel", False)
     for row in preSelectedRows:
         row = int(row)
@@ -98,16 +100,26 @@ def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
 
 
 def selectNext():
+    print('selectnext()...')
     rows: set = getState(FF_KEY_PRESELECTED_ROWS, None)
     if rows is not None and len(rows) == 1:
-        intRow = int(rows[0])
-        setState(FF_KEY_PRESELECTED_ROWS, [str(intRow+1)])
+        nextRow = str(int(rows[0])+1)
+        setQueryParamOrState(FF_KEY_PRESELECTED_ROWS, nextRow, [nextRow])
 
 
 def selectPrevious():
     rows: set = getState(FF_KEY_PRESELECTED_ROWS, None)
     if rows is not None and len(rows) == 1 and int(rows[0]) >= 0:
-        setState(FF_KEY_PRESELECTED_ROWS, [str(int(rows[0])-1)])
+        prevRow = str(int(rows[0])-1)
+    setQueryParamOrState(FF_KEY_PRESELECTED_ROWS, prevRow, [prevRow])
+
+
+def setQueryParamOrState(param: str, paramValue, stateValue=None):
+    """Sets query_params if it exists in url (overrides it), otherwise sets the state."""
+    if st.query_params.get(param):
+        st.query_params[param] = paramValue
+    else:
+        setState(param, stateValue if stateValue else paramValue)
 
 
 # TODO: NEW TABLE
@@ -258,7 +270,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected):
                                      disabled=filterResCnt < 1,
                                      on_click=selectPrevious,
                                      type="primary")),
-             (1, lambda _: st.button('&gt;', 'nextButton',
+             (1, lambda _: st.button('&gt;', 'nextButton',  # >
                                      help='Select & see next job',
                                      disabled=filterResCnt < 1,
                                      on_click=selectNext,
