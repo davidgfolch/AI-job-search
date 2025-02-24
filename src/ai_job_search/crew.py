@@ -14,10 +14,8 @@ from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
 from ai_job_search.tools.util import (
-    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, AUTOMATIC_REPEATED_JOBS_MERGE, getEnv,
-    getEnvBool, hasLen, removeExtraEmptyLines, consoleTimer)
-from ai_job_search.viewer.clean.mergeDuplicates import (
-    getSelect, mergeDuplicatedJobs)
+    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, getEnv,
+    hasLen, removeExtraEmptyLines, consoleTimer)
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 
@@ -53,9 +51,6 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     def processRows(self):
         global mysql
         while True:
-            if getEnvBool(AUTOMATIC_REPEATED_JOBS_MERGE):
-                with MysqlUtil() as _:
-                    mergeDuplicatedJobs(_.fetchAll(getSelect()))
             with MysqlUtil() as mysql:
                 total = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
                 if total == 0:

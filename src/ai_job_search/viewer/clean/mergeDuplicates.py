@@ -101,10 +101,9 @@ def mergeJobDuplicates(rows, ids):
 
 
 def mergeDuplicatedJobs(rows):
-    """CREW ai enrichment entry"""
+    """Scrapper ai enrichment entry"""
     try:
         if len(rows) == 0:
-            print('Merging duplicated jobs, nothing to merge.')
             return
         idsIdx = 1
         rows = [row[idsIdx] for row in rows]

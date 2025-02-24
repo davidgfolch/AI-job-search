@@ -9,6 +9,8 @@ from ai_job_search.scrapper.baseScrapper import (
 from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars, getEnv
+from ai_job_search.viewer.clean.mergeDuplicates import (
+    getSelect, mergeDuplicatedJobs)
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from ai_job_search.scrapper.selectors.glassdoorSelectors import (
@@ -218,6 +220,8 @@ def processRow():
         if id := mysql.insert((jobId, title, company, location, url, md,
                                easyApply, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
+            mergeDuplicatedJobs(mysql.fetchAll(getSelect()))
+
     else:
         raise ValueError('Validation failed')
     print()

@@ -9,6 +9,8 @@ from ai_job_search.scrapper.baseScrapper import (
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from ai_job_search.tools.util import getAndCheckEnvVars
 from ai_job_search.tools.decorator.retry import retry
+from ai_job_search.viewer.clean.mergeDuplicates import (
+    getSelect, mergeDuplicatedJobs)
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.indeedSelectors import (
@@ -183,7 +185,8 @@ def loadAndProcessRow(idx):
         ignore = False
     except IndexError as ex:
         print(yellow("WARNING: could not get all items per page, that's ",
-                     f"expected because not always has {JOBS_X_PAGE} pages: {ex}"))
+                     f"expected because not always has {JOBS_X_PAGE} ",
+                     f"pages: {ex}"))
     except Exception as ex:
         print(red(f'ERROR: {ex}'))
         debug(red(traceback.format_exc()))
@@ -219,6 +222,7 @@ def processRow(url):
         if id := mysql.insert((jobId, title, company, location, url, md,
                                easyApply, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
+            mergeDuplicatedJobs(mysql.fetchAll(getSelect()))
             return True
         else:
             debug(exception=True)
