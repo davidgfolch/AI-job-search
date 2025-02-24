@@ -14,10 +14,10 @@ from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
 from ai_job_search.tools.util import (
-    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, getEnv, hasLen, removeExtraEmptyLines,
-    consoleTimer)
+    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, AUTOMATIC_REPEATED_JOBS_MERGE, getEnv,
+    getEnvBool, hasLen, removeExtraEmptyLines, consoleTimer)
 from ai_job_search.viewer.clean.mergeDuplicates import (
-    SELECT, mergeDuplicatedJobs)
+    getSelect, mergeDuplicatedJobs)
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 
@@ -53,8 +53,10 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     def processRows(self):
         global mysql
         while True:
+            if getEnvBool(AUTOMATIC_REPEATED_JOBS_MERGE):
+                with MysqlUtil() as _:
+                    mergeDuplicatedJobs(_.fetchAll(getSelect()))
             with MysqlUtil() as mysql:
-                mergeDuplicatedJobs(mysql.fetchAll(SELECT))
                 total = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
                 if total == 0:
                     consoleTimer("All jobs are already AI enriched, ", '1m')
@@ -142,6 +144,7 @@ def rawToJson(raw: str) -> dict[str, str]:
         printJsonException(ex, res, raw)
         raise ex
 
+
 class LazyDecoder(json.JSONDecoder):
     def decode(self, s, **kwargs):
         regex_replacements = [
@@ -151,6 +154,7 @@ class LazyDecoder(json.JSONDecoder):
         for regex, replacement in regex_replacements:
             s = regex.sub(replacement, s)
         return super().decode(s, **kwargs)
+
 
 def printJsonException(ex: Exception, res: str, raw: str) -> None:
     print(red(traceback.format_exc()))

@@ -5,7 +5,7 @@ from ai_job_search.tools.mysqlUtil import (
     MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 from ai_job_search.tools.terminalColor import blue, cyan, printHR, red
 from ai_job_search.tools.util import (
-    AUTOMATIC_REPEATED_JOBS_MERGE, SHOW_SQL, getEnvBool,
+    SHOW_SQL_IN_AI_ENRICHMENT, getEnvBool,
     removeNewLines)
 from ai_job_search.viewer.clean.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
@@ -15,23 +15,9 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL)
 
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-ai_enriched,ai_enrich_error, company,client,comments,created"""
+ai_enriched,ai_enrich_error,company,client,comments"""
 FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
-
-INFO = "Merge duplicated jobs by `title,company`"
 COLUMNS = stripFields('Counter,Ids,Title,Company')
-SELECT = """
-select r.counter, r.ids, r.title, r.company
-from (select count(*) as counter,
-            GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',') as ids,
-            max(created) as max_created,  -- to delete all, but last
-            title, company
-        from jobs
-        -- where company != 'Joppy'
-        group by title, company
-    ) as r
-where r.counter>1
-order by r.title, r.company, r.max_created desc"""
 SELECT_FOR_MERGE = """select {cols}
     from jobs where id in ({ids})
     order by created asc"""
@@ -39,6 +25,25 @@ COLS = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
 COLS_ARR = stripFields(COLS)
 COLS_ARR.remove('closed')
 COL_COMPANY_IDX = COLS_ARR.index('title')
+
+
+def getInfo():
+    return "Merge duplicated jobs by `title,company`"
+
+
+def getSelect():
+    return """
+    select r.counter, r.ids, r.title, r.company
+    from (select count(*) as counter,
+                GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',') as ids,
+                max(created) as max_created,  -- to delete all, but last
+                title, company
+            from jobs
+            -- where company != 'Joppy'
+            group by title, company
+        ) as r
+    where r.counter>1
+    order by r.title, r.company, r.max_created desc"""
 
 
 def actionButton(stContainer: DeltaGenerator, selectedRows, disabled):
@@ -96,9 +101,7 @@ def mergeJobDuplicates(rows, ids):
 
 
 def mergeDuplicatedJobs(rows):
-    if not getEnvBool(AUTOMATIC_REPEATED_JOBS_MERGE):
-        print('Merging duplicated jobs is disabled, not running.')
-        return
+    """CREW ai enrichment entry"""
     try:
         if len(rows) == 0:
             print('Merging duplicated jobs, nothing to merge.')
@@ -111,10 +114,11 @@ def mergeDuplicatedJobs(rows):
         printHR(cyan)
         for generatorResult in merge(rows):
             for line in generatorResult:
+                query = line.get('query', None)
                 if arr := line.get('arr', None):
                     print(cyan(*[removeNewLines(f'{a}') for a in arr]))
-                if txt := line.get('query', None) and getEnvBool(SHOW_SQL):
-                    print(blue(removeNewLines(txt)))
+                if getEnvBool(SHOW_SQL_IN_AI_ENRICHMENT) and query:
+                    print(blue(removeNewLines(query)))
                 if txt := line.get('text', None):
                     print(blue(removeNewLines(txt)))
     except Exception:

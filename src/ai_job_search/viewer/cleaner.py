@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 import pandas as pd
 from ai_job_search.viewer.clean import (
-    deleteOld, ignoreInternships, mergeDuplicates)
+    deleteOld, ignoreByTitle, mergeDuplicates)
 from ai_job_search.viewer.clean.cleanUtil import getAllIds
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import (getState)
@@ -12,17 +12,17 @@ from tools.mysqlUtil import (MysqlUtil)
 
 
 PROCESS_CONFIG = [
-    {'info': mergeDuplicates.INFO,
+    {'info': mergeDuplicates.getInfo,
      'dfCols': mergeDuplicates.COLUMNS,
-     'sql': mergeDuplicates.SELECT,
+     'sql': mergeDuplicates.getSelect,
      'actionButtonFnc': mergeDuplicates.actionButton},
-    {'info': ignoreInternships.INFO,
-     'dfCols': ignoreInternships.COLUMNS,
-     'sql': ignoreInternships.SELECT,
-     'actionButtonFnc': ignoreInternships.actionButton},
-    {'info': deleteOld.INFO,
+    {'info': ignoreByTitle.getInfo,
+     'dfCols': ignoreByTitle.COLUMNS,
+     'sql': ignoreByTitle.getSelect,
+     'actionButtonFnc': ignoreByTitle.actionButton},
+    {'info': deleteOld.getInfo,
      'dfCols': deleteOld.COLUMNS,
-     'sql': deleteOld.SELECT,
+     'sql': deleteOld.getSelect,
      'actionButtonFnc': deleteOld.actionButton}
 ]
 
@@ -32,11 +32,11 @@ def clean():
         c1, c2 = st.columns([5, 5])
         idx = c1.selectbox("Select what to clean",
                            range(0, len(PROCESS_CONFIG)),
-                           format_func=lambda i: PROCESS_CONFIG[i]['info'],
+                           format_func=lambda i: PROCESS_CONFIG[i]['info'](),
                            label_visibility='collapsed',
                            key='selectedCleanProcess')
         cnf = PROCESS_CONFIG[idx]
-        query = showQuery(c2, cnf['sql'])
+        query = showQuery(c2, cnf['sql']())
         rows = mysql.fetchAll(query)
         if len(rows) > 0:
             rows, selectedRows = table(mysql, cnf, rows)
@@ -55,7 +55,7 @@ def table(mysql, cnf, res):
     dfWithSelections.insert(0, "Sel", getState('selectAll', False))
     rows = st.data_editor(dfWithSelections, use_container_width=True,
                           hide_index=True, key='cleanJobsListTable',
-                          column_config={'Ids': None}, height=400)
+                          column_config={'Ids': None}, height=600)
     selectedRows = df[rows.Sel]
     return rows, selectedRows
 

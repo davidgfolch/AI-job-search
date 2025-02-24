@@ -7,16 +7,25 @@ from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import stripFields
 
 
-TITLE_REGEX = getEnv('CLEAN_MARK_IGNORED_BY_TITLE_LOWER_REGEX')
-INFO = f'Ignore jobs (by title regex {TITLE_REGEX})'
 COLUMNS = stripFields('Id,Title,Company,Created')
-SELECT = f"""
-select id,title,company,created
-from jobs
-where LOWER(title) rlike '{TITLE_REGEX}' and
-        not (ignored or applied)
-order by created desc
-"""
+
+
+def getTitleRegex():
+    return getEnv('CLEAN_IGNORE_BY_TITLE_LOWER_REGEX')
+
+
+def getInfo():
+    return f'Ignore jobs (by title regex {getTitleRegex()})'
+
+
+def getSelect():
+    return f"""
+        select id,title,company,created
+        from jobs
+        where LOWER(title) rlike '{getTitleRegex()}' and
+                not (ignored or applied)
+        order by created desc
+        """
 
 
 def actionButton(stContainer, selectedRows, disabled):

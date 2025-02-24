@@ -1,12 +1,10 @@
 import os
-from pathlib import Path
-import shlex
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 # TODO: modal -> try from streamlit_modal import Modal ??
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
 from ai_job_search.tools.sqlUtil import formatSql
-from ai_job_search.tools.util import SHOW_SQL, getEnvBool, listFiles
+from ai_job_search.tools.util import SHOW_SQL_IN_VIEW, getEnvBool
 from ai_job_search.viewer.util.historyUtil import historyButton
 from ai_job_search.viewer.util.stStateUtil import (
     getBoolKeyName,
@@ -49,7 +47,7 @@ def checkAndPills(label, fields: list[str], key: str):
 
 
 def showCodeSql(sql, format=False, showSql=False):
-    if showSql or getEnvBool(SHOW_SQL):
+    if showSql or getEnvBool(SHOW_SQL_IN_VIEW):
         if format:
             st.code(formatSql(sql), 'sql')
         else:

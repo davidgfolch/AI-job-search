@@ -1,6 +1,6 @@
 from pandas import DataFrame
 from ai_job_search.tools.sqlUtil import formatSql
-from ai_job_search.tools.util import SHOW_SQL, getEnv, getEnvBool
+from ai_job_search.tools.util import SHOW_SQL_IN_VIEW, getEnv, getEnvBool
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, initStates
 from ai_job_search.viewer.util.viewUtil import (
@@ -119,7 +119,7 @@ def getJobData(selectedRows: DataFrame):
 
 def tableView():
     query = getJobListQuery()
-    if getEnvBool(SHOW_SQL):
+    if getEnvBool(SHOW_SQL_IN_VIEW):
         with st.expander("View generated sql"):
             st.code(formatSql(query, False), 'sql',
                     wrap_lines=True, line_numbers=True)
@@ -157,22 +157,28 @@ def formDetailForMultipleSelection(selectedRows, jobData):
 
 
 def addCompanyAppliedJobsInfo(jobData):
-    params = {'company': str(jobData['company']).lower().replace("'", "''"),
+    company = str(jobData['company']).lower().replace("'", "''")
+    params = {'company': company,
               'id':  str(jobData['id'])}
     query = SELECT_APPLIED_JOB_IDS_BY_COMPANY
     # For Joppy offers check also client
     # (client should be manually set by the user)
-    company = jobData['company']
     if params['company'] == 'joppy' and jobData['client']:
         query += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
         client = str(jobData['client']).lower()
         params |= {'client': client}
         company = jobData['client']
     rows = mysql.fetchAll(query.format(**params))
+    if len(rows) == 0:
+        companyParts = company.split(' ')
+        if len(companyParts) > 1 and len(companyParts[0]) > 3:
+            params['company'] = companyParts[0]
+            rows = mysql.fetchAll(query.format(**params))
     ids = ','.join([str(r[0]) for r in rows])
     dates = ' '.join(['  📅 '+str(r[1].date()) for r in rows])
     if len(ids) > 0:
         jobData['company'] += ' <span style="font-size: small">' + \
             ':point_right: :warning: ' + \
-            gotoPageByUrl(PAGE_VIEW_IDX, f'already applied {company}', ids) + \
-            f' on {dates}</span>'
+            gotoPageByUrl(PAGE_VIEW_IDX,
+                          f'already applied {params["company"]}', ids) \
+            + f' on {dates}</span>'

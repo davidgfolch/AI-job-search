@@ -8,17 +8,23 @@ from ai_job_search.viewer.util.stUtil import stripFields
 
 DAYS = 15
 DAYS2 = 25
-INFO = f'Delete jobs (older than {DAYS} days and not applied)'
 COLUMNS = stripFields('Id,Title,Company,Created')
-SELECT = f"""
-select id,title,company,created
-from jobs
-where (DATE(created) < DATE_SUB(CURDATE(), INTERVAL {DAYS} DAY) and
-            not applied and not flagged and not seen) or
-      (DATE(created) < DATE_SUB(CURDATE(), INTERVAL {DAYS2} DAY) and
-            not applied and not flagged)
-order by created desc
-"""
+
+
+def getInfo():
+    return f'Delete jobs (older than {DAYS} days and not applied)'
+
+
+def getSelect():
+    return f"""
+        select id,title,company,created
+        from jobs
+        where (DATE(created) < DATE_SUB(CURDATE(), INTERVAL {DAYS} DAY) and
+                    not applied and not flagged and not seen) or
+            (DATE(created) < DATE_SUB(CURDATE(), INTERVAL {DAYS2} DAY) and
+                    not applied and not flagged)
+        order by created desc
+        """
 
 
 def actionButton(container: DeltaGenerator, selectedRows, disabled):

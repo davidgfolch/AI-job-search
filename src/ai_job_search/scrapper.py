@@ -11,15 +11,15 @@ from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds
 # this could be an alternative way to add jobs in sites like glassdoor because
 # of cloudflare security filter
 SCRAPPERS: dict = {
+    'Infojobs': {  # first to solve security filter
+        'function': infojobs.run,
+        'timer': '2h'},
     'Linkedin': {
         'function': linkedin.run,
         'timer': '1h'},
     'Glassdoor': {
         'function': glassdoor.run,
         'timer': '3h'},
-    'Infojobs': {
-        'function': infojobs.run,
-        'timer': '2h'},
     'Tecnoempleo': {
         'function': tecnoempleo.run,
         'timer': '2h'},
@@ -32,41 +32,39 @@ SCRAPPERS: dict = {
 executionsTimes = {}
 
 
-def timeExpired():
-    last = executionsTimes.get(name, None)
+def timeExpired(name: str, timeout: int, waitBeforeFirstRuns: bool):
+    defaultLast = getDatetimeNow() if waitBeforeFirstRuns else None
+    last = executionsTimes.get(name, defaultLast)
     if last:
         lapsed = getDatetimeNow()-last
-        timeoutSeconds = getSeconds(properties['timer'])
+        timeoutSeconds = getSeconds(timeout)
         if lapsed + 1 <= timeoutSeconds:
             return False
     executionsTimes[name] = getDatetimeNow()
     return True
 
 
-args = sys.argv
-print('Scrapper init')
-starting = 'starting' in args and len(args) == 3
-startingAt = args[2].capitalize() if starting else None
-print("'starting' in args ", 'starting' in args)
-print("len(args) ", len(args))
-if len(args) == 1 or starting:
+def runAllScrappers(waitBeforeFirstRuns, starting):
     # No arguments specified in command line: run all
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
+    startingAt = args[2].capitalize() if starting else None
     print(f'Starting at : {startingAt}')
     while True:
         for name, properties in SCRAPPERS.items():
-            startAtThis = (starting and startingAt != name)
-            if timeExpired():
-                execFunction = properties['function']
-                if properties.get('ignoreAutoRun', False) or startAtThis:
+            if timeExpired(name, properties['timer'], waitBeforeFirstRuns):
+                notStartAtThisOne = (starting and startingAt != name)
+                if properties.get('ignoreAutoRun', False) or notStartAtThisOne:
                     print(f'Skipping : {name}')
                     continue
-                execFunction()
+                properties['function']()
                 starting = False
+        waitBeforeFirstRuns = False
         consoleTimer(
             "Waiting for next scrapping execution trigger, ", '10m')
-else:
+
+
+def runSpecifiedScrappers():
     # Arguments specified in command line
     print(f'Executing specified scrappers: {args[1:]}')
     for arg in args[1:]:
@@ -76,3 +74,22 @@ else:
             print(red(f"Invalid scrapper web page name {arg}"))
             print(yellow(
                 f"Available web page scrapper names: {SCRAPPERS.keys()}"))
+
+
+args = sys.argv
+print('Scrapper init')
+print('Usage: scrapper.py wait starting scrapperName')
+print('wait -> waits for scrapper timeout before executing')
+print('starting -> starts scrapping at the specified scrapper (by name)')
+wait = 'wait' in args
+startingWithPosition = 3 if wait else 4
+starting = 'starting' in args and len(args) == startingWithPosition
+if starting:
+    print(f"'starting' at {args[startingWithPosition]} ")
+if wait:
+    print("'wait' before execution", )
+
+if len(args) == 1 or starting or wait:
+    runAllScrappers(wait, starting)
+else:
+    runSpecifiedScrappers()

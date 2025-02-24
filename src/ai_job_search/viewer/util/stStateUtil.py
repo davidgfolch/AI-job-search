@@ -66,11 +66,11 @@ def saveSession(name: str):
     path = createFolder(getSessionFileName(name))
     with open(path, 'w') as f:
         session: dict = st.session_state.to_dict()
+        ignoredKeysRegex = r'jobsListTable|.+Button|FormSubmitter.+'
         for k in list(session.keys()):
             if session[k] is None or \
                     isinstance(session[k], DataFrame) or \
-                    str(k) == 'jobsListTable' or \
-                    str(k).endswith('Button'):  # incl. _historyButton
+                    re.match(ignoredKeysRegex, k, re.I) is not None:
                 session.pop(k)
         st.write(session)
         f.write(json.dumps(session, default=lambda o: None))

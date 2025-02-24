@@ -98,15 +98,16 @@ def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
 
 
 def selectNext():
-    rows: set = getState(FF_KEY_PRESELECTED_ROWS, [])
-    if len(rows) == 1:
-        setState(FF_KEY_PRESELECTED_ROWS, [rows[0]+1])
+    rows: set = getState(FF_KEY_PRESELECTED_ROWS, None)
+    if rows is not None and len(rows) == 1:
+        intRow = int(rows[0])
+        setState(FF_KEY_PRESELECTED_ROWS, [str(intRow+1)])
 
 
 def selectPrevious():
-    rows: set = getState(FF_KEY_PRESELECTED_ROWS, [])
-    if len(rows) == 1 and rows[0] >= 0:
-        setState(FF_KEY_PRESELECTED_ROWS, [rows[0]-1])
+    rows: set = getState(FF_KEY_PRESELECTED_ROWS, None)
+    if rows is not None and len(rows) == 1 and int(rows[0]) >= 0:
+        setState(FF_KEY_PRESELECTED_ROWS, [str(int(rows[0])-1)])
 
 
 # TODO: NEW TABLE
@@ -149,7 +150,7 @@ def selectPrevious():
 #     return selected_df
 
 
-def getTableColsConfig(fields, visibleColumns, selector=True):
+def getTableColsConfig(fields: list[str], visibleColumns, selector=True):
     # https://docs.streamlit.io/develop/api-reference/data/st.column_config
     cfg = {}
     if selector:
@@ -158,9 +159,15 @@ def getTableColsConfig(fields, visibleColumns, selector=True):
     # SORT VISIBLE COLUMNS FIRST
     for idx, c in enumerate(fields):
         if idx > 0 and c in visibleColumns:
+            cTranslated = getColumnTranslated(c)
+            width = 'medium'
+            if cTranslated == 'Sel':
+                width = 'small'
+            elif cTranslated == 'Title':
+                width = 'large'
             cfg[idx+2] = st.column_config.Column(
-                # TODO: configurable columns width
-                label=getColumnTranslated(c), width='medium')
+                label=cTranslated,
+                width=width)
         else:
             cfg[idx+2] = None
     return cfg
@@ -275,8 +282,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected):
 def showDetail(jobData: dict):
     data = scapeLatex(jobData, ['markdown', 'title'])
     formatDateTime(jobData)
-    data = {k: (data[k] if data[k] else None)
-            for k in data.keys()}
+    data = {k: (data[k] if data[k] else None) for k in data.keys()}
     str = DETAIL_FORMAT.format(**data)
     str += fmtDetailOpField(data, 'client')
     reqSkills = fmtDetailOpField(data, 'required_technologies', 'Required', 2)
