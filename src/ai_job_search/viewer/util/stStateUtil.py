@@ -64,13 +64,16 @@ def getBoolKeyName(key: str):
 
 def saveSession(name: str):
     path = createFolder(getSessionFileName(name))
+    # TODO: naming convention to simplify filter. Save all not in form
+    # f.ex.: xxxFilter, isXxxFilter
+    ignoreKeysRegex = r'|'.join(['jobsListTable', 'comments', 'company',
+                                 '.+Button', 'FormSubmitter.+'])
     with open(path, 'w') as f:
         session: dict = st.session_state.to_dict()
-        ignoredKeysRegex = r'jobsListTable|.+Button|FormSubmitter.+'
         for k in list(session.keys()):
             if session[k] is None or \
                     isinstance(session[k], DataFrame) or \
-                    re.match(ignoredKeysRegex, k, re.I) is not None:
+                    re.match(ignoreKeysRegex, k, re.I) is not None:
                 session.pop(k)
         st.write(session)
         f.write(json.dumps(session, default=lambda o: None))

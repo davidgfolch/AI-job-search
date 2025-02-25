@@ -59,7 +59,7 @@ def formDetailSubmit():
     ids = getSelectedRowsIds('selectedRows')
     if not ids or len(ids) < 1:
         return
-    fieldsValues = pillsValuesToDict('statusFields', FIELDS_BOOL)
+    fieldsValues = pillsValuesToDict('statusFieldsFilter', FIELDS_BOOL)
     setFieldValue(fieldsValues, F_KEY_COMMENTS, None, len(ids) == 1)
     setFieldValue(fieldsValues, F_KEY_SALARY, None, len(ids) == 1)
     setFieldValue(fieldsValues, F_KEY_COMPANY, None, len(ids) == 1)

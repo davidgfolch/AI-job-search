@@ -66,7 +66,8 @@ def view():
         with col1:
             filterResCnt, selectedRows, totalSelected = tableView()
             totalResults = mysql.count(QRY_SELECT_COUNT_JOBS)
-            tableFooter(totalResults, filterResCnt, totalSelected)
+            tableFooter(totalResults, filterResCnt,
+                        totalSelected, selectedRows)
             if totalSelected == 1:
                 jobData = getJobData(selectedRows)
                 formDetail(jobData)
@@ -93,7 +94,7 @@ def formDetail(jobData):
                 format_func=lambda c: getColumnTranslated(c),
                 selection_mode='multi',
                 label_visibility='collapsed',
-                key='statusFields')),
+                key='statusFieldsFilter')),
             (1, lambda _: st.form_submit_button(
                 'Save', 'Save changes in job(s)',
                 type='primary',

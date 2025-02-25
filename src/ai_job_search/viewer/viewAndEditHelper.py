@@ -99,17 +99,16 @@ def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
     return selectedRows
 
 
-def selectNext():
-    print('selectnext()...')
+def selectNext(max: int):
     rows: set = getState(FF_KEY_PRESELECTED_ROWS, None)
-    if rows is not None and len(rows) == 1:
+    if rows is not None and len(rows) == 1 and int(rows[0]) < max:
         nextRow = str(int(rows[0])+1)
         setQueryParamOrState(FF_KEY_PRESELECTED_ROWS, nextRow, [nextRow])
 
 
 def selectPrevious():
     rows: set = getState(FF_KEY_PRESELECTED_ROWS, None)
-    if rows is not None and len(rows) == 1 and int(rows[0]) >= 0:
+    if rows is not None and len(rows) == 1 and int(rows[0]) > 0:
         prevRow = str(int(rows[0])-1)
     setQueryParamOrState(FF_KEY_PRESELECTED_ROWS, prevRow, [prevRow])
 
@@ -189,10 +188,10 @@ def detailForSingleSelection():
     st.divider()
     c1, c2, _ = st.columns([4, 3, 30])
     c1.button('Ignore', help='Mark as ignored and Save',
-              key='ignore2', kwargs={'boolField': 'ignored'},
+              key='ignore2Button', kwargs={'boolField': 'ignored'},
               on_click=markAs)
     c2.button('Seen', help='Mark as Seen and Save',
-              key='seen2', kwargs={'boolField': 'seen'},
+              key='seen2Button', kwargs={'boolField': 'seen'},
               on_click=markAs)
 
 
@@ -243,52 +242,61 @@ def formFilterByIdsSetup():
         setState(KEY_SELECTED_IDS, None)
 
 
-def tableFooter(totalResults, filterResCnt, totalSelected):
+def tableFooter(totalResults, filterResCnt, totalSelected,
+                selectedRows: DataFrame):
     totals = f'<p style="text-align:right">{totalSelected} ' + \
         f'selected ({filterResCnt} filtered, ' + \
         f'{totalResults} total)</p>'
     st.write(totals, unsafe_allow_html=True)
-    if filterResCnt > 0:
-        columns = \
-            [(3, lambda _: st.button('Ignore',
-                                     help='Mark as ignored and Save',
-                                     kwargs={'boolField': 'ignored'},
-                                     disabled=totalSelected < 1,
-                                     on_click=markAs)),
-             (3, lambda _: st.button('Seen',
-                                     help='Mark as Seen and Save',
-                                     kwargs={'boolField': 'seen'},
-                                     disabled=totalSelected < 1,
-                                     on_click=markAs)),
-             (3, lambda _: st.button('Delete', 'deleteButton',
-                                     help='Delete selected job(s)',
-                                     disabled=totalSelected < 1,
-                                     on_click=deleteSelectedRows,
-                                     type="primary")),
-             (1, lambda _: st.button('<', 'prevButton',
-                                     help='Select & see previous job',
-                                     disabled=filterResCnt < 1,
-                                     on_click=selectPrevious,
-                                     type="primary")),
-             (1, lambda _: st.button('&gt;', 'nextButton',  # >
-                                     help='Select & see next job',
-                                     disabled=filterResCnt < 1,
-                                     on_click=selectNext,
-                                     type="primary")),
-             (1, lambda _: st.write('|')),
-             (5, lambda _: st.toggle('Single select',
-                                     key=FF_KEY_SINGLE_SELECT)),
-             (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT,
-                                           value=HEIGHT, step=100,
-                                           label_visibility='collapsed')),
-             (5, lambda _: st.number_input('Columns width',
-                                           key=FF_KEY_COLUMNS_WIDTH,
-                                           value=COLUMNS_WIDTH, step=0.1,
-                                           label_visibility='collapsed'))
+    if filterResCnt < 1:
+        return
+    singleSel = getState(FF_KEY_SINGLE_SELECT) == 1
+    idxValues = selectedRows.index.values
+    selected = idxValues[0] if len(idxValues) > 0 else None
+    enabledPrevNext = singleSel and selected is not None
+    prevEnabled = enabledPrevNext and selected > 0
+    nextEnabled = enabledPrevNext and selected < filterResCnt-1
+    columns = \
+        [(3, lambda _: st.button('Ignore',
+                                 help='Mark as ignored and Save',
+                                 kwargs={'boolField': 'ignored'},
+                                 disabled=totalSelected < 1,
+                                 on_click=markAs)),
+            (3, lambda _: st.button('Seen',
+                                    help='Mark as Seen and Save',
+                                    kwargs={'boolField': 'seen'},
+                                    disabled=totalSelected < 1,
+                                    on_click=markAs)),
+            (3, lambda _: st.button('Delete', 'deleteButton',
+                                    help='Delete selected job(s)',
+                                    disabled=totalSelected < 1,
+                                    on_click=deleteSelectedRows,
+                                    type="primary")),
+            (1, lambda _: st.button('<', 'prevButton',
+                                    help='Select & see previous job',
+                                    disabled=not prevEnabled,
+                                    on_click=selectPrevious,
+                                    type="primary")),
+            (1, lambda _: st.button('&gt;', 'nextButton',  # >
+                                    help='Select & see next job',
+                                    disabled=not nextEnabled,
+                                    on_click=selectNext,
+                                    kwargs={'max': filterResCnt-1},
+                                    type="primary")),
+            (1, lambda _: st.write('|')),
+            (5, lambda _: st.toggle('Single select',
+                                    key=FF_KEY_SINGLE_SELECT)),
+            (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT,
+                                          value=HEIGHT, step=100,
+                                          label_visibility='collapsed')),
+            (5, lambda _: st.number_input('Columns width',
+                                          key=FF_KEY_COLUMNS_WIDTH,
+                                          value=COLUMNS_WIDTH, step=0.1,
+                                          label_visibility='collapsed'))
 
-             ]
-        inColumns(kwargs={'vertical_alignment': 'center'},
-                  columns=columns)
+         ]
+    inColumns(kwargs={'vertical_alignment': 'center'},
+              columns=columns)
 
 
 def showDetail(jobData: dict):
@@ -308,7 +316,7 @@ def showDetail(jobData: dict):
     if salary != '':
         c1, c2 = st.columns(2)
         c1.write(salary)
-        c2.button('', icon='🗑️',
+        c2.button('', icon='🗑️', key='trashButton',
                   on_click=deleteSalary, kwargs={'id': jobData['id']})
     if val := data.get('comments'):
         with st.expander('Comments', expanded=True):
