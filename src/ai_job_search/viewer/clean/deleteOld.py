@@ -12,7 +12,7 @@ COLUMNS = stripFields('Id,Title,Company,Created')
 
 
 def getInfo():
-    return f'Delete jobs (older than {DAYS} days and not applied)'
+    return f'Delete jobs (older than {DAYS} days not applied/flagged/seen)'
 
 
 def getSelect():
