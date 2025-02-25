@@ -277,7 +277,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
                                     disabled=not prevEnabled,
                                     on_click=selectPrevious,
                                     type="primary")),
-            (1, lambda _: st.button('&gt;', 'nextButton',  # >
+            (2, lambda _: st.button('&gt;', 'nextButton',  # >
                                     help='Select & see next job',
                                     disabled=not nextEnabled,
                                     on_click=selectNext,

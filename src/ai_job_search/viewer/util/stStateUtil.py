@@ -66,8 +66,10 @@ def saveSession(name: str):
     path = createFolder(getSessionFileName(name))
     # TODO: naming convention to simplify filter. Save all not in form
     # f.ex.: xxxFilter, isXxxFilter
+    # extract constants and normalize names
     ignoreKeysRegex = r'|'.join(['jobsListTable', 'comments', 'company',
-                                 '.+Button', 'FormSubmitter.+'])
+                                 '.+Button', 'FormSubmitter.+',
+                                 'currentSessionSaved'])
     with open(path, 'w') as f:
         session: dict = st.session_state.to_dict()
         for k in list(session.keys()):
@@ -75,7 +77,6 @@ def saveSession(name: str):
                     isinstance(session[k], DataFrame) or \
                     re.match(ignoreKeysRegex, k, re.I) is not None:
                 session.pop(k)
-        st.write(session)
         f.write(json.dumps(session, default=lambda o: None))
 
 
