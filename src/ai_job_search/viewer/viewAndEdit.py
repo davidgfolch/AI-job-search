@@ -172,9 +172,11 @@ def addCompanyAppliedJobsInfo(jobData):
     rows = mysql.fetchAll(query.format(**params))
     if len(rows) == 0:
         companyParts = company.split(' ')
-        if len(companyParts) > 1 and len(companyParts[0]) > 3:
-            params['company'] = companyParts[0]
-            rows = mysql.fetchAll(query.format(**params))
+        if len(companyParts) > 1:
+            part1 = companyParts[0]
+            if len(part1) > 2 and part1 not in ['grupo']:
+                params['company'] = part1
+                rows = mysql.fetchAll(query.format(**params))
     ids = ','.join([str(r[0]) for r in rows])
     dates = ' '.join(['  📅 '+str(r[1].date()) for r in rows])
     if len(ids) > 0:

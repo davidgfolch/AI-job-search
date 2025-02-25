@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 # TODO: modal -> try from streamlit_modal import Modal ??
@@ -22,7 +21,7 @@ def checkAndInput(label: str, key: str, withColumns=None, withContainer=True,
     c = st.container(border=1) if withContainer else st
     if not withColumns:
         enabled = checkboxFilter(label, key, c)
-        col = c.columns([90, 10], vertical_alignment="top")
+        col = c.columns([90, 15], vertical_alignment="top")
         col[0].text_input(label, key=key, disabled=not enabled,
                           label_visibility='collapsed')
         historyButton(key, withHistory, col[1])

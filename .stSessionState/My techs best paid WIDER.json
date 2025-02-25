@@ -1,5 +1,5 @@
 {
-    "whereFilter": "required_technologies rlike 'java([^script]|$)|python|scala|clojure' or title rlike 'java([^script]|$)|python|scala|clojure' or lower(CONVERT(markdown USING utf8)) rlike 'java([^script]|$)|python|scala|clojure'",
+    "whereFilter": "required_technologies rlike 'java([^script]|$)|python|scala|clojure' or title rlike 'java([^script]|$)|python|scala|clojure' or lower(CONVERT(markdown USING utf8mb4) COLLATE utf8mb4_0900_ai_ci) rlike 'java([^script]|$)|python|scala|clojure'",
     "isBoolFieldsNotFilter": true,
     "daysOldFilter": "1",
     "salaryFilter": "([3456789]|[123][0-9])[0-9]",
@@ -14,7 +14,6 @@
         "closed",
         "applied"
     ],
-    "currentSessionSaved": "(New)",
     "boolFieldsFilter": [
         "ai_enriched"
     ],
