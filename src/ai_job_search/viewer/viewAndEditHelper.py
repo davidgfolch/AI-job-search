@@ -17,8 +17,8 @@ from ai_job_search.viewer.viewAndEditConstants import (
     COLUMNS_WIDTH, DEFAULT_ORDER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_DAYS_OLD,
     FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
-    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS_BOOL, HEIGHT,
-    SEARCH_COLUMNS, SEARCH_INPUT_HELP, VISIBLE_COLUMNS)
+    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS_BOOL,
+    LIST_HEIGHT, SEARCH_COLUMNS, SEARCH_INPUT_HELP, VISIBLE_COLUMNS)
 from ai_job_search.viewer.viewAndEditEvents import (
     deleteSalary, deleteSelectedRows, markAs, onTableChange)
 
@@ -91,7 +91,7 @@ def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
         on_change=onTableChange,
         column_config=getTableColsConfig(columnsOrder, visibleColumns),
         use_container_width=True,
-        height=getState(FF_KEY_LIST_HEIGHT, HEIGHT),
+        height=getState(FF_KEY_LIST_HEIGHT, LIST_HEIGHT),
         key='jobsListTable',
     )
     selectedRows = df[editedDf.Sel]
@@ -114,7 +114,8 @@ def selectPrevious():
 
 
 def setQueryParamOrState(param: str, paramValue, stateValue=None):
-    """Sets query_params if it exists in url (overrides it), otherwise sets the state."""
+    """Sets query_params if it exists in url (overrides it), otherwise sets
+      the state."""
     if st.query_params.get(param):
         st.query_params[param] = paramValue
     else:
@@ -291,7 +292,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
                                           label_visibility='collapsed')),
             (5, lambda _: st.number_input('Columns width',
                                           key=FF_KEY_COLUMNS_WIDTH,
-                                          value=COLUMNS_WIDTH, step=0.1,
+                                          step=0.1,
                                           label_visibility='collapsed'))
 
          ]

@@ -15,7 +15,7 @@ from ai_job_search.viewer.viewAndEditConstants import (
     FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH,
     FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE,
-    FIELDS, FIELDS_BOOL, FIELDS_SORTED, HEIGHT, LIST_VISIBLE_COLUMNS,
+    FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS,
     STYLE_JOBS_TABLE)
 from ai_job_search.viewer.viewAndEditEvents import (formDetailSubmit)
 from ai_job_search.viewer.viewAndEditHelper import (
@@ -56,7 +56,7 @@ def view():
             getBoolKeyName(FF_KEY_WHERE): False,
             FF_KEY_WHERE: DEFAULT_SQL_FILTER,
             FF_KEY_SINGLE_SELECT: True,
-            FF_KEY_LIST_HEIGHT: HEIGHT
+            FF_KEY_LIST_HEIGHT: LIST_HEIGHT
         })
         st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
         formFilter()
@@ -93,8 +93,7 @@ def formDetail(jobData):
                 default=boolFieldsValues,
                 format_func=lambda c: getColumnTranslated(c),
                 selection_mode='multi',
-                label_visibility='collapsed',
-                key='statusFieldsFilter')),
+                label_visibility='collapsed')),
             (1, lambda _: st.form_submit_button(
                 'Save', 'Save changes in job(s)',
                 type='primary',
@@ -102,10 +101,10 @@ def formDetail(jobData):
         rows = 5 if comments is None else len(comments.split('\n'))
         rows = rows if rows > 4 else 5
         height = rows*28 if rows*28 < 600 else 600
-        st.text_area("Comments", comments, key=F_KEY_COMMENTS, height=height)
-        st.text_input("Salary", salary, key=F_KEY_SALARY)
-        st.text_input("Company", company, key=F_KEY_COMPANY)
-        st.text_input("Client", client, key=F_KEY_CLIENT)
+        st.text_area("Comments", comments, height=height)
+        st.text_input("Salary", salary)
+        st.text_input("Company", company)
+        st.text_input("Client", client)
 
 
 def getJobData(selectedRows: DataFrame):

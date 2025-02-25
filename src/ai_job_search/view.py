@@ -22,7 +22,6 @@ selectedView = c1.segmented_control(
     format_func=lambda i: PAGES[i],
     selection_mode="single",
     label_visibility='collapsed',
-    default=0,
     key=PAGE_STATE_KEY
 )
 if messageInfo := getMessageInfo():

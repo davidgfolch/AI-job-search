@@ -2,7 +2,7 @@ from ai_job_search.tools.util import getEnv
 from ai_job_search.viewer.util.stUtil import sortFields, stripFields
 
 
-HEIGHT = 300
+LIST_HEIGHT = 400
 COLUMNS_WIDTH: float = 0.5
 
 # FORM FILTER KEYS
