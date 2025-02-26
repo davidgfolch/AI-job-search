@@ -17,6 +17,12 @@ def getMessageInfo():
     return msg
 
 
+def getTextAreaHeightByText(comments, defaultRows=5, defaultHeight=600):
+    rows = defaultRows if comments is None else len(comments.split('\n'))
+    rows = rows if rows >= defaultRows else defaultRows
+    return rows*28 if rows*28 < defaultHeight else defaultHeight
+
+
 # Fields processing
 def stripFields(fields: str) -> list[str]:
     return list(map(lambda c: re.sub('\n', '', c.strip()), fields.split(',')))

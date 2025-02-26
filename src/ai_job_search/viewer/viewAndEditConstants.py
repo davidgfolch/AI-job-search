@@ -18,10 +18,11 @@ FF_KEY_LIST_HEIGHT = 'listHeight'
 FF_KEY_PRESELECTED_ROWS = 'preSelectedRows'
 FF_KEY_COLUMNS_WIDTH = 'columnsWidth'
 # FORM KEYS
-F_KEY_COMMENTS = 'comments'
-F_KEY_SALARY = 'salary'
-F_KEY_COMPANY = 'company'
-F_KEY_CLIENT = 'client'
+F_KEY_STATUS = 'formFieldStatusPills'
+F_KEY_COMMENTS = 'formComments'
+F_KEY_SALARY = 'formSalary'
+F_KEY_COMPANY = 'formCompany'
+F_KEY_CLIENT = 'formClient'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """
 salary,title,company"""
