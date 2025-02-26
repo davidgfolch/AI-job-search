@@ -1,6 +1,6 @@
 from pandas import DataFrame
 from ai_job_search.tools.sqlUtil import formatSql
-from ai_job_search.tools.util import SHOW_SQL_IN_VIEW, getEnv, getEnvBool
+from ai_job_search.tools.util import getEnv
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, initStates
 from ai_job_search.viewer.util.viewUtil import (
@@ -13,6 +13,7 @@ from ai_job_search.viewer.viewAndEditConstants import (
     DEFAULT_SQL_FILTER,
     F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS,
     FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH,
+    FF_KEY_CONFIG_PILLS,
     FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE,
     FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS,
@@ -118,7 +119,7 @@ def getJobData(selectedRows: DataFrame):
 
 def tableView():
     query = getJobListQuery()
-    if getEnvBool(SHOW_SQL_IN_VIEW):
+    if 'showSql' in getState(FF_KEY_CONFIG_PILLS, []):
         with st.expander("View generated sql"):
             st.code(formatSql(query, False), 'sql',
                     wrap_lines=True, line_numbers=True)
@@ -173,7 +174,7 @@ def addCompanyAppliedJobsInfo(jobData):
         if len(companyParts) > 1:
             part1 = companyParts[0]
             if len(part1) > 2 and part1 not in ['grupo']:
-                params['company'] = part1
+                params['company'] = f'(^| ){part1}($| )'
                 rows = mysql.fetchAll(query.format(**params))
     ids = ','.join([str(r[0]) for r in rows])
     dates = ' '.join(['  📅 '+str(r[1].date()) for r in rows])

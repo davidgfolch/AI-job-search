@@ -1,15 +1,14 @@
+from collections import deque
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 # TODO: modal -> try from streamlit_modal import Modal ??
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
 from ai_job_search.tools.sqlUtil import formatSql
-from ai_job_search.tools.util import SHOW_SQL_IN_VIEW, getEnvBool
 from ai_job_search.viewer.util.historyUtil import historyButton
 from ai_job_search.viewer.util.stStateUtil import (
-    getBoolKeyName,
-    listSessionFiles,
-    loadSession,
-    saveSession)
+    getBoolKeyName, getState, listSessionFiles,
+    loadSession, saveSession)
+from ai_job_search.viewer.viewAndEditConstants import FF_KEY_CONFIG_PILLS
 
 
 def checkboxFilter(label, key, container: DeltaGenerator = st):
@@ -45,8 +44,9 @@ def checkAndPills(label, fields: list[str], key: str):
                      label_visibility='collapsed')
 
 
-def showCodeSql(sql, format=False, showSql=False):
-    if showSql or getEnvBool(SHOW_SQL_IN_VIEW):
+def showCodeSql(sql, format=False, showSql=None):
+    showSqlToggle = 'showSql' in getState(FF_KEY_CONFIG_PILLS, [])
+    if (showSql is not None and showSql) or showSqlToggle:
         if format:
             st.code(formatSql(sql), 'sql')
         else:
@@ -58,23 +58,27 @@ def reloadButton():
         st.rerun()
 
 
-def sessionStateButtons():
-    options: list = listSessionFiles()
+def sessionLoadSaveForm():
+    options: deque = deque(listSessionFiles())
+    options.remove('Default')
+    options.append('(None)')
+    options.append('Default')
     options.append('(New)')
+    options.rotate(3)
     with st.container(border=1):
-        c = st.columns([50, 5, 5, 40], vertical_alignment='bottom')
-        selected = c[0].selectbox("Filters configurations",
-                                  options=options,
-                                  #  format_func=lambda i: os.path.split(i)[1],
-                                  #  label_visibility='collapsed',
-                                  key='currentSessionSaved')
+        c1, c2, c3 = st.columns([50, 5, 5], vertical_alignment='bottom')
+        selected = c1.selectbox("Filters configurations",
+                                options=options,
+                                #  format_func=lambda i: os.path.split(i)[1],
+                                #  label_visibility='collapsed',
+                                key='currentSessionSaved')
         new = selected == '(New)'
         if new:
-            selected = c[0].text_input(
+            selected = c1.text_input(
                 'stateFile', label_visibility='collapsed',
                 placeholder='new file name')
         kwargs = {'name': selected}
-        c[1].button('Save', on_click=saveSession,
-                    key='sessionSaveButton', kwargs=kwargs)
-        c[2].button('Load', on_click=loadSession, key='sessionLoadButton',
-                    kwargs=kwargs, disabled=new)
+        c2.button('Save', on_click=saveSession,
+                  key='sessionSaveButton', kwargs=kwargs)
+        c3.button('Load', on_click=loadSession, key='sessionLoadButton',
+                  kwargs=kwargs, disabled=new)

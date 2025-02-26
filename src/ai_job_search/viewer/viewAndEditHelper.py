@@ -6,7 +6,7 @@ from ai_job_search.tools.mysqlUtil import (
     QRY_SELECT_JOBS_VIEWER, binaryColumnIgnoreCase, getColumnTranslated)
 from ai_job_search.tools.sqlUtil import getAndFilter
 from ai_job_search.viewer.util.stComponents import (
-    checkAndInput, checkAndPills, sessionStateButtons)
+    checkAndInput, checkAndPills, sessionLoadSaveForm)
 from ai_job_search.viewer.util.stStateUtil import (
     getBoolKeyName, getStateBool, getStateBoolValue, setState)
 from ai_job_search.viewer.util.stUtil import (
@@ -15,7 +15,8 @@ from ai_job_search.viewer.util.viewUtil import (
     KEY_SELECTED_IDS, fmtDetailOpField, formatDateTime)
 from ai_job_search.viewer.viewAndEditConstants import (
     COLUMNS_WIDTH, DEFAULT_ORDER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
-    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_DAYS_OLD,
+    FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS,
+    FF_KEY_DAYS_OLD,
     FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS_BOOL,
     LIST_HEIGHT, SEARCH_COLUMNS, SEARCH_INPUT_HELP, VISIBLE_COLUMNS)
@@ -201,7 +202,10 @@ def formFilter():
         if res := removeFiltersInNotFilters():
             setState(FF_KEY_BOOL_NOT_FIELDS, res)
     formFilterByIdsSetup()
-    sessionStateButtons()
+    inColumns([
+        (5, lambda _: sessionLoadSaveForm()),
+        (5, lambda _: st.pills("Toggle config's", ['showSql'],
+                               key=FF_KEY_CONFIG_PILLS))])
     with st.expander('Search filters'):
         inColumns([
             (6, lambda _: checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH,
@@ -257,45 +261,45 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
     enabledPrevNext = singleSel and selected is not None
     prevEnabled = enabledPrevNext and selected > 0
     nextEnabled = enabledPrevNext and selected < filterResCnt-1
-    columns = \
-        [(3, lambda _: st.button('Ignore',
-                                 help='Mark as ignored and Save',
-                                 kwargs={'boolField': 'ignored'},
-                                 disabled=totalSelected < 1,
-                                 on_click=markAs)),
-            (3, lambda _: st.button('Seen',
-                                    help='Mark as Seen and Save',
-                                    kwargs={'boolField': 'seen'},
-                                    disabled=totalSelected < 1,
-                                    on_click=markAs)),
-            (3, lambda _: st.button('Delete', 'deleteButton',
-                                    help='Delete selected job(s)',
-                                    disabled=totalSelected < 1,
-                                    on_click=deleteSelectedRows,
-                                    type="primary")),
-            (1, lambda _: st.button('<', 'prevButton',
-                                    help='Select & see previous job',
-                                    disabled=not prevEnabled,
-                                    on_click=selectPrevious,
-                                    type="primary")),
-            (2, lambda _: st.button('&gt;', 'nextButton',  # >
-                                    help='Select & see next job',
-                                    disabled=not nextEnabled,
-                                    on_click=selectNext,
-                                    kwargs={'max': filterResCnt-1},
-                                    type="primary")),
-            (1, lambda _: st.write('|')),
-            (5, lambda _: st.toggle('Single select',
-                                    key=FF_KEY_SINGLE_SELECT)),
-            (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT,
-                                          step=100,
-                                          label_visibility='collapsed')),
-            (5, lambda _: st.number_input('Columns width',
-                                          key=FF_KEY_COLUMNS_WIDTH,
-                                          step=0.1,
-                                          label_visibility='collapsed'))
+    columns = [
+        (3, lambda _: st.button('Ignore',
+                                help='Mark as ignored and Save',
+                                kwargs={'boolField': 'ignored'},
+                                disabled=totalSelected < 1,
+                                on_click=markAs)),
+        (3, lambda _: st.button('Seen',
+                                help='Mark as Seen and Save',
+                                kwargs={'boolField': 'seen'},
+                                disabled=totalSelected < 1,
+                                on_click=markAs)),
+        (3, lambda _: st.button('Delete', 'deleteButton',
+                                help='Delete selected job(s)',
+                                disabled=totalSelected < 1,
+                                on_click=deleteSelectedRows,
+                                type="primary")),
+        (1, lambda _: st.button('<', 'prevButton',
+                                help='Select & see previous job',
+                                disabled=not prevEnabled,
+                                on_click=selectPrevious,
+                                type="primary")),
+        (2, lambda _: st.button('&gt;', 'nextButton',  # >
+                                help='Select & see next job',
+                                disabled=not nextEnabled,
+                                on_click=selectNext,
+                                kwargs={'max': filterResCnt-1},
+                                type="primary")),
+        (1, lambda _: st.write('|')),
+        (5, lambda _: st.toggle('Single select',
+                                key=FF_KEY_SINGLE_SELECT)),
+        (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT,
+                                      step=100,
+                                      label_visibility='collapsed')),
+        (5, lambda _: st.number_input('Columns width',
+                                      key=FF_KEY_COLUMNS_WIDTH,
+                                      value=COLUMNS_WIDTH, step=0.1,
+                                      label_visibility='collapsed'))
 
-         ]
+    ]
     inColumns(kwargs={'vertical_alignment': 'center'},
               columns=columns)
 

@@ -1,4 +1,6 @@
+from streamlit.delta_generator import DeltaGenerator
 import re
+from typing import Callable
 from pandas import DataFrame
 import streamlit as st
 # TODO: modal -> try from streamlit_modal import Modal ??
@@ -49,10 +51,8 @@ def setFieldValue(fieldsValues, key, default=None, setEmpty: bool = False):
 
 
 def pillsValuesToDict(key, fields):
-    value = getState(key, None)
-    if value:
-        return {fields[i]: fields[i] in value for i in range(len(fields))}
-    return {}
+    pillsValues = getState(key, [])
+    return {fields[i]: fields[i] in pillsValues for i in range(len(fields))}
 
 
 def getSelectedRowsIds(key):
@@ -69,7 +69,7 @@ def scapeLatex(dictionary: dict, keys: list[str]):
     return dictionary
 
 
-def inColumns(columns: list[tuple], kwargs={}):
+def inColumns(columns: list[tuple[int, Callable[[DeltaGenerator], DeltaGenerator]]], kwargs={}):
     """ columns: [
       (size_int, lambda _: st.button(xxxx),
       (size_int, lambda _: fncUsingStreamlitCompoenents(xxxx), ...]"""

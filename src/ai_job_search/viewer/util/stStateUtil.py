@@ -67,7 +67,7 @@ def saveSession(name: str):
     # TODO: naming convention to simplify filter. Save all not in form
     # f.ex.: xxxFilter, isXxxFilter
     # extract constants and normalize names
-    ignoreKeysRegex = r'|'.join(['jobsListTable', 'comments', 'company',
+    ignoreKeysRegex = r'|'.join(['jobsListTable', 'form.+',
                                  '.+Button', 'FormSubmitter.+',
                                  'currentSessionSaved'])
     with open(path, 'w') as f:
@@ -81,6 +81,8 @@ def saveSession(name: str):
 
 
 def loadSession(name: str):
+    if name in ['(New)', '(None)']:
+        return
     path = createFolder(getSessionFileName(name))
     with open(path, 'r') as f:
         session: dict = json.loads(''.join(f.readlines()))

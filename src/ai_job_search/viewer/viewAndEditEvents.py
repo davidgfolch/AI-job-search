@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 from ai_job_search.tools.mysqlUtil import (
     deleteJobsQuery, updateFieldsQuery)
@@ -8,7 +9,7 @@ from ai_job_search.viewer.util.stUtil import (
     getSelectedRowsIds, getState, pillsValuesToDict, setFieldValue,
     setMessageInfo, setState)
 from ai_job_search.viewer.viewAndEditConstants import (
-    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY,
+    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS,
     FF_KEY_PRESELECTED_ROWS, FF_KEY_SINGLE_SELECT, FIELDS_BOOL)
 
 
@@ -59,7 +60,7 @@ def formDetailSubmit():
     ids = getSelectedRowsIds('selectedRows')
     if not ids or len(ids) < 1:
         return
-    fieldsValues = pillsValuesToDict('statusFieldsFilter', FIELDS_BOOL)
+    fieldsValues = pillsValuesToDict(F_KEY_STATUS, FIELDS_BOOL)
     setFieldValue(fieldsValues, F_KEY_COMMENTS, None, len(ids) == 1)
     setFieldValue(fieldsValues, F_KEY_SALARY, None, len(ids) == 1)
     setFieldValue(fieldsValues, F_KEY_COMPANY, None, len(ids) == 1)
@@ -67,9 +68,14 @@ def formDetailSubmit():
     if fieldsValues:
         if len(ids) > 1:  # for several rows just fields not None or empty
             fieldsValues = {k: v for k, v in fieldsValues.items() if v}
-        query, params = updateFieldsQuery(ids, fieldsValues)
+        query, params = updateFieldsQuery(ids, keysToColumns(fieldsValues))
         showCodeSql(formatSql(query, False))
         result = mysql().executeAndCommit(query, params)
         setMessageInfo(f'{result} row(s) updated.')
     else:
         setMessageInfo('Nothing to save.')
+
+
+def keysToColumns(fieldsValues: dict):
+    """Renames streamlit form component keys to mysql columns"""
+    return {re.sub(r'^form(.+)', r'\1', k): v for k, v in fieldsValues.items()}
