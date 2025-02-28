@@ -30,15 +30,11 @@
     "selectedPage": 0,
     "columnsWidth": 0.5,
     "isBoolfieldsFilter": true,
-    "statusFieldsFilter": [
-        "ai_enriched",
-        "easy_apply"
-    ],
     "isSearchfilter": false,
     "selectOrderFilter": "created desc",
     "isWherefilter": true,
     "preSelectedRows": [
-        3
+        0
     ],
     "listHeight": 400,
     "singleSelect": true

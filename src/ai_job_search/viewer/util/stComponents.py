@@ -44,9 +44,11 @@ def checkAndPills(label, fields: list[str], key: str):
                      label_visibility='collapsed')
 
 
-def showCodeSql(sql, format=False, showSql=None):
+def showCodeSql(sql: str, params: dict = None, format=False, showSql=None):
     showSqlToggle = 'showSql' in getState(FF_KEY_CONFIG_PILLS, [])
     if (showSql is not None and showSql) or showSqlToggle:
+        if params:
+            sql = sql.format(**params)
         if format:
             st.code(formatSql(sql), 'sql')
         else:

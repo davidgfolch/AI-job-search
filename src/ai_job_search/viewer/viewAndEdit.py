@@ -1,3 +1,4 @@
+import re
 from pandas import DataFrame
 from ai_job_search.tools.sqlUtil import formatSql
 from ai_job_search.tools.util import getEnv
@@ -170,12 +171,7 @@ def addCompanyAppliedJobsInfo(jobData):
         company = jobData['client']
     rows = mysql.fetchAll(query.format(**params))
     if len(rows) == 0:
-        companyParts = company.split(' ')
-        if len(companyParts) > 1:
-            part1 = companyParts[0]
-            if len(part1) > 2 and part1 not in ['grupo']:
-                params['company'] = f'(^| ){part1}($| )'
-                rows = mysql.fetchAll(query.format(**params))
+        rows = searchPartialCompanyName(company, params, query, rows)
     ids = ','.join([str(r[0]) for r in rows])
     dates = ' '.join(['  📅 '+str(r[1].date()) for r in rows])
     if len(ids) > 0:
@@ -184,3 +180,20 @@ def addCompanyAppliedJobsInfo(jobData):
             gotoPageByUrl(PAGE_VIEW_IDX,
                           f'already applied {params["company"]}', ids) \
             + f' on {dates}</span>'
+
+
+def searchPartialCompanyName(company: str, params: dict, query: str, rows):
+    companyWords = re.sub(r'[()[\]]', '', company).split(' ')
+    while len(companyWords) > 1 and len(rows) == 0:
+        companyWords = companyWords[:-1]
+        words = ' '.join(companyWords)
+        part1 = re.escape(words)  # FIXME: this doesn't work with MINSAIT (Indra Producción de Software
+        if len(part1) > 2 and part1 not in ['grupo']:
+            params['company'] = f'(^| ){part1}($| )'
+            showCodeSql(query, params)
+            try:
+                rows = mysql.fetchAll(query.format(**params))
+            except Exception as e:
+                st.error(e)
+            params['company'] = words
+    return rows

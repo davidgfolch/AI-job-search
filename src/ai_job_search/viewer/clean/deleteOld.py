@@ -40,6 +40,6 @@ def delete(selectedRows: DataFrame):
         ids = list(selectedRows.iloc[row].iloc[idsIdx]
                    for row in range(len(selectedRows)))
         query = deleteJobsQuery(ids)
-        showCodeSql(query, 'sql')
+        showCodeSql(query)
         count = mysql.executeAndCommit(query, {})
         st.info(f'Affected rows: {count}')

@@ -172,7 +172,6 @@ def searchJobs(index: int, keywords: str):
     try:
         print(yellow(f'Search keyword={keywords}'))
         loadSearchPageByUrl(keywords)
-        # loadSearchPageManually(keywords)
         if index == 0:
             securityFilter()
             selenium.waitUntilPageUrlContains(
@@ -211,28 +210,6 @@ def loadSearchPageByUrl(keywords):
     selenium.waitUntilPageIsLoaded()
 
 
-def loadSearchPageManually(keywords):
-    url = 'https://www.infojobs.net/candidate/my-infojobs.xhtml'
-    # selenium.loadPage(url)
-    # selenium.waitUntilPageIsLoaded()
-    selenium.waitUntilPageUrlContains(url)
-    selenium.sendKeys('form search #keyword-autocomplete', keywords)
-    selenium.waitAndClick('form search .sui-AtomButton')
-    selenium.waitUntilPageIsLoaded()
-    selenium.waitUntilPageUrlContains(LIST_URL)
-    SIDEBAR_FILTERS = '.ij-Container .ij-SearchListingPageContent-main .ij-SearchListingPageContent-filters .ij-SidebarFilter-form-filters '
-    # selenium.waitAndClick(f'{SIDEBAR_FILTERS} label[for=sort-by--PUBLICATION_DATE-b7e051d0-edc0-11ef-b448-8f936fb01bee]')
-    selenium.waitAndClick(
-        f'{SIDEBAR_FILTERS} fieldset#sort_by_date_b7e051d0-edc0-11ef-b448-8f936fb01bee label[for=sort-by--PUBLICATION_DATE-b7e051d0-edc0-11ef-b448-8f936fb01bee]')
-    selenium.waitUntilPageIsLoaded()
-    # selenium.waitAndClick(f'{SIDEBAR_FILTERS} fieldset#sort_by_date_b7e051d0-edc0-11ef-b448-8f936fb01bee label[for=radio-date--_24_HOURS-aeb62b60-edc1-11ef-b448-8f936fb01bee]')
-    selenium.waitAndClick(
-        f'{SIDEBAR_FILTERS} label[for=radio-date--_24_HOURS-aeb62b60-edc1-11ef-b448-8f936fb01bee]')
-    selenium.waitUntilPageIsLoaded()
-    selenium.waitAndClick(f'{SIDEBAR_FILTERS} input#check-teleworking--2')
-    selenium.waitUntilPageIsLoaded()
-
-
 def getJobLinkElement(idx):
     liElm = selenium.getElms(CSS_SEL_JOB_LI)[idx]
     return selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
@@ -256,8 +233,9 @@ def loadAndProcessRow(idx) -> bool:
             loadJobDetail(jobLinkElm)
             processed = True
         except IndexError as ex:
-            debug(yellow("WARNING: could not get all items per page, that's ",
-                         f"expected because not always has {JOBS_X_PAGE}: {ex}"))
+            debug(yellow(
+                "WARNING: could not get all items per page, that's ",
+                f"expected because not always has {JOBS_X_PAGE}: {ex}"))
         if processed:
             if not processRow(url):
                 raise ValueError('Validation failed')

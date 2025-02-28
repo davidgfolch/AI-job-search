@@ -1,5 +1,6 @@
 from pandas import DataFrame
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 from ai_job_search.tools.util import getEnv
 from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
@@ -28,7 +29,7 @@ def getSelect():
         """
 
 
-def actionButton(stContainer, selectedRows, disabled):
+def actionButton(stContainer: DeltaGenerator, selectedRows, disabled):
     stContainer.button('Mark all ignored',
                        on_click=markIgnored,
                        kwargs={'selectedRows': selectedRows},
@@ -41,6 +42,6 @@ def markIgnored(selectedRows: DataFrame):
         ids = list(selectedRows.iloc[row].iloc[idsIdx]
                    for row in range(len(selectedRows)))
         query, params = updateFieldsQuery(ids, {"ignored": True})
-        showCodeSql(query)
+        showCodeSql(query, params)
         count = mysql.executeAndCommit(query, params)
         st.write(f'Affected rows: {count}')

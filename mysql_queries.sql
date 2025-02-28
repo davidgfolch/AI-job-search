@@ -27,7 +27,7 @@ delete from jobs where jobs.web_page='Tecnoempleo';
 update jobs set web_page='Linkedin' where url like '%linkedin%';
 
 
-select id, ai_enriched, ai_enrich_error from jobs where ai_enrich_error is not null;
+select id, ai_enriched, ai_enrich_error, modified from jobs where ai_enrich_error is not null;
 update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
 update jobs set ai_enriched=False where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 24 HOUR);
 
@@ -50,6 +50,12 @@ delete from jobs where not ignored and not applied and DATE(created) > DATE_SUB(
 select count(*) from jobs
 
 select * from jobs where not ignored and not applied and DATE(created) < DATE_SUB(CURDATE(), INTERVAL 1 DAY) and comments is null
+
+select id,title,company,created, applied, flagged, seen
+from jobs
+where (DATE(created) < DATE_SUB(CURDATE(), INTERVAL 20 DAY) and not applied and not flagged and not seen) or
+      (DATE(created) < DATE_SUB(CURDATE(), INTERVAL 30 DAY) and not applied and not flagged)
+order by created desc
 
 select id, created, title, applied, ignored
 from jobs where DATE(created) < DATE_SUB(CURDATE(), INTERVAL 10 DAY) and applied is null or applied=False;
@@ -84,7 +90,7 @@ delete from jobs where id in (2426 , 2308)
 
 select title, company from jobs where id in (8505, 8518)
 
-select * from jobs where id = 57927
+select * from jobs where id = 69103
 
 select id, title, company from jobs where jobId = 4081331701
 select id, title, company, markdown from jobs where id = 32998;
@@ -170,3 +176,13 @@ group by createdDate;
 from jobs
 group by timeCreated
 order by timeCreated
+
+SELECT HOUR(created) AS hour, max(web_page), COUNT(*) AS total
+FROM jobs GROUP BY HOUR(created), web_page
+order by web_page, hour
+
+
+select concat('Applied: ',count(id)) as count from jobs where applied union all
+select concat('Call or interview (rh): ',count(id)) as count from jobs where interview or interview_rh union all
+select concat('Interview or tech/test: ',count(id)) as count from jobs where interview_tech or interview_technical_test union all
+select concat('Discarded: ',count(id)) as count from jobs where discarded;

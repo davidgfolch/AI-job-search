@@ -40,7 +40,7 @@ def clean():
         rows = mysql.fetchAll(query)
         if len(rows) > 0:
             rows, selectedRows = table(mysql, cnf, rows)
-            totalSelectedIds = tableSummary(cnf, rows, selectedRows)
+            totalSelectedIds = tableSummary(rows, selectedRows)
             actionButtons(cnf, selectedRows, totalSelectedIds)
         else:
             st.warning('No results found for query.')
@@ -52,7 +52,8 @@ def table(mysql, cnf, res):
         else mysql.getTableDdlColumnNames('jobs')
     df = pd.DataFrame(res, columns=columns)
     dfWithSelections = df.copy()
-    dfWithSelections.insert(0, "Sel", getState('selectAll', False))
+    defaultValue = getState('selectAll', False)
+    dfWithSelections.insert(0, "Sel", defaultValue)
     rows = st.data_editor(dfWithSelections, use_container_width=True,
                           hide_index=True, key='cleanJobsListTable',
                           column_config={'Ids': None}, height=600)
@@ -74,7 +75,7 @@ def actionButtons(cnf, selectedRows, totalSelectedIds):
                      use_container_width=True)
 
 
-def tableSummary(cnf, rows, selectedRows):
+def tableSummary(rows, selectedRows):
     totalSelectedIds = countIds(selectedRows, True)
     totalSelectedRows = len(selectedRows)
     totalRows = len(rows)
