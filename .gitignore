@@ -1,7 +1,13 @@
+test/__pycache__
+test_export_output/**
 .env
 .venv*
 .history
 __pycache__/
+__pycache__/*
+__pycache__/**
+**/__pycache__/**
+**/__pycache__/*
 scratch.*
 uv.lock
 .coverage
