@@ -4,3 +4,4 @@
 __pycache__/
 scratch.*
 uv.lock
+.coverage

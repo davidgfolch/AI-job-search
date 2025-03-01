@@ -109,3 +109,30 @@ DEBUG = False
 This will run LLM filling some extra fields from the job offer (salary, required_technologies, ...).  Using CrewAI framework (using local Ollama LLM by default).
 
 The automatic bash script keeps running in a infinite loop in console, waiting for jobs not `ai_enriched` in database.  Automatic jobs merge is executed before enrichment to save inference time, it merges the ai enriched structured data for same job `title` and `company`.
+
+## Tests & coverage
+
+```bash
+# run tests
+python -m pytest 
+# run coverage
+coverage run --source=src -m pytest 
+coverage report -m
+# see coverage
+coverage html
+```
+
+All in one:
+
+```bash
+pytest && coverage run --source=src -m pytest && coverage report -m
+```
+
+## Generate coverage badge for README.md
+
+```bash
+cd backend
+coverage-badge -o ../README.md_images/coverage.svg -f
+```
+
+NOTE: pipeline generation don't work

@@ -38,3 +38,11 @@ jobs:
       run: |
         touch .env
         python -m pytest
+    - name: Coverage
+      run: |
+        # coverage report --fail-under=90 -m
+        coverage run --source=src -m pytest
+        coverage report -m
+    - name: Coverage badge
+      run: |
+        coverage-badge -o coverage.svg -f        
