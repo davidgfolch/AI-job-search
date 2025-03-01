@@ -28,6 +28,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Clean up __pycache__ and .pyc files
+      run: |
+        find . -type d -name "__pycache__" -exec rm -r {} +
+        find . -type f -name "*.pyc" -delete        
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
