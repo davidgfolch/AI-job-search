@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     UNIQUE KEY (jobId)
     ) ENGINE=InnoDB
 
+ALTER TABLE jobs ADD merged datetime DEFAULT null;
+
 -- ai enrich fields
 ALTER TABLE jobs ADD ai_enriched BOOLEAN default 0;
 ALTER TABLE jobs ADD ai_enrich_error varchar(500);

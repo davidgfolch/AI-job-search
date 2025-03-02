@@ -1,6 +1,6 @@
 import re
 from typing import Any, Dict, Sequence, TypeVar, Union
-import mysql.connector
+import mysql.connector as mysqlConnector
 from mysql.connector import Error
 
 from ai_job_search.tools.terminalColor import printHR, red, yellow
@@ -51,35 +51,46 @@ ERROR_PREFIX = 'MysqlError: '
 REGEX_INCORRECT_VALUE_FOR_COL = re.compile(
     "Incorrect [^ ]+ value: (.+(?=for column))for column '(.+)' at .+")
 
+conn: mysqlConnector.MySQLConnection = None
 
-class MysqlUtil:
 
-    def __init__(self):
-        print('Init MysqlUtil, create connection...')
-        # https://dev.mysql.com/doc/connector-python/en/connector-python-connectargs.html
-        self.conn = mysql.connector.connect(
+def getConnection() -> mysqlConnector.MySQLConnection:
+    global conn
+    if conn is None:
+        conn = mysqlConnector.connect(
             user='root', password='rootPass', database='jobs',
             # pool_name='jobsPool',
-            # pool_size=20,
+            pool_size=20,
             # connection_timeout=10,
             # get_warnings=True
         )
+        print(conn.__repr__())
+    if not conn.is_connected():
+        conn.reconnect()
+    return conn
+
+
+class MysqlUtil:
+
+    def __init__(self, connection=None):
+        self.conn = connection
+        # https://dev.mysql.com/doc/connector-python/en/connector-python-connectargs.html
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        print('Exiting MysqlUtil, close connection...')
-        self.conn.close()
+        print('Exiting MysqlUtil')
 
     def cursor(self):
-        return self.conn.cursor()
+        conn = self.conn if self.conn else getConnection()
+        return conn.cursor()
 
     def insert(self, params) -> int | None:
         try:
             with self.cursor() as c:
                 c.execute(QRY_INSERT, params)
-                self.conn.commit()
+                getConnection().commit()
             return c.lastrowid
         except Error as ex:
             error(ex, end='')
@@ -92,7 +103,7 @@ class MysqlUtil:
             with self.cursor() as c:
                 c.execute(query, params)
                 return c.fetchone()[0]
-        except mysql.connector.Error as ex:
+        except mysqlConnector.Error as ex:
             error(ex)
 
     def fetchOne(self, query: str, id: int):
@@ -100,10 +111,10 @@ class MysqlUtil:
             with self.cursor() as c:
                 c.execute(query, [id])
                 return c.fetchone()
-        except mysql.connector.Error as ex:
+        except mysqlConnector.Error as ex:
             error(ex)
 
-    # FIXME: CHANGE required_technologies & optional_technoloties with
+    # FIXME: CHANGE required_technologies & optional_technologies with
     # required_skills & opt_skills
     def updateFromAI(self, id, company, paramsDict: dict,
                      deprecatedName='technologies', deep=0):
@@ -118,7 +129,7 @@ class MysqlUtil:
                 (200, 1000, 1000, None))
             with self.cursor() as c:
                 c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
-                self.conn.commit()
+                getConnection().commit()
                 if c.rowcount > 0:
                     print(
                         yellow(f'Inserted into DB (company={company}): ',
@@ -126,7 +137,7 @@ class MysqlUtil:
                     printHR(yellow)
                 else:
                     error(Exception('No rows affected'))
-        except mysql.connector.Error as ex:
+        except mysqlConnector.Error as ex:
             error(ex, f' -> params = {params}')
             if deep > len(paramsDict.keys()):
                 return
@@ -145,7 +156,7 @@ class MysqlUtil:
     def executeAndCommit(self, query, params=()) -> int:
         with self.cursor() as c:
             c.execute(query, params)
-            self.conn.commit()
+            getConnection().commit()
             return c.rowcount
 
     def executeAllAndCommit(self, queries: list[dict[str, any]]) -> int:
@@ -154,7 +165,7 @@ class MysqlUtil:
             for query in queries:
                 c.execute(query['query'], query.get('params', ()))
                 rowCount.append(c.rowcount)
-            self.conn.commit()
+            getConnection().commit()
             return rowCount
 
     def fetchAll(self, query: str, params=None):
@@ -177,12 +188,14 @@ def getColumnTranslated(c):
     return re.sub(r'`', '', re.sub(r'[_-]', ' ', c)).capitalize()
 
 
-def updateFieldsQuery(ids: list, fieldsValues: dict):
+def updateFieldsQuery(ids: list, fieldsValues: dict, merged=False):
     if len(ids) < 1:
         return
     query = 'UPDATE jobs SET '
     for field in fieldsValues.keys():
         query += f'{field}=%({field})s,'
+    if merged:
+        query += 'merged=NOW(),'
     query = query[:len(query)-1] + '\n'
     query += 'WHERE id ' + inFilter(ids)
     return query, fieldsValues

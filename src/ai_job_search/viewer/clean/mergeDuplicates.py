@@ -9,10 +9,12 @@ from ai_job_search.tools.util import (
     removeNewLines)
 from ai_job_search.viewer.clean.cleanUtil import (
     getAllIds, getFieldValue, removeNewestId)
+from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL)
+
 
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
 ai_enriched,ai_enrich_error,company,client,comments"""
@@ -67,20 +69,20 @@ def mergeStreamlitWrapper(selectedRows):
 
 
 def merge(rows):
-    with MysqlUtil() as mysql:
-        for ids in rows:
-            query = SELECT_FOR_MERGE.format(
-                **{'ids': ids,
-                    'cols': COLS})
-            id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
-            updateQry, params = updateFieldsQuery([id], merged)
-            queries = [{'query': updateQry, 'params': params}]
-            idsArr = removeNewestId(ids)
-            deleteQry = deleteJobsQuery(idsArr)
-            queries.append({'query': deleteQry})
-            affectedRows = mysql.executeAllAndCommit(queries)
-            yield [{'arr': out, 'query': query}] + queries + [{
-                'text': f'Affected rows (update & delete): {affectedRows}'}]
+    for ids in rows:
+        query = SELECT_FOR_MERGE.format(
+            **{'ids': ids,
+                'cols': COLS})
+        mysql = MysqlUtil(mysqlCachedConnection())
+        id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
+        updateQry, params = updateFieldsQuery([id], merged, merged=True)
+        queries = [{'query': updateQry, 'params': params}]
+        idsArr = removeNewestId(ids)
+        deleteQry = deleteJobsQuery(idsArr)
+        queries.append({'query': deleteQry})
+        affectedRows = mysql.executeAllAndCommit(queries)
+        yield [{'arr': out, 'query': query}] + queries + [{
+            'text': f'Affected rows (update & delete): {affectedRows}'}]
 
 
 def mergeJobDuplicates(rows, ids):

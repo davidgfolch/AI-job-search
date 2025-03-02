@@ -306,7 +306,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
 
 def showDetail(jobData: dict):
     data = scapeLatex(jobData, ['markdown', 'title'])
-    formatDateTime(jobData)
+    formatDateTime(data)
     data = {k: (data[k] if data[k] else None) for k in data.keys()}
     str = DETAIL_FORMAT.format(**data)
     str += fmtDetailOpField(data, 'client')

@@ -31,7 +31,7 @@ DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
-web_page,company,client,markdown,location,url,created,modified,
+web_page,company,client,markdown,location,url,created,modified,merged,
 comments,{DB_FIELDS_BOOL},ai_enrich_error"""
 # FILTERS
 RLIKE = getEnv('WHERE_FILTER_REGEX')
@@ -44,9 +44,8 @@ DEFAULT_ORDER = "created desc"
 # DETAIL FORMAT
 DETAIL_FORMAT = """
 ## [{title}]({url}) ({id})
-- Source: :green[{web_page}] <span style="font-size: small">
-(created :green[{created}] :green[{createdTime}] updated: :green[{modified}])
-</span>
+- Source: :green[{web_page}]
+  {dates}
 - Company: :green[{company}]
 """
 

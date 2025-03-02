@@ -48,7 +48,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting):
     # No arguments specified in command line: run all
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
-    startingAt = args[2].capitalize() if starting else None
+    startingAt = args[1].capitalize() if starting else None
     print(f'Starting at : {startingAt}')
     while True:
         for name, properties in SCRAPPERS.items():
@@ -81,12 +81,14 @@ print('Scrapper init')
 print('Usage: scrapper.py wait starting scrapperName')
 print('wait -> waits for scrapper timeout before executing')
 print('starting -> starts scrapping at the specified scrapper (by name)')
-wait = 'wait' in args
-startingWithPosition = 3 if wait else 4
-starting = 'starting' in args and len(args) == startingWithPosition
+
+starting = 'starting' in args
 if starting:
-    print(f"'starting' at {args[startingWithPosition]} ")
+    args.pop(args.index('starting'))
+    print(f"'starting' at {args[1]} ")
+wait = 'wait' in args
 if wait:
+    args.pop(args.index('wait'))
     print("'wait' before execution", )
 
 if len(args) == 1 or starting or wait:

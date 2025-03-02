@@ -1,9 +1,9 @@
 import re
 import streamlit as st
 from ai_job_search.tools.mysqlUtil import (
-    deleteJobsQuery, updateFieldsQuery)
+    MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 from ai_job_search.tools.sqlUtil import formatSql
-from ai_job_search.viewer.streamlitConn import mysql
+from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import (
     getSelectedRowsIds, getState, pillsValuesToDict, setFieldValue,
@@ -38,7 +38,7 @@ def markAs(boolField: str):
         return
     query, params = updateFieldsQuery(ids, {boolField: True})
     showCodeSql(formatSql(query, False))
-    result = mysql().executeAndCommit(query, params)
+    result = MysqlUtil(mysqlCachedConnection()).executeAndCommit(query, params)
     setMessageInfo(f'{result} row(s) marked as **{boolField.upper()}**.')
 
 
@@ -47,12 +47,12 @@ def deleteSelectedRows():
     if len(ids) > 0:
         query = deleteJobsQuery(ids)
         showCodeSql(query)
-        res = mysql().executeAndCommit(query)
+        res = MysqlUtil(mysqlCachedConnection()).executeAndCommit(query)
         st.info(f'{res} job(s) deleted.  Ids: {ids}')
 
 
 def deleteSalary(id):
-    mysql() \
+    MysqlUtil(mysqlCachedConnection()) \
         .executeAndCommit(f'update jobs set salary=null where id = {id}', {})
 
 
@@ -70,7 +70,8 @@ def formDetailSubmit():
             fieldsValues = {k: v for k, v in fieldsValues.items() if v}
         query, params = updateFieldsQuery(ids, keysToColumns(fieldsValues))
         showCodeSql(formatSql(query, False))
-        result = mysql().executeAndCommit(query, params)
+        result = MysqlUtil(mysqlCachedConnection()
+                           ).executeAndCommit(query, params)
         setMessageInfo(f'{result} row(s) updated.')
     else:
         setMessageInfo('Nothing to save.')

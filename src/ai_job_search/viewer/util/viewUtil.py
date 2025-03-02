@@ -1,4 +1,3 @@
-import datetime
 from pandas import DataFrame
 from ai_job_search.viewer.util.stUtil import (
     scapeLatex, setState)
@@ -45,20 +44,11 @@ def getValueAsDict(f, value):
 
 
 def formatDateTime(data: dict):
-    for f in ['created', 'modified']:
-        if isinstance(data[f], datetime.datetime):
-            data[f'{f}Time'] = f'🕑 {data[f].time()}'
-            data[f] = f'📅 {data[f].date()}'
-        else:
-            data[f] = None
-            data[f'{f}Time'] = None
-    if data['created'] == data['modified']:
-        data['modified'] = None
-        if data['createdTime'] == data['modifiedTime']:
-            data['modifiedTime'] = None
-    data['modified'] = ''.join(
-        [str(x)
-         for x in [data['modified'], data['modifiedTime']] if x is not None])
+    data['dates'] = '\n  '.join(
+        ['- <span style="font-size: small">' +
+         f':green[{str(data[f])[:-3]}] - {f}' +
+         '</span>'
+         for f in ['created', 'merged', 'modified'] if data[f] is not None])
 
 
 def fmtDetailOpField(data: dict, key: str, label: str = None, level=0) -> str:

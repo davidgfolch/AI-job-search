@@ -4,6 +4,7 @@ from streamlit.delta_generator import DeltaGenerator
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 from ai_job_search.tools.util import getEnv
 from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
+from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import stripFields
 
@@ -37,11 +38,10 @@ def actionButton(stContainer: DeltaGenerator, selectedRows, disabled):
 
 
 def markIgnored(selectedRows: DataFrame):
-    with MysqlUtil() as mysql:
-        idsIdx = getIdsIndex(selectedRows)
-        ids = list(selectedRows.iloc[row].iloc[idsIdx]
-                   for row in range(len(selectedRows)))
-        query, params = updateFieldsQuery(ids, {"ignored": True})
-        showCodeSql(query, params)
-        count = mysql.executeAndCommit(query, params)
-        st.write(f'Affected rows: {count}')
+    idsIdx = getIdsIndex(selectedRows)
+    ids = list(selectedRows.iloc[row].iloc[idsIdx]
+               for row in range(len(selectedRows)))
+    query, params = updateFieldsQuery(ids, {"ignored": True})
+    showCodeSql(query, params)
+    count = MysqlUtil(mysqlCachedConnection()).executeAndCommit(query, params)
+    st.write(f'Affected rows: {count}')

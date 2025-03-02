@@ -2,6 +2,7 @@ import re
 from pandas import DataFrame
 from ai_job_search.tools.sqlUtil import formatSql
 from ai_job_search.tools.util import getEnv
+from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, initStates
 from ai_job_search.viewer.util.viewUtil import (
@@ -26,8 +27,8 @@ from ai_job_search.viewer.viewAndEditHelper import (
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 from ai_job_search.tools.mysqlUtil import (
     SELECT_APPLIED_JOB_IDS_BY_COMPANY,
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, MysqlUtil, QRY_SELECT_COUNT_JOBS,
-    getColumnTranslated)
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS,
+    MysqlUtil, getColumnTranslated)
 import streamlit as st
 
 # from streamlit_js_eval import streamlit_js_eval
@@ -35,54 +36,49 @@ import streamlit as st
 #  rerun is fired and the table looses the scroll position
 # TODO: Check jobs still exists by id
 
-# @st.cache_resource()
-# def mysql():
-#     return MysqlUtil()
-mysql = None
-
 
 def view():
     global mysql
-    with MysqlUtil() as mysql:
-        initStates({
-            FF_KEY_SEARCH: '',
-            getBoolKeyName(FF_KEY_BOOL_FIELDS): True,
-            FF_KEY_BOOL_FIELDS: DEFAULT_BOOL_FILTERS,
-            getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS): True,
-            FF_KEY_BOOL_NOT_FIELDS: DEFAULT_NOT_FILTERS,
-            FF_KEY_ORDER: DEFAULT_ORDER,
-            getBoolKeyName(FF_KEY_SALARY): False,
-            FF_KEY_SALARY: getEnv('SALARY_FILTER_REGEX'),
-            getBoolKeyName(FF_KEY_DAYS_OLD): True,
-            FF_KEY_DAYS_OLD: DEFAULT_DAYS_OLD,
-            getBoolKeyName(FF_KEY_WHERE): False,
-            FF_KEY_WHERE: DEFAULT_SQL_FILTER,
-            FF_KEY_SINGLE_SELECT: True,
-            FF_KEY_LIST_HEIGHT: LIST_HEIGHT
-        })
-        st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
-        formFilter()
-        jobData = None
-        columnsWidth = getState(FF_KEY_COLUMNS_WIDTH, 0.5)
-        col1, col2 = st.columns([columnsWidth, 1-columnsWidth])
-        with col1:
-            filterResCnt, selectedRows, totalSelected = tableView()
-            totalResults = mysql.count(QRY_SELECT_COUNT_JOBS)
-            tableFooter(totalResults, filterResCnt,
-                        totalSelected, selectedRows)
-            if totalSelected == 1:
-                jobData = getJobData(selectedRows)
-                formDetail(jobData)
-        with col2:
-            with st.container():
-                if totalSelected > 1:
-                    formDetailForMultipleSelection(selectedRows, jobData)
-                elif totalSelected == 1:
-                    addCompanyAppliedJobsInfo(jobData)
-                    showDetail(jobData)
-                    detailForSingleSelection()
-                elif filterResCnt > 0:
-                    st.warning("Select one job only to see job detail.")
+    mysql = MysqlUtil(mysqlCachedConnection())
+    initStates({
+        FF_KEY_SEARCH: '',
+        getBoolKeyName(FF_KEY_BOOL_FIELDS): True,
+        FF_KEY_BOOL_FIELDS: DEFAULT_BOOL_FILTERS,
+        getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS): True,
+        FF_KEY_BOOL_NOT_FIELDS: DEFAULT_NOT_FILTERS,
+        FF_KEY_ORDER: DEFAULT_ORDER,
+        getBoolKeyName(FF_KEY_SALARY): False,
+        FF_KEY_SALARY: getEnv('SALARY_FILTER_REGEX'),
+        getBoolKeyName(FF_KEY_DAYS_OLD): True,
+        FF_KEY_DAYS_OLD: DEFAULT_DAYS_OLD,
+        getBoolKeyName(FF_KEY_WHERE): False,
+        FF_KEY_WHERE: DEFAULT_SQL_FILTER,
+        FF_KEY_SINGLE_SELECT: True,
+        FF_KEY_LIST_HEIGHT: LIST_HEIGHT
+    })
+    st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
+    formFilter()
+    jobData = None
+    columnsWidth = getState(FF_KEY_COLUMNS_WIDTH, 0.5)
+    col1, col2 = st.columns([columnsWidth, 1-columnsWidth])
+    with col1:
+        filterResCnt, selectedRows, totalSelected = tableView()
+        totalResults = mysql.count(QRY_SELECT_COUNT_JOBS)
+        tableFooter(totalResults, filterResCnt,
+                    totalSelected, selectedRows)
+        if totalSelected == 1:
+            jobData = getJobData(selectedRows)
+            formDetail(jobData)
+    with col2:
+        with st.container():
+            if totalSelected > 1:
+                formDetailForMultipleSelection(selectedRows, jobData)
+            elif totalSelected == 1:
+                addCompanyAppliedJobsInfo(jobData)
+                showDetail(jobData)
+                detailForSingleSelection()
+            elif filterResCnt > 0:
+                st.warning("Select one job only to see job detail.")
 
 
 def formDetail(jobData):

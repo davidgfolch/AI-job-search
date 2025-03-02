@@ -4,11 +4,12 @@ import pandas as pd
 from ai_job_search.viewer.clean import (
     deleteOld, ignoreByTitle, mergeDuplicates)
 from ai_job_search.viewer.clean.cleanUtil import getAllIds
+from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
 from ai_job_search.viewer.util.stUtil import (getState)
 from ai_job_search.viewer.util.viewUtil import gotoPage
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
-from tools.mysqlUtil import (MysqlUtil)
+from tools.mysqlUtil import MysqlUtil
 
 
 PROCESS_CONFIG = [
@@ -28,28 +29,29 @@ PROCESS_CONFIG = [
 
 
 def clean():
-    with MysqlUtil() as mysql:
-        c1, c2 = st.columns([5, 5])
-        idx = c1.selectbox("Select what to clean",
-                           range(0, len(PROCESS_CONFIG)),
-                           format_func=lambda i: PROCESS_CONFIG[i]['info'](),
-                           label_visibility='collapsed',
-                           key='selectedCleanProcess')
-        cnf = PROCESS_CONFIG[idx]
-        query = showQuery(c2, cnf['sql']())
-        rows = mysql.fetchAll(query)
-        if len(rows) > 0:
-            rows, selectedRows = table(mysql, cnf, rows)
-            totalSelectedIds = tableSummary(rows, selectedRows)
-            actionButtons(cnf, selectedRows, totalSelectedIds)
-        else:
-            st.warning('No results found for query.')
+    c1, c2 = st.columns([5, 5])
+    idx = c1.selectbox("Select what to clean",
+                       range(0, len(PROCESS_CONFIG)),
+                       format_func=lambda i: PROCESS_CONFIG[i]['info'](),
+                       label_visibility='collapsed',
+                       key='selectedCleanProcess')
+    cnf = PROCESS_CONFIG[idx]
+    query = showQuery(c2, cnf['sql']())
+    mysql = MysqlUtil(mysqlCachedConnection())
+    rows = mysql.fetchAll(query)
+    if len(rows) > 0:
+        columns = mysql.getTableDdlColumnNames('jobs')
+        rows, selectedRows = table(columns, cnf, rows)
+        totalSelectedIds = tableSummary(rows, selectedRows)
+        actionButtons(cnf, selectedRows, totalSelectedIds)
+    else:
+        st.warning('No results found for query.')
 
 
-def table(mysql, cnf, res):
+def table(columns, cnf, res):
     queryCols = cnf['dfCols']
     columns = queryCols if len(res[0]) == len(queryCols) \
-        else mysql.getTableDdlColumnNames('jobs')
+        else columns
     df = pd.DataFrame(res, columns=columns)
     dfWithSelections = df.copy()
     defaultValue = getState('selectAll', False)

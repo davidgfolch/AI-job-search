@@ -122,7 +122,9 @@ from (select count(*) as counter,
 where r.counter>1
 order by r.counter desc, r.title, r.company, r.max_created desc
 
-select title, company, applied, modified from jobs where applied order by modified desc limit 1;
+select id, title, company, applied, modified, ignored from jobs where ignored order by modified desc limit 100;
+select id, title, company, applied, created, merged, modified, ignored from jobs where merged is not null order by merged desc limit 100;
+update jobs set merged=null where created=merged;
 
 update jobs set salary=null where salary = 'Salario no disponible' or salary = 'Paquete retributivo muy competitivo acorde a la valía del candidato'
 or salary = 'Salario a convenir';
