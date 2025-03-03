@@ -119,7 +119,6 @@ def getJobIdsList() -> list[int]:
 
 
 def rawToJson(raw: str) -> dict[str, str]:
-    # FIXME: unit test this fnc & all regex code
     res = raw
     try:
         IM = re.I | re.M
