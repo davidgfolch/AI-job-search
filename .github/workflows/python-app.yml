@@ -43,7 +43,7 @@ jobs:
     - name: Test with pytest
       run: |
         touch .env
-        pytest
+        python -m pytest
     - name: Coverage
       run: |
         # coverage report --fail-under=90 -m
