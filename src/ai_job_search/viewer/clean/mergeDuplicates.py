@@ -3,7 +3,7 @@ from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
 from ai_job_search.tools.mysqlUtil import (
     MysqlUtil, deleteJobsQuery, updateFieldsQuery)
-from ai_job_search.tools.terminalColor import blue, cyan, printHR, red
+from ai_job_search.tools.terminalColor import blue, cyan, red
 from ai_job_search.tools.util import (
     SHOW_SQL_IN_AI_ENRICHMENT, getEnvBool,
     removeNewLines)
@@ -109,18 +109,16 @@ def mergeDuplicatedJobs(rows):
             return
         idsIdx = 1
         rows = [row[idsIdx] for row in rows]
-        printHR(cyan)
-        print(cyan('Merging duplicated jobs (into the last created one) ',
-                   'and deleting older ones...'))
-        printHR(cyan)
         for generatorResult in merge(rows):
             for line in generatorResult:
-                query = line.get('query', None)
+                print(' ', end='')
                 if arr := line.get('arr', None):
-                    print(cyan(*[removeNewLines(f'{a}') for a in arr]))
+                    print(cyan(' '.join([removeNewLines(a) for a in arr])),
+                          end=' ')
+                query = line.get('query', None)
                 if getEnvBool(SHOW_SQL_IN_AI_ENRICHMENT) and query:
-                    print(blue(removeNewLines(query)))
+                    print(blue(removeNewLines(query)), end=' ')
                 if txt := line.get('text', None):
-                    print(blue(removeNewLines(txt)))
+                    print(blue(removeNewLines(txt)), end=' ')
     except Exception:
         print(red(traceback.format_exc()))

@@ -46,7 +46,7 @@ def getValueAsDict(f, value):
 def formatDateTime(data: dict):
     data['dates'] = '\n  '.join(
         ['- <span style="font-size: small">' +
-         f':green[{str(data[f])[:-3]}] - {f}' +
+         f':green[{data[f].strftime("%d-%m-%y %H:%M")}] - {f}' +
          '</span>'
          for f in ['created', 'merged', 'modified'] if data[f] is not None])
 

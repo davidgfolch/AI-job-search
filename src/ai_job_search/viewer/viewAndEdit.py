@@ -169,7 +169,7 @@ def addCompanyAppliedJobsInfo(jobData):
     if len(rows) == 0:
         rows = searchPartialCompanyName(company, params, query, rows)
     ids = ','.join([str(r[0]) for r in rows])
-    dates = ' '.join(['  📅 '+str(r[1].date()) for r in rows])
+    dates = ' '.join(['  📅 '+formatDate(r[1].date()) for r in rows])
     if len(ids) > 0:
         jobData['company'] += ' <span style="font-size: small">' + \
             ':point_right: :warning: ' + \
@@ -178,12 +178,17 @@ def addCompanyAppliedJobsInfo(jobData):
             + f' on {dates}</span>'
 
 
+def formatDate(date):
+    return date.strftime("%d-%m-%y")
+
+
 def searchPartialCompanyName(company: str, params: dict, query: str, rows):
     companyWords = re.sub(r'[()[\]]', '', company).split(' ')
     while len(companyWords) > 1 and len(rows) == 0:
         companyWords = companyWords[:-1]
         words = ' '.join(companyWords)
-        part1 = re.escape(words)  # FIXME: this doesn't work with MINSAIT (Indra Producción de Software
+        # FIXME: this doesn't work with MINSAIT (Indra Producción de Software
+        part1 = re.escape(words)
         if len(part1) > 2 and part1 not in ['grupo']:
             params['company'] = f'(^| ){part1}($| )'
             showCodeSql(query, params)
