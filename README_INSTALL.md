@@ -34,3 +34,10 @@ source .venv/bin/activate
 pip install streamlit-aggrid
 python -m pip freeze > requirements.txt
 ```
+
+## Check dependencies
+
+```bash
+python -m pip check
+python -m pip install langchain --upgrade
+```

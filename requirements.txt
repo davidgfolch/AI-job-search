@@ -1,4 +1,4 @@
--e git+https://github.com/davidgfolch/AI-job-search.git@93b907ab87df47d6225e9973565feead70dfd713#egg=ai_job_search
+-e git+https://github.com/davidgfolch/AI-job-search.git@b2717f42455bdd0c84184cdfe75066a69e01cf26#egg=ai_job_search
 aiohappyeyeballs==2.4.3
 aiohttp==3.11.2
 aiosignal==1.3.1
@@ -110,14 +110,14 @@ jupyter_core==5.7.2
 kiwisolver==1.4.8
 kubernetes==31.0.0
 lancedb==0.15.0
-langchain==0.3.7
+langchain==0.3.19
 langchain-cohere==0.3.1
 langchain-community==0.3.4
-langchain-core==0.3.18
+langchain-core==0.3.40
 langchain-experimental==0.3.3
 langchain-google-genai==2.0.8
 langchain-openai==0.2.8
-langchain-text-splitters==0.3.2
+langchain-text-splitters==0.3.6
 langsmith==0.1.143
 linkedin-api==2.3.1
 litellm==1.52.8
