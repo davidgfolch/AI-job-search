@@ -56,9 +56,16 @@ def table(columns, cnf, res):
     dfWithSelections = df.copy()
     defaultValue = getState('selectAll', False)
     dfWithSelections.insert(0, "Sel", defaultValue)
+    colsConfig = {'Ids': None,
+                  'Sel': st.column_config.Column(width='small'),
+                  'Id': st.column_config.Column(width='small'),
+                  'Title': st.column_config.Column(width='large'),
+                  'Company': st.column_config.Column(width='large'),
+                  'Created': st.column_config.Column(width='large'),
+                  }
     rows = st.data_editor(dfWithSelections, use_container_width=True,
                           hide_index=True, key='cleanJobsListTable',
-                          column_config={'Ids': None}, height=600)
+                          column_config=colsConfig, height=600)
     selectedRows = df[rows.Sel]
     return rows, selectedRows
 

@@ -32,8 +32,15 @@ def fieldHistory(key):
     df = DataFrame(loadHistoryFromFile(key))
     df.insert(0, "Sel", False)
     st.write(f'File storage: :green[{getFileName(key)}]')
+    colsConfig = {'Ids': None,
+                  'Sel': st.column_config.Column(width='small'),
+                  'Id': st.column_config.Column(width='small'),
+                  'Title': st.column_config.Column(width='large'),
+                  'Company': st.column_config.Column(width='large'),
+                  'Created': st.column_config.Column(width='large'),
+                  }
     res = st.data_editor(data=df,
-                         #  column_config={'Sel': None, 'value': None},
+                         column_config=colsConfig,
                          width=600, use_container_width=True, hide_index=True)
     historyOnChange(key, res)
 

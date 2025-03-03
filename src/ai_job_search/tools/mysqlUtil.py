@@ -84,7 +84,9 @@ class MysqlUtil:
 
     def cursor(self):
         conn = self.conn if self.conn else getConnection()
-        return conn.cursor()
+        c = conn.cursor()
+        c.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
+        return c
 
     def insert(self, params) -> int | None:
         try:
