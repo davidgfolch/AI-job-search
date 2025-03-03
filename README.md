@@ -1,7 +1,7 @@
 # AI Job Search
 
 [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml)
-[![Backend coverage](README-images/coverage.svg)](backend/README.md#generate-coverage-badge-for-readmemd)
+[![Backend coverage](README-images/coverage.svg)](README.md#generate-coverage-badge-for-readmemd)
 
 Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor, Tecnoempleo...
 
