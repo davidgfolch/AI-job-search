@@ -1,7 +1,7 @@
 import sys
 from ai_job_search.scrapper import (
     linkedin, indeed, infojobs, glassdoor, tecnoempleo)
-from ai_job_search.tools.terminalColor import red, yellow
+from ai_job_search.tools.terminalColor import cyan, red, yellow
 from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds
 
 # FIXME: Implement scrapper by url in view and/or console
@@ -77,19 +77,19 @@ def runSpecifiedScrappers():
 
 
 args = sys.argv
-print('Scrapper init')
-print('Usage: scrapper.py wait starting scrapperName')
-print('wait -> waits for scrapper timeout before executing')
-print('starting -> starts scrapping at the specified scrapper (by name)')
+print(cyan('Scrapper init'))
+print(cyan('Usage: scrapper.py wait starting scrapperName'))
+print(cyan('wait -> waits for scrapper timeout before executing'))
+print(cyan('starting -> starts scrapping at the specified scrapper (by name)'))
 
-starting = 'starting' in args
-if starting:
-    args.pop(args.index('starting'))
-    print(f"'starting' at {args[1]} ")
 wait = 'wait' in args
 if wait:
     args.pop(args.index('wait'))
     print("'wait' before execution", )
+starting = 'starting' in args
+if starting:
+    args.pop(args.index('starting'))
+    print(f"'starting' at {args[1]} ")
 
 if len(args) == 1 or starting or wait:
     runAllScrappers(wait, starting)

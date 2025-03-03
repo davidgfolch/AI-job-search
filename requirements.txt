@@ -110,14 +110,14 @@ jupyter_core==5.7.2
 kiwisolver==1.4.8
 kubernetes==31.0.0
 lancedb==0.15.0
-langchain==0.3.18
+langchain==0.3.7
 langchain-cohere==0.3.1
 langchain-community==0.3.4
-langchain-core==0.3.35
+langchain-core==0.3.18
 langchain-experimental==0.3.3
 langchain-google-genai==2.0.8
 langchain-openai==0.2.8
-langchain-text-splitters==0.3.6
+langchain-text-splitters==0.3.2
 langsmith==0.1.143
 linkedin-api==2.3.1
 litellm==1.52.8
