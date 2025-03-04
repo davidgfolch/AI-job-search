@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 import pandas as pd
 from ai_job_search.viewer.clean import (
-    deleteOld, ignoreByTitle, mergeDuplicates)
+    deleteOld, ignoreByTitle)
 from ai_job_search.viewer.clean.cleanUtil import getAllIds
 from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
@@ -13,10 +13,10 @@ from tools.mysqlUtil import MysqlUtil
 
 
 PROCESS_CONFIG = [
-    {'info': mergeDuplicates.getInfo,
-     'dfCols': mergeDuplicates.COLUMNS,
-     'sql': mergeDuplicates.getSelect,
-     'actionButtonFnc': mergeDuplicates.actionButton},
+    # {'info': mergeDuplicates.getInfo,
+    #  'dfCols': mergeDuplicates.COLUMNS,
+    #  'sql': mergeDuplicates.getSelect,
+    #  'actionButtonFnc': mergeDuplicates.actionButton},
     {'info': ignoreByTitle.getInfo,
      'dfCols': ignoreByTitle.COLUMNS,
      'sql': ignoreByTitle.getSelect,
