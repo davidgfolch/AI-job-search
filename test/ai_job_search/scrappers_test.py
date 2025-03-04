@@ -16,6 +16,7 @@ def mock_scrappers():
     }):
         yield
 
+
 @pytest.fixture
 def mock_selenium():
     with patch('ai_job_search.scrapper_main.SeleniumUtil', MagicMock):
