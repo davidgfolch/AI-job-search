@@ -1,6 +1,4 @@
 import traceback
-from streamlit.delta_generator import DeltaGenerator
-import streamlit as st
 from ai_job_search.tools.mysqlUtil import (
     MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 from ai_job_search.tools.terminalColor import blue, cyan, red
@@ -8,9 +6,7 @@ from ai_job_search.tools.util import (
     SHOW_SQL_IN_AI_ENRICHMENT, getEnvBool,
     removeNewLines)
 from ai_job_search.viewer.clean.cleanUtil import (
-    getAllIds, getFieldValue, removeNewestId)
-from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
-from ai_job_search.viewer.util.stComponents import showCodeSql
+    getFieldValue, removeNewestId)
 from ai_job_search.viewer.util.stUtil import stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL)
@@ -48,41 +44,22 @@ def getSelect():
     order by r.title, r.company, r.max_created desc"""
 
 
-def actionButton(stContainer: DeltaGenerator, selectedRows, disabled):
-    stContainer.button('Merge & Delete old duplicated in selection',
-                       on_click=mergeStreamlitWrapper,
-                       kwargs={'selectedRows': selectedRows},
-                       type='primary', disabled=disabled)
-
-
-def mergeStreamlitWrapper(selectedRows):
-    rows = getAllIds(selectedRows, plainIdsStr=False)
-    with st.container(height=400):
-        for generatorResult in merge(rows):
-            for line in generatorResult:
-                if arr := line.get('arr', None):
-                    [st.write(a) for a in arr]
-                if txt := line.get('query', None):
-                    showCodeSql(txt, True)
-                if txt := line.get('text', None):
-                    st.write(txt)
-
 
 def merge(rows):
-    for ids in rows:
-        query = SELECT_FOR_MERGE.format(
-            **{'ids': ids,
-                'cols': COLS})
-        mysql = MysqlUtil(mysqlCachedConnection())
-        id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
-        updateQry, params = updateFieldsQuery([id], merged, merged=True)
-        queries = [{'query': updateQry, 'params': params}]
-        idsArr = removeNewestId(ids)
-        deleteQry = deleteJobsQuery(idsArr)
-        queries.append({'query': deleteQry})
-        affectedRows = mysql.executeAllAndCommit(queries)
-        yield [{'arr': out, 'query': query}] + queries + [{
-            'text': f'Affected rows (update & delete): {affectedRows}'}]
+    with MysqlUtil() as mysql:
+        for ids in rows:
+            query = SELECT_FOR_MERGE.format(
+                **{'ids': ids,
+                    'cols': COLS})
+            id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
+            updateQry, params = updateFieldsQuery([id], merged, merged=True)
+            queries = [{'query': updateQry, 'params': params}]
+            idsArr = removeNewestId(ids)
+            deleteQry = deleteJobsQuery(idsArr)
+            queries.append({'query': deleteQry})
+            affectedRows = mysql.executeAllAndCommit(queries)
+            yield [{'arr': out, 'query': query}] + queries + [{
+                'text': f'Affected rows (update & delete): {affectedRows}'}]
 
 
 def mergeJobDuplicates(rows, ids):
