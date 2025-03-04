@@ -54,7 +54,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
             with MysqlUtil() as mysql:
                 total = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
                 if total == 0:
-                    consoleTimer("All jobs are already AI enriched, ", '1m')
+                    consoleTimer("All jobs are already AI enriched, ", '10s')
                     continue
                 print(f'{total} jobs to be ai_enriched...')
                 self.enrichJobs(total)

@@ -1,8 +1,8 @@
 import re
 from typing import Any, Dict, Sequence, TypeVar, Union
 import mysql.connector as mysqlConnector
-from mysql.connector import Error
 
+from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.tools.terminalColor import printHR, red, yellow
 
 DB_NAME = 'jobs'
@@ -48,9 +48,6 @@ SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT = """ and client like '%{client}%'"""
 
 
 ERROR_PREFIX = 'MysqlError: '
-REGEX_INCORRECT_VALUE_FOR_COL = re.compile(
-    "Incorrect [^ ]+ value: (.+(?=for column))for column '(.+)' at .+")
-
 conn: mysqlConnector.MySQLConnection = None
 
 
@@ -94,7 +91,8 @@ class MysqlUtil:
                 c.execute(QRY_INSERT, params)
                 getConnection().commit()
             return c.lastrowid
-        except Error as ex:
+        except mysqlConnector.Error as ex:
+            self.rollback(ex)
             error(ex, end='')
             return None
 
@@ -116,19 +114,27 @@ class MysqlUtil:
         except mysqlConnector.Error as ex:
             error(ex)
 
+    def rollback(self, ex: mysqlConnector.Error):
+        # 1205 Lock wait timeout exceeded
+        if getConnection().is_connected() and getConnection().in_transaction:
+            print(red('Lock wait timeout exceeded, retrying'))
+            getConnection().rollback()
+        raise ex
+
     # FIXME: CHANGE required_technologies & optional_technologies with
     # required_skills & opt_skills
+    @retry(retries=3, delay=1, exception=mysqlConnector.Error)
     def updateFromAI(self, id, company, paramsDict: dict,
                      deprecatedName='technologies', deep=0):
+        params = maxLen(emptyToNone(
+            (paramsDict.get('salary', None),
+                # TODO: Change to required_skills, optional_skills
+                paramsDict.get(f'required_{deprecatedName}', None),
+                paramsDict.get(f'optional_{deprecatedName}', None),
+                id)),
+            # TODO: get mysql DDL metadata varchar sizes
+            (200, 1000, 1000, None))
         try:
-            params = maxLen(emptyToNone(
-                (paramsDict.get('salary', None),
-                 # TODO: Change to required_skills, optional_skills
-                 paramsDict.get(f'required_{deprecatedName}', None),
-                 paramsDict.get(f'optional_{deprecatedName}', None),
-                 id)),
-                # TODO: get mysql DDL metadata varchar sizes
-                (200, 1000, 1000, None))
             with self.cursor() as c:
                 c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
                 getConnection().commit()
@@ -140,35 +146,28 @@ class MysqlUtil:
                 else:
                     error(Exception('No rows affected'))
         except mysqlConnector.Error as ex:
-            error(ex, f' -> params = {params}')
-            if deep > len(paramsDict.keys()):
-                return
-            failColumn = re.sub(REGEX_INCORRECT_VALUE_FOR_COL, r'\2', str(ex))
-            # FIXME: implement with @retry (needs refactor) or get bbdd
-            # meta-data before inserting
-            if failColumn:
-                print(red(f'Found incorrect value for column {failColumn}, ',
-                          'retry with column value None'))
-                paramsDict[failColumn] = None
-                self.updateFromAI(id, company, paramsDict,
-                                  deprecatedName, deep+1)
-            else:
-                raise ex
+            self.rollback(ex)
 
     def executeAndCommit(self, query, params=()) -> int:
-        with self.cursor() as c:
-            c.execute(query, params)
-            getConnection().commit()
-            return c.rowcount
+        try:
+            with self.cursor() as c:
+                c.execute(query, params)
+                getConnection().commit()
+                return c.rowcount
+        except mysqlConnector.Error as ex:
+            self.rollback(ex)
 
     def executeAllAndCommit(self, queries: list[dict[str, any]]) -> int:
         rowCount = []
-        with self.cursor() as c:
-            for query in queries:
-                c.execute(query['query'], query.get('params', ()))
-                rowCount.append(c.rowcount)
-            getConnection().commit()
-            return rowCount
+        try:
+            with self.cursor() as c:
+                for query in queries:
+                    c.execute(query['query'], query.get('params', ()))
+                    rowCount.append(c.rowcount)
+                getConnection().commit()
+                return rowCount
+        except mysqlConnector.Error as ex:
+            self.rollback(ex)
 
     def fetchAll(self, query: str, params=None):
         with self.cursor() as c:
