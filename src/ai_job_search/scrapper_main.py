@@ -44,7 +44,7 @@ def timeExpired(name: str, timeout: int, waitBeforeFirstRuns: bool):
     return True
 
 
-def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, noLoop=True):
+def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
     # No arguments specified in command line: run all
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
@@ -61,7 +61,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, noLoop=True):
         waitBeforeFirstRuns = False
         consoleTimer(
             "Waiting for next scrapping execution trigger, ", '10m')
-        if noLoop:
+        if not loop:
             break
 
 

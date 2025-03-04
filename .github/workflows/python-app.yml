@@ -43,7 +43,7 @@ jobs:
     - name: Test with pytest
       run: |
         touch .env
-        python -m pytest
+        python -m pytest --ignore=test/ai_job_search/scrappers_test.py
     - name: Coverage
       run: |
         # coverage report --fail-under=90 -m

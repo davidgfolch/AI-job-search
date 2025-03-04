@@ -28,7 +28,7 @@ def test_runAllScrappers(mock_scrappers):
             patch('ai_job_search.scrapper_main.getDatetimeNow', return_value=0), \
             patch('ai_job_search.scrapper_main.getSeconds', return_value=0):
         runAllScrappers(waitBeforeFirstRuns=False,
-                        starting=False, startingAt=None, noLoop=True)
+                        starting=False, startingAt=None, loop=False)
         for scrapper in SCRAPPERS.values():
             if not scrapper.get('ignoreAutoRun', False):
                 scrapper['function'].assert_called_once()
@@ -39,7 +39,7 @@ def test_runAllScrappers_with_wait(mock_scrappers):
             patch('ai_job_search.scrapper_main.getDatetimeNow', return_value=0), \
             patch('ai_job_search.scrapper_main.getSeconds', return_value=0):
         runAllScrappers(waitBeforeFirstRuns=True,
-                        starting=False, startingAt=None, noLoop=True)
+                        starting=False, startingAt=None, loop=False)
         for scrapper in SCRAPPERS.values():
             if not scrapper.get('ignoreAutoRun', False):
                 scrapper['function'].assert_called_once()
