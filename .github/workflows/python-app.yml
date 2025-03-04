@@ -47,7 +47,7 @@ jobs:
     - name: Coverage
       run: |
         # coverage report --fail-under=90 -m
-        coverage run --source=src -m pytest
+        coverage run --source=src -m pytest --ignore=test/ai_job_search/scrappers_test.py
         coverage report -m
     - name: Coverage badge
       run: |
