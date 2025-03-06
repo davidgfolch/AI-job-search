@@ -186,10 +186,14 @@ def searchJobs(index: int, keywords: str):
             page += 1
             printPage(WEB_PAGE, page, totalPages, keywords)
             idx = 0
-            while idx < JOBS_X_PAGE and currentItem < totalResults:
+            failed = 0
+            while idx < JOBS_X_PAGE and currentItem < totalResults and failed < 2:
                 print(green(f'pg {page} job {idx+1} - '), end='')
                 if loadAndProcessRow(idx):
                     currentItem += 1
+                    failed = 0
+                else:
+                    failed += 1
                 print()
                 idx += 1
             if currentItem < totalResults:
