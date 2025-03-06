@@ -21,13 +21,6 @@ def getFieldValue(row, colsArr, colName):
     return row[colsArr.index(colName)]
 
 
-def removeNewestId(ids):
-    idsArr = ids.split(',')
-    idsArr.sort()
-    idsArr.pop()
-    return idsArr
-
-
 def getIdsIndex(rows: DataFrame) -> int:
     try:
         return rows.columns.get_loc('Ids')

@@ -155,6 +155,7 @@ def formDetailForMultipleSelection(selectedRows, jobData):
 
 def addCompanyAppliedJobsInfo(jobData):
     company = str(jobData['company']).lower().replace("'", "''")
+    company = removeRegexChars(company)
     params = {'company': company,
               'id':  str(jobData['id'])}
     query = SELECT_APPLIED_JOB_IDS_BY_COMPANY
@@ -164,7 +165,7 @@ def addCompanyAppliedJobsInfo(jobData):
         query += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
         client = str(jobData['client']).lower()
         params |= {'client': client}
-        company = jobData['client']
+        company = removeRegexChars(jobData['client'])
     rows = mysql.fetchAll(query.format(**params))
     if len(rows) == 0:
         rows = searchPartialCompanyName(company, params, query, rows)
@@ -183,7 +184,7 @@ def formatDate(date):
 
 
 def searchPartialCompanyName(company: str, params: dict, query: str, rows):
-    companyWords = re.sub(r'[()[\]|]', '', company).split(' ')
+    companyWords = removeRegexChars(company).split(' ')
     while len(companyWords) > 1 and len(rows) == 0:
         companyWords = companyWords[:-1]
         words = ' '.join(companyWords)
@@ -198,3 +199,7 @@ def searchPartialCompanyName(company: str, params: dict, query: str, rows):
                 st.error(e)
             params['company'] = words
     return rows
+
+
+def removeRegexChars(txt: str):
+    return re.sub(r'([()[\]|*+])', r'\\1', txt)

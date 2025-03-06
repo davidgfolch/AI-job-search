@@ -6,14 +6,14 @@ from ai_job_search.tools.util import (
     SHOW_SQL_IN_AI_ENRICHMENT, getEnvBool,
     removeNewLines)
 from ai_job_search.viewer.clean.cleanUtil import (
-    getFieldValue, removeNewestId)
+    getFieldValue)
 from ai_job_search.viewer.util.stUtil import stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
     DB_FIELDS_BOOL)
 
 
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-ai_enriched,ai_enrich_error,company,client,comments"""
+ai_enriched,ai_enrich_error,company,client,comments, created"""
 FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 COLUMNS = stripFields('Counter,Ids,Title,Company')
 SELECT_FOR_MERGE = """select {cols}
@@ -44,21 +44,23 @@ def getSelect():
     order by r.title, r.company, r.max_created desc"""
 
 
-def merge(rows):
+def merge(rowsIds):
     with MysqlUtil() as mysql:
-        for ids in rows:
+        for ids in rowsIds:
             query = SELECT_FOR_MERGE.format(
                 **{'ids': ids,
                     'cols': COLS})
             id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
             updateQry, params = updateFieldsQuery([id], merged, merged=True)
             queries = [{'query': updateQry, 'params': params}]
-            idsArr = removeNewestId(ids)
+            idsArr = ids.split(',')
+            idsArr.remove(str(id))
             deleteQry = deleteJobsQuery(idsArr)
             queries.append({'query': deleteQry})
             affectedRows = mysql.executeAllAndCommit(queries)
             yield [{'arr': out, 'query': query}] + queries + [{
-                'text': f'Affected rows (update & delete): {affectedRows}'}]
+                'text': f'Affected rows (updated {id} & deleted {idsArr}):' +
+                f' {affectedRows}'}]
 
 
 def mergeJobDuplicates(rows, ids):
@@ -68,7 +70,7 @@ def mergeJobDuplicates(rows, ids):
             if colIdx > COL_COMPANY_IDX and row[colIdx]:
                 if f != 'created' or \
                         f == 'created' and merged.get(f, None) is None:
-                    merged.setdefault(f, row[colIdx])
+                    merged[f] = row[colIdx]
         id = getFieldValue(row, COLS_ARR, 'id')
         out = [' '.join([f'`{getFieldValue(row, COLS_ARR, "title")}`',
                         '-',
@@ -84,8 +86,8 @@ def mergeDuplicatedJobs(rows):
         if len(rows) == 0:
             return
         idsIdx = 1
-        rows = [row[idsIdx] for row in rows]
-        for generatorResult in merge(rows):
+        rowsIds = [row[idsIdx] for row in rows]
+        for generatorResult in merge(rowsIds):
             for line in generatorResult:
                 print(' ', end='')
                 if arr := line.get('arr', None):

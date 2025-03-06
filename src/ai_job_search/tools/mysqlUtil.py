@@ -77,7 +77,7 @@ class MysqlUtil:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        print('Exiting MysqlUtil')
+        pass
 
     def cursor(self):
         conn = self.conn if self.conn else getConnection()
