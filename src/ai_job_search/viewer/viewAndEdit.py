@@ -183,7 +183,7 @@ def formatDate(date):
 
 
 def searchPartialCompanyName(company: str, params: dict, query: str, rows):
-    companyWords = re.sub(r'[()[\]]', '', company).split(' ')
+    companyWords = re.sub(r'[()[\]|]', '', company).split(' ')
     while len(companyWords) > 1 and len(rows) == 0:
         companyWords = companyWords[:-1]
         words = ' '.join(companyWords)

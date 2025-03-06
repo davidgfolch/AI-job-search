@@ -44,7 +44,6 @@ def getSelect():
     order by r.title, r.company, r.max_created desc"""
 
 
-
 def merge(rows):
     with MysqlUtil() as mysql:
         for ids in rows:
