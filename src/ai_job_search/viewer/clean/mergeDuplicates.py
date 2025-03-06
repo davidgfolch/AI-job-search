@@ -44,7 +44,8 @@ def getSelect():
     order by r.title, r.company, r.max_created desc"""
 
 
-def merge(rowsIds):
+def merge(rowsIds) -> list:
+    results = []
     with MysqlUtil() as mysql:
         for ids in rowsIds:
             query = SELECT_FOR_MERGE.format(
@@ -58,9 +59,10 @@ def merge(rowsIds):
             deleteQry = deleteJobsQuery(idsArr)
             queries.append({'query': deleteQry})
             affectedRows = mysql.executeAllAndCommit(queries)
-            yield [{'arr': out, 'query': query}] + queries + [{
+            results.append([{'arr': out, 'query': query}] + queries + [{
                 'text': f'Affected rows (updated {id} & deleted {idsArr}):' +
-                f' {affectedRows}'}]
+                f' {affectedRows}'}])
+    return results
 
 
 def mergeJobDuplicates(rows, ids):
@@ -87,8 +89,8 @@ def mergeDuplicatedJobs(rows):
             return
         idsIdx = 1
         rowsIds = [row[idsIdx] for row in rows]
-        for generatorResult in merge(rowsIds):
-            for line in generatorResult:
+        for results in merge(rowsIds):
+            for line in results:
                 print(' ', end='')
                 if arr := line.get('arr', None):
                     print(cyan(' '.join([removeNewLines(a) for a in arr])),
