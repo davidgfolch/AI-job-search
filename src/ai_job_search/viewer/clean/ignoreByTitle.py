@@ -2,7 +2,7 @@ from pandas import DataFrame
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
-from ai_job_search.tools.util import getEnv
+from ai_job_search.tools.util import getEnvMultiline
 from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
 from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
@@ -13,7 +13,7 @@ COLUMNS = stripFields('Id,Title,Company,Created')
 
 
 def getTitleRegex():
-    return getEnv('CLEAN_IGNORE_BY_TITLE_LOWER_REGEX')
+    return getEnvMultiline('CLEAN_IGNORE_BY_TITLE_REGEX')
 
 
 def getInfo():

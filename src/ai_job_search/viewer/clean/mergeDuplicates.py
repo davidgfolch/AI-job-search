@@ -3,8 +3,7 @@ from ai_job_search.tools.mysqlUtil import (
     MysqlUtil, deleteJobsQuery, updateFieldsQuery)
 from ai_job_search.tools.terminalColor import blue, cyan, red
 from ai_job_search.tools.util import (
-    SHOW_SQL_IN_AI_ENRICHMENT, getEnvBool,
-    removeNewLines)
+    getEnvBool, removeNewLines)
 from ai_job_search.viewer.clean.cleanUtil import (
     getFieldValue)
 from ai_job_search.viewer.util.stUtil import stripFields
@@ -96,7 +95,7 @@ def mergeDuplicatedJobs(rows):
                     print(cyan(' '.join([removeNewLines(a) for a in arr])),
                           end=' ')
                 query = line.get('query', None)
-                if getEnvBool(SHOW_SQL_IN_AI_ENRICHMENT) and query:
+                if getEnvBool('SHOW_SQL_IN_AI_ENRICHMENT') and query:
                     print(blue(removeNewLines(query)), end=' ')
                 if txt := line.get('text', None):
                     print(blue(removeNewLines(txt)), end=' ')

@@ -10,11 +10,6 @@ from typing import Iterator
 from dotenv import load_dotenv
 
 
-SHOW_SQL_IN_AI_ENRICHMENT = 'SHOW_SQL_IN_AI_ENRICHMENT'
-AUTOMATIC_REPEATED_JOBS_MERGE = 'AUTOMATIC_REPEATED_JOBS_MERGE'
-AI_ENRICHMENT_JOB_TIMEOUT_MINUTES = 'AI_ENRICHMENT_JOB_TIMEOUT_MINUTES'
-
-
 def getEnvModified() -> float | None:
     x = os.stat('.env').st_ctime if os.stat('.env') else None
     return x
@@ -35,7 +30,6 @@ def checkEnvReload():
 
 
 def getAndCheckEnvVars(site: str):
-    checkEnvReload()
     mail = getEnv(f'{site}_EMAIL')
     pwd = getEnv(f'{site}_PWD')
     search = getEnv(f'{site}_JOBS_SEARCH')
@@ -55,6 +49,18 @@ def getEnv(key: str, default: str = None) -> str:
     checkEnvReload()
     v = os.environ.get(key, default)
     return v
+
+
+def getEnvMultiline(key: str, default: str = None) -> str:
+    idx = 1
+    value = ''
+    while True:
+        partialValue = getEnv(f'{key}_{idx}')
+        if partialValue is None:
+            break
+        value += partialValue
+        idx += 1
+    return value
 
 
 def getEnvBool(key: str, default: bool = False) -> bool:

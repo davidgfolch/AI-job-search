@@ -123,8 +123,19 @@ where r.counter>1
 order by r.counter desc, r.title, r.company, r.max_created desc
 
 select id, title, company, applied, modified, ignored from jobs where ignored order by modified desc limit 100;
-select id, title, company, applied, created, merged, modified, ignored from jobs where merged is not null order by merged desc limit 100;
+select id, title, company, applied, created, merged, modified, ignored from jobs where merged is not null order by merged desc;
 update jobs set merged=null where created=merged;
+
+
+SELECT id, salary, title, company
+FROM jobs
+WHERE (lower(required_technologies) rlike 'java([^script]|$)|spring|python|scala([^bility]|$)|clojure' or lower(title) rlike 'java([^script]|$)|spring|python|scala([^bility]|$)|clojure' or lower(CONVERT(markdown USING utf8mb4) COLLATE utf8mb4_0900_ai_ci) rlike 'java([^script]|$)|spring|python|scala([^bility]|$)|clojure')
+ and DATE(created) >=     DATE_SUB(CURDATE(),  INTERVAL 1 DAY)
+ and (ai_enriched)
+ and not (seen or ignored or applied or discarded or closed)
+ORDER BY salary desc,  created  desc
+
+
 
 update jobs set salary=null where salary = 'Salario no disponible' or salary = 'Paquete retributivo muy competitivo acorde a la valía del candidato'
 or salary = 'Salario a convenir';
@@ -188,3 +199,8 @@ select concat('Applied: ',count(id)) as count from jobs where applied union all
 select concat('Call or interview (rh): ',count(id)) as count from jobs where interview or interview_rh union all
 select concat('Interview or tech/test: ',count(id)) as count from jobs where interview_tech or interview_technical_test union all
 select concat('Discarded: ',count(id)) as count from jobs where discarded;
+
+-- Locks
+show open tables;
+show performance_schema.processlist;
+

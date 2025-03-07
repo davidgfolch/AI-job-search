@@ -14,8 +14,7 @@ from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
 from ai_job_search.tools.util import (
-    AI_ENRICHMENT_JOB_TIMEOUT_MINUTES, getEnv,
-    hasLen, removeExtraEmptyLines, consoleTimer)
+    getEnv, hasLen, removeExtraEmptyLines, consoleTimer)
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 
@@ -226,7 +225,7 @@ class AiJobSearch:
 
     @agent
     def researcher_agent(self) -> Agent:
-        timeout = getEnv(AI_ENRICHMENT_JOB_TIMEOUT_MINUTES)
+        timeout = getEnv('AI_ENRICHMENT_JOB_TIMEOUT_MINUTES')
         print('Creating agent:',
               f'timeout (minutes)={timeout}')
         config = self.agents_config['researcher_agent']
