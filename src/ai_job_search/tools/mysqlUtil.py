@@ -62,15 +62,13 @@ def getConnection() -> mysqlConnector.MySQLConnection:
             # get_warnings=True
         )
         print(conn.__repr__())
-    if not conn.is_connected():
-        conn.reconnect()
     return conn
 
 
 class MysqlUtil:
 
     def __init__(self, connection=None):
-        self.conn = connection
+        self.conn = connection if connection else None
         # https://dev.mysql.com/doc/connector-python/en/connector-python-connectargs.html
 
     def __enter__(self):
@@ -81,6 +79,9 @@ class MysqlUtil:
 
     def cursor(self):
         conn = self.conn if self.conn else getConnection()
+        if not conn.is_connected():
+            print(f'Reconnecting to DB conn: {conn}')
+            conn.reconnect()
         c = conn.cursor()
         c.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
         return c

@@ -123,7 +123,7 @@ def tableView():
     try:
         res = mysql.fetchAll(query)
     except Exception as e:
-        showCodeSql(query, True)
+        showCodeSql(query, showSql=True)
         raise e
     df = DataFrame(res, columns=['id'] + LIST_VISIBLE_COLUMNS)
     filterResCnt = len(df.index)
