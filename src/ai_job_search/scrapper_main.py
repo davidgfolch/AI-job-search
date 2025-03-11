@@ -2,7 +2,7 @@ import sys
 from ai_job_search.scrapper import (
     linkedin, indeed, infojobs, glassdoor, tecnoempleo)
 from ai_job_search.tools.terminalColor import cyan, red, yellow
-from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds
+from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds, getTimeUnits
 
 # FIXME: Implement scrapper by url in view and/or console
 # f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-
@@ -29,15 +29,20 @@ SCRAPPERS: dict = {
         'ignoreAutoRun': True
     },
 }
+MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 executionsTimes = {}
 
 
-def timeExpired(name: str, timeout: int, waitBeforeFirstRuns: bool):
-    defaultLast = getDatetimeNow() if waitBeforeFirstRuns else None
-    last = executionsTimes.get(name, defaultLast)
-    if last:
+def timeExpired(name: str, properties: dict):
+    timeout: int = properties['timer']
+    waitBeforeFirstRuns: bool = properties['waitBeforeFirstRun']
+    executionsTimes[name] = executionsTimes.get(
+        name, getDatetimeNow() if waitBeforeFirstRuns else None)
+    if last := executionsTimes[name]:
         lapsed = getDatetimeNow()-last
         timeoutSeconds = getSeconds(timeout)
+        timeLeft = getTimeUnits(timeoutSeconds-lapsed)
+        print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
         if lapsed + 1 <= timeoutSeconds:
             return False
     executionsTimes[name] = getDatetimeNow()
@@ -51,11 +56,14 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
     print(f'Starting at : {startingAt}')
     while True:
         for name, properties in SCRAPPERS.items():
-            if timeExpired(name, properties['timer'], waitBeforeFirstRuns):
+            properties['waitBeforeFirstRun'] = properties.get(
+                'waitBeforeFirstRun', waitBeforeFirstRuns)
+            if timeExpired(name, properties):
                 notStartAtThisOne = (starting and startingAt != name)
                 if properties.get('ignoreAutoRun', False) or notStartAtThisOne:
                     print(f'Skipping : {name}')
                     continue
+                properties['waitBeforeFirstRun'] = False
                 properties['function']()
                 starting = False
         waitBeforeFirstRuns = False

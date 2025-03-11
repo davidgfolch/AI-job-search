@@ -124,6 +124,24 @@ def getSeconds(timeUnit: str):
     return seconds
 
 
+def getTimeUnits(seconds: int) -> str:
+    """Convert seconds to a detailed time unit string (e.g., 1h 35m 10s)."""
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+
+    time_units = []
+    if hours > 0:
+        time_units.append(f"{hours}h")
+    if minutes > 0:
+        time_units.append(f"{minutes}m")
+    if seconds > 0 or not time_units:
+        time_units.append(f"{seconds}s")
+
+    return ' '.join(time_units)
+
+
 def getDatetimeNow() -> int:
     return int(datetime.now().timestamp())
 
