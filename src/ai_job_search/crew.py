@@ -35,6 +35,7 @@ elif GEMINI_API_KEY:
                                      goggle_api_key=GEMINI_API_KEY)
 else:
     LLM_CFG = LLM(
+        # model="ollama/gemma3",
         model="ollama/llama3.2",
         # model="ollama/nuextract",  # hangs on local ollama
         # model="ollama/deepseek-r1:8b",  # no GPU inference

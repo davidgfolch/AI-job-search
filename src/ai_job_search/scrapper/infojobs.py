@@ -130,6 +130,7 @@ def scrollToBottom():
 
 @retry(retries=2, delay=5)
 def scrollJobsList(idx):
+    selenium.getElm(CSS_SEL_JOB_LI)  # try to get li element next line hangs
     lis = selenium.getElms(CSS_SEL_JOB_LI)
     if (idx >= len(lis)):
         scrollToBottom()
