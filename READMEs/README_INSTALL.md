@@ -20,18 +20,18 @@ and 3.11 incompatibility with other crewAi libraries.
 ## Install project dependencies
 
 ```bash
-    # Create environment
-    python -m venv .venv
-    # Activate environment
-    source .venv/bin/activate
-    # Install dependencies
-    pip install -r requirements.txt
+# Create environment
+python -m venv .venv
+# Activate environment
+source .venv/bin/activate
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 If problems found installing mysql client library for Streamlit, follow this:
 
 ```bash
-    sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-essential
+sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-essential
 ```
 
 ## Setup credentials & other settings
@@ -53,9 +53,6 @@ After executing for first time `docker-compose up` or `./scripts/run_1_Mysql.sh`
 
 [Mysql docker doc reference](https://hub.docker.com/_/mysql)
 
---------------
---------------
---------------
 --------------
 
 ## Managing dependencies

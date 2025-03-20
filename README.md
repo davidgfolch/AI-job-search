@@ -20,7 +20,7 @@ Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor, 
 
 See [README_INSTALL.md](./READMEs/README_INSTALL.md)
 
-## Lifecycle
+## Run & lifecycle
 
 Run bash scripts in separate terminals:
 
@@ -36,6 +36,8 @@ Run bash scripts in separate terminals:
 ./scripts/run_4_Viewer.sh
 ```
 
+Alternatively if you have terminator installed you can run all in one with: `run.sh`
+
 ## Scrapers
 
 The automatic scrapper (`./run_2_Scrapper.sh` without parameters) keeps running in a infinite loop in console.  Different timeouts are configured in `scrapper.py` for each site scrapper.
@@ -47,6 +49,21 @@ The automatic scrapper (`./run_2_Scrapper.sh` without parameters) keeps running 
 This will use LLM to extract structured data from job offers (salary, required_technologies, ...).  Using CrewAI framework & local Ollama LLM.
 
 The automatic script `./scripts/run_3_AiEnricher.sh` keeps running in a infinite loop in console, waiting for jobs not `ai_enriched` in database.
+
+## Viewer
+
+User interface available to see & manage jobs with many capabilities:
+
+- **View & manage** tab:
+  - Search jobs using the filter form:
+    - Configurable defaults saved to local storage files (`.stSessionState`).
+    - Select one (or more) in search results to edit.
+      - Add comments in each offer in interviews or calls.
+      - Change states (ignored, seen, applied, closed, discarded, etc.)
+- **Clean** tab:
+  - Set some expressions to select jobs offers to be automatically ignored.
+  - Delete old job offers from database.
+- **Statistics** tab.
 
 ## Contribute
 
