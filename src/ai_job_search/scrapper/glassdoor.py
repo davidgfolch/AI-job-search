@@ -198,7 +198,7 @@ def loadJobDetail(liElm):
     selenium.loadPage(href)
 
 
-@retry()
+@retry(raiseException=False)
 def processRow():
     title = selenium.getText(CSS_SEL_JOB_TITLE)
     company = selenium.getElms(CSS_SEL_COMPANY)

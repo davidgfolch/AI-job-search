@@ -14,7 +14,7 @@ CSS_SEL_NO_RESULTS = 'CSS_SEL_NO_RESULTS'
 CSS_SEL_JOB_LI = 'div#left-column > div.JobsList_wrapper__EyUF6 > ul > li.JobsList_jobListItem__wjTHv'
 CSS_SEL_COMPANY = '.EmployerProfile_compactEmployerName__9MGcV'
 CSS_SEL_COMPANY2 = '.EmployerProfile_employerNameContainer__ptolz h4'
-CSS_SEL_LOCATION = '.JobDetails_location__mSg5h'
+CSS_SEL_LOCATION = 'header[data-test=job-details-header] div[data-test=location]'
 LI_JOB_TITLE_CSS_SUFFIX = 'a.JobCard_jobTitle__GLyJ1'
 CSS_SEL_NEXT_PAGE_BUTTON = 'div#left-column button[data-test="load-more"]'
 
