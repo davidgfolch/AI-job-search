@@ -5,9 +5,9 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    htmlToMarkdown, join, printPage, printScrapperTitle, validate)
+    getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle,
+    validate)
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
-from ai_job_search.tools.util import getAndCheckEnvVars
 from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.viewer.clean.mergeDuplicates import (
     getSelect, mergeDuplicatedJobs)

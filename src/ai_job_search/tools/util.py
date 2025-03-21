@@ -29,22 +29,6 @@ def checkEnvReload():
     envLastModified = getEnvModified()
 
 
-def getAndCheckEnvVars(site: str):
-    mail = getEnv(f'{site}_EMAIL')
-    pwd = getEnv(f'{site}_PWD')
-    search = getEnv(f'{site}_JOBS_SEARCH')
-    if not search:
-        search = getEnv('JOBS_SEARCH')
-    if not mail or not pwd or not search:
-        print(yellow('Set up .venv file with the following keys:'))
-        print(yellow(f'{site}_EMAIL' if not mail else '',
-                     f'{site}_PWD' if not pwd else '',
-                     f'{site}_JOBS_SEARCH' if not search else ''))
-        print(yellow('Please read README.md for more info'))
-        exit()
-    return mail, pwd, search
-
-
 def getEnv(key: str, default: str = None) -> str:
     checkEnvReload()
     v = os.environ.get(key, default)
