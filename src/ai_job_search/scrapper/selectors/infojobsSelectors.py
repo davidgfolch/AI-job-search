@@ -17,12 +17,12 @@ CSS_SEL_JOB_LINK = 'div.ij-OfferCardContent-description h2 > a'
 CSS_SEL_NEXT_PAGE_BUTTON = 'html body div#app div.sui-Layout-MediaQuery div.ij-Box.ij-Container.ij-Container-wrapper.ij-Container-centered.ij-TemplateAdsPage div.ij-Box.ij-Container.ij-Container-container.ij-TemplateAdsPage-mainContainer main.ij-Box.ij-TemplateAdsPage-main div.ij-Box.ij-SearchListingPageContent-main div.ij-Box.ij-TemplateAdsPage-row.ij-SearchListingPageContent-list div.ij-Box.ij-TemplateAdsPage-row div.ij-ComponentPagination ul.sui-MoleculePagination li.sui-MoleculePagination-item button.sui-AtomButton.sui-AtomButton--primary.sui-AtomButton--flat.sui-AtomButton--center'
 
 # JOB DETAIL (IN LIST CLICK)
-CSS_SEL_JOB_TITLE = '#prefijoPuesto'
-CSS_SEL_COMPANY = '#main-wrapper div.heading-addons a.link'
-CSS_SEL_LOCATION = '#prefijoPoblacion'
+CSS_SEL_JOB_TITLE = 'h1'  # '#prefijoPuesto'
+CSS_SEL_COMPANY = '.ij-OfferDetailHeader-companyLogo .ij-OfferDetailHeader-companyLogo-title .ij-OfferDetailHeader-companyLogo-companyName > a' # '#main-wrapper div.heading-addons a.link'
+DETAILS_PREFIX = '.ij-OfferDetailHeader-detailsList'
+CSS_SEL_LOCATION = 'div.ij-OfferDetailHeader-detailsList-column:nth-child(1) > div:nth-child(1) > p:nth-child(2)'  # '#main-wrapper div.heading-addons a.link'
 
-CSS_SEL_JOB_DETAIL = 'div.row div.panel-canvas'
-CSS_SEL_JOB_REQUIREMENTS = f'{CSS_SEL_JOB_DETAIL} > ul'
-CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} > .highlight-text'
-CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} #candidate_application'
-CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'  # No longer accepting applications
+
+CSS_SEL_JOB_DETAIL = '.ij-OfferDetailPage-mainContent-container > article:not(.no-printable)'
+# No longer accepting applications
+CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'

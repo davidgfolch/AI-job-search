@@ -35,6 +35,8 @@ remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
 # Spain if you need other make a manual search and get your country code
 location = '105646813'
 f_TPR = 'r86400'  # last 24 hours
+# f_TPR = 'r604800'  # last week
+# f_TPR = 'r2592000'  # last month
 # Set to True to stop selenium driver navigating if any error occurs
 DEBUG = False
 

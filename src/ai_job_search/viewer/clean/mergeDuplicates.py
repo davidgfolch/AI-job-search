@@ -59,7 +59,7 @@ def merge(rowsIds) -> list:
             queries.append({'query': deleteQry})
             affectedRows = mysql.executeAllAndCommit(queries)
             results.append([{'arr': out, 'query': query}] + queries + [{
-                'text': f'Affected rows (updated {id} & deleted {idsArr}):' +
+                'text': f'Merge duplicates: affected rows (updated {id} & deleted {idsArr}):' +
                 f' {affectedRows}'}])
     return results
 

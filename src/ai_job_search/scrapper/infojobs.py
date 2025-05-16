@@ -14,10 +14,8 @@ from ai_job_search.viewer.clean.mergeDuplicates import (
 from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.infojobsSelectors import (
-    CSS_SEL_JOB_DESCRIPTION,
-    CSS_SEL_JOB_EASY_APPLY,
+    CSS_SEL_JOB_DETAIL,
     CSS_SEL_JOB_LI,
-    CSS_SEL_JOB_REQUIREMENTS,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
     CSS_SEL_COMPANY,
     CSS_SEL_LOCATION,
@@ -256,23 +254,18 @@ def processRow(url):
     # try:
     title = selenium.getText(CSS_SEL_JOB_TITLE)
     company = selenium.getText(CSS_SEL_COMPANY)
-    # company = selenium.getText(CSS_SEL_COMPANY2)
     location = selenium.getText(CSS_SEL_LOCATION)
     jobId = getJobId(url)
-    html = selenium.getHtml(CSS_SEL_JOB_REQUIREMENTS)
-    html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-    # TODO: Infojobs  "Conocimientos necesarios" are relative url links,
-    # implement tree visitor for a.href (and img.src)
-    # https://stackoverflow.com/questions/54920208/python-markdown-how-can-i-config-base-url-for-media-when-markdown-string-into-h
+    html = selenium.getHtml(CSS_SEL_JOB_DETAIL)
     md = htmlToMarkdown(html)
     md = postProcessMarkdown(md)
     # easyApply: there are 2 buttons
-    easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-    print(f'{jobId}, {title}, {company}, {location}, ',
-          f'easy_apply={easyApply} - ', end='')
+    # easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
+    # print(f'{jobId}, {title}, {company}, {location}, ',
+    #       f'easy_apply={easyApply} - ', end='')
     if validate(title, url, company, md, DEBUG):
         if id := mysql.insert((jobId, title, company, location, url, md,
-                               easyApply, WEB_PAGE)):
+                               None, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
             mergeDuplicatedJobs(mysql.fetchAll(getSelect()))
             return True
