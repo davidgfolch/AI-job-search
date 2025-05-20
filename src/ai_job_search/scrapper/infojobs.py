@@ -30,7 +30,7 @@ from .selectors.infojobsSelectors import (
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 
 # Set to True to stop selenium driver navigating if any error occurs
-DEBUG = False
+DEBUG = True
 
 WEB_PAGE = 'Infojobs'
 LIST_URL = 'https://www.infojobs.net/jobsearch/search-results/list.xhtml'
@@ -257,8 +257,9 @@ def processRow(url):
     location = selenium.getText(CSS_SEL_LOCATION)
     jobId = getJobId(url)
     html = selenium.getHtml(CSS_SEL_JOB_DETAIL)
+    print(green(f'jobId={jobId}, title={title}, company={company}, \n{html}'))
     md = htmlToMarkdown(html)
-    md = postProcessMarkdown(md)
+    # md = postProcessMarkdown(md)
     # easyApply: there are 2 buttons
     # easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
     # print(f'{jobId}, {title}, {company}, {location}, ',
@@ -272,14 +273,14 @@ def processRow(url):
     return False
 
 
-def postProcessMarkdown(md):
-    txt = re.sub(r'\[([^\]]+)\]\(/ofertas-trabajo[^\)]+\)', r'\1', md)
-    txt = re.sub(r'[\\]+-', '-', txt)
-    txt = re.sub(r'[\\]+\.', '.', txt)
-    txt = re.sub(r'-\n', '\n', txt)
-    txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
-    txt = re.sub(r'[-*] #', '#', txt)
-    return txt
+# def postProcessMarkdown(md):
+#     txt = re.sub(r'\[([^\]]+)\]\(/ofertas-trabajo[^\)]+\)', r'\1', md)
+#     txt = re.sub(r'[\\]+-', '-', txt)
+#     txt = re.sub(r'[\\]+\.', '.', txt)
+#     txt = re.sub(r'-\n', '\n', txt)
+#     txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
+#     txt = re.sub(r'[-*] #', '#', txt)
+#     return txt
 
 
 def debug(msg: str = '', exception=False):
