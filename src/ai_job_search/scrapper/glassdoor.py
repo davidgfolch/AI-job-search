@@ -75,7 +75,7 @@ def login():
     selenium.waitAndClick(CSS_SEL_PASSWORD_SUBMIT)
     print(yellow('Waiting for Glassdoor to redirect after login...'))
     selenium.waitUntilPageUrlContains(
-        'https://www.glassdoor.es/Empleo/index.htm', 60)
+        'https://www.glassdoor.es/Job/index.htm', 60)
 
 
 @retry()
