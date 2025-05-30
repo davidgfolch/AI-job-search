@@ -30,7 +30,7 @@ from .selectors.infojobsSelectors import (
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 
 # Set to True to stop selenium driver navigating if any error occurs
-DEBUG = True
+DEBUG = False
 
 WEB_PAGE = 'Infojobs'
 LIST_URL = 'https://www.infojobs.net/jobsearch/search-results/list.xhtml'
@@ -257,13 +257,11 @@ def processRow(url):
     location = selenium.getText(CSS_SEL_LOCATION)
     jobId = getJobId(url)
     html = selenium.getHtml(CSS_SEL_JOB_DETAIL)
-    print(green(f'jobId={jobId}, title={title}, company={company}, \n{html}'))
     md = htmlToMarkdown(html)
     # md = postProcessMarkdown(md)
     # easyApply: there are 2 buttons
     # easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-    # print(f'{jobId}, {title}, {company}, {location}, ',
-    #       f'easy_apply={easyApply} - ', end='')
+    print(f'{jobId}, {title}, {company}, {location}  - ', end='')
     if validate(title, url, company, md, DEBUG):
         if id := mysql.insert((jobId, title, company, location, url, md,
                                None, WEB_PAGE)):
