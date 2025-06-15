@@ -39,7 +39,7 @@ def printPage(webPage, page, totalPages, keywords):
     printHR(green)
 
 
-def htmlToMarkdown(html: str):
+def htmlToMarkdown(html: str) -> str:
     # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#options
     # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#converting-beautifulsoup-objects
     # def convertSoup(soup, **options):
@@ -58,6 +58,11 @@ def removeInvalidScapes(md: str) -> str:
     # remove all backslash NOT unicode \uxxxx
     md = re.sub(r'[\\]+(?!=u)', '', md, flags=re.M)
     return md
+
+
+def removeLinks(md: str) -> str:
+    # remove all links, but keep the text
+    return re.sub(r'\[([^\]]+)\]\([^\)]+\)', r' \1 ', md, flags=re.M)
 
 
 def validate(title: str, url: str, company: str, markdown: str,

@@ -203,8 +203,8 @@ def formFilter():
             setState(FF_KEY_BOOL_NOT_FIELDS, res)
     formFilterByIdsSetup()
     inColumns([
-        (5, lambda _: sessionLoadSaveForm()),
-        (5, lambda _: st.pills("Toggle config's", ['showSql'],
+        (7, lambda _: sessionLoadSaveForm()),
+        (3, lambda _: st.pills("Toggle config's", ['showSql'],
                                key=FF_KEY_CONFIG_PILLS))])
     with st.expander('Search filters'):
         inColumns([

@@ -5,7 +5,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
-    getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle,
+    getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, removeLinks,
     validate)
 from ai_job_search.tools.terminalColor import green, printHR, yellow
 from ai_job_search.tools.decorator.retry import retry
@@ -258,7 +258,7 @@ def processRow(url):
     jobId = getJobId(url)
     html = selenium.getHtml(CSS_SEL_JOB_DETAIL)
     md = htmlToMarkdown(html)
-    # md = postProcessMarkdown(md)
+    md = postProcessMarkdown(md)
     # easyApply: there are 2 buttons
     # easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
     print(f'{jobId}, {title}, {company}, {location}  - ', end='')
@@ -271,14 +271,15 @@ def processRow(url):
     return False
 
 
-# def postProcessMarkdown(md):
-#     txt = re.sub(r'\[([^\]]+)\]\(/ofertas-trabajo[^\)]+\)', r'\1', md)
-#     txt = re.sub(r'[\\]+-', '-', txt)
-#     txt = re.sub(r'[\\]+\.', '.', txt)
-#     txt = re.sub(r'-\n', '\n', txt)
-#     txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
-#     txt = re.sub(r'[-*] #', '#', txt)
-#     return txt
+def postProcessMarkdown(md):
+    txt = removeLinks(md)
+    # txt = re.sub(r'\[([^\]]+)\]\(/ofertas-trabajo[^\)]+\)', r'\1', md)
+    # txt = re.sub(r'[\\]+-', '-', txt)
+    # txt = re.sub(r'[\\]+\.', '.', txt)
+    # txt = re.sub(r'-\n', '\n', txt)
+    # txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
+    # txt = re.sub(r'[-*] #', '#', txt)
+    return txt
 
 
 def debug(msg: str = '', exception=False):

@@ -26,7 +26,14 @@ Run bash scripts in separate terminals:
 ./scripts/run_4_Viewer.sh
 ```
 
+### Run all with single bash script
+
 Alternatively if you have terminator installed you can run all in one with: `./run.sh`
+
+NOTE that to execute `run.sh` you will need:
+
+- Perl installed and `colorTail.pl` script to be available in your `~/scripts/` folder
+- or remove `| perl ~/scripts/colorTail.pl \"gpu|cuda\"` in `run.sh` command line pipe for Ollama logs
 
 ## Scrapers
 
