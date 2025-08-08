@@ -11,3 +11,4 @@ __pycache__/**
 scratch.*
 uv.lock
 .coverage
+node_modules
