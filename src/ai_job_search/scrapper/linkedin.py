@@ -103,7 +103,7 @@ def getTotalResultsFromHeader(keywords: str) -> int:
     print(green(join(f'{total} total results for search: {keywords}',
                      f'(remote={remote}, location={location}, last={f_TPR})')))
     printHR(green)
-    return int(total)
+    return int(total.replace('+',''))
 
 
 def summarize(keywords, totalResults, currentItem):
