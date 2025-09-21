@@ -67,6 +67,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
         crew: Crew = AiJobSearch().crew()
         stopWatch = StopWatch()
         for idx, id in enumerate(getJobIdsList()):
+            print(yellow(''*60))
             stopWatch.start()
             try:
                 job = mysql.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)

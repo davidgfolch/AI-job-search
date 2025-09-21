@@ -1,4 +1,5 @@
 import sys
+import traceback
 from ai_job_search.scrapper import (
     linkedin, indeed, infojobs, glassdoor, tecnoempleo)
 from ai_job_search.tools.terminalColor import cyan, red, yellow
@@ -64,7 +65,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
                     print(f'Skipping : {name}')
                     continue
                 properties['waitBeforeFirstRun'] = False
-                properties['function']()
+                executeScrapper(name, properties)
                 starting = False
         waitBeforeFirstRuns = False
         consoleTimer(
@@ -78,11 +79,20 @@ def runSpecifiedScrappers(scrappersList: list):
     print(f'Executing specified scrappers: {scrappersList}')
     for arg in scrappersList:
         if SCRAPPERS.get(arg.capitalize()):
-            SCRAPPERS.get(arg.capitalize())['function']()
+            properties = SCRAPPERS[arg.capitalize()]
+            executeScrapper(arg.capitalize(), properties)
         else:
             print(red(f"Invalid scrapper web page name {arg}"))
             print(yellow(
                 f"Available web page scrapper names: {SCRAPPERS.keys()}"))
+
+
+def executeScrapper(name, properties: dict):
+    try:
+        properties['function']()
+    except Exception as e:
+        print(red(f"Error occurred while executing {name}: {e}"))
+        print(red(traceback.format_exc()))
 
 
 if __name__ == '__main__':
