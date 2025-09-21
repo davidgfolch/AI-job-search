@@ -21,8 +21,3 @@ dependant_scripts() {
 terminator --new-tab --title="run_1_Mysql" --command="bash -c 'sudo ./scripts/run_1_Mysql.sh; exec bash'" && \
     wait_for_mysql && \
     dependant_scripts
-
-
-# run new bash terminal in tab
-
-

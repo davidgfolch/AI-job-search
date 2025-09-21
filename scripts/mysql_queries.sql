@@ -13,8 +13,12 @@ select * from jobs WHERE not ai_enriched and not ignored;
 -- select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
 -- TODO: 
 update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
+update jobs set ai_enriched=0, salary=null
 -- WHERE ai_enriched and required_technologies like '%\\\\u%';
-where id=43652
+-- where DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 48 HOUR)
+-- where id=XXXXXXXX
+
+
 
 select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
@@ -45,7 +49,10 @@ select * from jobs where not (required_technologies like '%Java%' or required_te
 
 select title, markdown from jobs where salary is null and required_technologies is null and optional_technologies is null
 
-delete from jobs where not ignored and not applied and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) and comments is null;
+
+DELETE 
+-- SELECT title, markdown, created 
+from jobs where not ignored and not applied and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY) and comments is NULL AND web_page = 'Infojobs';
 
 select count(*) from jobs
 
@@ -69,7 +76,7 @@ update jobs set ignored=true
 where title rlike '(SAP|ABAP|HANA|COBOL|DevOps)' and not (ignored or applied or closed)
 order by created desc;
 
-select id from jobs where title = 'Remote Coding Expertise for AI Training - Tier 3 Non US'
+select * from jobs where title like 'Senior Full Stack Developer (Java/Angular) - 100% Remoto'
 
 select * from jobs where url like '%glassdoor%'
 
@@ -125,6 +132,9 @@ order by r.counter desc, r.title, r.company, r.max_created desc
 select id, title, company, applied, modified, ignored from jobs where ignored order by modified desc limit 100;
 select id, title, company, applied, created, merged, modified, ignored from jobs where merged is not null order by merged desc;
 update jobs set merged=null where created=merged;
+
+select id, title from jobs where date(modified)=CURDATE()  order by modified desc
+update jobs set ignored=null where id=261283;
 
 
 SELECT id, salary, title, company
