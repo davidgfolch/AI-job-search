@@ -1,8 +1,8 @@
 import random
 import time
+# import undetected_chromedriver as uc
 from typing import List
 from selenium import webdriver
-# TODO: import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
@@ -61,9 +61,11 @@ class SeleniumUtil:
         opts.add_argument("--disable-blink-features=AutomationControlled")
         opts.add_experimental_option("excludeSwitches", ["enable-automation"])
         opts.add_experimental_option("useAutomationExtension", False)
-        userAgent = random.choice(DESKTOP_USER_AGENTS)
-        print(yellow(f'Using user-agent={userAgent}'))
-        opts.add_argument(f"user-agent={userAgent}")
+        # userAgent = random.choice(DESKTOP_USER_AGENTS)
+        # print(yellow(f'Using user-agent={userAgent}'))
+        # opts.add_argument(f"user-agent={userAgent}")
+        opts.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+        # driver = uc.Chrome(options=opts)
         driver = webdriver.Chrome(options=opts)
         driver.execute_script(
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -198,8 +200,20 @@ class SeleniumUtil:
     def close(self):
         driver.quit()
 
+    def cloudFlareSecurityFilter(self):
+        #TODO Don't detect iframe
+        sleep(20,20)
+        self.waitUntilPageIsLoaded(30)
+        # iframe:WebElement = driver.find_elements(By.XPATH,'//iframe')[0]
+        driver.switch_to.frame(0)
+        self.waitAndClick('input[type="checkbox"]')
+        driver.switch_to.default_content()
+        sleep(10,10)
+
 
 def sleep(ini: float, end: float, disable=False):
     if disable:
         return
     time.sleep(random.uniform(ini, end))
+
+

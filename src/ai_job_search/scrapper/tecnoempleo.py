@@ -1,5 +1,4 @@
 import math
-from time import sleep
 import traceback
 from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
@@ -12,7 +11,7 @@ from ai_job_search.tools.terminalColor import (
 from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.viewer.clean.mergeDuplicates import (
     getSelect, mergeDuplicatedJobs)
-from .seleniumUtil import SeleniumUtil
+from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.tecnoempleoSelectors import (
     CSS_SEL_JOB_DATA,
@@ -46,6 +45,8 @@ def run():
     global selenium, mysql
     printScrapperTitle('Tecnoempleo')
     with MysqlUtil() as mysql, SeleniumUtil() as selenium:
+        selenium.loadPage('https://www.tecnoempleo.com')
+        selenium.waitUntilPageIsLoaded()
         login()
         print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
         selenium.waitUntilPageUrlContains(
@@ -55,11 +56,20 @@ def run():
 
 
 def login():
-    selenium.loadPage(
-        'https://www.tecnoempleo.com/demanda-trabajo-informatica.php')
+    # selenium.loadPage('https://www.tecnoempleo.com/demanda-trabajo-informatica.php')
+    sleep(2, 2)
+    selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
+    selenium.waitUntilPageIsLoaded()
+    cloudFlareSecurityFilter()
     selenium.sendKeys('#e_mail', USER_EMAIL)
     selenium.sendKeys('#password', USER_PWD)
     selenium.waitAndClick('form input[type=submit]')
+
+@retry(retries=100, delay=5, exception=NoSuchElementException)
+def cloudFlareSecurityFilter():
+    print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
+    sleep(4, 4)
+    selenium.getElm('#e_mail')
 
 
 def getUrl(keywords):
@@ -149,7 +159,7 @@ def getJobId(url: str):
 
 
 def acceptCookies():
-    sleep(1)
+    sleep(1,2)
     closeCreateAlert()
     cssSel = '#capa_cookie_rgpd > div.row > div:nth-child(1) > a'
     if len(selenium.getElms(cssSel)) > 0:
