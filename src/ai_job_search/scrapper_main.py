@@ -15,15 +15,15 @@ SCRAPPERS: dict = {
     'Infojobs': {  # first to solve security filter
         'function': infojobs.run,
         'timer': '2h'},
+    'Tecnoempleo': {
+        'function': tecnoempleo.run,
+        'timer': '2h'},
     'Linkedin': {
         'function': linkedin.run,
         'timer': '1h'},
     'Glassdoor': {
         'function': glassdoor.run,
         'timer': '3h'},
-    'Tecnoempleo': {
-        'function': tecnoempleo.run,
-        'timer': '2h'},
     'Indeed': {
         'function': indeed.run,
         'timer': '3h',
@@ -35,13 +35,10 @@ executionsTimes = {}
 
 
 def timeExpired(name: str, properties: dict):
-    timeout: int = properties['timer']
-    waitBeforeFirstRuns: bool = properties['waitBeforeFirstRun']
-    executionsTimes[name] = executionsTimes.get(
-        name, getDatetimeNow() if waitBeforeFirstRuns else None)
+    executionsTimes[name] = executionsTimes.get(name, getDatetimeNow() if properties['waitBeforeFirstRun'] else None)
     if last := executionsTimes[name]:
         lapsed = getDatetimeNow()-last
-        timeoutSeconds = getSeconds(timeout)
+        timeoutSeconds = getSeconds(properties['timer'])
         timeLeft = getTimeUnits(timeoutSeconds-lapsed)
         print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
         if lapsed + 1 <= timeoutSeconds:
@@ -56,20 +53,21 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
     print(f'Starting at : {startingAt}')
     while True:
+        toRun = []
         for name, properties in SCRAPPERS.items():
-            properties['waitBeforeFirstRun'] = properties.get(
-                'waitBeforeFirstRun', waitBeforeFirstRuns)
+            properties['waitBeforeFirstRun'] = properties.get('waitBeforeFirstRun', waitBeforeFirstRuns)
             if timeExpired(name, properties):
                 notStartAtThisOne = (starting and startingAt != name)
                 if properties.get('ignoreAutoRun', False) or notStartAtThisOne:
                     print(f'Skipping : {name}')
                     continue
                 properties['waitBeforeFirstRun'] = False
-                executeScrapper(name, properties)
+                toRun.append({"name": name, "properties": properties})
                 starting = False
+        for runThis in toRun:
+            executeScrapper(runThis['name'], runThis['properties'])
         waitBeforeFirstRuns = False
-        consoleTimer(
-            "Waiting for next scrapping execution trigger, ", '10m')
+        consoleTimer("Waiting for next scrapping execution trigger, ", '10m')
         if not loop:
             break
 
@@ -83,8 +81,7 @@ def runSpecifiedScrappers(scrappersList: list):
             executeScrapper(arg.capitalize(), properties)
         else:
             print(red(f"Invalid scrapper web page name {arg}"))
-            print(yellow(
-                f"Available web page scrapper names: {SCRAPPERS.keys()}"))
+            print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
 
 
 def executeScrapper(name, properties: dict):
