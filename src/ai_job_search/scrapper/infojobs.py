@@ -43,32 +43,36 @@ selenium: SeleniumUtil = None
 mysql: MysqlUtil = None
 
 
-def run():
+def run(seleniumUtil: SeleniumUtil, securityFilter: bool):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
+    selenium = seleniumUtil
     printScrapperTitle('Infojobs')
-    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
+    if securityFilter:
+        searchJobs(JOBS_SEARCH.split(',')[0], True)
+        return
+    with MysqlUtil() as mysql:
         # login()
         # securityFilter()
-        for i, keywords in enumerate(JOBS_SEARCH.split(',')):
-            searchJobs(i, keywords.strip())
+        for keywords in JOBS_SEARCH.split(','):
+            searchJobs(keywords.strip(), False)
 
 
-def login():
-    # FIXME: AVOID ROBOT SECURITY FILTER, example with BeautifulSoup:
-    # FIXME: https://github.com/ander-elkoroaristizabal/InfojobsScraper
-    # slow write login to avoid security robot filter don't work
-    selenium.loadPage(LOGIN_PAGE)
-    disableWait = LOGIN_WAIT_DISABLE
-    sleep(4, 6, disableWait)
-    acceptCookies()
-    selenium.sendKeys('#email', USER_EMAIL,
-                      keyByKeyTime=None if disableWait else (0.01, 0.1))
-    sleep(2, 6, disableWait)
-    selenium.sendKeys('#id-password', USER_PWD,
-                      keyByKeyTime=None if disableWait else (0.03, 0.6))
-    sleep(2, 6, disableWait)
-    selenium.waitAndClick('#idSubmitButton', scrollIntoView=True)
+# def login():
+#     # FIXME: AVOID ROBOT SECURITY FILTER, example with BeautifulSoup:
+#     # FIXME: https://github.com/ander-elkoroaristizabal/InfojobsScraper
+#     # slow write login to avoid security robot filter don't work
+#     selenium.loadPage(LOGIN_PAGE)
+#     disableWait = LOGIN_WAIT_DISABLE
+#     sleep(4, 6, disableWait)
+#     acceptCookies()
+#     selenium.sendKeys('#email', USER_EMAIL,
+#                       keyByKeyTime=None if disableWait else (0.01, 0.1))
+#     sleep(2, 6, disableWait)
+#     selenium.sendKeys('#id-password', USER_PWD,
+#                       keyByKeyTime=None if disableWait else (0.03, 0.6))
+#     sleep(2, 6, disableWait)
+#     selenium.waitAndClick('#idSubmitButton', scrollIntoView=True)
 
 
 @retry(retries=60, delay=5, exception=NoSuchElementException)
@@ -167,16 +171,17 @@ def getJobUrlShort(url: str):
     return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
 
 
-def searchJobs(index: int, keywords: str):
+def searchJobs(keywords: str, preloadPage: bool):
     try:
         print(yellow(f'Search keyword={keywords}'))
         loadSearchPageByUrl(keywords)
-        if index == 0:
+        if preloadPage:
             securityFilter()
             selenium.waitUntilPageUrlContains(
                 'https://www.infojobs.net/jobsearch/search-results', 60)
             # selenium.loadPage(url)
             # selenium.waitUntilPageIsLoaded()
+            return
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 0

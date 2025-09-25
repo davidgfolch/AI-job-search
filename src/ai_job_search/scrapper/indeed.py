@@ -41,13 +41,17 @@ selenium = None
 mysql = None
 
 
-def run():
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
+    selenium = seleniumUtil
     printScrapperTitle('Indeed')
-    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
+    if preloadPage:
+        searchJobs(JOBS_SEARCH.split(',')[0], True)
+        return
+    with MysqlUtil() as mysql:
         for i, keywords in enumerate(JOBS_SEARCH.split(',')):
-            searchJobs(i, keywords.strip())
+            searchJobs(i, keywords.strip(), False)
 
 
 def getUrl(keywords):
@@ -124,7 +128,7 @@ def acceptCookies():
         '#onetrust-accept-btn-handler', 'Could not accept cookies')
 
 
-def searchJobs(index: int, keywords: str):
+def searchJobs(keywords: str, securityFilter: bool):
     try:
         print(yellow(f'Search keyword={keywords}'))
         url = getUrl(keywords)
@@ -136,6 +140,8 @@ def searchJobs(index: int, keywords: str):
         # totalResults = getTotalResultsFromHeader(keywords)
         # totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         acceptCookies()
+        if securityFilter:
+            return
         page = 0
         currentItem = 0
         totalResults = 0

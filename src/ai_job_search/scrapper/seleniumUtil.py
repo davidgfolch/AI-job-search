@@ -37,6 +37,7 @@ SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end',  behavior
 
 driver = None
 action = None
+tabs = {}
 
 
 class SeleniumUtil:
@@ -78,6 +79,15 @@ class SeleniumUtil:
     def __exit__(self, exc_type, exc_value, traceback):
         print('Exiting SeleniumUtil, close driver...')
         driver.close()
+    
+    def tab(self, name: str):
+        print(f'SeleniumUtil creating new tab')
+        if tabs.get(name):
+            driver.switch_to.window(tabs[name])
+        else:
+            driver.switch_to.new_window('tab')
+            tabs[name] = driver.current_window_handle
+            self.waitUntilPageIsLoaded(30)
 
     @retry()
     def loadPage(self, url: str):

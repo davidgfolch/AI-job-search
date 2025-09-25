@@ -48,15 +48,18 @@ selenium = None
 mysql = None
 
 
-def run():
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
+    selenium = seleniumUtil
     printScrapperTitle('LinkedIn')
-    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
+    if preloadPage:
         login()
         print(yellow('Waiting for LinkedIn to redirect to feed page...',
                      '(Maybe you need to solve a security filter first)'))
-        selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)
+        selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)        
+        return
+    with MysqlUtil() as mysql:
         # TODO: save search keywords in DB
         # TODO: additionally set search ranking?
         for keywords in JOBS_SEARCH.split(','):

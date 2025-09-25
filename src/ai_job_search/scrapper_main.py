@@ -2,6 +2,7 @@ import sys
 import traceback
 from ai_job_search.scrapper import (
     linkedin, indeed, infojobs, glassdoor, tecnoempleo)
+from ai_job_search.scrapper.seleniumUtil import SeleniumUtil
 from ai_job_search.tools.terminalColor import cyan, red, yellow
 from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds, getTimeUnits
 
@@ -14,24 +15,25 @@ from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds, g
 SCRAPPERS: dict = {
     'Infojobs': {  # first to solve security filter
         'function': infojobs.run,
-        'timer': '2h'},
+        'timer': '10m'},
     'Tecnoempleo': { # first to solve security filter
         'function': tecnoempleo.run,
-        'timer': '2h'},
+        'timer': '10m'},
     'Linkedin': {
         'function': linkedin.run,
-        'timer': '1h'},
+        'timer': '10m'},
     'Glassdoor': {
         'function': glassdoor.run,
-        'timer': '3h'},
+        'timer': '10m'},
     'Indeed': {
         'function': indeed.run,
-        'timer': '3h',
+        'timer': '10m',
         'ignoreAutoRun': True
     },
 }
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 executionsTimes = {}
+seleniumUtil: SeleniumUtil = None
 
 
 def timeExpired(name: str, properties: dict):
@@ -52,6 +54,10 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
     print(f'Starting at : {startingAt}')
+    for name, properties in SCRAPPERS.items():
+        print(yellow(f'\nPRELOADING {name}: login & security filters'))
+        seleniumUtil.tab(name)
+        properties['function'](seleniumUtil, True)
     while True:
         toRun = []
         for name, properties in SCRAPPERS.items():
@@ -65,6 +71,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
                 toRun.append({"name": name, "properties": properties})
                 starting = False
         for runThis in toRun:
+            seleniumUtil.tab(runThis['name'])
             executeScrapper(runThis['name'], runThis['properties'])
         waitBeforeFirstRuns = False
         consoleTimer("Waiting for next scrapping execution trigger, ", '10m')
@@ -76,6 +83,11 @@ def runSpecifiedScrappers(scrappersList: list):
     # Arguments specified in command line
     print(f'Executing specified scrappers: {scrappersList}')
     for arg in scrappersList:
+        print(yellow(f'\nPRELOADING {arg}: login & security filters'))
+        seleniumUtil.tab(arg)
+        properties = SCRAPPERS[arg.capitalize()]
+        properties['function'](seleniumUtil, True)
+    for arg in scrappersList:
         if SCRAPPERS.get(arg.capitalize()):
             properties = SCRAPPERS[arg.capitalize()]
             executeScrapper(arg.capitalize(), properties)
@@ -86,7 +98,7 @@ def runSpecifiedScrappers(scrappersList: list):
 
 def executeScrapper(name, properties: dict):
     try:
-        properties['function']()
+        properties['function'](seleniumUtil, False)
     except Exception as e:
         print(red(f"Error occurred while executing {name}: {e}"))
         print(red(traceback.format_exc()))
@@ -109,8 +121,9 @@ if __name__ == '__main__':
         args.pop(args.index('starting'))
         print(f"'starting' at {args[1]} ")
 
-    if len(args) == 1 or starting or wait:
-        startingAt = args[1].capitalize() if starting else None
-        runAllScrappers(wait, starting, startingAt)
-    else:
-        runSpecifiedScrappers(args[1:])
+    with SeleniumUtil() as seleniumUtil:    
+        if len(args) == 1 or starting or wait:
+            startingAt = args[1].capitalize() if starting else None
+            runAllScrappers(wait, starting, startingAt)
+        else:
+            runSpecifiedScrappers(args[1:])

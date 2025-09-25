@@ -44,23 +44,35 @@ selenium = None
 mysql = None
 
 
-def run():
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
+    selenium = seleniumUtil
     printScrapperTitle('Glassdoor')
-    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
+    if preloadPage:
         login()
+        return
+    with MysqlUtil() as mysql:
         for search in JOBS_SEARCH.split('|~|'):
             url = JOBS_SEARCH_BASE_URL.format(**{'search': search})
             print(yellow('Search list URL ', url))
             searchJobs(url)
 
 
+def loadMainPage():
+    selenium.loadPage('https://www.glassdoor.es/index.htm')
+    try:
+        selenium.waitUntil_presenceLocatedElement('#inlineUserEmail')
+    except Exception:  # reload page, it get hung sometimes
+        selenium.loadPage('https://www.glassdoor.es/index.htm')
+        try:
+            selenium.waitUntil_presenceLocatedElement('#inlineUserEmail')
+        except Exception:
+            cloudFlareSecurityFilter()
+
 @retry()
 def login():
-    selenium.loadPage('https://www.glassdoor.es/index.htm')
-    time.sleep(10)
-    cloudFlareSecurityFilter()
+    loadMainPage()
     selenium.sendKeys('#inlineUserEmail', USER_EMAIL)
     sleep(2, 5)
     selenium.waitAndClick('.emailButton button[type=submit]')
@@ -77,7 +89,8 @@ def login():
     print(yellow('Waiting for Glassdoor to redirect after login...'))
     selenium.waitUntilPageUrlContains(
         'https://www.glassdoor.es/Job/index.htm', 60)
-    
+
+
 @retry(retries=60, delay=5, exception=NoSuchElementException)
 def cloudFlareSecurityFilter():
     print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
@@ -126,7 +139,7 @@ def reInitSeleniumAndLogin():
     login()
 
 
-@retry(exceptionFnc=reInitSeleniumAndLogin)
+@retry() # (exceptionFnc=reInitSeleniumAndLogin)
 def searchJobs(url: str):
     keywords = url.split('/')
     keywords = keywords[len(keywords)-1:]
