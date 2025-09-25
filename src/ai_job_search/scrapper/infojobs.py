@@ -71,7 +71,7 @@ def login():
     selenium.waitAndClick('#idSubmitButton', scrollIntoView=True)
 
 
-@retry(retries=100, delay=5, exception=NoSuchElementException)
+@retry(retries=60, delay=5, exception=NoSuchElementException)
 def acceptCookies():
     print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
     sleep(4, 4)

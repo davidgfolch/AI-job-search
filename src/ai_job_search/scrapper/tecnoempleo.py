@@ -65,7 +65,7 @@ def login():
     selenium.sendKeys('#password', USER_PWD)
     selenium.waitAndClick('form input[type=submit]')
 
-@retry(retries=100, delay=5, exception=NoSuchElementException)
+@retry(retries=60, delay=5, exception=NoSuchElementException)
 def cloudFlareSecurityFilter():
     print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
     sleep(4, 4)

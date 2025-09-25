@@ -15,7 +15,7 @@ SCRAPPERS: dict = {
     'Infojobs': {  # first to solve security filter
         'function': infojobs.run,
         'timer': '2h'},
-    'Tecnoempleo': {
+    'Tecnoempleo': { # first to solve security filter
         'function': tecnoempleo.run,
         'timer': '2h'},
     'Linkedin': {
@@ -90,6 +90,7 @@ def executeScrapper(name, properties: dict):
     except Exception as e:
         print(red(f"Error occurred while executing {name}: {e}"))
         print(red(traceback.format_exc()))
+        executionsTimes[name] = getSeconds(properties['timer']) # re-execute resetting timer
 
 
 if __name__ == '__main__':

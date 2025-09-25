@@ -60,6 +60,7 @@ def run():
 def login():
     selenium.loadPage('https://www.glassdoor.es/index.htm')
     time.sleep(10)
+    cloudFlareSecurityFilter()
     selenium.sendKeys('#inlineUserEmail', USER_EMAIL)
     sleep(2, 5)
     selenium.waitAndClick('.emailButton button[type=submit]')
@@ -76,6 +77,12 @@ def login():
     print(yellow('Waiting for Glassdoor to redirect after login...'))
     selenium.waitUntilPageUrlContains(
         'https://www.glassdoor.es/Job/index.htm', 60)
+    
+@retry(retries=60, delay=5, exception=NoSuchElementException)
+def cloudFlareSecurityFilter():
+    print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
+    sleep(4, 4)
+    selenium.getElm('#inlineUserEmail')
 
 
 @retry()

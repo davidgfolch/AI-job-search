@@ -8,7 +8,7 @@ import markdownify
 
 from ai_job_search.tools.terminalColor import (
     green, printHR, red, yellow)
-from ai_job_search.tools.util import getEnv, hasLenAnyText
+from ai_job_search.tools.util import getDatetimeNowStr, getEnv, hasLenAnyText, getDatetimeNow
 
 
 def getAndCheckEnvVars(site: str):
@@ -29,12 +29,12 @@ def getAndCheckEnvVars(site: str):
 
 def printScrapperTitle(scrapper: str):
     printHR(green)
-    print(green(f'RUNNING {scrapper} scrapper'))
+    print(green(f'RUNNING {scrapper} scrapper - {getDatetimeNowStr()}'))
     printHR(green)
 
 
 def printPage(webPage, page, totalPages, keywords):
-    print(green(f'{webPage} Starting page {page} of {totalPages} ',
+    print(green(f'{webPage} Starting page {page} of {totalPages} ({getDatetimeNowStr()}) ',
                 f'search={keywords}'))
     printHR(green)
 

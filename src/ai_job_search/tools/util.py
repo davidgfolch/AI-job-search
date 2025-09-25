@@ -130,6 +130,10 @@ def getDatetimeNow() -> int:
     return int(datetime.now().timestamp())
 
 
+def getDatetimeNowStr() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
 class Spinner():
     SPINNERS = [
         "←↖↑↗→↘↓↙", "▁▃▄▅▆▇█▇▆▅▄▃", "▉▊▋▌▍▎▏▎▍▌▋▊▉", "▖▘▝▗",
