@@ -15,19 +15,19 @@ from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds, g
 SCRAPPERS: dict = {
     'Infojobs': {  # first to solve security filter
         'function': infojobs.run,
-        'timer': '10m'},
+        'timer': '2h'},
     'Tecnoempleo': { # first to solve security filter
         'function': tecnoempleo.run,
-        'timer': '10m'},
+        'timer': '2h'},
     'Linkedin': {
         'function': linkedin.run,
-        'timer': '10m'},
+        'timer': '1h'},
     'Glassdoor': {
         'function': glassdoor.run,
-        'timer': '10m'},
+        'timer': '3h'},
     'Indeed': {
         'function': indeed.run,
-        'timer': '10m',
+        'timer': '3h',
         'ignoreAutoRun': True
     },
 }
