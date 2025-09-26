@@ -33,7 +33,7 @@ USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 DEBUG = False
 
 WEB_PAGE = 'Infojobs'
-LIST_URL = 'https://www.infojobs.net/jobsearch/search-results/list.xhtml'
+LIST_URL = 'https://www.infojobs.net/ofertas-trabajo'
 JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults
 
 LOGIN_WAIT_DISABLE = False
@@ -91,13 +91,6 @@ def securityFilter():
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER1)
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER2)
     acceptCookies()
-
-
-def getUrl(keywords):
-    return join(LIST_URL,
-                f'?keyword={keywords}&searchByType=country&teleworkingIds=2',
-                '&segmentId=&page=1&sortBy=PUBLICATION_DATE',
-                '&onlyForeignCountry=false&countryIds=17&sinceDate=_7_DAYS')
 
 
 def replaceIndex(cssSelector: str, idx: int):
@@ -174,14 +167,14 @@ def getJobUrlShort(url: str):
 def searchJobs(keywords: str, preloadPage: bool):
     try:
         print(yellow(f'Search keyword={keywords}'))
-        loadSearchPageByUrl(keywords)
+        loadSearchPage()
         if preloadPage:
             securityFilter()
-            selenium.waitUntilPageUrlContains(
-                'https://www.infojobs.net/jobsearch/search-results', 60)
+            selenium.waitUntilPageUrlContains('https://www.infojobs.net', 60)
             # selenium.loadPage(url)
             # selenium.waitUntilPageIsLoaded()
             return
+        loadFilteredSearchResults(keywords)
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 0
@@ -211,11 +204,22 @@ def searchJobs(keywords: str, preloadPage: bool):
         debug(exception=True)
 
 
-def loadSearchPageByUrl(keywords):
-    url = getUrl(keywords)
-    print(yellow(f'Loading page {url}'))
-    selenium.loadPage(url)
+def loadSearchPage():
+    print(yellow(f'Loading search-jobs page'))
+    if selenium.getUrl().find('infojobs.net') == -1:
+        selenium.loadPage('https://www.infojobs.net/')
+
+
+def loadFilteredSearchResults(keywords: str):
+    selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
     selenium.waitUntilPageIsLoaded()
+    selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword',keywords, clear=True)
+    selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
+    sleep(1, 2)
+    selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
+    sleep(1, 2)
+    selenium.waitAndClick('.ij-SidebarFilter #check-teleworking--2', scrollIntoView=True)
+    sleep(1, 2)
 
 
 def getJobLinkElement(idx):
@@ -225,7 +229,7 @@ def getJobLinkElement(idx):
 
 @retry(retries=1, delay=5, raiseException=True)
 def loadAndProcessRow(idx) -> bool:
-    processed = False
+    loaded = False
     jobExists = False
     try:
         try:
@@ -235,22 +239,20 @@ def loadAndProcessRow(idx) -> bool:
             url = jobLinkElm.get_attribute('href')
             jobId, jobExists = jobExistsInDB(url)
             if jobExists:
-                print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
-                      end='')
+                print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
                 return True
             loadJobDetail(jobLinkElm)
-            processed = True
+            loaded = True
         except IndexError as ex:
-            debug(yellow(
-                "WARNING: could not get all items per page, that's ",
-                f"expected because not always has {JOBS_X_PAGE}: {ex}"))
-        if processed:
+            debug(yellow("WARNING: could not get all items per page, that's ",
+                         f"expected because not always has {JOBS_X_PAGE}: {ex}"))
+        if loaded:
             if not processRow(url):
                 raise ValueError('Validation failed')
     finally:
         if LIST_URL not in selenium.getUrl():
             selenium.back()
-    return processed
+    return loaded
 
 
 @retry()

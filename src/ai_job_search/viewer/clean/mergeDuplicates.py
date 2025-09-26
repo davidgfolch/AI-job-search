@@ -82,7 +82,7 @@ def mergeJobDuplicates(rows, ids):
 
 
 def mergeDuplicatedJobs(rows):
-    """Scrapper ai enrichment entry"""
+    """Scrapper entry"""
     try:
         if len(rows) == 0:
             return
@@ -92,8 +92,7 @@ def mergeDuplicatedJobs(rows):
             for line in results:
                 print(' ', end='')
                 if arr := line.get('arr', None):
-                    print(cyan(' '.join([removeNewLines(a) for a in arr])),
-                          end=' ')
+                    print(cyan(' '.join([removeNewLines(a) for a in arr])), end=' ')
                 query = line.get('query', None)
                 if getEnvBool('SHOW_SQL_IN_AI_ENRICHMENT') and query:
                     print(blue(removeNewLines(query)), end=' ')
