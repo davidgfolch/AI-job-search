@@ -43,17 +43,15 @@ selenium: SeleniumUtil = None
 mysql: MysqlUtil = None
 
 
-def run(seleniumUtil: SeleniumUtil, securityFilter: bool):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
-    printScrapperTitle('Infojobs')
-    if securityFilter:
+    printScrapperTitle('Infojobs', preloadPage)
+    if preloadPage:
         searchJobs(JOBS_SEARCH.split(',')[0], True)
         return
     with MysqlUtil() as mysql:
-        # login()
-        # securityFilter()
         for keywords in JOBS_SEARCH.split(','):
             searchJobs(keywords.strip(), False)
 
@@ -75,7 +73,7 @@ def run(seleniumUtil: SeleniumUtil, securityFilter: bool):
 #     selenium.waitAndClick('#idSubmitButton', scrollIntoView=True)
 
 
-@retry(retries=60, delay=5, exception=NoSuchElementException)
+@retry(retries=10, delay=5, exception=NoSuchElementException)
 def acceptCookies():
     print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
     sleep(4, 4)
@@ -90,7 +88,11 @@ def securityFilter():
     sleep(4, 4)
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER1)
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER2)
-    acceptCookies()
+    try:
+        acceptCookies()
+    except NoSuchElementException:
+        print(yellow('Could not accept cookies'))
+    selenium.waitUntilPageUrlContains('https://www.infojobs.net', 60)
 
 
 def replaceIndex(cssSelector: str, idx: int):
@@ -170,11 +172,9 @@ def searchJobs(keywords: str, preloadPage: bool):
         loadSearchPage()
         if preloadPage:
             securityFilter()
-            selenium.waitUntilPageUrlContains('https://www.infojobs.net', 60)
-            # selenium.loadPage(url)
-            # selenium.waitUntilPageIsLoaded()
             return
-        loadFilteredSearchResults(keywords)
+        if not loadFilteredSearchResults(keywords):
+            return
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 0
@@ -205,21 +205,33 @@ def searchJobs(keywords: str, preloadPage: bool):
 
 
 def loadSearchPage():
-    print(yellow(f'Loading search-jobs page'))
     if selenium.getUrl().find('infojobs.net') == -1:
+        print(yellow(f'Loading search-jobs page'))
         selenium.loadPage('https://www.infojobs.net/')
+    else:
+        print(yellow(f'Click on search-jobs button'))
+        clickOnSearchJobs()
 
 
 def loadFilteredSearchResults(keywords: str):
-    selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
-    selenium.waitUntilPageIsLoaded()
+    clickOnSearchJobs()
     selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword',keywords, clear=True)
     selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
     sleep(1, 2)
     selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
     sleep(1, 2)
+    if selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
+        print(yellow('No results for this search'))
+        return False
     selenium.waitAndClick('.ij-SidebarFilter #check-teleworking--2', scrollIntoView=True)
     sleep(1, 2)
+    return True
+
+
+@retry(exceptionFnc=securityFilter)
+def clickOnSearchJobs():
+    selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
+    selenium.waitUntilPageIsLoaded()    
 
 
 def getJobLinkElement(idx):

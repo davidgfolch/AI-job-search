@@ -27,9 +27,12 @@ def getAndCheckEnvVars(site: str):
     return mail, pwd, search
 
 
-def printScrapperTitle(scrapper: str):
+def printScrapperTitle(scrapper: str, preloadPage: bool):
     printHR(green)
-    print(green(f'RUNNING {scrapper} scrapper - {getDatetimeNowStr()}'))
+    if preloadPage:
+        print(yellow(f'{getDatetimeNowStr()} - PRELOADING {scrapper}: login & security filters'))
+    else:
+        print(green(f'{getDatetimeNowStr()} - RUNNING {scrapper} scrapper'))
     printHR(green)
 
 

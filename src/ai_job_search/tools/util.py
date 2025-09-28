@@ -166,3 +166,11 @@ def createFolder(filename: str) -> Path:
 
 def listFiles(folder: str) -> list[str]:
     return [f for f in os.listdir(folder) if isfile(join(folder, f))]
+
+
+def getcwd() -> str:
+    return os.getcwd()
+
+def getSrcPath() -> str:
+    srcFolder='src/ai_job_search'
+    return str(Path(os.getcwd()).joinpath(srcFolder))

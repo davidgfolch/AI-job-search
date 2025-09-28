@@ -141,32 +141,34 @@ class SeleniumUtil:
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     def scrollIntoView(self, cssSel: str | WebElement):
-        elm = self.getElm(cssSel) if isinstance(cssSel, str) else cssSel
+        elm = self.getElmFromOpSelector(cssSel)
         driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)
-        self.waitUntilClickable(cssSel)
-        # self.moveToElement(elm)
-
+        self.waitUntilVisible(elm)
+        self.moveToElement(elm)
+    
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
-        method = EC.element_to_be_clickable
-        WebDriverWait(driver, timeout).until(method, self.getElm(cssSel))
+        WebDriverWait(driver, timeout).until(EC.element_to_be_clickable, self.getElmFromOpSelector(cssSel))
 
-    def waitUntil_presenceLocatedElement(self, cssSel: str, timeout: int = 10):
-        method = EC.presence_of_element_located
-        WebDriverWait(driver, timeout).until(method, self.getElm(cssSel))
+    def waitUntilVisible(self, cssSel: str | WebElement, timeout: int = 10):
+        WebDriverWait(driver, timeout).until(EC.visibility_of, self.getElmFromOpSelector(cssSel))
+
+    def waitUntil_presenceLocatedElement(self, cssSel: str | WebElement, timeout: int = 10):
+        WebDriverWait(driver, timeout).until(EC.presence_of_element_located, self.getElmFromOpSelector(cssSel))
 
     def waitUntilTitleIs(self, title: str, timeout: int = 10):
-        method = EC.title_is
-        WebDriverWait(driver, timeout).until(method, title)
+        WebDriverWait(driver, timeout).until(EC.title_is, title)
 
-    def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10,
-                     scrollIntoView: bool = False):
+    def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         """ scrollIntoView, waits to be clickable & click"""
         if scrollIntoView:
             self.scrollIntoView(cssSel)
         self.waitUntilClickable(cssSel, timeout)
-        elm = self.getElm(cssSel)
+        elm = self.getElmFromOpSelector(cssSel)
         self.moveToElement(elm)
         elm.click()
+
+    def getElmFromOpSelector(self, cssSel: str | WebElement) -> WebElement:
+        return self.getElm(cssSel) if isinstance(cssSel, str) else cssSel
 
     def waitAndClick_noError(self, cssSel: str, msg: str, showException=True) -> bool:
         try:

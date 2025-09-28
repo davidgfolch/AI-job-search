@@ -11,7 +11,7 @@ from ai_job_search.tools.terminalColor import (
 from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.viewer.clean.mergeDuplicates import (
     getSelect, mergeDuplicatedJobs)
-from .seleniumUtil import SeleniumUtil
+from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.linkedinSelectors import (
     # CSS_SEL_GLOBAL_ALERT_HIDE,
@@ -52,7 +52,7 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
-    printScrapperTitle('LinkedIn')
+    printScrapperTitle('LinkedIn', preloadPage)
     if preloadPage:
         login()
         print(yellow('Waiting for LinkedIn to redirect to feed page...',
@@ -120,20 +120,24 @@ def summarize(keywords, totalResults, currentItem):
 
 def scrollJobsList(idx):
     cssSel = replaceIndex(CSS_SEL_JOB_LINK, idx)
-    if idx < JOBS_X_PAGE-3:  # scroll to job link
-        # in last page could not exist
-        scrollJobsListRetry(cssSel)
+    try:
+        selenium.scrollIntoView(cssSel)
+    except NoSuchElementException:
+        scrollJobsListRetry(idx)
+        selenium.scrollIntoView(cssSel)
+    selenium.moveToElement(selenium.getElm(cssSel))
     selenium.waitUntilClickable(cssSel)
     return cssSel
 
 
-def scrollToBottom():
-    selenium.scrollIntoView('#jobs-search-results-footer')
-
-
-@retry(exceptionFnc=scrollToBottom)
-def scrollJobsListRetry(cssSel):
-    selenium.scrollIntoView(cssSel)
+@retry()
+def scrollJobsListRetry(idx):
+    """Scroll to job list item idx-1, idx, idx+1 to load lazy items (class name changes in linked in and is not visible)"""
+    for i in range(idx, idx+1):
+        cssSelI = replaceIndex(CSS_SEL_JOB_LI_IDX, i)
+        selenium.scrollIntoView(cssSelI)
+        selenium.moveToElement(selenium.getElm(cssSelI))
+        selenium.waitUntilClickable(replaceIndex(CSS_SEL_JOB_LINK, i))
 
 
 @retry(exception=NoSuchElementException, raiseException=False)
@@ -141,8 +145,7 @@ def clickNextPage():
     """Click on next to load next page.
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
-    selenium.waitAndClick(
-        CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
+    selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
     return True
 
 
@@ -198,9 +201,7 @@ def searchJobs(keywords: str):
                 errors += 0 if ok else 1
                 if errors > 1:  # exit page loop, some pages has less items
                     break
-            if currentItem >= totalResults:
-                break  # exit while
-            if not clickNextPage():
+            if currentItem >= totalResults or page>=totalPages or not clickNextPage():
                 break  # exit while
             page += 1
             selenium.waitUntilPageIsLoaded()

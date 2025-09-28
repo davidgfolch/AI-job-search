@@ -48,7 +48,7 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
-    printScrapperTitle('Glassdoor')
+    printScrapperTitle('Glassdoor', preloadPage)
     if preloadPage:
         login()
         return
