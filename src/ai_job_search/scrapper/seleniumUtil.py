@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.tools.terminalColor import yellow
 
@@ -81,10 +82,11 @@ class SeleniumUtil:
         driver.close()
     
     def tab(self, name: str):
-        print(f'SeleniumUtil creating new tab')
         if tabs.get(name):
+            print(f'SeleniumUtil switching to existing tab: {name}')
             driver.switch_to.window(tabs[name])
         else:
+            print(f'SeleniumUtil creating new tab')
             driver.switch_to.new_window('tab')
             tabs[name] = driver.current_window_handle
             self.waitUntilPageIsLoaded(30)
@@ -112,6 +114,9 @@ class SeleniumUtil:
         if driverOverride:
             return driverOverride.find_elements(By.CSS_SELECTOR, cssSel)
         return driver.find_elements(By.CSS_SELECTOR, cssSel)
+
+    def sendEscapeKey(self):
+        webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
 
     def sendKeys(self, cssSel: str, value: str,
                  keyByKeyTime: None | tuple[int] = None, clear=True):

@@ -202,6 +202,7 @@ def loadFilteredSearchResults(keywords: str):
     selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword',keywords, clear=True)
     selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
     sleep(1, 2)
+    selenium.sendEscapeKey()
     selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
     sleep(1, 2)
     if selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
