@@ -1,13 +1,14 @@
 import math
 import time
 import re
+import traceback
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from ai_job_search.scrapper import baseScrapper
 from ai_job_search.scrapper.baseScrapper import (
     getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, removeLinks,
     validate)
-from ai_job_search.tools.terminalColor import green, printHR, yellow
+from ai_job_search.tools.terminalColor import green, printHR, red, yellow
 from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.viewer.clean.mergeDuplicates import (
     getSelect, mergeDuplicatedJobs)
@@ -15,11 +16,11 @@ from .seleniumUtil import SeleniumUtil, sleep
 from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.infojobsSelectors import (
     CSS_SEL_JOB_DETAIL,
-    CSS_SEL_JOB_LI,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
     CSS_SEL_COMPANY,
     CSS_SEL_LOCATION,
     CSS_SEL_JOB_TITLE,
+    CSS_SEL_JOB_LI,
     CSS_SEL_JOB_LINK,
     CSS_SEL_NEXT_PAGE_BUTTON,
     CSS_SEL_SECURITY_FILTER1,
@@ -124,19 +125,6 @@ def scrollToBottom():
     selenium.scrollToBottom()
     sleep(3, 3)
 
-
-@retry(retries=2, delay=5)
-def scrollJobsList(idx):
-    selenium.getElm(CSS_SEL_JOB_LI)  # try to get li element next line hangs
-    lis = selenium.getElms(CSS_SEL_JOB_LI)
-    if (idx >= len(lis)):
-        scrollToBottom()
-        lis = selenium.getElms(CSS_SEL_JOB_LI)
-    for i in range(0, idx+1):
-        li = lis[i]
-        selenium.scrollIntoView(li)
-
-
 @retry(exception=NoSuchElementException, raiseException=False)
 def clickNextPage():
     """Click on next to load next page.
@@ -183,14 +171,10 @@ def searchJobs(keywords: str, preloadPage: bool):
             page += 1
             printPage(WEB_PAGE, page, totalPages, keywords)
             idx = 0
-            failed = 0
-            while idx < JOBS_X_PAGE and currentItem < totalResults and failed < 2:
-                print(green(f'pg {page} job {idx+1} - '), end='')
-                if loadAndProcessRow(idx):
-                    currentItem += 1
-                    failed = 0
-                else:
-                    failed += 1
+            while idx < JOBS_X_PAGE and currentItem < totalResults:
+                print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
+                loadAndProcessRow(idx)
+                currentItem += 1
                 print()
                 idx += 1
             if currentItem < totalResults:
@@ -234,37 +218,36 @@ def clickOnSearchJobs():
     selenium.waitUntilPageIsLoaded()    
 
 
-def getJobLinkElement(idx):
-    liElm = selenium.getElms(CSS_SEL_JOB_LI)[idx]
-    return selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
+@retry()
+def scrollJobsList(idx):
+    links = selenium.getElms(CSS_SEL_JOB_LINK)
+    if idx > len(links)-1: # if link not found, scroll all list to properly load dynamic links' class in DOM
+        for li in selenium.getElms(CSS_SEL_JOB_LI):
+            selenium.scrollIntoView(li)
+    selenium.scrollIntoView(selenium.getElms(CSS_SEL_JOB_LINK)[idx])
 
 
-@retry(retries=1, delay=5, raiseException=True)
 def loadAndProcessRow(idx) -> bool:
-    loaded = False
-    jobExists = False
     try:
-        try:
+        if idx > 2:
             scrollJobsList(idx)
-            # pagination not always contains all JOBS_X_PAGE
-            jobLinkElm: WebElement = getJobLinkElement(idx)
-            url = jobLinkElm.get_attribute('href')
-            jobId, jobExists = jobExistsInDB(url)
-            if jobExists:
-                print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
-                return True
-            loadJobDetail(jobLinkElm)
-            loaded = True
-        except IndexError as ex:
-            debug(yellow("WARNING: could not get all items per page, that's ",
-                         f"expected because not always has {JOBS_X_PAGE}: {ex}"))
-        if loaded:
-            if not processRow(url):
-                raise ValueError('Validation failed')
+        jobLinkElm: WebElement = selenium.getElms(CSS_SEL_JOB_LINK)[idx]
+        url = jobLinkElm.get_attribute('href')
+        jobId, jobExists = jobExistsInDB(url)
+        if jobExists:
+            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
+            return True
+        loadJobDetail(jobLinkElm)
+        if not processRow(url):
+            raise ValueError('Validation failed')
+    except Exception as ex:
+        print(red(f'ERROR: {ex}'))
+        debug(red(traceback.format_exc()))
+        return False
     finally:
         if LIST_URL not in selenium.getUrl():
             selenium.back()
-    return loaded
+    return True
 
 
 @retry()

@@ -190,8 +190,8 @@ class SeleniumUtil:
                 yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
             return False
 
-    def moveToElement(self, elm: WebElement):
-        action.move_to_element(elm)
+    def moveToElement(self, elm: str | WebElement):
+        action.move_to_element(self.getElmFromOpSelector(elm))
         action.perform()
 
     def getHtml(self, cssSel: str) -> str:

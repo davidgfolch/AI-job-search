@@ -12,8 +12,9 @@ CSS_SEL_GLOBAL_ALERT_HIDE = 'div.ij-SearchListingPageContent-heading h1'
 
 
 # LIST
-CSS_SEL_JOB_LI = 'html body div#app div.sui-Layout-MediaQuery div.ij-Box.ij-Container.ij-Container-wrapper.ij-Container-centered.ij-TemplateAdsPage div.ij-Box.ij-Container.ij-Container-container.ij-TemplateAdsPage-mainContainer main.ij-Box.ij-TemplateAdsPage-main div.ij-Box.ij-SearchListingPageContent-main div.ij-Box.ij-TemplateAdsPage-row.ij-SearchListingPageContent-list ul.ij-List.ij-List--vertical.ij-List--spaced li.ij-List-item div.sui-AtomCard.sui-AtomCard-link.sui-AtomCard--rounded-l div.sui-AtomCard-info'
-CSS_SEL_JOB_LINK = 'div.ij-OfferCardContent-description h2 > a'
+# Note: there are some li with advertisements, they don't have the ij-OfferCardContent-description-title-link class'
+CSS_SEL_JOB_LI = 'div.ij-SearchListingPageContent-list li.ij-List-item'
+CSS_SEL_JOB_LINK = CSS_SEL_JOB_LI + ' a.ij-OfferCardContent-description-title-link'
 CSS_SEL_NEXT_PAGE_BUTTON = 'html body div#app div.sui-Layout-MediaQuery div.ij-Box.ij-Container.ij-Container-wrapper.ij-Container-centered.ij-TemplateAdsPage div.ij-Box.ij-Container.ij-Container-container.ij-TemplateAdsPage-mainContainer main.ij-Box.ij-TemplateAdsPage-main div.ij-Box.ij-SearchListingPageContent-main div.ij-Box.ij-TemplateAdsPage-row.ij-SearchListingPageContent-list div.ij-Box.ij-TemplateAdsPage-row div.ij-ComponentPagination ul.sui-MoleculePagination li.sui-MoleculePagination-item button.sui-AtomButton.sui-AtomButton--primary.sui-AtomButton--flat.sui-AtomButton--center'
 
 # JOB DETAIL (IN LIST CLICK)
