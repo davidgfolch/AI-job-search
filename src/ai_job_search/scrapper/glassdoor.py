@@ -8,7 +8,7 @@ from ai_job_search.scrapper.baseScrapper import (
     validate)
 from ai_job_search.tools.decorator.retry import retry
 from ai_job_search.tools.terminalColor import green, printHR, yellow
-from ai_job_search.tools.util import getEnv
+from ai_job_search.tools.util import getDatetimeNowStr, getEnv
 from ai_job_search.viewer.clean.mergeDuplicates import (
     getSelect, mergeDuplicatedJobs)
 from .seleniumUtil import SeleniumUtil, sleep
@@ -50,7 +50,7 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     selenium = seleniumUtil
     printScrapperTitle('Glassdoor', preloadPage)
     if preloadPage:
-        login()
+        loadMainPage()
         return
     with MysqlUtil() as mysql:
         for search in JOBS_SEARCH.split('|~|'):
@@ -87,8 +87,7 @@ def login():
     sleep(1, 2)
     selenium.waitAndClick(CSS_SEL_PASSWORD_SUBMIT)
     print(yellow('Waiting for Glassdoor to redirect after login...'))
-    selenium.waitUntilPageUrlContains(
-        'https://www.glassdoor.es/Job/index.htm', 60)
+    selenium.waitUntilPageUrlContains('https://www.glassdoor.es/Job/index.htm', 60)
 
 
 @retry(retries=60, delay=5, exception=NoSuchElementException)
@@ -109,8 +108,7 @@ def getTotalResultsFromHeader(keywords: str) -> int:
 
 def summarize(keywords, totalResults, currentItem):
     printHR()
-    print(f'Loaded {currentItem} of {totalResults} total results for',
-          f'search: {keywords}')
+    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
     printHR()
     print()
 
@@ -128,15 +126,6 @@ def getJobId(url: str):
     # https://www.glassdoor.es/job-listing/telecom-support-engineer-skyvera-remote-60-000-year-usd-crossover-JV_IC2547194_KO0,55_KE56,65.htm?jl=1009552660667&src=GD_JOB_AD&ao=1110586&jrtk=5-yul1-0-1ieb5v41mi8oh800-e71236e165c7d622---6NYlbfkN0Bp-pWyh_yd7-BMq_HjiKF8q-wDEEHI6K3EhZcTze0zEjIHj4r45OmtWfbbiAi_eIZuGypcbT_DdfyeGTzRrDYphDn3IzgUnq8LYdoPPjlTQRT7F5LIfGITPRrOGm_f1RqD5UM3Uud4MFzXJ0DAYia8heQWKVQTbEUgq9yaVeGvQEaaB9voulayu49wH_siPfiHxLoeEkzwKGWtpAV0LQU0XvSZOP_3bnp9H01zvitX4HCGh_n8z84Q2LPuFKsEHTPZlhhTkTE1eSktmj6vNHhNzs1PGmPPeddnlkD5qw86Z8NFLaOT9ldFBD0i0nnPq5MHYnPlN2BiXMNuwD5FfohRQxxrB1s958tWneiFNf_PtEdxoXxMs2y5mcGMuZ3frX-xhCyyBYj2I8s63MDQg3Js6vGblTIJABNBgPGz1Q8Ei6TmNtA0biVVJTVBs8xM_v6MkBAEltu2ipF711OETqz7MqXegWOupKJKZZ_kWmBC6xyJ8L6bmtjWKaAnlJVw2oyLk1G5QNW3COWK1emQjQkcHLYI3W95K2dx3NBdXZWnlDXfT-AAoF48DydZuzBkTsorWnH7nVC85ebAQQ6h1CH1iHbAaYry6pHrUxRB3DLYWj8hL2B-T1ece1PjXMYzu7KZP91F1tXO4NQk98G2iaKEv_E30vhWJUKWxdQBdGI-d7RJsxMOXLzH-QKkp2zU4BZWTJsifiKz0fO7v97xznnelhX4Nb2yDF7OSWUXtnhnFj-mNRCHos7wasN4GLRz0WxMSqsAuUsTHiS_UwrkFYp79u09ZJz5h9Mkrlp6xN35kR_LOByEfzoXcmM_M0os3W6eBkSS7Rw4abuB4xGmDl0ckNq0ohQTtavsHUKFdYwI8wcpBUuVrL8BhFQUL3-r969GkYJ7bzKwHVYCSnfa9K6Q5UfPx2NkhF0%253D&cs=1_5bbdeada&s=58&t=SR&pos=102&cpc=2CAED5C921A5F994&guid=00000193965f8ff984666794c6547271&jobListingId=1009552660667&ea=1&vt=w&cb=1733394665730&ctt=1733394906726
     return re.sub(r'.*[?&](jl|jobListingId)=([0-9]+).*', r'\2',
                   url, flags=re.I)
-
-
-def reInitSeleniumAndLogin():
-    global selenium
-    # Cloudflare filter retrying with new selenium driver
-    debug(yellow("Reinitializing selenium"))
-    selenium.close()
-    selenium = SeleniumUtil()
-    login()
 
 
 @retry() # (exceptionFnc=reInitSeleniumAndLogin)

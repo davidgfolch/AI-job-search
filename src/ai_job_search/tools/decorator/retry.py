@@ -45,12 +45,13 @@ def retry(retries: int = 5,
                             print(red(traceback.format_exc()))
                         else:
                             print(red(e))
+                        print("", end='\n', flush=True)
                         return False
                     print(yellow(f'Error calling function {fnc.__name__}()',
                                  f' -> Retry {i}/{retries}... '),
                           end='', flush=True)
                     if stackStrace == StackTrace.ALWAYS:
-                        print(red(traceback.format_exc()))
+                        print(red(traceback.format_exc()), end='\n', flush=True)
                     if exceptionFnc is not None:
                         exceptionFnc()
                     sleep(delay)

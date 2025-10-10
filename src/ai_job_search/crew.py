@@ -13,8 +13,7 @@ from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import (
     QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
     QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
-from ai_job_search.tools.util import (
-    getEnv, hasLen, removeExtraEmptyLines, consoleTimer)
+from ai_job_search.tools.util import (getEnv, hasLen, removeExtraEmptyLines, consoleTimer)
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 
@@ -37,6 +36,8 @@ else:
     LLM_CFG = LLM(
         # model="ollama/gemma3",
         model="ollama/llama3.2",
+        # model="ollama/glm4",
+        # model="ollama/granite4",
         # model="ollama/nuextract",  # hangs on local ollama
         # model="ollama/deepseek-r1:8b",  # no GPU inference
         base_url="http://localhost:11434",
@@ -82,16 +83,12 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                              f' id={id}, title={title}, company={company}'))
                 # DB markdown blob decoding
                 markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
-                crewOutput: CrewOutput = crew.kickoff(
-                    inputs={"markdown": f'# {title} \n {markdown}'})
+                crewOutput: CrewOutput = crew.kickoff(inputs={"markdown": f'# {title} \n {markdown}'})
                 result: dict[str, str] = rawToJson(crewOutput.raw)
                 if result is not None:
                     validateResult(result)
                     mysql.updateFromAI(id, company, result, 'technologies')
-            except openai.APIStatusError as e:
-                jobErrors.add((id, f'{title} - {company}: {e}'))
-                raise e
-            except Exception as ex:
+            except (Exception, KeyboardInterrupt) as ex:
                 print(red(traceback.format_exc()))
                 jobErrors.add((id, f'{title} - {company}: {ex}'))
                 aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]

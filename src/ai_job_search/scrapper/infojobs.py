@@ -9,7 +9,8 @@ from ai_job_search.scrapper.baseScrapper import (
     getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, removeLinks,
     validate)
 from ai_job_search.tools.terminalColor import green, printHR, red, yellow
-from ai_job_search.tools.decorator.retry import retry
+from ai_job_search.tools.decorator.retry import StackTrace, retry
+from ai_job_search.tools.util import getDatetimeNowStr
 from ai_job_search.viewer.clean.mergeDuplicates import (
     getSelect, mergeDuplicatedJobs)
 from .seleniumUtil import SeleniumUtil, sleep
@@ -24,8 +25,7 @@ from .selectors.infojobsSelectors import (
     CSS_SEL_JOB_LINK,
     CSS_SEL_NEXT_PAGE_BUTTON,
     CSS_SEL_SECURITY_FILTER1,
-    CSS_SEL_SECURITY_FILTER2,
-    LOGIN_PAGE)
+    CSS_SEL_SECURITY_FILTER2)
 
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
@@ -45,7 +45,7 @@ mysql: MysqlUtil = None
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
-    """Login, process jobs in search paginated list results"""
+    """Process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
     printScrapperTitle('Infojobs', preloadPage)
@@ -55,23 +55,6 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
             searchJobs(keywords.strip(), False)
-
-
-# def login():
-#     # FIXME: AVOID ROBOT SECURITY FILTER, example with BeautifulSoup:
-#     # FIXME: https://github.com/ander-elkoroaristizabal/InfojobsScraper
-#     # slow write login to avoid security robot filter don't work
-#     selenium.loadPage(LOGIN_PAGE)
-#     disableWait = LOGIN_WAIT_DISABLE
-#     sleep(4, 6, disableWait)
-#     acceptCookies()
-#     selenium.sendKeys('#email', USER_EMAIL,
-#                       keyByKeyTime=None if disableWait else (0.01, 0.1))
-#     sleep(2, 6, disableWait)
-#     selenium.sendKeys('#id-password', USER_PWD,
-#                       keyByKeyTime=None if disableWait else (0.03, 0.6))
-#     sleep(2, 6, disableWait)
-#     selenium.waitAndClick('#idSubmitButton', scrollIntoView=True)
 
 
 @retry(retries=10, delay=5, exception=NoSuchElementException)
@@ -110,8 +93,7 @@ def getTotalResultsFromHeader(keywords: str) -> int:
 
 def summarize(keywords, totalResults, currentItem):
     printHR()
-    print(f'Loaded {currentItem} of {totalResults} total results for',
-          f'search: {keywords}')
+    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
     printHR()
     print()
 
@@ -165,20 +147,21 @@ def searchJobs(keywords: str, preloadPage: bool):
             return
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        page = 0
+        page = 1
         currentItem = 0
         while currentItem < totalResults:
-            page += 1
             printPage(WEB_PAGE, page, totalPages, keywords)
             idx = 0
             while idx < JOBS_X_PAGE and currentItem < totalResults:
+                #Note JOBS_X_PAGE is not always exact
                 print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
-                loadAndProcessRow(idx)
-                currentItem += 1
+                if loadAndProcessRow(idx):
+                    currentItem += 1
                 print()
                 idx += 1
             if currentItem < totalResults:
                 if clickNextPage():
+                    page += 1
                     selenium.waitUntilPageIsLoaded()
                     time.sleep(5)
                 else:
@@ -222,8 +205,8 @@ def clickOnSearchJobs():
 @retry()
 def scrollJobsList(idx):
     links = selenium.getElms(CSS_SEL_JOB_LINK)
-    if idx > len(links)-1: # if link not found, scroll all list to properly load dynamic links' class in DOM
-        for li in selenium.getElms(CSS_SEL_JOB_LI):
+    if idx >= len(links): # if link not found, scroll all list to properly load dynamic links' class in DOM
+        for li in selenium.getElms(CSS_SEL_JOB_LI)[len(links)-1:]:
             selenium.scrollIntoView(li)
     selenium.scrollIntoView(selenium.getElms(CSS_SEL_JOB_LINK)[idx])
 
@@ -231,7 +214,11 @@ def scrollJobsList(idx):
 def loadAndProcessRow(idx) -> bool:
     try:
         if idx > 2:
-            scrollJobsList(idx)
+            try:
+                scrollJobsList(idx)
+            except Exception as e:
+                print(yellow(f'Could not scroll to link {idx}, IGNORING.'), end='')
+                return False
         jobLinkElm: WebElement = selenium.getElms(CSS_SEL_JOB_LINK)[idx]
         url = jobLinkElm.get_attribute('href')
         jobId, jobExists = jobExistsInDB(url)

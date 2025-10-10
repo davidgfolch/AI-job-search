@@ -9,6 +9,7 @@ from ai_job_search.scrapper.baseScrapper import (
 from ai_job_search.tools.terminalColor import (
     green, printHR, yellow)
 from ai_job_search.tools.decorator.retry import retry
+from ai_job_search.tools.util import getDatetimeNowStr
 from ai_job_search.viewer.clean.mergeDuplicates import (
     getSelect, mergeDuplicatedJobs)
 from .seleniumUtil import SeleniumUtil, sleep
@@ -110,9 +111,7 @@ def getTotalResultsFromHeader(keywords: str) -> int:
 
 def summarize(keywords, totalResults, currentItem):
     printHR()
-    print(f'Loaded {currentItem} of {totalResults} total results for',
-          f'search: {keywords}',
-          f'(remote={remote})')
+    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords} (remote={remote})')
     printHR()
     print()
 

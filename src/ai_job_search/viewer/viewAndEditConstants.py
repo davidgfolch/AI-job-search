@@ -41,10 +41,9 @@ required_technologies rlike '{RLIKE}'
  or markdown rlike '{RLIKE}'"""
 DEFAULT_DAYS_OLD = "1"
 DEFAULT_ORDER = "created desc"
-# DETAIL FORMAT
 DETAIL_FORMAT = """
-## [{title}]({url}) ({id})
-- Source: :green[{web_page}]
+    ## [{title}]({url})
+- Source: :green[{web_page}] - [Internal link](http://localhost:8501/?selectedIds={id}&selectedPage=0&preSelectedRows=0)
   {dates}
 - Company: :green[{company}]
 """

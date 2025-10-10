@@ -33,20 +33,21 @@ SCRAPPERS: dict = {
 }
 NEXT_SCRAP_TIMER = '10m' #'10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
-executionsTimes = {}
 seleniumUtil: SeleniumUtil = None
 
 
 def timeExpired(name: str, properties: dict):
-    executionsTimes[name] = executionsTimes.get(name, getDatetimeNow() if properties['waitBeforeFirstRun'] else None)
-    if last := executionsTimes[name]:
+    properties['lastExecution'] = properties.get('lastExecution', getDatetimeNow() if properties['waitBeforeFirstRun'] else None)
+    if last := properties['lastExecution']:
+        if last is None:
+            return True
         lapsed = getDatetimeNow()-last
         timeoutSeconds = getSeconds(properties['timer'])
         timeLeft = getTimeUnits(timeoutSeconds-lapsed)
         print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
         if lapsed + 1 <= timeoutSeconds:
             return False
-    executionsTimes[name] = getDatetimeNow()
+    properties['lastExecution'] = getDatetimeNow()
     return True
 
 
@@ -56,8 +57,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
     print(f'Starting at : {startingAt}')
     for name, properties in SCRAPPERS.items():
-        seleniumUtil.tab(name)
-        properties['function'](seleniumUtil, True)
+        executeScrapperPreload(name, properties)
     while loop:
         toRun = []
         for name, properties in SCRAPPERS.items():
@@ -72,6 +72,8 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
                 starting = False
         for runThis in toRun:
             seleniumUtil.tab(runThis['name'])
+            if not runThis['properties']['preloaded']:
+                executeScrapperPreload(runThis['name'], runThis['properties'])
             executeScrapper(runThis['name'], runThis['properties'])
         waitBeforeFirstRuns = False
         consoleTimer("Waiting for next scrapping execution trigger, ", NEXT_SCRAP_TIMER)
@@ -81,9 +83,8 @@ def runSpecifiedScrappers(scrappersList: list):
     # Arguments specified in command line
     print(f'Executing specified scrappers: {scrappersList}')
     for arg in scrappersList:
-        seleniumUtil.tab(arg)
         properties = SCRAPPERS[arg.capitalize()]
-        properties['function'](seleniumUtil, True)
+        executeScrapperPreload(arg.capitalize(), properties)
     for arg in scrappersList:
         if SCRAPPERS.get(arg.capitalize()):
             properties = SCRAPPERS[arg.capitalize()]
@@ -93,13 +94,24 @@ def runSpecifiedScrappers(scrappersList: list):
             print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
 
 
+def executeScrapperPreload(name, properties: dict):
+    try:
+        seleniumUtil.tab(name)
+        properties['function'](seleniumUtil, True)
+        properties['preloaded'] = True
+    except Exception as e:
+        print(red(f"Error occurred while preloading {name}: {e}"))
+        print(red(traceback.format_exc()))
+        properties['preloaded'] = False
+
+
 def executeScrapper(name, properties: dict):
     try:
         properties['function'](seleniumUtil, False)
     except Exception as e:
         print(red(f"Error occurred while executing {name}: {e}"))
         print(red(traceback.format_exc()))
-        executionsTimes[name] = getSeconds(properties['timer']) # re-execute resetting timer
+        properties['lastExecution'] = None # re-execute resetting timer
 
 
 if __name__ == '__main__':

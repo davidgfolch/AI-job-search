@@ -191,8 +191,7 @@ class SeleniumUtil:
             self.scrollIntoView(cssSel)
             return True
         except Exception:
-            print(
-                yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
+            print(yellow(f'scrollIntoView_noError, {cssSel} not Found'), end='')
             return False
 
     def moveToElement(self, elm: str | WebElement):

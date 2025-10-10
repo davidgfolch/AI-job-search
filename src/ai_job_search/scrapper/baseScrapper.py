@@ -28,6 +28,7 @@ def getAndCheckEnvVars(site: str):
 
 
 def printScrapperTitle(scrapper: str, preloadPage: bool):
+    print("")
     printHR(green)
     if preloadPage:
         print(yellow(f'{getDatetimeNowStr()} - PRELOADING {scrapper}: login & security filters'))
@@ -37,7 +38,7 @@ def printScrapperTitle(scrapper: str, preloadPage: bool):
 
 
 def printPage(webPage, page, totalPages, keywords):
-    print(green(f'{webPage} Starting page {page} of {totalPages} ({getDatetimeNowStr()}) ',
+    print(green(f'{getDatetimeNowStr()}- {webPage} Starting page {page} of {totalPages} ',
                 f'search={keywords}'))
     printHR(green)
 
