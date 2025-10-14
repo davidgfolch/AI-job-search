@@ -25,11 +25,9 @@ python -m venv .venv
 # Activate environment
 source .venv/bin/activate  # linux
 .\.venv\Scripts\activate   # windows
-# Install dependencies
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-# Install ai-job-search as a module in .venv
-python -m pip install -e .
+python -m pip install -r requirements.txt  # Install dependencies
+python -m pip install -e . # Install ai-job-search as a module in .venv
 ```
 
 If problems found installing mysql client library for Streamlit, follow this:
@@ -37,6 +35,9 @@ If problems found installing mysql client library for Streamlit, follow this:
 ```bash
 sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-essential
 ```
+
+## Install crewai
+See [README_CREWAI.md](./README_CREWAI.md)
 
 ## Setup credentials & other settings
 
@@ -54,9 +55,10 @@ Then edit your `.env` file.
 After executing for first time `docker-compose up` or `docker compose up` or `./scripts/run_1_Mysql.sh`, you must create database tables with the ddl script:  `scripts/mysql/ddl.sql`
 
 ```bash
-# Execute inside the docker container
 docker exec -it ai-job-search-mysql_db-1 bash
+# Execute next lines inside the docker container
 mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/ddl.sql
+mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/backup.sql
 ```
 
 [Mysql docker doc reference](https://hub.docker.com/_/mysql)
@@ -71,17 +73,37 @@ docker exec ai_job_search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootP
 
 ## Managing dependencies
 
-### Add libraries
+### Add main dependency
 
 ```bash
 source .venv/bin/activate
-pip install streamlit-aggrid
-python -m pip freeze > requirements.txt
+python -m pip install selenium  # !!!! then manually add it in requirements.in
+
+# Create requirements.txt dependency-tree from base dependencies in requirements.in
+python -m pip install pip-tools
+pip-compile requirements.in
 ```
 
-### Check dependencies
+### Upgrading existing dependencies
 
 ```bash
-python -m pip check
-python -m pip install langchain --upgrade
+python -m pip list --outdated
+python -m pip install --upgrade selenium
+```
+
+### Remove dependency
+
+```bash
+python -m pip uninstall selenium
+# and remove it from requirements.in and...
+pip-compile requirements.in # to generate requirements.txt
+# to fully check, delete .venv and start a clean .venv
+```
+
+### Dependency tree check
+```bash
+python -m pip install pipdeptree
+pipdeptree
+
+python -m pip check # Check dependencies
 ```

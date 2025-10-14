@@ -1,0 +1,8 @@
+streamlit==1.50.0
+pandas==2.3.3
+plotly==6.3.1
+altair==5.5.0
+selenium==4.36.0
+markdownify==1.2.0
+mysql-connector-python==9.4.0
+pytest==8.4.2
