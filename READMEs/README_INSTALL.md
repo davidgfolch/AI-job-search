@@ -49,8 +49,6 @@ cp scripts/.env.example .env
 
 Then edit your `.env` file.
 
-> NOTE: AiEnricher using OPENAI_API_KEY or GEMINI_API_KEY are not tested.
-
 ## Setup database
 
 After executing for first time `docker-compose up` or `docker compose up` or `./scripts/run_1_Mysql.sh`, you must create database tables with the ddl script:  `scripts/mysql/ddl.sql`

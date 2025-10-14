@@ -24,8 +24,6 @@ python -m uv tool install crewai
 
 ### Customizing
 
-**Add your `OPENAI_API_KEY` into the `.env` file**
-
 - Modify `src/ai_job_search/config/agents.yaml` to define your agents
 - Modify `src/ai_job_search/config/tasks.yaml` to define your tasks
 - Modify `src/ai_job_search/crew.py` to add your own logic, tools and specific args

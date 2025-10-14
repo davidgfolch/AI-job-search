@@ -122,16 +122,13 @@ class MysqlUtil:
             getConnection().rollback()
         raise ex
 
-    # FIXME: CHANGE required_technologies & optional_technologies with
-    # required_skills & opt_skills
-    @retry(retries=3, delay=1, exception=mysqlConnector.Error)
-    def updateFromAI(self, id, company, paramsDict: dict,
-                     deprecatedName='technologies', deep=0):
+    @retry(retries=20, delay=1, exception=mysqlConnector.Error)
+    def updateFromAI(self, id, company, paramsDict: dict, deep=0):
         params = maxLen(emptyToNone(
             (paramsDict.get('salary', None),
                 # TODO: Change to required_skills, optional_skills
-                paramsDict.get(f'required_{deprecatedName}', None),
-                paramsDict.get(f'optional_{deprecatedName}', None),
+                paramsDict.get(f'required_technologies', None),
+                paramsDict.get(f'optional_technologies', None),
                 id)),
             # TODO: get mysql DDL metadata varchar sizes
             (200, 1000, 1000, None))
@@ -140,9 +137,7 @@ class MysqlUtil:
                 c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
                 getConnection().commit()
                 if c.rowcount > 0:
-                    print(
-                        yellow(f'Inserted into DB (company={company}): ',
-                               f'{params}'))
+                    print(yellow(f'Inserted into DB (company={company}): {params}'))
                     printHR(yellow)
                 else:
                     error(Exception('No rows affected'))

@@ -15,9 +15,6 @@ from ai_job_search.tools.util import (getEnv, hasLen, removeExtraEmptyLines, con
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 
-OPENAI_API_KEY = getEnv('OPENAI_API_KEY')
-GEMINI_API_KEY = getEnv('GEMINI_API_KEY')
-
 LLM_CFG = LLM(
     # model="ollama/gemma3",
     model="ollama/llama3.2",
@@ -69,15 +66,14 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 company = job[3]
                 printHR()
                 now = str(datetime.datetime.now())
-                print(yellow(f'Job {idx+1}/{total} Started at: {now} ->',
-                             f' id={id}, title={title}, company={company}'))
+                print(yellow(f'Job {idx+1}/{total} Started at: {now} -> id={id}, title={title}, company={company}'))
                 # DB markdown blob decoding
                 markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
                 crewOutput: CrewOutput = crew.kickoff(inputs={"markdown": f'# {title} \n {markdown}'})
                 result: dict[str, str] = rawToJson(crewOutput.raw)
                 if result is not None:
                     validateResult(result)
-                    mysql.updateFromAI(id, company, result, 'technologies')
+                    mysql.updateFromAI(id, company, result)
             except (Exception, KeyboardInterrupt) as ex:
                 print(red(traceback.format_exc()))
                 jobErrors.add((id, f'{title} - {company}: {ex}'))
@@ -103,8 +99,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
 
 
 def getJobIdsList() -> list[int]:
-    jobIds = [row[0]
-              for row in mysql.fetchAll(QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
+    jobIds = [row[0] for row in mysql.fetchAll(QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
     print(yellow(f'{jobIds}'))
     return jobIds
 
