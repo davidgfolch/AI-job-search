@@ -9,7 +9,9 @@ Ensure you have Python >=3.10 <=3.13 installed on your system. This project uses
 First, if you haven't already, install uv:
 
 ```bash
-pip install uv
+.\.venv\Scripts\activate
+python -m pip install uv
+python -m uv tool update-shell
 ```
 
 Next, navigate to your project directory and install the dependencies:
@@ -17,7 +19,7 @@ Next, navigate to your project directory and install the dependencies:
 (Optional) Lock the dependencies and install them by using the CLI command:
 
 ```bash
-crewai install
+python -m uv tool install crewai
 ```
 
 ### Customizing

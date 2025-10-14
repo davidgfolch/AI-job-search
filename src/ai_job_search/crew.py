@@ -6,8 +6,6 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
-from langchain_google_genai import ChatGoogleGenerativeAI
-import openai
 from ai_job_search.tools.stopWatch import StopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
 from ai_job_search.tools.mysqlUtil import (
@@ -20,29 +18,21 @@ MAX_AI_ENRICH_ERROR_LEN = 500
 OPENAI_API_KEY = getEnv('OPENAI_API_KEY')
 GEMINI_API_KEY = getEnv('GEMINI_API_KEY')
 
-if OPENAI_API_KEY:
-    model = "o1-preview-2024-09-12"  # gpt-3.5-turbo,  gpt-4o-mini
-    LLM_CFG = LLM(model=model,
-                  base_url="https://api.openai.com/v1",
-                  api_key=OPENAI_API_KEY,
-                  temperature=0)
-elif GEMINI_API_KEY:
-    # TODO: README: gcloud auth application-default login
-    LLM_CFG = ChatGoogleGenerativeAI(model='gemini-1.5-flash',
-                                     verbose=True,
-                                     temperature=0,
-                                     goggle_api_key=GEMINI_API_KEY)
-else:
-    LLM_CFG = LLM(
-        # model="ollama/gemma3",
-        model="ollama/llama3.2",
-        # model="ollama/glm4",
-        # model="ollama/granite4",
-        # model="ollama/nuextract",  # hangs on local ollama
-        # model="ollama/deepseek-r1:8b",  # no GPU inference
-        base_url="http://localhost:11434",
-        temperature=0)
+LLM_CFG = LLM(
+    # model="ollama/gemma3",
+    model="ollama/llama3.2",
+    # model="ollama/glm4",
+    # model="ollama/granite4",
+    # model="ollama/nuextract",  # hangs on local ollama
+    # model="ollama/deepseek-r1:8b",  # no GPU inference
+    base_url="http://localhost:11434",
+    temperature=0)
 mysql = None
+
+stopWatch = StopWatch()
+
+# global counter for total processed jobs across runs
+totalCount = 0
 
 
 class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
@@ -64,9 +54,9 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 print(yellow(''*60))
 
     def enrichJobs(self, total):
+        global totalCount
         jobErrors = set[tuple[int, str]]()
         crew: Crew = AiJobSearch().crew()
-        stopWatch = StopWatch()
         for idx, id in enumerate(getJobIdsList()):
             print(yellow(''*60))
             stopWatch.start()
@@ -101,7 +91,10 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 else:
                     print(red(f"could not update ai_enrich_error, id={id}"))
             stopWatch.end()
-            print(yellow(f'Total processed jobs: {idx+1}/{total}'))
+            # increment global cumulative counter and print both per-batch and total
+            totalCount += 1
+            print(yellow(f'Total processed jobs (this run): {idx+1}/{total}'))
+            print(yellow(f'Global total processed jobs: {totalCount}'))
             print()
             print()
         if jobErrors:
@@ -224,9 +217,8 @@ class AiJobSearch:
 
     @agent
     def researcher_agent(self) -> Agent:
-        timeout = getEnv('AI_ENRICHMENT_JOB_TIMEOUT_MINUTES')
-        print('Creating agent:',
-              f'timeout (minutes)={timeout}')
+        timeout = getEnv('AI_ENRICHMENT_JOB_TIMEOUT_SECONDS')
+        print(f'Creating agent: timeout (seconds)={timeout}')
         config = self.agents_config['researcher_agent']
         result = Agent(
             llm=LLM_CFG,
@@ -235,7 +227,7 @@ class AiJobSearch:
             verbose=True,
             max_iter=1,
             # max_rpm=1,
-            max_execution_time=timeout * 60)
+            max_execution_time=timeout)
         return result
 
     @task

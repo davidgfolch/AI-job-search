@@ -23,9 +23,13 @@ and 3.11 incompatibility with other crewAi libraries.
 # Create environment
 python -m venv .venv
 # Activate environment
-source .venv/bin/activate
+source .venv/bin/activate  # linux
+.\.venv\Scripts\activate   # windows
 # Install dependencies
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+# Install ai-job-search as a module in .venv
+python -m pip install -e .
 ```
 
 If problems found installing mysql client library for Streamlit, follow this:
@@ -49,11 +53,21 @@ Then edit your `.env` file.
 
 ## Setup database
 
-After executing for first time `docker-compose up` or `./scripts/run_1_Mysql.sh`, you must create database tables (if not created automatically, not sure about that right now) with the ddl script:  `mysql-init-files/ddl.sql`
+After executing for first time `docker-compose up` or `docker compose up` or `./scripts/run_1_Mysql.sh`, you must create database tables with the ddl script:  `scripts/mysql/ddl.sql`
+
+```bash
+# Execute inside the docker container
+docker exec -it ai-job-search-mysql_db-1 bash
+mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/ddl.sql
+```
 
 [Mysql docker doc reference](https://hub.docker.com/_/mysql)
 
 --------------
+
+## Database backup
+
+
 
 ## Managing dependencies
 

@@ -13,3 +13,4 @@ uv.lock
 .coverage
 **/node_modules/**
 **/.next/**
+scripts/mysql/backup.sql

@@ -12,7 +12,9 @@ See [README_INSTALL.md](./READMEs/README_INSTALL.md)
 
 ## Run & lifecycle
 
-Run bash scripts in separate terminals:
+Run scripts in separate terminals.
+
+### Linux
 
 ```bash
 # Start mysql with docker compose
@@ -26,14 +28,15 @@ Run bash scripts in separate terminals:
 ./scripts/run_4_Viewer.sh
 ```
 
-### Run all with single bash script
-
-Alternatively if you have terminator installed you can run all in one with: `./run.sh`
-
-NOTE that to execute `run.sh` you will need:
-
-- Perl installed and `colorTail.pl` script to be available in your `~/scripts/` folder
-- or remove `| perl ~/scripts/colorTail.pl \"gpu|cuda\"` in `run.sh` command line pipe for Ollama logs
+### Windows
+```shell
+docker compose up -d  # Start mysql with docker compose
+# Start all scrappers (follow browser & console to solve robot security filters)
+run_2_Scrapper.bat
+# OPTIONAL: Process each job offer with AI/LLM inference in database, extracting salary, required technologies, etc...
+run_3_AiEnricher.bat
+run_4_Viewer.bat
+```
 
 ## Scrapers
 
