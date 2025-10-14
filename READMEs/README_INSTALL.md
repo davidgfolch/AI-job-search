@@ -67,7 +67,9 @@ mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/ddl.sql
 
 ## Database backup
 
-
+```bash
+docker exec ai_job_search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootPass jobs > scripts/backup.sql
+```
 
 ## Managing dependencies
 
