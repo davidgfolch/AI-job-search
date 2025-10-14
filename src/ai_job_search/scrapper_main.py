@@ -83,16 +83,20 @@ def runSpecifiedScrappers(scrappersList: list):
     # Arguments specified in command line
     print(f'Executing specified scrappers: {scrappersList}')
     for arg in scrappersList:
-        properties = SCRAPPERS[arg.capitalize()]
-        executeScrapperPreload(arg.capitalize(), properties)
+        if validScrapperName(arg):
+            properties = SCRAPPERS[arg.capitalize()]
+            executeScrapperPreload(arg.capitalize(), properties)
     for arg in scrappersList:
-        if SCRAPPERS.get(arg.capitalize()):
+        if validScrapperName(arg):
             properties = SCRAPPERS[arg.capitalize()]
             executeScrapper(arg.capitalize(), properties)
-        else:
-            print(red(f"Invalid scrapper web page name {arg}"))
-            print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
 
+def validScrapperName(name: str):
+    if SCRAPPERS.get(name.capitalize()) is not None:
+        return True
+    print(red(f"Invalid scrapper web page name {name}"))
+    print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
+    return False
 
 def executeScrapperPreload(name, properties: dict):
     try:
