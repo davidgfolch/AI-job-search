@@ -1,15 +1,15 @@
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
-import pandas as pd
-from ai_job_search.viewer.clean import (
-    deleteOld, ignoreByTitle)
+from pandas import DataFrame
+from ai_job_search.tools.mysqlUtil import MysqlUtil
+from ai_job_search.viewer.clean import (deleteOld, ignoreByTitle)
 from ai_job_search.viewer.clean.cleanUtil import getAllIds
 from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
+from ai_job_search.viewer.util.stStateUtil import setState
 from ai_job_search.viewer.util.stUtil import (getState)
 from ai_job_search.viewer.util.viewUtil import gotoPage
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
-from tools.mysqlUtil import MysqlUtil
 
 
 PROCESS_CONFIG = [
@@ -50,12 +50,17 @@ def clean():
 
 def table(columns, cnf, res):
     queryCols = cnf['dfCols']
-    columns = queryCols if len(res[0]) == len(queryCols) \
-        else columns
-    df = pd.DataFrame(res, columns=columns)
-    dfWithSelections = df.copy()
-    defaultValue = getState('selectAll', False)
-    dfWithSelections.insert(0, "Sel", defaultValue)
+    columns = queryCols if len(res[0]) == len(queryCols) else columns
+    df = DataFrame(res, columns=columns)
+    df.insert(0, "Sel", False)
+    lastSelected = getState('lastSelected')
+    if getState('selectAll'):
+        df['Sel'] = True
+        setState('lastSelected', {'Sel': df['Sel']})
+    elif lastSelected and 'Sel' in lastSelected:
+        df['Sel'] = lastSelected['Sel']
+        
+    #st.write(f'df: {df["Sel"]}')
     colsConfig = {'Ids': None,
                   'Sel': st.column_config.Column(width='small'),
                   'Id': st.column_config.Column(width='small'),
@@ -63,11 +68,23 @@ def table(columns, cnf, res):
                   'Company': st.column_config.Column(width='large'),
                   'Created': st.column_config.Column(width='large'),
                   }
-    rows = st.data_editor(dfWithSelections, use_container_width=True,
+    #TODO: use st-aggrid instead of data_editor?
+    editedDf = st.data_editor(df, use_container_width=True,
                           hide_index=True, key='cleanJobsListTable',
+                          on_change=onTableChange,
                           column_config=colsConfig, height=600)
-    selectedRows = df[rows.Sel]
-    return rows, selectedRows
+    selectedRows = df[editedDf['Sel']]
+    return editedDf, selectedRows
+
+
+def onTableChange():
+    selected = getState('cleanJobsListTable')['edited_rows']
+    lastSelected = getState('lastSelected')
+    if lastSelected and selected and selected != lastSelected:
+        lastSelected.update(selected)
+        setState('lastSelected', lastSelected)
+    else:
+        setState('lastSelected', selected)
 
 
 def actionButtons(cnf, selectedRows, totalSelectedIds):
@@ -75,13 +92,11 @@ def actionButtons(cnf, selectedRows, totalSelectedIds):
     disabled = totalSelectedIds < 1
     c1.button('Select all', key='selectAll', type='primary')
     cnf['actionButtonFnc'](c1, selectedRows, disabled)
-    c1.button('View', on_click=gotoPage,
+    c1.button('View', on_click=gotoPage, type='primary', disabled=disabled,
               kwargs={'page': PAGE_VIEW_IDX,
-                      'ids': getAllIds(selectedRows)},
-              type='primary', disabled=disabled)
+                      'ids': getAllIds(selectedRows)})
     if not disabled:
-        c2.dataframe(selectedRows, hide_index=True,
-                     use_container_width=True)
+        c2.dataframe(selectedRows, hide_index=True, use_container_width=True)
 
 
 def tableSummary(rows, selectedRows):
@@ -91,13 +106,12 @@ def tableSummary(rows, selectedRows):
     total = countIds(rows)
     txt = [f':green[{totalSelectedIds}/{total} JOBS selected/total]']
     if totalRows != total:
-        txt.append(
-            f' :blue[({totalSelectedRows}/{totalRows} ROWS selected/total)]')
+        txt.append(f' :blue[({totalSelectedRows}/{totalRows} ROWS selected/total)]')
     st.write(*txt)
     return totalSelectedIds
 
 
-def countIds(rows: pd.DataFrame, selection=False):
+def countIds(rows: DataFrame, selection=False):
     ids = getAllIds(rows)
     return len(ids.split(',')) if ids else 0
 

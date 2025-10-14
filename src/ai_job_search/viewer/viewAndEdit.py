@@ -64,8 +64,7 @@ def view():
     with col1:
         filterResCnt, selectedRows, totalSelected = tableView()
         totalResults = mysql.count(QRY_SELECT_COUNT_JOBS)
-        tableFooter(totalResults, filterResCnt,
-                    totalSelected, selectedRows)
+        tableFooter(totalResults, filterResCnt, totalSelected, selectedRows)
         if totalSelected == 1:
             jobData = getJobData(selectedRows)
             formDetail(jobData)

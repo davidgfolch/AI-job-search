@@ -2,26 +2,20 @@ import streamlit as st
 # from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from streamlit.column_config import CheckboxColumn
 from pandas import DataFrame
-from ai_job_search.tools.mysqlUtil import (
-    QRY_SELECT_JOBS_VIEWER, binaryColumnIgnoreCase, getColumnTranslated)
+from ai_job_search.tools.mysqlUtil import (QRY_SELECT_JOBS_VIEWER, binaryColumnIgnoreCase, getColumnTranslated)
 from ai_job_search.tools.sqlUtil import getAndFilter
-from ai_job_search.viewer.util.stComponents import (
-    checkAndInput, checkAndPills, sessionLoadSaveForm)
-from ai_job_search.viewer.util.stStateUtil import (
-    getBoolKeyName, getStateBool, getStateBoolValue, setState)
-from ai_job_search.viewer.util.stUtil import (
-    getState, inColumns, scapeLatex)
+from ai_job_search.viewer.util.stComponents import (checkAndInput, checkAndPills, sessionLoadSaveForm)
+from ai_job_search.viewer.util.stStateUtil import (getBoolKeyName, getStateBool, getStateBoolValue, setState)
+from ai_job_search.viewer.util.stUtil import (getState, inColumns, scapeLatex)
 from ai_job_search.viewer.util.viewUtil import (
     KEY_SELECTED_IDS, fmtDetailOpField, formatDateTime)
 from ai_job_search.viewer.viewAndEditConstants import (
     COLUMNS_WIDTH, DEFAULT_ORDER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS,
-    FF_KEY_DAYS_OLD,
-    FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
+    FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS_BOOL,
     LIST_HEIGHT, SEARCH_COLUMNS, SEARCH_INPUT_HELP, VISIBLE_COLUMNS)
-from ai_job_search.viewer.viewAndEditEvents import (
-    deleteSalary, deleteSelectedRows, markAs, onTableChange)
+from ai_job_search.viewer.viewAndEditEvents import (deleteSalary, deleteSelectedRows, markAs, onTableChange)
 
 
 def getJobListQuery():
@@ -75,15 +69,7 @@ def removeFiltersInNotFilters():
 # https://docs.streamlit.io/develop/tutorials/elements/dataframe-row-selections
 def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
     dfWithSelections = df.copy()
-    preSelectedRows = getState(FF_KEY_PRESELECTED_ROWS, [])
-    if len(preSelectedRows) == 1:
-        setState(FF_KEY_SINGLE_SELECT, 1)
-    dfWithSelections.insert(0, "Sel", False)
-    for row in preSelectedRows:
-        row = int(row)
-        if len(dfWithSelections.index) > row:
-            rowIdx = dfWithSelections.index[row]
-            dfWithSelections.loc[rowIdx, 'Sel'] = True
+    preSelectRows(dfWithSelections, FF_KEY_PRESELECTED_ROWS)
     # https://docs.streamlit.io/develop/api-reference/data/st.data_editor
     editedDf = st.data_editor(
         dfWithSelections,
@@ -98,6 +84,14 @@ def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
     selectedRows = df[editedDf.Sel]
     setState('selectedRows', selectedRows)
     return selectedRows
+
+def preSelectRows(dfWithSelections: DataFrame, preSelectedRowsKey):
+    dfWithSelections.insert(0, "Sel", False)
+    for row in getState(preSelectedRowsKey, []):
+        row = int(row)
+        if len(dfWithSelections.index) > row:
+            rowIdx = dfWithSelections.index[row]
+            dfWithSelections.loc[rowIdx, 'Sel'] = True
 
 
 def selectNext(max: int):
