@@ -27,7 +27,7 @@ source .venv/bin/activate  # linux
 .\.venv\Scripts\activate   # windows
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt  # Install dependencies
-python -m pip install -e . # Install ai-job-search as a module in .venv
+python -m pip install -e . # Install ai-job-search as a module in .venv (in editable mode)
 ```
 
 If problems found installing mysql client library for Streamlit, follow this:
