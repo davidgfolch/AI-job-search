@@ -5,4 +5,8 @@ altair==5.5.0
 selenium==4.36.0
 markdownify==1.2.0
 mysql-connector-python==9.4.0
+
+# For development and testing
 pytest==8.4.2
+coverage==7.6.12
+coverage-badge==1.1.2
