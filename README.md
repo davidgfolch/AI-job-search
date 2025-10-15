@@ -3,7 +3,7 @@
 Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor, Tecnoempleo...
 
 - Selenium sites scrappers to store in local mysql database.
-- (OPTIONAL) Artificial intelligence to enrich the job offer with structured information (salary, required technologies, ...). You will need a local Ollama installation, [see setup](#setup).
+- Artificial intelligence to enrich the job offer with structured information (salary, required technologies, ...).
 - User interface to filter, see, manage & clean jobs in database.
 
 ## Setup

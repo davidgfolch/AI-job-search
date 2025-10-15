@@ -73,6 +73,8 @@ docker exec ai_job_search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootP
 
 ## Managing dependencies
 
+We are using a base `requirements.in` with main dependencies, and generating `requirements.txt` with pip-compile.
+
 ### Add main dependency
 
 ```bash

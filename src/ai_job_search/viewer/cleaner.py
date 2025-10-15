@@ -34,7 +34,8 @@ def clean():
                        range(0, len(PROCESS_CONFIG)),
                        format_func=lambda i: PROCESS_CONFIG[i]['info'](),
                        label_visibility='collapsed',
-                       key='selectedCleanProcess')
+                       key='selectedCleanProcess',
+                       on_change=resetState)
     cnf = PROCESS_CONFIG[idx]
     query = showQuery(c2, cnf['sql']())
     mysql = MysqlUtil(mysqlCachedConnection())
@@ -46,6 +47,10 @@ def clean():
         actionButtons(cnf, selectedRows, totalSelectedIds)
     else:
         st.warning('No results found for query.')
+
+
+def resetState():
+    setState('lastSelected', None)
 
 
 def table(columns, cnf, res):
@@ -73,6 +78,7 @@ def table(columns, cnf, res):
                           hide_index=True, key='cleanJobsListTable',
                           on_change=onTableChange,
                           column_config=colsConfig, height=600)
+    #FIXME: when doing ignore rows first -> select all,
     selectedRows = df[editedDf['Sel']]
     return editedDf, selectedRows
 
