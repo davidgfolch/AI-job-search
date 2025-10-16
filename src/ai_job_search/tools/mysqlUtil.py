@@ -3,7 +3,9 @@ from typing import Any, Dict, Sequence, TypeVar, Union
 import mysql.connector as mysqlConnector
 
 from ai_job_search.tools.decorator.retry import retry
-from ai_job_search.tools.terminalColor import printHR, red, yellow
+from ai_job_search.tools.terminalColor import green, red
+
+DEBUG = False
 
 DB_NAME = 'jobs'
 QRY_FIND_JOB_BY_JOB_ID = """
@@ -31,6 +33,7 @@ UPDATE jobs SET
     salary=%s,
     required_technologies=%s,
     optional_technologies=%s,
+    cv_match_percentage=%s,
     ai_enriched=1
 WHERE id=%s"""
 QRY_SELECT_JOBS_VIEWER = """
@@ -61,6 +64,7 @@ def getConnection() -> mysqlConnector.MySQLConnection:
             # connection_timeout=10,
             # get_warnings=True
         )
+    if DEBUG:
         print(conn.__repr__())
     return conn
 
@@ -118,27 +122,27 @@ class MysqlUtil:
     def rollback(self, ex: mysqlConnector.Error):
         # 1205 Lock wait timeout exceeded
         if getConnection().is_connected() and getConnection().in_transaction:
-            print(red('Lock wait timeout exceeded, retrying'))
+            print(red(f'Rolling back transaction due to error: {ex}'))
             getConnection().rollback()
         raise ex
 
     @retry(retries=20, delay=1, exception=mysqlConnector.Error)
-    def updateFromAI(self, id, company, paramsDict: dict, deep=0):
+    def updateFromAI(self, id, company, paramsDict: dict):
         params = maxLen(emptyToNone(
             (paramsDict.get('salary', None),
                 # TODO: Change to required_skills, optional_skills
                 paramsDict.get(f'required_technologies', None),
                 paramsDict.get(f'optional_technologies', None),
+                paramsDict.get('cv_match_percentage', None),
                 id)),
             # TODO: get mysql DDL metadata varchar sizes
-            (200, 1000, 1000, None))
+            (200, 1000, 1000, None, None))
         try:
             with self.cursor() as c:
                 c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
                 getConnection().commit()
                 if c.rowcount > 0:
-                    print(yellow(f'Inserted into DB (company={company}): {params}'))
-                    printHR(yellow)
+                    print(green(f'Updated database (company={company}): {params}'))
                 else:
                     error(Exception('No rows affected'))
         except mysqlConnector.Error as ex:
@@ -155,15 +159,16 @@ class MysqlUtil:
 
     def executeAllAndCommit(self, queries: list[dict[str, any]]) -> int:
         rowCount = []
-        try:
-            with self.cursor() as c:
+        with self.cursor() as c:
+            try:
                 for query in queries:
                     c.execute(query['query'], query.get('params', ()))
                     rowCount.append(c.rowcount)
                 getConnection().commit()
                 return rowCount
-        except mysqlConnector.Error as ex:
-            self.rollback(ex)
+            except mysqlConnector.Error as ex:
+                self.rollback(ex)
+        
 
     def fetchAll(self, query: str, params=None):
         with self.cursor() as c:

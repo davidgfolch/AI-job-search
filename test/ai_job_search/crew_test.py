@@ -14,6 +14,9 @@ from ai_job_search.crew import validateResult
     ('{"key": "value\\&"}', {"key": "value&"}),
     ('{"key": "value"', {"key": "value"}),
     ('{"key": "value", "key2": "value2"', {"key": "value", "key2": "value2"}),
+    ('{"key": "value"}}', {"key": "value"}),
+    ('{"key": 10}}', {"key": 10}),
+    ('{"cv_match_percentage": 0}}', {"cv_match_percentage": 0}),
 ])
 def test_rawToJson(raw, expected):
     assert rawToJson(raw) == expected

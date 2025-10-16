@@ -5,6 +5,7 @@ altair==5.5.0
 selenium==4.36.0
 markdownify==1.2.0
 mysql-connector-python==9.4.0
+pdfplumber==0.11.7
 
 # For development and testing
 pytest==8.4.2

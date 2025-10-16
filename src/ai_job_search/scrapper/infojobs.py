@@ -256,7 +256,7 @@ def processRow(url):
         if id := mysql.insert((jobId, title, company, location, url, md,
                                None, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
-            mergeDuplicatedJobs(mysql.fetchAll(getSelect()))
+            mergeDuplicatedJobs(mysql, getSelect())
             return True
     return False
 

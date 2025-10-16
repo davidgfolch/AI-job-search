@@ -1,20 +1,18 @@
-import datetime
 import json
-import re
-import traceback
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
+from ai_job_search.crewai import cvMatcher
+from ai_job_search.crewai.crewHelper import combineTaskResults, getJobIdsList, mapJob, printJob, rawToJson, saveError, validateResult
+from ai_job_search.crewai.cvMatcher import loadCVContent
 from ai_job_search.tools.stopWatch import StopWatch
 from ai_job_search.tools.terminalColor import printHR, red, yellow
-from ai_job_search.tools.mysqlUtil import (
-    QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT,
-    QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, MysqlUtil, updateFieldsQuery)
-from ai_job_search.tools.util import (getEnv, hasLen, removeExtraEmptyLines, consoleTimer)
+from ai_job_search.tools.mysqlUtil import (QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT, MysqlUtil)
+from ai_job_search.tools.util import (getEnv, consoleTimer, getEnvBool)
 
-MAX_AI_ENRICH_ERROR_LEN = 500
-
+VERBOSE = False
+DEBUG = False
 LLM_CFG = LLM(
     # model="ollama/gemma3",
     model="ollama/llama3.2",
@@ -25,11 +23,11 @@ LLM_CFG = LLM(
     base_url="http://localhost:11434",
     temperature=0)
 mysql = None
-
 stopWatch = StopWatch()
-
 # global counter for total processed jobs across runs
 totalCount = 0
+total = 0
+jobErrors = set[tuple[int, str]]()
 
 
 class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
@@ -38,57 +36,47 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     @start()
     def processRows(self):
         global mysql
+        global total
+        if getEnvBool('AI_CV_MATCH'):
+            loadCVContent()  # Load CV once at startup if matching is enabled
         while True:
             with MysqlUtil() as mysql:
                 total = mysql.count(QRY_COUNT_JOBS_FOR_ENRICHMENT)
                 if total == 0:
-                    consoleTimer("All jobs are already AI enriched, ", '10s')
+                    consoleTimer("All jobs are already AI enriched, ", '10s', end='\n')
                     continue
                 print(f'{total} jobs to be ai_enriched...')
                 self.enrichJobs(total)
-                print(yellow(''*60))
+                printHR(yellow)
                 print(yellow('ALL ROWS PROCESSES!'))
-                print(yellow(''*60))
+                printHR(yellow)
 
     def enrichJobs(self, total):
-        global totalCount
-        jobErrors = set[tuple[int, str]]()
+        global totalCount, jobErrors
         crew: Crew = AiJobSearch().crew()
-        for idx, id in enumerate(getJobIdsList()):
-            print(yellow(''*60))
+        for idx, id in enumerate(getJobIdsList(mysql)):
+            printHR(yellow)
             stopWatch.start()
             try:
                 job = mysql.fetchOne(QRY_FIND_JOB_FOR_ENRICHMENT, id)
                 if job is None:
-                    print(f'Job id={id} not found in database, skipping')
+                    print(f'Job id={id} not found in database (or mark as ignored, discarded, closed) , skipping')
                     continue
-                title = job[1]
-                company = job[3]
-                printHR()
-                now = str(datetime.datetime.now())
-                print(yellow(f'Job {idx+1}/{total} Started at: {now} -> id={id}, title={title}, company={company}'))
-                # DB markdown blob decoding
-                markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
-                crewOutput: CrewOutput = crew.kickoff(inputs={"markdown": f'# {title} \n {markdown}'})
-                result: dict[str, str] = rawToJson(crewOutput.raw)
+                title, company, markdown = mapJob(job)
+                printJob(total, idx, id, title, company)
+                inputs = {"markdown": f'# {title} \n {markdown}'}
+                if getEnvBool('AI_CV_MATCH'):
+                    inputs["cv_content"] = cvMatcher.cvContent
+                crewOutput: CrewOutput = crew.kickoff(inputs=inputs)
+                result = combineTaskResults(crewOutput, DEBUG)
+                print(f'AI Enrichment result:\n{json.dumps(result, indent=2)}')
                 if result is not None:
                     validateResult(result)
                     mysql.updateFromAI(id, company, result)
             except (Exception, KeyboardInterrupt) as ex:
-                print(red(traceback.format_exc()))
-                jobErrors.add((id, f'{title} - {company}: {ex}'))
-                aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
-                params = {'ai_enrich_error': aiEnrichError,
-                          'ai_enriched': True}
-                query, params = updateFieldsQuery([id], params)
-                count = mysql.executeAndCommit(query, params)
-                if count == 0:
-                    print(yellow(f"ai_enrich_error set, id={id}"))
-                else:
-                    print(red(f"could not update ai_enrich_error, id={id}"))
-            stopWatch.end()
-            # increment global cumulative counter and print both per-batch and total
+                saveError(mysql, jobErrors, id, title, company, ex)
             totalCount += 1
+            stopWatch.end()
             print(yellow(f'Total processed jobs (this run): {idx+1}/{total}'))
             print(yellow(f'Global total processed jobs: {totalCount}'))
             print()
@@ -98,112 +86,6 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
             [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
 
 
-def getJobIdsList() -> list[int]:
-    jobIds = [row[0] for row in mysql.fetchAll(QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
-    print(yellow(f'{jobIds}'))
-    return jobIds
-
-
-def rawToJson(raw: str) -> dict[str, str]:
-    res = raw
-    try:
-        IM = re.I | re.M
-        # remove Agent Thought or Note
-        res = re.sub(r'\n(Thought|Note):(.*\n)*', '', res, flags=IM)
-        # remove json prefix
-        res = re.sub(r'json *object *', '', res, flags=IM)
-        res = re.sub(r'(```)', '', res, flags=IM)
-        res = fixJsonStartCurlyBraces(res)
-        res = fixJsonEndCurlyBraces(res)
-        res = fixJsonInvalidAttribute(res)
-        # repl \& or \. (...) by & or .
-        res = re.sub(r'\\([&.*-+#])', r'\1', res, re.I | re.M)
-        # res = fixInvalidUnicode(res)
-        return dict(json.loads(f'{res}', cls=LazyDecoder))
-    except Exception as ex:
-        printJsonException(ex, res, raw)
-        raise ex
-
-
-class LazyDecoder(json.JSONDecoder):
-    def decode(self, s, **kwargs):
-        regex_replacements = [
-            (re.compile(r'([^\\])\\([^\\])'), r'\1\\\\\2'),
-            (re.compile(r',(\s*])'), r'\1'),
-        ]
-        for regex, replacement in regex_replacements:
-            s = regex.sub(replacement, s)
-        return super().decode(s, **kwargs)
-
-
-def printJsonException(ex: Exception, res: str, raw: str) -> None:
-    print(red(traceback.format_exc()))
-    print(red(f'Could not parse json after clean it: {ex}'))
-    print(red(f'Json after clean:\n{res}'))
-    print(yellow(f'Original json:\n{raw}'))
-    raise ex
-
-
-# def fixInvalidUnicode(res):
-#     res = re.sub('\\\\u00ai', '\u00ad', res)  # á
-#     res = re.sub('\\\\u00f3', '\u00ed', res)  # í
-#     res = re.sub('\\\\u00f3', '\u00ed', res)  # í
-#     return res
-
-
-def fixJsonInvalidAttribute(raw):
-    """Fixes LLM invalid json value, f.ex.:
-    "salary": "xx" + "yy",
-    "salary": "xx",",
-    """
-    raw = re.sub(r'" \+ "', ' + ', raw)
-    # {"salary":
-    # "$\text{Salary determined by the market and your experience} \\\$",
-    raw = re.sub(r'"[$]\\text\{([^\}]+)\} \\\\\\\$"', r'\1', raw)
-    return re.sub(r'(.+)",",', r'\1",', raw)
-
-
-def fixJsonEndCurlyBraces(raw):
-    raw = re.sub('"[)\\\\]', '"}', raw)
-    idx = raw.rfind('}')
-    if idx > 0 and idx + 1 < len(raw):  # remove extra text after }
-        return raw[0:idx+1]
-    if idx == -1:  # sometimes LLM forgets to close }
-        return raw + '}'
-    return raw
-
-
-def fixJsonStartCurlyBraces(raw):
-    idx = raw.rfind('{')
-    if idx > 0 and idx + 1 < len(raw):
-        # remove extra text before {
-        return raw[idx:]
-    return raw
-
-
-def validateResult(result: dict[str, str]):
-    salary = result.get('salary')
-    if salary:  # infojobs
-        if re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
-            print(yellow(f'Removing no numbers salary: {salary}'))
-            result.update({'salary': None})
-        else:
-            regex = r'^(sueldo|salarios?|\(?según experiencia\)?)[: ]+(.+)'
-            if hasLen(re.finditer(regex, salary, flags=re.I)):
-                result.update(
-                    {'salary': re.sub(regex, r'\2', salary, flags=re.I)})
-    listsToString(result, ['required_technologies', 'optional_technologies'])
-
-
-def listsToString(result: dict[str, str], fields: list[str]):
-    for f in fields:
-        value = result.get(f, None)
-        if not value:
-            result[f] = None
-        elif isinstance(value, list):
-            result[f] = ','.join(value)
-
-
 @CrewBase
 class AiJobSearch:
 
@@ -211,36 +93,65 @@ class AiJobSearch:
     tasks_config = 'config/tasks.yaml'
 
     @agent
-    def researcher_agent(self) -> Agent:
-        timeout = getEnv('AI_ENRICHMENT_JOB_TIMEOUT_SECONDS')
-        print(f'Creating agent: timeout (seconds)={timeout}')
-        config = self.agents_config['researcher_agent']
+    def extractor_agent(self) -> Agent:
+        print('Creating extractor agent')
+        config = self.agents_config['extractor_agent']
         result = Agent(
             llm=LLM_CFG,
             config=config,
             result_as_answer=True,
-            verbose=True,
+            verbose=VERBOSE,
             max_iter=1,
             # max_rpm=1,
-            max_execution_time=timeout)
+            max_execution_time=getEnv('AI_ENRICH_EXTRACT_TIMEOUT_SECONDS'))
         return result
 
+    @agent
+    def cv_matcher_agent(self) -> Agent:
+        """Agent for matching CV with job offer"""
+        print('Creating cv_matcher_agent', '(Disabled)' if self.tasks_config.get('cv_matcher_agent', None) is None else '')
+        config = self.agents_config['cv_matcher_agent']
+        return Agent(llm=LLM_CFG,
+                     config=config,
+                     result_as_answer=True,
+                     verbose=VERBOSE,
+                     max_iter=1,
+                     max_execution_time=getEnv('AI_ENRICH_CV_MATCH_TIMEOUT_SECONDS'))
+
     @task
-    def researcher_task(self) -> Task:
-        print('Creating task')
-        config = self.tasks_config['researcher']
-        return Task(config=config,
-                    verbose=True)
-        # ,output_json=JobTaskOutputModel
+    def extractor_task(self) -> Task:
+        print('Creating extractor task')
+        config = self.tasks_config['extractor_task']
+        return Task(config=config, verbose=VERBOSE)
+
+    # @task
+    def cv_matcher_task(self) -> Task:
+        """Task for matching CV with job offer"""
+        # if self.tasks_config.get('cv_matcher_task', None) is None:
+        if getEnvBool('AI_CV_MATCH') is False:
+            print(yellow('CV matcher task not configured, skipping'))
+            return None
+        print('Creating cv_matcher_task')
+        config = self.tasks_config['cv_matcher_task']
+        return Task(config=config, verbose=VERBOSE)
 
     @crew
     def crew(self) -> Crew:
         """Creates the AiJobSearch crew"""
         print('Creating the AiJobSearch crew')
+        agents = [self.extractor_agent()]
+        tasks = [self.extractor_task()]
+        # Add CV matcher if enabled
+        cv_task = self.cv_matcher_task()
+        if cv_task is not None:
+            # cv_agent = self.cv_matcher_agent()
+            # if cv_agent and cv_task:
+            agents.append(self.cv_matcher_agent())
+            tasks.append(cv_task)
+            print(yellow('CV matching enabled'))
         return Crew(
-            agents=self.agents,
-            tasks=self.tasks,
+            agents=agents,
+            tasks=tasks,
             process=Process.sequential,
-            # response_format:
-            verbose=True,
+            verbose=VERBOSE,
         )

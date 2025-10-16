@@ -29,6 +29,12 @@ python -m uv tool install crewai
 - Modify `src/ai_job_search/crew.py` to add your own logic, tools and specific args
 - Modify `src/ai_job_search/main.py` to add custom inputs for your agents and tasks
 
+#### CV match (optional)
+
+CV matching % against job offer can be enabled setting `AI_CV_MATCH=True` in your `.env` file.
+
+TODO: There is no implementation yet in front end (but value % is stored in database jobs.cv_match_percentage column)
+
 ## Running the Project
 
 To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:

@@ -81,23 +81,22 @@ def removeNewLines(txt: str) -> str:
         return str(txt)
 
 
-def consoleTimer(message: str, timeUnit: str):
+def consoleTimer(message: str, timeUnit: str, end='\r'):
     """timeUnit: 30s|8m|2h"""
     seconds = getSeconds(timeUnit)
     spinner = Spinner()
+    blankLine = True if end == '\r' else False
     try:
         for left in range(seconds*spinner.tickXSec, 0, -1):
             spinnerStr = spinner.generate()
-            timeLeft = str(timedelta(
-                seconds=int(left/spinner.tickXSec)))
-            print(yellow(message,
-                         f"{spinnerStr} I'll retry in {timeLeft} {spinnerStr}",
-                         f"{' '*10}"),
-                  end='\r')
+            timeLeft = str(timedelta(seconds=int(left/spinner.tickXSec)))
+            print(yellow(message, f"{spinnerStr} I'll retry in {timeLeft} {spinnerStr}{' '*10}"), end=end)
+            end='\r'
             spinner.nextTick()
             sleep(1/spinner.tickXSec)
     finally:
-        print()
+        if blankLine:
+            print()
 
 
 def getSeconds(timeUnit: str):

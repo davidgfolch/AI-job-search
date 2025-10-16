@@ -259,7 +259,7 @@ def processRow():
         if id := mysql.insert((jobId, title, company, location, url, md,
                                easyApply, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
-            mergeDuplicatedJobs(mysql.fetchAll(getSelect()))
+            mergeDuplicatedJobs(mysql, getSelect())
     else:
         raise ValueError('Validation failed')
     print()

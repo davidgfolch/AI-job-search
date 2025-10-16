@@ -66,6 +66,9 @@ CREATE TABLE `jobs` (
   KEY `discarded_index` (`discarded`),
   KEY `closed_index` (`closed`)
 ) ENGINE=InnoDB AUTO_INCREMENT=341286 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE jobs ADD COLUMN cv_match_percentage TINYINT NULL;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

@@ -1,14 +1,10 @@
 import traceback
-from ai_job_search.tools.mysqlUtil import (
-    MysqlUtil, deleteJobsQuery, updateFieldsQuery)
+from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery, updateFieldsQuery
 from ai_job_search.tools.terminalColor import blue, cyan, red
-from ai_job_search.tools.util import (
-    getEnvBool, removeNewLines)
-from ai_job_search.viewer.clean.cleanUtil import (
-    getFieldValue)
+from ai_job_search.tools.util import getEnvBool, removeNewLines
+from ai_job_search.viewer.clean.cleanUtil import getFieldValue
 from ai_job_search.viewer.util.stUtil import stripFields
-from ai_job_search.viewer.viewAndEditConstants import (
-    DB_FIELDS_BOOL)
+from ai_job_search.viewer.viewAndEditConstants import DB_FIELDS_BOOL
 
 
 DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
@@ -43,24 +39,21 @@ def getSelect():
     order by r.title, r.company, r.max_created desc"""
 
 
-def merge(rowsIds) -> list:
+def merge(mysql: MysqlUtil, rowsIds) -> list:
     results = []
-    with MysqlUtil() as mysql:
-        for ids in rowsIds:
-            query = SELECT_FOR_MERGE.format(
-                **{'ids': ids,
-                    'cols': COLS})
-            id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
-            updateQry, params = updateFieldsQuery([id], merged, merged=True)
-            queries = [{'query': updateQry, 'params': params}]
-            idsArr = ids.split(',')
-            idsArr.remove(str(id))
-            deleteQry = deleteJobsQuery(idsArr)
-            queries.append({'query': deleteQry})
-            affectedRows = mysql.executeAllAndCommit(queries)
-            results.append([{'arr': out, 'query': query}] + queries + [{
-                'text': f'Merge duplicates: affected rows (updated {id} & deleted {idsArr}):' +
-                f' {affectedRows}'}])
+    for ids in rowsIds:
+        query = SELECT_FOR_MERGE.format(**{'ids': ids,'cols': COLS})
+        id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
+        updateQry, params = updateFieldsQuery([id], merged, merged=True)
+        queries = [{'query': updateQry, 'params': params}]
+        idsArr = ids.split(',')
+        idsArr.remove(str(id))
+        deleteQry = deleteJobsQuery(idsArr)
+        queries.append({'query': deleteQry})
+        affectedRows = mysql.executeAllAndCommit(queries)
+        results.append([{'arr': out, 'query': query}] + queries + [{
+            'text': f'Merge duplicates: affected rows (updated {id} & deleted {idsArr}):' +
+            f' {affectedRows}'}])
     return results
 
 
@@ -69,8 +62,7 @@ def mergeJobDuplicates(rows, ids):
     for row in rows:
         for colIdx, f in enumerate(COLS_ARR):
             if colIdx > COL_COMPANY_IDX and row[colIdx]:
-                if f != 'created' or \
-                        f == 'created' and merged.get(f, None) is None:
+                if f != 'created' or f == 'created' and merged.get(f, None) is None:
                     merged[f] = row[colIdx]
         id = getFieldValue(row, COLS_ARR, 'id')
         out = [' '.join([f'`{getFieldValue(row, COLS_ARR, "title")}`',
@@ -81,14 +73,15 @@ def mergeJobDuplicates(rows, ids):
     return id, merged, out
 
 
-def mergeDuplicatedJobs(rows):
+def mergeDuplicatedJobs(mysql: MysqlUtil, selectQuery: str):
     """Scrapper entry"""
     try:
+        rows = mysql.fetchAll(selectQuery)
         if len(rows) == 0:
             return
         idsIdx = 1
         rowsIds = [row[idsIdx] for row in rows]
-        for results in merge(rowsIds):
+        for results in merge(mysql, rowsIds):
             for line in results:
                 print(' ', end='')
                 if arr := line.get('arr', None):

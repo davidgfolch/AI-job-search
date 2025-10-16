@@ -70,6 +70,7 @@ def loadMainPage():
         except Exception:
             cloudFlareSecurityFilter()
 
+
 @retry()
 def login():
     loadMainPage()
@@ -128,7 +129,7 @@ def getJobId(url: str):
                   url, flags=re.I)
 
 
-@retry() # (exceptionFnc=reInitSeleniumAndLogin)
+@retry()  # (exceptionFnc=reInitSeleniumAndLogin)
 def searchJobs(url: str):
     keywords = url.split('/')
     keywords = keywords[len(keywords)-1:]
@@ -229,7 +230,7 @@ def processRow():
         if id := mysql.insert((jobId, title, company, location, url, md,
                                easyApply, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
-            mergeDuplicatedJobs(mysql.fetchAll(getSelect()))
+            mergeDuplicatedJobs(mysql, getSelect())
 
     else:
         raise ValueError('Validation failed')
