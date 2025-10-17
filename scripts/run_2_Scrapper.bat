@@ -1,2 +1,2 @@
 @echo off
-.\.venv\Scripts\python -m ai_job_search.scrapper_main
+.\.venv\Scripts\python python src/ai_job_search/scrapper_main.py

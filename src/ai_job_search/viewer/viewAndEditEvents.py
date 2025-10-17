@@ -1,16 +1,13 @@
 import re
 import streamlit as st
-from ai_job_search.tools.mysqlUtil import (
-    MysqlUtil, deleteJobsQuery, updateFieldsQuery)
+from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery, updateFieldsQuery
 from ai_job_search.tools.sqlUtil import formatSql
 from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
-from ai_job_search.viewer.util.stUtil import (
-    getSelectedRowsIds, getState, pillsValuesToDict, setFieldValue,
-    setMessageInfo, setState)
-from ai_job_search.viewer.viewAndEditConstants import (
-    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS,
-    FF_KEY_PRESELECTED_ROWS, FF_KEY_SINGLE_SELECT, FIELDS_BOOL)
+from ai_job_search.viewer.util.stStateUtil import getState, setState
+from ai_job_search.viewer.util.stUtil import getSelectedRowsIds, pillsValuesToDict, setFieldValue, setMessageInfo
+from ai_job_search.viewer.viewAndEditConstants import (F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS,
+                                                       FF_KEY_PRESELECTED_ROWS, FF_KEY_SINGLE_SELECT, FIELDS_BOOL)
 
 
 def onTableChange():
@@ -52,8 +49,7 @@ def deleteSelectedRows():
 
 
 def deleteSalary(id):
-    MysqlUtil(mysqlCachedConnection()) \
-        .executeAndCommit(f'update jobs set salary=null where id = {id}', {})
+    MysqlUtil(mysqlCachedConnection()).executeAndCommit(f'update jobs set salary=null where id = {id}', {})
 
 
 def formDetailSubmit():
@@ -69,9 +65,8 @@ def formDetailSubmit():
         if len(ids) > 1:  # for several rows just fields not None or empty
             fieldsValues = {k: v for k, v in fieldsValues.items() if v}
         query, params = updateFieldsQuery(ids, keysToColumns(fieldsValues))
-        showCodeSql(formatSql(query, False))
-        result = MysqlUtil(mysqlCachedConnection()
-                           ).executeAndCommit(query, params)
+        showCodeSql(formatSql(query, False), params=params)
+        result = MysqlUtil(mysqlCachedConnection()).executeAndCommit(query, params)
         setMessageInfo(f'{result} row(s) updated.')
     else:
         setMessageInfo('Nothing to save.')

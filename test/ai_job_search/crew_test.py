@@ -1,6 +1,6 @@
 import pytest
-from ai_job_search.crew import rawToJson
-from ai_job_search.crew import validateResult
+
+from ai_job_search.crewai.crewHelper import rawToJson, validateResult
 
 
 @pytest.mark.parametrize("raw, expected", [

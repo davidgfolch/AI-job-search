@@ -4,14 +4,14 @@ import traceback
 
 from crewai.crews.crew_output import CrewOutput
 
-from ai_job_search.tools.util import (getDatetimeNowStr, hasLen, removeExtraEmptyLines)
-from ai_job_search.tools.mysqlUtil import (QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, updateFieldsQuery)
-from ai_job_search.tools.terminalColor import green, red, yellow
+from ..tools.util import (getDatetimeNowStr, hasLen, removeExtraEmptyLines)
+from ..tools.mysqlUtil import (QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, updateFieldsQuery)
+from ..tools.terminalColor import green, red, yellow
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 
 def printJob(total, idx, id, title, company):
-    print(green(f'Job {idx+1}/{total} Started at: {getDatetimeNowStr()} -> id={id}, title={title}, company={company}'))
+    print(green(f'AI enrich job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company}'))
 
 
 def mapJob(job):

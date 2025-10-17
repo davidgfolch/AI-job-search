@@ -6,9 +6,9 @@ import traceback
 # from markdownify import MarkdownConverter
 import markdownify
 
-from ai_job_search.tools.terminalColor import (
-    green, printHR, red, yellow)
-from ai_job_search.tools.util import getDatetimeNowStr, getEnv, hasLenAnyText, getDatetimeNow
+
+from ai_job_search.tools.terminalColor import green, printHR, red, yellow
+from ai_job_search.tools.util import getDatetimeNowStr, getEnv, hasLenAnyText
 
 
 def getAndCheckEnvVars(site: str):

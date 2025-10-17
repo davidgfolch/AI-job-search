@@ -2,8 +2,8 @@ import traceback
 import pandas as pd
 import pdfplumber
 from pathlib import Path
-from ai_job_search.tools.terminalColor import red, yellow
-from ai_job_search.tools.util import getEnv, getEnvBool
+from ..tools.terminalColor import red, yellow
+from ..tools.util import getEnv, getEnvBool
 
 # CV content cache
 cvContent = None

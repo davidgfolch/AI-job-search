@@ -1,13 +1,13 @@
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from pandas import DataFrame
+
+from ai_job_search.viewer.clean import deleteOld, ignoreByTitle
 from ai_job_search.tools.mysqlUtil import MysqlUtil
-from ai_job_search.viewer.clean import (deleteOld, ignoreByTitle)
 from ai_job_search.viewer.clean.cleanUtil import getAllIds
 from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
-from ai_job_search.viewer.util.stStateUtil import setState
-from ai_job_search.viewer.util.stUtil import (getState)
+from ai_job_search.viewer.util.stStateUtil import getState, setState
 from ai_job_search.viewer.util.viewUtil import gotoPage
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
 
@@ -74,7 +74,7 @@ def table(columns, cnf, res):
                   'Created': st.column_config.Column(width='large'),
                   }
     #TODO: use st-aggrid instead of data_editor?
-    editedDf = st.data_editor(df, use_container_width=True,
+    editedDf = st.data_editor(df, width='stretch',
                           hide_index=True, key='cleanJobsListTable',
                           on_change=onTableChange,
                           column_config=colsConfig, height=600)
@@ -102,7 +102,7 @@ def actionButtons(cnf, selectedRows, totalSelectedIds):
               kwargs={'page': PAGE_VIEW_IDX,
                       'ids': getAllIds(selectedRows)})
     if not disabled:
-        c2.dataframe(selectedRows, hide_index=True, use_container_width=True)
+        c2.dataframe(selectedRows, hide_index=True, width='stretch')
 
 
 def tableSummary(rows, selectedRows):

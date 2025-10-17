@@ -1,5 +1,6 @@
 from pandas import DataFrame
 import streamlit as st
+
 from streamlit.delta_generator import DeltaGenerator
 from ai_job_search.tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 from ai_job_search.tools.util import getEnvMultiline

@@ -3,13 +3,12 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.flow.flow import Flow, start
 from crewai.crews.crew_output import CrewOutput
-from ai_job_search.crewai import cvMatcher
-from ai_job_search.crewai.crewHelper import combineTaskResults, getJobIdsList, mapJob, printJob, rawToJson, saveError, validateResult
-from ai_job_search.crewai.cvMatcher import loadCVContent
-from ai_job_search.tools.stopWatch import StopWatch
-from ai_job_search.tools.terminalColor import printHR, red, yellow
-from ai_job_search.tools.mysqlUtil import (QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT, MysqlUtil)
-from ai_job_search.tools.util import (getEnv, consoleTimer, getEnvBool)
+from .crewai.crewHelper import combineTaskResults, getJobIdsList, mapJob, printJob, rawToJson, saveError, validateResult
+from .crewai.cvMatcher import loadCVContent, cvContent
+from .tools.stopWatch import StopWatch
+from .tools.terminalColor import printHR, red, yellow
+from .tools.mysqlUtil import (QRY_COUNT_JOBS_FOR_ENRICHMENT, QRY_FIND_JOB_FOR_ENRICHMENT, MysqlUtil)
+from .tools.util import (getEnv, consoleTimer, getEnvBool)
 
 VERBOSE = False
 DEBUG = False
@@ -66,7 +65,7 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
                 printJob(total, idx, id, title, company)
                 inputs = {"markdown": f'# {title} \n {markdown}'}
                 if getEnvBool('AI_CV_MATCH'):
-                    inputs["cv_content"] = cvMatcher.cvContent
+                    inputs["cv_content"] = cvContent
                 crewOutput: CrewOutput = crew.kickoff(inputs=inputs)
                 result = combineTaskResults(crewOutput, DEBUG)
                 print(f'AI Enrichment result:\n{json.dumps(result, indent=2)}')

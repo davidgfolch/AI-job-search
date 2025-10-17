@@ -2,8 +2,7 @@
 import sys
 import warnings
 
-from ai_job_search.crew import AiJobSearch, AiJobSearchFlow
-# from ai_job_search.inputs import INPUTS
+from .crew import AiJobSearch, AiJobSearchFlow
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 

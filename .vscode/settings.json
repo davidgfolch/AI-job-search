@@ -48,6 +48,6 @@
     },
     "autopep8.args": [
           "--max-line-length=120"
-      ]
+    ]
 
 }

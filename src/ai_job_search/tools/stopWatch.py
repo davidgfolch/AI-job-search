@@ -1,7 +1,7 @@
 import statistics
 import time
 
-from ai_job_search.tools.terminalColor import yellow
+from .terminalColor import yellow
 
 
 class StopWatch:

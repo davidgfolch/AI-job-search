@@ -1,4 +1,5 @@
 import traceback
+
 from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery, updateFieldsQuery
 from ai_job_search.tools.terminalColor import blue, cyan, red
 from ai_job_search.tools.util import getEnvBool, removeNewLines

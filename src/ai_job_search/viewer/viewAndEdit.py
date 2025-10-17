@@ -1,35 +1,24 @@
 import re
+import streamlit as st
 from pandas import DataFrame
 from ai_job_search.tools.sqlUtil import formatSql
 from ai_job_search.tools.util import getEnv
 from ai_job_search.viewer.streamlitConn import mysqlCachedConnection
 from ai_job_search.viewer.util.stComponents import showCodeSql
-from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, initStates
-from ai_job_search.viewer.util.viewUtil import (
-    getValueAsDict, gotoPageByUrl, mapDetailForm)
-from ai_job_search.viewer.util.stUtil import (
-    getState, getTextAreaHeightByText, stripFields)
+from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, getState, initStates
+from ai_job_search.viewer.util.viewUtil import getValueAsDict, gotoPageByUrl, mapDetailForm
+from ai_job_search.viewer.util.stUtil import getTextAreaHeightByText, inColumns, stripFields
 from ai_job_search.viewer.viewAndEditConstants import (
-    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD,
-    DEFAULT_NOT_FILTERS, DEFAULT_ORDER,
-    DEFAULT_SQL_FILTER,
-    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS,
-    FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH,
-    FF_KEY_CONFIG_PILLS,
-    FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY,
-    FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE,
-    FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS,
-    STYLE_JOBS_TABLE)
-from ai_job_search.viewer.viewAndEditEvents import (formDetailSubmit)
-from ai_job_search.viewer.viewAndEditHelper import (
-    detailForSingleSelection, formFilter, inColumns, showDetail,
-    getJobListQuery, table, tableFooter)
+    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS, DEFAULT_ORDER, DEFAULT_SQL_FILTER,
+    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS, FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS,
+    FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS, FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY, FF_KEY_SEARCH,
+    FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS, STYLE_JOBS_TABLE)
+from ai_job_search.viewer.viewAndEditEvents import formDetailSubmit
+from ai_job_search.viewer.viewAndEditHelper import detailForSingleSelection, formFilter, showDetail, getJobListQuery, table, tableFooter
 from ai_job_search.viewer.viewConstants import PAGE_VIEW_IDX
-from ai_job_search.tools.mysqlUtil import (
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY,
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS,
-    MysqlUtil, getColumnTranslated)
-import streamlit as st
+from ai_job_search.tools.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS,
+                                           MysqlUtil, getColumnTranslated)
+
 
 # from streamlit_js_eval import streamlit_js_eval
 # TODO: Table scroll memory: when selecting a row below the visible scroll, a
@@ -81,8 +70,7 @@ def view():
 
 
 def formDetail(jobData):
-    boolFieldsValues, comments, salary, company, client = \
-        mapDetailForm(jobData, FIELDS_BOOL)
+    boolFieldsValues, comments, salary, company, client = mapDetailForm(jobData, FIELDS_BOOL)
     with st.form('statusForm'):
         inColumns([
             (10, lambda _: st.pills(
@@ -96,8 +84,7 @@ def formDetail(jobData):
                 'Save', 'Save changes in job(s)',
                 type='primary',
                 on_click=formDetailSubmit))])
-        st.text_area("Comments", comments, key=F_KEY_COMMENTS,
-                     height=getTextAreaHeightByText(comments))
+        st.text_area("Comments", comments, key=F_KEY_COMMENTS, height=getTextAreaHeightByText(comments))
         st.text_input("Salary", salary, key=F_KEY_SALARY)
         st.text_input("Company", company, key=F_KEY_COMPANY)
         st.text_input("Client", client, key=F_KEY_CLIENT)
@@ -110,7 +97,8 @@ def getJobData(selectedRows: DataFrame):
     fieldsArr = stripFields(DB_FIELDS)
     return {
         f'{fieldsArr[idx]}': getValueAsDict(fieldsArr[idx], data)
-        for idx, data in enumerate(jobData)}
+        for idx, data in enumerate(jobData)
+    }
 
 
 def tableView():
@@ -147,7 +135,7 @@ def formDetailForMultipleSelection(selectedRows, jobData):
     }
     st.dataframe(selectedRows,  # column_order=FIELDS,
                  hide_index=True,
-                 use_container_width=True,
+                 width='stretch',
                  column_config=config)
     formDetail(jobData)
 

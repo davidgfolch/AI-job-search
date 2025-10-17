@@ -8,8 +8,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from ai_job_search.tools.decorator.retry import retry
-from ai_job_search.tools.terminalColor import yellow
+from ..tools.decorator.retry import retry
+from ..tools.terminalColor import yellow
 
 # Rotating User-Agents to avoid Cloudflare security filter
 # TODO: Keep list updated, last update 30/ene/2025

@@ -1,9 +1,7 @@
 from pandas import DataFrame
-from ai_job_search.viewer.util.stUtil import (
-    scapeLatex, setState)
-from ai_job_search.viewer.viewAndEditConstants import (
-    F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY,
-    FF_KEY_PRESELECTED_ROWS)
+from ai_job_search.viewer.util.stStateUtil import setState
+from ai_job_search.viewer.util.stUtil import scapeLatex
+from ai_job_search.viewer.viewAndEditConstants import F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, FF_KEY_PRESELECTED_ROWS
 from ai_job_search.viewer.viewConstants import PAGE_STATE_KEY
 
 KEY_SELECTED_IDS = 'selectedIds'
@@ -56,7 +54,8 @@ def fmtDetailOpField(data: dict, key: str, label: str = None, level=0) -> str:
     if value is None:
         return ''
     label = key.capitalize() if label is None else label
-    value = scapeLatex({key: data.get(key)}, key).get(key)
+    if isinstance(value,str):
+        value = scapeLatex({key: value}, key).get(key)
     return f'{" "* level}- {label}: :green[{value}]\n'
 
 

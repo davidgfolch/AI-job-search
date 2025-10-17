@@ -1,5 +1,6 @@
 import re
 import time
+
 from ai_job_search.tools.stopWatch import StopWatch
 
 def test_start():

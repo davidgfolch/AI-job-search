@@ -6,6 +6,7 @@ selenium==4.36.0
 markdownify==1.2.0
 mysql-connector-python==9.4.0
 pdfplumber==0.11.7
+dotenv==0.9.9
 
 # For development and testing
 pytest==8.4.2

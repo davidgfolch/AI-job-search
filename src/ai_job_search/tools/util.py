@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 import random
 import re
 from time import sleep
-from ai_job_search.tools.terminalColor import yellow
 import os
 from typing import Iterator
 from dotenv import load_dotenv
+from .terminalColor import yellow
 
 
 def getEnvModified() -> float | None:

@@ -3,17 +3,14 @@ import re
 import traceback
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
-from ai_job_search.scrapper import baseScrapper
-from ai_job_search.scrapper.baseScrapper import (
-    getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle,
-    validate)
-from ai_job_search.tools.terminalColor import green, printHR, red, yellow
-from ai_job_search.tools.decorator.retry import retry
-from ai_job_search.tools.util import getDatetimeNowStr
-from ai_job_search.viewer.clean.mergeDuplicates import (
-    getSelect, mergeDuplicatedJobs)
+from . import baseScrapper
+from .baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
+from ..tools.terminalColor import green, printHR, red, yellow
+from ..tools.decorator.retry import retry
+from ..tools.util import getDatetimeNowStr
+from ..viewer.clean.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from .seleniumUtil import SeleniumUtil, sleep
-from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from ..tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .selectors.indeedSelectors import (
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,

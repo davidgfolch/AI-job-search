@@ -1,6 +1,7 @@
 import pytest
 
-from ai_job_search.tools.decorator.retry import retry, StackTrace
+from ai_job_search.tools.decorator import retry
+from ai_job_search.tools.decorator.retry import StackTrace
 
 def test_retry_success():
     

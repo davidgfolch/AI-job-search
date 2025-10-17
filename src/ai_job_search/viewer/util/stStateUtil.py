@@ -1,7 +1,7 @@
 import json
 import re
-from pandas import DataFrame
 import streamlit as st
+from pandas import DataFrame
 from functools import reduce
 
 from ai_job_search.tools.util import createFolder, listFiles, toBool

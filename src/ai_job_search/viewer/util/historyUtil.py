@@ -1,11 +1,11 @@
 import os
 import re
-from pandas import DataFrame, Series
-from ai_job_search.tools.util import createFolder
-from ai_job_search.viewer.util.stStateUtil import (
-    getBoolKeyName, getState, setState)
 import streamlit as st
+from pandas import DataFrame, Series
 from streamlit.delta_generator import DeltaGenerator
+
+from ai_job_search.tools.util import createFolder
+from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, getState, setState
 
 
 def historyButton(key: str, history: bool, container: DeltaGenerator = st):
@@ -39,9 +39,7 @@ def fieldHistory(key):
                   'Company': st.column_config.Column(width='large'),
                   'Created': st.column_config.Column(width='large'),
                   }
-    res = st.data_editor(data=df,
-                         column_config=colsConfig,
-                         width=600, use_container_width=True, hide_index=True)
+    res = st.data_editor(data=df, column_config=colsConfig, width='stretch', hide_index=True)
     historyOnChange(key, res)
 
 

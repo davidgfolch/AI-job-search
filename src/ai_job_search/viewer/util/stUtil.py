@@ -3,9 +3,10 @@ import re
 from typing import Callable
 from pandas import DataFrame
 import streamlit as st
+
+from ai_job_search.viewer.util.stStateUtil import getState, setState
+
 # TODO: modal -> try from streamlit_modal import Modal ??
-from ai_job_search.viewer.util.stStateUtil import (
-    getState, setState)
 
 
 def setMessageInfo(msg: str):

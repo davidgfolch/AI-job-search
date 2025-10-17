@@ -4,7 +4,7 @@ import traceback
 from typing import Callable, Any
 from time import sleep
 
-from ai_job_search.tools.terminalColor import red, yellow
+from ..terminalColor import red, yellow
 
 
 class StackTrace(Enum):

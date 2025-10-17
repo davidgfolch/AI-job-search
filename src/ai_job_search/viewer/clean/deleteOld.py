@@ -1,6 +1,7 @@
 from pandas import DataFrame
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+
 from ai_job_search.tools.mysqlUtil import MysqlUtil, deleteJobsQuery
 from ai_job_search.viewer.clean.cleanUtil import getIdsIndex
 from ai_job_search.viewer.streamlitConn import mysqlCachedConnection

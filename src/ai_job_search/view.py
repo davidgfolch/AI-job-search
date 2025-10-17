@@ -1,4 +1,5 @@
 import streamlit as st
+
 from ai_job_search.viewer.cleaner import clean
 from ai_job_search.viewer.dashboard import stats
 from ai_job_search.viewer.util.stStateUtil import printSessionState

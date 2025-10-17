@@ -32,7 +32,7 @@ interview_rh,interview,interview_tech,interview_technical_test,interview_technic
 ai_enriched,easy_apply"""
 DB_FIELDS = f"""id,salary,title,required_technologies,optional_technologies,
 web_page,company,client,markdown,location,url,created,modified,merged,
-comments,{DB_FIELDS_BOOL},ai_enrich_error"""
+comments,{DB_FIELDS_BOOL},ai_enrich_error,cv_match_percentage"""
 # FILTERS
 RLIKE = getEnv('WHERE_FILTER_REGEX')
 DEFAULT_SQL_FILTER = f"""
@@ -42,7 +42,7 @@ required_technologies rlike '{RLIKE}'
 DEFAULT_DAYS_OLD = "1"
 DEFAULT_ORDER = "created desc"
 DETAIL_FORMAT = """
-    ## [{title}]({url})
+    ## [{title}]({url}) - {id}
 - Source: :green[{web_page}] - [Internal link](http://localhost:8501/?selectedIds={id}&selectedPage=0&preSelectedRows=0)
   {dates}
 - Company: :green[{company}]

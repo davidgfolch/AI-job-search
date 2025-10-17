@@ -1,15 +1,15 @@
-from collections import deque
 import streamlit as st
+from collections import deque
 from streamlit.delta_generator import DeltaGenerator
-# TODO: modal -> try from streamlit_modal import Modal ??
+
 from ai_job_search.tools.mysqlUtil import getColumnTranslated
 from ai_job_search.tools.sqlUtil import formatSql
 from ai_job_search.viewer.util.historyUtil import historyButton
-from ai_job_search.viewer.util.stStateUtil import (
-    getBoolKeyName, getState, listSessionFiles,
-    loadSession, saveSession)
+from ai_job_search.viewer.util.stStateUtil import getBoolKeyName, getState, listSessionFiles, loadSession, saveSession
 from ai_job_search.viewer.viewAndEditConstants import FF_KEY_CONFIG_PILLS
 
+
+# TODO: modal -> try from streamlit_modal import Modal ??
 
 def checkboxFilter(label, key, container: DeltaGenerator = st):
     return container.checkbox(label, key=getBoolKeyName(key))

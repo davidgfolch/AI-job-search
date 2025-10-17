@@ -1,7 +1,7 @@
 import sys
 import traceback
-from ai_job_search.scrapper import (
-    linkedin, indeed, infojobs, glassdoor, tecnoempleo)
+
+from ai_job_search.scrapper import glassdoor, indeed, infojobs, linkedin, tecnoempleo
 from ai_job_search.scrapper.seleniumUtil import SeleniumUtil
 from ai_job_search.tools.terminalColor import cyan, red, yellow
 from ai_job_search.tools.util import consoleTimer, getDatetimeNow, getSeconds, getSrcPath, getTimeUnits

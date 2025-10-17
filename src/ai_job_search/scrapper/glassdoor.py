@@ -1,19 +1,16 @@
 import math
-import time
 import re
 from selenium.common.exceptions import NoSuchElementException
-from ai_job_search.scrapper import baseScrapper
-from ai_job_search.scrapper.baseScrapper import (
-    getAndCheckEnvVars, htmlToMarkdown, printPage, printScrapperTitle,
-    validate)
-from ai_job_search.tools.decorator.retry import retry
-from ai_job_search.tools.terminalColor import green, printHR, yellow
-from ai_job_search.tools.util import getDatetimeNowStr, getEnv
-from ai_job_search.viewer.clean.mergeDuplicates import (
-    getSelect, mergeDuplicatedJobs)
+
+from . import baseScrapper
+from .baseScrapper import (getAndCheckEnvVars, htmlToMarkdown, printPage, printScrapperTitle, validate)
+from ..tools.decorator.retry import retry
+from ..tools.terminalColor import green, printHR, yellow
+from ..tools.util import getDatetimeNowStr, getEnv
+from ..viewer.clean.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from .seleniumUtil import SeleniumUtil, sleep
-from ai_job_search.tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
-from ai_job_search.scrapper.selectors.glassdoorSelectors import (
+from ..tools.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from .selectors.glassdoorSelectors import (
     CSS_SEL_COMPANY2,
     CSS_SEL_COOKIES_ACCEPT,
     CSS_SEL_DIALOG_CLOSE,

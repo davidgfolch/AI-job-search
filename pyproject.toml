@@ -24,4 +24,4 @@ build-backend = "hatchling.build"
 addopts = [
     "--import-mode=importlib",
 ]
-pythonpath = "src"
+pythonpath = "src.ai_job_search"

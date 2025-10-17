@@ -31,8 +31,8 @@ delete from jobs where jobs.web_page='Tecnoempleo';
 update jobs set web_page='Linkedin' where url like '%linkedin%';
 
 
-select id, ai_enriched, ai_enrich_error, modified from jobs where ai_enrich_error is not null;
-update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null;
+select id, ai_enriched, title, ai_enrich_error, modified from jobs where ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
+update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
 update jobs set ai_enriched=False where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 24 HOUR);
 
 SELECT url FROM jobs WHERE web_page='Indeed';

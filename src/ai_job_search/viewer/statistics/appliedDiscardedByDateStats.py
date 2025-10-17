@@ -70,7 +70,7 @@ def run():
         title='Applied vs discarded jobs'
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 
 if __name__ == "__main__":

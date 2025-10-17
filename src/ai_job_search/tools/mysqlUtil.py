@@ -2,8 +2,8 @@ import re
 from typing import Any, Dict, Sequence, TypeVar, Union
 import mysql.connector as mysqlConnector
 
-from ai_job_search.tools.decorator.retry import retry
-from ai_job_search.tools.terminalColor import green, red
+from .decorator.retry import retry
+from .terminalColor import green, red
 
 DEBUG = False
 
@@ -159,15 +159,15 @@ class MysqlUtil:
 
     def executeAllAndCommit(self, queries: list[dict[str, any]]) -> int:
         rowCount = []
-        with self.cursor() as c:
-            try:
+        try:
+            with self.cursor() as c:
                 for query in queries:
                     c.execute(query['query'], query.get('params', ()))
                     rowCount.append(c.rowcount)
                 getConnection().commit()
                 return rowCount
-            except mysqlConnector.Error as ex:
-                self.rollback(ex)
+        except mysqlConnector.Error as ex:
+            self.rollback(ex)
         
 
     def fetchAll(self, query: str, params=None):
