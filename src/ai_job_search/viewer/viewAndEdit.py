@@ -72,18 +72,15 @@ def view():
 def formDetail(jobData):
     boolFieldsValues, comments, salary, company, client = mapDetailForm(jobData, FIELDS_BOOL)
     with st.form('statusForm'):
-        inColumns([
-            (10, lambda _: st.pills(
-                'Status form', FIELDS_BOOL,
-                default=boolFieldsValues,
-                format_func=lambda c: getColumnTranslated(c),
-                selection_mode='multi',
-                label_visibility='collapsed',
-                key=F_KEY_STATUS)),
-            (1, lambda _: st.form_submit_button(
-                'Save', 'Save changes in job(s)',
-                type='primary',
-                on_click=formDetailSubmit))])
+        inColumns([(10, lambda _: st.pills('Status form', FIELDS_BOOL,
+                                           default=boolFieldsValues,
+                                           format_func=lambda c: getColumnTranslated(c),
+                                           selection_mode='multi',
+                                           label_visibility='collapsed',
+                                           key=F_KEY_STATUS)),
+                   (1, lambda _: st.form_submit_button('Save', 'Save changes in job(s)',
+                                                       type='primary',
+                                                       on_click=formDetailSubmit))])
         st.text_area("Comments", comments, key=F_KEY_COMMENTS, height=getTextAreaHeightByText(comments))
         st.text_input("Salary", salary, key=F_KEY_SALARY)
         st.text_input("Company", company, key=F_KEY_COMPANY)

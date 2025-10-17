@@ -2,7 +2,9 @@
 import sys
 import warnings
 
-from .crew import AiJobSearch, AiJobSearchFlow
+from ai_job_search.crewai.dataExtractor import DataExtractor
+
+from .crew import AiJobSearchFlow
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -26,7 +28,7 @@ def train():
     Train the crew for a given number of iterations.
     """
     try:
-        AiJobSearch().crew().train(
+        DataExtractor().crew().train(
             n_iterations=int(sys.argv[1]),
             filename=sys.argv[2],
             inputs={})
@@ -39,7 +41,7 @@ def replay():
     Replay the crew execution from a specific task.
     """
     try:
-        AiJobSearch().crew().replay(task_id=sys.argv[1])
+        DataExtractor().crew().replay(task_id=sys.argv[1])
     except Exception as e:
         raise Exception(f"An error occurred while replaying the crew: {e}")
 
@@ -49,7 +51,7 @@ def test():
     Test the crew execution and returns the results.
     """
     try:
-        AiJobSearch().crew().test(
+        DataExtractor().crew().test(
             n_iterations=int(sys.argv[1]),
             openai_model_name=sys.argv[2],
             inputs={})

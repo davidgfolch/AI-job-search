@@ -21,5 +21,4 @@ class StopWatch:
         end = time.time()
         timeElapsed = end-self.startTime
         self.times.append(timeElapsed)
-        print(f'Time elapsed: {timeElapsed} secs.')
-        print(yellow(f'Media time elapsed: {statistics.median(self.times)}'))
+        print(f'Time elapsed: {timeElapsed:.2f} secs. (Media: {statistics.median(self.times):.2f})')

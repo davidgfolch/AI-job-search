@@ -35,6 +35,8 @@ select id, ai_enriched, title, ai_enrich_error, modified from jobs where ai_enri
 update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
 update jobs set ai_enriched=False where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 24 HOUR);
 
+select id, cv_match_percentage, title, ai_enriched, ai_enrich_error, modified from jobs where cv_match_percentage = -1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
+
 SELECT url FROM jobs WHERE web_page='Indeed';
 update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null;
 
@@ -214,3 +216,8 @@ select concat('Discarded: ',count(id)) as count from jobs where discarded;
 show open tables;
 show performance_schema.processlist;
 
+SELECT id, title, markdown, company
+FROM jobs
+WHERE id=353404 and cv_match_percentage is null and not (ignored or discarded or closed)
+ORDER BY created desc
+LIMIT 2

@@ -84,6 +84,7 @@ def table(df: DataFrame, columnsOrder, visibleColumns) -> DataFrame:
     setState('selectedRows', selectedRows)
     return selectedRows
 
+
 def preSelectRows(dfWithSelections: DataFrame, preSelectedRowsKey):
     dfWithSelections.insert(0, "Sel", False)
     for row in getState(preSelectedRowsKey, []):
@@ -301,24 +302,25 @@ def showDetail(jobData: dict):
     data = scapeLatex(jobData, ['markdown', 'title'])
     formatDateTime(data)
     data = {k: (data[k] if data[k] else None) for k in data.keys()}
-    str = DETAIL_FORMAT.format(**data)
-    str += fmtDetailOpField(data, 'client')
+    outStr = DETAIL_FORMAT.format(**data)
+    outStr += fmtDetailOpField(data, 'client')
     reqSkills = fmtDetailOpField(data, 'required_technologies', 'Required', 2)
     opSkills = fmtDetailOpField(data, 'optional_technologies', 'Optional', 2)
     if reqSkills + opSkills != '':
-        str += ''.join(["- Skills\n", reqSkills, opSkills])
+        outStr += ''.join(["- Skills\n", reqSkills, opSkills])
     if error := jobData.get('ai_enrich_error', None):
-        str += f'- :red[AI enrich error:] {error}'
-    st.markdown(str, unsafe_allow_html=True)
+        outStr += f'- :red[AI enrich error:] {error}'
+    st.markdown(outStr, unsafe_allow_html=True)
     salary = fmtDetailOpField(data, 'salary')
     if salary != '':
         c1, c2 = st.columns(2)
         c1.write(salary)
         c2.button('', icon='🗑️', key='trashButton',
                   on_click=deleteSalary, kwargs={'id': jobData['id']})
-    cvMatchPercentage = fmtDetailOpField(data, 'cv_match_percentage', 'CV Match %')
+    cvMatchPercentage = fmtDetailOpField(data, 'cv_match_percentage', 'CV match',2)
     if cvMatchPercentage != '':
-        st.markdown(cvMatchPercentage)
+        with st.expander(cvMatchPercentage+'%', expanded=True):
+            st.progress(data['cv_match_percentage'])
     if val := data.get('comments'):
         with st.expander('Comments', expanded=True):
             st.markdown(val)

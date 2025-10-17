@@ -1,0 +1,29 @@
+extractor_task:
+  description: >
+    Analyze the following job offer and extract structured information.
+    
+    Job Offer:
+    {markdown}
+    
+    Extract the following information:
+    - Required technologies (comma-separated list)
+    - Optional technologies (comma-separated list)
+    - Salary information (if available)
+
+    
+  expected_output: >
+    A valid JSON object with the extracted information. Include all fields even if empty.
+    The json output must have the following fields and structure:
+    {
+      "required_technologies": "..., ..., ...",
+      "optional_technologies": "..., ..., ...",
+      "salary": "...",
+    }
+  agent: extractor_agent
+
+# description
+    # - Experience level required
+    # - Key responsibilities (comma-separated list)
+# expected_output
+    # "experience_level": "3-5 years",
+    # "responsibilities": "Develop backend services, manage databases"

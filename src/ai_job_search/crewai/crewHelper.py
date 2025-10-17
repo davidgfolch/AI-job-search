@@ -4,14 +4,14 @@ import traceback
 
 from crewai.crews.crew_output import CrewOutput
 
-from ..tools.util import (getDatetimeNowStr, hasLen, removeExtraEmptyLines)
-from ..tools.mysqlUtil import (QRY_FIND_JOBS_IDS_FOR_ENRICHMENT, updateFieldsQuery)
+from ..tools.util import getDatetimeNowStr, hasLen, removeExtraEmptyLines
+from ..tools.mysqlUtil import MysqlUtil, updateFieldsQuery
 from ..tools.terminalColor import green, red, yellow
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 
-def printJob(total, idx, id, title, company):
-    print(green(f'AI enrich job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company}'))
+def printJob(processName, total, idx, id, title, company, inputLen):
+    print(green(f'AI {processName} job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={inputLen}'))
 
 
 def mapJob(job):
@@ -21,24 +21,17 @@ def mapJob(job):
     return title, company, markdown
 
 
-def saveError(mysql, jobErrors, id, title, company, ex):
+def saveError(mysql: MysqlUtil, jobErrors: set, id, title, company, ex, dataExtractor:bool):
     print(red(traceback.format_exc()))
     jobErrors.add((id, f'{title} - {company}: {ex}'))
     aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
-    params = {'ai_enrich_error': aiEnrichError,
-              'ai_enriched': True}
-    query, params = updateFieldsQuery([id], params)
+    fields = {'ai_enrich_error': aiEnrichError, 'ai_enriched': True} if dataExtractor else {'cv_match_percentage': -1}
+    query, params = updateFieldsQuery([id], fields)
     count = mysql.executeAndCommit(query, params)
     if count == 0:
         print(yellow(f"ai_enrich_error set, id={id}"))
     else:
         print(red(f"could not update ai_enrich_error, id={id}"))
-
-
-def getJobIdsList(mysql) -> list[int]:
-    jobIds = [row[0] for row in mysql.fetchAll(QRY_FIND_JOBS_IDS_FOR_ENRICHMENT)]
-    print(yellow(f'{jobIds}'))
-    return jobIds
 
 
 def rawToJson(raw: str) -> dict[str, str]:
@@ -157,20 +150,15 @@ def listsToString(result: dict[str, str], fields: list[str]):
 def combineTaskResults(crewOutput: CrewOutput, debug) -> dict:
     """Combina los resultados de todas las tareas en un único JSON"""
     result = {}
-    try:  # Procesar el resultado principal (extractor task)
-        mainResult = rawToJson(crewOutput.raw)
-        if mainResult:
-            if debug:
-                print(yellow(f'Main result: {json.dumps(mainResult, indent=2)}'))
-            result.update(mainResult)
-    except Exception as e:
-        print(red(f'Error parsing main result: {e}'))
-
-    # Procesar los resultados de las tareas individuales
-    if hasattr(crewOutput, 'tasks_output') and crewOutput.tasks_output:
-        for task_idx, task_output in enumerate(crewOutput.tasks_output):
-            try:
-                # Intentar parsear el output de cada tarea
+    mainResult = rawToJson(crewOutput.raw)
+    if mainResult:
+        if debug:
+            print(yellow(f'Main result: {json.dumps(mainResult, indent=2)}'))
+        result.update(mainResult)
+    if result is None:
+        # Procesar los resultados de las tareas individuales
+        if hasattr(crewOutput, 'tasks_output') and crewOutput.tasks_output:
+            for task_idx, task_output in enumerate(crewOutput.tasks_output):
                 taskResult = rawToJson(task_output.raw)
                 if taskResult:
                     if debug:
@@ -178,6 +166,13 @@ def combineTaskResults(crewOutput: CrewOutput, debug) -> dict:
                     for key, value in taskResult.items():
                         if key not in result and key in ["required_technologies", "optional_technologies", "salary", "experience_level", "responsibilities", "cv_match_percentage"]:
                             result[key] = value
-            except Exception as e:
-                print(red(f'Error parsing task {task_idx} result: {e}'))
     return result
+
+def footer(total, idx, totalCount, jobErrors:set):
+    print(yellow(f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'),
+          end='\n' if len(jobErrors)==0 else '')
+    if jobErrors:
+        print(red(f'Total job errors: {len(jobErrors)}'))
+        # [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
+
+

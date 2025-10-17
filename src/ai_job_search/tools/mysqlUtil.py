@@ -14,28 +14,7 @@ QRY_INSERT = """
 INSERT INTO jobs (
     jobId,title,company,location,url,markdown,easy_apply,web_page)
           values (%s,%s,%s,%s,%s,%s,%s,%s)"""
-JOBS_FOR_ENRICHMENT = """
-FROM jobs
-WHERE (ai_enriched IS NULL OR not ai_enriched) and
-not (ignored or discarded or closed)
-ORDER BY created desc"""
-QRY_COUNT_JOBS_FOR_ENRICHMENT = f"""
-SELECT count(id) {JOBS_FOR_ENRICHMENT}"""
-QRY_FIND_JOBS_IDS_FOR_ENRICHMENT = f"""
-SELECT id {JOBS_FOR_ENRICHMENT}"""
-QRY_FIND_JOB_FOR_ENRICHMENT = """
-SELECT id, title, markdown, company
-FROM jobs
-WHERE id=%s and not ai_enriched and not (ignored or discarded or closed)
-ORDER BY created desc"""
-QRY_UPDATE_JOBS_WITH_AI = """
-UPDATE jobs SET
-    salary=%s,
-    required_technologies=%s,
-    optional_technologies=%s,
-    cv_match_percentage=%s,
-    ai_enriched=1
-WHERE id=%s"""
+
 QRY_SELECT_JOBS_VIEWER = """
 SELECT {selectFields}
 FROM jobs
@@ -127,22 +106,13 @@ class MysqlUtil:
         raise ex
 
     @retry(retries=20, delay=1, exception=mysqlConnector.Error)
-    def updateFromAI(self, id, company, paramsDict: dict):
-        params = maxLen(emptyToNone(
-            (paramsDict.get('salary', None),
-                # TODO: Change to required_skills, optional_skills
-                paramsDict.get(f'required_technologies', None),
-                paramsDict.get(f'optional_technologies', None),
-                paramsDict.get('cv_match_percentage', None),
-                id)),
-            # TODO: get mysql DDL metadata varchar sizes
-            (200, 1000, 1000, None, None))
+    def updateFromAI(self, query, params):
         try:
             with self.cursor() as c:
-                c.execute(QRY_UPDATE_JOBS_WITH_AI, params)
+                c.execute(query, params)
                 getConnection().commit()
                 if c.rowcount > 0:
-                    print(green(f'Updated database (company={company}): {params}'))
+                    print(green(f'Updated database: {params}'))
                 else:
                     error(Exception('No rows affected'))
         except mysqlConnector.Error as ex:
@@ -168,7 +138,6 @@ class MysqlUtil:
                 return rowCount
         except mysqlConnector.Error as ex:
             self.rollback(ex)
-        
 
     def fetchAll(self, query: str, params=None):
         with self.cursor() as c:
