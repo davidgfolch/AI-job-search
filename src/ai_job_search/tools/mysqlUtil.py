@@ -3,7 +3,7 @@ from typing import Any, Dict, Sequence, TypeVar, Union
 import mysql.connector as mysqlConnector
 
 from .decorator.retry import retry
-from .terminalColor import green, red
+from .terminalColor import green, red, yellow
 
 DEBUG = False
 
@@ -102,10 +102,11 @@ class MysqlUtil:
         # 1205 Lock wait timeout exceeded
         if getConnection().is_connected() and getConnection().in_transaction:
             print(red(f'Rolling back transaction due to error: {ex}'))
+            print(yellow(self.fetchOne('SHOW ENGINE INNODB STATUS\G;')['status']))
             getConnection().rollback()
         raise ex
 
-    @retry(retries=20, delay=1, exception=mysqlConnector.Error)
+    @retry(retries=5, delay=1, exception=mysqlConnector.Error)
     def updateFromAI(self, query, params):
         try:
             with self.cursor() as c:

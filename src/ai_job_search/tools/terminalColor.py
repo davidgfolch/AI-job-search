@@ -4,6 +4,7 @@ CYAN = '\033[96m'
 GREEN = '\033[92m'
 YELLOW = '\033[93m'
 RED = '\033[91m'
+MAGENTA = '\033[35m'
 BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 __RESET = '\033[0m'
@@ -27,6 +28,10 @@ def blue(*text: str):
 
 def cyan(*text: str):
     return CYAN + ''.join(text) + __RESET
+
+
+def magenta(*text: str):
+    return MAGENTA + ''.join(text) + __RESET
 
 
 def printHR(colorFnc=None):

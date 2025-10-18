@@ -212,12 +212,28 @@ select concat('Call or interview (rh): ',count(id)) as count from jobs where int
 select concat('Interview or tech/test: ',count(id)) as count from jobs where interview_tech or interview_technical_test union all
 select concat('Discarded: ',count(id)) as count from jobs where discarded;
 
--- Locks
-show open tables;
-show performance_schema.processlist;
+SELECT id, title, company, applied, ignored, discarded, closed, created, modified
+FROM jobs
+where modified >= DATE_SUB(NOW(), INTERVAL 30 MINUTE) and modified <> created
+order by modified desc  
 
 SELECT id, title, markdown, company
 FROM jobs
-WHERE id=353404 and cv_match_percentage is null and not (ignored or discarded or closed)
+WHERE id=355109 and cv_match_percentage is null and not (ignored or discarded or closed)
 ORDER BY created desc
 LIMIT 2
+
+
+-- Locks
+show open tables where in_use>0;
+
+show performance_schema.processlist;
+
+
+SHOW ENGINE INNODB STATUS\G;
+
+SHOW PROCESSLIST;
+
+SHOW FULL PROCESSLIST;   -- This shows que query locking  the table
+
+SHOW ENGINE INNODB STATUS\G; 

@@ -170,7 +170,7 @@ def combineTaskResults(crewOutput: CrewOutput, debug) -> dict:
 
 def footer(total, idx, totalCount, jobErrors:set):
     print(yellow(f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'),
-          end='\n' if len(jobErrors)==0 else '')
+          end='\n' if len(jobErrors)==0 else ' ')
     if jobErrors:
         print(red(f'Total job errors: {len(jobErrors)}'))
         # [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]

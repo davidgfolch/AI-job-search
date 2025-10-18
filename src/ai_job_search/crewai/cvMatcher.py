@@ -10,7 +10,7 @@ from pathlib import Path
 from ai_job_search.crewai.crewHelper import combineTaskResults, footer, mapJob, printJob, saveError, validateResult
 from ai_job_search.tools.mysqlUtil import MysqlUtil, emptyToNone, maxLen
 from ai_job_search.tools.stopWatch import StopWatch
-from ..tools.terminalColor import printHR, red, yellow
+from ..tools.terminalColor import cyan, printHR, red, yellow
 from ..tools.util import getEnv, getEnvBool
 
 VERBOSE = False
@@ -73,17 +73,21 @@ def cvMatch() -> int:
                 inputs = {"markdown": f'# {title} \n {markdown}', "cv_content": cvContent}
                 crewOutput: CrewOutput = crew.kickoff(inputs=inputs)
                 result = combineTaskResults(crewOutput, DEBUG)
-                print(f'Result:\n{json.dumps(result, indent=2)}')
+                print('Result: ', cyan(json.dumps(result)))
                 if result is not None:
-                    validateResult(result)
-                    params = maxLen(emptyToNone((result.get('cv_match_percentage', None), id)), (None, None))
-                    mysql.updateFromAI(QRY_UPDATE, params)
+                    save(mysql, id, result)
             except (Exception, KeyboardInterrupt) as ex:
                 saveError(mysql, jobErrors, id, title, company, ex, False)
             totalCount += 1
             stopWatch.end()
             footer(total, idx, totalCount, jobErrors)
         return total
+
+
+def save(mysql: MysqlUtil, id, result: dict):
+    validateResult(result)
+    params = maxLen(emptyToNone((result.get('cv_match_percentage', None), id)), (None, None))
+    mysql.updateFromAI(QRY_UPDATE, params)
 
 
 @CrewBase

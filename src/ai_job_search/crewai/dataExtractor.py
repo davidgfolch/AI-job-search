@@ -6,7 +6,7 @@ from crewai.crews.crew_output import CrewOutput
 from ai_job_search.crewai.crewHelper import combineTaskResults, footer, mapJob, printJob, saveError, validateResult
 from ai_job_search.tools.mysqlUtil import MysqlUtil, emptyToNone, maxLen
 from ai_job_search.tools.stopWatch import StopWatch
-from ai_job_search.tools.terminalColor import printHR, red, yellow
+from ai_job_search.tools.terminalColor import magenta, printHR, yellow
 from ai_job_search.tools.util import getEnv
 
 VERBOSE = False
@@ -70,7 +70,7 @@ def dataExtractor() -> int:
                 inputs = {"markdown": f'# {title} \n {markdown}'}
                 crewOutput: CrewOutput = crew.kickoff(inputs=inputs)
                 result = combineTaskResults(crewOutput, DEBUG)
-                print(f'Result:\n{json.dumps(result, indent=2)}')
+                print('Result:\n', magenta(json.dumps(result, indent=2)))
                 if result is not None:
                     save(mysql, id, company, result)
             except (Exception, KeyboardInterrupt) as ex:
