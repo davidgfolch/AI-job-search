@@ -29,9 +29,9 @@ def saveError(mysql: MysqlUtil, jobErrors: set, id, title, company, ex, dataExtr
     query, params = updateFieldsQuery([id], fields)
     count = mysql.executeAndCommit(query, params)
     if count == 0:
-        print(yellow(f"ai_enrich_error set, id={id}"))
-    else:
         print(red(f"could not update ai_enrich_error, id={id}"))
+    else:
+        print(yellow(f"ai_enrich_error set, id={id}"))
 
 
 def rawToJson(raw: str) -> dict[str, str]:
