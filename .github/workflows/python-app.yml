@@ -13,8 +13,12 @@ permissions:
   contents: read
 
 jobs:
-  setup:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        folder: [packages/commonlib, apps/scrapper, apps/viewer, apps/aiEnrich]
+      max-parallel: 1
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
@@ -26,17 +30,12 @@ jobs:
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         cp '.env.example' .env
-    - name: Install commonlib
-      run: cd packages/commonlib && poetry lock && poetry install --no-interaction && cd ../..
-  build:
-    runs-on: ubuntu-latest
-    needs: setup
-    strategy:
-      matrix:
-        folder: [apps/scrapper, apps/viewer]        
-    steps:
     - name: Install ${{ matrix.folder }}
-      run: pwd && cd ${{ matrix.folder }} && poetry lock && poetry install --no-interaction && cd ../..
+      if: ${{ matrix.folder != 'apps/aiEnrich' }}
+      run: |
+        cd ${{ matrix.folder }}
+        poetry lock && poetry install --no-interaction
+        cd ../..
     - name: Install aiEnrich
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -45,14 +44,8 @@ jobs:
         uv tool install crewai
         crewai install
         cd ../..
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    strategy:
-      matrix:
-        folder: [packages/commonlib, apps/scrapper, apps/viewer]    
-    steps:
     - name: ${{ matrix.folder }} tests
+      if: ${{ matrix.folder != 'apps/aiEnrich' }}
       run: cd ${{ matrix.folder }} && poetry run pytest && cd ../..
     - name: Run aiEnrich tests
       run: cd apps/aiEnrich && uv run pytest && cd ../..
@@ -68,14 +61,8 @@ jobs:
     #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-  coverage:
-    runs-on: ubuntu-latest
-    needs: test
-    strategy:
-      matrix:
-        folder: [packages/commonlib, apps/scrapper, apps/viewer]
-    steps:
     - name: ${{ matrix.folder }} coverage
+      if: ${{ matrix.folder != 'apps/aiEnrich' }}
       run: |
         cd ${{ matrix.folder }}
         poetry run coverage run -m pytest
@@ -91,13 +78,6 @@ jobs:
         uv run coverage xml
         mv coverage.xml commonlib-coverage.xml
         cd ../..
-  coverage-badge:
-    runs-on: ubuntu-latest
-    needs: coverage
-    strategy:
-      matrix:
-        folder: [packages/commonlib, apps/scrapper, apps/viewer, apps/aiEnrich]
-    steps:
     - name: ${{ matrix.folder }} coverage badge
       uses: tj-actions/coverage-badge-py@v2
       with:
