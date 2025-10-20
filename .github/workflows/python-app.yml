@@ -27,7 +27,7 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         cp '.env.example' .env
     - name: Install commonlib
-      run: cd commonlib && poetry lock && poetry install --no-interaction && cd ../..
+      run: cd packages/commonlib && poetry lock && poetry install --no-interaction && cd ../..
   build:
     runs-on: ubuntu-latest
     needs: setup
