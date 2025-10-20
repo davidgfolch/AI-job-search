@@ -138,6 +138,8 @@ update jobs set merged=null where created=merged;
 select id, title from jobs where date(modified)=CURDATE()  order by modified desc
 update jobs set ignored=null where id=261283;
 
+select `id`, title from  jobs where jobId=4313375111
+
 
 SELECT id, salary, title, company
 FROM jobs
@@ -212,7 +214,7 @@ select concat('Call or interview (rh): ',count(id)) as count from jobs where int
 select concat('Interview or tech/test: ',count(id)) as count from jobs where interview_tech or interview_technical_test union all
 select concat('Discarded: ',count(id)) as count from jobs where discarded;
 
-SELECT id, title, company, applied, ignored, discarded, closed, created, modified
+SELECT id, title, company, applied, ignored, discarded, closed, created, modified, ai_enrich_error
 FROM jobs
 where modified >= DATE_SUB(NOW(), INTERVAL 30 MINUTE) and modified <> created
 order by modified desc  

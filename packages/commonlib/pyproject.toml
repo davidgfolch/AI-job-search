@@ -1,0 +1,23 @@
+[project]
+name = "commonlib"
+version = "0.1.0"
+description = "Ai-job-search Common library"
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+packages = [{include = "commonlib"}]
+
+include = "commonlib"
+from = "."
+
+dependencies = [
+    "mysql-connector-python==9.4.0",
+    "python-dotenv==1.1.1",
+    "dotenv==0.9.9"
+]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

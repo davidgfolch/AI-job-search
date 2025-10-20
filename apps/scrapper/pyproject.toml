@@ -1,0 +1,23 @@
+[project]
+name = "scrapper"
+version = "0.1.0"
+description = "Scrapper"
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+
+dependencies = [
+    "commonlib==0.1.0",
+    "selenium (>=4.37.0,<5.0.0)",
+    "markdownify==1.2.0",
+]
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+
+[tool.poetry.dependencies]
+commonlib = { path = "../../packages/commonlib/", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

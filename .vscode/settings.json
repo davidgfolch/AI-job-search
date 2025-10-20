@@ -48,6 +48,9 @@
     },
     "autopep8.args": [
           "--max-line-length=120"
+    ],
+    "python.analysis.extraPaths": [
+        "./packages/commonlib"
     ]
 
 }

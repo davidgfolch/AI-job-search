@@ -11,23 +11,15 @@ and 3.11 incompatibility with other crewAi libraries.
 - [Local Ollama](https://github.com/davidgfolch/OpenAI-local-ollama-chat/blob/main/README_OLLAMA.md) (OPTIONAL, for AI enrichment)
 - Python 3.10 & libraries:
 
-    ```bash
-    sudo apt install python3.10
-    sudo apt install python3.10-venv
-    python -m ensurepip --upgrade
-    ```
+```bash
+sudo apt install python3.10
+curl -sSL https://install.python-poetry.org | python3 -
+```
 
 ## Install project dependencies
 
 ```bash
-# Create environment
-python -m venv .venv
-# Activate environment
-source .venv/bin/activate  # linux
-.\.venv\Scripts\activate   # windows
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt  # Install dependencies
-python -m pip install -e . # Install ai-job-search as a module in .venv (in editable mode)
+
 ```
 
 If problems found installing mysql client library for Streamlit, follow this:
@@ -73,39 +65,32 @@ docker exec ai_job_search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootP
 
 ## Managing dependencies
 
-We are using a base `requirements.in` with main dependencies, and generating `requirements.txt` with pip-compile.
+This monorepo has a `packages/commonlib` shared for all `apps/*`
+
+```bash
+cd packages/commonlib && poetry install && cd ../..
+cd apps/scrapper && poetry install && cd ../..
+cd apps/viewer && poetry install && cd ../..
+```
+Then install [AiEnrich following it's readme](/apps/aiEnrich/README.md).
+
 
 ### Add main dependency
 
 ```bash
-source .venv/bin/activate
-python -m pip install selenium  # !!!! then manually add it in requirements.in
-
-# Create requirements.txt dependency-tree from base dependencies in requirements.in
-python -m pip install pip-tools
-pip-compile requirements.in
+poetry add selenium
 ```
 
 ### Upgrading existing dependencies
 
 ```bash
-python -m pip list --outdated
-python -m pip install --upgrade selenium
+poetry show --outdated
+poetry update
 ```
 
 ### Remove dependency
 
 ```bash
-python -m pip uninstall selenium
-# and remove it from requirements.in and...
-pip-compile requirements.in # to generate requirements.txt
-# to fully check, delete .venv and start a clean .venv
+poetry remove selenium
 ```
 
-### Dependency tree check
-```bash
-python -m pip install pipdeptree
-pipdeptree
-
-python -m pip check # Check dependencies
-```
