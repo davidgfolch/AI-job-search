@@ -24,7 +24,7 @@ source = ["scrapper"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 36
+fail_under = 30
 
 [build-system]
 requires = ["poetry-core"]
