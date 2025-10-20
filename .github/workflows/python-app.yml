@@ -36,8 +36,8 @@ jobs:
         folder: [apps/scrapper, apps/viewer]        
     steps:
     - name: Install ${{ matrix.folder }}
-      run: cd ${{ matrix.folder }} && poetry lock && poetry install --no-interaction && cd ../..
-    - name: Install aiEnrich dependencies
+      run: pwd && cd ${{ matrix.folder }} && poetry lock && poetry install --no-interaction && cd ../..
+    - name: Install aiEnrich
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         cd apps/aiEnrich
