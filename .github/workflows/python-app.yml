@@ -14,9 +14,7 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
@@ -29,16 +27,16 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        cd ./packages/commonlib && poetry install --sync --no-interaction && cd ../..
-        cd ./apps/scrapper && poetry install --sync --no-interaction && cd ../..
-        cd ./apps/viewer && poetry install --sync --no-interaction && cd ../..
-        cd ./apps/aiEnrich && poetry install --sync --no-interaction && cd ../..
+        cd packages/commonlib && poetry install --sync --no-interaction && cd ../..
+        cd apps/scrapper && poetry install --sync --no-interaction && cd ../..
+        cd apps/viewer && poetry install --sync --no-interaction && cd ../..
+        cd apps/aiEnrich && poetry install --sync --no-interaction && cd ../..
     - name: Run common tests
       run: |
-        cd ./packages/commonlib && poetry run pytest && cd ../..
-        cd ./apps/scrapper && poetry run pytest && cd ../..
-        cd ./apps/viewer && poetry run pytest && cd ../..
-        cd ./apps/aiEnrich && uv run pytest && cd ../..
+        cd packages/commonlib && poetry run pytest && cd ../..
+        cd apps/scrapper && poetry run pytest && cd ../..
+        cd apps/viewer && poetry run pytest && cd ../..
+        cd apps/aiEnrich && uv run pytest && cd ../..
     # - name: Set PYTHONPATH
     #   run: echo "PYTHONPATH=src" >> $GITHUB_ENV
     # - name: Clean up __pycache__ and .pyc files
