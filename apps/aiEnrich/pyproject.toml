@@ -17,6 +17,23 @@ train = "aiEnrich.main:train"
 replay = "aiEnrich.main:replay"
 test = "aiEnrich.main:test"
 
+[tool.uv.sources]
+commonlib = { path = "../../packages/commonlib", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["viewer"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 45
+
 [build-system]
 requires = [
     "hatchling",
@@ -29,11 +46,3 @@ packages = ["src/aiEnrich"]
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[tool.uv.sources]
-commonlib = { path = "../../packages/commonlib", editable = true }
-
-[dependency-groups]
-dev = [
-    "pytest>=8.4.2",
-    "pytest-cov>=7.0.0"
-]

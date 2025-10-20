@@ -14,13 +14,20 @@ dependencies = [
     "altair==5.5.0",
 ]
 
+[tool.poetry.dependencies]
+commonlib = { path = "../../packages/commonlib/", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
 pytest-cov = "^7.0.0"
 
-[tool.poetry.dependencies]
-commonlib = { path = "../../packages/commonlib/", develop = true }
+[tool.coverage.run]
+branch = true
+source = ["viewer"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 37
 
 [build-system]
 requires = ["poetry-core"]
