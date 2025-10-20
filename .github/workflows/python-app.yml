@@ -27,10 +27,10 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        cd packages/commonlib && poetry install --sync --no-interaction && cd ../..
-        cd apps/scrapper && poetry install --sync --no-interaction && cd ../..
-        cd apps/viewer && poetry install --sync --no-interaction && cd ../..
-        cd apps/aiEnrich && poetry install --sync --no-interaction && cd ../..
+        cd packages/commonlib && poetry lock install --no-interaction && cd ../..
+        cd apps/scrapper && poetry lock install --no-interaction && cd ../..
+        cd apps/viewer && poetry lock install --no-interaction && cd ../..
+        cd apps/aiEnrich && poetry lock install --no-interaction && cd ../..
     - name: Run common tests
       run: |
         cd packages/commonlib && poetry run pytest && cd ../..
