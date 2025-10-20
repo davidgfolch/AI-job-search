@@ -25,7 +25,7 @@ jobs:
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - name: Install common dependencies
+    - name: Install commonlib dependencies
       run: cd packages/commonlib && poetry lock && poetry install --no-interaction && cd ../..
     - name: Install scrapper dependencies
       run: cd apps/scrapper && poetry lock && poetry install --no-interaction && cd ../..
@@ -39,13 +39,16 @@ jobs:
         uv tool install crewai
         crewai install
         cd ../..
-    - name: Run common tests
+    - name: Run commonlib tests
       run: |
         cp '.env.example' .env
         cd packages/commonlib && poetry run pytest && cd ../..
-        cd apps/scrapper && poetry run pytest && cd ../..
-        cd apps/viewer && poetry run pytest && cd ../..
-        cd apps/aiEnrich && uv run pytest && cd ../..
+    - name: Run scrapper tests
+      run: cd apps/scrapper && poetry run pytest && cd ../..
+    - name: Run viewer tests
+      run: cd apps/viewer && poetry run pytest && cd ../..
+    - name: Run aiEnrich tests
+      run: cd apps/aiEnrich && uv run pytest && cd ../..
     # - name: Set PYTHONPATH
     #   run: echo "PYTHONPATH=src" >> $GITHUB_ENV
     # - name: Clean up __pycache__ and .pyc files
@@ -58,11 +61,10 @@ jobs:
     #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Coverage
+    - name: commonlib coverage
       run: |
-        # coverage report --fail-under=90 -m
-        coverage run --source=src -m pytest --ignore=test/ai_job_search/scrappers_test.py
-        coverage report -m
-    - name: Coverage badge
-      run: |
-        coverage-badge -o coverage.svg -f
+        poetry run coverage run -m pytest
+        poetry run coverage report -m
+    # - name: Coverage badge
+    #   run: |
+    #     coverage-badge -o coverage.svg -f

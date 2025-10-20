@@ -17,6 +17,18 @@ dependencies = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
+pytest-cov = "^7.0.0"
+
+[tool.coverage.run]
+branch = true
+source = ["commonlib"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+
+[tool.coverage.html]
+directory = "htmlcov"
 
 [build-system]
 requires = ["poetry-core"]
