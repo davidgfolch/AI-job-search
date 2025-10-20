@@ -41,6 +41,7 @@ jobs:
         cd ../..
     - name: Run common tests
       run: |
+        cp .env.example .env
         cd packages/commonlib && poetry run pytest && cd ../..
         cd apps/scrapper && poetry run pytest && cd ../..
         cd apps/viewer && poetry run pytest && cd ../..
