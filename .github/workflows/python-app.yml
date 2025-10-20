@@ -66,25 +66,51 @@ jobs:
         cd packages/commonlib
         poetry run coverage run -m pytest
         poetry run coverage report -m
+        poetry run coverage xml
+        mv coverage.xml commonlib-coverage.xml        
         cd ../..
     - name: scrapper coverage
       run: |
         cd apps/scrapper
         poetry run coverage run -m pytest
         poetry run coverage report -m
+        poetry run coverage xml
+        mv coverage.xml scrapper-coverage.xml
         cd ../..
     - name: viewer coverage
       run: |
         cd apps/viewer
         poetry run coverage run -m pytest
         poetry run coverage report -m
+        poetry run coverage xml
+        mv coverage.xml viewer-coverage.xml
         cd ../..
     - name: aiEnrich coverage
       run: |
         cd apps/aiEnrich
         uv run coverage run -m pytest
         uv run coverage report -m
-        cd ../..        
-    # - name: Coverage badge
-    #   run: |
-    #     coverage-badge -o coverage.svg -f
+        uv run coverage xml
+        mv coverage.xml commonlib-coverage.xml
+        cd ../..
+    - name: commonlib coverage badge
+      uses: tj-actions/coverage-badge-py@v2
+      with:
+        coverage.filename: ./commonlib-coverage.xml
+        badge.filename: ./commonlib-coverage.svg        
+    - name: scrapper coverage badge
+      uses: tj-actions/coverage-badge-py@v2
+      with:
+        coverage.filename: ./scrapper-coverage.xml
+        badge.filename: ./scrapper-coverage.svg        
+    - name: viewer coverage badge
+      uses: tj-actions/coverage-badge-py@v2
+      with:
+        coverage.filename: ./viewer-coverage.xml
+        badge.filename: ./viewer-coverage.svg        
+    - name: aiEnrich coverage badge
+      uses: tj-actions/coverage-badge-py@v2
+      with:
+        coverage.filename: ./viewer-coverage.xml
+        badge.filename: ./viewer-coverage.svg        
+
