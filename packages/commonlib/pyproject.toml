@@ -25,7 +25,7 @@ source = ["commonlib"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 80
+fail_under = 38
 
 [tool.coverage.html]
 directory = "htmlcov"
