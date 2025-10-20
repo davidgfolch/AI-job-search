@@ -63,8 +63,28 @@ jobs:
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: commonlib coverage
       run: |
+        cd packages/commonlib
         poetry run coverage run -m pytest
         poetry run coverage report -m
+        cd ../..
+    - name: scrapper coverage
+      run: |
+        cd apps/scrapper
+        poetry run coverage run -m pytest
+        poetry run coverage report -m
+        cd ../..
+    - name: viewer coverage
+      run: |
+        cd apps/viewer
+        poetry run coverage run -m pytest
+        poetry run coverage report -m
+        cd ../..
+    - name: aiEnrich coverage
+      run: |
+        cd apps/aiEnrich
+        uv run coverage run -m pytest
+        uv run coverage report -m
+        cd ../..        
     # - name: Coverage badge
     #   run: |
     #     coverage-badge -o coverage.svg -f

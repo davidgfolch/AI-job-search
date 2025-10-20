@@ -21,14 +21,11 @@ First, if you haven't already, install uv:
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux
 
-source .venv/bin/activate  # linux
-.\.venv\Scripts\activate   # windows
-
 # uv sync --active
 
 uv tool update-shell
 uv tool install crewai
-uv tool install crewai --upgrade
+#uv tool install crewai --upgrade
 uv tool list
 crewai install
 # uv pip install -e ../../packages/common
