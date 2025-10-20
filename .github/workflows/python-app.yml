@@ -77,7 +77,7 @@ jobs:
         uv run coverage run -m pytest
         uv run coverage report -m
         uv run coverage xml
-        mv coverage.xml aiEnrich-coverage.xml
+        mv coverage.xml apps/aiEnrich-coverage.xml
         cd ../..
     - name: ${{ matrix.folder }} coverage badge
       uses: tj-actions/coverage-badge-py@v2
