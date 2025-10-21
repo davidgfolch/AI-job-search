@@ -12,13 +12,12 @@ on:
 permissions:
   contents: read
 
+env:
+  MODULES: "packages/commonlib apps/scrapper apps/viewer apps/aiEnrich"
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        folder: [packages/commonlib, apps/scrapper, apps/viewer, apps/aiEnrich]
-      max-parallel: 1
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
@@ -28,33 +27,71 @@ jobs:
     - name: Install package manager
       run: |
         cp '.env.example' .env
-        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-        else
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-        fi
-    - name: Install ${{ matrix.folder }}
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Install MODULES
       run: |
-        cd ${{ matrix.folder }}
-        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
-          uv tool update-shell
-          uv tool install crewai
-          crewai install
-        else
-          poetry lock && poetry install --no-interaction
-        fi
-        cd ../..
-    - name: ${{ matrix.folder }} tests
+        MODULE=($MODULES)
+        for MODULE in "${MODULES[@]}"; do
+          cd ${MODULE}
+          if [ "${MODULE}" == "apps/aiEnrich" ]; then
+            uv tool update-shell
+            uv tool install crewai
+            crewai install
+          else
+            poetry lock && poetry install --no-interaction
+          fi
+          cd ../..
+        done
+    - name: Tests MODULES
       run: |
-        cd ${{ matrix.folder }}
-        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
-          uv run pytest
-        else
-          poetry run pytest
-        fi
-        cd ../..
-    # - name: Set PYTHONPATH
+        MODULE=($MODULES)
+        for MODULE in "${MODULES[@]}"; do
+          cd ${MODULE}
+          if [ "${MODULE}" == "apps/aiEnrich" ]; then
+            uv run pytest
+          else
+            poetry run pytest
+          fi
+          cd ../..
+        done
+    - name: Coverage
+      run: |
+        MODULE=($MODULES)
+        for MODULE in "${MODULES[@]}"; do
+          cd ${MODULE}
+          if [ "${MODULE}" == "apps/aiEnrich" ]; then
+            uv run coverage run -m pytest
+            uv run coverage report -m
+            uv run coverage xml
+            uv run coverage-badge -o coverage-badge.svg -f
+          else
+            poetry run coverage run -m pytest
+            poetry run coverage report -m
+            poetry run coverage xml
+            poetry run coverage-badge -o coverage-badge.svg -f
+          fi
+          cd ../..
+        done
+
+    - name: Commit coverage badge
+      run: |
+        # git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        MODULE=($MODULES)
+        for MODULE in "${MODULES[@]}"; do
+          git add ${MODULE}/coverage-badge.svg
+        done
+        git commit -m "Update coverage badges"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
+
+        # - name: Set PYTHONPATH
     #   run: echo "PYTHONPATH=src" >> $GITHUB_ENV
     # - name: Clean up __pycache__ and .pyc files
     #   run: |
@@ -66,27 +103,3 @@ jobs:
     #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: ${{ matrix.folder }} coverage
-      run: |
-        cd ${{ matrix.folder }}
-        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
-          uv run coverage run -m pytest
-          uv run coverage report -m
-          uv run coverage xml
-          uv run coverage-badge -o coverage-badge.svg -f
-        else
-          poetry run coverage run -m pytest
-          poetry run coverage report -m
-          poetry run coverage xml
-          poetry run coverage-badge -o coverage-badge.svg -f
-        fi
-        cd ../..
-    # - name: Commit coverage ${{ matrix.folder }} badge
-    #   run: |
-    #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
-    #     git config --local user.name "github-actions[bot]"
-    #     git add ${{ matrix.folder }}/coverage-badge.svg
-    #     git commit -m "Update coverage badge ${{ matrix.folder }}"
-    #     git push
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
