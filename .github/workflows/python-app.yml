@@ -32,7 +32,8 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Install MODULES
       run: |
-        for MODULE in "${MODULES[@]}"; do
+        read -ra MODULE_ARR <<< "${MODULES}"
+        for MODULE in "${MODULE_ARR[@]}"; do
           cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv tool update-shell
@@ -45,7 +46,8 @@ jobs:
         done
     - name: Tests MODULES
       run: |
-        for MODULE in "${MODULES[@]}"; do
+        read -ra MODULE_ARR <<< "${MODULES}"
+        for MODULE in "${MODULE_ARR[@]}"; do
           cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv run pytest
@@ -56,7 +58,8 @@ jobs:
         done
     - name: Coverage
       run: |
-        for MODULE in "${MODULES[@]}"; do
+        read -ra MODULE_ARR <<< "${MODULES}"
+        for MODULE in "${MODULE_ARR[@]}"; do
           cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv run coverage run -m pytest
@@ -76,7 +79,8 @@ jobs:
       run: |
         # git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        for MODULE in "${MODULES[@]}"; do
+        read -ra MODULE_ARR <<< "${MODULES}"
+        for MODULE in "${MODULE_ARR[@]}"; do
           git add ${MODULE}/coverage-badge.svg
         done
         git commit -m "Update coverage badges"
