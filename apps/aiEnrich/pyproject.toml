@@ -28,7 +28,7 @@ dev = [
 
 [tool.coverage.run]
 branch = true
-source = ["viewer"]
+source = ["aiEnrich"]
 
 [tool.coverage.report]
 show_missing = true
