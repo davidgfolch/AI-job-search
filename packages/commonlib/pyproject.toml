@@ -11,12 +11,13 @@ from = "."
 
 dependencies = [
     "mysql-connector-python==9.4.0",
-    "dotenv==0.9.9"
+    "dotenv==0.9.9",
 ]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
 pytest-cov = "^7.0.0"
+coverage-badge = "^1.1.2"
 
 [tool.coverage.run]
 branch = true

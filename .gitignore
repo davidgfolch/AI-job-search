@@ -16,3 +16,5 @@ uv.lock
 **/.next/**
 scripts/mysql/backup.sql
 apps/aiEnrich/*_CV.*
+**/coverage.svg
+**/coverage.xml
