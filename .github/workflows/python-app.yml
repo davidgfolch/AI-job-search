@@ -32,7 +32,6 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     - name: Install MODULES
       run: |
-        MODULE=($MODULES)
         for MODULE in "${MODULES[@]}"; do
           cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
@@ -46,7 +45,6 @@ jobs:
         done
     - name: Tests MODULES
       run: |
-        MODULE=($MODULES)
         for MODULE in "${MODULES[@]}"; do
           cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
@@ -58,7 +56,6 @@ jobs:
         done
     - name: Coverage
       run: |
-        MODULE=($MODULES)
         for MODULE in "${MODULES[@]}"; do
           cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
@@ -79,7 +76,6 @@ jobs:
       run: |
         # git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        MODULE=($MODULES)
         for MODULE in "${MODULES[@]}"; do
           git add ${MODULE}/coverage-badge.svg
         done
