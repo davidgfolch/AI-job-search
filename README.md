@@ -1,4 +1,13 @@
-# [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml) [![Backend coverage](READMEs/img/coverage.svg)](README.md#generate-coverage-badge-for-readmemd)
+# AI job search
+
+[![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml)
+
+| Module's coverage  |                                                              |
+|--------------------|--------------------------------------------------------------|
+| packages/commonlib | ![commonlib](packages/commonlib/coverage-badge.svg) |
+| apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage-badge.svg)      |
+| apps/scrapper      | ![scrapper](apps/scrapper/coverage-badge.svg)      |
+| apps/viewer        | ![viewer](apps/viewer/coverage-badge.svg)      |
 
 Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor, Tecnoempleo...
 
@@ -29,6 +38,7 @@ Run scripts in separate terminals.
 ```
 
 ### Windows
+
 ```shell
 docker compose up -d  # Start mysql with docker compose
 # Start all scrappers (follow browser & console to solve robot security filters)
