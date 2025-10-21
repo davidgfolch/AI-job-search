@@ -69,7 +69,7 @@ jobs:
         poetry run coverage run -m pytest
         poetry run coverage report -m
         poetry run coverage xml
-        mv coverage.xml ${{ matrix.module }}-coverage.xml        
+        poetry run coverage-badge -o coverage-${{ matrix.module }}.svg -f
         cd ../..
     # - name: aiEnrich coverage
     #   run: |
@@ -79,11 +79,11 @@ jobs:
     #     uv run coverage xml
     #     mv coverage.xml apps/aiEnrich-coverage.xml
     #     cd ../..
-    - name: ${{ matrix.folder }} coverage badge
-      if: ${{ matrix.folder != 'apps/aiEnrich' }}
-      run: |
-        cd ${{ matrix.folder }}
-        poetry run coverage-badge -o coverage-${{ matrix.module }}.svg -f
+    # - name: ${{ matrix.folder }} coverage badge
+    #   if: ${{ matrix.folder != 'apps/aiEnrich' }}
+    #   run: |
+    #     cd ${{ matrix.folder }}
+        
       # uses: tj-actions/coverage-badge-py@v2
       # with:
       #   coverage.filename: ./${{ matrix.folder }}-coverage.xml
