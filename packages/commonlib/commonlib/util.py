@@ -171,6 +171,5 @@ def getcwd() -> str:
     return os.getcwd()
 
 def getSrcPath() -> str:
-    srcFolder='src/ai_job_search'
-    return str(Path(os.getcwd()).joinpath(srcFolder))
+    return str(Path(os.getcwd()))
 
