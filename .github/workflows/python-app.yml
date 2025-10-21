@@ -80,10 +80,13 @@ jobs:
     #     mv coverage.xml apps/aiEnrich-coverage.xml
     #     cd ../..
     - name: ${{ matrix.folder }} coverage badge
-      uses: tj-actions/coverage-badge-py@v2
       if: ${{ matrix.folder != 'apps/aiEnrich' }}
-      with:
-        coverage.filename: ./${{ matrix.folder }}-coverage.xml
-        badge.filename: ./${{ matrix.folder }}-coverage.svg        
+      run: |
+        cd ${{ matrix.folder }}
+        poetry run coverage-badge -o coverage-${{ matrix.module }}.svg -f
+      # uses: tj-actions/coverage-badge-py@v2
+      # with:
+      #   coverage.filename: ./${{ matrix.folder }}-coverage.xml
+      #   badge.filename: ./${{ matrix.folder }}-coverage.svg        
    
 
