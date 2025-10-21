@@ -65,12 +65,13 @@ jobs:
       if: ${{ matrix.folder != 'apps/aiEnrich' }}
       run: |
         cd ${{ matrix.folder }}
+
         poetry run coverage run -m pytest
         poetry run coverage report -m
         poetry run coverage xml
         # Replace invalid characters with dashes
-        MODULE_NAME=$(echo "${{ matrix.module }}" | tr '/:*?"<>|' '-' | tr ' ' '-' | tr -s '-')        
-        poetry run coverage-badge -o coverage-${MODULE_NAME}.svg -f
+        # MODULE_NAME=$(echo "${{ matrix.folder }}" | tr '/:*?"<>|' '-' | tr ' ' '-' | tr -s '-')        
+        poetry run coverage-badge -o coverage-badge.svg -f
         cd ../..
     # - name: aiEnrich coverage
     #   run: |
@@ -81,13 +82,16 @@ jobs:
     #     mv coverage.xml apps/aiEnrich-coverage.xml
     #     cd ../..
     # - name: ${{ matrix.folder }} coverage badge
-    #   if: ${{ matrix.folder != 'apps/aiEnrich' }}
     #   run: |
     #     cd ${{ matrix.folder }}
-        
-      # uses: tj-actions/coverage-badge-py@v2
-      # with:
-      #   coverage.filename: ./${{ matrix.folder }}-coverage.xml
-      #   badge.filename: ./${{ matrix.folder }}-coverage.svg        
-   
 
+    - name: Commit coverage ${{ matrix.folder }} badge
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        cd ${{ matrix.folder }}
+        git add coverage-badge.svg
+        git commit -m "Update coverage badge ${{ matrix.folder }}"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
