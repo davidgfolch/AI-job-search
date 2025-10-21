@@ -65,22 +65,20 @@ jobs:
       if: ${{ matrix.folder != 'apps/aiEnrich' }}
       run: |
         cd ${{ matrix.folder }}
-
-        poetry run coverage run -m pytest
-        poetry run coverage report -m
-        poetry run coverage xml
-        # Replace invalid characters with dashes
-        # MODULE_NAME=$(echo "${{ matrix.folder }}" | tr '/:*?"<>|' '-' | tr ' ' '-' | tr -s '-')        
-        poetry run coverage-badge -o coverage-badge.svg -f
+        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
+          uv run coverage run -m pytest
+          uv run coverage report -m
+          uv run coverage xml
+          poetry run coverage-badge -o coverage-badge.svg -f
+        else
+          poetry run coverage run -m pytest
+          poetry run coverage report -m
+          poetry run coverage xml
+          # Replace invalid characters with dashes
+          # MODULE_NAME=$(echo "${{ matrix.folder }}" | tr '/:*?"<>|' '-' | tr ' ' '-' | tr -s '-')        
+          poetry run coverage-badge -o coverage-badge.svg -f
+        fi        
         cd ../..
-    # - name: aiEnrich coverage
-    #   run: |
-    #     cd apps/aiEnrich
-    #     uv run coverage run -m pytest
-    #     uv run coverage report -m
-    #     uv run coverage xml
-    #     mv coverage.xml apps/aiEnrich-coverage.xml
-    #     cd ../..
     # - name: ${{ matrix.folder }} coverage badge
     #   run: |
     #     cd ${{ matrix.folder }}
