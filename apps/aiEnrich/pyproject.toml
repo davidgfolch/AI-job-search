@@ -24,6 +24,7 @@ commonlib = { path = "../../packages/commonlib", editable = true }
 dev = [
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0"
+    "coverage-badge>=1.1.2"
 ]
 
 [tool.coverage.run]
