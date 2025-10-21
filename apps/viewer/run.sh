@@ -1,2 +1,4 @@
 #!/bin/bash
-poetry run streamlit run .\viewer\main.py
+cd apps/viewer
+poetry run streamlit run ./viewer/main.py
+cd ../..

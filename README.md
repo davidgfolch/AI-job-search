@@ -29,12 +29,12 @@ Run scripts in separate terminals.
 # Start mysql with docker compose
 ./scripts/run_1_Mysql.sh
 # Start all scrappers (follow browser & console to solve robot security filters)
-./scripts/run_2_Scrapper.sh  # or
-./scripts/run_2_scrapper.sh Linkedin Infojobs Glassdoor  # Run specific scrappers
+./apps/scrapper/run.sh  # or
+./apps/scrapper/run.sh Linkedin Infojobs Glassdoor  # Run specific scrappers
 # OPTIONAL: Process each job offer with AI/LLM inference in database, extracting salary, required technologies, etc...
-./scripts/run_3_AiEnricher.sh
+./apps/aiEnrich/run.sh
 # Run User interface to edit
-./scripts/run_4_Viewer.sh
+./apps/viewer/run.sh
 ```
 
 ### Windows
@@ -42,23 +42,23 @@ Run scripts in separate terminals.
 ```shell
 docker compose up -d  # Start mysql with docker compose
 # Start all scrappers (follow browser & console to solve robot security filters)
-run_2_Scrapper.bat
+.\apps\scrapper\run.bat
 # OPTIONAL: Process each job offer with AI/LLM inference in database, extracting salary, required technologies, etc...
-run_3_AiEnricher.bat
-run_4_Viewer.bat
+.\apps\aiEnrich\run.bat
+.\apps\viewer\run.bat
 ```
 
 ## Scrapers
 
-The automatic scrapper (`./run_2_Scrapper.sh` without parameters) keeps running in a infinite loop in console.  Different timeouts are configured in `scrapper.py` for each site scrapper.
+The automatic scrapper (`./apps/scrapper/run.sh` without parameters) keeps running in a infinite loop in console.  Different timeouts are configured in `scrapper/main.py` for each site scrapper.
 
-See [README_SCRAPPERS.md](READMEs/README_SCRAPPERS.md)
+See [module README.md](apps/scrapper/README.md)
 
 ## AI enricher (optional)
 
 This will use LLM to extract structured data from job offers (salary, required_technologies, ...).  Using CrewAI framework & local Ollama LLM.
 
-The automatic script `./scripts/run_3_AiEnricher.sh` keeps running in a infinite loop in console, waiting for jobs not `ai_enriched` in database.
+The automatic script `./apps/aiEnrich/run.sh` keeps running in a infinite loop in console, waiting for jobs not `ai_enriched` in database.
 
 ## Viewer
 

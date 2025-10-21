@@ -13,14 +13,33 @@ and 3.11 incompatibility with other crewAi libraries.
 
 ```bash
 sudo apt install python3.10
+```
+
+### Package managers install
+
+#### Poetry (all modules except apps/aiEnrich)
+
+```bash
 curl -sSL https://install.python-poetry.org | python3 -
+```
+
+#### UV (for apps/aiEnrich)
+
+AiEnrich uses CrewAI framework, and CrewAI uses UV
+
+> <https://docs.crewai.com/en/installation>
+
+```bash
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux
+uv tool update-shell
 ```
 
 ## Install project dependencies
 
-```bash
+Follow each README (in order):
 
-```
+[packages/commonlib README.md](../packages/commonlib/README.md)
 
 If problems found installing mysql client library for Streamlit, follow this:
 
@@ -29,7 +48,17 @@ sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-ess
 ```
 
 ## Install crewai
-See [README_CREWAI.md](./README_CREWAI.md)
+
+> <https://docs.crewai.com/en/installation>
+
+In `apps/crewAi` folder:
+
+```bash
+uv tool install crewai
+uv tool list
+```
+
+> uv tool install crewai --upgrade
 
 ## Setup credentials & other settings
 

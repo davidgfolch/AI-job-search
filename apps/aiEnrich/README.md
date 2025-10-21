@@ -4,32 +4,7 @@ Welcome to the AiJobSearch Crew project, powered by [crewAI](https://crewai.com)
 
 ## Installation
 
-Ensure you have Python >=3.10 <=3.13 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.
-
-First, if you haven't already, install uv:
-
-```bash
-# .\.venv\Scripts\activate
-
-
-# python -m pip install uv
-# python -m uv tool update-shell
-
-
-# https://docs.crewai.com/en/installation
-
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
-curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux
-
-# uv sync --active
-
-uv tool update-shell
-uv tool install crewai
-#uv tool install crewai --upgrade
-uv tool list
-crewai install
-# uv pip install -e ../../packages/common
-```
+[See README_INSTALL.md](README_INSTALL.md)
 
 ### Customizing
 
@@ -49,6 +24,7 @@ TODO: There is no implementation yet in front end (but value % is stored in data
 To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
 
 ```bash
+crewai install
 crewai run
 ```
 
