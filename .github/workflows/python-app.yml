@@ -34,7 +34,7 @@ jobs:
       run: |
         MODULE=($MODULES)
         for MODULE in "${MODULES[@]}"; do
-          cd ${MODULE}
+          cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv tool update-shell
             uv tool install crewai
@@ -48,7 +48,7 @@ jobs:
       run: |
         MODULE=($MODULES)
         for MODULE in "${MODULES[@]}"; do
-          cd ${MODULE}
+          cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv run pytest
           else
@@ -60,7 +60,7 @@ jobs:
       run: |
         MODULE=($MODULES)
         for MODULE in "${MODULES[@]}"; do
-          cd ${MODULE}
+          cd "${MODULE}"
           if [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv run coverage run -m pytest
             uv run coverage report -m
