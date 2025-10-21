@@ -18,7 +18,6 @@ jobs:
     strategy:
       matrix:
         folder: [packages/commonlib, apps/scrapper, apps/viewer, apps/aiEnrich]
-        module: [packages-commonlib, apps-scrapper, apps-viewer, apps-aiEnrich]
       max-parallel: 1
     steps:
     - uses: actions/checkout@v4
@@ -69,7 +68,9 @@ jobs:
         poetry run coverage run -m pytest
         poetry run coverage report -m
         poetry run coverage xml
-        poetry run coverage-badge -o coverage-${{ matrix.module }}.svg -f
+        # Replace invalid characters with dashes
+        MODULE_NAME=$(echo "${{ matrix.module }}" | tr '/:*?"<>|' '-' | tr ' ' '-' | tr -s '-')        
+        poetry run coverage-badge -o coverage-${MODULE_NAME}.svg -f
         cd ../..
     # - name: aiEnrich coverage
     #   run: |

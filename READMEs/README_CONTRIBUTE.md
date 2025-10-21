@@ -8,27 +8,5 @@ Please contact me on Github for any comments or questions I'll be happy to answe
 
 ## Tests & coverage
 
-```bash
-# run tests
-python -m pytest 
-# run coverage
-coverage run --source=src -m pytest 
-coverage report -m
-# see coverage
-coverage html
-```
+See [.github/workflows](../.github/workflows/python-app.yml) for respective apps test & coverage runs.
 
-All in one:
-
-```bash
-pytest && coverage run --source=src -m pytest && coverage report -m
-```
-
-## Generate coverage badge for README.md
-
-```bash
-cd backend
-coverage-badge -o ../README.md_images/img/coverage.svg -f
-```
-
-NOTE: pipeline generation don't work
