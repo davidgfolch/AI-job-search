@@ -25,17 +25,19 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-    - name: Install Poetry
+    - name: Install package manager
       run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
         cp '.env.example' .env
+        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+        else
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        fi
     - name: Install ${{ matrix.folder }}
       run: |
         cd ${{ matrix.folder }}
         if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          cd apps/aiEnrich
           uv tool update-shell
           uv tool install crewai
           crewai install
@@ -77,7 +79,7 @@ jobs:
           poetry run coverage report -m
           poetry run coverage xml
           poetry run coverage-badge -o coverage-badge.svg -f
-        fi        
+        fi
         cd ../..
     # - name: Commit coverage ${{ matrix.folder }} badge
     #   run: |
