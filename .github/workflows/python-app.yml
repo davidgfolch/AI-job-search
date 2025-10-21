@@ -31,24 +31,27 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         cp '.env.example' .env
     - name: Install ${{ matrix.folder }}
-      if: ${{ matrix.folder != 'apps/aiEnrich' }}
       run: |
         cd ${{ matrix.folder }}
-        poetry lock && poetry install --no-interaction
-        cd ../..
-    - name: Install aiEnrich
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        cd apps/aiEnrich
-        uv tool update-shell
-        uv tool install crewai
-        crewai install
+        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          cd apps/aiEnrich
+          uv tool update-shell
+          uv tool install crewai
+          crewai install
+        else
+          poetry lock && poetry install --no-interaction
+        fi
         cd ../..
     - name: ${{ matrix.folder }} tests
-      if: ${{ matrix.folder != 'apps/aiEnrich' }}
-      run: cd ${{ matrix.folder }} && poetry run pytest && cd ../..
-    - name: Run aiEnrich tests
-      run: cd apps/aiEnrich && uv run pytest && cd ../..
+      run: |
+        cd ${{ matrix.folder }}
+        if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
+          uv run pytest
+        else
+          poetry run pytest
+        fi
+        cd ../..
     # - name: Set PYTHONPATH
     #   run: echo "PYTHONPATH=src" >> $GITHUB_ENV
     # - name: Clean up __pycache__ and .pyc files
@@ -62,14 +65,13 @@ jobs:
     #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: ${{ matrix.folder }} coverage
-      if: ${{ matrix.folder != 'apps/aiEnrich' }}
       run: |
         cd ${{ matrix.folder }}
         if [ "${{ matrix.folder }}" == "apps/aiEnrich" ]; then
           uv run coverage run -m pytest
           uv run coverage report -m
           uv run coverage xml
-          poetry run coverage-badge -o coverage-badge.svg -f
+          uv run coverage-badge -o coverage-badge.svg -f
         else
           poetry run coverage run -m pytest
           poetry run coverage report -m
