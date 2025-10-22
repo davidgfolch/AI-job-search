@@ -90,10 +90,10 @@ jobs:
           fi
         done
         if $changes; then
-          echo "No coverage badge files changed"
-        else
           git commit -m "Update coverage badges"
           git push
+        else
+          echo "No coverage badge files changed"
         fi        
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
