@@ -80,11 +80,21 @@ jobs:
         # git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         read -ra MODULE_ARR <<< "${MODULES}"
+        changes=false
         for MODULE in "${MODULE_ARR[@]}"; do
-          git add ${MODULE}/coverage-badge.svg
+          if git diff --quiet "${MODULE}/coverage-badge.svg"; then  # No changes in this file
+            continue
+          else
+            changes=true
+            git add ${MODULE}/coverage-badge.svg
+          fi
         done
-        git commit -m "Update coverage badges"
-        git push
+        if $changes; then
+          echo "No coverage badge files changed"
+        else
+          git commit -m "Update coverage badges"
+          git push
+        fi        
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
