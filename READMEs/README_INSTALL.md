@@ -37,15 +37,10 @@ uv tool update-shell
 
 ## Install project dependencies
 
-Follow each README (in order):
+In project root folder execute `./scripts/install.sh`
 
-[packages/commonlib README.md](../packages/commonlib/README.md)
-
-If problems found installing mysql client library for Streamlit, follow this:
-
-```bash
-sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-essential
-```
+> If problems found installing mysql client library for Streamlit, follow this:
+> `sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-essential`
 
 ## Install crewai
 
@@ -79,7 +74,6 @@ After executing for first time `docker-compose up` or `docker compose up` or `./
 docker exec -it ai-job-search-mysql_db-1 bash
 # Execute next lines inside the docker container
 mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/ddl.sql
-mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/backup.sql
 ```
 
 [Mysql docker doc reference](https://hub.docker.com/_/mysql)
@@ -89,7 +83,10 @@ mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/backup.sql
 ## Database backup
 
 ```bash
-docker exec ai_job_search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootPass jobs > scripts/backup.sql
+# backup
+docker exec ai_job_search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootPass jobs > docker-entrypoint-initdb.d/backup.sql
+# restore
+cat scripts/mysql/backup.sql | docker exec -i ai_job_search-mysql_db-1 /usr/bin/mysql -uroot -prootPass jobs
 ```
 
 ## Managing dependencies
