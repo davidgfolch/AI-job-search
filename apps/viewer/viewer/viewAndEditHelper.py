@@ -320,7 +320,10 @@ def showDetail(jobData: dict):
     cvMatchPercentage = fmtDetailOpField(data, 'cv_match_percentage', 'CV match', 2)
     if cvMatchPercentage != '':
         with st.expander(cvMatchPercentage+'%', expanded=True):
-            st.progress(data['cv_match_percentage'])
+            if data['cv_match_percentage']>-1:
+                st.progress(data['cv_match_percentage'])
+            else:
+                st.write('AI CV Match error')
     if val := data.get('comments'):
         with st.expander('Comments', expanded=True):
             st.markdown(val)
