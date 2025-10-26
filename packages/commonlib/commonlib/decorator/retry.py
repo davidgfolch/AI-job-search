@@ -15,9 +15,9 @@ class StackTrace(Enum):
 
 def retry(retries: int = 5,
           delay: float = 2,
-          exception: Exception = Exception,
+          exception: type[Exception] = Exception,
           stackStrace: StackTrace = StackTrace.LAST_RETRY,
-          exceptionFnc: Callable = None,
+          exceptionFnc: Callable = (lambda: None),
           raiseException: bool = True) -> Callable:
     """
     Attempt to call a function, if it fails, try again with a specified delay.
@@ -37,6 +37,8 @@ def retry(retries: int = 5,
             for i in range(1, retries + 2):
                 try:
                     return fnc(*args, **kwargs)
+                except KeyboardInterrupt as e:
+                    raise e
                 except exception as e:
                     if i == retries + 1:
                         if raiseException:
@@ -44,7 +46,7 @@ def retry(retries: int = 5,
                         if stackStrace != StackTrace.NEVER:
                             print(red(traceback.format_exc()))
                         else:
-                            print(red(e))
+                            print(red(str(e)))
                         print("", end='\n', flush=True)
                         return False
                     print(yellow(f'Error calling function {fnc.__name__}()',
@@ -54,7 +56,11 @@ def retry(retries: int = 5,
                         print(red(traceback.format_exc()), end='\n', flush=True)
                     if exceptionFnc is not None:
                         exceptionFnc()
-                    sleep(delay)
+                    try:
+                        sleep(delay)
+                    except KeyboardInterrupt as e:
+                        raise e
+
         return wrapper
 
     return decorator

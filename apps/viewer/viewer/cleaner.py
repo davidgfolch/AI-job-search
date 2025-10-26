@@ -59,7 +59,7 @@ def table(columns, cnf, res):
     df = DataFrame(res, columns=columns)
     df.insert(0, "Sel", False)
     lastSelected = getState('lastSelected')
-    if getState('selectAll'):
+    if getState('selectAll', False):
         df['Sel'] = True
         setState('lastSelected', {'Sel': df['Sel']})
     elif lastSelected and 'Sel' in lastSelected:

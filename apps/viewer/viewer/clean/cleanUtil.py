@@ -2,8 +2,7 @@ import re
 from pandas import DataFrame
 
 
-def getAllIds(selectedRows: DataFrame,
-              dropFirstByGroup=False, plainIdsStr=True):
+def getAllIds(selectedRows: DataFrame, dropFirstByGroup=False, plainIdsStr=True):
     rows = [selectedRows.iloc[row].iloc[getIdsIndex(selectedRows)]
             for row in range(len(selectedRows))]
     if len(rows) == 0:

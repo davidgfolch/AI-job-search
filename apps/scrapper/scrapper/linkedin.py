@@ -41,8 +41,8 @@ WEB_PAGE = 'Linkedin'
 JOBS_X_PAGE = 25
 
 print('Linkedin scrapper init')
-selenium = None
-mysql = None
+selenium: SeleniumUtil
+mysql: MysqlUtil
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
@@ -160,8 +160,8 @@ def jobExistsInDB(cssSel):
     return (jobId, mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
 
 
-def getJobId(url: str):
-    return re.sub(r'.*/jobs/view/([^/]+)/.*', r'\1', url)
+def getJobId(url: str) -> int:
+    return int(re.sub(r'.*/jobs/view/([^/]+)/.*', r'\1', url))
 
 
 def getJobUrlShort(url: str):
@@ -239,8 +239,7 @@ def processRow(idx):
         md = htmlToMarkdown(html)
         # easyApply: there are 2 buttons
         easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-        print(f'{jobId}, {title}, {company}, {location}, ',
-              f'easy_apply={easyApply} - ', end='')
+        print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='')
         if validate(title, url, company, md, DEBUG):
             if id := mysql.insert((jobId, title, company, location, url, md,
                                    easyApply, WEB_PAGE)):

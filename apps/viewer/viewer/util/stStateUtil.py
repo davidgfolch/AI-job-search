@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import re
+from typing import TypeVar
 import streamlit as st
 from pandas import DataFrame
 from functools import reduce
@@ -26,8 +27,11 @@ def printSessionState():
         st.write(st.session_state)
 
 
-def getState(key: str, default=None):
-    value = st.session_state.get(key, default)
+T = TypeVar("T")
+
+
+def getState(key: str, default: T = None) -> T:
+    value: T = st.session_state.get(key, default)
     if (isinstance(value, DataFrame) and len(value)) or value:
         if isinstance(value, str):
             if len(value.strip()) > 0:
@@ -50,6 +54,11 @@ def getStateBoolValue(*keys: str):
 
 def setState(key: str, value):
     st.session_state[key] = value
+
+
+def setStateIfNone(key: str, value):
+    if st.session_state.get(key) is None:
+        st.session_state[key] = value
 
 
 def setStateNoError(key: str, value):

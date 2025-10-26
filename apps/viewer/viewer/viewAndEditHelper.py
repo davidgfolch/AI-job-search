@@ -5,7 +5,7 @@ from pandas import DataFrame
 from commonlib.mysqlUtil import QRY_SELECT_JOBS_VIEWER, binaryColumnIgnoreCase, getColumnTranslated
 from commonlib.sqlUtil import getAndFilter
 from .util.stComponents import checkAndInput, checkAndPills, sessionLoadSaveForm
-from .util.stStateUtil import getBoolKeyName, getState, getStateBool, getStateBoolValue, setState
+from .util.stStateUtil import getBoolKeyName, getState, getStateBool, getStateBoolValue, setState, setStateIfNone
 from .util.stUtil import inColumns, scapeLatex
 from .util.viewUtil import KEY_SELECTED_IDS, fmtDetailOpField, formatDateTime
 from .viewAndEditConstants import (
@@ -229,15 +229,14 @@ def formFilterByIdsSetup():
     selectedIds = getState(KEY_SELECTED_IDS)
     if selectedIds and len(selectedIds) > 0:  # clean page entry point
         st.info(f'Selected ids: {selectedIds}')
-        setState(getBoolKeyName(FF_KEY_BOOL_FIELDS), False)
-        setState(getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS), False)
-        setState(FF_KEY_SEARCH, '')
-        setState(getBoolKeyName(FF_KEY_SALARY), False)
-        setState(getBoolKeyName(FF_KEY_DAYS_OLD), False)
-        setState(getBoolKeyName(FF_KEY_WHERE), True)
-        setState(FF_KEY_WHERE,
-                 ' or '.join({f'id={id}' for id in selectedIds.split(',')}))
-        setState(FF_KEY_ORDER, "modified desc")
+        setStateIfNone(getBoolKeyName(FF_KEY_BOOL_FIELDS), False)
+        setStateIfNone(getBoolKeyName(FF_KEY_BOOL_NOT_FIELDS), False)
+        setStateIfNone(FF_KEY_SEARCH, '')
+        setStateIfNone(getBoolKeyName(FF_KEY_SALARY), False)
+        setStateIfNone(getBoolKeyName(FF_KEY_DAYS_OLD), False)
+        setStateIfNone(getBoolKeyName(FF_KEY_WHERE), True)
+        setStateIfNone(FF_KEY_WHERE, ' or '.join({f'id={id}' for id in selectedIds.split(',')}))
+        setStateIfNone(FF_KEY_ORDER, "modified desc")
         setState(KEY_SELECTED_IDS, None)
 
 
@@ -249,7 +248,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
     st.write(totals, unsafe_allow_html=True)
     if filterResCnt < 1:
         return
-    singleSel = getState(FF_KEY_SINGLE_SELECT) == 1
+    singleSel = getState(FF_KEY_SINGLE_SELECT, 1) == 1
     idxValues = selectedRows.index.values
     selected = idxValues[0] if len(idxValues) > 0 else None
     enabledPrevNext = singleSel and selected is not None
@@ -283,8 +282,7 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
                                 kwargs={'max': filterResCnt-1},
                                 type="primary")),
         (1, lambda _: st.write('|')),
-        (5, lambda _: st.toggle('Single select',
-                                key=FF_KEY_SINGLE_SELECT)),
+        (5, lambda _: st.toggle('Single select', value=singleSel, key=FF_KEY_SINGLE_SELECT)),
         (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT,
                                       step=100,
                                       label_visibility='collapsed')),

@@ -5,7 +5,6 @@ from commonlib.util import getDatetimeNow, getSeconds, getTimeUnits, getSrcPath,
 from commonlib.terminalColor import cyan, red, yellow
 from .seleniumUtil import SeleniumUtil
 from . import tecnoempleo, infojobs, linkedin, glassdoor, indeed
-from . import infojobs
 
 # FIXME: Implement scrapper by url in view and/or console
 # f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-
@@ -22,7 +21,8 @@ SCRAPPERS: dict = {
         'timer': '2h'},
     'Linkedin': {
         'function': linkedin.run,
-        'timer': '1h'},
+        'timer': '1h',
+        'closeTab': True},
     'Glassdoor': {
         'function': glassdoor.run,
         'timer': '3h'},
@@ -32,13 +32,14 @@ SCRAPPERS: dict = {
         'ignoreAutoRun': True
     },
 }
-NEXT_SCRAP_TIMER = '10m' #'10m'  # time to wait between scrapping executions
+NEXT_SCRAP_TIMER = '10m'  # '10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 seleniumUtil: SeleniumUtil = None
 
 
 def timeExpired(name: str, properties: dict):
-    properties['lastExecution'] = properties.get('lastExecution', getDatetimeNow() if properties['waitBeforeFirstRun'] else None)
+    defaultLastExecution = getDatetimeNow() if properties['waitBeforeFirstRun'] else None
+    properties['lastExecution'] = properties.get('lastExecution', defaultLastExecution)
     if last := properties['lastExecution']:
         if last is None:
             return True
@@ -73,7 +74,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
                 starting = False
         for runThis in toRun:
             seleniumUtil.tab(runThis['name'])
-            if not runThis['properties']['preloaded']:
+            if not runThis['properties']['preloaded'] or runThis['properties'].get('closeTab',False):
                 executeScrapperPreload(runThis['name'], runThis['properties'])
             executeScrapper(runThis['name'], runThis['properties'])
         waitBeforeFirstRuns = False
@@ -92,12 +93,14 @@ def runSpecifiedScrappers(scrappersList: list):
             properties = SCRAPPERS[arg.capitalize()]
             executeScrapper(arg.capitalize(), properties)
 
+
 def validScrapperName(name: str):
     if SCRAPPERS.get(name.capitalize()) is not None:
         return True
     print(red(f"Invalid scrapper web page name {name}"))
     print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
     return False
+
 
 def executeScrapperPreload(name, properties: dict):
     try:
@@ -116,7 +119,13 @@ def executeScrapper(name, properties: dict):
     except Exception as e:
         print(red(f"Error occurred while executing {name}: {e}"))
         print(red(traceback.format_exc()))
-        properties['lastExecution'] = None # re-execute resetting timer
+        properties['lastExecution'] = None  # re-execute resetting timer
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if properties.get('closeTab',False):
+            seleniumUtil.tabClose(name)
+        seleniumUtil.tab()  # switches to default tab
 
 
 if __name__ == '__main__':

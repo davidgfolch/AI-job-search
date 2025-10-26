@@ -1,10 +1,12 @@
 import re
+from typing import Dict
 import streamlit as st
 from pandas import DataFrame
+from mysql.connector.types import RowItemType
 from commonlib.sqlUtil import formatSql
 from commonlib.util import getEnv
-from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS,
-                                    MysqlUtil, getColumnTranslated)
+from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS, SELECT_APPLIED_JOB_ORDER_BY,
+                                 MysqlUtil, getColumnTranslated)
 from viewer.streamlitConn import mysqlCachedConnection
 from viewer.util.stComponents import showCodeSql
 from viewer.util.stStateUtil import getBoolKeyName, getState, initStates
@@ -48,7 +50,7 @@ def view():
     st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
     formFilter()
     jobData = None
-    columnsWidth = getState(FF_KEY_COLUMNS_WIDTH, 0.5)
+    columnsWidth: float = getState(FF_KEY_COLUMNS_WIDTH, 0.5)
     col1, col2 = st.columns([columnsWidth, 1-columnsWidth])
     with col1:
         filterResCnt, selectedRows, totalSelected = tableView()
@@ -90,7 +92,7 @@ def formDetail(jobData):
 def getJobData(selectedRows: DataFrame):
     selected = selectedRows.iloc[0]
     id = int(selected.iloc[0])
-    jobData = mysql.fetchOne(f"select {DB_FIELDS} from jobs where id=%s", id)
+    jobData: Dict[str, RowItemType] = mysql.fetchOne(f"select {DB_FIELDS} from jobs where id=%s", id)
     fieldsArr = stripFields(DB_FIELDS)
     return {
         f'{fieldsArr[idx]}': getValueAsDict(fieldsArr[idx], data)
@@ -116,7 +118,7 @@ def tableView():
         # selectedRows = tableV2(df, FIELDS_SORTED, LIST_VISIBLE_COLUMNS)
     else:
         st.warning('No results found for filter.')
-        selectedRows = []
+        selectedRows = DataFrame()
     totalSelected = len(selectedRows)
     return filterResCnt, selectedRows, totalSelected
 
@@ -142,25 +144,25 @@ def addCompanyAppliedJobsInfo(jobData):
     company = removeRegexChars(company)
     params = {'company': company,
               'id':  str(jobData['id'])}
-    query = SELECT_APPLIED_JOB_IDS_BY_COMPANY
+    qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY
     # For Joppy offers check also client
     # (client should be manually set by the user)
     if params['company'] == 'joppy' and jobData['client']:
-        query += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
+        qry += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
         client = str(jobData['client']).lower()
         params |= {'client': client}
         company = removeRegexChars(jobData['client'])
-    rows = mysql.fetchAll(query.format(**params))
+    qry += SELECT_APPLIED_JOB_ORDER_BY
+    rows = mysql.fetchAll(qry.format(**params))
     if len(rows) == 0:
-        rows = searchPartialCompanyName(company, params, query, rows)
+        rows = searchPartialCompanyName(company, params, qry, rows)
     ids = ','.join([str(r[0]) for r in rows])
-    dates = ' '.join(['  📅 '+formatDate(r[1].date()) for r in rows])
     if len(ids) > 0:
+        dates = ' '.join(['  📅 '+formatDate(r[1].date()) for r in rows])
         jobData['company'] += ' <span style="font-size: small">' + \
             ':point_right: :warning: ' + \
-            gotoPageByUrl(PAGE_VIEW_IDX,
-                          f'already applied {params["company"]}', ids) \
-            + f' on {dates}</span>'
+            gotoPageByUrl(PAGE_VIEW_IDX, f'already applied {params["company"]}', ids) + \
+            f' on {dates}</span>'
 
 
 def formatDate(date):

@@ -42,6 +42,13 @@ def printPage(webPage, page, totalPages, keywords):
     printHR(green)
 
 
+from markdownify import MarkdownConverter
+
+class CustomConverter(MarkdownConverter):
+    def convert_br(self, el, text, parent_tags):
+        # Usa dos espacios + salto de línea para Markdown compatible
+        return "  \n"
+    
 def htmlToMarkdown(html: str) -> str:
     # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#options
     # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#converting-beautifulsoup-objects
@@ -52,7 +59,8 @@ def htmlToMarkdown(html: str) -> str:
     # md = convertSoup(html)
     # print(yellow('>>> Markdown with previous beautifulSoup clean <<<'))
     # print(green(md))
-    md = markdownify.markdownify(html)
+    # md = markdownify.markdownify(html)
+    md = CustomConverter().convert(html)
     return removeInvalidScapes(md)
 
 
@@ -68,8 +76,7 @@ def removeLinks(md: str) -> str:
     return re.sub(r'\[([^\]]+)\]\([^\)]+\)', r' \1 ', md, flags=re.M)
 
 
-def validate(title: str, url: str, company: str, markdown: str,
-             debugFlag: bool):
+def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool):
     fields = ['title', 'url', 'company', 'markdown']
     validations = hasLenAnyText(title, url, company, markdown)
     if 0 in validations:

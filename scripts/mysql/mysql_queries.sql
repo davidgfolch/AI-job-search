@@ -225,6 +225,11 @@ WHERE id=355109 and cv_match_percentage is null and not (ignored or discarded or
 ORDER BY created desc
 LIMIT 2
 
+update jobs set cv_match_percentage = 1 where cv_match_percentage=-1;
+
+select id, markdown from jobs order by created desc;
+
+
 
 -- Locks
 show open tables where in_use>0;

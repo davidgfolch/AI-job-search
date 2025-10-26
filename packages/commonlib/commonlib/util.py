@@ -86,17 +86,15 @@ def consoleTimer(message: str, timeUnit: str, end='\r'):
     seconds = getSeconds(timeUnit)
     spinner = Spinner()
     blankLine = True if end == '\r' else False
-    try:
-        for left in range(seconds*spinner.tickXSec, 0, -1):
-            spinnerStr = spinner.generate()
-            timeLeft = str(timedelta(seconds=int(left/spinner.tickXSec)))
-            print(yellow(message, f"{spinnerStr} I'll retry in {timeLeft} {spinnerStr}{' '*10}"), end=end)
-            end='\r'
-            spinner.nextTick()
-            sleep(1/spinner.tickXSec)
-    finally:
-        if blankLine:
-            print()
+    for left in range(seconds*spinner.tickXSec, 0, -1):
+        spinnerStr = spinner.generate()
+        timeLeft = str(timedelta(seconds=int(left/spinner.tickXSec)))
+        print(yellow(message, f"{spinnerStr} I'll retry in {timeLeft} {spinnerStr}{' '*10}"), end=end)
+        end='\r'
+        spinner.nextTick()
+        sleep(1/spinner.tickXSec)
+    if blankLine:
+        print()
 
 
 def getSeconds(timeUnit: str):

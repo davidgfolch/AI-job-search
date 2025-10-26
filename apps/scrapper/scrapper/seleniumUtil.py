@@ -36,15 +36,15 @@ Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like 
 
 SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end',  behavior: 'smooth' });"
 
-driver = None
-action = None
-tabs = {}
-
-
 class SeleniumUtil:
 
+    driver: webdriver.Remote
+    action: webdriver.ActionChains
+    defaulTab: str
+    tabs = {}
+
+
     def __init__(self):
-        global driver, action
         print('selenium driver init')
         print(DESKTOP_USER_AGENTS)
         opts = webdriver.ChromeOptions()
@@ -68,44 +68,61 @@ class SeleniumUtil:
         # opts.add_argument(f"user-agent={userAgent}")
         opts.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
         # driver = uc.Chrome(options=opts)
-        driver = webdriver.Chrome(options=opts)
-        driver.execute_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        action = webdriver.ActionChains(driver)
-        print(f'selenium driver init driver={driver}')
+        self.driver = webdriver.Chrome(options=opts)
+        self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        self.action = webdriver.ActionChains(self.driver)
+        print(f'selenium driver init driver={self.driver}')
+        self.defaulTab = self.driver.current_window_handle
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.exit()
+
+    def exit(self):
         print('Exiting SeleniumUtil, close driver...')
-        driver.close()
-    
-    def tab(self, name: str):
-        if tabs.get(name):
+        for tab in self.tabs:
+            print(f'closing tab={tab}')
+            self.driver.close()
+        self.driver.close()
+        self.driver.quit()
+
+    def tabClose(self, name: str = None):
+        self.driver.close()
+        if name:
+            self.tabs.pop(name)
+
+
+    def tab(self, name: str = None):
+        """Switch or create to tab name. If no name specified switches to default tab."""
+        if name is None:
+            print(f'SeleniumUtil switching to default tab={self.defaulTab}')
+            self.driver.switch_to.window(self.defaulTab)
+        elif self.tabs.get(name):
             print(f'SeleniumUtil switching to existing tab: {name}')
-            driver.switch_to.window(tabs[name])
+            self.driver.switch_to.window(self.tabs[name])
         else:
             print(f'SeleniumUtil creating new tab')
-            driver.switch_to.new_window('tab')
-            tabs[name] = driver.current_window_handle
+            self.driver.switch_to.new_window('tab')
+            self.tabs[name] = self.driver.current_window_handle
             self.waitUntilPageIsLoaded(30)
 
     @retry()
     def loadPage(self, url: str):
-        driver.get(url)
+        self.driver.get(url)
 
     def getUrl(self):
-        return driver.current_url
+        return self.driver.current_url
 
     def waitUntilPageUrlContains(self, url: str, timeout: int = 10):
-        WebDriverWait(driver, timeout).until(
+        WebDriverWait(self.driver, timeout).until(
             lambda d: str(d.current_url).find(url) >= 0)
 
     def getElm(self, cssSel: str | WebElement):
         if isinstance(cssSel, WebElement):
             return cssSel
-        return driver.find_element(By.CSS_SELECTOR, cssSel)
+        return self.driver.find_element(By.CSS_SELECTOR, cssSel)
 
     def getElmOf(self, elm: WebElement, cssSel: str):
         return elm.find_element(By.CSS_SELECTOR, cssSel)
@@ -113,10 +130,10 @@ class SeleniumUtil:
     def getElms(self, cssSel: str, driverOverride=None) -> List[WebElement]:
         if driverOverride:
             return driverOverride.find_elements(By.CSS_SELECTOR, cssSel)
-        return driver.find_elements(By.CSS_SELECTOR, cssSel)
+        return self.driver.find_elements(By.CSS_SELECTOR, cssSel)
 
     def sendEscapeKey(self):
-        webdriver.ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+        webdriver.ActionChains(self.driver).send_keys(Keys.ESCAPE).perform()
 
     def sendKeys(self, cssSel: str, value: str,
                  keyByKeyTime: None | tuple[int] = None, clear=True):
@@ -135,33 +152,33 @@ class SeleniumUtil:
         checkbox = self.getElm(cssSel)
         self.moveToElement(checkbox)
         if checkbox.is_selected():
-            driver.execute_script("arguments[0].click();", checkbox)
+            self.driver.execute_script("arguments[0].click();", checkbox)
 
     def waitUntilPageIsLoaded(self, timeout: int = 10):
-        WebDriverWait(driver, timeout).until(
+        WebDriverWait(self.driver, timeout).until(
             lambda driver: driver.execute_script(
                 'return document.readyState;') == 'complete')
 
     def scrollToBottom(self):
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     def scrollIntoView(self, cssSel: str | WebElement):
         elm = self.getElmFromOpSelector(cssSel)
-        driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)
+        self.driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)
         self.waitUntilVisible(elm)
         self.moveToElement(elm)
     
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(driver, timeout).until(EC.element_to_be_clickable, self.getElmFromOpSelector(cssSel))
+        WebDriverWait(self.driver, timeout).until(EC.element_to_be_clickable, self.getElmFromOpSelector(cssSel))
 
     def waitUntilVisible(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(driver, timeout).until(EC.visibility_of, self.getElmFromOpSelector(cssSel))
+        WebDriverWait(self.driver, timeout).until(EC.visibility_of, self.getElmFromOpSelector(cssSel))
 
     def waitUntil_presenceLocatedElement(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(driver, timeout).until(EC.presence_of_element_located, self.getElmFromOpSelector(cssSel))
+        WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located, self.getElmFromOpSelector(cssSel))
 
     def waitUntilTitleIs(self, title: str, timeout: int = 10):
-        WebDriverWait(driver, timeout).until(EC.title_is, title)
+        WebDriverWait(self.driver, timeout).until(EC.title_is, title)
 
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         """ scrollIntoView, waits to be clickable & click"""
@@ -195,8 +212,8 @@ class SeleniumUtil:
             return False
 
     def moveToElement(self, elm: str | WebElement):
-        action.move_to_element(self.getElmFromOpSelector(elm))
-        action.perform()
+        self.action.move_to_element(self.getElmFromOpSelector(elm))
+        self.action.perform()
 
     def getHtml(self, cssSel: str) -> str:
         return self.getAttr(cssSel, 'innerHTML')
@@ -211,19 +228,16 @@ class SeleniumUtil:
         return self.getElmOf(elm, cssSel).get_attribute(attr)
 
     def back(self):
-        driver.back()
-
-    def close(self):
-        driver.quit()
+        self.driver.back()
 
     def cloudFlareSecurityFilter(self):
         #TODO Don't detect iframe
         sleep(20,20)
         self.waitUntilPageIsLoaded(30)
-        # iframe:WebElement = driver.find_elements(By.XPATH,'//iframe')[0]
-        driver.switch_to.frame(0)
+        # iframe:WebElement = self.driver.find_elements(By.XPATH,'//iframe')[0]
+        self.driver.switch_to.frame(0)
         self.waitAndClick('input[type="checkbox"]')
-        driver.switch_to.default_content()
+        self.driver.switch_to.default_content()
         sleep(10,10)
 
 
