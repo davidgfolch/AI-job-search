@@ -37,8 +37,8 @@ JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults
 LOGIN_WAIT_DISABLE = False
 
 print('Infojobs scrapper init')
-selenium: SeleniumUtil = None
-mysql: MysqlUtil = None
+selenium: SeleniumUtil
+mysql: MysqlUtil
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool):

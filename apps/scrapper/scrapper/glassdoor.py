@@ -37,8 +37,8 @@ WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
 
 print('Glassdoor scrapper init')
-selenium = None
-mysql = None
+selenium: SeleniumUtil
+mysql: MysqlUtil
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool):

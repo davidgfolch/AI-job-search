@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from commonlib.util import getDatetimeNow, getSeconds, getTimeUnits, getSrcPath, consoleTimer
+from commonlib.util import getDatetimeNow, getEnv, getEnvBool, getSeconds, getTimeUnits, getSrcPath, consoleTimer
 from commonlib.terminalColor import cyan, red, yellow
 from .seleniumUtil import SeleniumUtil
 from . import tecnoempleo, infojobs, linkedin, glassdoor, indeed
@@ -15,26 +15,29 @@ from . import tecnoempleo, infojobs, linkedin, glassdoor, indeed
 SCRAPPERS: dict = {
     'Infojobs': {  # first to solve security filter
         'function': infojobs.run,
-        'timer': '2h'},
+        'timer': getSeconds(getEnv('INFOJOBS_RUN_CADENCY'))},
     'Tecnoempleo': { # first to solve security filter
         'function': tecnoempleo.run,
-        'timer': '2h'},
+        'timer': getSeconds(getEnv('TECNOEMPLEO_RUN_CADENCY'))},
     'Linkedin': {
         'function': linkedin.run,
-        'timer': '1h',
+        'timer': getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
         'closeTab': True},
     'Glassdoor': {
         'function': glassdoor.run,
-        'timer': '3h'},
+        'timer': getSeconds(getEnv('GLASSDOOR_RUN_CADENCY'))},
     'Indeed': {
         'function': indeed.run,
-        'timer': '3h',
+        'timer': getSeconds(getEnv('INDEED_RUN_CADENCY')),
         'ignoreAutoRun': True
     },
 }
+print(f'Scrappers config: {SCRAPPERS}')
+RUN_IN_TABS=getEnvBool('RUN_IN_TABS', False)
 NEXT_SCRAP_TIMER = '10m'  # '10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
-seleniumUtil: SeleniumUtil = None
+
+seleniumUtil: SeleniumUtil = SeleniumUtil()
 
 
 def timeExpired(name: str, properties: dict):
@@ -44,7 +47,7 @@ def timeExpired(name: str, properties: dict):
         if last is None:
             return True
         lapsed = getDatetimeNow()-last
-        timeoutSeconds = getSeconds(properties['timer'])
+        timeoutSeconds = properties['timer']
         timeLeft = getTimeUnits(timeoutSeconds-lapsed)
         print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
         if lapsed + 1 <= timeoutSeconds:
@@ -58,8 +61,8 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
     print(f'Starting at : {startingAt}')
-    for name, properties in SCRAPPERS.items():
-        executeScrapperPreload(name, properties)
+    # for name, properties in SCRAPPERS.items():  THIS CAUSES PROBLEMS WITH URL LIB SOCKET DISCONNECTION & PROCESS HANGS LONG TIME.
+    #     executeScrapperPreload(name, properties)
     while loop:
         toRun = []
         for name, properties in SCRAPPERS.items():
@@ -73,8 +76,9 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
                 toRun.append({"name": name, "properties": properties})
                 starting = False
         for runThis in toRun:
-            seleniumUtil.tab(runThis['name'])
-            if not runThis['properties']['preloaded'] or runThis['properties'].get('closeTab',False):
+            if RUN_IN_TABS:
+                seleniumUtil.tab(runThis['name'])
+            if runPreload(runThis['properties']):
                 executeScrapperPreload(runThis['name'], runThis['properties'])
             executeScrapper(runThis['name'], runThis['properties'])
         waitBeforeFirstRuns = False
@@ -84,14 +88,19 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
 def runSpecifiedScrappers(scrappersList: list):
     # Arguments specified in command line
     print(f'Executing specified scrappers: {scrappersList}')
+    # for arg in scrappersList:
+    #     if validScrapperName(arg):
+    #         properties = SCRAPPERS[arg.capitalize()]
+    #         executeScrapperPreload(arg.capitalize(), properties)
     for arg in scrappersList:
-        if validScrapperName(arg):
+        if validScrapperName(arg):            
             properties = SCRAPPERS[arg.capitalize()]
-            executeScrapperPreload(arg.capitalize(), properties)
-    for arg in scrappersList:
-        if validScrapperName(arg):
-            properties = SCRAPPERS[arg.capitalize()]
+            if runPreload(properties):
+                executeScrapperPreload(arg.capitalize(), properties)
             executeScrapper(arg.capitalize(), properties)
+
+def runPreload(properties):
+    return not properties.get('preloaded',False) or properties.get('closeTab',False) or not RUN_IN_TABS
 
 
 def validScrapperName(name: str):
@@ -104,7 +113,8 @@ def validScrapperName(name: str):
 
 def executeScrapperPreload(name, properties: dict):
     try:
-        seleniumUtil.tab(name)
+        if RUN_IN_TABS:
+            seleniumUtil.tab(name)
         properties['function'](seleniumUtil, True)
         properties['preloaded'] = True
     except Exception as e:
@@ -113,7 +123,7 @@ def executeScrapperPreload(name, properties: dict):
         properties['preloaded'] = False
 
 
-def executeScrapper(name, properties: dict):
+def executeScrapper(name, properties: dict):        
     try:
         properties['function'](seleniumUtil, False)
     except Exception as e:
@@ -123,9 +133,10 @@ def executeScrapper(name, properties: dict):
     except KeyboardInterrupt:
         pass
     finally:
-        if properties.get('closeTab',False):
-            seleniumUtil.tabClose(name)
-        seleniumUtil.tab()  # switches to default tab
+        if RUN_IN_TABS:
+            if properties.get('closeTab',False):
+                seleniumUtil.tabClose(name)
+            seleniumUtil.tab()  # switches to default tab
 
 
 if __name__ == '__main__':
@@ -144,10 +155,12 @@ if __name__ == '__main__':
         args.pop(args.index('starting'))
         print(f"'starting' at {args[1]} ")
 
-    with SeleniumUtil() as seleniumUtil:
+    try:
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
         if len(args) == 1 or starting or wait:
             startingAt = args[1].capitalize() if starting else None
             runAllScrappers(wait, starting, startingAt)
         else:
             runSpecifiedScrappers(args[1:])
+    finally:
+        seleniumUtil.exit()

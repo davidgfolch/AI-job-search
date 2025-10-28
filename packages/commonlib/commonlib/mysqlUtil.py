@@ -26,9 +26,10 @@ SELECT count(*)
 FROM jobs
 """
 SELECT_APPLIED_JOB_IDS_BY_COMPANY = """select id, created from jobs
- where applied and lower(company) rlike '{company}' and id != {id}"""
+ where applied and lower(company) rlike '{company}' and id != {id} """
 SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT = " and client like '%{client}%' "
-SELECT_APPLIED_JOB_ORDER_BY = """order by created desc"""
+SELECT_APPLIED_JOB_ORDER_BY = """
+order by created desc"""
 
 DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
@@ -95,7 +96,7 @@ class MysqlUtil:
         except mysqlConnector.Error as ex:
             error(ex)
 
-    def fetchOne(self, query: str, id: int) -> Dict[str, RowItemType]:
+    def fetchOne(self, query: str, id: int | str) -> Dict[str, RowItemType]:
         try:
             with self.cursor() as c:
                 c.execute(query, [id])

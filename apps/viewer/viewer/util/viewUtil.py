@@ -11,17 +11,15 @@ def mapDetailForm(jobData, fieldsBool):
     boolFieldsValues = []
     comments, salary, company, client = (None, None, None, None)
     if jobData:
-        comments, salary, company, client = (jobData['comments'],
-                                             jobData['salary'],
-                                             jobData['company'],
-                                             jobData['client'])
+        comments = jobData['comments']
+        salary = jobData['salary']
+        company = jobData['company']
+        client = jobData['client']
         setState(F_KEY_COMMENTS, comments)
         setState(F_KEY_SALARY, salary)
         setState(F_KEY_COMPANY, company)
         setState(F_KEY_CLIENT, client)
-        boolMapper = map(lambda f: f if
-                         jobData.get(f, False) else None,
-                         fieldsBool)
+        boolMapper = map(lambda f: f if jobData.get(f, False) else None, fieldsBool)
         boolFieldsValues = list(filter(lambda x: x, boolMapper))
     comments = comments if comments else ''
     return boolFieldsValues, comments, salary, company, client

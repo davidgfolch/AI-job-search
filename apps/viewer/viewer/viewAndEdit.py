@@ -10,15 +10,15 @@ from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLI
 from viewer.streamlitConn import mysqlCachedConnection
 from viewer.util.stComponents import showCodeSql
 from viewer.util.stStateUtil import getBoolKeyName, getState, initStates
-from viewer.util.viewUtil import getValueAsDict, gotoPageByUrl, mapDetailForm
-from viewer.util.stUtil import getTextAreaHeightByText, inColumns, stripFields
+from viewer.util.viewUtil import fmtDetailOpField, formatDateTime, getValueAsDict, gotoPageByUrl, mapDetailForm
+from viewer.util.stUtil import getTextAreaHeightByText, inColumns, scapeLatex, stripFields
 from viewer.viewAndEditConstants import (
-    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS, DEFAULT_ORDER, DEFAULT_SQL_FILTER,
+    DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS, DEFAULT_ORDER, DEFAULT_SQL_FILTER, DETAIL_FORMAT,
     F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS, FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS,
     FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS, FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY, FF_KEY_SEARCH,
     FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS, STYLE_JOBS_TABLE)
-from viewer.viewAndEditEvents import formDetailSubmit
-from viewer.viewAndEditHelper import detailForSingleSelection, formFilter, showDetail, getJobListQuery, table, tableFooter
+from viewer.viewAndEditEvents import deleteSalary, salaryCalculator, formDetailSubmit
+from viewer.viewAndEditHelper import detailForSingleSelection, formFilter, getJobListQuery, table, tableFooter
 from viewer.viewConstants import PAGE_VIEW_IDX
 
 
@@ -49,7 +49,7 @@ def view():
     })
     st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
     formFilter()
-    jobData = None
+    jobData: Dict = {}
     columnsWidth: float = getState(FF_KEY_COLUMNS_WIDTH, 0.5)
     col1, col2 = st.columns([columnsWidth, 1-columnsWidth])
     with col1:
@@ -89,7 +89,7 @@ def formDetail(jobData):
         st.text_input("Client", client, key=F_KEY_CLIENT)
 
 
-def getJobData(selectedRows: DataFrame):
+def getJobData(selectedRows: DataFrame) -> Dict:
     selected = selectedRows.iloc[0]
     id = int(selected.iloc[0])
     jobData: Dict[str, RowItemType] = mysql.fetchOne(f"select {DB_FIELDS} from jobs where id=%s", id)
@@ -123,7 +123,40 @@ def tableView():
     return filterResCnt, selectedRows, totalSelected
 
 
-def formDetailForMultipleSelection(selectedRows, jobData):
+def showDetail(jobData: dict):
+    data: Dict = scapeLatex(jobData, ['markdown', 'title'])
+    formatDateTime(data)
+    data = {k: (data[k] if data[k] else None) for k in data.keys()}
+    outStr = DETAIL_FORMAT.format(**data)
+    outStr += fmtDetailOpField(data, 'client')
+    reqSkills = fmtDetailOpField(data, 'required_technologies', 'Required', 2)
+    opSkills = fmtDetailOpField(data, 'optional_technologies', 'Optional', 2)
+    if reqSkills + opSkills != '':
+        outStr += ''.join(["- Skills\n", reqSkills, opSkills])
+    if error := jobData.get('ai_enrich_error', None):
+        outStr += f'- :red[AI enrich error:] {error}'
+    st.markdown(outStr, unsafe_allow_html=True)
+    salary = fmtDetailOpField(data, 'salary')
+    if salary != '':
+        inColumns([
+            (10, lambda _: st.write(salary)),
+            (1, lambda _: st.button('', icon='🧮', key='calculatorButton', on_click=salaryCalculator, kwargs={'salary': jobData['salary']})),
+            (1, lambda _: st.button('', icon='🗑️', key='trashButton', on_click=deleteSalary, kwargs={'id': jobData['id']})),
+        ])
+    cvMatchPercentage = fmtDetailOpField(data, 'cv_match_percentage', 'CV match', 2)
+    if cvMatchPercentage != '':
+        with st.expander(cvMatchPercentage+'%', expanded=True):
+            if data['cv_match_percentage'] > -1:
+                st.progress(data['cv_match_percentage'])
+            else:
+                st.write('AI CV Match error')
+    if val := data.get('comments'):
+        with st.expander('Comments', expanded=True):
+            st.markdown(val)
+    st.markdown(data['markdown'])
+
+
+def formDetailForMultipleSelection(selectedRows, jobData: Dict):
     # Table shown on the right when more than 1 is selected
     # FIXME: BAD SOLUTION, if fields order changed in query
     # check DB_FIELDS
@@ -152,6 +185,7 @@ def addCompanyAppliedJobsInfo(jobData):
         client = str(jobData['client']).lower()
         params |= {'client': client}
         company = removeRegexChars(jobData['client'])
+
     qry += SELECT_APPLIED_JOB_ORDER_BY
     rows = mysql.fetchAll(qry.format(**params))
     if len(rows) == 0:

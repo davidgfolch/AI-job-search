@@ -52,6 +52,10 @@ def deleteSalary(id):
     MysqlUtil(mysqlCachedConnection()).executeAndCommit(f'update jobs set salary=null where id = {id}', {})
 
 
+def salaryCalculator(salary: str):
+    pass
+
+
 def formDetailSubmit():
     ids = getSelectedRowsIds('selectedRows')
     if not ids or len(ids) < 1:

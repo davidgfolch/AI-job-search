@@ -35,8 +35,8 @@ JOBS_X_PAGE = 15
 LOGIN_WAIT_DISABLE = True
 
 print('Indeed scrapper init')
-selenium = None
-mysql = None
+selenium: SeleniumUtil
+mysql: MysqlUtil
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
@@ -48,8 +48,8 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
         searchJobs(JOBS_SEARCH.split(',')[0], True)
         return
     with MysqlUtil() as mysql:
-        for i, keywords in enumerate(JOBS_SEARCH.split(',')):
-            searchJobs(i, keywords.strip(), False)
+        for keywords in JOBS_SEARCH.split(','):
+            searchJobs(keywords.strip(), False)
 
 
 def getUrl(keywords):
@@ -172,6 +172,7 @@ def getJobLinkElement(idx):
 def loadAndProcessRow(idx):
     ignore = True
     jobExists = False
+    url = ''
     try:
         scrollJobsList(idx)
         jobLinkElm: WebElement = getJobLinkElement(idx)
@@ -196,7 +197,7 @@ def loadAndProcessRow(idx):
     if not ignore:
         if not processRow(url):
             print(red('Validation failed'))
-            return loadAndProcessRow(idx, False)
+            return loadAndProcessRow(idx)
         selenium.back()
         sleep(1, 2)
         return True

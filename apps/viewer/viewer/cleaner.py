@@ -74,12 +74,11 @@ def table(columns, cnf, res):
                   'Created': st.column_config.Column(width='large'),
                   }
     #TODO: use st-aggrid instead of data_editor?
-    editedDf = st.data_editor(df, width='stretch',
+    editedDf: DataFrame = st.data_editor(df, width='stretch',
                           hide_index=True, key='cleanJobsListTable',
                           on_change=onTableChange,
                           column_config=colsConfig, height=600)
-    #FIXME: when doing ignore rows first -> select all,
-    selectedRows = df[editedDf['Sel']]
+    selectedRows = df[editedDf['Sel'].fillna(False).astype(bool)]
     return editedDf, selectedRows
 
 

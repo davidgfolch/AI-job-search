@@ -6,15 +6,15 @@ from commonlib.mysqlUtil import QRY_SELECT_JOBS_VIEWER, binaryColumnIgnoreCase, 
 from commonlib.sqlUtil import getAndFilter
 from .util.stComponents import checkAndInput, checkAndPills, sessionLoadSaveForm
 from .util.stStateUtil import getBoolKeyName, getState, getStateBool, getStateBoolValue, setState, setStateIfNone
-from .util.stUtil import inColumns, scapeLatex
-from .util.viewUtil import KEY_SELECTED_IDS, fmtDetailOpField, formatDateTime
+from .util.stUtil import inColumns
+from .util.viewUtil import KEY_SELECTED_IDS
 from .viewAndEditConstants import (
-    COLUMNS_WIDTH, DEFAULT_ORDER, DETAIL_FORMAT, FF_KEY_BOOL_FIELDS,
+    COLUMNS_WIDTH, DEFAULT_ORDER, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS,
     FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS_BOOL,
     LIST_HEIGHT, SEARCH_COLUMNS, SEARCH_INPUT_HELP, VISIBLE_COLUMNS)
-from .viewAndEditEvents import deleteSalary, deleteSelectedRows, markAs, onTableChange
+from .viewAndEditEvents import deleteSelectedRows, markAs, onTableChange
 
 
 def getJobListQuery():
@@ -23,7 +23,7 @@ def getJobListQuery():
     if getStateBool(FF_KEY_WHERE) and filters:
         where = f'({filters})'
     if getState(getBoolKeyName(FF_KEY_SEARCH)):
-        search = getState(FF_KEY_SEARCH)
+        search: str = getState(FF_KEY_SEARCH, '')
         if search:
             searchArr = search.split(',')
             if len(searchArr) > 1:
@@ -294,35 +294,3 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
     ]
     inColumns(kwargs={'vertical_alignment': 'center'},
               columns=columns)
-
-
-def showDetail(jobData: dict):
-    data = scapeLatex(jobData, ['markdown', 'title'])
-    formatDateTime(data)
-    data = {k: (data[k] if data[k] else None) for k in data.keys()}
-    outStr = DETAIL_FORMAT.format(**data)
-    outStr += fmtDetailOpField(data, 'client')
-    reqSkills = fmtDetailOpField(data, 'required_technologies', 'Required', 2)
-    opSkills = fmtDetailOpField(data, 'optional_technologies', 'Optional', 2)
-    if reqSkills + opSkills != '':
-        outStr += ''.join(["- Skills\n", reqSkills, opSkills])
-    if error := jobData.get('ai_enrich_error', None):
-        outStr += f'- :red[AI enrich error:] {error}'
-    st.markdown(outStr, unsafe_allow_html=True)
-    salary = fmtDetailOpField(data, 'salary')
-    if salary != '':
-        c1, c2 = st.columns(2)
-        c1.write(salary)
-        c2.button('', icon='🗑️', key='trashButton',
-                  on_click=deleteSalary, kwargs={'id': jobData['id']})
-    cvMatchPercentage = fmtDetailOpField(data, 'cv_match_percentage', 'CV match', 2)
-    if cvMatchPercentage != '':
-        with st.expander(cvMatchPercentage+'%', expanded=True):
-            if data['cv_match_percentage']>-1:
-                st.progress(data['cv_match_percentage'])
-            else:
-                st.write('AI CV Match error')
-    if val := data.get('comments'):
-        with st.expander('Comments', expanded=True):
-            st.markdown(val)
-    st.markdown(data['markdown'])

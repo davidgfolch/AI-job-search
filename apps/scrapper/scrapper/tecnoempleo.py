@@ -35,9 +35,8 @@ WEB_PAGE = 'Tecnoempleo'
 JOBS_X_PAGE = 30
 
 print('Tecnoempleo scrapper init')
-selenium = None
-mysql = None
-
+selenium: SeleniumUtil
+mysql: MysqlUtil
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     """Login, process jobs in search paginated list results"""
@@ -187,7 +186,7 @@ def searchJobs(keywords: str):
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
-        while True:
+        while True: # Pagination
             errors = 0
             printPage(WEB_PAGE, page, totalPages, keywords)
             for idx in range(1, JOBS_X_PAGE+1):
@@ -199,6 +198,9 @@ def searchJobs(keywords: str):
                 ok = loadAndProcessRow(liIdx)
                 # if page == 1:
                 #     closeCreateAlert()
+                if not ok:
+                    if selenium.getText('div.cf-wrapper header').find('You are being rate limited')>-1:
+                        return False
                 errors += 0 if ok else 1
                 if errors > 1:  # exit page loop, some pages has less items
                     break

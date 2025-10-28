@@ -99,9 +99,10 @@ def consoleTimer(message: str, timeUnit: str, end='\r'):
 
 def getSeconds(timeUnit: str):
     """timeUnit: 30s|8m|2h"""
+    timeUnit = timeUnit.strip()
     seconds_per_unit = {"s": 1, "m": 60, "h": 3600}
-    unit = timeUnit[-1]
-    seconds = int(timeUnit[:-1]) * seconds_per_unit[unit]
+    unit = timeUnit[-1].lower()
+    seconds = int(timeUnit.strip()[:-1]) * seconds_per_unit[unit]
     return seconds
 
 
@@ -168,6 +169,6 @@ def listFiles(folder: Path) -> list[str]:
 def getcwd() -> str:
     return os.getcwd()
 
+
 def getSrcPath() -> str:
     return str(Path(os.getcwd()))
-
