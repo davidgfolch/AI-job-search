@@ -84,7 +84,7 @@ mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/ddl.sql
 
 ```bash
 # backup
-docker exec ai_job_search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootPass jobs > docker-entrypoint-initdb.d/backup.sql
+docker exec ai-job-search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootPass jobs > scripts/mysql/20251029_backup.sql
 # restore
 cat scripts/mysql/backup.sql | docker exec -i ai_job_search-mysql_db-1 /usr/bin/mysql -uroot -prootPass jobs
 ```

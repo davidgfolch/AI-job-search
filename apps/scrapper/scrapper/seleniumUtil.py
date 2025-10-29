@@ -45,7 +45,7 @@ class SeleniumUtil:
 
 
     def __init__(self):
-        print('selenium driver init')
+        print('seleniumUtil init')
         print(DESKTOP_USER_AGENTS)
         opts = webdriver.ChromeOptions()
         # opts.add_argument("--start-maximized")
@@ -71,7 +71,7 @@ class SeleniumUtil:
         self.driver = webdriver.Chrome(options=opts)
         self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         self.action = webdriver.ActionChains(self.driver)
-        print(f'selenium driver init driver={self.driver}')
+        print(f'seleniumUtil init driver={self.driver}')
         self.defaulTab = self.driver.current_window_handle
 
     def __enter__(self):

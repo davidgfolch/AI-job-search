@@ -25,6 +25,8 @@ F_KEY_COMMENTS = 'formComments'
 F_KEY_SALARY = 'formSalary'
 F_KEY_COMPANY = 'formCompany'
 F_KEY_CLIENT = 'formClient'
+# VIEW KEYS
+V_KEY_SHOW_CALCULATOR = 'showCalculator'
 # COLUMNS (MYSQL & DATAFRAME)
 VISIBLE_COLUMNS = """
 salary,title,company"""

@@ -5,6 +5,7 @@ services:
 
   mysql_db:
     image: mysql
+    # container_name: ai-job-search-mysql
     volumes:
       - /var/lib/mysql:/var/lib/mysql
       - ./scripts/mysql:/docker-entrypoint-initdb.d
@@ -20,3 +21,59 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-data:/var/lib/ollama
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/v1/models"]
+  #     interval: 1m30s
+  #     timeout: 10s
+  #     retries: 3
+  # python31:
+  #   image: python:3.11-slim
+  #   container_name: ai-job-search-python311
+  #   working_dir: /app
+  #   volumes:
+  #     - ./:/app
+  #     - ./scripts/.venv:/app/.venv
+  #     - /app/.venv/lib/python3.11/site-packages
+  #     - /app/.venv/Lib/site-packages
+  #   run: bash -c "pip install --no-cache-dir -r requirements.txt && tail -f /dev/null"
+  # scrapper:
+  #   image: python:3.11-slim
+  #   container_name: ai-job-search-scrapper
+  #   working_dir: /app
+  #   volumes:
+  #     - ./:/app
+  #     - ./scripts/.venv:/app/.venv
+  #     - /app/.venv/lib/python3.11/site-packages
+  #     - /app/.venv/Lib/site-packages
+  #   run: bash -c "./scripts/run_2_Scrapper.sh"
+  #   depends_on:
+  #     mysql_db:
+  #       condition: service_healthy
+  #     python31:
+  #       condition: service_healthy
+  # aienricher:
+  #   image: python:3.11-slim
+  #   container_name: ai-job-search-aienricher
+  #   working_dir: /app
+  #   volumes:
+  #     - ./:/app
+  #     - ./scripts/.venv:/app/.venv
+  #     - /app/.venv/lib/python3.11/site-packages
+  #     - /app/.venv/Lib/site-packages
+  #   run: bash -c "./scripts/run_3_AiEnricher.sh"
+  #   depends_on:
+  #     mysql_db:
+  #       condition: service_healthy
+  #     ollama:
+  #       condition: service_healthy
+  #     python31:
+  #       condition: service_healthy
+    

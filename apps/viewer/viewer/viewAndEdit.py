@@ -1,5 +1,7 @@
+from decimal import Decimal
 import re
 from typing import Dict
+from mathparse import mathparse
 import streamlit as st
 from pandas import DataFrame
 from mysql.connector.types import RowItemType
@@ -9,14 +11,14 @@ from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLI
                                  MysqlUtil, getColumnTranslated)
 from viewer.streamlitConn import mysqlCachedConnection
 from viewer.util.stComponents import showCodeSql
-from viewer.util.stStateUtil import getBoolKeyName, getState, initStates
+from viewer.util.stStateUtil import getBoolKeyName, getState, initStates, setState
 from viewer.util.viewUtil import fmtDetailOpField, formatDateTime, getValueAsDict, gotoPageByUrl, mapDetailForm
 from viewer.util.stUtil import getTextAreaHeightByText, inColumns, scapeLatex, stripFields
 from viewer.viewAndEditConstants import (
     DB_FIELDS, DEFAULT_BOOL_FILTERS, DEFAULT_DAYS_OLD, DEFAULT_NOT_FILTERS, DEFAULT_ORDER, DEFAULT_SQL_FILTER, DETAIL_FORMAT,
     F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS, FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS,
     FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS, FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY, FF_KEY_SEARCH,
-    FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS, STYLE_JOBS_TABLE)
+    FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS, STYLE_JOBS_TABLE, V_KEY_SHOW_CALCULATOR)
 from viewer.viewAndEditEvents import deleteSalary, salaryCalculator, formDetailSubmit
 from viewer.viewAndEditHelper import detailForSingleSelection, formFilter, getJobListQuery, table, tableFooter
 from viewer.viewConstants import PAGE_VIEW_IDX
@@ -140,9 +142,14 @@ def showDetail(jobData: dict):
     if salary != '':
         inColumns([
             (10, lambda _: st.write(salary)),
-            (1, lambda _: st.button('', icon='🧮', key='calculatorButton', on_click=salaryCalculator, kwargs={'salary': jobData['salary']})),
-            (1, lambda _: st.button('', icon='🗑️', key='trashButton', on_click=deleteSalary, kwargs={'id': jobData['id']})),
+            (1, lambda _: st.button('', icon='🧮', key='calculatorButton', on_click=showSalaryCalculator)),
+            (1, lambda _: st.button('', icon='🗑️', key='trashButton',
+             on_click=deleteSalary, kwargs={'id': jobData['id']})),
         ])
+    else:
+        st.button('', icon='🧮', key='calculatorButton', on_click=showSalaryCalculator)
+    if getState(V_KEY_SHOW_CALCULATOR, False):
+        calculator()
     cvMatchPercentage = fmtDetailOpField(data, 'cv_match_percentage', 'CV match', 2)
     if cvMatchPercentage != '':
         with st.expander(cvMatchPercentage+'%', expanded=True):
@@ -154,6 +161,66 @@ def showDetail(jobData: dict):
         with st.expander('Comments', expanded=True):
             st.markdown(val)
     st.markdown(data['markdown'])
+
+
+def showSalaryCalculator():
+    setState(V_KEY_SHOW_CALCULATOR, not getState(V_KEY_SHOW_CALCULATOR, False))
+
+
+def calculator():
+    equations: Dict[str, str] = {
+        'Hourly': '{rate} * {hoursXDay} * 23.3 * 11',
+        'Daily': '{rate} * 23.3 * 11',
+    }
+    parsedEquation = equations[getState('calculatorRateType', 'Hourly')] \
+        .format(rate=Decimal(getState('calculatorRate', 40)),
+                hoursXDay=Decimal(getState('calculatorHoursXDay', 8)))
+    grossYear = Decimal(mathparse.parse(parsedEquation))
+    yearTaxEquation = getYearTaxEquation(grossYear)
+    yearTax = Decimal(mathparse.parse(yearTaxEquation))
+    freelanceTax = f'{Decimal(getState("calculatorFreelanceRate", 80))} * 12'
+    netYearEquation = f'{grossYear} - {yearTax:.0f} - {freelanceTax}'
+    netYear = Decimal(mathparse.parse(netYearEquation))
+    inColumns([(1, lambda _: st.number_input('Rate', key='calculatorRate')),
+               (1, lambda _: st.selectbox('Rate type', ('Hourly', 'Daily'), key='calculatorRateType')),
+               (1, lambda _: st.selectbox('Freelance month rate', ('80', '300'), key='calculatorFreelanceRate')),
+               (2, lambda _: st.markdown('<span style="font-family:monospace;">' +
+                                         f'Gr/ year: :green[{grossYear}]   <span style="font-size: small">({parsedEquation})</span>  \n' +
+                                         f'Tax year: :green[{yearTax:.0f}]   <span style="font-size: small">({yearTaxEquation})</span>  \n' +
+                                         f'Net year: :green[{netYear:.0f}] <span style="font-size: small">({netYearEquation})</span>   \n' +
+                                         f'Net motn: :green[{(netYear/12):.0f}]' +
+                                         '</span>', unsafe_allow_html=True)),
+               ])
+
+
+tramos = [
+    (12450, 0.19),
+    (20200, 0.24),
+    (35200, 0.30),
+    (60000, 0.37),
+    (300000, 0.45),
+    (float('inf'), 0.47)
+]
+
+
+def getYearTaxEquation(grossYear):
+    gross = grossYear
+    result = ''
+    i=0
+    while gross > 0 and i<len(tramos):
+        partial = gross-tramos[i][0]
+        i+=1
+        gross = gross - partial
+        result += ('' if result == '' else '+') + \
+            f'({Decimal(grossYear)} * {Decimal(getTaxPercentageSpain(grossYear)):.2f})'
+    return result
+
+
+def getTaxPercentageSpain(grossSalary) -> Decimal:
+    for limit, percentage in tramos:
+        if grossSalary <= limit:
+            return Decimal(percentage)
+    return Decimal(tramos[len(tramos)-1])
 
 
 def formDetailForMultipleSelection(selectedRows, jobData: Dict):
@@ -193,10 +260,8 @@ def addCompanyAppliedJobsInfo(jobData):
     ids = ','.join([str(r[0]) for r in rows])
     if len(ids) > 0:
         dates = ' '.join(['  📅 '+formatDate(r[1].date()) for r in rows])
-        jobData['company'] += ' <span style="font-size: small">' + \
-            ':point_right: :warning: ' + \
-            gotoPageByUrl(PAGE_VIEW_IDX, f'already applied {params["company"]}', ids) + \
-            f' on {dates}</span>'
+        jobData['company'] += ' <span style="font-size: small">' + ':point_right: :warning: ' \
+            + gotoPageByUrl(PAGE_VIEW_IDX, f'already applied {params["company"]}', ids) + f' on {dates}</span>'
 
 
 def formatDate(date):

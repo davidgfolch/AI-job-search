@@ -1,6 +1,6 @@
 from streamlit.delta_generator import DeltaGenerator
 import re
-from typing import Callable
+from typing import Any, Callable
 from pandas import DataFrame
 import streamlit as st
 
@@ -70,7 +70,7 @@ def scapeLatex(dictionary: dict, keys: list[str]):
     return dictionary
 
 
-def inColumns(columns: list[tuple[int, Callable[[DeltaGenerator], DeltaGenerator]]], kwargs={}):
+def inColumns(columns: list[tuple[int, Callable[[DeltaGenerator], Any]]], kwargs={}):
     """ columns: [
       (size_int, lambda _: st.button(xxxx),
       (size_int, lambda _: fncUsingStreamlitCompoenents(xxxx), ...]"""
