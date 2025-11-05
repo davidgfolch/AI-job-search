@@ -37,7 +37,7 @@ RUN_IN_TABS=getEnvBool('RUN_IN_TABS', False)
 NEXT_SCRAP_TIMER = '10m'  # '10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 
-seleniumUtil: SeleniumUtil = SeleniumUtil()
+seleniumUtil: SeleniumUtil
 
 
 def timeExpired(name: str, properties: dict):
@@ -155,6 +155,8 @@ if __name__ == '__main__':
         args.pop(args.index('starting'))
         print(f"'starting' at {args[1]} ")
 
+    global seleniumUtil
+    seleniumUtil= SeleniumUtil()
     try:
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
         if len(args) == 1 or starting or wait:
