@@ -1,7 +1,6 @@
 from decimal import Decimal
 import re
 from typing import Dict
-from mathparse import mathparse
 import streamlit as st
 from pandas import DataFrame
 from mysql.connector.types import RowItemType
@@ -22,6 +21,7 @@ from viewer.viewAndEditConstants import (
 from viewer.viewAndEditEvents import deleteSalary, salaryCalculator, formDetailSubmit
 from viewer.viewAndEditHelper import detailForSingleSelection, formFilter, getJobListQuery, table, tableFooter
 from viewer.viewConstants import PAGE_VIEW_IDX
+from viewer.util.salaryCalculator import calculator
 
 
 # from streamlit_js_eval import streamlit_js_eval
@@ -165,62 +165,6 @@ def showDetail(jobData: dict):
 
 def showSalaryCalculator():
     setState(V_KEY_SHOW_CALCULATOR, not getState(V_KEY_SHOW_CALCULATOR, False))
-
-
-def calculator():
-    equations: Dict[str, str] = {
-        'Hourly': '{rate} * {hoursXDay} * 23.3 * 11',
-        'Daily': '{rate} * 23.3 * 11',
-    }
-    parsedEquation = equations[getState('calculatorRateType', 'Hourly')] \
-        .format(rate=Decimal(getState('calculatorRate', 40)),
-                hoursXDay=Decimal(getState('calculatorHoursXDay', 8)))
-    grossYear = Decimal(mathparse.parse(parsedEquation))
-    yearTaxEquation = getYearTaxEquation(grossYear)
-    yearTax = Decimal(mathparse.parse(yearTaxEquation))
-    freelanceTax = f'{Decimal(getState("calculatorFreelanceRate", 80))} * 12'
-    netYearEquation = f'{grossYear} - {yearTax:.0f} - {freelanceTax}'
-    netYear = Decimal(mathparse.parse(netYearEquation))
-    inColumns([(1, lambda _: st.number_input('Rate', key='calculatorRate')),
-               (1, lambda _: st.selectbox('Rate type', ('Hourly', 'Daily'), key='calculatorRateType')),
-               (1, lambda _: st.selectbox('Freelance month rate', ('80', '300'), key='calculatorFreelanceRate')),
-               (2, lambda _: st.markdown('<span style="font-family:monospace;">' +
-                                         f'Gr/ year: :green[{grossYear}]   <span style="font-size: small">({parsedEquation})</span>  \n' +
-                                         f'Tax year: :green[{yearTax:.0f}]   <span style="font-size: small">({yearTaxEquation})</span>  \n' +
-                                         f'Net year: :green[{netYear:.0f}] <span style="font-size: small">({netYearEquation})</span>   \n' +
-                                         f'Net motn: :green[{(netYear/12):.0f}]' +
-                                         '</span>', unsafe_allow_html=True)),
-               ])
-
-
-tramos = [
-    (12450, 0.19),
-    (20200, 0.24),
-    (35200, 0.30),
-    (60000, 0.37),
-    (300000, 0.45),
-    (float('inf'), 0.47)
-]
-
-
-def getYearTaxEquation(grossYear):
-    gross = grossYear
-    result = ''
-    i=0
-    while gross > 0 and i<len(tramos):
-        partial = gross-tramos[i][0]
-        i+=1
-        gross = gross - partial
-        result += ('' if result == '' else '+') + \
-            f'({Decimal(grossYear)} * {Decimal(getTaxPercentageSpain(grossYear)):.2f})'
-    return result
-
-
-def getTaxPercentageSpain(grossSalary) -> Decimal:
-    for limit, percentage in tramos:
-        if grossSalary <= limit:
-            return Decimal(percentage)
-    return Decimal(tramos[len(tramos)-1])
 
 
 def formDetailForMultipleSelection(selectedRows, jobData: Dict):
