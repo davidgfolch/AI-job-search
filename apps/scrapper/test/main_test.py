@@ -29,9 +29,10 @@ def test_runAllScrappers(mock_scrappers, mock_selenium):
             patch('scrapper.main.getDatetimeNow', return_value=0), \
             patch('scrapper.main.getSeconds', return_value=0):
         runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, loop=False)
-        for scrapper in SCRAPPERS.values():
+        for name, properties in SCRAPPERS.items():
+            scrapper = properties['function']
             if not scrapper.get('ignoreAutoRun', False):
-                scrapper['function'].assert_called_once()
+                scrapper.assert_called_once()
 
 
 def test_runAllScrappers_with_wait(mock_scrappers, mock_selenium):
@@ -39,7 +40,8 @@ def test_runAllScrappers_with_wait(mock_scrappers, mock_selenium):
             patch('scrapper.main.getDatetimeNow', return_value=0), \
             patch('scrapper.main.getSeconds', return_value=0):
         runAllScrappers(waitBeforeFirstRuns=True, starting=False, startingAt=None, loop=False)
-        for scrapper in SCRAPPERS.values():
+        for name, properties in SCRAPPERS.items():
+            scrapper = properties['function']
             if not scrapper.get('ignoreAutoRun', False):
                 scrapper['function'].assert_called_once()
 
