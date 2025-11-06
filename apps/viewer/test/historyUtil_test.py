@@ -1,7 +1,7 @@
-from viewer.util.historyUtil import getHistoryKey, validValue
+from viewer.util.historyUtil import getHistoryKey, validValue, getFileName, sortedList
 
 
-def testValidValue():
+def test_valid_value():
     assert not validValue('id=123')
     assert not validValue('id =123')
     assert not validValue('id= 123')
@@ -13,9 +13,11 @@ def testValidValue():
     assert validValue("required_technologies rlike 'java([^script]|$)|python|scala|clojure' or title rlike 'java([^script]|$)|python|scala|clojure' or markdown rlike 'java([^script]|$)|python|scala|clojure'")
 
 
-def testGetHistoryKey():
+def test_get_history_key():
     assert getHistoryKey('a') == 'a_history'
 
 
-def getFileName():
+def test_get_file_name_and_sorted_list():
     assert getFileName('keyName') == '.history/keyName.txt'
+    values = {'b', 'A', 'c'}
+    assert sortedList(values) == ['A', 'b', 'c']

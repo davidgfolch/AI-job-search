@@ -1,11 +1,11 @@
 import streamlit as st
 
-from dashboard import stats
-from util.stStateUtil import printSessionState
-from util.stUtil import getMessageInfo
-from viewAndEdit import view
-from cleaner import clean
-from viewConstants import PAGE_STATE_KEY, PAGES
+from viewer.viewAndEdit import view
+from viewer.cleaner import clean
+from viewer.dashboard import stats
+from viewer.util.stStateUtil import printSessionState
+from viewer.util.stUtil import getMessageInfo
+from viewer.viewConstants import PAGE_STATE_KEY, PAGES
 
 DEBUG = False
 
