@@ -17,22 +17,12 @@ sudo apt install python3.10
 
 ### Package managers install
 
+All ´apps´ & packages use poetry except `apps/aiEnrich` crewAi that uses UV [See README](/apps/aiEnrich/README.md)
+
 #### Poetry (all modules except apps/aiEnrich)
 
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
-```
-
-#### UV (for apps/aiEnrich)
-
-AiEnrich uses CrewAI framework, and CrewAI uses UV
-
-> <https://docs.crewai.com/en/installation>
-
-```bash
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
-curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux
-uv tool update-shell
 ```
 
 ## Install project dependencies
@@ -41,19 +31,6 @@ In project root folder execute `./scripts/install.sh`
 
 > If problems found installing mysql client library for Streamlit, follow this:
 > `sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-essential`
-
-## Install crewai
-
-> <https://docs.crewai.com/en/installation>
-
-In `apps/crewAi` folder:
-
-```bash
-uv tool install crewai
-uv tool list
-```
-
-> uv tool install crewai --upgrade
 
 ## Setup credentials & other settings
 
@@ -98,8 +75,8 @@ cd packages/commonlib && poetry install && cd ../..
 cd apps/scrapper && poetry install && cd ../..
 cd apps/viewer && poetry install && cd ../..
 ```
-Then install [AiEnrich following it's readme](/apps/aiEnrich/README.md).
 
+Then install [AiEnrich following it's readme](/apps/aiEnrich/README.md).
 
 ### Add main dependency
 
@@ -119,4 +96,3 @@ poetry update
 ```bash
 poetry remove selenium
 ```
-

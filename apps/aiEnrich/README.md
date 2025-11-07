@@ -4,7 +4,31 @@ Welcome to the AiJobSearch Crew project, powered by [crewAI](https://crewai.com)
 
 ## Installation
 
-[See README_INSTALL.md](README_INSTALL.md)
+### UV Package manager
+
+AiEnrich uses CrewAI framework, and CrewAI uses UV
+
+> <https://docs.crewai.com/en/installation>
+
+```bash
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+curl -LsSf https://astral.sh/uv/install.sh | sh  # Linux
+uv tool update-shell
+```
+
+## Install crewai
+
+> <https://docs.crewai.com/en/installation>
+
+In `apps/crewAi` folder:
+
+```bash
+uv tool install crewai
+uv tool list
+crewai install
+```
+
+> uv tool install crewai --upgrade
 
 ### Customizing
 
@@ -17,14 +41,11 @@ Welcome to the AiJobSearch Crew project, powered by [crewAI](https://crewai.com)
 
 CV matching % against job offer can be enabled setting `AI_CV_MATCH=True` in your `.env` file.
 
-TODO: There is no implementation yet in front end (but value % is stored in database jobs.cv_match_percentage column)
-
 ## Running the Project
 
 To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
 
 ```bash
-crewai install
 crewai run
 ```
 

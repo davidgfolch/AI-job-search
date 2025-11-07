@@ -6,7 +6,6 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
     "commonlib==0.1.0",
     "crewai[tools]>=0.80.0,<1.0.0",
-    "linkedin-api>=2.3.1",
     "pandas==2.3.3",
 ]
 
