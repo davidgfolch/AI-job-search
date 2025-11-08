@@ -26,8 +26,8 @@ for /d %%a in (apps\*) do (
         uv run coverage report -m
         uv run coverage xml
         uv run coverage-badge -o coverage-badge.svg -f
+        popd
     ) else (
-        echo Testing %%~nxa library...
         pushd "%%~fa"
         @REM poetry run pytest
         poetry run coverage run -m pytest
