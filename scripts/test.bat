@@ -12,7 +12,6 @@ for /d %%a in (apps\*) do (
     echo.
     echo Testing %%~nxa...
     if "%%~nxa"=="aiEnrich" (
-        echo Testing aiEnrich library...
         pushd "%%~fa"
         rem set environment variable for this session and run uv commands if available
         set "UV_PROJECT_ENVIRONMENT=custom-venv"
