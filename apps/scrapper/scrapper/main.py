@@ -3,8 +3,8 @@ import traceback
 
 from commonlib.util import getDatetimeNow, getEnv, getEnvBool, getSeconds, getTimeUnits, getSrcPath, consoleTimer
 from commonlib.terminalColor import cyan, red, yellow
-from .seleniumUtil import SeleniumUtil
-from . import tecnoempleo, infojobs, linkedin, glassdoor, indeed
+from scrapper.seleniumUtil import SeleniumUtil
+from scrapper import tecnoempleo, infojobs, linkedin, glassdoor, indeed
 
 # FIXME: Implement scrapper by url in view and/or console
 # f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-
@@ -56,14 +56,16 @@ def timeExpired(name: str, properties: dict):
     return True
 
 
-def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loop=True):
+def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loops=99999999999):
     # No arguments specified in command line: run all
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
     print(f'Starting at : {startingAt}')
     # for name, properties in SCRAPPERS.items():  THIS CAUSES PROBLEMS WITH URL LIB SOCKET DISCONNECTION & PROCESS HANGS LONG TIME.
     #     executeScrapperPreload(name, properties)
-    while loop:
+    count = 0
+    while loops==99999999999 or count<loops:
+        count += 1
         toRun = []
         for name, properties in SCRAPPERS.items():
             properties['waitBeforeFirstRun'] = properties.get('waitBeforeFirstRun', waitBeforeFirstRuns)
