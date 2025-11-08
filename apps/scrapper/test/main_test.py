@@ -101,93 +101,84 @@ def test_valid_scrapper_name(input, expected):
     assert validScrapperName(input) is expected
 
 
-class TestExecuteScrapperPreload:
-    def success(self, mock_selenium):
-        mock_function = MagicMock()
-        properties = {'function': mock_function}
-        with patch('scrapper.main.RUN_IN_TABS', False):
-            executeScrapperPreload('', properties)
-        mock_function.assert_called_once_with(mock_selenium, True)
-        assert properties['preloaded'] is True
+def mockPropertiesFunction(sideEffect=None):
+    mockFnc = MagicMock(side_effect=sideEffect)
+    return {'function': mockFnc, 'preloaded': None}
 
-    def with_tabs(self, mock_selenium):
-        mock_function = MagicMock()
-        properties = {'function': mock_function}
-        with patch('scrapper.main.RUN_IN_TABS', True):
-            executeScrapperPreload('', properties)
+
+@pytest.mark.parametrize("runInTabs, exception, preloaded", [
+    (False, False, True),
+    (True, False, True),
+    (False, True, False),
+])
+def testExecuteScrapperPreload(mock_selenium, runInTabs, exception, preloaded):
+    properties = mockPropertiesFunction(Exception("Test error") if exception else None)
+    with patch('scrapper.main.RUN_IN_TABS', runInTabs):
+        executeScrapperPreload('', properties)
+    if not exception:
+        properties['function'].assert_called_once_with(mock_selenium, True)
+    if runInTabs:
         mock_selenium.tab.assert_called_once_with('')
-        mock_function.assert_called_once_with(mock_selenium, True)
-        assert properties['preloaded'] is True
-
-    def exception(self, mock_selenium):
-        mock_function = MagicMock(side_effect=Exception("Test error"))
-        properties = {'function': mock_function}
-        with patch('scrapper.main.RUN_IN_TABS', False):
-            executeScrapperPreload('', properties)
-        assert properties['preloaded'] is False
+    assert properties['preloaded'] is preloaded
 
 
 class TestExecuteScrapper:
-    def test_executeScrapper_success(self, mock_selenium):
-        mock_function = MagicMock()
-        properties = {'function': mock_function}
+    def success(self, mock_selenium):
+        properties = mockPropertiesFunction()
         with patch('scrapper.main.RUN_IN_TABS', False):
             executeScrapper('', properties)
-        mock_function.assert_called_once_with(mock_selenium, False)
+        properties['function'].assert_called_once_with(mock_selenium, False)
 
-    def test_executeScrapper_with_tabs(self, mock_selenium):
-        mock_function = MagicMock()
-        properties = {'function': mock_function}
+    def with_tabs(self, mock_selenium):
+        properties = mockPropertiesFunction()
         with patch('scrapper.main.RUN_IN_TABS', True):
             executeScrapper('', properties)
         assert mock_selenium.tab.call_count == 1  # Only the finally block call
-        mock_function.assert_called_once_with(mock_selenium, False)
+        properties['function'].assert_called_once_with(mock_selenium, False)
 
-    def test_executeScrapper_with_close_tab(self, mock_selenium):
-        mock_function = MagicMock()
-        properties = {'function': mock_function, 'closeTab': True}
+    def with_close_tab(self, mock_selenium):
+        properties = mockPropertiesFunction()
         with patch('scrapper.main.RUN_IN_TABS', True):
             executeScrapper('', properties)
         mock_selenium.tabClose.assert_called_once_with('')
 
-    def test_executeScrapper_exception(self, mock_selenium):
-        mock_function = MagicMock(side_effect=Exception("Test error"))
-        properties = {'function': mock_function, 'lastExecution': datetime(2025, 1, 1)}
+    def exception(self, mock_selenium):
+        properties = mockPropertiesFunction(Exception("Test error"))
+        properties['lastExecution'] = datetime(2025, 1, 1)
         with patch('scrapper.main.RUN_IN_TABS', False):
             executeScrapper('', properties)
         assert properties['lastExecution'] is None
 
-    def test_executeScrapper_keyboard_interrupt(self, mock_selenium):
-        mock_function = MagicMock(side_effect=KeyboardInterrupt())
-        properties = {'function': mock_function}
+    def keyboard_interrupt(self, mock_selenium):
+        properties = mockPropertiesFunction(KeyboardInterrupt())
         with patch('scrapper.main.RUN_IN_TABS', False):
             executeScrapper('', properties)
-        mock_function.assert_called_once()
+        properties['function'].assert_called_once()
 
 
 class TestRunPreload:
-    def test_runPreload_not_preloaded(self):
+    def not_preloaded(self):
         properties = {}
         assert runPreload(properties) is True
 
-    def test_runPreload_already_preloaded_no_tabs(self):
+    def already_preloaded_no_tabs(self):
         properties = {'preloaded': True}
         with patch('scrapper.main.RUN_IN_TABS', True):
             assert runPreload(properties) is False
 
-    def test_runPreload_with_close_tab(self):
+    def with_close_tab(self):
         properties = {'preloaded': True, 'closeTab': True}
         with patch('scrapper.main.RUN_IN_TABS', True):
             assert runPreload(properties) is True
 
-    def test_runPreload_not_in_tabs(self):
+    def not_in_tabs(self):
         properties = {'preloaded': True}
         with patch('scrapper.main.RUN_IN_TABS', False):
             assert runPreload(properties) is True
 
 
 class TestRunAllScrappers:
-    def test_runAllScrappers_basic(self, mock_scrappers, mock_selenium, reset_scrappers):
+    def basic(self, mock_scrappers, mock_selenium, reset_scrappers):
         """Test basic execution of all scrappers"""
         with patch('scrapper.main.consoleTimer'), \
                 patch('scrapper.main.getDatetimeNow', return_value=1000), \
@@ -200,7 +191,7 @@ class TestRunAllScrappers:
         SCRAPPERS['Tecnoempleo']['function'].assert_called()
         assert SCRAPPERS['Indeed']['function'].call_count == 0
 
-    def test_runAllScrappers_with_starting(self, mock_scrappers, mock_selenium, reset_scrappers):
+    def with_starting(self, mock_scrappers, mock_selenium, reset_scrappers):
         """Test starting at specific scrapper"""
         with patch('scrapper.main.consoleTimer'), \
                 patch('scrapper.main.getDatetimeNow', return_value=1000), \
@@ -212,7 +203,7 @@ class TestRunAllScrappers:
         SCRAPPERS['Linkedin']['function'].assert_called()
         SCRAPPERS['Glassdoor']['function'].assert_called()
 
-    def test_runAllScrappers_with_tabs(self, mock_scrappers, mock_selenium, reset_scrappers):
+    def with_tabs(self, mock_scrappers, mock_selenium, reset_scrappers):
         with patch('scrapper.main.consoleTimer'), \
                 patch('scrapper.main.getDatetimeNow', return_value=1000), \
                 patch('scrapper.main.RUN_IN_TABS', True), \
@@ -222,13 +213,13 @@ class TestRunAllScrappers:
 
 
 class TestRunSpecifiedScrappers:
-    def test_runSpecifiedScrappers_single(self, mock_scrappers, mock_selenium):
+    def single(self, mock_scrappers, mock_selenium):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
         assert SCRAPPERS['Linkedin']['function'].call_count == 0
 
-    def test_runSpecifiedScrappers_multiple(self, mock_scrappers, mock_selenium):
+    def multiple(self, mock_scrappers, mock_selenium):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs', 'Linkedin', 'Glassdoor'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
@@ -236,19 +227,19 @@ class TestRunSpecifiedScrappers:
         assert SCRAPPERS['Glassdoor']['function'].call_count == 2
         assert SCRAPPERS['Indeed']['function'].call_count == 0
 
-    def test_runSpecifiedScrappers_mixed_valid_invalid(self, mock_scrappers, mock_selenium):
+    def mixed_valid_invalid(self, mock_scrappers, mock_selenium):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs', 'InvalidScrapper', 'Linkedin'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
         assert SCRAPPERS['Linkedin']['function'].call_count == 2
 
-    def test_runSpecifiedScrappers_case_insensitive(self, mock_scrappers, mock_selenium):
+    def case_insensitive(self, mock_scrappers, mock_selenium):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['infojobs', 'LINKEDIN'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
         assert SCRAPPERS['Linkedin']['function'].call_count == 2
 
-    def test_runSpecifiedScrappers_with_preloaded(self, mock_scrappers, mock_selenium):
+    def with_preloaded(self, mock_scrappers, mock_selenium):
         SCRAPPERS['Infojobs']['preloaded'] = True
         with patch('scrapper.main.RUN_IN_TABS', True):
             runSpecifiedScrappers(['Infojobs'])
