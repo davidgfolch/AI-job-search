@@ -4,7 +4,10 @@ rem Test commonlib
 echo.
 echo Testing commonlib library...
 pushd packages\commonlib
-poetry run pytest
+poetry run coverage run -m pytest
+poetry run coverage report -m
+poetry run coverage xml
+poetry run coverage-badge -o coverage-badge.svg -f
 popd
 
 rem Iterate over app directories in apps\
@@ -18,15 +21,15 @@ for /d %%a in (apps\*) do (
         if exist "%~dp0" (
             rem prefer calling commands directly; errors will be shown by those tools
         )
-        uv run pytest
+        @REM uv run pytest
         uv run coverage run -m pytest
         uv run coverage report -m
         uv run coverage xml
-        uv run coverage-badge -o coverage-badge.svg -f        popd
+        uv run coverage-badge -o coverage-badge.svg -f
     ) else (
         echo Testing %%~nxa library...
         pushd "%%~fa"
-        poetry run pytest
+        @REM poetry run pytest
         poetry run coverage run -m pytest
         poetry run coverage report -m
         poetry run coverage xml
