@@ -1,17 +1,7 @@
 import pytest
-from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock, call
-
-from scrapper.main import (
-    SCRAPPERS,
-    runAllScrappers,
-    runSpecifiedScrappers,
-    timeExpired,
-    validScrapperName,
-    executeScrapperPreload,
-    executeScrapper,
-    runPreload
-)
+from datetime import datetime
+from unittest.mock import patch, MagicMock
+from scrapper.main import SCRAPPERS, runAllScrappers, runSpecifiedScrappers, timeExpired, validScrapperName, executeScrapperPreload, executeScrapper, runPreload
 
 
 @pytest.fixture
@@ -42,7 +32,6 @@ def reset_scrappers():
         properties.pop('preloaded', None)
 
 
-# Tests for timeExpired function
 class TestTimeExpired:
     def first_run_no_wait(self):
         with patch('scrapper.main.getDatetimeNow', return_value=1000):
