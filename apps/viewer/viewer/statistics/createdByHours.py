@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-from ..streamlitConn import mysqlCachedConnection
+from ..mysqlConn import mysqlCachedConnection
 
 
 def run():

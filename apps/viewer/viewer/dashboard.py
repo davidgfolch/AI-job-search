@@ -3,7 +3,7 @@ import streamlit as st
 from commonlib.mysqlUtil import MysqlUtil
 
 from viewer.statistics import appliedDiscardedByDateStats, createdByDate, createdByHours
-from viewer.streamlitConn import mysqlCachedConnection
+from viewer.mysqlConn import mysqlCachedConnection
 from viewer.util.stComponents import reloadButton
 
 
@@ -25,3 +25,7 @@ def stats():
     createdByDate.run()
     createdByHours.run()
     appliedDiscardedByDateStats.run()
+
+
+if __name__ == "__main__":
+    stats()

@@ -1,4 +1,3 @@
-from decimal import Decimal
 import re
 from typing import Dict
 import streamlit as st
@@ -8,7 +7,7 @@ from commonlib.sqlUtil import formatSql
 from commonlib.util import getEnv
 from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS, SELECT_APPLIED_JOB_ORDER_BY,
                                  MysqlUtil, getColumnTranslated)
-from viewer.streamlitConn import mysqlCachedConnection
+from viewer.mysqlConn import mysqlCachedConnection
 from viewer.util.stComponents import showCodeSql
 from viewer.util.stStateUtil import getBoolKeyName, getState, initStates, setState
 from viewer.util.viewUtil import fmtDetailOpField, formatDateTime, getValueAsDict, gotoPageByUrl, mapDetailForm
@@ -232,3 +231,7 @@ def searchPartialCompanyName(company: str, params: dict, query: str, rows):
 
 def removeRegexChars(txt: str):
     return re.sub(r'([()[\]|*+])', r'\\1', txt)
+
+
+if __name__ == "__main__":
+    view()

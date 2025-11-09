@@ -2,7 +2,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from ..streamlitConn import mysqlCachedConnection
+from ..mysqlConn import mysqlCachedConnection
 
 
 def run():

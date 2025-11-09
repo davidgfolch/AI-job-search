@@ -4,7 +4,7 @@ from streamlit.delta_generator import DeltaGenerator
 
 from commonlib.mysqlUtil import MysqlUtil, deleteJobsQuery
 from .cleanUtil import getIdsIndex
-from ..streamlitConn import mysqlCachedConnection
+from ..mysqlConn import mysqlCachedConnection
 from ..util.stComponents import showCodeSql
 from ..util.stUtil import stripFields
 

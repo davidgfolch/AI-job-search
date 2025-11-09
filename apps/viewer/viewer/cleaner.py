@@ -5,7 +5,7 @@ from pandas import DataFrame
 from commonlib.mysqlUtil import MysqlUtil
 from viewer.clean import deleteOld, ignoreByTitle
 from viewer.clean.cleanUtil import getAllIds
-from viewer.streamlitConn import mysqlCachedConnection
+from viewer.mysqlConn import mysqlCachedConnection
 from viewer.util.stComponents import showCodeSql
 from viewer.util.stStateUtil import getState, setState
 from viewer.util.viewUtil import gotoPage
