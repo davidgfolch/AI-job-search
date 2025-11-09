@@ -8,6 +8,17 @@ from commonlib.util import getEnv
 from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS, SELECT_APPLIED_JOB_ORDER_BY,
                                  MysqlUtil, getColumnTranslated)
 from viewer.mysqlConn import mysqlCachedConnection
+
+# Try to import new architecture, fallback to old if not available
+try:
+    from commonlib.container.dependency_container import DependencyContainer
+    from commonlib.services.job_service import JobService
+    from viewer.controllers.job_controller import JobController
+    NEW_ARCHITECTURE_AVAILABLE = True
+except ImportError:
+    NEW_ARCHITECTURE_AVAILABLE = False
+    DependencyContainer = None
+    JobController = None
 from viewer.util.stComponents import showCodeSql
 from viewer.util.stStateUtil import getBoolKeyName, getState, initStates, setState
 from viewer.util.viewUtil import fmtDetailOpField, formatDateTime, getValueAsDict, gotoPageByUrl, mapDetailForm
@@ -30,8 +41,18 @@ from viewer.util.salaryCalculator import calculator
 
 
 def view():
+    # Declare global variable first
     global mysql
-    mysql = MysqlUtil(mysqlCachedConnection())
+    
+    # Initialize new architecture if available
+    if NEW_ARCHITECTURE_AVAILABLE:
+        container = DependencyContainer()
+        # Don't store controller in session_state due to serialization issues
+        mysql = container.get('mysql_util')
+    else:
+        # Fallback to old architecture
+        mysql = MysqlUtil(mysqlCachedConnection())
+    
     initStates({
         FF_KEY_SEARCH: '',
         getBoolKeyName(FF_KEY_BOOL_FIELDS): True,
@@ -93,6 +114,8 @@ def formDetail(jobData):
 def getJobData(selectedRows: DataFrame) -> Dict:
     selected = selectedRows.iloc[0]
     id = int(selected.iloc[0])
+    
+    # Use original implementation (new architecture integrated at mysql level)
     jobData: Dict[str, RowItemType] = mysql.fetchOne(f"select {DB_FIELDS} from jobs where id=%s", id)
     fieldsArr = stripFields(DB_FIELDS)
     return {
