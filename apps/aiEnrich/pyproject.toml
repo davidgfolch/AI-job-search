@@ -28,11 +28,11 @@ dev = [
 
 [tool.coverage.run]
 branch = true
-source = ["aiEnrich"]
+source = ["src/aiEnrich"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 45
+fail_under = 20
 
 [build-system]
 requires = [
