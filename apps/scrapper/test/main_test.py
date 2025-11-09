@@ -23,6 +23,13 @@ def mock_selenium():
 
 
 @pytest.fixture
+def mock_new_architecture():
+    """Mock the new architecture to prevent it from being used in tests"""
+    with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', False):
+        yield
+
+
+@pytest.fixture
 def reset_scrappers():
     """Reset SCRAPPERS state after each test"""
     yield
@@ -168,7 +175,7 @@ class TestRunPreload:
 
 
 class TestRunAllScrappers:
-    def test_basic(self, mock_scrappers, mock_selenium, reset_scrappers):
+    def test_basic(self, mock_scrappers, mock_selenium, reset_scrappers, mock_new_architecture):
         """Test basic execution of all scrappers"""
         with patch('scrapper.main.consoleTimer'), \
                 patch('scrapper.main.getDatetimeNow', return_value=1000), \
@@ -181,7 +188,7 @@ class TestRunAllScrappers:
         SCRAPPERS['Tecnoempleo']['function'].assert_called()
         assert SCRAPPERS['Indeed']['function'].call_count == 0
 
-    def test_with_starting(self, mock_scrappers, mock_selenium, reset_scrappers):
+    def test_with_starting(self, mock_scrappers, mock_selenium, reset_scrappers, mock_new_architecture):
         """Test starting at specific scrapper"""
         with patch('scrapper.main.consoleTimer'), \
                 patch('scrapper.main.getDatetimeNow', return_value=1000), \
@@ -203,13 +210,13 @@ class TestRunAllScrappers:
 
 
 class TestRunSpecifiedScrappers:
-    def single(self, mock_scrappers, mock_selenium):
+    def single(self, mock_scrappers, mock_selenium, mock_new_architecture):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
         assert SCRAPPERS['Linkedin']['function'].call_count == 0
 
-    def test_multiple(self, mock_scrappers, mock_selenium):
+    def test_multiple(self, mock_scrappers, mock_selenium, mock_new_architecture):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs', 'Linkedin', 'Glassdoor'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
@@ -217,13 +224,13 @@ class TestRunSpecifiedScrappers:
         assert SCRAPPERS['Glassdoor']['function'].call_count == 2
         assert SCRAPPERS['Indeed']['function'].call_count == 0
 
-    def test_mixed_valid_invalid(self, mock_scrappers, mock_selenium):
+    def test_mixed_valid_invalid(self, mock_scrappers, mock_selenium, mock_new_architecture):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs', 'InvalidScrapper', 'Linkedin'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
         assert SCRAPPERS['Linkedin']['function'].call_count == 2
 
-    def test_case_insensitive(self, mock_scrappers, mock_selenium):
+    def test_case_insensitive(self, mock_scrappers, mock_selenium, mock_new_architecture):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['infojobs', 'LINKEDIN'])
         assert SCRAPPERS['Infojobs']['function'].call_count == 2
@@ -234,3 +241,91 @@ class TestRunSpecifiedScrappers:
         with patch('scrapper.main.RUN_IN_TABS', True):
             runSpecifiedScrappers(['Infojobs'])
         SCRAPPERS['Infojobs']['function'].assert_called()
+
+
+class TestNewArchitecture:
+    """Test new SOLID architecture integration"""
+    
+    @pytest.fixture
+    def mock_container(self):
+        with patch('scrapper.main.ScrapperContainer') as mock:
+            yield mock
+    
+    @pytest.fixture
+    def mock_scrapping_service(self):
+        mock_service = MagicMock()
+        mock_service.execute_scrapping.return_value = {
+            'total_processed': 5,
+            'total_saved': 3,
+            'total_duplicates': 2,
+            'errors': []
+        }
+        return mock_service
+    
+    def test_new_architecture_preload_success(self, mock_selenium, mock_container, mock_scrapping_service):
+        """Test new architecture preload success"""
+        mock_container.return_value.get_scrapping_service.return_value = mock_scrapping_service
+        mock_scrapping_service.execute_scrapping.return_value = {'login_success': True}
+        
+        properties = {'function': MagicMock()}
+        
+        with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True):
+            executeScrapperPreload('Linkedin', properties)
+        
+        mock_scrapping_service.execute_scrapping.assert_called_once_with(
+            mock_selenium, [], preload_only=True
+        )
+        assert properties['preloaded'] is True
+    
+    def test_new_architecture_preload_failure_fallback(self, mock_selenium, mock_container, mock_scrapping_service):
+        """Test new architecture preload failure falls back to old method"""
+        mock_container.return_value.get_scrapping_service.return_value = mock_scrapping_service
+        mock_scrapping_service.execute_scrapping.return_value = {'login_success': False}
+        
+        properties = {'function': MagicMock()}
+        
+        with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True):
+            executeScrapperPreload('Linkedin', properties)
+        
+        # Should fallback to old method
+        properties['function'].assert_called_once_with(mock_selenium, True)
+        assert properties['preloaded'] is True
+    
+    def test_new_architecture_scrapping_success(self, mock_selenium, mock_container, mock_scrapping_service):
+        """Test new architecture scrapping execution"""
+        mock_container.return_value.get_scrapping_service.return_value = mock_scrapping_service
+        
+        properties = {'function': MagicMock()}
+        
+        with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True), \
+             patch('scrapper.main.getEnv', return_value='java,python'):
+            executeScrapper('Linkedin', properties)
+        
+        mock_scrapping_service.execute_scrapping.assert_called_once_with(
+            mock_selenium, ['java', 'python'], preload_only=False
+        )
+    
+    def test_new_architecture_scrapping_exception_fallback(self, mock_selenium, mock_container):
+        """Test new architecture exception falls back to old method"""
+        mock_container.side_effect = Exception("Container error")
+        
+        properties = {'function': MagicMock()}
+        
+        with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True):
+            executeScrapper('Linkedin', properties)
+        
+        # Should fallback to old method
+        properties['function'].assert_called_once_with(mock_selenium, False)
+    
+    def test_non_linkedin_scrapper_uses_old_architecture(self, mock_selenium):
+        """Test non-LinkedIn scrappers still use old architecture"""
+        properties = {'function': MagicMock()}
+        
+        with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True):
+            executeScrapperPreload('Infojobs', properties)
+            executeScrapper('Infojobs', properties)
+        
+        # Should use old method for non-LinkedIn scrappers
+        assert properties['function'].call_count == 2
+        properties['function'].assert_any_call(mock_selenium, True)  # preload
+        properties['function'].assert_any_call(mock_selenium, False)  # execute

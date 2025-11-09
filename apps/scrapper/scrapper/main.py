@@ -2,9 +2,19 @@ import sys
 import traceback
 
 from commonlib.util import getDatetimeNow, getEnv, getEnvBool, getSeconds, getTimeUnits, getSrcPath, consoleTimer
-from commonlib.terminalColor import cyan, red, yellow
+from commonlib.terminalColor import cyan, red, yellow, green
 from scrapper.seleniumUtil import SeleniumUtil
 from scrapper import tecnoempleo, infojobs, linkedin, glassdoor, indeed
+
+# Try to import new SOLID architecture
+try:
+    from scrapper.container.scrapper_container import ScrapperContainer
+    from scrapper.services.scrapping_service import ScrappingService
+    NEW_ARCHITECTURE_AVAILABLE = True
+except ImportError:
+    NEW_ARCHITECTURE_AVAILABLE = False
+    ScrapperContainer = None
+    ScrappingService = None
 
 # FIXME: Implement scrapper by url in view and/or console
 # f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-
@@ -117,7 +127,14 @@ def executeScrapperPreload(name, properties: dict):
     try:
         if RUN_IN_TABS:
             seleniumUtil.tab(name)
-        properties['function'](seleniumUtil, True)
+        
+        # Try new architecture first for supported scrappers
+        if NEW_ARCHITECTURE_AVAILABLE and name.lower() == 'linkedin':
+            executeScrapperPreloadNewArchitecture(name, properties)
+        else:
+            # Fallback to old architecture
+            properties['function'](seleniumUtil, True)
+        
         properties['preloaded'] = True
     except Exception as e:
         print(red(f"Error occurred while preloading {name}: {e}"))
@@ -125,9 +142,35 @@ def executeScrapperPreload(name, properties: dict):
         properties['preloaded'] = False
 
 
+def executeScrapperPreloadNewArchitecture(name: str, properties: dict):
+    """Execute scrapper preload using new SOLID architecture"""
+    try:
+        container = ScrapperContainer()
+        scrapping_service = container.get_scrapping_service(name.lower())
+        
+        # Execute preload (login only)
+        results = scrapping_service.execute_scrapping(seleniumUtil, [], preload_only=True)
+        
+        if results.get('login_success', False):
+            print(green(f"Preload completed successfully for {name}"))
+        else:
+            print(red(f"Preload failed for {name}"))
+            raise Exception("Login failed")
+        
+    except Exception as e:
+        print(red(f"Error in new architecture preload for {name}: {e}"))
+        # Fallback to old method
+        properties['function'](seleniumUtil, True)
+
+
 def executeScrapper(name, properties: dict):        
     try:
-        properties['function'](seleniumUtil, False)
+        # Try new architecture first for supported scrappers
+        if NEW_ARCHITECTURE_AVAILABLE and name.lower() == 'linkedin':
+            executeScrapperNewArchitecture(name, properties)
+        else:
+            # Fallback to old architecture
+            properties['function'](seleniumUtil, False)
     except Exception as e:
         print(red(f"Error occurred while executing {name}: {e}"))
         print(red(traceback.format_exc()))
@@ -139,6 +182,34 @@ def executeScrapper(name, properties: dict):
             if properties.get('closeTab',False):
                 seleniumUtil.tabClose(name)
             seleniumUtil.tab()  # switches to default tab
+
+
+def executeScrapperNewArchitecture(name: str, properties: dict):
+    """Execute scrapper using new SOLID architecture"""
+    try:
+        container = ScrapperContainer()
+        scrapping_service = container.get_scrapping_service(name.lower())
+        
+        # Get keywords from environment
+        keywords_list = getEnv('LINKEDIN_JOBS_SEARCH', getEnv('JOBS_SEARCH', '')).split(',')
+        
+        # Execute scrapping
+        results = scrapping_service.execute_scrapping(seleniumUtil, keywords_list, preload_only=False)
+        
+        # Print results
+        print(green(f"Scrapping completed for {name}:"))
+        print(f"  Processed: {results['total_processed']} jobs")
+        print(f"  Saved: {results['total_saved']} jobs")
+        print(f"  Duplicates: {results['total_duplicates']} jobs")
+        if results['errors']:
+            print(red(f"  Errors: {len(results['errors'])}"))
+            for error in results['errors'][:3]:  # Show first 3 errors
+                print(red(f"    - {error}"))
+        
+    except Exception as e:
+        print(red(f"Error in new architecture for {name}: {e}"))
+        # Fallback to old method
+        properties['function'](seleniumUtil, False)
 
 
 if __name__ == '__main__':
