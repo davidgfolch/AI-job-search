@@ -5,48 +5,36 @@ from ..seleniumUtil import SeleniumUtil
 from commonlib.terminalColor import green, yellow, red
 
 class ScrappingService:
-    """Service handling scrapping business logic following SRP"""
-    
     def __init__(self, scrapper: ScrapperInterface, storage: JobStorageInterface):
         self.scrapper = scrapper
         self.storage = storage
-    
-    def execute_scrapping(self, selenium: SeleniumUtil, keywords_list: List[str], preload_only: bool = False) -> Dict[str, Any]:
-        """Execute scrapping process with business logic"""
+
+    def executeScrapping(self, selenium: SeleniumUtil, keywordsList: List[str], preloadOnly: bool = False) -> Dict[str, Any]:
         results = {
-            'site': self.scrapper.get_site_name(),
+            'site': self.scrapper.getSiteName(),
             'total_processed': 0,
             'total_saved': 0,
             'total_duplicates': 0,
             'errors': []
         }
-        
         try:
-            # Login phase
-            if preload_only:
+            if preloadOnly:
                 success = self.scrapper.login(selenium)
                 results['login_success'] = success
                 return results
-            
-            # Scrapping phase
-            for keywords in keywords_list:
-                keyword_results = self._process_keywords(selenium, keywords.strip())
-                results['total_processed'] += keyword_results['processed']
-                results['total_saved'] += keyword_results['saved']
-                results['total_duplicates'] += keyword_results['duplicates']
-                results['errors'].extend(keyword_results['errors'])
-            
-            # Merge duplicates after all scrapping
-            self.storage.merge_duplicates()
-            
+            for keywords in keywordsList:
+                keywordResults = self._processKeywords(selenium, keywords.strip())
+                results['total_processed'] += keywordResults['processed']
+                results['total_saved'] += keywordResults['saved']
+                results['total_duplicates'] += keywordResults['duplicates']
+                results['errors'].extend(keywordResults['errors'])
+            self.storage.mergeDuplicates()
         except Exception as e:
             results['errors'].append(f"Critical error: {str(e)}")
             print(red(f"Critical error in scrapping service: {e}"))
-        
         return results
-    
-    def _process_keywords(self, selenium: SeleniumUtil, keywords: str) -> Dict[str, Any]:
-        """Process jobs for specific keywords"""
+
+    def _processKeywords(self, selenium: SeleniumUtil, keywords: str) -> Dict[str, Any]:
         results = {
             'keywords': keywords,
             'processed': 0,
@@ -54,52 +42,40 @@ class ScrappingService:
             'duplicates': 0,
             'errors': []
         }
-        
         try:
             print(yellow(f'Processing keywords: {keywords}'))
-            jobs = self.scrapper.search_jobs(selenium, keywords)
-            
-            for job_data in jobs:
+            jobs = self.scrapper.searchJobs(selenium, keywords)
+            for jobData in jobs:
                 results['processed'] += 1
-                
-                if self._is_duplicate_job(job_data):
+                if self._isDuplicateJob(jobData):
                     results['duplicates'] += 1
-                    print(yellow(f"Job {job_data.get('job_id', 'unknown')} already exists, skipped"))
+                    print(yellow(f"Job {jobData.get('job_id', 'unknown')} already exists, skipped"))
                     continue
-                
-                if self._save_job(job_data):
+                if self._saveJob(jobData):
                     results['saved'] += 1
-                    print(green(f"Job {job_data.get('job_id', 'unknown')} saved successfully"))
+                    print(green(f"Job {jobData.get('job_id', 'unknown')} saved successfully"))
                 else:
-                    results['errors'].append(f"Failed to save job {job_data.get('job_id', 'unknown')}")
-        
+                    results['errors'].append(f"Failed to save job {jobData.get('job_id', 'unknown')}")
         except Exception as e:
             results['errors'].append(f"Error processing keywords '{keywords}': {str(e)}")
             print(red(f"Error processing keywords '{keywords}': {e}"))
-        
         return results
-    
-    def _is_duplicate_job(self, job_data: Dict[str, Any]) -> bool:
-        """Check if job is duplicate"""
-        job_id = job_data.get('job_id')
-        if not job_id:
+
+    def _isDuplicateJob(self, jobData: Dict[str, Any]) -> bool:
+        jobId = jobData.get('job_id')
+        if not jobId:
             return False
-        return self.storage.job_exists(str(job_id))
-    
-    def _save_job(self, job_data: Dict[str, Any]) -> bool:
-        """Save job with validation"""
+        return self.storage.jobExists(str(jobId))
+
+    def _saveJob(self, jobData: Dict[str, Any]) -> bool:
         try:
-            # Validate required fields
-            required_fields = ['job_id', 'title', 'company', 'url', 'markdown']
-            for field in required_fields:
-                if not job_data.get(field):
+            requiredFields = ['job_id', 'title', 'company', 'url', 'markdown']
+            for field in requiredFields:
+                if not jobData.get(field):
                     print(red(f"Missing required field: {field}"))
                     return False
-            
-            # Save job
-            saved_id = self.storage.save_job(job_data)
-            return saved_id is not None
-            
+            savedId = self.storage.saveJob(jobData)
+            return savedId is not None
         except Exception as e:
             print(red(f"Error saving job: {e}"))
             return False
