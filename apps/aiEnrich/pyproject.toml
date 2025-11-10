@@ -14,7 +14,7 @@ aienrich = "aiEnrich.main:run"
 run_crew = "aiEnrich.main:run"
 train = "aiEnrich.main:train"
 replay = "aiEnrich.main:replay"
-test = "aiEnrich.main:test"
+test = "aiEnrich.main:test_crew"
 
 [tool.uv.sources]
 commonlib = { path = "../../packages/commonlib", editable = true }

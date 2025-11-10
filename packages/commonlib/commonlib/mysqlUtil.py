@@ -85,6 +85,25 @@ class MysqlUtil:
             self.rollback(ex)
             error(ex, end='')
             return None
+    
+    def job_exists(self, job_id: str) -> bool:
+        """Check if job exists in database by job_id"""
+        existing = self.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id)
+        return existing is not None
+    
+    def insertJob(self, job_data) -> int | None:
+        """Insert job data and return row ID if successful, None on error"""
+        params = (
+            job_data.get('job_id', ''),
+            job_data.get('title', ''),
+            job_data.get('company', ''),
+            job_data.get('location', ''),
+            job_data.get('url', ''),
+            job_data.get('markdown', ''),
+            job_data.get('easy_apply', False),
+            job_data.get('web_page', '')
+        )
+        return self.insert(params)
 
     T = TypeVar("T")  # T = TypeVar("T", bound="List")
 
@@ -150,6 +169,10 @@ class MysqlUtil:
         with self.cursor() as c:
             c.execute(query, params)
             return c.fetchall()
+    
+    def getConnection(self):
+        """Get the MySQL connection"""
+        return self.conn if self.conn else getConnection()
 
     def getTableDdlColumnNames(self, table):
         """Returns table DDL column names in same order than
@@ -208,10 +231,10 @@ def maxLen(params: tuple[Any], maxLens: tuple[int]):
         val = p[0]
         max = p[1]
         if max is not None and isinstance(val, str) and len(val) > max:
-            return val[:max-3]+'...'
+            return val[:max]+'...'
         return val
     return tuple(
-        map(lambda p: mapParam(p), zip(params, maxLens, strict=True)))
+        map(lambda p: mapParam(p), zip(params, maxLens, strict=False)))
 
 
 def inFilter(ids: list[int]):

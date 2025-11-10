@@ -26,7 +26,7 @@ for /d %%a in (packages\* apps\*) do (
             uv run -m coverage run -m pytest
             uv run -m coverage report -m
             uv run -m coverage xml
-            uv run coverage-badge -o coverage-badge.svg -f
+            uv run python -m coverage_badge -o coverage-badge.svg -f
         )
         popd
     ) else (

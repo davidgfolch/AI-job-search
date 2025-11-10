@@ -15,23 +15,33 @@ PAGES_MAP = {  # Also change PAGES
     2: stats
 }
 
-st.set_page_config(layout='wide', page_title="ai job search")
-c1, c2 = st.columns([10, 40])
-selectedView = c1.segmented_control(
-    label="Menu",
-    options=PAGES.keys(),
-    format_func=lambda i: PAGES[i],
-    selection_mode="single",
-    label_visibility='collapsed',
-    key=PAGE_STATE_KEY
-)
-if messageInfo := getMessageInfo():
-    c2.info(messageInfo)
-if selectedView is not None:
-    selectedView = PAGES_MAP[selectedView]
-    selectedView()
-else:
-    view()
+def main():
+    """Main application function"""
+    st.set_page_config(layout='wide', page_title="ai job search")
+    
+    c1, c2 = st.columns([10, 40])
 
-if DEBUG:
-    printSessionState()
+    selectedView = c1.segmented_control(
+        label="Menu",
+        options=PAGES.keys(),
+        format_func=lambda i: PAGES[i],
+        selection_mode="single",
+        label_visibility='collapsed',
+        key=PAGE_STATE_KEY
+    )
+    
+    if messageInfo := getMessageInfo():
+        c2.info(messageInfo)
+    
+    if selectedView is not None:
+        selectedView = PAGES_MAP[selectedView]
+        selectedView()
+    else:
+        view()
+    
+    if DEBUG:
+        printSessionState()
+
+
+if __name__ == "__main__" or "streamlit" in globals():
+    main()
