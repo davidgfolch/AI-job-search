@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 
-from test.test_helpers import BaseScrapper
+from test_helpers import BaseScrapper
 
 
 class TestBaseScrapper:
@@ -20,7 +20,7 @@ class TestBaseScrapper:
         assert scrapper.name == "TestScrapper"
         assert scrapper.url == "https://test.com"
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_save_job_success(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.insertJob.return_value = True
@@ -39,7 +39,7 @@ class TestBaseScrapper:
         assert scrapper.jobsSaved == 1
         mock_mysql.insertJob.assert_called_once_with(job_data)
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_save_job_duplicate(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.insertJob.return_value = False
@@ -57,7 +57,7 @@ class TestBaseScrapper:
         assert result is False
         assert scrapper.jobsDuplicates == 1
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_save_job_exception(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.insertJob.side_effect = Exception("Database error")
@@ -82,10 +82,10 @@ class TestBaseScrapper:
         scrapper.jobsDuplicates = 1
         scrapper.jobsErrors = 1
         
-        with patch('test.test_helpers.printHR'), \
-             patch('test.test_helpers.green') as mock_green, \
-             patch('test.test_helpers.yellow') as mock_yellow, \
-             patch('test.test_helpers.red') as mock_red:
+        with patch('test_helpers.printHR'), \
+             patch('test_helpers.green') as mock_green, \
+             patch('test_helpers.yellow') as mock_yellow, \
+             patch('test_helpers.red') as mock_red:
             
             scrapper.printStats()
             
@@ -97,8 +97,8 @@ class TestBaseScrapper:
     def test_print_stats_no_jobs(self):
         scrapper = BaseScrapper("TestScrapper")
         
-        with patch('test.test_helpers.printHR'), \
-             patch('test.test_helpers.green') as mock_green:
+        with patch('test_helpers.printHR'), \
+             patch('test_helpers.green') as mock_green:
             
             scrapper.printStats()
             mock_green.assert_called()
@@ -136,7 +136,7 @@ class TestBaseScrapper:
         assert scrapper.jobsDuplicates == 1
         assert scrapper.jobsErrors == 1
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_save_job_with_none_data(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -148,7 +148,7 @@ class TestBaseScrapper:
         assert result is False
         assert scrapper.jobsErrors == 1
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_save_job_with_empty_data(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
