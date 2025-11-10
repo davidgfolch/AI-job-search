@@ -79,11 +79,14 @@ class MysqlUtil:
         try:
             with self.cursor() as c:
                 c.execute(QRY_INSERT, params)
-                getConnection().commit()
+                self.getConnection().commit()
             return c.lastrowid
         except mysqlConnector.Error as ex:
-            self.rollback(ex)
             error(ex, end='')
+            try:
+                self.rollback(ex)
+            except mysqlConnector.Error as rollbackEx:
+                print(red(f'Rollback error: {rollbackEx}'))
             return None
     
     def job_exists(self, job_id: str) -> bool:
@@ -125,10 +128,11 @@ class MysqlUtil:
 
     def rollback(self, ex: mysqlConnector.Error):
         # 1205 Lock wait timeout exceeded
-        if getConnection().is_connected() and getConnection().in_transaction:
+        conn = self.getConnection()
+        if conn.is_connected() and conn.in_transaction:
             print(red(f'Rolling back transaction due to error: {ex}'))
-            print(yellow(self.fetchOne('SHOW ENGINE INNODB STATUS\G;')['status']), flush=True)
-            getConnection().rollback()
+            print(yellow(self.fetchOne('SHOW ENGINE INNODB STATUS\\G;')['status']), flush=True)
+            conn.rollback()
         raise ex
 
     @retry(retries=5, delay=1, exception=mysqlConnector.Error)
@@ -136,7 +140,7 @@ class MysqlUtil:
         try:
             with self.cursor() as c:
                 c.execute(query, params)
-                getConnection().commit()
+                self.getConnection().commit()
                 if c.rowcount > 0:
                     print(green(f'Updated database: {params}'), flush=True)
                 else:
@@ -148,7 +152,7 @@ class MysqlUtil:
         try:
             with self.cursor() as c:
                 c.execute(query, params)
-                getConnection().commit()
+                self.getConnection().commit()
                 return c.rowcount
         except mysqlConnector.Error as ex:
             self.rollback(ex)
@@ -160,7 +164,7 @@ class MysqlUtil:
                 for query in queries:
                     c.execute(query['query'], query.get('params', ()))
                     rowCount.append(c.rowcount)
-                getConnection().commit()
+                self.getConnection().commit()
                 return rowCount
         except mysqlConnector.Error as ex:
             self.rollback(ex)

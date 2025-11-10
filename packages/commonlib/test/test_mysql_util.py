@@ -120,7 +120,8 @@ class TestMysqlUtil:
         mock_cursor.__exit__ = MagicMock(return_value=False)
         mock_connection.cursor.return_value = mock_cursor
         mock_connection.is_connected.return_value = True
-        mock_connection.commit.side_effect = Exception("Duplicate entry")
+        mock_connection.in_transaction = False
+        mock_connection.commit.side_effect = mysql.connector.Error("Duplicate entry")
         
         mysql_util = MysqlUtil(mock_connection)
         job_data = {
