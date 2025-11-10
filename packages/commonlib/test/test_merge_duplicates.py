@@ -1,14 +1,14 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from test.test_helpers import (
+from test_helpers import (
     mergeDuplicates, findDuplicates, mergeJobData, 
     updateJobReferences, deleteJob, MergeDuplicatesProcessor
 )
 
 
 class TestMergeDuplicates:
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_merge_duplicates_no_duplicates(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.fetchAll.return_value = []
@@ -17,8 +17,8 @@ class TestMergeDuplicates:
         result = mergeDuplicates()
         assert result == 0
 
-    @patch('test.test_helpers.findDuplicates')
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.findDuplicates')
+    @patch('test_helpers.MysqlUtil')
     def test_merge_duplicates_with_duplicates(self, mock_mysql_util, mock_find_duplicates):
         mock_mysql = MagicMock()
         # Mock fetchAll to return rows with structure: (counter, ids, title, company)
@@ -34,9 +34,9 @@ class TestMergeDuplicates:
             [(3, 'Another Job', 'Company B'), (4, 'Another Job', 'Company B')]
         ]
         
-        with patch('test.test_helpers.mergeJobData'), \
-             patch('test.test_helpers.updateJobReferences'), \
-             patch('test.test_helpers.deleteJob'):
+        with patch('test_helpers.mergeJobData'), \
+             patch('test_helpers.updateJobReferences'), \
+             patch('test_helpers.deleteJob'):
             
             result = mergeDuplicates()
             assert result == 2  # Two duplicate groups processed
@@ -86,7 +86,7 @@ class TestMergeDuplicates:
         assert len(result) == 1
         assert len(result[0]) == 3
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_merge_job_data_success(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -99,7 +99,7 @@ class TestMergeDuplicates:
         # Should call executeAndCommit for merging data
         mock_mysql.executeAndCommit.assert_called()
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_update_job_references_success(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -112,7 +112,7 @@ class TestMergeDuplicates:
         # Should call executeAndCommit for each duplicate job
         assert mock_mysql.executeAndCommit.call_count >= len(duplicate_job_ids)
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_delete_job_success(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -128,8 +128,8 @@ class TestMergeDuplicates:
         assert processor.merged_count == 0
         assert processor.errors == []
 
-    @patch('test.test_helpers.findDuplicates')
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.findDuplicates')
+    @patch('test_helpers.MysqlUtil')
     def test_merge_duplicates_processor_process(self, mock_mysql_util, mock_find_duplicates):
         mock_mysql = MagicMock()
         # Mock fetchAll to return rows with structure: (counter, ids, title, company)
@@ -168,7 +168,7 @@ class TestMergeDuplicates:
         
         assert stats == expected
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_merge_duplicates_with_exception(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.fetchAll.side_effect = Exception("Database error")
@@ -202,7 +202,7 @@ class TestMergeDuplicates:
         # Should treat empty strings as potential duplicates
         assert isinstance(result, list)
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_merge_job_data_with_exception(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.executeAndCommit.side_effect = Exception("Merge error")
@@ -215,7 +215,7 @@ class TestMergeDuplicates:
         with pytest.raises(Exception):
             mergeJobData(primary_job, duplicate_jobs)
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_update_job_references_with_exception(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.executeAndCommit.side_effect = Exception("Update error")
@@ -225,7 +225,7 @@ class TestMergeDuplicates:
         with pytest.raises(Exception):
             updateJobReferences(1, [2, 3])
 
-    @patch('test.test_helpers.MysqlUtil')
+    @patch('test_helpers.MysqlUtil')
     def test_delete_job_with_exception(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.executeAndCommit.side_effect = Exception("Delete error")
