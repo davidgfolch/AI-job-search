@@ -82,16 +82,29 @@ class SeleniumUtil:
 
     def exit(self):
         print('Exiting SeleniumUtil, close driver...')
-        for tab in self.tabs:
-            print(f'closing tab={tab}')
-            self.driver.close()
-        self.driver.close()
-        self.driver.quit()
+        try:
+            if self.driver and self.isDriverAlive():
+                self.driver.quit()
+            else:
+                print('Driver already closed or not alive')
+        except Exception as ex:
+            print(f'Error closing driver: {ex}')
+
+    def isDriverAlive(self) -> bool:
+        try:
+            self.driver.current_url
+            return True
+        except Exception:
+            return False
 
     def tabClose(self, name: str = None):
-        self.driver.close()
-        if name:
-            self.tabs.pop(name)
+        try:
+            if self.isDriverAlive():
+                self.driver.close()
+            if name:
+                self.tabs.pop(name)
+        except Exception as ex:
+            print(f'Error closing tab: {ex}')
 
 
     def tab(self, name: str = None):
@@ -110,6 +123,8 @@ class SeleniumUtil:
 
     @retry()
     def loadPage(self, url: str):
+        if not self.isDriverAlive():
+            raise Exception('Driver connection lost')
         self.driver.get(url)
 
     def getUrl(self):
