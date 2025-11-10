@@ -69,7 +69,7 @@ class MysqlUtil:
     def cursor(self):
         conn = self.conn if self.conn else getConnection()
         if not conn.is_connected():
-            print(f'Reconnecting to DB conn: {conn}')
+            print(f'Reconnecting to DB conn: {conn}', flush=True)
             conn.reconnect()
         c = conn.cursor()
         c.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
@@ -127,7 +127,7 @@ class MysqlUtil:
         # 1205 Lock wait timeout exceeded
         if getConnection().is_connected() and getConnection().in_transaction:
             print(red(f'Rolling back transaction due to error: {ex}'))
-            print(yellow(self.fetchOne('SHOW ENGINE INNODB STATUS\G;')['status']))
+            print(yellow(self.fetchOne('SHOW ENGINE INNODB STATUS\G;')['status']), flush=True)
             getConnection().rollback()
         raise ex
 
@@ -138,7 +138,7 @@ class MysqlUtil:
                 c.execute(query, params)
                 getConnection().commit()
                 if c.rowcount > 0:
-                    print(green(f'Updated database: {params}'))
+                    print(green(f'Updated database: {params}'), flush=True)
                 else:
                     error(Exception('No rows affected'))
         except mysqlConnector.Error as ex:
@@ -211,7 +211,7 @@ def deleteJobsQuery(ids: list[str]):
 
 
 def error(ex, suffix='', end='\n'):
-    print(red(f'{ERROR_PREFIX}{ex}{suffix}'), end=end)
+    print(red(f'{ERROR_PREFIX}{ex}{suffix}'), end=end, flush=True)
 
 
 def emptyToNone(params: tuple[Any]):

@@ -97,6 +97,8 @@ def mergeDuplicatedJobs(mysql: MysqlUtil, selectQuery: str):
                     print(blue(removeNewLines(txt)), end=' ')
     except Exception:
         print(red(traceback.format_exc()))
+    finally:
+        print('', flush=True)
 
 
 def getFieldValue(row, colsArr, colName):

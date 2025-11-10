@@ -150,7 +150,7 @@ def loadJobDetail(jobExists: bool, idx: int, cssSel):
     # if job exists in DB no need to load details (rate limit)
     if jobExists or idx == 1:
         return
-    print(yellow('loading...'), end='')
+    print(yellow('loading...'), end='', flush=True)
     selenium.waitAndClick(cssSel)
 
 
@@ -192,7 +192,7 @@ def searchJobs(keywords: str):
                 if currentItem >= totalResults:
                     break  # exit for
                 currentItem += 1
-                print(green(f'pg {page} job {idx} - '), end='')
+                print(green(f'pg {page} job {idx} - '), end='', flush=True)
                 ok = loadAndProcessRow(idx)
                 errors += 0 if ok else 1
                 if errors > 1:  # exit page loop, some pages has less items
@@ -215,6 +215,7 @@ def loadAndProcessRow(idx):
     except NoSuchElementException as ex:
         debug("NoSuchElement in loadAndProcessRow " +
               red(f'ERROR (loadJob): {ex.msg}'))
+        print()
         return False
     if jobExists:
         print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
@@ -239,11 +240,11 @@ def processRow(idx):
         md = htmlToMarkdown(html)
         # easyApply: there are 2 buttons
         easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-        print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='')
+        print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='', flush=True)
         if validate(title, url, company, md, DEBUG):
             if id := mysql.insert((jobId, title, company, location, url, md,
                                    easyApply, WEB_PAGE)):
-                print(green(f'INSERTED {id}!'), end='')
+                print(green(f'INSERTED {id}!'), end='', flush=True)
                 mergeDuplicatedJobs(mysql, getSelect())
         else:
             raise ValueError('Validation failed')

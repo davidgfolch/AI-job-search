@@ -49,11 +49,11 @@ class ScrappingService:
                 results['processed'] += 1
                 if self._isDuplicateJob(jobData):
                     results['duplicates'] += 1
-                    print(yellow(f"Job {jobData.get('job_id', 'unknown')} already exists, skipped"))
+                    print(yellow(f"Job {jobData.get('job_id', 'unknown')} already exists, skipped"), flush=True)
                     continue
                 if self._saveJob(jobData):
                     results['saved'] += 1
-                    print(green(f"Job {jobData.get('job_id', 'unknown')} saved successfully"))
+                    print(green(f"Job {jobData.get('job_id', 'unknown')} saved successfully"), flush=True)
                 else:
                     results['errors'].append(f"Failed to save job {jobData.get('job_id', 'unknown')}")
         except Exception as e:
