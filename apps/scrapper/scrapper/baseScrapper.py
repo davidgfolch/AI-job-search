@@ -67,7 +67,7 @@ def htmlToMarkdown(html: str) -> str:
 def removeInvalidScapes(md: str) -> str:
     md = md.replace('\$', '$')  # dont remove \$ ignore the warning
     # remove all backslash NOT unicode \uxxxx
-    md = re.sub(r'[\\]+(?!=u)', '', md, flags=re.M)
+    md = re.sub(r'\\(?!u[0-9a-fA-F]{4})', '', md, flags=re.M)
     return md
 
 

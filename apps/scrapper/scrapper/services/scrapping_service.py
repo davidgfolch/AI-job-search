@@ -15,13 +15,15 @@ class ScrappingService:
             'total_processed': 0,
             'total_saved': 0,
             'total_duplicates': 0,
-            'errors': []
+            'errors': [],
+            'login_success': False
         }
         try:
             if not hasattr(self.scrapper, 'login_success'):
-                results['login_success'] = self.scrapper.login(selenium)
-                self.scrapper.login_success = results['login_success']
-                if not results['login_success']:
+                loginResult = self.scrapper.login(selenium)
+                results['login_success'] = loginResult
+                self.scrapper.login_success = loginResult
+                if not loginResult:
                     return results
             else:
                 results['login_success'] = self.scrapper.login_success

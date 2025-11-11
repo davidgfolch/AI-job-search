@@ -7,7 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 from ..interfaces.scrapper_interface import ScrapperInterface
 from ..seleniumUtil import SeleniumUtil
 from ..baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, validate
-import baseScrapper
+from .. import baseScrapper
 from ..selectors.linkedinSelectors import *
 from commonlib.terminalColor import green, yellow, red
 from commonlib.decorator.retry import retry

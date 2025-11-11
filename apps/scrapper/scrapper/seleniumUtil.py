@@ -57,6 +57,8 @@ class SeleniumUtil:
             chromePath = self._findChrome()
             if chromePath is not None:
                 self.driver = uc.Chrome(browser_executable_path=chromePath) if chromePath else uc.Chrome()
+                self.driver.set_page_load_timeout(180)
+                self.driver.set_script_timeout(180)
             else:
                 print(yellow('WARNING: undetected-chromedriver requires Chrome installed. Falling back to standard Selenium.'))
                 useUndetected = False
@@ -67,7 +69,11 @@ class SeleniumUtil:
             opts.add_experimental_option("excludeSwitches", ["enable-automation"])
             opts.add_experimental_option("useAutomationExtension", False)
             opts.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            opts.add_argument("--disable-dev-shm-usage")
+            opts.add_argument("--no-sandbox")
             self.driver = webdriver.Chrome(options=opts)
+            self.driver.set_page_load_timeout(180)
+            self.driver.set_script_timeout(180)
             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         self.action = webdriver.ActionChains(self.driver)
         print(f'seleniumUtil init driver={self.driver}')
@@ -119,6 +125,12 @@ class SeleniumUtil:
         except Exception:
             return False
 
+    def keepAlive(self):
+        try:
+            self.driver.execute_script("return 1")
+        except Exception:
+            pass
+
     def tabClose(self, name: str = None):
         try:
             if self.isDriverAlive():
@@ -147,6 +159,7 @@ class SeleniumUtil:
     def loadPage(self, url: str):
         if not self.isDriverAlive():
             raise Exception('Driver connection lost')
+        self.keepAlive()
         self.driver.get(url)
 
     def getUrl(self):
@@ -199,6 +212,18 @@ class SeleniumUtil:
     def scrollToBottom(self):
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
+    def scrollProgressive(self, distance: int):
+        currentPos = self.driver.execute_script("return window.pageYOffset;")
+        targetPos = currentPos + distance
+        step = 50 if distance > 0 else -50
+        while (step > 0 and currentPos < targetPos) or (step < 0 and currentPos > targetPos):
+            currentPos += step
+            if (step > 0 and currentPos > targetPos) or (step < 0 and currentPos < targetPos):
+                currentPos = targetPos
+            self.driver.execute_script(f"window.scrollTo(0, {currentPos});")
+            sleep(0.01, 0.03)
+        self.driver.execute_script(f"window.scrollTo(0, {targetPos});")
+
     def scrollIntoView(self, cssSel: str | WebElement):
         elm = self.getElmFromOpSelector(cssSel)
         self.driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)
@@ -219,6 +244,7 @@ class SeleniumUtil:
 
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         """ scrollIntoView, waits to be clickable & click"""
+        self.keepAlive()
         if scrollIntoView:
             self.scrollIntoView(cssSel)
         self.waitUntilClickable(cssSel, timeout)

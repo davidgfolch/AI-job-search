@@ -106,14 +106,18 @@ def scrollToBottom():
     # this this can contain "pagination" or "Nueva busqueda"
     # when no pagination exists
     # selenium.scrollIntoView('div.ij-SearchListingPageContent-main main>div')
-    selenium.scrollToBottom()
+    # selenium.scrollToBottom()
+    selenium.scrollProgressive(400)
     sleep(3, 3)
 
-@retry(exception=NoSuchElementException, raiseException=False)
+@retry(retries=5, delay=3, exception=NoSuchElementException, raiseException=False)
 def clickNextPage():
     """Click on next to load next page.
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
+    if not selenium.isDriverAlive():
+        raise Exception('Driver connection lost')
+    selenium.keepAlive()
     selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
     return True
 
@@ -191,14 +195,19 @@ def loadFilteredSearchResults(keywords: str):
     return True
 
 
-@retry(exceptionFnc=securityFilter)
+@retry(retries=10, delay=5, exceptionFnc=securityFilter)
 def clickOnSearchJobs():
+    if not selenium.isDriverAlive():
+        raise Exception('Driver connection lost')
     selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
     selenium.waitUntilPageIsLoaded()    
 
 
-@retry()
+@retry(retries=5, delay=3, exceptionFnc=scrollToBottom)
 def scrollJobsList(idx):
+    if not selenium.isDriverAlive():
+        raise Exception('Driver connection lost')
+    selenium.keepAlive()
     links = selenium.getElms(CSS_SEL_JOB_LINK)
     if idx >= len(links): # if link not found, scroll all list to properly load dynamic links' class in DOM
         for li in selenium.getElms(CSS_SEL_JOB_LI)[len(links)-1:]:
@@ -235,8 +244,11 @@ def loadAndProcessRow(idx) -> bool:
     return True
 
 
-@retry()
+@retry(retries=3, delay=5)
 def processRow(url):
+    if not selenium.isDriverAlive():
+        raise Exception('Driver connection lost')
+    selenium.keepAlive()
     sleep(5, 6)
     # try:
     title = selenium.getText(CSS_SEL_JOB_TITLE)

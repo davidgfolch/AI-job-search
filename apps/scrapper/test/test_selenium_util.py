@@ -115,6 +115,29 @@ class TestSeleniumUtil:
         selenium_util.scrollToBottom()
         mock_driver.execute_script.assert_called_with("window.scrollTo(0, document.body.scrollHeight);")
 
+    @patch('scrapper.seleniumUtil.sleep')
+    def test_scroll_progressive_down(self, mock_sleep, selenium_util, mock_driver):
+        mock_driver.execute_script.side_effect = [100] + [None] * 20
+        selenium_util.scrollProgressive(200)
+        assert mock_driver.execute_script.call_count >= 3
+        final_call = mock_driver.execute_script.call_args_list[-1]
+        assert 'window.scrollTo(0, 300)' in str(final_call)
+
+    @patch('scrapper.seleniumUtil.sleep')
+    def test_scroll_progressive_up(self, mock_sleep, selenium_util, mock_driver):
+        mock_driver.execute_script.side_effect = [500] + [None] * 20
+        selenium_util.scrollProgressive(-200)
+        assert mock_driver.execute_script.call_count >= 3
+        final_call = mock_driver.execute_script.call_args_list[-1]
+        assert 'window.scrollTo(0, 300)' in str(final_call)
+
+    @patch('scrapper.seleniumUtil.sleep')
+    def test_scroll_progressive_zero(self, mock_sleep, selenium_util, mock_driver):
+        mock_driver.execute_script.side_effect = [100, None]
+        selenium_util.scrollProgressive(0)
+        final_call = mock_driver.execute_script.call_args_list[-1]
+        assert 'window.scrollTo(0, 100)' in str(final_call)
+
     def test_send_escape_key(self, selenium_util):
         with patch('scrapper.seleniumUtil.webdriver.ActionChains') as mock_action:
             mock_chain = MagicMock()
@@ -123,9 +146,12 @@ class TestSeleniumUtil:
             mock_chain.send_keys.assert_called()
 
     def test_checkbox_unselect(self, selenium_util, mock_driver):
+        mock_driver.reset_mock()
         mock_checkbox = MagicMock()
         mock_checkbox.is_selected.return_value = True
         mock_driver.find_element.return_value = mock_checkbox
+        mock_driver.execute_script.return_value = None
+        mock_driver.execute_script.side_effect = None
         
         with patch.object(selenium_util, 'moveToElement'):
             selenium_util.checkboxUnselect('#checkbox')
