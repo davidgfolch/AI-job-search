@@ -18,8 +18,10 @@ class LinkedInScrapper(ScrapperInterface):
         self.fTpr = 'r86400'
         self.jobsPerPage = 25
         self.webPage = 'LinkedIn'
-    def getSiteName(self) -> str:
+
+    def get_site_name(self) -> str:
         return self.webPage
+    
     def login(self, selenium: SeleniumUtil) -> bool:
         try:
             selenium.loadPage('https://www.linkedin.com/login')
@@ -37,7 +39,7 @@ class LinkedInScrapper(ScrapperInterface):
             print(red(f"Login failed: {e}"))
             return False
     
-    def searchJobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
+    def search_jobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
         jobs = []
         try:
             url = self._buildSearchUrl(keywords)
@@ -65,8 +67,9 @@ class LinkedInScrapper(ScrapperInterface):
             print(red(f'Error searching jobs: {e}'))
         return jobs
     
-    def extractJobData(self, selenium: SeleniumUtil, jobElement) -> Dict[str, Any]:
-        pass
+    def extract_job_data(self, selenium: SeleniumUtil, jobElement) -> Dict[str, Any]:
+        return self._extractJobInfo(selenium, jobElement, '')
+    
     def _buildSearchUrl(self, keywords: str) -> str:
         return join('https://www.linkedin.com/jobs/search/?',
                    '&'.join([
@@ -75,14 +78,17 @@ class LinkedInScrapper(ScrapperInterface):
                        f'geoId={self.location}',
                        f'f_TPR={self.fTpr}'
                    ]))
+    
     def _checkResults(self, selenium: SeleniumUtil, keywords: str, url: str) -> bool:
         noResultElms = selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElms) > 0:
             print(red(f'No results for keywords={keywords} URL={url}'))
             return False
         return True
+    
     def _hideUiElements(self, selenium: SeleniumUtil):
         selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')
+
     def _getTotalResults(self, selenium: SeleniumUtil, keywords: str) -> int:
         totalText = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
         total = int(totalText.replace('+', ''))
@@ -104,6 +110,7 @@ class LinkedInScrapper(ScrapperInterface):
                 if errors > 1:
                     break
         return jobs
+    
     def _processJobItem(self, selenium: SeleniumUtil, idx: int) -> Dict[str, Any]:
         try:
             cssSel = self._scrollToJob(selenium, idx)
@@ -125,6 +132,7 @@ class LinkedInScrapper(ScrapperInterface):
         selenium.moveToElement(selenium.getElm(cssSel))
         selenium.waitUntilClickable(cssSel)
         return cssSel
+    
     def _extractJobInfo(self, selenium: SeleniumUtil, idx: int, cssSel: str) -> Dict[str, Any]:
         liPrefix = self._replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
         title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
@@ -155,6 +163,7 @@ class LinkedInScrapper(ScrapperInterface):
     def _clickNextPage(self, selenium: SeleniumUtil) -> bool:
         selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
         return True
+    
     @retry()
     def _scrollJobsListRetry(self, selenium: SeleniumUtil, idx: int):
         cssSelI = self._replaceIndex(CSS_SEL_JOB_LI_IDX, idx)

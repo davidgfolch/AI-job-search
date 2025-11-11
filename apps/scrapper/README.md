@@ -14,6 +14,12 @@ The automatic scrapper `./run_2_Scrapper.sh` (without parameters) keeps running 
 
 To minimize Anti Robot Security Filters (**ASRF**), Selenium operations on each website are implemented with waits & mouse moves to mimic human behavior, but still **ASRF** could appear sometimes (or always as in Infojobs).  You can try an VPN to bypass **ASRF** Cloudflare.  Be aware that your fixed IP could be banned by Cloudflare **ASRF** if you exceed rate limits.
 
+### Bypass Cloudflare with undetected-chromedriver
+
+Set `USE_UNDETECTED_CHROMEDRIVER=true` in your `.env` file to use undetected-chromedriver instead of standard Selenium. This helps bypass Cloudflare and other bot detection systems (recommended for Infojobs and Glassdoor).
+
+**Note:** Requires Google Chrome installed. If Chrome is not detected, falls back to standard Selenium with ChromeDriver.
+
 Also a @retry mechanism is implemented for random fails (page load's timeouts, etc).
 
 To avoid **RATE LIMITS** security filters, job search's are limited to last 24 hours only, so scrappers must run at least each day to not miss job offers.  The automatic scrapper script `./run_2_Scrapper.sh`, control the times each web-site scrapping is executed to avoid security filters.

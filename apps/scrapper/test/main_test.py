@@ -154,21 +154,25 @@ class TestExecuteScrapper:
 
 
 class TestRunPreload:
-    def test_not_preloaded(self):
+    def test_not_preloaded(self, mock_selenium):
+        mock_selenium.useUndetected = False
         properties = {}
         assert runPreload(properties) is True
 
-    def test_already_preloaded_no_tabs(self):
+    def test_already_preloaded_no_tabs(self, mock_selenium):
+        mock_selenium.useUndetected = False
         properties = {'preloaded': True}
         with patch('scrapper.main.RUN_IN_TABS', True):
             assert runPreload(properties) is False
 
-    def test_with_close_tab(self):
+    def test_with_close_tab(self, mock_selenium):
+        mock_selenium.useUndetected = False
         properties = {'preloaded': True, 'closeTab': True}
         with patch('scrapper.main.RUN_IN_TABS', True):
             assert runPreload(properties) is True
 
-    def test_not_in_tabs(self):
+    def test_not_in_tabs(self, mock_selenium):
+        mock_selenium.useUndetected = False
         properties = {'preloaded': True}
         with patch('scrapper.main.RUN_IN_TABS', False):
             assert runPreload(properties) is True
@@ -219,22 +223,22 @@ class TestRunSpecifiedScrappers:
     def test_multiple(self, mock_scrappers, mock_selenium, mock_new_architecture):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs', 'Linkedin', 'Glassdoor'])
-        assert SCRAPPERS['Infojobs']['function'].call_count == 2
-        assert SCRAPPERS['Linkedin']['function'].call_count == 2
-        assert SCRAPPERS['Glassdoor']['function'].call_count == 2
+        assert SCRAPPERS['Infojobs']['function'].call_count == 1
+        assert SCRAPPERS['Linkedin']['function'].call_count == 1
+        assert SCRAPPERS['Glassdoor']['function'].call_count == 1
         assert SCRAPPERS['Indeed']['function'].call_count == 0
 
     def test_mixed_valid_invalid(self, mock_scrappers, mock_selenium, mock_new_architecture):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['Infojobs', 'InvalidScrapper', 'Linkedin'])
-        assert SCRAPPERS['Infojobs']['function'].call_count == 2
-        assert SCRAPPERS['Linkedin']['function'].call_count == 2
+        assert SCRAPPERS['Infojobs']['function'].call_count == 1
+        assert SCRAPPERS['Linkedin']['function'].call_count == 1
 
     def test_case_insensitive(self, mock_scrappers, mock_selenium, mock_new_architecture):
         with patch('scrapper.main.RUN_IN_TABS', False):
             runSpecifiedScrappers(['infojobs', 'LINKEDIN'])
-        assert SCRAPPERS['Infojobs']['function'].call_count == 2
-        assert SCRAPPERS['Linkedin']['function'].call_count == 2
+        assert SCRAPPERS['Infojobs']['function'].call_count == 1
+        assert SCRAPPERS['Linkedin']['function'].call_count == 1
 
     def test_with_preloaded(self, mock_scrappers, mock_selenium):
         SCRAPPERS['Infojobs']['preloaded'] = True

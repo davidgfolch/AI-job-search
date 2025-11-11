@@ -19,7 +19,7 @@ def mock_driver():
 def selenium_util(mock_driver):
     """Shared SeleniumUtil instance with mocked driver"""
     with patch('scrapper.seleniumUtil.webdriver.Chrome', return_value=mock_driver):
-        util = SeleniumUtil()
+        util = SeleniumUtil(useUndetected=False)
         yield util
 
 

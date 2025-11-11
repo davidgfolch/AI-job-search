@@ -1,6 +1,7 @@
 import random
 import time
-# import undetected_chromedriver as uc
+import os
+import undetected_chromedriver as uc
 from typing import List
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -11,6 +12,7 @@ from selenium.webdriver.common.keys import Keys
 
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import yellow
+from commonlib.util import getEnv
 
 # Rotating User-Agents to avoid Cloudflare security filter
 # TODO: Keep list updated, last update 30/ene/2025
@@ -42,37 +44,56 @@ class SeleniumUtil:
     action: webdriver.ActionChains
     defaulTab: str
     tabs = {}
+    useUndetected: bool
 
 
-    def __init__(self):
-        print('seleniumUtil init')
-        print(DESKTOP_USER_AGENTS)
-        opts = webdriver.ChromeOptions()
-        # opts.add_argument("--start-maximized")
-        # opts.add_argument("start-maximized")
-        opts.add_argument("--window-size=1920,900")
-        # TODO: Couldn't avoid Security filters for Infojobs & Glassdoor
-        # options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        # options.add_experimental_option('useAutomationExtension', False)
-        # driver = webdriver.Chrome(options=options)  # , executable_path=r'C:\WebDrivers\chromedriver.exe')
-        # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        # driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
-        # print(driver.execute_script("return navigator.userAgent;"))
-
-        # https://www.zenrows.com/blog/selenium-avoid-bot-detection#disable-automation-indicator-webdriver-flags
-        opts.add_argument("--disable-blink-features=AutomationControlled")
-        opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-        opts.add_experimental_option("useAutomationExtension", False)
-        # userAgent = random.choice(DESKTOP_USER_AGENTS)
-        # print(yellow(f'Using user-agent={userAgent}'))
-        # opts.add_argument(f"user-agent={userAgent}")
-        opts.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-        # driver = uc.Chrome(options=opts)
-        self.driver = webdriver.Chrome(options=opts)
-        self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    def __init__(self, useUndetected: bool = None):
+        if useUndetected is None:
+            useUndetected = getEnv('USE_UNDETECTED_CHROMEDRIVER', 'false').lower() == 'true'
+        self.useUndetected = useUndetected
+        print(f'seleniumUtil init (undetected={useUndetected})')
+        if useUndetected:
+            chromePath = self._findChrome()
+            if chromePath is not None:
+                self.driver = uc.Chrome(browser_executable_path=chromePath) if chromePath else uc.Chrome()
+            else:
+                print(yellow('WARNING: undetected-chromedriver requires Chrome installed. Falling back to standard Selenium.'))
+                useUndetected = False
+        if not useUndetected:
+            opts = webdriver.ChromeOptions()
+            opts.add_argument("--window-size=1920,900")
+            opts.add_argument("--disable-blink-features=AutomationControlled")
+            opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+            opts.add_experimental_option("useAutomationExtension", False)
+            opts.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            self.driver = webdriver.Chrome(options=opts)
+            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         self.action = webdriver.ActionChains(self.driver)
         print(f'seleniumUtil init driver={self.driver}')
         self.defaulTab = self.driver.current_window_handle
+
+    def _findChrome(self):
+        import platform
+        system = platform.system()
+        if system == 'Windows':
+            paths = [
+                r'C:\Program Files\Google\Chrome\Application\chrome.exe',
+                r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+                os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe'),
+                os.path.expandvars(r'%PROGRAMFILES%\Google\Chrome\Application\chrome.exe'),
+                os.path.expandvars(r'%PROGRAMFILES(X86)%\Google\Chrome\Application\chrome.exe'),
+            ]
+        else:
+            paths = [
+                '/usr/bin/google-chrome',
+                '/usr/local/bin/google-chrome',
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+            ]
+        for path in paths:
+            if os.path.exists(path):
+                return path
+        return None
 
     def __enter__(self):
         return self
@@ -260,5 +281,3 @@ def sleep(ini: float, end: float, disable=False):
     if disable:
         return
     time.sleep(random.uniform(ini, end))
-
-

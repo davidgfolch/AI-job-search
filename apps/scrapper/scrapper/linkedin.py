@@ -252,7 +252,6 @@ def processRow(idx):
         raise e
     except Exception as ex:
         debug('processRow Exception -> ' + red(f'ERROR: {ex}'))
-    print()
 
 
 def debug(msg: str = ''):

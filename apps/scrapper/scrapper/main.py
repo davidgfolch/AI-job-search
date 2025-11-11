@@ -111,7 +111,9 @@ def runSpecifiedScrappers(scrappersList: list):
                 executeScrapperPreload(arg.capitalize(), properties)
             executeScrapper(arg.capitalize(), properties)
 
-def runPreload(properties):
+def runPreload(properties: dict) -> bool:
+    if seleniumUtil.useUndetected:
+        return False
     return not properties.get('preloaded',False) or properties.get('closeTab',False) or not RUN_IN_TABS
 
 
@@ -127,14 +129,12 @@ def executeScrapperPreload(name, properties: dict):
     try:
         if RUN_IN_TABS:
             seleniumUtil.tab(name)
-        
         # Try new architecture first for supported scrappers
         if NEW_ARCHITECTURE_AVAILABLE and name.lower() == 'linkedin':
             executeScrapperPreloadNewArchitecture(name, properties)
         else:
             # Fallback to old architecture
             properties['function'](seleniumUtil, True)
-        
         properties['preloaded'] = True
     except Exception as e:
         print(red(f"Error occurred while preloading {name}: {e}"))

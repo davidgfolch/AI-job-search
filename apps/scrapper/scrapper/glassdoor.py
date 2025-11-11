@@ -65,7 +65,8 @@ def loadMainPage():
         try:
             selenium.waitUntil_presenceLocatedElement('#inlineUserEmail')
         except Exception:
-            cloudFlareSecurityFilter()
+            if not selenium.useUndetected:
+                cloudFlareSecurityFilter()
 
 
 @retry()
@@ -155,7 +156,10 @@ def searchJobs(url: str):
             idx = 0
             while idx < JOBS_X_PAGE and currentItem < totalResults:
                 print(green(f'pg {page} job {idx + 1} - '), end='')
-                loadAndProcessRow(idx)
+                try:
+                    loadAndProcessRow(idx)
+                finally:
+                    print(flush=True)
                 currentItem += 1
                 idx += 1
             if currentItem < totalResults:
@@ -172,7 +176,7 @@ def loadAndProcessRow(idx):
     if not jobExists:
         loadJobDetail(liElm)
     if jobExists:
-        print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
+        print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
     else:
         try:
             sleep(0.5, 1.5)
@@ -221,17 +225,14 @@ def processRow():
     md = htmlToMarkdown(html)
     # easyApply: there are 2 buttons
     easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-    print(f'{jobId}, {title}, {company}, {location}, ',
-          f'easy_apply={easyApply} - ', end='')
+    print(f'{jobId}, {title}, {company}, {location}, ', f'easy_apply={easyApply} - ', end='')
     if validate(title, url, company, md, DEBUG):
         if id := mysql.insert((jobId, title, company, location, url, md,
                                easyApply, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
             mergeDuplicatedJobs(mysql, getSelect())
-
     else:
         raise ValueError('Validation failed')
-    print()
 
 
 def debug(msg: str = ''):

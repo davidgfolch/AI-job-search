@@ -61,7 +61,8 @@ def login():
     sleep(2, 2)
     selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
     selenium.waitUntilPageIsLoaded()
-    cloudFlareSecurityFilter()
+    if not selenium.useUndetected:
+        cloudFlareSecurityFilter()
     selenium.sendKeys('#e_mail', USER_EMAIL)
     selenium.sendKeys('#password', USER_PWD)
     selenium.waitAndClick('form input[type=submit]')
@@ -221,7 +222,7 @@ def loadAndProcessRow(idx):
         cssSelLink = scrollJobsList(idx)
         jobId, jobExists = jobExistsInDB(cssSelLink)
         if jobExists:
-            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
+            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
             return True
         print(yellow('loading...'), end='')
         pageLoaded = loadDetail(cssSelLink)
@@ -230,6 +231,7 @@ def loadAndProcessRow(idx):
         debug(traceback.format_exc())
         return False
     finally:
+        print(flush=True)
         if pageLoaded:
             selenium.back()
     return True
@@ -248,22 +250,17 @@ def processRow():
     location = ''
     url = selenium.getUrl()
     jobId = getJobId(url)
-    html = '\n'.join(['- '+selenium.getText(elm)
-                      for elm in selenium.getElms(CSS_SEL_JOB_DATA)]) + \
-        '\n' * 2
+    html = '\n'.join(['- '+selenium.getText(elm) for elm in selenium.getElms(CSS_SEL_JOB_DATA)]) + '\n' * 2
     html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
     md = htmlToMarkdown(html)
     easyApply = False
-    print(f'{jobId}, {title}, {company}, {location}, ',
-          f'easy_apply={easyApply} - ', end='')
+    print(f'{jobId}, {title}, {company}, {location}, ', f'easy_apply={easyApply} - ', end='')
     if validate(title, url, company, md, DEBUG):
-        if id := mysql.insert((jobId, title, company, location, url, md,
-                               easyApply, WEB_PAGE)):
+        if id := mysql.insert((jobId, title, company, location, url, md, easyApply, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
             mergeDuplicatedJobs(mysql, getSelect())
     else:
         raise ValueError('Validation failed')
-    print()
 
 
 def debug(msg: str = ''):

@@ -56,15 +56,20 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
 
 @retry(retries=10, delay=5, exception=NoSuchElementException)
 def acceptCookies():
-    print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
-    sleep(4, 4)
+    if not selenium.useUndetected:
+        print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
+        sleep(4, 4)
     selenium.scrollIntoView('#didomi-notice-agree-button > span')
     sleep(2, 6)
     selenium.waitAndClick('#didomi-notice-agree-button > span')
     sleep(2, 6)
+    print()
 
 
 def securityFilter():
+    if selenium.useUndetected:
+        acceptCookies()
+        return
     selenium.waitUntilPageIsLoaded()
     sleep(4, 4)
     selenium.waitAndClick(CSS_SEL_SECURITY_FILTER1)
@@ -113,13 +118,6 @@ def clickNextPage():
     return True
 
 
-def loadJobDetail(jobLinkElm: WebElement):
-    # first job in page loads automatically
-    # if job exists in DB no need to load details (rate limit)
-    print(yellow('loading...'), end='')
-    jobLinkElm.click()
-
-
 def jobExistsInDB(url):
     jobId = getJobId(url)
     return (jobId, mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
@@ -138,7 +136,8 @@ def searchJobs(keywords: str, preloadPage: bool):
         print(yellow(f'Search keyword={keywords}'))
         loadSearchPage()
         if preloadPage:
-            securityFilter()
+            if not selenium.useUndetected:
+                securityFilter()
             return
         if not loadFilteredSearchResults(keywords):
             return
@@ -154,7 +153,6 @@ def searchJobs(keywords: str, preloadPage: bool):
                 print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
                 if loadAndProcessRow(idx):
                     currentItem += 1
-                print()
                 idx += 1
             if currentItem < totalResults:
                 if clickNextPage():
@@ -222,7 +220,8 @@ def loadAndProcessRow(idx) -> bool:
         if jobExists:
             print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
             return True
-        loadJobDetail(jobLinkElm)
+        print(yellow('loading...'), end='')
+        jobLinkElm.click()
         if not processRow(url):
             raise ValueError('Validation failed')
     except Exception as ex:
@@ -230,6 +229,7 @@ def loadAndProcessRow(idx) -> bool:
         debug(red(traceback.format_exc()))
         return False
     finally:
+        print(flush=True)
         if LIST_URL not in selenium.getUrl():
             selenium.back()
     return True
@@ -250,8 +250,7 @@ def processRow(url):
     # easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
     print(f'{jobId}, {title}, {company}, {location}  - ', end='')
     if validate(title, url, company, md, DEBUG):
-        if id := mysql.insert((jobId, title, company, location, url, md,
-                               None, WEB_PAGE)):
+        if id := mysql.insert((jobId, title, company, location, url, md, None, WEB_PAGE)):
             print(green(f'INSERTED {id}!'), end='')
             mergeDuplicatedJobs(mysql, getSelect())
             return True
