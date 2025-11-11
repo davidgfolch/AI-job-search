@@ -18,10 +18,13 @@ class ScrappingService:
             'errors': []
         }
         try:
-            if preloadOnly:
-                success = self.scrapper.login(selenium)
-                results['login_success'] = success
-                return results
+            if not hasattr(self.scrapper, 'login_success'):
+                results['login_success'] = self.scrapper.login(selenium)
+                self.scrapper.login_success = results['login_success']
+                if not results['login_success']:
+                    return results
+            else:
+                results['login_success'] = self.scrapper.login_success
             for keywords in keywordsList:
                 keywordResults = self._processKeywords(selenium, keywords.strip())
                 results['total_processed'] += keywordResults['processed']

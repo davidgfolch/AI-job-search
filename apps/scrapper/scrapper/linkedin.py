@@ -54,7 +54,7 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
         login()
         print(yellow('Waiting for LinkedIn to redirect to feed page...',
                      '(Maybe you need to solve a security filter first)'))
-        selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)        
+        selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)
         return
     with MysqlUtil() as mysql:
         # TODO: save search keywords in DB
@@ -103,7 +103,7 @@ def getTotalResultsFromHeader(keywords: str) -> int:
     print(green(join(f'{total} total results for search: {keywords}',
                      f'(remote={remote}, location={location}, last={f_TPR})')))
     printHR(green)
-    return int(total.replace('+',''))
+    return int(total.replace('+', ''))
 
 
 def summarize(keywords, totalResults, currentItem):
@@ -179,8 +179,7 @@ def searchJobs(keywords: str):
             return
         # selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE,
         #                               'Could close global alert')
-        selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE,
-                                      'Could not collapse messages')
+        selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
@@ -197,13 +196,13 @@ def searchJobs(keywords: str):
                 errors += 0 if ok else 1
                 if errors > 1:  # exit page loop, some pages has less items
                     break
-            if currentItem >= totalResults or page>=totalPages or not clickNextPage():
+            if currentItem >= totalResults or page >= totalPages or not clickNextPage():
                 break  # exit while
             page += 1
             selenium.waitUntilPageIsLoaded()
         summarize(keywords, totalResults, currentItem)
     except Exception as ex:
-        debug(red(f'ERROR: {ex}'))
+        debug(red(f'ERROR: {ex}'), exception=True)
 
 
 def loadAndProcessRow(idx):
@@ -213,8 +212,7 @@ def loadAndProcessRow(idx):
         jobId, jobExists = jobExistsInDB(cssSel)
         loadJobDetail(jobExists, idx, cssSel)
     except NoSuchElementException as ex:
-        debug("NoSuchElement in loadAndProcessRow " +
-              red(f'ERROR (loadJob): {ex.msg}'))
+        debug("NoSuchElement in loadAndProcessRow " + red(f'ERROR (loadJob): {ex.msg}'))
         print()
         return False
     if jobExists:
@@ -254,5 +252,5 @@ def processRow(idx):
         debug('processRow Exception -> ' + red(f'ERROR: {ex}'))
 
 
-def debug(msg: str = ''):
-    baseScrapper.debug(DEBUG, msg)
+def debug(msg: str = '', exception: bool = False):
+    baseScrapper.debug(DEBUG, msg, exception)

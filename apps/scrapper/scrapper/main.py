@@ -112,8 +112,6 @@ def runSpecifiedScrappers(scrappersList: list):
             executeScrapper(arg.capitalize(), properties)
 
 def runPreload(properties: dict) -> bool:
-    if seleniumUtil.useUndetected:
-        return False
     return not properties.get('preloaded',False) or properties.get('closeTab',False) or not RUN_IN_TABS
 
 
@@ -134,10 +132,11 @@ def executeScrapperPreload(name, properties: dict):
             executeScrapperPreloadNewArchitecture(name, properties)
         else:
             # Fallback to old architecture
+            print(yellow(f"⚠️  Using OLD architecture for {name} preload (new architecture not available)"))
             properties['function'](seleniumUtil, True)
         properties['preloaded'] = True
-    except Exception as e:
-        print(red(f"Error occurred while preloading {name}: {e}"))
+    except Exception:
+        print(red(f"Error occurred while preloading {name}:"))
         print(red(traceback.format_exc()))
         properties['preloaded'] = False
 
@@ -145,21 +144,20 @@ def executeScrapperPreload(name, properties: dict):
 def executeScrapperPreloadNewArchitecture(name: str, properties: dict):
     """Execute scrapper preload using new SOLID architecture"""
     try:
+        print(cyan(f"Using NEW SOLID architecture for {name} preload"))
         container = ScrapperContainer()
         scrapping_service = container.get_scrapping_service(name.lower())
-        
         # Execute preload (login only)
-        results = scrapping_service.execute_scrapping(seleniumUtil, [], preload_only=True)
-        
+        results = scrapping_service.executeScrapping(seleniumUtil, [], preloadOnly=True)
         if results.get('login_success', False):
             print(green(f"Preload completed successfully for {name}"))
         else:
             print(red(f"Preload failed for {name}"))
             raise Exception("Login failed")
-        
     except Exception as e:
         print(red(f"Error in new architecture preload for {name}: {e}"))
         # Fallback to old method
+        print(yellow(f"⚠️  Falling back to OLD architecture for {name} preload due to error"))
         properties['function'](seleniumUtil, True)
 
 
@@ -170,9 +168,10 @@ def executeScrapper(name, properties: dict):
             executeScrapperNewArchitecture(name, properties)
         else:
             # Fallback to old architecture
+            print(yellow(f"⚠️  Using OLD architecture for {name} (new architecture not available)"))
             properties['function'](seleniumUtil, False)
-    except Exception as e:
-        print(red(f"Error occurred while executing {name}: {e}"))
+    except Exception:
+        print(red(f"Error occurred while executing {name}:"))
         print(red(traceback.format_exc()))
         properties['lastExecution'] = None  # re-execute resetting timer
     except KeyboardInterrupt:
@@ -187,6 +186,7 @@ def executeScrapper(name, properties: dict):
 def executeScrapperNewArchitecture(name: str, properties: dict):
     """Execute scrapper using new SOLID architecture"""
     try:
+        print(cyan(f"Using NEW SOLID architecture for {name}"))
         container = ScrapperContainer()
         scrapping_service = container.get_scrapping_service(name.lower())
         
@@ -194,7 +194,7 @@ def executeScrapperNewArchitecture(name: str, properties: dict):
         keywords_list = getEnv('LINKEDIN_JOBS_SEARCH', getEnv('JOBS_SEARCH', '')).split(',')
         
         # Execute scrapping
-        results = scrapping_service.execute_scrapping(seleniumUtil, keywords_list, preload_only=False)
+        results = scrapping_service.executeScrapping(seleniumUtil, keywords_list, preloadOnly=False)
         
         # Print results
         print(green(f"Scrapping completed for {name}:"))
@@ -209,6 +209,7 @@ def executeScrapperNewArchitecture(name: str, properties: dict):
     except Exception as e:
         print(red(f"Error in new architecture for {name}: {e}"))
         # Fallback to old method
+        print(yellow(f"⚠️  Falling back to OLD architecture for {name} due to error"))
         properties['function'](seleniumUtil, False)
 
 

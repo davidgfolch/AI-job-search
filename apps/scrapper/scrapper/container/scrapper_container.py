@@ -32,10 +32,13 @@ class ScrapperContainer:
     
     def get_scrapping_service(self, scrapper_name: str) -> ScrappingService:
         """Get scrapping service for specific scrapper"""
-        return ScrappingService(
-            self.get(f'{scrapper_name}_scrapper'),
-            self.get('mysql_job_storage')
-        )
+        service_key = f'{scrapper_name}_scrapping_service'
+        if service_key not in self._services:
+            self._services[service_key] = ScrappingService(
+                self.get(f'{scrapper_name}_scrapper'),
+                self.get('mysql_job_storage')
+            )
+        return self._services[service_key]
     
     def register_scrapper(self, name: str, scrapper_class):
         """Register a new scrapper"""

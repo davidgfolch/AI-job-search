@@ -9,7 +9,7 @@ from test_helpers import (
 
 class TestMergeDuplicates:
     @patch('test_helpers.MysqlUtil')
-    def test_merge_duplicates_no_duplicates(self, mock_mysql_util):
+    def test_mergeDuplicates_no_duplicates(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.fetchAll.return_value = []
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -19,7 +19,7 @@ class TestMergeDuplicates:
 
     @patch('test_helpers.findDuplicates')
     @patch('test_helpers.MysqlUtil')
-    def test_merge_duplicates_with_duplicates(self, mock_mysql_util, mock_find_duplicates):
+    def test_mergeDuplicates_with_duplicates(self, mock_mysql_util, mock_find_duplicates):
         mock_mysql = MagicMock()
         # Mock fetchAll to return rows with structure: (counter, ids, title, company)
         mock_mysql.fetchAll.return_value = [
@@ -122,7 +122,7 @@ class TestMergeDuplicates:
         
         mock_mysql.executeAndCommit.assert_called_once()
 
-    def test_merge_duplicates_processor_initialization(self):
+    def test_mergeDuplicates_processor_initialization(self):
         processor = MergeDuplicatesProcessor()
         assert processor.processed_count == 0
         assert processor.merged_count == 0
@@ -130,7 +130,7 @@ class TestMergeDuplicates:
 
     @patch('test_helpers.findDuplicates')
     @patch('test_helpers.MysqlUtil')
-    def test_merge_duplicates_processor_process(self, mock_mysql_util, mock_find_duplicates):
+    def test_mergeDuplicates_processor_process(self, mock_mysql_util, mock_find_duplicates):
         mock_mysql = MagicMock()
         # Mock fetchAll to return rows with structure: (counter, ids, title, company)
         mock_mysql.fetchAll.return_value = [
@@ -151,7 +151,7 @@ class TestMergeDuplicates:
             
         assert processor.processed_count == 2
 
-    def test_merge_duplicates_processor_get_stats(self):
+    def test_mergeDuplicates_processor_get_stats(self):
         processor = MergeDuplicatesProcessor()
         processor.processed_count = 5
         processor.merged_count = 2
@@ -169,7 +169,7 @@ class TestMergeDuplicates:
         assert stats == expected
 
     @patch('test_helpers.MysqlUtil')
-    def test_merge_duplicates_with_exception(self, mock_mysql_util):
+    def test_mergeDuplicates_with_exception(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.fetchAll.side_effect = Exception("Database error")
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql

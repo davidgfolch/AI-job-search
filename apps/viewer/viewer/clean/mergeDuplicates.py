@@ -73,24 +73,3 @@ def mergeJobDuplicates(rows, ids):
                merged]
     return id, merged, out
 
-
-def mergeDuplicatedJobs(mysql: MysqlUtil, selectQuery: str):
-    """Scrapper entry"""
-    try:
-        rows = mysql.fetchAll(selectQuery)
-        if len(rows) == 0:
-            return
-        idsIdx = 1
-        rowsIds = [row[idsIdx] for row in rows]
-        for results in merge(mysql, rowsIds):
-            for line in results:
-                print(' ', end='')
-                if arr := line.get('arr', None):
-                    print(cyan(' '.join([removeNewLines(a) for a in arr])), end=' ')
-                query = line.get('query', None)
-                if getEnvBool('SHOW_SQL_IN_AI_ENRICHMENT') and query:
-                    print(blue(removeNewLines(query)), end=' ')
-                if txt := line.get('text', None):
-                    print(blue(removeNewLines(txt)), end=' ')
-    except Exception:
-        print(red(traceback.format_exc()))

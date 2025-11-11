@@ -13,7 +13,7 @@ class JobController:
     def display_job_list(self, filters: Dict[str, any] = None) -> DataFrame:
         """Display job list with filters"""
         try:
-            jobs = self.job_service.search_jobs(filters)
+            jobs = self.job_service.searchJobs(filters)
             return self._jobs_to_dataframe(jobs)
         except Exception as e:
             st.error(f"Error loading jobs: {e}")

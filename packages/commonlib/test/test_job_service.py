@@ -22,7 +22,7 @@ class TestJobService:
         with pytest.raises(ValueError, match="Job ID must be positive"):
             service.getJobById(-1)
     
-    def test_search_jobs(self):
+    def test_searchJobs(self):
         mock_repo = Mock(spec=JobRepository)
         mock_jobs = [Job(id=1, title="Job 1"), Job(id=2, title="Job 2")]
         mock_repo.findAll.return_value = mock_jobs

@@ -11,16 +11,16 @@ class ScrapperInterface(ABC):
         pass
     
     @abstractmethod
-    def search_jobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
+    def searchJobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
         """Search for jobs with given keywords"""
         pass
     
     @abstractmethod
-    def extract_job_data(self, selenium: SeleniumUtil, job_element) -> Dict[str, Any]:
+    def extractJobData(self, selenium: SeleniumUtil, job_element) -> Dict[str, Any]:
         """Extract job data from a job element"""
         pass
     
     @abstractmethod
-    def get_site_name(self) -> str:
+    def getSiteName(self) -> str:
         """Get the name of the job site"""
         pass

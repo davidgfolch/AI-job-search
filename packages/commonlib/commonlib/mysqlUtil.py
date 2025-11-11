@@ -89,7 +89,7 @@ class MysqlUtil:
                 print(red(f'Rollback error: {rollbackEx}'))
             return None
     
-    def job_exists(self, job_id: str) -> bool:
+    def jobExists(self, job_id: str) -> bool:
         """Check if job exists in database by job_id"""
         existing = self.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id)
         return existing is not None

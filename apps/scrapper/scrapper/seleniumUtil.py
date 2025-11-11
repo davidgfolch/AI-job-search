@@ -1,6 +1,7 @@
 import random
 import time
 import os
+import traceback
 import undetected_chromedriver as uc
 from typing import List
 from selenium import webdriver
@@ -11,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 
 from commonlib.decorator.retry import retry
-from commonlib.terminalColor import yellow
+from commonlib.terminalColor import red, yellow
 from commonlib.util import getEnv
 
 # Rotating User-Agents to avoid Cloudflare security filter
@@ -233,10 +234,9 @@ class SeleniumUtil:
             self.waitAndClick(cssSel)
             return True
         except Exception as ex:
+            print(yellow(f'{msg}: {type(ex).__name__}'))
             if showException:
-                print(f'{msg}, exception {ex}')
-            else:
-                print(f'{msg}')
+                print(red(traceback.format_exc()))
             return False
 
     def scrollIntoView_noError(self, cssSel: str | WebElement):

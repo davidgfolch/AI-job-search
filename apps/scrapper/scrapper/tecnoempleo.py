@@ -48,8 +48,7 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
         selenium.waitUntilPageIsLoaded()
         login()
         print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
-        selenium.waitUntilPageUrlContains(
-            'https://www.tecnoempleo.com/profesionales/candidat.php', 60)
+        selenium.waitUntilPageUrlContains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
         return
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
@@ -57,11 +56,13 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
 
 
 def login():
-    # selenium.loadPage('https://www.tecnoempleo.com/demanda-trabajo-informatica.php')
     sleep(2, 2)
     selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
     selenium.waitUntilPageIsLoaded()
-    if not selenium.useUndetected:
+    if selenium.useUndetected:
+        sleep(5, 5) # wait for security filter apperars and autosolve        
+        selenium.waitUntil_presenceLocatedElement('#e_mail') 
+    else:
         cloudFlareSecurityFilter()
     selenium.sendKeys('#e_mail', USER_EMAIL)
     selenium.sendKeys('#password', USER_PWD)

@@ -21,7 +21,7 @@ class TestBaseScrapper:
         assert scrapper.url == "https://test.com"
 
     @patch('test_helpers.MysqlUtil')
-    def test_save_job_success(self, mock_mysql_util):
+    def test_saveJob_success(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.insertJob.return_value = True
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -40,7 +40,7 @@ class TestBaseScrapper:
         mock_mysql.insertJob.assert_called_once_with(job_data)
 
     @patch('test_helpers.MysqlUtil')
-    def test_save_job_duplicate(self, mock_mysql_util):
+    def test_saveJob_duplicate(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.insertJob.return_value = False
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -58,7 +58,7 @@ class TestBaseScrapper:
         assert scrapper.jobsDuplicates == 1
 
     @patch('test_helpers.MysqlUtil')
-    def test_save_job_exception(self, mock_mysql_util):
+    def test_saveJob_exception(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql.insertJob.side_effect = Exception("Database error")
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
@@ -137,7 +137,7 @@ class TestBaseScrapper:
         assert scrapper.jobsErrors == 1
 
     @patch('test_helpers.MysqlUtil')
-    def test_save_job_with_none_data(self, mock_mysql_util):
+    def test_saveJob_with_none_data(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
         
@@ -149,7 +149,7 @@ class TestBaseScrapper:
         assert scrapper.jobsErrors == 1
 
     @patch('test_helpers.MysqlUtil')
-    def test_save_job_with_empty_data(self, mock_mysql_util):
+    def test_saveJob_with_empty_data(self, mock_mysql_util):
         mock_mysql = MagicMock()
         mock_mysql_util.return_value.__enter__.return_value = mock_mysql
         

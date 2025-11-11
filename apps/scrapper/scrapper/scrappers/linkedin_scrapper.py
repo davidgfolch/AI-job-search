@@ -1,14 +1,18 @@
 import math
 import re
+import traceback
 from typing import List, Dict, Any
 from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
 from ..interfaces.scrapper_interface import ScrapperInterface
 from ..seleniumUtil import SeleniumUtil
 from ..baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, validate
+import baseScrapper
 from ..selectors.linkedinSelectors import *
 from commonlib.terminalColor import green, yellow, red
 from commonlib.decorator.retry import retry
+
+DEBUG = False
 
 class LinkedInScrapper(ScrapperInterface):
     def __init__(self):
@@ -19,7 +23,7 @@ class LinkedInScrapper(ScrapperInterface):
         self.jobsPerPage = 25
         self.webPage = 'LinkedIn'
 
-    def get_site_name(self) -> str:
+    def getSiteName(self) -> str:
         return self.webPage
     
     def login(self, selenium: SeleniumUtil) -> bool:
@@ -39,7 +43,7 @@ class LinkedInScrapper(ScrapperInterface):
             print(red(f"Login failed: {e}"))
             return False
     
-    def search_jobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
+    def searchJobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
         jobs = []
         try:
             url = self._buildSearchUrl(keywords)
@@ -65,9 +69,10 @@ class LinkedInScrapper(ScrapperInterface):
             self._printSummary(keywords, totalResults, currentItem)
         except Exception as e:
             print(red(f'Error searching jobs: {e}'))
+            print(red(traceback.format_exc()))
         return jobs
     
-    def extract_job_data(self, selenium: SeleniumUtil, jobElement) -> Dict[str, Any]:
+    def extractJobData(self, selenium: SeleniumUtil, jobElement) -> Dict[str, Any]:
         return self._extractJobInfo(selenium, jobElement, '')
     
     def _buildSearchUrl(self, keywords: str) -> str:
@@ -120,6 +125,7 @@ class LinkedInScrapper(ScrapperInterface):
                 return jobData
         except Exception as e:
             print(red(f'Error processing job {idx}: {e}'))
+            print(red(traceback.format_exc()))
         return None
     
     def _scrollToJob(self, selenium: SeleniumUtil, idx: int) -> str:
@@ -170,11 +176,18 @@ class LinkedInScrapper(ScrapperInterface):
         selenium.scrollIntoView(cssSelI)
         selenium.moveToElement(selenium.getElm(cssSelI))
         selenium.waitUntilClickable(self._replaceIndex(CSS_SEL_JOB_LINK, idx))
+
     def _replaceIndex(self, cssSelector: str, idx: int) -> str:
         return cssSelector.replace('##idx##', str(idx))
+    
     def _getJobId(self, url: str) -> int:
         return int(re.sub(r'.*/jobs/view/([^/]+)/.*', r'\1', url))
+    
     def _getJobUrlShort(self, url: str) -> str:
         return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
+    
     def _printSummary(self, keywords: str, totalResults: int, currentItem: int):
         print(f'Loaded {currentItem} of {totalResults} total results for search: {keywords}')
+
+def debug(msg: str = ''):
+    baseScrapper.debug(DEBUG, msg)

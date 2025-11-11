@@ -88,8 +88,8 @@ def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool)
     return True
 
 
-def debug(debug: bool, msg: str = '', exception=False):
-    if debug:
+def debug(debugFlag: bool, msg: str = '', exception=False):
+    if debugFlag:
         msg = f" (debug active) {msg}, press a key"
         if exception:
             print(yellow(msg))
@@ -101,7 +101,7 @@ def debug(debug: bool, msg: str = '', exception=False):
             print(yellow(msg))
             print(red(traceback.format_exc()))
         else:
-            print(red(msg), end='')
+            print(red(msg))
 
 
 def join(*str: str) -> str:
