@@ -235,7 +235,7 @@ def maxLen(params: tuple[Any], maxLens: tuple[int]):
         val = p[0]
         max = p[1]
         if max is not None and isinstance(val, str) and len(val) > max:
-            return val[:max]+'...'
+            return val[:(max-len('[...]'))]+'[...]'
         return val
     return tuple(
         map(lambda p: mapParam(p), zip(params, maxLens, strict=False)))

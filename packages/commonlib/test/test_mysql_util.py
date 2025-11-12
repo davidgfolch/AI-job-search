@@ -175,16 +175,16 @@ class TestUtilityFunctions:
         assert result == ('short', 'text')
 
     def test_max_len_exceeds_limits(self):
-        result = maxLen(('very long text', 'short'), (5, 10))
-        assert result == ('very ...', 'short')
+        result = maxLen(('very long text', 'short'), (6, 10))
+        assert result == ('v[...]', 'short')
 
     def test_max_len_with_none_values(self):
         result = maxLen((None, 'text'), (10, 10))
         assert result == (None, 'text')
 
     def test_max_len_with_none_limits(self):
-        result = maxLen(('text', 'more text'), (None, 5))
-        assert result == ('text', 'more ...')
+        result = maxLen(('text', 'more text'), (None, 6))
+        assert result == ('text', 'm[...]')
 
     def test_max_len_empty_input(self):
         result = maxLen((), ())
