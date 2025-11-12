@@ -12,6 +12,8 @@ try:
     from scrapper.services.scrapping_service import ScrappingService
     NEW_ARCHITECTURE_AVAILABLE = True
 except ImportError:
+    print(yellow("⚠️  New SOLID architecture for scrappers not available, using old architecture"))
+    traceback.print_exc()
     NEW_ARCHITECTURE_AVAILABLE = False
     ScrapperContainer = None
     ScrappingService = None
@@ -32,6 +34,7 @@ SCRAPPERS: dict = {
     'Linkedin': {
         'function': linkedin.run,
         'timer': getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
+        'executeNewArchitecture': False,
         'closeTab': True},
     'Glassdoor': {
         'function': glassdoor.run,
@@ -48,6 +51,7 @@ NEXT_SCRAP_TIMER = '10m'  # '10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 
 seleniumUtil: SeleniumUtil = None
+scrapperContainer: ScrapperContainer = None
 
 
 def timeExpired(name: str, properties: dict):
@@ -123,15 +127,23 @@ def validScrapperName(name: str):
     return False
 
 
+def hasNewArchitecture(name: str) -> bool:
+    if not NEW_ARCHITECTURE_AVAILABLE:
+        return False
+    try:
+        scrapperContainer.get_scrapping_service(name.lower())
+        return SCRAPPERS.get(name.capitalize()).get('executeNewArchitecture', False)
+    except Exception:
+        return False
+
+
 def executeScrapperPreload(name, properties: dict):
     try:
         if RUN_IN_TABS:
             seleniumUtil.tab(name)
-        # Try new architecture first for supported scrappers
-        if NEW_ARCHITECTURE_AVAILABLE and name.lower() == 'linkedin':
+        if hasNewArchitecture(name):
             executeScrapperPreloadNewArchitecture(name, properties)
         else:
-            # Fallback to old architecture
             print(yellow(f"⚠️  Using OLD architecture for {name} preload (new architecture not available)"))
             properties['function'](seleniumUtil, True)
         properties['preloaded'] = True
@@ -145,9 +157,7 @@ def executeScrapperPreloadNewArchitecture(name: str, properties: dict):
     """Execute scrapper preload using new SOLID architecture"""
     try:
         print(cyan(f"Using NEW SOLID architecture for {name} preload"))
-        container = ScrapperContainer()
-        scrapping_service = container.get_scrapping_service(name.lower())
-        # Execute preload (login only)
+        scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         results = scrapping_service.executeScrapping(seleniumUtil, [], preloadOnly=True)
         if results.get('login_success', False):
             print(green(f"Preload completed successfully for {name}"))
@@ -156,18 +166,15 @@ def executeScrapperPreloadNewArchitecture(name: str, properties: dict):
             raise Exception("Login failed")
     except Exception as e:
         print(red(f"Error in new architecture preload for {name}: {e}"))
-        # Fallback to old method
         print(yellow(f"⚠️  Falling back to OLD architecture for {name} preload due to error"))
         properties['function'](seleniumUtil, True)
 
 
 def executeScrapper(name, properties: dict):        
     try:
-        # Try new architecture first for supported scrappers
-        if NEW_ARCHITECTURE_AVAILABLE and name.lower() == 'linkedin':
+        if hasNewArchitecture(name):
             executeScrapperNewArchitecture(name, properties)
         else:
-            # Fallback to old architecture
             print(yellow(f"⚠️  Using OLD architecture for {name} (new architecture not available)"))
             properties['function'](seleniumUtil, False)
     except Exception:
@@ -187,28 +194,19 @@ def executeScrapperNewArchitecture(name: str, properties: dict):
     """Execute scrapper using new SOLID architecture"""
     try:
         print(cyan(f"Using NEW SOLID architecture for {name}"))
-        container = ScrapperContainer()
-        scrapping_service = container.get_scrapping_service(name.lower())
-        
-        # Get keywords from environment
+        scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         keywords_list = getEnv('LINKEDIN_JOBS_SEARCH', getEnv('JOBS_SEARCH', '')).split(',')
-        
-        # Execute scrapping
         results = scrapping_service.executeScrapping(seleniumUtil, keywords_list, preloadOnly=False)
-        
-        # Print results
         print(green(f"Scrapping completed for {name}:"))
         print(f"  Processed: {results['total_processed']} jobs")
         print(f"  Saved: {results['total_saved']} jobs")
         print(f"  Duplicates: {results['total_duplicates']} jobs")
         if results['errors']:
             print(red(f"  Errors: {len(results['errors'])}"))
-            for error in results['errors'][:3]:  # Show first 3 errors
+            for error in results['errors'][:3]:
                 print(red(f"    - {error}"))
-        
     except Exception as e:
         print(red(f"Error in new architecture for {name}: {e}"))
-        # Fallback to old method
         print(yellow(f"⚠️  Falling back to OLD architecture for {name} due to error"))
         properties['function'](seleniumUtil, False)
 
@@ -230,6 +228,8 @@ if __name__ == '__main__':
         print(f"'starting' at {args[1]} ")
 
     with SeleniumUtil() as seleniumUtil:
+        if NEW_ARCHITECTURE_AVAILABLE:
+            scrapperContainer = ScrapperContainer()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
         if len(args) == 1 or starting or wait:
             startingAt = args[1].capitalize() if starting else None

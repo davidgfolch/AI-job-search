@@ -16,7 +16,7 @@ class ScrapperInterface(ABC):
         pass
     
     @abstractmethod
-    def extractJobData(self, selenium: SeleniumUtil, job_element) -> Dict[str, Any]:
+    def extractJobData(self, selenium: SeleniumUtil, jobElement) -> Dict[str, Any]:
         """Extract job data from a job element"""
         pass
     

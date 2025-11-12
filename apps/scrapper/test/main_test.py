@@ -266,14 +266,17 @@ class TestNewArchitecture:
     
     def test_new_architecture_preload_success(self, mock_selenium, mock_container, mock_scrapping_service):
         """Test new architecture preload success"""
-        mock_container.return_value.get_scrapping_service.return_value = mock_scrapping_service
+        mock_container_instance = mock_container.return_value
+        mock_container_instance.get_scrapping_service.return_value = mock_scrapping_service
         mock_scrapping_service.executeScrapping.return_value = {'login_success': True}
-        
+
         properties = {'function': MagicMock()}
-        
-        with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True):
+
+        with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True), \
+             patch('scrapper.main.scrapperContainer', mock_container_instance), \
+             patch.dict('scrapper.main.SCRAPPERS', {'Linkedin': {'function': MagicMock(), 'executeNewArchitecture': True}}):
             executeScrapperPreload('Linkedin', properties)
-        
+
         mock_scrapping_service.executeScrapping.assert_called_once_with(
             mock_selenium, [], preloadOnly=True
         )
@@ -294,14 +297,17 @@ class TestNewArchitecture:
     
     def test_new_architecture_scrapping_success(self, mock_selenium, mock_container, mock_scrapping_service):
         """Test new architecture scrapping execution"""
-        mock_container.return_value.get_scrapping_service.return_value = mock_scrapping_service
-        
+        mock_container_instance = mock_container.return_value
+        mock_container_instance.get_scrapping_service.return_value = mock_scrapping_service
+
         properties = {'function': MagicMock()}
-        
+
         with patch('scrapper.main.NEW_ARCHITECTURE_AVAILABLE', True), \
+             patch('scrapper.main.scrapperContainer', mock_container_instance), \
+             patch.dict('scrapper.main.SCRAPPERS', {'Linkedin': {'function': MagicMock(), 'executeNewArchitecture': True}}), \
              patch('scrapper.main.getEnv', return_value='java,python'):
             executeScrapper('Linkedin', properties)
-        
+
         mock_scrapping_service.executeScrapping.assert_called_once_with(
             mock_selenium, ['java', 'python'], preloadOnly=False
         )

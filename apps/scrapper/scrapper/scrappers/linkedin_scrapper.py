@@ -6,10 +6,9 @@ from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
 from ..interfaces.scrapper_interface import ScrapperInterface
 from ..seleniumUtil import SeleniumUtil
-from ..baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, validate
-from .. import baseScrapper
+from ..baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, validate, debug as baseDebug
 from ..selectors.linkedinSelectors import *
-from commonlib.terminalColor import green, yellow, red
+from commonlib.terminalColor import green, red, yellow
 from commonlib.decorator.retry import retry
 
 DEBUG = False
@@ -27,6 +26,7 @@ class LinkedInScrapper(ScrapperInterface):
         return self.webPage
     
     def login(self, selenium: SeleniumUtil) -> bool:
+        print(yellow('Logging into LinkedIn...'))
         try:
             selenium.loadPage('https://www.linkedin.com/login')
             selenium.sendKeys('#username', self.userEmail)
@@ -36,16 +36,19 @@ class LinkedInScrapper(ScrapperInterface):
             except Exception:
                 pass
             selenium.waitAndClick('form button[type=submit]')
-            print(yellow('Waiting for LinkedIn to redirect to feed page...'))
+            print(yellow('Waiting for LinkedIn to redirect to feed page...',
+                         '(Maybe you need to solve a security filter first)'))
             selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)
+            print(green('Login successful!'))
             return True
-        except Exception as e:
-            print(red(f"Login failed: {e}"))
+        except Exception:
+            baseDebug(DEBUG, 'Login failed', exception=True)
             return False
     
     def searchJobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
         jobs = []
         try:
+            print(yellow(f'Search keyword={keywords}'))
             url = self._buildSearchUrl(keywords)
             print(yellow(f'Loading page {url}'))
             selenium.loadPage(url)
@@ -67,9 +70,8 @@ class LinkedInScrapper(ScrapperInterface):
                 page += 1
                 selenium.waitUntilPageIsLoaded()
             self._printSummary(keywords, totalResults, currentItem)
-        except Exception as e:
-            print(red(f'Error searching jobs: {e}'))
-            print(red(traceback.format_exc()))
+        except Exception:
+            baseDebug(DEBUG, 'Error searching jobs', exception=True)
         return jobs
     
     def extractJobData(self, selenium: SeleniumUtil, jobElement) -> Dict[str, Any]:
@@ -95,9 +97,12 @@ class LinkedInScrapper(ScrapperInterface):
         selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')
 
     def _getTotalResults(self, selenium: SeleniumUtil, keywords: str) -> int:
+        from commonlib.terminalColor import printHR
         totalText = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
         total = int(totalText.replace('+', ''))
-        print(green(f'{total} total results for search: {keywords}'))
+        printHR(green)
+        print(green(f'{total} total results for search: {keywords} (remote={self.remote}, location={self.location}, last={self.fTpr})'))
+        printHR(green)
         return total
     
     def _processPage(self, selenium: SeleniumUtil, page: int, currentItem: int, totalResults: int) -> List[Dict[str, Any]]:
@@ -106,7 +111,7 @@ class LinkedInScrapper(ScrapperInterface):
         for idx in range(1, self.jobsPerPage + 1):
             if currentItem + idx > totalResults:
                 break
-            print(green(f'pg {page} job {idx} - '), end='')
+            print(green(f'pg {page} job {idx} - '), end='', flush=True)
             jobData = self._processJobItem(selenium, idx)
             if jobData:
                 jobs.append(jobData)
@@ -123,9 +128,10 @@ class LinkedInScrapper(ScrapperInterface):
             if jobData and validate(jobData['title'], jobData['url'], 
                                    jobData['company'], jobData['markdown'], False):
                 return jobData
-        except Exception as e:
-            print(red(f'Error processing job {idx}: {e}'))
-            print(red(traceback.format_exc()))
+        except Exception:
+            baseDebug(DEBUG, f'Error processing job {idx}', exception=True)
+        finally:
+            print(flush=True)
         return None
     
     def _scrollToJob(self, selenium: SeleniumUtil, idx: int) -> str:
@@ -148,12 +154,12 @@ class LinkedInScrapper(ScrapperInterface):
         url = self._getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
         jobId = self._getJobId(url)
         if idx != 1:
-            print(yellow('loading...'), end='')
+            print(yellow('loading...'), end='', flush=True)
             selenium.waitAndClick(cssSel)
         html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
         markdown = htmlToMarkdown(html)
         easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-        print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='')
+        print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='', flush=True)
         return {
             'job_id': jobId,
             'title': title,
@@ -187,7 +193,12 @@ class LinkedInScrapper(ScrapperInterface):
         return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
     
     def _printSummary(self, keywords: str, totalResults: int, currentItem: int):
-        print(f'Loaded {currentItem} of {totalResults} total results for search: {keywords}')
+        from commonlib.terminalColor import printHR
+        from commonlib.util import getDatetimeNowStr
+        printHR()
+        print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords} (remote={self.remote} location={self.location} last={self.fTpr})')
+        printHR()
+        print()
 
 def debug(msg: str = ''):
-    baseScrapper.debug(DEBUG, msg)
+    baseDebug(DEBUG, msg)

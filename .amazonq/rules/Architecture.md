@@ -30,5 +30,5 @@ This project is a monorepo with the following structure:
 - Avoid code duplication by reusing components and methods.
 - Document architecture decisions and patterns used in the project.
 - Ensure scalability and maintainability of the architecture.
-- Production scope and Test scope should be separated properly.
+- Production scope code and Test scope code should be separated.
 - Use test helpers to abstract duplicated code.

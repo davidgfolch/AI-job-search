@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from ..interfaces.scrapper_interface import ScrapperInterface
 from ..interfaces.job_storage_interface import JobStorageInterface
 from ..seleniumUtil import SeleniumUtil
+from ..baseScrapper import printScrapperTitle
 from commonlib.terminalColor import green, yellow, red
 
 class ScrappingService:
@@ -10,6 +11,7 @@ class ScrappingService:
         self.storage = storage
 
     def executeScrapping(self, selenium: SeleniumUtil, keywordsList: List[str], preloadOnly: bool = False) -> Dict[str, Any]:
+        printScrapperTitle(self.scrapper.getSiteName(), preloadOnly)
         results = {
             'site': self.scrapper.getSiteName(),
             'total_processed': 0,
@@ -27,6 +29,8 @@ class ScrappingService:
                     return results
             else:
                 results['login_success'] = self.scrapper.login_success
+            if preloadOnly:
+                return results
             for keywords in keywordsList:
                 keywordResults = self._processKeywords(selenium, keywords.strip())
                 results['total_processed'] += keywordResults['processed']
@@ -48,17 +52,16 @@ class ScrappingService:
             'errors': []
         }
         try:
-            print(yellow(f'Processing keywords: {keywords}'))
             jobs = self.scrapper.searchJobs(selenium, keywords)
             for jobData in jobs:
                 results['processed'] += 1
                 if self._isDuplicateJob(jobData):
                     results['duplicates'] += 1
-                    print(yellow(f"Job {jobData.get('job_id', 'unknown')} already exists, skipped"), flush=True)
+                    print(yellow(f"Job id={jobData.get('job_id', 'unknown')} already exists in DB, IGNORED."))
                     continue
                 if self._saveJob(jobData):
                     results['saved'] += 1
-                    print(green(f"Job {jobData.get('job_id', 'unknown')} saved successfully"), flush=True)
+                    print(green(f"INSERTED {jobData.get('job_id', 'unknown')}!"), flush=True)
                 else:
                     results['errors'].append(f"Failed to save job {jobData.get('job_id', 'unknown')}")
         except Exception as e:
@@ -80,6 +83,9 @@ class ScrappingService:
                     print(red(f"Missing required field: {field}"))
                     return False
             savedId = self.storage.saveJob(jobData)
+            if savedId:
+                print(green(f'INSERTED {savedId}!'), end='')
+                self.storage.mergeDuplicates()
             return savedId is not None
         except Exception as e:
             print(red(f"Error saving job: {e}"))
