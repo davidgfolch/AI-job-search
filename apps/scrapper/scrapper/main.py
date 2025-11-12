@@ -24,25 +24,30 @@ except ImportError:
 # taking site id to check if already exists in db
 # this could be an alternative way to add jobs in sites like glassdoor because
 # of cloudflare security filter
+FUNCTION = 'function'
+TIMER = 'timer'
+EXEC_NEW_ARCH = 'executeNewArchitecture'
+CLOSE_TAB = 'closeTab'
+IGNORE_AUTORUN = 'ignoreAutoRun'
 SCRAPPERS: dict = {
     'Infojobs': {  # first to solve security filter
-        'function': infojobs.run,
-        'timer': getSeconds(getEnv('INFOJOBS_RUN_CADENCY'))},
+        FUNCTION: infojobs.run,
+        TIMER: getSeconds(getEnv('INFOJOBS_RUN_CADENCY'))},
     'Tecnoempleo': { # first to solve security filter
-        'function': tecnoempleo.run,
-        'timer': getSeconds(getEnv('TECNOEMPLEO_RUN_CADENCY'))},
+        FUNCTION: tecnoempleo.run,
+        TIMER: getSeconds(getEnv('TECNOEMPLEO_RUN_CADENCY'))},
     'Linkedin': {
-        'function': linkedin.run,
-        'timer': getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
-        'executeNewArchitecture': False,
-        'closeTab': True},
+        FUNCTION: linkedin.run,
+        TIMER: getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
+        EXEC_NEW_ARCH: False,
+        CLOSE_TAB: True},
     'Glassdoor': {
-        'function': glassdoor.run,
-        'timer': getSeconds(getEnv('GLASSDOOR_RUN_CADENCY'))},
+        FUNCTION: glassdoor.run,
+        TIMER: getSeconds(getEnv('GLASSDOOR_RUN_CADENCY'))},
     'Indeed': {
-        'function': indeed.run,
-        'timer': getSeconds(getEnv('INDEED_RUN_CADENCY')),
-        'ignoreAutoRun': True
+        FUNCTION: indeed.run,
+        TIMER: getSeconds(getEnv('INDEED_RUN_CADENCY')),
+        IGNORE_AUTORUN: True
     },
 }
 print(f'Scrappers config: {SCRAPPERS}')
@@ -61,7 +66,7 @@ def timeExpired(name: str, properties: dict):
         if last is None:
             return True
         lapsed = getDatetimeNow()-last
-        timeoutSeconds = properties['timer']
+        timeoutSeconds = properties[TIMER]
         timeLeft = getTimeUnits(timeoutSeconds-lapsed)
         print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
         if lapsed + 1 <= timeoutSeconds:
@@ -85,7 +90,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loops=99999999999
             properties['waitBeforeFirstRun'] = properties.get('waitBeforeFirstRun', waitBeforeFirstRuns)
             if timeExpired(name, properties):
                 notStartAtThisOne = (starting and startingAt != name)
-                if properties.get('ignoreAutoRun', False) or notStartAtThisOne:
+                if properties.get(IGNORE_AUTORUN, False) or notStartAtThisOne:
                     print(f'Skipping : {name}')
                     continue
                 properties['waitBeforeFirstRun'] = False
@@ -116,7 +121,7 @@ def runSpecifiedScrappers(scrappersList: list):
             executeScrapper(arg.capitalize(), properties)
 
 def runPreload(properties: dict) -> bool:
-    return not properties.get('preloaded',False) or properties.get('closeTab',False) or not RUN_IN_TABS
+    return not properties.get('preloaded',False) or properties.get(CLOSE_TAB,False) or not RUN_IN_TABS
 
 
 def validScrapperName(name: str):
@@ -132,7 +137,7 @@ def hasNewArchitecture(name: str) -> bool:
         return False
     try:
         scrapperContainer.get_scrapping_service(name.lower())
-        return SCRAPPERS.get(name.capitalize()).get('executeNewArchitecture', False)
+        return SCRAPPERS.get(name.capitalize()).get(EXEC_NEW_ARCH, False)
     except Exception:
         return False
 
@@ -145,7 +150,7 @@ def executeScrapperPreload(name, properties: dict):
             executeScrapperPreloadNewArchitecture(name, properties)
         else:
             print(yellow(f"⚠️  Using OLD architecture for {name} preload (new architecture not available)"))
-            properties['function'](seleniumUtil, True)
+            properties[FUNCTION](seleniumUtil, True)
         properties['preloaded'] = True
     except Exception:
         print(red(f"Error occurred while preloading {name}:"))
@@ -167,7 +172,7 @@ def executeScrapperPreloadNewArchitecture(name: str, properties: dict):
     except Exception as e:
         print(red(f"Error in new architecture preload for {name}: {e}"))
         print(yellow(f"⚠️  Falling back to OLD architecture for {name} preload due to error"))
-        properties['function'](seleniumUtil, True)
+        properties[FUNCTION](seleniumUtil, True)
 
 
 def executeScrapper(name, properties: dict):        
@@ -176,7 +181,7 @@ def executeScrapper(name, properties: dict):
             executeScrapperNewArchitecture(name, properties)
         else:
             print(yellow(f"⚠️  Using OLD architecture for {name} (new architecture not available)"))
-            properties['function'](seleniumUtil, False)
+            properties[FUNCTION](seleniumUtil, False)
     except Exception:
         print(red(f"Error occurred while executing {name}:"))
         print(red(traceback.format_exc()))
@@ -185,7 +190,7 @@ def executeScrapper(name, properties: dict):
         pass
     finally:
         if RUN_IN_TABS:
-            if properties.get('closeTab',False):
+            if properties.get(CLOSE_TAB,False):
                 seleniumUtil.tabClose(name)
             seleniumUtil.tab()  # switches to default tab
 
@@ -208,7 +213,7 @@ def executeScrapperNewArchitecture(name: str, properties: dict):
     except Exception as e:
         print(red(f"Error in new architecture for {name}: {e}"))
         print(yellow(f"⚠️  Falling back to OLD architecture for {name} due to error"))
-        properties['function'](seleniumUtil, False)
+        properties[FUNCTION](seleniumUtil, False)
 
 
 if __name__ == '__main__':

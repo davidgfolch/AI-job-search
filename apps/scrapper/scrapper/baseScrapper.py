@@ -27,7 +27,6 @@ def getAndCheckEnvVars(site: str):
 
 
 def printScrapperTitle(scrapper: str, preloadPage: bool):
-    print("")
     printHR(green)
     if preloadPage:
         print(yellow(f'{getDatetimeNowStr()} - PRELOADING {scrapper}: login & security filters'))

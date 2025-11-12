@@ -219,6 +219,7 @@ def loadAndProcessRow(idx):
         print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
     else:
         processRow(idx)
+        print()
     return True
 
 
