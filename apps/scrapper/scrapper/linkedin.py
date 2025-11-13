@@ -1,5 +1,6 @@
 import math
 import re
+import traceback
 from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
 from . import baseScrapper
@@ -70,7 +71,7 @@ def login():
     try:
         selenium.checkboxUnselect('div.remember_me__opt_in input')
     except Exception as e:
-        print(e)
+        print(red(str(e)))
     selenium.waitAndClick('form button[type=submit]')
 
 
@@ -201,8 +202,8 @@ def searchJobs(keywords: str):
             page += 1
             selenium.waitUntilPageIsLoaded()
         summarize(keywords, totalResults, currentItem)
-    except Exception as ex:
-        debug(red(f'ERROR: {ex}'), exception=True)
+    except Exception:
+        debug(red(traceback.format_exc()))
 
 
 def loadAndProcessRow(idx):

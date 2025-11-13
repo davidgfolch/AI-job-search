@@ -18,8 +18,9 @@ def mock_driver():
 @pytest.fixture(scope='class')
 def selenium_util(mock_driver):
     """Shared SeleniumUtil instance with mocked driver"""
-    with patch('scrapper.seleniumUtil.webdriver.Chrome', return_value=mock_driver):
-        util = SeleniumUtil(useUndetected=False)
+    with patch('scrapper.seleniumUtil.getEnvBool', return_value=False), \
+         patch('scrapper.seleniumUtil.webdriver.Chrome', return_value=mock_driver):
+        util = SeleniumUtil()
         yield util
 
 
@@ -206,11 +207,6 @@ class TestSeleniumUtil:
         with patch.object(selenium_util, 'isDriverAlive', return_value=False):
             selenium_util.exit()
             mock_driver.quit.assert_not_called()
-
-    def test_load_page_driver_not_alive(self, selenium_util, mock_driver):
-        with patch.object(selenium_util, 'isDriverAlive', return_value=False):
-            with pytest.raises(Exception, match='Driver connection lost'):
-                selenium_util.loadPage('https://test.com')
 
     def test_tab_close_error_handling(self, selenium_util, mock_driver):
         selenium_util.tabs['test_tab'] = 'handle'

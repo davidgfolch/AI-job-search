@@ -60,9 +60,9 @@ def acceptCookies():
         print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
         sleep(4, 4)
     selenium.scrollIntoView('#didomi-notice-agree-button > span')
-    sleep(2, 6)
+    sleep(1, 3)
     selenium.waitAndClick('#didomi-notice-agree-button > span')
-    sleep(2, 6)
+    sleep(2, 4)
     print()
 
 
@@ -90,7 +90,7 @@ def getTotalResultsFromHeader(keywords: str) -> int:
     printHR()
     print(green(join(f'{total} total results for search: {keywords}')))
     printHR()
-    return int(total)
+    return int(total.replace(',','')) # remove 1,200 comma
 
 
 def summarize(keywords, totalResults, currentItem):
@@ -107,17 +107,15 @@ def scrollToBottom():
     # when no pagination exists
     # selenium.scrollIntoView('div.ij-SearchListingPageContent-main main>div')
     # selenium.scrollToBottom()
-    selenium.scrollProgressive(400)
-    sleep(3, 3)
+    selenium.scrollProgressive(600)
+    selenium.scrollProgressive(-1200)
+    sleep(1, 2)
 
 @retry(retries=5, delay=3, exception=NoSuchElementException, raiseException=False)
 def clickNextPage():
     """Click on next to load next page.
     If there isn't next button in pagination we are in the last page,
     so return false to exit loop (stop processing)"""
-    if not selenium.isDriverAlive():
-        raise Exception('Driver connection lost')
-    selenium.keepAlive()
     selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
     return True
 
@@ -155,8 +153,8 @@ def searchJobs(keywords: str, preloadPage: bool):
             while idx < JOBS_X_PAGE and currentItem < totalResults:
                 #Note JOBS_X_PAGE is not always exact
                 print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
-                if loadAndProcessRow(idx):
-                    currentItem += 1
+                loadAndProcessRow(idx)
+                currentItem += 1
                 idx += 1
             if currentItem < totalResults:
                 if clickNextPage():
@@ -181,10 +179,13 @@ def loadSearchPage():
 
 def loadFilteredSearchResults(keywords: str):
     clickOnSearchJobs()
-    selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword',keywords, clear=True)
+    selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword',keywords, keyByKeyTime=(0.1, 0.2), clear=True)
+    sleep(0.5, 1)
+    selenium.sendEscapeKey()
+    sleep(0.5, 1)
     selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
     sleep(1, 2)
-    selenium.sendEscapeKey()
+    selenium.waitUntil_presenceLocatedElement('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', timeout=5)
     selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
     sleep(1, 2)
     if selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
@@ -197,21 +198,20 @@ def loadFilteredSearchResults(keywords: str):
 
 @retry(retries=10, delay=5, exceptionFnc=securityFilter)
 def clickOnSearchJobs():
-    if not selenium.isDriverAlive():
-        raise Exception('Driver connection lost')
     selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
-    selenium.waitUntilPageIsLoaded()    
+    selenium.waitUntilPageIsLoaded()
 
 
-@retry(retries=5, delay=3, exceptionFnc=scrollToBottom)
+@retry(retries=3, delay=1, exceptionFnc=scrollToBottom)
 def scrollJobsList(idx):
-    if not selenium.isDriverAlive():
-        raise Exception('Driver connection lost')
-    selenium.keepAlive()
     links = selenium.getElms(CSS_SEL_JOB_LINK)
     if idx >= len(links): # if link not found, scroll all list to properly load dynamic links' class in DOM
         for li in selenium.getElms(CSS_SEL_JOB_LI)[len(links)-1:]:
+            selenium.setAttr(li, 'style', (selenium.getAttr(li, 'style') or '')+'border: 5px solid red;')
             selenium.scrollIntoView(li)
+            sleep(0.5, 1)
+            selenium.setAttr(li, 'style', '')
+        sleep(1, 2)
     selenium.scrollIntoView(selenium.getElms(CSS_SEL_JOB_LINK)[idx])
 
 
@@ -220,8 +220,8 @@ def loadAndProcessRow(idx) -> bool:
         if idx > 2:
             try:
                 scrollJobsList(idx)
-            except Exception as e:
-                print(yellow(f'Could not scroll to link {idx}, IGNORING.'), end='')
+            except Exception:
+                print(yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
                 return False
         jobLinkElm: WebElement = selenium.getElms(CSS_SEL_JOB_LINK)[idx]
         url = jobLinkElm.get_attribute('href')
@@ -233,8 +233,7 @@ def loadAndProcessRow(idx) -> bool:
         jobLinkElm.click()
         if not processRow(url):
             raise ValueError('Validation failed')
-    except Exception as ex:
-        print(red(f'ERROR: {ex}'))
+    except Exception:
         debug(red(traceback.format_exc()))
         return False
     finally:
@@ -246,10 +245,6 @@ def loadAndProcessRow(idx) -> bool:
 
 @retry(retries=3, delay=5)
 def processRow(url):
-    if not selenium.isDriverAlive():
-        raise Exception('Driver connection lost')
-    selenium.keepAlive()
-    sleep(5, 6)
     # try:
     title = selenium.getText(CSS_SEL_JOB_TITLE)
     company = selenium.getText(CSS_SEL_COMPANY)

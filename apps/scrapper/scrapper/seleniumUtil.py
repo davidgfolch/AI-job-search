@@ -13,7 +13,7 @@ from selenium.webdriver.common.keys import Keys
 
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import red, yellow
-from commonlib.util import getEnv
+from commonlib.util import getEnv, getEnvBool
 
 # Rotating User-Agents to avoid Cloudflare security filter
 # TODO: Keep list updated, last update 30/ene/2025
@@ -48,17 +48,37 @@ class SeleniumUtil:
     useUndetected: bool
 
 
-    def __init__(self, useUndetected: bool = None):
-        if useUndetected is None:
-            useUndetected = getEnv('USE_UNDETECTED_CHROMEDRIVER', 'false').lower() == 'true'
+    def __init__(self):
+        useUndetected = getEnvBool('USE_UNDETECTED_CHROMEDRIVER', False)
         self.useUndetected = useUndetected
         print(f'seleniumUtil init (undetected={useUndetected})')
         if useUndetected:
             chromePath = self._findChrome()
             if chromePath is not None:
                 self.driver = uc.Chrome(browser_executable_path=chromePath) if chromePath else uc.Chrome()
-                self.driver.set_page_load_timeout(180)
-                self.driver.set_script_timeout(180)
+                # # Enhanced undetected-chromedriver configuration
+                # # Note: undetected_chromedriver handles most anti-detection internally
+                # options = uc.ChromeOptions()
+                # # Only add safe arguments that undetected-chromedriver supports
+                # options.add_argument('--window-size=1920,1080')
+                # options.add_argument('--disable-dev-shm-usage')
+                # options.add_argument('--no-sandbox')
+                # # Random user agent
+                # user_agent = random.choice(DESKTOP_USER_AGENTS)
+                # options.add_argument(f'--user-agent={user_agent}')
+
+                # self.driver = uc.Chrome(
+                #     browser_executable_path=chromePath if chromePath else None,
+                #     options=options,
+                #     version_main=None,  # Auto-detect Chrome version
+                #     use_subprocess=True,
+                #     headless=False  # Headless mode increases detection
+                # )
+                # self.driver.set_page_load_timeout(180)
+                # self.driver.set_script_timeout(180)
+
+                # # Additional stealth techniques
+                # self._apply_stealth_scripts()
             else:
                 print(yellow('WARNING: undetected-chromedriver requires Chrome installed. Falling back to standard Selenium.'))
                 useUndetected = False
@@ -68,16 +88,92 @@ class SeleniumUtil:
             opts.add_argument("--disable-blink-features=AutomationControlled")
             opts.add_experimental_option("excludeSwitches", ["enable-automation"])
             opts.add_experimental_option("useAutomationExtension", False)
-            opts.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            # Use random user agent
+            user_agent = random.choice(DESKTOP_USER_AGENTS)
+            opts.add_argument(f"--user-agent={user_agent}")
             opts.add_argument("--disable-dev-shm-usage")
             opts.add_argument("--no-sandbox")
+            opts.add_argument("--disable-gpu")
             self.driver = webdriver.Chrome(options=opts)
             self.driver.set_page_load_timeout(180)
             self.driver.set_script_timeout(180)
-            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            self._apply_stealth_scripts()
         self.action = webdriver.ActionChains(self.driver)
         print(f'seleniumUtil init driver={self.driver}')
         self.defaulTab = self.driver.current_window_handle
+
+    def _apply_stealth_scripts(self):
+        """Apply advanced stealth techniques to bypass bot detection"""
+        stealth_js = """
+        // Overwrite the `languages` property to use a custom getter
+        Object.defineProperty(navigator, 'languages', {
+            get: function() { return ['en-US', 'en']; }
+        });
+
+        // Overwrite the `plugins` property to use a custom getter
+        Object.defineProperty(navigator, 'plugins', {
+            get: function() { return [1, 2, 3, 4, 5]; }
+        });
+
+        // Remove webdriver property
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+        });
+
+        // Mock chrome runtime
+        window.chrome = {
+            runtime: {}
+        };
+
+        // Mock permissions
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+            parameters.name === 'notifications' ?
+                Promise.resolve({ state: Notification.permission }) :
+                originalQuery(parameters)
+        );
+
+        // Add vendor and renderer info
+        const getParameter = WebGLRenderingContext.prototype.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(parameter) {
+            if (parameter === 37445) {
+                return 'Intel Inc.';
+            }
+            if (parameter === 37446) {
+                return 'Intel Iris OpenGL Engine';
+            }
+            return getParameter.call(this, parameter);
+        };
+
+        // Mock automation flags
+        Object.defineProperty(navigator, 'maxTouchPoints', {
+            get: () => 1
+        });
+
+        Object.defineProperty(navigator, 'hardwareConcurrency', {
+            get: () => 8
+        });
+
+        // Add connection info
+        Object.defineProperty(navigator, 'connection', {
+            get: () => ({
+                effectiveType: '4g',
+                rtt: 50,
+                downlink: 10,
+                saveData: false
+            })
+        });
+        """
+        try:
+            self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+                'source': stealth_js
+            })
+        except Exception:
+            # Fallback for non-CDP browsers
+            try:
+                self.driver.execute_script(stealth_js)
+            except Exception:
+                pass
 
     def _findChrome(self):
         import platform
@@ -157,9 +253,6 @@ class SeleniumUtil:
 
     @retry()
     def loadPage(self, url: str):
-        if not self.isDriverAlive():
-            raise Exception('Driver connection lost')
-        self.keepAlive()
         self.driver.get(url)
 
     def getUrl(self):
@@ -186,15 +279,20 @@ class SeleniumUtil:
         webdriver.ActionChains(self.driver).send_keys(Keys.ESCAPE).perform()
 
     def sendKeys(self, cssSel: str, value: str,
-                 keyByKeyTime: None | tuple[int] = None, clear=True):
+                 keyByKeyTime: None | tuple[float, float] = None, clear=True):
         elm = self.getElm(cssSel)
         self.moveToElement(elm)
         if clear:
             elm.clear()
         if keyByKeyTime:
+            # support both (min, max) or a single-value tuple (min == max)
+            if len(keyByKeyTime) == 1:
+                min_t, max_t = keyByKeyTime[0], keyByKeyTime[0]
+            else:
+                min_t, max_t = keyByKeyTime[0], keyByKeyTime[1]
             for c in value:
                 elm.send_keys(c)
-                sleep(*keyByKeyTime)
+                sleep(min_t, max_t)
         else:
             elm.send_keys(value)
 
@@ -244,7 +342,6 @@ class SeleniumUtil:
 
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         """ scrollIntoView, waits to be clickable & click"""
-        self.keepAlive()
         if scrollIntoView:
             self.scrollIntoView(cssSel)
         self.waitUntilClickable(cssSel, timeout)
@@ -277,17 +374,21 @@ class SeleniumUtil:
         self.action.move_to_element(self.getElmFromOpSelector(elm))
         self.action.perform()
 
-    def getHtml(self, cssSel: str) -> str:
+    def getHtml(self, cssSel: str) -> str | None:
         return self.getAttr(cssSel, 'innerHTML')
 
     def getText(self, cssSel: str | WebElement) -> str:
         return self.getElm(cssSel).text
 
-    def getAttr(self, cssSel: str, attr: str) -> str:
+    def getAttr(self, cssSel: str | WebElement, attr: str) -> str | None:
         return self.getElm(cssSel).get_attribute(attr)
 
-    def getAttrOf(self, elm: WebElement, cssSel: str, attr: str) -> str:
+    def getAttrOf(self, elm: WebElement, cssSel: str, attr: str) -> str | None:
         return self.getElmOf(elm, cssSel).get_attribute(attr)
+    
+    def setAttr(self, elm: str | WebElement, attr: str, value: str):
+        elmObj = self.getElmFromOpSelector(elm)
+        self.driver.execute_script(f"arguments[0].setAttribute('{attr}', '{value}')", elmObj)
 
     def back(self):
         self.driver.back()

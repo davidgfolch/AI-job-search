@@ -185,7 +185,7 @@ def loadCVContent():
     except FileNotFoundError:
         print(red(f'CV file not found: {cvLocation}'))
         return False
-    except Exception as ex:
-        print(red(f'Error loading CV: {ex}'))
-        traceback.print_exc()
+    except Exception:
+        print(red(f'Error loading CV:'))
+        print(red(traceback.format_exc()))
         return False

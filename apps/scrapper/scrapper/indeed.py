@@ -191,8 +191,7 @@ def loadAndProcessRow(idx):
         print(yellow("WARNING: could not get all items per page, that's ",
                      f"expected because not always has {JOBS_X_PAGE} ",
                      f"pages: {ex}"))
-    except Exception as ex:
-        print(red(f'ERROR: {ex}'))
+    except Exception:
         debug(red(traceback.format_exc()))
     if not ignore:
         if not processRow(url):
