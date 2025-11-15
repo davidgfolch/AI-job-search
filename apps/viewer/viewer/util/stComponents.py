@@ -15,21 +15,20 @@ def checkboxFilter(label, key, container: DeltaGenerator = st):
     return container.checkbox(label, key=getBoolKeyName(key))
 
 
-def checkAndInput(label: str, key: str, withColumns=None, withContainer=True,
-                  withHistory=False):
-    c = st.container(border=1) if withContainer else st
+def checkAndInput(label: str, key: str, withColumns=None, withContainer=True, withHistory=False):
+    c = st.container(border=True) if withContainer else st
     if not withColumns:
         enabled = checkboxFilter(label, key, c)
         col = c.columns([90, 15], vertical_alignment="top")
-        col[0].text_input(label, key=key, disabled=not enabled,
-                          label_visibility='collapsed')
-        historyButton(key, withHistory, col[1])
+        col[0].text_input(label, key=key, disabled=not enabled, label_visibility='collapsed')
+        if withHistory:
+            historyButton(key, col[1])
     else:
         c = c.columns(withColumns, vertical_alignment="top")
         enabled = checkboxFilter(label, key, c[0])
-        c[1].text_input(label, key=key, disabled=not enabled,
-                        label_visibility='collapsed')
-        historyButton(key, withHistory, c[2])
+        c[1].text_input(label, key=key, disabled=not enabled, label_visibility='collapsed')
+        if withHistory:
+            historyButton(key, c[2])
 
 
 def checkAndPills(label, fields: list[str], key: str):

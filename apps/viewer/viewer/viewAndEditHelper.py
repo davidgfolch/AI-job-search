@@ -9,7 +9,7 @@ from .util.stStateUtil import getBoolKeyName, getState, getStateBool, getStateBo
 from .util.stUtil import inColumns
 from .util.viewUtil import KEY_SELECTED_IDS
 from .viewAndEditConstants import (
-    COLUMNS_WIDTH, DEFAULT_ORDER, FF_KEY_BOOL_FIELDS,
+    DEFAULT_ORDER, FF_KEY_BOOL_FIELDS,
     FF_KEY_BOOL_NOT_FIELDS, FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS,
     FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_PRESELECTED_ROWS, FF_KEY_SALARY,
     FF_KEY_SEARCH, FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS_BOOL,
@@ -117,46 +117,6 @@ def setQueryParamOrState(param: str, paramValue, stateValue=None):
         setState(param, stateValue if stateValue else paramValue)
 
 
-# TODO: NEW TABLE
-# def tableV2(df: DataFrame, columnsOrder: List[str],
-#             visibleColumns: List[str]) -> DataFrame:
-#     # 1. Filtrar columnas existentes
-#     cols = df.columns.tolist()
-#     columnsOrder = [col for col in columnsOrder if col in cols]
-#     visibleColumns = [col for col in visibleColumns if col in cols]
-#     # 2. Reordenar y filtrar columnas
-#     df = df[columnsOrder]  # Reordenar según fieldsSorted
-#     df = df[visibleColumns]  # Filtrar columnas visibles
-#     # 3. Configurar la grilla
-#     gb = GridOptionsBuilder.from_dataframe(df)
-#     # 4. Configurar columnas (ancho, etiquetas, etc.)
-#     for col in df.columns:
-#         gb.configure_column(col,
-#                             header_name=getColumnTranslated(col),
-#                             width=200)  # Ajusta el ancho según necesidades
-#     # 5. Selección de filas con un click
-#     gb.configure_selection(
-#         selection_mode="multiple",  # 'single' para selección única
-#         use_checkbox=False,  # True para mostrar checkboxes
-#         pre_selected_rows=getState(FF_KEY_PRESELECTED_ROWS, []))
-#     grid_options = gb.build()
-#     # 6. Renderizar la tabla
-#     grid_response = AgGrid(df,
-#                            gridOptions=grid_options,
-#                            height=getState(FF_KEY_LIST_HEIGHT, HEIGHT),
-#                            update_mode=GridUpdateMode.SELECTION_CHANGED,
-#                            key='jobsListTable',
-#                            allow_unsafe_jmespath=True)
-#     # 7. Obtener filas seleccionadas
-#     selected_rows = grid_response["selected_rows"]
-#     # selected_df = DataFrame(selected_rows).drop(
-#     #     columns=['_selectedRowNodeInfo'])
-#     selected_df = DataFrame(selected_rows)
-#     # 8. Actualizar estado
-#     setState('selectedRows', selected_df)
-#     return selected_df
-
-
 def getTableColsConfig(fields: list[str], visibleColumns, selector=True):
     # https://docs.streamlit.io/develop/api-reference/data/st.column_config
     cfg = {}
@@ -172,9 +132,7 @@ def getTableColsConfig(fields: list[str], visibleColumns, selector=True):
                 width = 'small'
             elif cTranslated == 'Title':
                 width = 'large'
-            cfg[idx+2] = st.column_config.Column(
-                label=cTranslated,
-                width=width)
+            cfg[idx+2] = st.column_config.Column(label=cTranslated, width=width)
         else:
             cfg[idx+2] = None
     return cfg
@@ -198,31 +156,18 @@ def formFilter():
     formFilterByIdsSetup()
     inColumns([
         (7, lambda _: sessionLoadSaveForm()),
-        (3, lambda _: st.pills("Toggle config's", ['showSql'],
-                               key=FF_KEY_CONFIG_PILLS))])
+        (3, lambda _: st.pills("Toggle config's", ['showSql'], key=FF_KEY_CONFIG_PILLS))])
     with st.expander('Search filters'):
         inColumns([
-            (6, lambda _: checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH,
-                                        withContainer=False,
-                                        withHistory=True)),
-            (1, lambda _: checkAndInput('Days old', FF_KEY_DAYS_OLD,
-                                        withContainer=False)),
-            (3, lambda _: checkAndInput("Salary regular expression",
-                                        FF_KEY_SALARY,
-                                        withContainer=False,
-                                        withHistory=True)),
-            (3, lambda _: checkAndInput('Sort by columns', FF_KEY_ORDER,
-                                        withContainer=False,
-                                        withHistory=True))])
+            (6, lambda _: checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH, withContainer=False, withHistory=True)),
+            (1, lambda _: checkAndInput('Days old', FF_KEY_DAYS_OLD, withContainer=False)),
+            (3, lambda _: checkAndInput("Salary regular expression", FF_KEY_SALARY, withContainer=False, withHistory=True)),
+            (3, lambda _: checkAndInput('Sort by columns', FF_KEY_ORDER, withContainer=False, withHistory=True))])
         inColumns([
-            (1, lambda _: checkAndPills(
-                'Status filter', FIELDS_BOOL, FF_KEY_BOOL_FIELDS)),
-            (1, lambda _: checkAndPills('Status NOT filter',
-             FIELDS_BOOL, FF_KEY_BOOL_NOT_FIELDS))
+            (1, lambda _: checkAndPills('Status filter', FIELDS_BOOL, FF_KEY_BOOL_FIELDS)),
+            (1, lambda _: checkAndPills('Status NOT filter', FIELDS_BOOL, FF_KEY_BOOL_NOT_FIELDS))
         ])
-        checkAndInput("SQL where filters", FF_KEY_WHERE,
-                      withContainer=False,
-                      withHistory=True)
+        checkAndInput("SQL where filters", FF_KEY_WHERE, withContainer=False, withHistory=True)
 
 
 def formFilterByIdsSetup():
@@ -282,15 +227,8 @@ def tableFooter(totalResults, filterResCnt, totalSelected,
                                 kwargs={'max': filterResCnt-1},
                                 type="primary")),
         (1, lambda _: st.write('|')),
-        (5, lambda _: st.toggle('Single select', value=singleSel, key=FF_KEY_SINGLE_SELECT)),
-        (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT,
-                                      step=100,
-                                      label_visibility='collapsed')),
-        (5, lambda _: st.number_input('Columns width',
-                                      key=FF_KEY_COLUMNS_WIDTH,
-                                      value=COLUMNS_WIDTH, step=0.1,
-                                      label_visibility='collapsed'))
-
+        (5, lambda _: st.toggle('Single select', key=FF_KEY_SINGLE_SELECT)),
+        (5, lambda _: st.number_input('Height', key=FF_KEY_LIST_HEIGHT, step=100, label_visibility='collapsed')),
+        (5, lambda _: st.number_input('Columns width', key=FF_KEY_COLUMNS_WIDTH, step=0.1, label_visibility='collapsed'))
     ]
-    inColumns(kwargs={'vertical_alignment': 'center'},
-              columns=columns)
+    inColumns(kwargs={'vertical_alignment': 'center'}, columns=columns)

@@ -1,5 +1,6 @@
 import streamlit as st
 
+from viewer.util import historyUtil
 from viewer.viewAndEdit import view
 from viewer.cleaner import clean
 from viewer.dashboard import stats
@@ -17,6 +18,8 @@ PAGES_MAP = {  # Also change PAGES
 
 def main():
     """Main application function"""
+    historyUtil.init()
+    
     st.set_page_config(layout='wide', page_title="ai job search")
     
     c1, c2 = st.columns([10, 40])

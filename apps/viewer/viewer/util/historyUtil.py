@@ -8,14 +8,13 @@ from commonlib.util import createFolder
 from .stStateUtil import getBoolKeyName, getState, setState
 
 
-def historyButton(key: str, history: bool, container: DeltaGenerator = st):
-    if history and len(loadHistoryFromFile(key)) > 0:
-        help = addToHistory(key)
-        help = buttonTooltip(help)
-        container.button(':clipboard:', help=help,
-                         key=key+'_historyButton',
-                         on_click=fieldHistory,
-                         kwargs={'key': key})
+def historyButton(key: str, container: DeltaGenerator = st):
+    help = addToHistory(key)
+    help = buttonTooltip(help)
+    container.button(':clipboard:', help=help,
+                     key=key+'_historyButton',
+                     on_click=fieldHistory,
+                     kwargs={'key': key})
 
 
 def buttonTooltip(help):
@@ -56,7 +55,7 @@ def historyOnChange(key: str, df: DataFrame):
 
 
 def addToHistory(key: str):
-    value = getState(key)
+    value = getState(key, '')
     history = loadHistoryFromFile(key)
     if not validValue(value):
         return history
@@ -87,7 +86,7 @@ def getFileName(key):
     return f'.history/{key}.txt'
 
 
-def saveHistoryToFile(key, values: set) -> set:
+def saveHistoryToFile(key, values: set):
     path = createFolder(getFileName(key))
     with open(path, 'w+') as output:
         output.writelines(v + '\n' for v in sortedList(values))
@@ -95,3 +94,8 @@ def saveHistoryToFile(key, values: set) -> set:
 
 def sortedList(values: set) -> list:
     return sorted(list(values), key=lambda x: x.lower())
+
+def init():
+    if not os.path.isdir('.history'):
+        print('Creating .history folder')
+        createFolder('.history')
