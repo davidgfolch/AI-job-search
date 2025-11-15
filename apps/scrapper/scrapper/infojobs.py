@@ -90,7 +90,7 @@ def getTotalResultsFromHeader(keywords: str) -> int:
     printHR()
     print(green(join(f'{total} total results for search: {keywords}')))
     printHR()
-    return int(total.replace(',','')) # remove 1,200 comma
+    return int(total.replace(',', ''))  # remove 1,200 comma
 
 
 def summarize(keywords, totalResults, currentItem):
@@ -110,6 +110,7 @@ def scrollToBottom():
     selenium.scrollProgressive(600)
     selenium.scrollProgressive(-1200)
     sleep(1, 2)
+
 
 @retry(retries=5, delay=3, exception=NoSuchElementException, raiseException=False)
 def clickNextPage():
@@ -151,7 +152,7 @@ def searchJobs(keywords: str, preloadPage: bool):
             printPage(WEB_PAGE, page, totalPages, keywords)
             idx = 0
             while idx < JOBS_X_PAGE and currentItem < totalResults:
-                #Note JOBS_X_PAGE is not always exact
+                # Note JOBS_X_PAGE is not always exact
                 print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
                 loadAndProcessRow(idx)
                 currentItem += 1
@@ -172,14 +173,17 @@ def loadSearchPage():
     if selenium.getUrl().find('infojobs.net') == -1:
         print(yellow(f'Loading search-jobs page'))
         selenium.loadPage('https://www.infojobs.net/')
-    else:
-        print(yellow(f'Click on search-jobs button'))
-        clickOnSearchJobs()
+        selenium.waitUntilPageIsLoaded()
+    print(yellow(f'Click on search-jobs button'))
+    clickOnSearchJobs()
 
 
 def loadFilteredSearchResults(keywords: str):
     clickOnSearchJobs()
-    selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword',keywords, keyByKeyTime=(0.1, 0.2), clear=True)
+    if not selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2), clear=True):
+        print(yellow('Could not set search keyword, reloading search page'))
+        clickOnSearchJobs(forcePageLoad=True)
+        selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2))
     sleep(0.5, 1)
     selenium.sendEscapeKey()
     sleep(0.5, 1)
@@ -190,6 +194,8 @@ def loadFilteredSearchResults(keywords: str):
     sleep(1, 2)
     if selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
         print(yellow('No results for this search'))
+        printHR()
+        print()
         return False
     selenium.waitAndClick('.ij-SidebarFilter #check-teleworking--2', scrollIntoView=True)
     sleep(1, 2)
@@ -197,7 +203,9 @@ def loadFilteredSearchResults(keywords: str):
 
 
 @retry(retries=10, delay=5, exceptionFnc=securityFilter)
-def clickOnSearchJobs():
+def clickOnSearchJobs(forcePageLoad=False):
+    if (not forcePageLoad) and selenium.getUrl().find('/ofertas-trabajo') > 0:
+        return
     selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
     selenium.waitUntilPageIsLoaded()
 
@@ -205,7 +213,7 @@ def clickOnSearchJobs():
 @retry(retries=3, delay=1, exceptionFnc=scrollToBottom)
 def scrollJobsList(idx):
     links = selenium.getElms(CSS_SEL_JOB_LINK)
-    if idx >= len(links): # if link not found, scroll all list to properly load dynamic links' class in DOM
+    if idx >= len(links):  # if link not found, scroll all list to properly load dynamic links' class in DOM
         for li in selenium.getElms(CSS_SEL_JOB_LI)[len(links)-1:]:
             selenium.setAttr(li, 'style', (selenium.getAttr(li, 'style') or '')+'border: 5px solid red;')
             selenium.scrollIntoView(li)
@@ -230,7 +238,7 @@ def loadAndProcessRow(idx) -> bool:
             print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
             return True
         print(yellow('loading...'), end='')
-        jobLinkElm.click()
+        selenium.waitAndClick(jobLinkElm)
         if not processRow(url):
             raise ValueError('Validation failed')
     except Exception:

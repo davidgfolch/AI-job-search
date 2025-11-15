@@ -311,3 +311,8 @@ def safeBool(value, default=False):
         return bool(value)
     except (ValueError, TypeError):
         return default
+
+
+def isMacOS() -> bool:
+    import platform
+    return platform.system() == 'Darwin'

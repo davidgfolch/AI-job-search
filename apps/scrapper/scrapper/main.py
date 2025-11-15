@@ -169,10 +169,9 @@ def executeScrapperPreloadNewArchitecture(name: str, properties: dict):
         else:
             print(red(f"Preload failed for {name}"))
             raise Exception("Login failed")
-    except Exception as e:
-        print(red(f"Error in new architecture preload for {name}: {e}"))
-        print(yellow(f"⚠️  Falling back to OLD architecture for {name} preload due to error"))
-        properties[FUNCTION](seleniumUtil, True)
+    except Exception:
+        print(red(f"Error in new architecture preload for {name}"))
+        print(red(traceback.format_exc()))
 
 
 def executeScrapper(name, properties: dict):        
@@ -210,10 +209,9 @@ def executeScrapperNewArchitecture(name: str, properties: dict):
             print(red(f"  Errors: {len(results['errors'])}"))
             for error in results['errors'][:3]:
                 print(red(f"    - {error}"))
-    except Exception as e:
-        print(red(f"Error in new architecture for {name}: {e}"))
-        print(yellow(f"⚠️  Falling back to OLD architecture for {name} due to error"))
-        properties[FUNCTION](seleniumUtil, False)
+    except Exception:
+        print(red(f"Error in new architecture for {name}"))
+        print(red(traceback.format_exc()))
 
 
 if __name__ == '__main__':

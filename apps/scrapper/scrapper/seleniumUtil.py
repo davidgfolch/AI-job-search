@@ -13,7 +13,7 @@ from selenium.webdriver.common.keys import Keys
 
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import red, yellow
-from commonlib.util import getEnv, getEnvBool
+from commonlib.util import getEnvBool, isMacOS
 
 # Rotating User-Agents to avoid Cloudflare security filter
 # TODO: Keep list updated, last update 30/ene/2025
@@ -98,7 +98,6 @@ class SeleniumUtil:
             self.driver.set_page_load_timeout(180)
             self.driver.set_script_timeout(180)
             self._apply_stealth_scripts()
-        self.action = webdriver.ActionChains(self.driver)
         print(f'seleniumUtil init driver={self.driver}')
         self.defaulTab = self.driver.current_window_handle
 
@@ -211,8 +210,9 @@ class SeleniumUtil:
                 self.driver.quit()
             else:
                 print('Driver already closed or not alive')
-        except Exception as ex:
-            print(f'Error closing driver: {ex}')
+        except Exception:
+            print(f'Error closing driver')
+            print(red(traceback.format_exc()))
 
     def isDriverAlive(self) -> bool:
         try:
@@ -278,12 +278,13 @@ class SeleniumUtil:
     def sendEscapeKey(self):
         webdriver.ActionChains(self.driver).send_keys(Keys.ESCAPE).perform()
 
-    def sendKeys(self, cssSel: str, value: str,
-                 keyByKeyTime: None | tuple[float, float] = None, clear=True):
+    def sendKeys(self, cssSel: str, value: str, keyByKeyTime: None | tuple[float, float] = None, clear=True):
+        self.waitAndClick(cssSel)
         elm = self.getElm(cssSel)
         self.moveToElement(elm)
         if clear:
-            elm.clear()
+            if not self.clearInputbox(cssSel):
+                return False
         if keyByKeyTime:
             # support both (min, max) or a single-value tuple (min == max)
             if len(keyByKeyTime) == 1:
@@ -295,7 +296,20 @@ class SeleniumUtil:
                 sleep(min_t, max_t)
         else:
             elm.send_keys(value)
+        sleep(0.3, 0.5)
+        return elm.text == value or elm.get_attribute('value') == value
 
+
+    def clearInputbox(self, cssSel: str | WebElement) -> bool:
+        elm = self.getElmFromOpSelector(cssSel)
+        elm.clear() # doesn't work in infojobs
+        sleep(0.3, 0.5)
+        if len(elm.text) > 0:
+            elm.send_keys((Keys.COMMAND if isMacOS() else Keys.CONTROL) + "a")
+            elm.send_keys(Keys.BACKSPACE)
+            sleep(0.3, 0.5)
+        return len(elm.text)==0
+        
     def checkboxUnselect(self, cssSel: str):
         checkbox = self.getElm(cssSel)
         self.moveToElement(checkbox)
@@ -371,8 +385,7 @@ class SeleniumUtil:
             return False
 
     def moveToElement(self, elm: str | WebElement):
-        self.action.move_to_element(self.getElmFromOpSelector(elm))
-        self.action.perform()
+        webdriver.ActionChains(self.driver).move_to_element(self.getElmFromOpSelector(elm)).perform()
 
     def getHtml(self, cssSel: str) -> str | None:
         return self.getAttr(cssSel, 'innerHTML')

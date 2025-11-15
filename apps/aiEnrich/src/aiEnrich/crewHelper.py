@@ -96,6 +96,7 @@ def fixJsonInvalidAttribute(raw):
 def fixJsonEndCurlyBraces(raw):
     raw = re.sub('"[)\\\\]', '"}', raw)
     raw = re.sub('[}]{2,}', '}', raw) # remove dobule curly braces at the end }}
+    raw = re.sub(',[ \n]*[}]', '\n}', raw) # remove exta comma at the end ,}
     idx = raw.rfind('}')
     if idx > 0 and idx + 1 < len(raw):  # remove extra text after }
         return raw[0:idx+1]

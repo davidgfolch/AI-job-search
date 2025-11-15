@@ -17,6 +17,7 @@ from aiEnrich.crewHelper import rawToJson, validateResult
     ('{"key": "value"}}', {"key": "value"}),
     ('{"key": 10}}', {"key": 10}),
     ('{"cv_match_percentage": 0}}', {"cv_match_percentage": 0}),
+    ('{"any_param": 0,}', {"any_param": 0}),
 ])
 def test_rawToJson(raw, expected):
     assert rawToJson(raw) == expected

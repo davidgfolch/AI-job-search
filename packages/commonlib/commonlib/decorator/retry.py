@@ -56,10 +56,7 @@ def retry(retries: int = 5,
                         print(red(traceback.format_exc()), end='\n', flush=True)
                     if exceptionFnc is not None:
                         exceptionFnc()
-                    try:
-                        sleep(delay)
-                    except KeyboardInterrupt as e:
-                        raise e
+                    sleep(delay)
 
         return wrapper
 
