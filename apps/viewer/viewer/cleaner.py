@@ -13,10 +13,6 @@ from viewer.viewConstants import PAGE_VIEW_IDX
 
 
 PROCESS_CONFIG = [
-    # {'info': mergeDuplicates.getInfo,
-    #  'dfCols': mergeDuplicates.COLUMNS,
-    #  'sql': mergeDuplicates.getSelect,
-    #  'actionButtonFnc': mergeDuplicates.actionButton},
     {'info': ignoreByTitle.getInfo,
      'dfCols': ignoreByTitle.COLUMNS,
      'sql': ignoreByTitle.getSelect,

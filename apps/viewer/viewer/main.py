@@ -17,13 +17,9 @@ PAGES_MAP = {  # Also change PAGES
 }
 
 def main():
-    """Main application function"""
     historyUtil.init()
-    
     st.set_page_config(layout='wide', page_title="ai job search")
-    
     c1, c2 = st.columns([10, 40])
-
     selectedView = c1.segmented_control(
         label="Menu",
         options=PAGES.keys(),
@@ -32,16 +28,13 @@ def main():
         label_visibility='collapsed',
         key=PAGE_STATE_KEY
     )
-    
     if messageInfo := getMessageInfo():
         c2.info(messageInfo)
-    
     if selectedView is not None:
         selectedView = PAGES_MAP[selectedView]
         selectedView()
     else:
         view()
-    
     if DEBUG:
         printSessionState()
 

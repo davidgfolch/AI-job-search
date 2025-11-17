@@ -3,9 +3,10 @@ import re
 import traceback
 from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
+
 from . import baseScrapper
 from .baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
-from commonlib.terminalColor import green, printHR, red, yellow
+from commonlib.terminalColor import green, magenta, printHR, red, yellow
 from commonlib.decorator.retry import retry
 from commonlib.util import getDatetimeNowStr
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
@@ -66,6 +67,9 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
 
 def login():
     selenium.loadPage('https://www.linkedin.com/login')
+    selenium.waitUntilPageIsLoaded()
+    if selenium.getUrl().find('linkedin.com/feed/') > -1:
+        return  # linkedin redirects to feed if previous login done with same selenium driver
     selenium.sendKeys('#username', USER_EMAIL)
     selenium.sendKeys('#password', USER_PWD)
     try:
@@ -89,7 +93,7 @@ def checkResults(keywords: str, url: str):
             join('No results for job search on linkedIn for',
                  f'keywords={keywords}', f'remote={remote}',
                  f'location={location}', f'old={f_TPR}', f'URL {url}')))
-        debug(f'checkResults -> no results for search={keywords}')
+        baseScrapper.debug(DEBUG, f'checkResults -> no results for search={keywords}', False)
         return False
     return True
 
@@ -99,7 +103,7 @@ def replaceIndex(cssSelector: str, idx: int):
 
 
 def getTotalResultsFromHeader(keywords: str) -> int:
-    total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
+    total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')  # can be 100+
     printHR(green)
     print(green(join(f'{total} total results for search: {keywords}',
                      f'(remote={remote}, location={location}, last={f_TPR})')))
@@ -203,7 +207,7 @@ def searchJobs(keywords: str):
             selenium.waitUntilPageIsLoaded()
         summarize(keywords, totalResults, currentItem)
     except Exception:
-        debug(red(traceback.format_exc()))
+        baseScrapper.debug(DEBUG, '', True)
 
 
 def loadAndProcessRow(idx):
@@ -213,7 +217,7 @@ def loadAndProcessRow(idx):
         jobId, jobExists = jobExistsInDB(cssSel)
         loadJobDetail(jobExists, idx, cssSel)
     except NoSuchElementException as ex:
-        debug("NoSuchElement in loadAndProcessRow " + red(f'ERROR (loadJob): {ex.msg}'))
+        baseScrapper.debug(DEBUG, "NoSuchElement in loadAndProcessRow " + red(f'ERROR (loadJob): {ex.msg}'))
         print()
         return False
     if jobExists:
@@ -224,35 +228,55 @@ def loadAndProcessRow(idx):
     return True
 
 
+def processUrl(url: str):
+    global selenium, mysql
+    with MysqlUtil() as mysql, SeleniumUtil() as selenium:
+        selenium.loadPage(url)
+        selenium.waitUntilPageIsLoaded()
+        processRow(None)
+
+
 @retry(exception=ValueError)
 def processRow(idx):
-    # TODO: CSS_SEL_JOB_CLOSED -> No longer accepting applications
-    # https://www.linkedin.com/jobs/view/4057715315/
     try:
-        liPrefix = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
-        title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
-        company = selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
-        location = selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
-        selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
-        url = getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
+        if idx is not None:
+            liPrefix = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
+            title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
+            company = selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
+            location = selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
+            selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
+            url = getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
+            html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+        else: # TODO: finish this, maybe update DB
+            selenium.waitUntil_presenceLocatedElement('section[aria-modal=true][role=dialog]')
+            # selenium.waitAndClick('section[aria-modal=true][role=dialog] button.modal__dismiss')
+            selenium.sendEscapeKey()
+            selenium.waitUntilClickable('section.top-card-layout h1')
+            title = selenium.getText('section.top-card-layout h1')
+            company = selenium.getText('section.top-card-layout h4 a.topcard__org-name-link')
+            location = selenium.getText('section.top-card-layout h4 span')
+            selenium.waitAndClick('button.show-more-less-html__button--more')
+            url = selenium.getUrl()
+            html = selenium.getHtml('div.show-more-less-html__markup')
         jobId = getJobId(url)
-        html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
         md = htmlToMarkdown(html)
         # easyApply: there are 2 buttons
         easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
         print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='', flush=True)
         if validate(title, url, company, md, DEBUG):
-            if id := mysql.insert((jobId, title, company, location, url, md,
-                                   easyApply, WEB_PAGE)):
+            if mysql.jobExists(str(jobId)):
+                print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
+                print(yellow(f'TITLE={title}'))
+                print(yellow(f'COMPANY={company}'))
+                print(yellow(f'LOCATION={location}'))
+                print(yellow(f'URL={url}'))
+                print(yellow(f'MARKDOWN:\n', magenta(md)))
+            elif id := mysql.insert((jobId, title, company, location, url, md, easyApply, WEB_PAGE)):
                 print(green(f'INSERTED {id}!'), end='', flush=True)
                 mergeDuplicatedJobs(mysql, getSelect())
         else:
             raise ValueError('Validation failed')
-    except ValueError as e:
+    except (ValueError, KeyboardInterrupt) as e:
         raise e
-    except Exception as ex:
-        debug('processRow Exception -> ' + red(f'ERROR: {ex}'))
-
-
-def debug(msg: str = '', exception: bool = False):
-    baseScrapper.debug(DEBUG, msg, exception)
+    except Exception:
+        baseScrapper.debug(DEBUG, '', True)

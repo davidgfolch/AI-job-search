@@ -5,10 +5,11 @@ from ..seleniumUtil import SeleniumUtil
 from ..baseScrapper import printScrapperTitle
 from commonlib.terminalColor import green, yellow, red
 
+
 class ScrappingService:
     def __init__(self, scrapper: ScrapperInterface, storage: JobStorageInterface):
-        self.scrapper = scrapper
-        self.storage = storage
+        self.scrapper: ScrapperInterface = scrapper
+        self.storage: JobStorageInterface = storage
 
     def executeScrapping(self, selenium: SeleniumUtil, keywordsList: List[str], preloadOnly: bool = False) -> Dict[str, Any]:
         printScrapperTitle(self.scrapper.getSiteName(), preloadOnly)

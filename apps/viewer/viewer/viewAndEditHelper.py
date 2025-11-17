@@ -149,7 +149,7 @@ def detailForSingleSelection():
               on_click=markAs)
 
 
-def formFilter():
+def formFilter(expanded: bool):
     if getStateBool(FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS):
         if res := removeFiltersInNotFilters():
             setState(FF_KEY_BOOL_NOT_FIELDS, res)
@@ -157,7 +157,7 @@ def formFilter():
     inColumns([
         (7, lambda _: sessionLoadSaveForm()),
         (3, lambda _: st.pills("Toggle config's", ['showSql'], key=FF_KEY_CONFIG_PILLS))])
-    with st.expander('Search filters'):
+    with st.expander('Search filters', expanded=expanded):
         inColumns([
             (6, lambda _: checkAndInput(SEARCH_INPUT_HELP, FF_KEY_SEARCH, withContainer=False, withHistory=True)),
             (1, lambda _: checkAndInput('Days old', FF_KEY_DAYS_OLD, withContainer=False)),

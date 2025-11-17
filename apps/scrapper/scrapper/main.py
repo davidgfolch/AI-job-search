@@ -1,35 +1,25 @@
+from __future__ import annotations
+
 import sys
-import traceback
+from typing import Any, Callable, Optional
+
+import urllib3
 
 from commonlib.util import getDatetimeNow, getEnv, getEnvBool, getSeconds, getTimeUnits, getSrcPath, consoleTimer
 from commonlib.terminalColor import cyan, red, yellow, green
 from scrapper.seleniumUtil import SeleniumUtil
-from scrapper import tecnoempleo, infojobs, linkedin, glassdoor, indeed
+from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, indeed
 
-# Try to import new SOLID architecture
-try:
-    from scrapper.container.scrapper_container import ScrapperContainer
-    from scrapper.services.scrapping_service import ScrappingService
-    NEW_ARCHITECTURE_AVAILABLE = True
-except ImportError:
-    print(yellow("⚠️  New SOLID architecture for scrappers not available, using old architecture"))
-    traceback.print_exc()
-    NEW_ARCHITECTURE_AVAILABLE = False
-    ScrapperContainer = None
-    ScrappingService = None
+from scrapper.container.scrapper_container import ScrapperContainer
 
-# FIXME: Implement scrapper by url in view and/or console
-# f.ex.: https://www.glassdoor.es/Empleo/madrid-java-developer-empleos-
-# SRCH_IL.0,6_IC2664239_KO7,21.htm?jl=1009607227015&srs=JV_APPLYPANE
-# taking site id to check if already exists in db
-# this could be an alternative way to add jobs in sites like glassdoor because
-# of cloudflare security filter
+DEBUG = getEnvBool('SCRAPPER_DEBUG', False)
 FUNCTION = 'function'
 TIMER = 'timer'
 EXEC_NEW_ARCH = 'executeNewArchitecture'
 CLOSE_TAB = 'closeTab'
 IGNORE_AUTORUN = 'ignoreAutoRun'
-SCRAPPERS: dict = {
+SCRAP_PAGE_FUNCTION = 'scrapPageFunction'
+SCRAPPERS: dict[str, dict[str,Any]] = {
     'Infojobs': {  # first to solve security filter
         FUNCTION: infojobs.run,
         TIMER: getSeconds(getEnv('INFOJOBS_RUN_CADENCY'))},
@@ -40,7 +30,8 @@ SCRAPPERS: dict = {
         FUNCTION: linkedin.run,
         TIMER: getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
         EXEC_NEW_ARCH: False,
-        CLOSE_TAB: True},
+        CLOSE_TAB: True,
+        SCRAP_PAGE_FUNCTION: linkedin.processUrl},
     'Glassdoor': {
         FUNCTION: glassdoor.run,
         TIMER: getSeconds(getEnv('GLASSDOOR_RUN_CADENCY'))},
@@ -56,8 +47,6 @@ NEXT_SCRAP_TIMER = '10m'  # '10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 
 seleniumUtil: SeleniumUtil = None
-scrapperContainer: ScrapperContainer = None
-
 
 def timeExpired(name: str, properties: dict):
     defaultLastExecution = getDatetimeNow() if properties['waitBeforeFirstRun'] else None
@@ -125,65 +114,73 @@ def runPreload(properties: dict) -> bool:
 
 
 def validScrapperName(name: str):
-    if SCRAPPERS.get(name.capitalize()) is not None:
+    if getProperties(name) is not None:
         return True
     print(red(f"Invalid scrapper web page name {name}"))
     print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
     return False
 
 
-def hasNewArchitecture(name: str) -> bool:
-    if not NEW_ARCHITECTURE_AVAILABLE:
-        return False
+def getProperties(name: str) -> Optional[dict[str,Any]]:
+    return SCRAPPERS.get(name.capitalize())
+
+
+def hasNewArchitecture(name: str, properties: dict[str,dict[str,Any]]) -> bool:
     try:
         scrapperContainer.get_scrapping_service(name.lower())
-        return SCRAPPERS.get(name.capitalize()).get(EXEC_NEW_ARCH, False)
+        print(cyan(f"Using NEW SOLID architecture for {name}"))
+        return bool(properties.get(EXEC_NEW_ARCH, False))
     except Exception:
+        baseScrapper.debug(DEBUG, f"⚠️  Using OLD architecture for {name}, new architecture not available")
         return False
-
+    
 
 def executeScrapperPreload(name, properties: dict):
     try:
         if RUN_IN_TABS:
             seleniumUtil.tab(name)
-        if hasNewArchitecture(name):
-            executeScrapperPreloadNewArchitecture(name, properties)
+        if hasNewArchitecture(name, properties):
+            executeScrapperPreloadNewArchitecture(name)
         else:
-            print(yellow(f"⚠️  Using OLD architecture for {name} preload (new architecture not available)"))
-            properties[FUNCTION](seleniumUtil, True)
+            runScrapper(properties, True)
         properties['preloaded'] = True
     except Exception:
-        print(red(f"Error occurred while preloading {name}:"))
-        print(red(traceback.format_exc()))
+        baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:", True)
         properties['preloaded'] = False
 
 
-def executeScrapperPreloadNewArchitecture(name: str, properties: dict):
-    """Execute scrapper preload using new SOLID architecture"""
+def runScrapper(properties: dict, preloadOnly: bool, retryCount: int = 1):
+    global seleniumUtil
+    try: 
+        properties[FUNCTION](seleniumUtil, preloadOnly)
+    except urllib3.exceptions.MaxRetryError:
+        if retryCount > 2:
+            raise
+        baseScrapper.debug(DEBUG, "MaxRetryError detected, restarting selenium session", True)
+        try:
+            seleniumUtil.exit()
+        finally:
+            with SeleniumUtil() as seleniumUtil:
+                runScrapper(properties, preloadOnly, retryCount + 1)
+
+def executeScrapperPreloadNewArchitecture(name: str):
     try:
-        print(cyan(f"Using NEW SOLID architecture for {name} preload"))
         scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         results = scrapping_service.executeScrapping(seleniumUtil, [], preloadOnly=True)
-        if results.get('login_success', False):
-            print(green(f"Preload completed successfully for {name}"))
-        else:
+        if not results.get('login_success', False):
             print(red(f"Preload failed for {name}"))
-            raise Exception("Login failed")
     except Exception:
-        print(red(f"Error in new architecture preload for {name}"))
-        print(red(traceback.format_exc()))
+        baseScrapper.debug(DEBUG)
 
 
 def executeScrapper(name, properties: dict):        
     try:
-        if hasNewArchitecture(name):
+        if hasNewArchitecture(name, properties):
             executeScrapperNewArchitecture(name, properties)
         else:
-            print(yellow(f"⚠️  Using OLD architecture for {name} (new architecture not available)"))
-            properties[FUNCTION](seleniumUtil, False)
+            runScrapper(properties, False)
     except Exception:
-        print(red(f"Error occurred while executing {name}:"))
-        print(red(traceback.format_exc()))
+        baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
         properties['lastExecution'] = None  # re-execute resetting timer
     except KeyboardInterrupt:
         pass
@@ -195,10 +192,9 @@ def executeScrapper(name, properties: dict):
 
 
 def executeScrapperNewArchitecture(name: str, properties: dict):
-    """Execute scrapper using new SOLID architecture"""
     try:
-        print(cyan(f"Using NEW SOLID architecture for {name}"))
         scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
+        # FIXME: NEXT LINE SHOULD BE SOMETHING LIKE: baseScrapper.getAndCheckEnvVars(name)
         keywords_list = getEnv('LINKEDIN_JOBS_SEARCH', getEnv('JOBS_SEARCH', '')).split(',')
         results = scrapping_service.executeScrapping(seleniumUtil, keywords_list, preloadOnly=False)
         print(green(f"Scrapping completed for {name}:"))
@@ -210,8 +206,22 @@ def executeScrapperNewArchitecture(name: str, properties: dict):
             for error in results['errors'][:3]:
                 print(red(f"    - {error}"))
     except Exception:
-        print(red(f"Error in new architecture for {name}"))
-        print(red(traceback.format_exc()))
+        baseScrapper.debug(DEBUG)
+
+
+def runScrapperPageUrl(url: str):
+    for name, properties in SCRAPPERS.items():
+        if url.find(name.lower()) != -1:
+            print(cyan(f'Running scrapper for pageUrl: {url}'))
+            properties[SCRAP_PAGE_FUNCTION](url)
+            
+
+def hasArgument(args:list, name:str, info: Callable = (lambda: str)) -> bool:
+    exists = name in args
+    if exists:
+        args.pop(args.index(name))
+        print(info())
+    return exists
 
 
 if __name__ == '__main__':
@@ -220,20 +230,18 @@ if __name__ == '__main__':
     print(cyan('Usage: scrapper.py wait starting scrapperName'))
     print(cyan('wait -> waits for scrapper timeout before executing'))
     print(cyan('starting -> starts scrapping at the specified scrapper (by name)'))
+    print(cyan('url -> scrapping only the specified url page'))
 
-    wait = 'wait' in args
-    if wait:
-        args.pop(args.index('wait'))
-        print("'wait' before execution", )
-    starting = 'starting' in args
-    if starting:
-        args.pop(args.index('starting'))
-        print(f"'starting' at {args[1]} ")
+    wait = hasArgument(args, 'wait', lambda: "'wait' before execution")
+    starting = hasArgument(args, 'starting', lambda: f"'starting' at {args[1]} ")
+    url = hasArgument(args, 'url', lambda: f"scrapping only url page -> {args[1]} ")
 
     with SeleniumUtil() as seleniumUtil:
-        if NEW_ARCHITECTURE_AVAILABLE:
-            scrapperContainer = ScrapperContainer()
+        scrapperContainer = ScrapperContainer()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
+        # args always include AI-job-search\\apps\\scrapper\\scrapper\\main.py as first parameter
+        if len(args) == 2 and url:
+            runScrapperPageUrl(args[1])
         if len(args) == 1 or starting or wait:
             startingAt = args[1].capitalize() if starting else None
             runAllScrappers(wait, starting, startingAt)

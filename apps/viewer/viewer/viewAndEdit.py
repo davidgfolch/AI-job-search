@@ -9,16 +9,6 @@ from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLI
                                  MysqlUtil, getColumnTranslated)
 from viewer.mysqlConn import mysqlCachedConnection
 
-# Try to import new architecture, fallback to old if not available
-try:
-    from commonlib.container.dependency_container import DependencyContainer
-    from commonlib.services.job_service import JobService
-    from viewer.controllers.job_controller import JobController
-    NEW_ARCHITECTURE_AVAILABLE = True
-except ImportError:
-    NEW_ARCHITECTURE_AVAILABLE = False
-    DependencyContainer = None
-    JobController = None
 from viewer.util.stComponents import showCodeSql
 from viewer.util.stStateUtil import getBoolKeyName, getState, initStates, setState
 from viewer.util.viewUtil import fmtDetailOpField, formatDateTime, getValueAsDict, gotoPageByUrl, mapDetailForm
@@ -39,20 +29,12 @@ from viewer.util.salaryCalculator import calculator
 #  rerun is fired and the table looses the scroll position
 # TODO: Check jobs still exists by id
 
+expandFilterForm = False
 
 def view():
     # Declare global variable first
-    global mysql
-    
-    # Initialize new architecture if available
-    if NEW_ARCHITECTURE_AVAILABLE:
-        container = DependencyContainer()
-        # Don't store controller in session_state due to serialization issues
-        mysql = container.get('mysql_util')
-    else:
-        # Fallback to old architecture
-        mysql = MysqlUtil(mysqlCachedConnection())
-    
+    global mysql    
+    mysql = MysqlUtil(mysqlCachedConnection())
     initStates({
         FF_KEY_SEARCH: '',
         getBoolKeyName(FF_KEY_BOOL_FIELDS): True,
@@ -71,7 +53,7 @@ def view():
         FF_KEY_COLUMNS_WIDTH: COLUMNS_WIDTH,
     })
     st.markdown(STYLE_JOBS_TABLE, unsafe_allow_html=True)
-    formFilter()
+    formFilter(expandFilterForm)
     jobData: Dict = {}
     columnsWidth: float = getState(FF_KEY_COLUMNS_WIDTH, 0.5)
     col1, col2 = st.columns([columnsWidth, 1-columnsWidth])
@@ -129,8 +111,7 @@ def tableView():
     query = getJobListQuery()
     if 'showSql' in getState(FF_KEY_CONFIG_PILLS, []):
         with st.expander("View generated sql"):
-            st.code(formatSql(query, False), 'sql',
-                    wrap_lines=True, line_numbers=True)
+            st.code(formatSql(query, False), 'sql', wrap_lines=True, line_numbers=True)
     try:
         res = mysql.fetchAll(query)
     except Exception as e:
@@ -143,6 +124,10 @@ def tableView():
         # selectedRows = tableV2(df, FIELDS_SORTED, LIST_VISIBLE_COLUMNS)
     else:
         st.warning('No results found for filter.')
+        global expandFilterForm
+        if not expandFilterForm:
+            expandFilterForm = True
+            st.rerun()
         selectedRows = DataFrame()
     totalSelected = len(selectedRows)
     return filterResCnt, selectedRows, totalSelected

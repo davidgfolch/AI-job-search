@@ -54,14 +54,16 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
         for keywords in JOBS_SEARCH.split(','):
             searchJobs(keywords.strip())
 
+@retry(retries=3, delay=10)
+def waitForUndetectedSecurityFilter():
+    selenium.waitUntil_presenceLocatedElement('#e_mail', 20) 
 
 def login():
     sleep(2, 2)
     selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
     selenium.waitUntilPageIsLoaded()
     if selenium.useUndetected:
-        sleep(5, 5) # wait for security filter apperars and autosolve        
-        selenium.waitUntil_presenceLocatedElement('#e_mail') 
+        waitForUndetectedSecurityFilter()
     else:
         cloudFlareSecurityFilter()
     selenium.sendKeys('#e_mail', USER_EMAIL)

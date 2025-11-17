@@ -13,7 +13,6 @@ class ScrapperContainer:
         self._setup_factories()
     
     def _setup_factories(self):
-        """Setup service factories"""
         self._factories['mysql_util'] = lambda: MysqlUtil()
         self._factories['mysql_job_storage'] = lambda: MySQLJobStorage(self.get('mysql_util'))
         self._factories['linkedin_scrapper'] = lambda: LinkedInScrapper()
@@ -31,7 +30,6 @@ class ScrapperContainer:
         return self._services[service_name]
     
     def get_scrapping_service(self, scrapper_name: str) -> ScrappingService:
-        """Get scrapping service for specific scrapper"""
         service_key = f'{scrapper_name}_scrapping_service'
         if service_key not in self._services:
             self._services[service_key] = ScrappingService(

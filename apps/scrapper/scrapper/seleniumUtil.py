@@ -387,14 +387,18 @@ class SeleniumUtil:
     def moveToElement(self, elm: str | WebElement):
         webdriver.ActionChains(self.driver).move_to_element(self.getElmFromOpSelector(elm)).perform()
 
-    def getHtml(self, cssSel: str) -> str | None:
-        return self.getAttr(cssSel, 'innerHTML')
+    def getHtml(self, cssSel: str) -> str:
+        if value:= self.getAttr(cssSel, 'innerHTML'):
+            return value
+        raise Exception(f'Could not get innerHTML from {cssSel}')
 
     def getText(self, cssSel: str | WebElement) -> str:
         return self.getElm(cssSel).text
 
-    def getAttr(self, cssSel: str | WebElement, attr: str) -> str | None:
-        return self.getElm(cssSel).get_attribute(attr)
+    def getAttr(self, cssSel: str | WebElement, attr: str) -> str:
+        if value:=self.getElm(cssSel).get_attribute(attr):
+            return value 
+        raise Exception(f'Could not get attribute {attr} from {cssSel}')
 
     def getAttrOf(self, elm: WebElement, cssSel: str, attr: str) -> str | None:
         return self.getElmOf(elm, cssSel).get_attribute(attr)

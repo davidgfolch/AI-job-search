@@ -3,7 +3,6 @@ import re
 import traceback
 
 # from bs4 import BeautifulSoup
-import markdownify
 from markdownify import MarkdownConverter
 
 from commonlib.util import getEnv,getDatetimeNowStr, hasLenAnyText
@@ -87,7 +86,8 @@ def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool)
     return True
 
 
-def debug(debugFlag: bool, msg: str = '', exception=False):
+def debug(debugFlag: bool, msg: str = '', exception=None):
+    exception = exception if exception is not None else debugFlag
     if debugFlag:
         msg = f" (debug active) {msg}, press a key"
         if exception:
