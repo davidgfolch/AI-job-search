@@ -44,16 +44,13 @@ def retry(retries: int = 5,
                         if raiseException:
                             raise e
                         if stackStrace != StackTrace.NEVER:
-                            print(red(traceback.format_exc()))
+                            print(red(traceback.format_exc()), flush=True)
                         else:
-                            print(red(str(e)))
-                        print("", end='\n', flush=True)
+                            print(red(str(e)), flush=True)
                         return False
-                    print(yellow(f'Error calling function {fnc.__name__}()',
-                                 f' -> Retry {i}/{retries}... '),
-                          end='', flush=True)
+                    print(yellow(f'Error calling function {fnc.__name__}() -> Retry {i}/{retries}... '), end='', flush=True)
                     if stackStrace == StackTrace.ALWAYS:
-                        print(red(traceback.format_exc()), end='\n', flush=True)
+                        print(red(traceback.format_exc()), flush=True)
                     if exceptionFnc is not None:
                         exceptionFnc()
                     sleep(delay)

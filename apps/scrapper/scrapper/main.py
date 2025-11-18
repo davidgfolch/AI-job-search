@@ -15,21 +15,21 @@ from scrapper.container.scrapper_container import ScrapperContainer
 DEBUG = getEnvBool('SCRAPPER_DEBUG', False)
 FUNCTION = 'function'
 TIMER = 'timer'
-EXEC_NEW_ARCH = 'executeNewArchitecture'
+NEW_ARCH = 'newArchitecture'
 CLOSE_TAB = 'closeTab'
 IGNORE_AUTORUN = 'ignoreAutoRun'
 SCRAP_PAGE_FUNCTION = 'scrapPageFunction'
-SCRAPPERS: dict[str, dict[str,Any]] = {
+SCRAPPERS: dict[str, dict[str, Any]] = {
     'Infojobs': {  # first to solve security filter
         FUNCTION: infojobs.run,
         TIMER: getSeconds(getEnv('INFOJOBS_RUN_CADENCY'))},
-    'Tecnoempleo': { # first to solve security filter
+    'Tecnoempleo': {  # first to solve security filter
         FUNCTION: tecnoempleo.run,
         TIMER: getSeconds(getEnv('TECNOEMPLEO_RUN_CADENCY'))},
     'Linkedin': {
         FUNCTION: linkedin.run,
         TIMER: getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
-        EXEC_NEW_ARCH: False,
+        NEW_ARCH: getEnvBool('LINKEDIN_NEW_ARCHITECTURE', False),
         CLOSE_TAB: True,
         SCRAP_PAGE_FUNCTION: linkedin.processUrl},
     'Glassdoor': {
@@ -42,11 +42,12 @@ SCRAPPERS: dict[str, dict[str,Any]] = {
     },
 }
 print(f'Scrappers config: {SCRAPPERS}')
-RUN_IN_TABS=getEnvBool('RUN_IN_TABS', False)
+RUN_IN_TABS = getEnvBool('RUN_IN_TABS', False)
 NEXT_SCRAP_TIMER = '10m'  # '10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 
-seleniumUtil: SeleniumUtil = None
+seleniumUtil: SeleniumUtil = None  # None initialization needed for tests mocks only
+
 
 def timeExpired(name: str, properties: dict):
     defaultLastExecution = getDatetimeNow() if properties['waitBeforeFirstRun'] else None
@@ -72,7 +73,7 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loops=99999999999
     # for name, properties in SCRAPPERS.items():  THIS CAUSES PROBLEMS WITH URL LIB SOCKET DISCONNECTION & PROCESS HANGS LONG TIME.
     #     executeScrapperPreload(name, properties)
     count = 0
-    while loops==99999999999 or count<loops:
+    while loops == 99999999999 or count < loops:
         count += 1
         toRun = []
         for name, properties in SCRAPPERS.items():
@@ -103,14 +104,15 @@ def runSpecifiedScrappers(scrappersList: list):
     #         properties = SCRAPPERS[arg.capitalize()]
     #         executeScrapperPreload(arg.capitalize(), properties)
     for arg in scrappersList:
-        if validScrapperName(arg):            
+        if validScrapperName(arg):
             properties = SCRAPPERS[arg.capitalize()]
             if runPreload(properties):
                 executeScrapperPreload(arg.capitalize(), properties)
             executeScrapper(arg.capitalize(), properties)
 
+
 def runPreload(properties: dict) -> bool:
-    return not properties.get('preloaded',False) or properties.get(CLOSE_TAB,False) or not RUN_IN_TABS
+    return not properties.get('preloaded', False) or properties.get(CLOSE_TAB, False) or not RUN_IN_TABS
 
 
 def validScrapperName(name: str):
@@ -121,26 +123,29 @@ def validScrapperName(name: str):
     return False
 
 
-def getProperties(name: str) -> Optional[dict[str,Any]]:
+def getProperties(name: str) -> Optional[dict[str, Any]]:
     return SCRAPPERS.get(name.capitalize())
 
 
-def hasNewArchitecture(name: str, properties: dict[str,dict[str,Any]]) -> bool:
+def hasNewArchitecture(name: str, properties: dict[str, dict[str, Any]]) -> bool:
     try:
+        if not bool(properties.get(NEW_ARCH, False)):
+            print(f"⚠️  Using OLD architecture for {name}, new architecture DISABLED")
+            return False
         scrapperContainer.get_scrapping_service(name.lower())
         print(cyan(f"Using NEW SOLID architecture for {name}"))
-        return bool(properties.get(EXEC_NEW_ARCH, False))
+        return True
     except Exception:
-        baseScrapper.debug(DEBUG, f"⚠️  Using OLD architecture for {name}, new architecture not available")
+        print(DEBUG, f"⚠️  Using OLD architecture for {name}, new architecture not available")
         return False
-    
+
 
 def executeScrapperPreload(name, properties: dict):
     try:
         if RUN_IN_TABS:
             seleniumUtil.tab(name)
         if hasNewArchitecture(name, properties):
-            executeScrapperPreloadNewArchitecture(name)
+            runPreloadNewArchitecture(name)
         else:
             runScrapper(properties, True)
         properties['preloaded'] = True
@@ -151,7 +156,7 @@ def executeScrapperPreload(name, properties: dict):
 
 def runScrapper(properties: dict, preloadOnly: bool, retryCount: int = 1):
     global seleniumUtil
-    try: 
+    try:
         properties[FUNCTION](seleniumUtil, preloadOnly)
     except urllib3.exceptions.MaxRetryError:
         if retryCount > 2:
@@ -163,7 +168,8 @@ def runScrapper(properties: dict, preloadOnly: bool, retryCount: int = 1):
             with SeleniumUtil() as seleniumUtil:
                 runScrapper(properties, preloadOnly, retryCount + 1)
 
-def executeScrapperPreloadNewArchitecture(name: str):
+
+def runPreloadNewArchitecture(name: str):
     try:
         scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         results = scrapping_service.executeScrapping(seleniumUtil, [], preloadOnly=True)
@@ -173,10 +179,10 @@ def executeScrapperPreloadNewArchitecture(name: str):
         baseScrapper.debug(DEBUG)
 
 
-def executeScrapper(name, properties: dict):        
+def executeScrapper(name, properties: dict):
     try:
         if hasNewArchitecture(name, properties):
-            executeScrapperNewArchitecture(name, properties)
+            runScrapperNewArchitecture(name, properties)
         else:
             runScrapper(properties, False)
     except Exception:
@@ -186,12 +192,12 @@ def executeScrapper(name, properties: dict):
         pass
     finally:
         if RUN_IN_TABS:
-            if properties.get(CLOSE_TAB,False):
+            if properties.get(CLOSE_TAB, False):
                 seleniumUtil.tabClose(name)
             seleniumUtil.tab()  # switches to default tab
 
 
-def executeScrapperNewArchitecture(name: str, properties: dict):
+def runScrapperNewArchitecture(name: str, properties: dict):
     try:
         scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         # FIXME: NEXT LINE SHOULD BE SOMETHING LIKE: baseScrapper.getAndCheckEnvVars(name)
@@ -214,9 +220,9 @@ def runScrapperPageUrl(url: str):
         if url.find(name.lower()) != -1:
             print(cyan(f'Running scrapper for pageUrl: {url}'))
             properties[SCRAP_PAGE_FUNCTION](url)
-            
 
-def hasArgument(args:list, name:str, info: Callable = (lambda: str)) -> bool:
+
+def hasArgument(args: list, name: str, info: Callable = (lambda: str)) -> bool:
     exists = name in args
     if exists:
         args.pop(args.index(name))

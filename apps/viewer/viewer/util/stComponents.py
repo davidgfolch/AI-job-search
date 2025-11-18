@@ -66,20 +66,11 @@ def sessionLoadSaveForm():
     options.append('Default')
     options.append('(New)')
     options.rotate(3)
-    with st.container(border=1):
+    with st.container(border=True):
         c1, c2, c3 = st.columns([50, 5, 5], vertical_alignment='bottom')
-        selected = c1.selectbox("Filters configurations",
-                                options=options,
-                                #  format_func=lambda i: os.path.split(i)[1],
-                                #  label_visibility='collapsed',
-                                key='currentSessionSaved')
-        new = selected == '(New)'
-        if new:
-            selected = c1.text_input(
-                'stateFile', label_visibility='collapsed',
-                placeholder='new file name')
+        selected = c1.selectbox("Filters configurations", options=options, key='currentSessionSaved')
+        if new := selected == '(New)':
+            selected = c1.text_input('stateFile', label_visibility='collapsed', placeholder='new file name')
         kwargs = {'name': selected}
-        c2.button('Save', on_click=saveSession,
-                  key='sessionSaveButton', kwargs=kwargs)
-        c3.button('Load', on_click=loadSession, key='sessionLoadButton',
-                  kwargs=kwargs, disabled=new)
+        c2.button('Save', on_click=saveSession, key='sessionSaveButton', kwargs=kwargs)
+        c3.button('Load', on_click=loadSession, key='sessionLoadButton', kwargs=kwargs, disabled=new, )

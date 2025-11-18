@@ -54,8 +54,7 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     printScrapperTitle('LinkedIn', preloadPage)
     if preloadPage:
         login()
-        print(yellow('Waiting for LinkedIn to redirect to feed page...',
-                     '(Maybe you need to solve a security filter first)'))
+        print(yellow('Waiting for LinkedIn to redirect to feed page... (Maybe you need to solve a security filter first)'))
         selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)
         return
     with MysqlUtil() as mysql:
@@ -102,6 +101,7 @@ def replaceIndex(cssSelector: str, idx: int):
     return cssSelector.replace('##idx##', str(idx))
 
 
+@retry(exception=NoSuchElementException)
 def getTotalResultsFromHeader(keywords: str) -> int:
     total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')  # can be 100+
     printHR(green)
@@ -182,24 +182,22 @@ def searchJobs(keywords: str):
         selenium.waitUntilPageIsLoaded()
         if not checkResults(keywords, url):
             return
-        # selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE,
-        #                               'Could close global alert')
         selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
         while True:
-            errors = 0
             printPage(WEB_PAGE, page, totalPages, keywords)
+            rowErrors = 0
             for idx in range(1, JOBS_X_PAGE+1):
                 if currentItem >= totalResults:
                     break  # exit for
                 currentItem += 1
                 print(green(f'pg {page} job {idx} - '), end='', flush=True)
-                ok = loadAndProcessRow(idx)
-                errors += 0 if ok else 1
-                if errors > 1:  # exit page loop, some pages has less items
+                if not loadAndProcessRow(idx):
+                    rowErrors += 1
+                if rowErrors > 1:  # exit page loop, some pages has less items
                     break
             if currentItem >= totalResults or page >= totalPages or not clickNextPage():
                 break  # exit while
@@ -238,39 +236,16 @@ def processUrl(url: str):
 
 @retry(exception=ValueError)
 def processRow(idx):
+    isDirectUrlScrapping = idx is None
     try:
-        if idx is not None:
-            liPrefix = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
-            title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
-            company = selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
-            location = selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
-            selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
-            url = getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
-            html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        else: # TODO: finish this, maybe update DB
-            selenium.waitUntil_presenceLocatedElement('section[aria-modal=true][role=dialog]')
-            # selenium.waitAndClick('section[aria-modal=true][role=dialog] button.modal__dismiss')
-            selenium.sendEscapeKey()
-            selenium.waitUntilClickable('section.top-card-layout h1')
-            title = selenium.getText('section.top-card-layout h1')
-            company = selenium.getText('section.top-card-layout h4 a.topcard__org-name-link')
-            location = selenium.getText('section.top-card-layout h4 span')
-            selenium.waitAndClick('button.show-more-less-html__button--more')
-            url = selenium.getUrl()
-            html = selenium.getHtml('div.show-more-less-html__markup')
+        title, company, location, url, html = getJobDataInDetailPage() if isDirectUrlScrapping else getJobDataInList(idx)
         jobId = getJobId(url)
         md = htmlToMarkdown(html)
-        # easyApply: there are 2 buttons
-        easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
+        easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0  # easyApply: there are 2 buttons
         print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='', flush=True)
         if validate(title, url, company, md, DEBUG):
-            if mysql.jobExists(str(jobId)):
-                print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
-                print(yellow(f'TITLE={title}'))
-                print(yellow(f'COMPANY={company}'))
-                print(yellow(f'LOCATION={location}'))
-                print(yellow(f'URL={url}'))
-                print(yellow(f'MARKDOWN:\n', magenta(md)))
+            if isDirectUrlScrapping and mysql.jobExists(str(jobId)):
+                printJob(title, company, location, url, jobId, md)
             elif id := mysql.insert((jobId, title, company, location, url, md, easyApply, WEB_PAGE)):
                 print(green(f'INSERTED {id}!'), end='', flush=True)
                 mergeDuplicatedJobs(mysql, getSelect())
@@ -280,3 +255,36 @@ def processRow(idx):
         raise e
     except Exception:
         baseScrapper.debug(DEBUG, '', True)
+
+def printJob(title, company, location, url, jobId, md):
+    print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
+    print(yellow(f'TITLE={title}'))
+    print(yellow(f'COMPANY={company}'))
+    print(yellow(f'LOCATION={location}'))
+    print(yellow(f'URL={url}'))
+    print(yellow(f'MARKDOWN:\n', magenta(md)))
+
+
+def getJobDataInDetailPage():
+    # TODO: finish this, maybe update DB
+    selenium.waitUntil_presenceLocatedElement('section[aria-modal=true][role=dialog]')
+    selenium.sendEscapeKey()
+    selenium.waitUntilClickable('section.top-card-layout h1')
+    title = selenium.getText('section.top-card-layout h1')
+    company = selenium.getText('section.top-card-layout h4 a.topcard__org-name-link')
+    location = selenium.getText('section.top-card-layout h4 span')
+    selenium.waitAndClick('button.show-more-less-html__button--more')
+    url = selenium.getUrl()
+    html = selenium.getHtml('div.show-more-less-html__markup')
+    return title, company, location, url, html
+
+
+def getJobDataInList(idx):
+    liPrefix = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
+    title = selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
+    company = selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
+    location = selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
+    selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
+    url = getJobUrlShort(selenium.getAttr(CSS_SEL_JOB_HEADER, 'href'))
+    html = selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+    return title, company, location, url, html
