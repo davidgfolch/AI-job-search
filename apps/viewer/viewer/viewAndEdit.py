@@ -239,7 +239,8 @@ def searchPartialCompanyName(company: str, params: dict, query: str, rows):
 
 
 def removeRegexChars(txt: str):
-    return re.sub(r'([()[\]|*+])', r'\\1', txt)
+    # Insert a backslash before each special regex character
+    return re.sub(r'([()\[\]|*+])', r'\\\1', txt)
 
 
 if __name__ == "__main__":

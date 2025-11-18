@@ -39,7 +39,8 @@ if 'streamlit' not in sys.modules or not hasattr(sys.modules.get('streamlit'), '
     mock_st.proto.ButtonGroup_pb2.ButtonGroup = MagicMock()
     
     # Configure st.columns to return the expected number of columns
-    def mock_columns(spec):
+    def mock_columns(spec, **kwargs):
+        # Accept keyword args (vertical_alignment etc.) used in some calls
         if isinstance(spec, list):
             return [MagicMock() for _ in spec]
         return [MagicMock() for _ in range(spec)]

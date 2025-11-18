@@ -4,7 +4,6 @@ import datetime
 from types import SimpleNamespace
 
 import pandas as pd
-import pytest
 
 # Ensure the local `viewer` package (apps/viewer/viewer) is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -22,11 +21,11 @@ def test_view_constants_pages():
 def test_remove_regex_chars():
     from viewer.viewAndEdit import removeRegexChars
 
-    txt = "(abc)[def]|ghi*+"
+    txt = "abc(1) [2]"
     out = removeRegexChars(txt)
-    # ensure special regex characters are escaped with backslash
-    assert '\\1' in out  # re.escape uses \1, \2, etc. for special chars
-    assert txt != out  # output should be different from input
+    # ensure parentheses and square brackets are escaped for regex
+    assert "\\(" in out and "\\)" in out
+    assert "\\[" in out and "\\]" in out
 
 
 def test_format_date():

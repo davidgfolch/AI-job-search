@@ -26,7 +26,8 @@ def setup_mocks():
     mock_streamlit = MagicMock()
     
     # Configure st.columns to return the expected number of columns
-    def mock_columns(spec):
+    def mock_columns(spec, **kwargs):
+        # Accept kwargs such as vertical_alignment used by callers
         if isinstance(spec, list):
             return [MagicMock() for _ in spec]
         return [MagicMock() for _ in range(spec)]
