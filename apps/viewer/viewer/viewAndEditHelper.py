@@ -105,7 +105,7 @@ def selectPrevious():
     rows: set = getState(FF_KEY_PRESELECTED_ROWS, None)
     if rows is not None and len(rows) == 1 and int(rows[0]) > 0:
         prevRow = str(int(rows[0])-1)
-    setQueryParamOrState(FF_KEY_PRESELECTED_ROWS, prevRow, [prevRow])
+        setQueryParamOrState(FF_KEY_PRESELECTED_ROWS, prevRow, [prevRow])
 
 
 def setQueryParamOrState(param: str, paramValue, stateValue=None):

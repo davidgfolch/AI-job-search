@@ -247,7 +247,7 @@ class TestNewArchitecture:
             yield mock
 
     @pytest.fixture
-    def mock_scrapping_service(self):
+    def mock_scrapperService(self):
         mock_service = MagicMock()
         mock_service.executeScrapping.return_value = {
             'total_processed': 5,
@@ -257,33 +257,33 @@ class TestNewArchitecture:
         }
         return mock_service
 
-    def test_new_architecture_preload_success(self, mock_selenium, mock_container, mock_scrapping_service):
+    def test_new_architecture_preload_success(self, mock_selenium, mock_container, mock_scrapperService):
         """Test new architecture preload success"""
-        mock_container.get_scrapping_service.return_value = mock_scrapping_service
-        mock_scrapping_service.executeScrapping.return_value = {'login_success': True}
+        mock_container.get_scrapping_service.return_value = mock_scrapperService
+        mock_scrapperService.executeScrapping.return_value = {'login_success': True}
         properties = {FUNCTION: MagicMock(), NEW_ARCH: True}
         with patch('scrapper.main.SCRAPPERS', {'Linkedin': {FUNCTION: MagicMock(), NEW_ARCH: True}}):
             executeScrapperPreload('Linkedin', properties)
-        mock_scrapping_service.executeScrapping.assert_called_once_with(mock_selenium, [], preloadOnly=True)
+        mock_scrapperService.executeScrapping.assert_called_once_with(mock_selenium, [], preloadOnly=True)
         assert properties['preloaded'] is True
 
-    def test_new_architecture_preload_failure_fallback(self, mock_selenium, mock_container, mock_scrapping_service):
+    def test_new_architecture_preload_failure_fallback(self, mock_selenium, mock_container, mock_scrapperService):
         """Test new architecture preload failure falls back to old method"""
-        mock_container.get_scrapping_service.return_value = mock_scrapping_service
-        mock_scrapping_service.executeScrapping.return_value = {'login_success': False}
+        mock_container.get_scrapping_service.return_value = mock_scrapperService
+        mock_scrapperService.executeScrapping.return_value = {'login_success': False}
         properties = {FUNCTION: MagicMock()}
         executeScrapperPreload('Linkedin', properties)
         properties[FUNCTION].assert_called_once_with(mock_selenium, True)
         assert properties['preloaded'] is True
 
-    def test_new_architecture_scrapping_success(self, mock_selenium, mock_container, mock_scrapping_service):
+    def test_new_architecture_scrapping_success(self, mock_selenium, mock_container, mock_scrapperService):
         """Test new architecture scrapping execution"""
-        mock_container.get_scrapping_service.return_value = mock_scrapping_service
+        mock_container.get_scrapping_service.return_value = mock_scrapperService
         properties = {FUNCTION: MagicMock(), NEW_ARCH: True}
         with patch.dict('scrapper.main.SCRAPPERS', {'Linkedin': {FUNCTION: MagicMock(), NEW_ARCH: True}}), \
                 patch('scrapper.main.getEnv', return_value='java,python'):
             executeScrapper('Linkedin', properties)
-        mock_scrapping_service.executeScrapping.assert_called_once_with(
+        mock_scrapperService.executeScrapping.assert_called_once_with(
             mock_selenium, ['java', 'python'], preloadOnly=False
         )
 

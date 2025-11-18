@@ -242,12 +242,14 @@ if __name__ == '__main__':
     starting = hasArgument(args, 'starting', lambda: f"'starting' at {args[1]} ")
     url = hasArgument(args, 'url', lambda: f"scrapping only url page -> {args[1]} ")
 
+    # args always include AI-job-search\\apps\\scrapper\\scrapper\\main.py as first parameter
+    if len(args) == 2 and url:
+        runScrapperPageUrl(args[1])
+        exit(0)
+
     with SeleniumUtil() as seleniumUtil:
         scrapperContainer = ScrapperContainer()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
-        # args always include AI-job-search\\apps\\scrapper\\scrapper\\main.py as first parameter
-        if len(args) == 2 and url:
-            runScrapperPageUrl(args[1])
         if len(args) == 1 or starting or wait:
             startingAt = args[1].capitalize() if starting else None
             runAllScrappers(wait, starting, startingAt)

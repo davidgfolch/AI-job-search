@@ -245,7 +245,7 @@ def processRow(idx):
         print(f'{jobId}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='', flush=True)
         if validate(title, url, company, md, DEBUG):
             if isDirectUrlScrapping and mysql.jobExists(str(jobId)):
-                printJob(title, company, location, url, jobId, md)
+                printJob(title, company, location, url, jobId, html, md)
             elif id := mysql.insert((jobId, title, company, location, url, md, easyApply, WEB_PAGE)):
                 print(green(f'INSERTED {id}!'), end='', flush=True)
                 mergeDuplicatedJobs(mysql, getSelect())
@@ -256,12 +256,13 @@ def processRow(idx):
     except Exception:
         baseScrapper.debug(DEBUG, '', True)
 
-def printJob(title, company, location, url, jobId, md):
+def printJob(title, company, location, url, jobId, html, md):
     print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
     print(yellow(f'TITLE={title}'))
     print(yellow(f'COMPANY={company}'))
     print(yellow(f'LOCATION={location}'))
     print(yellow(f'URL={url}'))
+    print(yellow(f'HTML:\n', magenta(html)))
     print(yellow(f'MARKDOWN:\n', magenta(md)))
 
 
