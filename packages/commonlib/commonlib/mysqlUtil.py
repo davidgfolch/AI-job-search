@@ -1,7 +1,8 @@
-import re
-from typing import Any, Dict, Sequence, TypeVar, Union
+from typing import Dict, Sequence, TypeVar, Union
 import mysql.connector as mysqlConnector
 from mysql.connector.types import RowItemType
+
+from commonlib.sqlUtil import error
 
 from .decorator.retry import retry
 from .terminalColor import green, red, yellow
@@ -35,7 +36,6 @@ DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,easy_apply"""
 
-ERROR_PREFIX = 'MysqlError: '
 conn: mysqlConnector.MySQLConnection = None
 
 
@@ -186,67 +186,3 @@ class MysqlUtil:
         columns = [c[0] for c in columns]
         columns = [getColumnTranslated(c) for c in columns]
         return columns
-
-
-# static methods
-def getColumnTranslated(c):
-    return re.sub(r'`', '', re.sub(r'[_-]', ' ', c)).capitalize()
-
-
-def updateFieldsQuery(ids: list, fieldsValues: dict, merged=False):
-    if len(ids) < 1:
-        return
-    query = 'UPDATE jobs SET '
-    for field in fieldsValues.keys():
-        query += f'{field}=%({field})s,'
-    if merged:
-        query += 'merged=NOW(),'
-    query = query[:len(query)-1] + '\n'
-    query += 'WHERE id ' + inFilter(ids)
-    return query, fieldsValues
-
-
-def deleteJobsQuery(ids: list[str]):
-    if len(ids) < 1:
-        return
-    query = 'DELETE FROM jobs '
-    query += 'WHERE id ' + inFilter(ids)
-    return query
-
-
-def error(ex, suffix='', end='\n'):
-    print(red(f'{ERROR_PREFIX}{ex}{suffix}'), end=end, flush=True)
-
-
-def emptyToNone(params: tuple[Any]):
-    return tuple(
-        map(lambda p:
-            None if isinstance(p, str) and p.strip() == '' else p,
-            params))
-
-
-def toBoolean(params: tuple[Any]):
-    return tuple(
-        map(lambda p: bool(p), params))
-
-
-def maxLen(params: tuple[Any], maxLens: tuple[int]):
-    def mapParam(p: tuple):
-        val = p[0]
-        max = p[1]
-        if max is not None and isinstance(val, str) and len(val) > max:
-            return val[:(max-len('[...]'))]+'[...]'
-        return val
-    return tuple(
-        map(lambda p: mapParam(p), zip(params, maxLens, strict=False)))
-
-
-def inFilter(ids: list[int]):
-    idsFilter = ','.join([str(id) for id in ids])
-    return f' in ({idsFilter})'
-
-
-def binaryColumnIgnoreCase(col: str) -> str:
-    if col in ['comments', 'markdown']:
-        return f'CONVERT({col} USING utf8mb4) COLLATE utf8mb4_0900_ai_ci'
-    return col

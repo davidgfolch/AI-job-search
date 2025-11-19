@@ -1,7 +1,8 @@
 from unittest.mock import patch, MagicMock
 import mysql.connector
 
-from commonlib.mysqlUtil import MysqlUtil, emptyToNone, maxLen
+from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sqlUtil import emptyToNone, maxLen
 
 
 class TestMysqlUtil:

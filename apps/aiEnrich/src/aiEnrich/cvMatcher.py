@@ -8,7 +8,8 @@ import pdfplumber
 from pathlib import Path
 
 from .crewHelper import combineTaskResults, footer, mapJob, printJob, saveError, validateResult
-from commonlib.mysqlUtil import MysqlUtil, emptyToNone, maxLen
+from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import cyan, printHR, red, yellow
 from commonlib.util import getEnv, getEnvBool

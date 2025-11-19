@@ -5,7 +5,8 @@ import traceback
 from crewai.crews.crew_output import CrewOutput
 
 from commonlib.util import getDatetimeNowStr, hasLen, removeExtraEmptyLines
-from commonlib.mysqlUtil import MysqlUtil, updateFieldsQuery
+from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.terminalColor import green, red, yellow
 
 MAX_AI_ENRICH_ERROR_LEN = 500

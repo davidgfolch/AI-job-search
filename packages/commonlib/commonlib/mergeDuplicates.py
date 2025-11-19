@@ -1,7 +1,9 @@
 import re
 import traceback
 
-from .mysqlUtil import DB_FIELDS_BOOL, MysqlUtil, deleteJobsQuery, updateFieldsQuery
+from commonlib.sqlUtil import deleteJobsQuery, updateFieldsQuery
+
+from .mysqlUtil import DB_FIELDS_BOOL, MysqlUtil
 from .terminalColor import blue, cyan, red
 from .util import getEnvBool, removeNewLines
 
@@ -24,10 +26,6 @@ COLS_ARR.remove('closed')
 COL_COMPANY_IDX = COLS_ARR.index('title')
 
 
-def getInfo():
-    return "Merge duplicated jobs by `title,company`"
-
-
 def getSelect():
     return """
     select r.counter, r.ids, r.title, r.company
@@ -43,11 +41,11 @@ def getSelect():
     order by r.title, r.company, r.max_created desc"""
 
 
-def merge(mysql: MysqlUtil, rowsIds) -> list:
+def _mergeAll(mysql: MysqlUtil, rowsIds) -> list:
     results = []
     for ids in rowsIds:
         query = SELECT_FOR_MERGE.format(**{'ids': ids,'cols': COLS})
-        id, merged, out = mergeJobDuplicates(mysql.fetchAll(query), ids)
+        id, merged, out = _mergeJobDuplicates(mysql.fetchAll(query), ids)
         updateQry, params = updateFieldsQuery([id], merged, merged=True)
         queries = [{'query': updateQry, 'params': params}]
         idsArr = ids.split(',')
@@ -61,7 +59,7 @@ def merge(mysql: MysqlUtil, rowsIds) -> list:
     return results
 
 
-def mergeJobDuplicates(rows, ids):
+def _mergeJobDuplicates(rows, ids):
     merged: dict = {}
     for row in rows:
         for colIdx, f in enumerate(COLS_ARR):
@@ -84,7 +82,7 @@ def mergeDuplicatedJobs(mysql: MysqlUtil, selectQuery: str):
             return
         idsIdx = 1
         rowsIds = [row[idsIdx] for row in rows]
-        for results in merge(mysql, rowsIds):
+        for results in _mergeAll(mysql, rowsIds):
             for line in results:
                 print(' ', end='')
                 if arr := line.get('arr', None):
