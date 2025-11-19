@@ -1,7 +1,6 @@
 import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from scrapper.seleniumUtil import SeleniumUtil
 
@@ -18,8 +17,8 @@ def mock_driver():
 @pytest.fixture(scope='class')
 def selenium_util(mock_driver):
     """Shared SeleniumUtil instance with mocked driver"""
-    with patch('scrapper.seleniumUtil.getEnvBool', return_value=False), \
-         patch('scrapper.seleniumUtil.webdriver.Chrome', return_value=mock_driver):
+    with patch('scrapper.driverUtil.getEnvBool', return_value=False), \
+         patch('scrapper.driverUtil.webdriver.Chrome', return_value=mock_driver):
         util = SeleniumUtil()
         yield util
 
@@ -99,10 +98,9 @@ class TestSeleniumUtil:
 
     def test_tab_close(self, selenium_util, mock_driver):
         selenium_util.tabs['test_tab'] = 'handle'
-        with patch.object(selenium_util, 'isDriverAlive', return_value=True):
-            selenium_util.tabClose('test_tab')
-            mock_driver.close.assert_called()
-            assert 'test_tab' not in selenium_util.tabs
+        selenium_util.tabClose('test_tab')
+        mock_driver.close.assert_called()
+        assert 'test_tab' not in selenium_util.tabs
 
     @patch('scrapper.seleniumUtil.WebDriverWait')
     def test_wait_until_page_is_loaded(self, mock_wait, selenium_util, mock_driver):
@@ -111,10 +109,6 @@ class TestSeleniumUtil:
         
         selenium_util.waitUntilPageIsLoaded(10)
         mock_wait.assert_called_with(mock_driver, 10)
-
-    def test_scroll_to_bottom(self, selenium_util, mock_driver):
-        selenium_util.scrollToBottom()
-        mock_driver.execute_script.assert_called_with("window.scrollTo(0, document.body.scrollHeight);")
 
     @patch('scrapper.seleniumUtil.sleep')
     def test_scroll_progressive_down(self, mock_sleep, selenium_util, mock_driver):
@@ -189,28 +183,12 @@ class TestSeleniumUtil:
         selenium_util.back()
         mock_driver.back.assert_called_once()
 
-    def test_is_driver_alive_true(self, selenium_util, mock_driver):
-        mock_driver.current_url = 'https://test.com'
-        assert selenium_util.isDriverAlive() is True
-
-    def test_is_driver_alive_false(self, selenium_util, mock_driver):
-        type(mock_driver).current_url = PropertyMock(side_effect=Exception('Connection lost'))
-        assert selenium_util.isDriverAlive() is False
-
     def test_exit_driver_alive(self, selenium_util, mock_driver):
-        with patch.object(selenium_util, 'isDriverAlive', return_value=True):
-            selenium_util.exit()
-            mock_driver.quit.assert_called()
-
-    def test_exit_driver_not_alive(self, selenium_util, mock_driver):
-        mock_driver.reset_mock()
-        with patch.object(selenium_util, 'isDriverAlive', return_value=False):
-            selenium_util.exit()
-            mock_driver.quit.assert_not_called()
+        selenium_util.exit()
+        mock_driver.quit.assert_called()
 
     def test_tab_close_error_handling(self, selenium_util, mock_driver):
         selenium_util.tabs['test_tab'] = 'handle'
         mock_driver.close.side_effect = Exception('Close error')
-        with patch.object(selenium_util, 'isDriverAlive', return_value=True):
-            selenium_util.tabClose('test_tab')
+        selenium_util.tabClose('test_tab')
         mock_driver.close.side_effect = None

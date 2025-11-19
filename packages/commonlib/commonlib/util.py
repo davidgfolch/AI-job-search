@@ -114,7 +114,6 @@ def getTimeUnits(seconds: int) -> str:
     seconds %= 3600
     minutes = seconds // 60
     seconds %= 60
-
     time_units = []
     if hours > 0:
         time_units.append(f"{hours}h")
@@ -145,7 +144,7 @@ class Spinner():
         "⠠⠐⠈"]
     tickXSec = 6
     spinItem = 0
-    spinner = None
+    spinner:str = ''
 
     def __init__(self):
         self.spinner = self.SPINNERS[random.randint(0, len(self.SPINNERS)-1)]
@@ -168,151 +167,18 @@ def listFiles(folder: Path) -> list[str]:
     return [f for f in os.listdir(folder.absolute()) if isfile(join(folder, f))]
 
 
-def getcwd() -> str:
-    return os.getcwd()
-
-
 def getSrcPath() -> str:
     return str(Path(os.getcwd()))
-
-
-def getEnvInt(key: str, default: int = 0) -> int:
-    """Get environment variable as integer"""
-    try:
-        value = getEnv(key)
-        if value is None:
-            return default
-        return int(value)
-    except (ValueError, TypeError):
-        return default
-
-
-def getEnvFloat(key: str, default: float = 0.0) -> float:
-    """Get environment variable as float"""
-    try:
-        value = getEnv(key)
-        if value is None:
-            return default
-        return float(value)
-    except (ValueError, TypeError):
-        return default
-
-
-def formatNumber(number):
-    """Format number with thousands separator"""
-    if isinstance(number, (int, float)):
-        return f"{number:,}"
-    return str(number)
-
-
-def formatBytes(bytes_value):
-    """Format bytes to human readable format"""
-    if bytes_value < 1024:
-        return f"{bytes_value} B"
-    elif bytes_value < 1024 ** 2:
-        return f"{bytes_value / 1024:.1f} KB"
-    elif bytes_value < 1024 ** 3:
-        return f"{bytes_value / (1024 ** 2):.1f} MB"
-    else:
-        return f"{bytes_value / (1024 ** 3):.1f} GB"
-
-
-def formatPercentage(value):
-    """Format decimal as percentage"""
-    return f"{value * 100:.1f}%"
-
-
-def isValidUrl(url):
-    """Check if URL is valid"""
-    if not url:
-        return False
-    return url.startswith(('http://', 'https://'))
-
-
-def isValidEmail(email):
-    """Check if email is valid"""
-    if not email:
-        return False
-    import re
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
-
-
-def cleanText(text):
-    """Clean text by removing extra whitespace"""
-    if not text:
-        return ''
-    return re.sub(r'\s+', ' ', text.strip())
-
-
-def parseDate(date_str):
-    """Parse date string to datetime object"""
-    if not date_str:
-        return None
-    try:
-        from datetime import datetime
-        # Try different formats
-        formats = ['%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%Y-%m-%d %H:%M:%S']
-        for fmt in formats:
-            try:
-                return datetime.strptime(date_str, fmt)
-            except ValueError:
-                continue
-        return None
-    except Exception:
-        return None
-
-
-def formatDate(date_obj, format_str='%Y-%m-%d %H:%M:%S'):
-    """Format datetime object to string"""
-    if not date_obj:
-        return ''
-    try:
-        return date_obj.strftime(format_str)
-    except Exception:
-        return ''
-
-
-def getCurrentTimestamp():
-    """Get current timestamp"""
-    import time
-    return time.time()
-
-
-def safeInt(value, default=0):
-    """Safely convert value to int"""
-    try:
-        if value is None:
-            return default
-        return int(value)
-    except (ValueError, TypeError):
-        return default
-
-
-def safeFloat(value, default=0.0):
-    """Safely convert value to float"""
-    try:
-        if value is None:
-            return default
-        return float(value)
-    except (ValueError, TypeError):
-        return default
-
-
-def safeBool(value, default=False):
-    """Safely convert value to bool"""
-    try:
-        if value is None:
-            return default
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, str):
-            return value.lower() in ['true', '1', 'yes', 'on']
-        return bool(value)
-    except (ValueError, TypeError):
-        return default
 
 
 def isMacOS() -> bool:
     import platform
     return platform.system() == 'Darwin'
+
+def isWindowsOS() -> bool:
+    import platform
+    return platform.system() == 'Windows'
+
+def isLinuxOS() -> bool:
+    import platform
+    return platform.system() == 'Linux'

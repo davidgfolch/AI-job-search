@@ -1,6 +1,5 @@
 import math
 import re
-import traceback
 from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
 

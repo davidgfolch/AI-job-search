@@ -229,7 +229,12 @@ update jobs set cv_match_percentage = 1 where cv_match_percentage=-1;
 
 select id, markdown from jobs order by created desc;
 
-insert into jobs (jobId,title,markdown,`location`,url) values ('handMade912876394872983','Backend - TravelTech - Java', 'todo','handMade', 'https://www.linkedin.com/in/tristan-marvalin-%F0%9F%8D%80-bba7722b/')
+insert into jobs (jobId,title,markdown,`location`,url) values (
+    'handMade918739487293847',
+    'SENIOR PYTHON FULLSTACK ENGINEER | 55-70.000 € FULL REMOTE (from Spain)',
+    'todo','handMade', 'https://www.linkedin.com/posts/luismarquezperez_encontrar-trabajo-lhh-share-7396576958068891648-uwle?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAZZizwBuntXrHiItXZY-quYzSMB_DQy5oM')
+
+select * from jobs where jobId='handMade918739487293847';
 
 select * from jobs where jobId = 'handMade912876394872983';
 

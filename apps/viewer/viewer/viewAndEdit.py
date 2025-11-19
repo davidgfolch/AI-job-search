@@ -1,6 +1,7 @@
 import re
-from typing import Dict
+from typing import Any, Dict, List, Tuple
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 from pandas import DataFrame
 from mysql.connector.types import RowItemType
 from commonlib.sqlUtil import formatSql
@@ -18,11 +19,10 @@ from viewer.viewAndEditConstants import (
     F_KEY_CLIENT, F_KEY_COMMENTS, F_KEY_COMPANY, F_KEY_SALARY, F_KEY_STATUS, FF_KEY_BOOL_FIELDS, FF_KEY_BOOL_NOT_FIELDS,
     FF_KEY_COLUMNS_WIDTH, FF_KEY_CONFIG_PILLS, FF_KEY_DAYS_OLD, FF_KEY_LIST_HEIGHT, FF_KEY_ORDER, FF_KEY_SALARY, FF_KEY_SEARCH,
     FF_KEY_SINGLE_SELECT, FF_KEY_WHERE, FIELDS, FIELDS_BOOL, FIELDS_SORTED, LIST_HEIGHT, LIST_VISIBLE_COLUMNS, STYLE_JOBS_TABLE, V_KEY_SHOW_CALCULATOR)
-from viewer.viewAndEditEvents import deleteSalary, salaryCalculator, formDetailSubmit
+from viewer.viewAndEditEvents import deleteSalary, formDetailSubmit
 from viewer.viewAndEditHelper import detailForSingleSelection, formFilter, getJobListQuery, table, tableFooter
 from viewer.viewConstants import PAGE_VIEW_IDX
 from viewer.util.salaryCalculator import calculator
-
 
 # from streamlit_js_eval import streamlit_js_eval
 # TODO: Table scroll memory: when selecting a row below the visible scroll, a
@@ -31,9 +31,10 @@ from viewer.util.salaryCalculator import calculator
 
 expandFilterForm = False
 
+
 def view():
     # Declare global variable first
-    global mysql    
+    global mysql
     mysql = MysqlUtil(mysqlCachedConnection())
     initStates({
         FF_KEY_SEARCH: '',
@@ -97,7 +98,7 @@ def formDetail(jobData):
 def getJobData(selectedRows: DataFrame) -> Dict:
     selected = selectedRows.iloc[0]
     id = int(selected.iloc[0])
-    
+
     # Use original implementation (new architecture integrated at mysql level)
     jobData: Dict[str, RowItemType] = mysql.fetchOne(f"select {DB_FIELDS} from jobs where id=%s", id)
     fieldsArr = stripFields(DB_FIELDS)
@@ -148,14 +149,14 @@ def showDetail(jobData: dict):
     st.markdown(outStr, unsafe_allow_html=True)
     salary = fmtDetailOpField(data, 'salary')
     if salary != '':
-        inColumns([
-            (10, lambda _: st.write(salary)),
-            (1, lambda _: st.button('', icon='🧮', key='calculatorButton', on_click=showSalaryCalculator)),
-            (1, lambda _: st.button('', icon='🗑️', key='trashButton',
-             on_click=deleteSalary, kwargs={'id': jobData['id']})),
-        ])
+        inColumns([(10, lambda _: st.write(salary)),
+                  (2, lambda _: st.button('', icon='🗑️', key='trashButton', on_click=deleteSalary, kwargs={'id': jobData['id']})),
+                  (4, lambda _: salaryFreelanceButton()),
+                  (5, lambda _: salaryGrossYearButton())])
     else:
-        st.button('', icon='🧮', key='calculatorButton', on_click=showSalaryCalculator)
+        inColumns([(1, lambda _: st.empty), (1, lambda _: st.empty),
+                  (1, lambda _: salaryFreelanceButton()),
+                  (1, lambda _: salaryGrossYearButton())])
     if getState(V_KEY_SHOW_CALCULATOR, False):
         calculator()
     cvMatchPercentage = fmtDetailOpField(data, 'cv_match_percentage', 'CV match', 2)
@@ -169,6 +170,14 @@ def showDetail(jobData: dict):
         with st.expander('Comments', expanded=True):
             st.markdown(val)
     st.markdown(data['markdown'])
+
+
+def salaryFreelanceButton() -> bool:
+    return st.button('Freelance salary ', icon='🧮', key='calculatorButton', on_click=showSalaryCalculator)
+
+
+def salaryGrossYearButton() -> DeltaGenerator:
+    return st.link_button("🔗 Gross year salary", "https://tecalculo.com/calculadora-de-sueldo-neto", icon='🧮')
 
 
 def showSalaryCalculator():
@@ -212,8 +221,8 @@ def addCompanyAppliedJobsInfo(jobData):
     ids = ','.join([str(r[0]) for r in rows])
     if len(ids) > 0:
         dates = ' '.join(['  📅 '+formatDate(r[1].date()) for r in rows])
-        jobData['company'] += ' <span style="font-size: small">' + ':point_right: :warning: ' \
-            + gotoPageByUrl(PAGE_VIEW_IDX, f'already applied {params["company"]}', ids) + f' on {dates}</span>'
+        jobData['company'] += ' <span style="font-size: small">' + ':point_right: :warning: ' + \
+            gotoPageByUrl(PAGE_VIEW_IDX, f'already applied {params["company"]}', ids) + f' on {dates}</span>'
 
 
 def formatDate(date):
