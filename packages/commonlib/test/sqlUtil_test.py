@@ -1,7 +1,3 @@
-import pytest
-from unittest.mock import patch, MagicMock
-
-
 def buildWhereClause(filters):
     """Build WHERE clause from filters dictionary"""
     if not filters:
