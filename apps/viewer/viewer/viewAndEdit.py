@@ -1,13 +1,13 @@
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Dict
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from pandas import DataFrame
 from mysql.connector.types import RowItemType
 from commonlib.sqlUtil import formatSql
 from commonlib.util import getEnv
-from commonlib.mysqlUtil import (SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS, SELECT_APPLIED_JOB_ORDER_BY,
-                                 MysqlUtil, getColumnTranslated)
+from commonlib.mysqlUtil import MysqlUtil, SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, QRY_SELECT_COUNT_JOBS, SELECT_APPLIED_JOB_ORDER_BY
+from commonlib.sqlUtil import getColumnTranslated
 from viewer.mysqlConn import mysqlCachedConnection
 
 from viewer.util.stComponents import showCodeSql
@@ -150,7 +150,7 @@ def showDetail(jobData: dict):
     salary = fmtDetailOpField(data, 'salary')
     if salary != '':
         inColumns([(10, lambda _: st.write(salary)),
-                  (2, lambda _: st.button('', icon='🗑️', key='trashButton', on_click=deleteSalary, kwargs={'id': jobData['id']})),
+                  (2, lambda _: salaryDeleteButton(jobData['id'])),
                   (4, lambda _: salaryFreelanceButton()),
                   (5, lambda _: salaryGrossYearButton())])
     else:
@@ -170,6 +170,10 @@ def showDetail(jobData: dict):
         with st.expander('Comments', expanded=True):
             st.markdown(val)
     st.markdown(data['markdown'])
+
+
+def salaryDeleteButton(id: str) -> DeltaGenerator:
+    return st.button('', icon='🗑️', key='trashButton', on_click=deleteSalary, kwargs={'id': id})
 
 
 def salaryFreelanceButton() -> bool:

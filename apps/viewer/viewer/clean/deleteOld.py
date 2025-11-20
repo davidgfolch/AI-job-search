@@ -2,7 +2,8 @@ from pandas import DataFrame
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
-from commonlib.mysqlUtil import MysqlUtil, deleteJobsQuery
+from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sqlUtil import deleteJobsQuery
 from .cleanUtil import getIdsIndex
 from ..mysqlConn import mysqlCachedConnection
 from ..util.stComponents import showCodeSql

@@ -1,7 +1,7 @@
 import re
 import streamlit as st
-from commonlib.mysqlUtil import MysqlUtil, deleteJobsQuery, updateFieldsQuery
-from commonlib.sqlUtil import formatSql
+from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sqlUtil import formatSql, deleteJobsQuery, updateFieldsQuery
 from .mysqlConn import mysqlCachedConnection
 from .util.stComponents import showCodeSql
 from .util.stStateUtil import getState, setState

@@ -60,8 +60,6 @@ def table(columns, cnf, res):
         setState('lastSelected', {'Sel': df['Sel']})
     elif lastSelected and 'Sel' in lastSelected:
         df['Sel'] = lastSelected['Sel']
-        
-    #st.write(f'df: {df["Sel"]}')
     colsConfig = {'Ids': None,
                   'Sel': st.column_config.Column(width='small'),
                   'Id': st.column_config.Column(width='small'),
@@ -69,11 +67,11 @@ def table(columns, cnf, res):
                   'Company': st.column_config.Column(width='large'),
                   'Created': st.column_config.Column(width='large'),
                   }
-    #TODO: use st-aggrid instead of data_editor?
+    # TODO: use st-aggrid instead of data_editor?
     editedDf: DataFrame = st.data_editor(df, width='stretch',
-                          hide_index=True, key='cleanJobsListTable',
-                          on_change=onTableChange,
-                          column_config=colsConfig, height=600)
+                                         hide_index=True, key='cleanJobsListTable',
+                                         on_change=onTableChange,
+                                         column_config=colsConfig, height=600)
     selectedRows = df[editedDf['Sel'].fillna(False).astype(bool)]
     return editedDf, selectedRows
 
@@ -121,5 +119,5 @@ def showQuery(container: DeltaGenerator, q: str):
     with container.expander('Sql query details'):
         if st.toggle('Edit query'):
             q = st.text_area('Query', q, key='cleanSelectQuery', height=300)
-        showCodeSql(q, True, True)
+        showCodeSql(q, format=True, showSql=True)
     return q

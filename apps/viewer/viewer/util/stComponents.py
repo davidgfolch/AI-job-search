@@ -1,9 +1,9 @@
+from typing import Optional
 import streamlit as st
 from collections import deque
 from streamlit.delta_generator import DeltaGenerator
 
-from commonlib.mysqlUtil import getColumnTranslated
-from commonlib.sqlUtil import formatSql
+from commonlib.sqlUtil import formatSql, getColumnTranslated
 from .historyUtil import historyButton
 from .stStateUtil import getBoolKeyName, getState, listSessionFiles, loadSession, saveSession
 from ..viewAndEditConstants import FF_KEY_CONFIG_PILLS
@@ -43,7 +43,7 @@ def checkAndPills(label, fields: list[str], key: str):
                      label_visibility='collapsed')
 
 
-def showCodeSql(sql: str, params: dict = None, format=False, showSql=None):
+def showCodeSql(sql: str, params: Optional[dict] = None, format=False, showSql=None):
     showSqlToggle = 'showSql' in getState(FF_KEY_CONFIG_PILLS, [])
     if (showSql is not None and showSql) or showSqlToggle:
         if params:
