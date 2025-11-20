@@ -2,7 +2,7 @@ from typing import Dict, Sequence, TypeVar, Union
 import mysql.connector as mysqlConnector
 from mysql.connector.types import RowItemType
 
-from commonlib.sqlUtil import error
+from commonlib.sqlUtil import error, getColumnTranslated
 
 from .decorator.retry import retry
 from .terminalColor import green, red, yellow

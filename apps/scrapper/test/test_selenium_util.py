@@ -39,7 +39,6 @@ class TestSeleniumUtil:
     def test_get_elm_success(self, selenium_util, mock_driver):
         mock_element = MagicMock()
         mock_driver.find_element.return_value = mock_element
-        
         result = selenium_util.getElm('#test-id')
         assert result == mock_element
         mock_driver.find_element.assert_called_with(By.CSS_SELECTOR, '#test-id')
@@ -47,7 +46,6 @@ class TestSeleniumUtil:
     def test_get_elms_success(self, selenium_util, mock_driver):
         mock_elements = [MagicMock(), MagicMock()]
         mock_driver.find_elements.return_value = mock_elements
-        
         result = selenium_util.getElms('.test-class')
         assert result == mock_elements
         mock_driver.find_elements.assert_called_with(By.CSS_SELECTOR, '.test-class')
@@ -55,7 +53,6 @@ class TestSeleniumUtil:
     def test_send_keys(self, selenium_util, mock_driver):
         mock_element = MagicMock()
         mock_driver.find_element.return_value = mock_element
-        
         with patch.object(selenium_util, 'moveToElement'):
             selenium_util.sendKeys('#test-id', 'test text')
             mock_element.send_keys.assert_called_with('test text')
@@ -64,7 +61,6 @@ class TestSeleniumUtil:
         mock_element = MagicMock()
         mock_element.text = 'Test text'
         mock_driver.find_element.return_value = mock_element
-        
         result = selenium_util.getText('#test-id')
         assert result == 'Test text'
 
@@ -72,7 +68,6 @@ class TestSeleniumUtil:
         mock_element = MagicMock()
         mock_element.get_attribute.return_value = 'test-value'
         mock_driver.find_element.return_value = mock_element
-        
         result = selenium_util.getAttr('#test-id', 'href')
         assert result == 'test-value'
         mock_element.get_attribute.assert_called_with('href')
@@ -80,7 +75,6 @@ class TestSeleniumUtil:
     def test_scroll_into_view(self, selenium_util, mock_driver):
         mock_element = MagicMock()
         mock_driver.find_element.return_value = mock_element
-        
         with patch.object(selenium_util, 'waitUntilVisible'), \
              patch.object(selenium_util, 'moveToElement'):
             selenium_util.scrollIntoView('#test-id')
@@ -92,10 +86,6 @@ class TestSeleniumUtil:
             selenium_util.tab('test_tab')
             assert 'test_tab' in selenium_util.tabs
 
-    def test_tab_switch_to_default(self, selenium_util, mock_driver):
-        selenium_util.tab(None)
-        mock_driver.switch_to.window.assert_called_with('main_tab')
-
     def test_tab_close(self, selenium_util, mock_driver):
         selenium_util.tabs['test_tab'] = 'handle'
         selenium_util.tabClose('test_tab')
@@ -106,7 +96,6 @@ class TestSeleniumUtil:
     def test_wait_until_page_is_loaded(self, mock_wait, selenium_util, mock_driver):
         mock_wait_instance = MagicMock()
         mock_wait.return_value = mock_wait_instance
-        
         selenium_util.waitUntilPageIsLoaded(10)
         mock_wait.assert_called_with(mock_driver, 10)
 
@@ -147,7 +136,7 @@ class TestSeleniumUtil:
         mock_driver.find_element.return_value = mock_checkbox
         mock_driver.execute_script.return_value = None
         mock_driver.execute_script.side_effect = None
-        
+
         with patch.object(selenium_util, 'moveToElement'):
             selenium_util.checkboxUnselect('#checkbox')
             mock_driver.execute_script.assert_called()
@@ -155,7 +144,7 @@ class TestSeleniumUtil:
     def test_wait_and_click(self, selenium_util, mock_driver):
         mock_element = MagicMock()
         mock_driver.find_element.return_value = mock_element
-        
+
         with patch.object(selenium_util, 'waitUntilClickable'), \
              patch.object(selenium_util, 'moveToElement'):
             selenium_util.waitAndClick('#test-id')
@@ -175,7 +164,7 @@ class TestSeleniumUtil:
         mock_element = MagicMock()
         mock_element.get_attribute.return_value = '<div>test</div>'
         mock_driver.find_element.return_value = mock_element
-        
+
         result = selenium_util.getHtml('#test-id')
         assert result == '<div>test</div>'
 

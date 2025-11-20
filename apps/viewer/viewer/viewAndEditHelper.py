@@ -185,8 +185,7 @@ def formFilterByIdsSetup():
         setState(KEY_SELECTED_IDS, None)
 
 
-def tableFooter(totalResults, filterResCnt, totalSelected,
-                selectedRows: DataFrame):
+def tableFooter(totalResults, filterResCnt, totalSelected, selectedRows: DataFrame):
     totals = f'<p style="text-align:right">{totalSelected} ' + \
         f'selected ({filterResCnt} filtered, ' + \
         f'{totalResults} total)</p>'
