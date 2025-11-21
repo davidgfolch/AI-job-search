@@ -56,7 +56,7 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
 
 @retry(retries=10, delay=5, exception=NoSuchElementException)
 def acceptCookies():
-    if not selenium.useUndetected:
+    if not selenium.driverUtil.useUndetected:
         print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
         sleep(4, 4)
     selenium.scrollIntoView('#didomi-notice-agree-button > span')
@@ -67,7 +67,7 @@ def acceptCookies():
 
 
 def securityFilter():
-    if selenium.useUndetected:
+    if selenium.driverUtil.useUndetected:
         acceptCookies()
         return
     selenium.waitUntilPageIsLoaded()
@@ -139,7 +139,7 @@ def searchJobs(keywords: str, preloadPage: bool):
         print(yellow(f'Search keyword={keywords}'))
         loadSearchPage()
         if preloadPage:
-            if not selenium.useUndetected:
+            if not selenium.driverUtil.useUndetected:
                 securityFilter()
             return
         if not loadFilteredSearchResults(keywords):
