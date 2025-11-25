@@ -82,12 +82,12 @@ def scrollJobsList(idx):
     #     i = idx
     #     while i <= idx:
     # in last page could not exist
-    debug("before scrollJobsList")
+    baseScrapper.debug(DEBUG, "before scrollJobsList")
     li = selenium.getElms(CSS_SEL_JOB_LI)[idx]
     selenium.scrollIntoView_noError(li)
     sleep(0.5, 1)
     # i += 1
-    debug("after scrollJobsList")
+    baseScrapper.debug(DEBUG, "after scrollJobsList")
 
 
 @retry(exception=NoSuchElementException, raiseException=False)
@@ -160,7 +160,7 @@ def searchJobs(keywords: str, securityFilter: bool):
                 break  # exit while
         summarize(keywords, totalResults, currentItem)
     except Exception:
-        debug(exception=True)
+        baseScrapper.debug(DEBUG, exception=True)
 
 
 def getJobLinkElement(idx):
@@ -178,7 +178,7 @@ def loadAndProcessRow(idx):
         jobLinkElm: WebElement = getJobLinkElement(idx)
         url = jobLinkElm.get_attribute('href')
         jobId, jobExists = jobExistsInDB(url)
-        debug("after jobExistsInDB")
+        baseScrapper.debug(DEBUG, "after jobExistsInDB")
         # clean url just with jobId param
         url = f'https://es.indeed.com/viewjob?jk={jobId}'
         if jobExists:
@@ -192,7 +192,7 @@ def loadAndProcessRow(idx):
                      f"expected because not always has {JOBS_X_PAGE} ",
                      f"pages: {ex}"))
     except Exception:
-        debug(red(traceback.format_exc()))
+        baseScrapper.debug(DEBUG)
     if not ignore:
         if not processRow(url):
             print(red('Validation failed'))
@@ -228,7 +228,7 @@ def processRow(url):
             mergeDuplicatedJobs(mysql, getSelect())
             return True
         else:
-            debug(exception=True)
+            baseScrapper.debug(DEBUG, exception=True)
     return False
 
 
@@ -240,7 +240,3 @@ def postProcessMarkdown(md):
     txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
     txt = re.sub(r'[-*] #', '#', txt)
     return txt
-
-
-def debug(msg: str = '', exception=False):
-    baseScrapper.debug(DEBUG, msg, exception)

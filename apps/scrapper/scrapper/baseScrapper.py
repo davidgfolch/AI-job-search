@@ -1,6 +1,7 @@
 
 import re
 import traceback
+from typing import Optional
 
 # from bs4 import BeautifulSoup
 from markdownify import MarkdownConverter
@@ -86,7 +87,7 @@ def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool)
     return True
 
 
-def debug(debugFlag: bool, msg: str = '', exception=None):
+def debug(debugFlag: bool, msg: str = '', exception: Optional[bool]=None):
     exception = exception if exception is not None else debugFlag
     if debugFlag:
         msg = f" (debug active) {msg}, press a key"

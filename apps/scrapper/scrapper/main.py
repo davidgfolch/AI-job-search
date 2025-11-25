@@ -1,9 +1,5 @@
-from __future__ import annotations
-
 import sys
 from typing import Any, Callable, Optional
-
-import urllib3
 
 from commonlib.util import getDatetimeNow, getEnv, getEnvBool, getSeconds, getTimeUnits, getSrcPath, consoleTimer
 from commonlib.terminalColor import cyan, red, yellow, green
@@ -13,7 +9,6 @@ from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, i
 from scrapper.container.scrapper_container import ScrapperContainer
 
 DEBUG = getEnvBool('SCRAPPER_DEBUG', False)
-FUNCTION = 'function'
 TIMER = 'timer'
 NEW_ARCH = 'newArchitecture'
 CLOSE_TAB = 'closeTab'
@@ -21,22 +16,17 @@ IGNORE_AUTORUN = 'ignoreAutoRun'
 SCRAP_PAGE_FUNCTION = 'scrapPageFunction'
 SCRAPPERS: dict[str, dict[str, Any]] = {
     'Infojobs': {  # first to solve security filter
-        FUNCTION: infojobs.run,
         TIMER: getSeconds(getEnv('INFOJOBS_RUN_CADENCY'))},
     'Tecnoempleo': {  # first to solve security filter
-        FUNCTION: tecnoempleo.run,
         TIMER: getSeconds(getEnv('TECNOEMPLEO_RUN_CADENCY'))},
     'Linkedin': {
-        FUNCTION: linkedin.run,
         TIMER: getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
         NEW_ARCH: getEnvBool('LINKEDIN_NEW_ARCHITECTURE', False),
         CLOSE_TAB: True,
         SCRAP_PAGE_FUNCTION: linkedin.processUrl},
     'Glassdoor': {
-        FUNCTION: glassdoor.run,
         TIMER: getSeconds(getEnv('GLASSDOOR_RUN_CADENCY'))},
     'Indeed': {
-        FUNCTION: indeed.run,
         TIMER: getSeconds(getEnv('INDEED_RUN_CADENCY')),
         IGNORE_AUTORUN: True
     },
@@ -140,33 +130,32 @@ def hasNewArchitecture(name: str, properties: dict[str, dict[str, Any]]) -> bool
         return False
 
 
-def executeScrapperPreload(name, properties: dict):
+def executeScrapperPreload(name: str, properties: dict):
     try:
         if RUN_IN_TABS:
             seleniumUtil.tab(name)
         if hasNewArchitecture(name, properties):
             runPreloadNewArchitecture(name)
         else:
-            runScrapper(properties, True)
+            runScrapper(name, True)
         properties['preloaded'] = True
     except Exception:
-        baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:", True)
+        baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:")
         properties['preloaded'] = False
 
 
-def runScrapper(properties: dict, preloadOnly: bool, retryCount: int = 1):
-    global seleniumUtil
-    try:
-        properties[FUNCTION](seleniumUtil, preloadOnly)
-    except urllib3.exceptions.MaxRetryError:
-        if retryCount > 2:
-            raise
-        baseScrapper.debug(DEBUG, "MaxRetryError detected, restarting selenium session", True)
-        try:
-            seleniumUtil.exit()
-        finally:
-            with SeleniumUtil() as seleniumUtil:
-                runScrapper(properties, preloadOnly, retryCount + 1)
+def runScrapper(name: str, preloadOnly: bool):
+    match name.lower():
+        case 'infojobs':
+            infojobs.run(seleniumUtil, preloadOnly)
+        case 'tecnoempleo':
+            tecnoempleo.run(seleniumUtil, preloadOnly)
+        case 'linkedin':
+            linkedin.run(seleniumUtil, preloadOnly)
+        case 'glassdoor':
+            glassdoor.run(seleniumUtil, preloadOnly)
+        case 'indeed':
+            indeed.run(seleniumUtil, preloadOnly)
 
 
 def runPreloadNewArchitecture(name: str):
@@ -179,12 +168,12 @@ def runPreloadNewArchitecture(name: str):
         baseScrapper.debug(DEBUG)
 
 
-def executeScrapper(name, properties: dict):
+def executeScrapper(name: str, properties: dict):
     try:
         if hasNewArchitecture(name, properties):
             runScrapperNewArchitecture(name, properties)
         else:
-            runScrapper(properties, False)
+            runScrapper(name, False)
     except Exception:
         baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
         properties['lastExecution'] = None  # re-execute resetting timer

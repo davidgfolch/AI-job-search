@@ -57,13 +57,15 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
         selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)
         return
     with MysqlUtil() as mysql:
-        # TODO: save search keywords in DB
-        # TODO: additionally set search ranking?
         for keywords in JOBS_SEARCH.split(','):
-            url = loadPage(keywords.strip())
-            checkLoginPopup(keywords.strip())
-            if checkResults(keywords, url):
-                searchJobs(keywords.strip())
+            try:
+                url = loadPage(keywords.strip())
+                checkLoginPopup(keywords.strip())
+                if checkResults(keywords, url):
+                    searchJobs(keywords.strip())
+            except Exception:
+                baseScrapper.debug(DEBUG)
+
 
 def loadPage(keywords: str) -> str:
     print(yellow(f'Search keyword={keywords}'))
@@ -90,8 +92,8 @@ def login():
     selenium.sendKeys('#password', USER_PWD)
     try:
         selenium.checkboxUnselect('div.remember_me__opt_in input')
-    except Exception as e:
-        print(red(str(e)))
+    except Exception:
+        print(yellow('Could not click on "remember me" checkbox'))
     selenium.waitAndClick('form button[type=submit]')
 
 
@@ -104,14 +106,13 @@ def getUrl(keywords):
 
 def checkResults(keywords: str, url: str):
     noResultElm = selenium.getElms(CSS_SEL_NO_RESULTS)
-    if len(noResultElm) > 0:
-        print(Exception(
-            join('No results for job search on linkedIn for',
-                 f'keywords={keywords}', f'remote={remote}',
-                 f'location={location}', f'old={f_TPR}', f'URL {url}')))
-        baseScrapper.debug(DEBUG, f'checkResults -> no results for search={keywords}', False)
-        return False
-    return True
+    if len(noResultElm) == 0:
+        return True
+    print(yellow(
+        join('No results for job search on linkedIn for',
+                f'keywords={keywords}', f'remote={remote}',
+                f'location={location}', f'old={f_TPR}', f'URL {url}')))
+    return False
 
 
 def replaceIndex(cssSelector: str, idx: int):
@@ -215,7 +216,7 @@ def searchJobs(keywords: str):
             selenium.waitUntilPageIsLoaded()
         summarize(keywords, totalResults, currentItem)
     except Exception:
-        baseScrapper.debug(DEBUG, '', True)
+        baseScrapper.debug(DEBUG, exception=True)
 
 
 def loadAndProcessRow(idx):
@@ -224,8 +225,8 @@ def loadAndProcessRow(idx):
         cssSel = scrollJobsList(idx)
         jobId, jobExists = jobExistsInDB(cssSel)
         loadJobDetail(jobExists, idx, cssSel)
-    except NoSuchElementException as ex:
-        baseScrapper.debug(DEBUG, "NoSuchElement in loadAndProcessRow " + red(f'ERROR (loadJob): {ex.msg}'))
+    except NoSuchElementException:
+        baseScrapper.debug(DEBUG, "NoSuchElement in loadAndProcessRow ", exception=True)
         print()
         return False
     if jobExists:
@@ -264,7 +265,7 @@ def processRow(idx):
     except (ValueError, KeyboardInterrupt) as e:
         raise e
     except Exception:
-        baseScrapper.debug(DEBUG, '', True)
+        baseScrapper.debug(DEBUG, exception=True)
 
 
 def printJob(title, company, location, url, jobId, html, md):

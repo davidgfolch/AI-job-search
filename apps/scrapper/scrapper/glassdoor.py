@@ -65,7 +65,7 @@ def loadMainPage():
         try:
             selenium.waitUntil_presenceLocatedElement('#inlineUserEmail')
         except Exception:
-            if not selenium.useUndetected:
+            if not selenium.driverUtil.useUndetected:
                 cloudFlareSecurityFilter()
 
 
@@ -233,7 +233,3 @@ def processRow():
             mergeDuplicatedJobs(mysql, getSelect())
     else:
         raise ValueError('Validation failed')
-
-
-def debug(msg: str = ''):
-    baseScrapper.debug(DEBUG, msg)

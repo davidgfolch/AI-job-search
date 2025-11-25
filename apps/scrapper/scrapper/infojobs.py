@@ -166,7 +166,7 @@ def searchJobs(keywords: str, preloadPage: bool):
                     break  # exit while
         summarize(keywords, totalResults, currentItem)
     except Exception:
-        debug(exception=True)
+        baseScrapper.debug(DEBUG, exception=True)
 
 
 def loadSearchPage():
@@ -242,7 +242,7 @@ def loadAndProcessRow(idx) -> bool:
         if not processRow(url):
             raise ValueError('Validation failed')
     except Exception:
-        debug(red(traceback.format_exc()))
+        baseScrapper.debug(DEBUG, exception=True)
         return False
     finally:
         print(flush=True)
@@ -281,7 +281,3 @@ def postProcessMarkdown(md):
     # txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
     # txt = re.sub(r'[-*] #', '#', txt)
     return txt
-
-
-def debug(msg: str = '', exception=False):
-    baseScrapper.debug(DEBUG, msg, exception)

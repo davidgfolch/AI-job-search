@@ -1,5 +1,4 @@
 import math
-import traceback
 from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
 
@@ -62,7 +61,7 @@ def login():
     sleep(2, 2)
     selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
     selenium.waitUntilPageIsLoaded()
-    if selenium.useUndetected:
+    if selenium.driverUtil.useUndetected:
         waitForUndetectedSecurityFilter()
     else:
         cloudFlareSecurityFilter()
@@ -216,7 +215,7 @@ def searchJobs(keywords: str):
             selenium.waitUntilPageIsLoaded()
         summarize(keywords, totalResults, currentItem)
     except Exception:
-        debug(traceback.format_exc())
+        baseScrapper.debug(DEBUG, exception=True)
 
 
 def loadAndProcessRow(idx):
@@ -231,7 +230,7 @@ def loadAndProcessRow(idx):
         pageLoaded = loadDetail(cssSelLink)
         processRow()
     except Exception:
-        debug(traceback.format_exc())
+        baseScrapper.debug(DEBUG, exception=True)
         return False
     finally:
         print(flush=True)
@@ -264,7 +263,3 @@ def processRow():
             mergeDuplicatedJobs(mysql, getSelect())
     else:
         raise ValueError('Validation failed')
-
-
-def debug(msg: str = ''):
-    baseScrapper.debug(DEBUG, msg)
