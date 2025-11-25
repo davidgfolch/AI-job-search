@@ -1,15 +1,17 @@
 #!/bin/bash
-
+set -x
 echo ""
 echo "Installing commonlib library..."
-cd packages/commonlib && poetry install && cd ../..
+cd packages/commonlib && poetry lock && poetry install
+cd ../..
 
-for app in apps/*; do
+for app in ./apps/*/; do
     echo ""
     echo "Installing $(basename $app)..."
-    if [ "$app" == "apps/aiEnrich" ]; then
-        cd "$app" && UV_PROJECT_ENVIRONMENT=custom-venv uv sync && uv tool install --force crewai & cd ../..
+    if [ "$app" == "./apps/aiEnrich/" ]; then
+        cd "$app" && uv sync && uv tool install --force crewai
     else
-        cd "$app" && poetry install & cd ../..
+        cd "$app" && poetry lock && poetry install
     fi
+    cd ../..
 done
