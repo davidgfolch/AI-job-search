@@ -14,7 +14,7 @@ uv.lock
 .coverage
 **/node_modules/**
 **/.next/**
-scripts/mysql/backup.sql
+scripts/mysql/*backup.*
 apps/aiEnrich/*_CV.*
 **/coverage.svg
 **/coverage.xml
