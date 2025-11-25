@@ -10,7 +10,7 @@ from commonlib.decorator.retry import retry
 from commonlib.util import getDatetimeNowStr
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
-from .seleniumUtil import SeleniumUtil
+from .seleniumUtil import SeleniumUtil, sleep
 from .selectors.linkedinSelectors import (
     # CSS_SEL_GLOBAL_ALERT_HIDE,
     CSS_SEL_JOB_DESCRIPTION,
@@ -60,7 +60,25 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
         # TODO: save search keywords in DB
         # TODO: additionally set search ranking?
         for keywords in JOBS_SEARCH.split(','):
-            searchJobs(keywords.strip())
+            url = loadPage(keywords.strip())
+            checkLoginPopup(keywords.strip())
+            if checkResults(keywords, url):
+                searchJobs(keywords.strip())
+
+def loadPage(keywords: str) -> str:
+    print(yellow(f'Search keyword={keywords}'))
+    url = getUrl(keywords)
+    print(yellow(f'Loading page {url}'))
+    selenium.loadPage(url)
+    selenium.waitUntilPageIsLoaded()
+    return url
+
+def checkLoginPopup(keywords) -> bool:
+    sleep(2, 3)
+    if selenium.waitAndClick_noError("#base-contextual-sign-in-modal > div > section > div > div > div > div.sign-in-modal > button", "Checking linkedin login popup is present", showException=False):
+        login()
+        loadPage(keywords.strip())
+    return True
 
 
 def login():
@@ -174,14 +192,7 @@ def getJobUrlShort(url: str):
 
 def searchJobs(keywords: str):
     try:
-        print(yellow(f'Search keyword={keywords}'))
-        url = getUrl(keywords)
-        print(yellow(f'Loading page {url}'))
-        selenium.loadPage(url)
-        selenium.waitUntilPageIsLoaded()
-        if not checkResults(keywords, url):
-            return
-        selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')
+        selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')        
         totalResults = getTotalResultsFromHeader(keywords)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
@@ -254,6 +265,7 @@ def processRow(idx):
         raise e
     except Exception:
         baseScrapper.debug(DEBUG, '', True)
+
 
 def printJob(title, company, location, url, jobId, html, md):
     print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
