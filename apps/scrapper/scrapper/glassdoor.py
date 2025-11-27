@@ -38,8 +38,8 @@ WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
 
 print('Glassdoor scrapper init')
-selenium: SeleniumUtil
-mysql: MysqlUtil
+selenium: SeleniumUtil = None
+mysql: MysqlUtil = None
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
@@ -50,7 +50,6 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: Persi
     if preloadPage:
         loadMainPage()
         return
-    
     saved_state = {}
     if persistenceManager:
         saved_state = persistenceManager.get_state('Glassdoor')

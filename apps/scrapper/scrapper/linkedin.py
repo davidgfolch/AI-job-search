@@ -43,8 +43,8 @@ WEB_PAGE = 'Linkedin'
 JOBS_X_PAGE = 25
 
 print('Linkedin scrapper init')
-selenium: SeleniumUtil
-mysql: MysqlUtil
+selenium: SeleniumUtil = None
+mysql: MysqlUtil = None
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):

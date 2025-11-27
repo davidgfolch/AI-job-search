@@ -36,8 +36,8 @@ JOBS_X_PAGE = 15
 LOGIN_WAIT_DISABLE = True
 
 print('Indeed scrapper init')
-selenium: SeleniumUtil
-mysql: MysqlUtil
+selenium: SeleniumUtil = None
+mysql: MysqlUtil = None
 
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):

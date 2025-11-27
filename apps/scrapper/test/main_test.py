@@ -72,68 +72,69 @@ def mock_persistence_manager():
 
 
 class TestTimeExpired:
-    def test_first_run_no_wait(self, mock_persistence_manager):
+    def test_first_run_no_wait(self):
         with patch('scrapper.main.getDatetimeNow', return_value=1000):
             properties = {TIMER: 3600, 'waitBeforeFirstRun': False}
-            assert timeExpired('', properties, mock_persistence_manager) is True
+            assert timeExpired('', properties, None) is True
             # lastExecution is NOT updated in timeExpired anymore
             assert properties.get('lastExecution') is None
 
-    def test_first_run_with_wait(self, mock_persistence_manager):
+    def test_first_run_with_wait(self):
         with patch('scrapper.main.getDatetimeNow', return_value=1000):
             properties = {TIMER: 3600, 'waitBeforeFirstRun': True}
-            assert timeExpired('', properties, mock_persistence_manager) is False
-            assert properties['lastExecution'] == 1000
+            # When lastExecution is None, timeExpired returns True (expired)
+            assert timeExpired('', properties, None) is True
+            # timeExpired doesn't update properties anymore
+            assert properties.get('lastExecution') is None
 
     @patch('scrapper.main.getDatetimeNow', side_effect=[100, 1900])
     @patch('scrapper.main.getTimeUnits', return_value='30m 0s')
-    def test_not_expired(self, mockGetTimeUnits, mockGetDatetimeNow, mock_persistence_manager):
+    def test_not_expired(self, mockGetTimeUnits, mockGetDatetimeNow):
         properties = {
             TIMER: 3600,
             'lastExecution': None,
             'waitBeforeFirstRun': False
         }
         mockGetDatetimeNow.reset_mock()
-        res = timeExpired('', properties, mock_persistence_manager)
+        res = timeExpired('', properties, None)
         assert res is True
         # lastExecution is NOT updated in timeExpired anymore
-        assert properties['lastExecution'] is None
+        assert properties.get('lastExecution') is None
         
-        # Simulate update in runAllScrappers
-        properties['lastExecution'] = 100
-        
-        result2 = timeExpired('', properties, mock_persistence_manager)
+        # Test with actual lastExecution value
+        # 1900 - 100 = 1800 seconds lapsed, which is less than 3600 timer
+        result2 = timeExpired('', properties, 100)
         assert result2 is False
-        assert properties['lastExecution'] == 100
+        # timeExpired doesn't modify properties
+        assert properties.get('lastExecution') is None
 
     @patch('scrapper.main.getDatetimeNow', side_effect=[5000, 6000])
-    def test_expired(self, mockGetDatetimeNow, mock_persistence_manager):
+    def test_expired(self, mockGetDatetimeNow):
         properties = {
             TIMER: 3600,
-            'waitBeforeFirstRun': False,
-            'lastExecution': 100
+            'waitBeforeFirstRun': False
         }
-        res = timeExpired('', properties, mock_persistence_manager)
+        # 5000 - 100 = 4900 seconds lapsed, which exceeds 3600 timer
+        res = timeExpired('', properties, 100)
         assert res is True
         # lastExecution is NOT updated in timeExpired anymore
-        assert properties['lastExecution'] == 100
+        assert properties.get('lastExecution') is None
 
-    def test_none_last_execution(self, mock_persistence_manager):
+    def test_none_last_execution(self):
         with patch('scrapper.main.getDatetimeNow', return_value=1000):
             properties = {
                 TIMER: 3600,
-                'lastExecution': None,
                 'waitBeforeFirstRun': False
             }
-            assert timeExpired('', properties, mock_persistence_manager) is True
+            assert timeExpired('', properties, None) is True
 
-    def test_persisted_execution(self, mock_persistence_manager):
-        mock_persistence_manager.get_last_execution.return_value = 500
+    def test_persisted_execution(self):
         with patch('scrapper.main.getDatetimeNow', return_value=1000):
             properties = {TIMER: 3600, 'waitBeforeFirstRun': True}
-            # Should use persisted value 500. 1000 - 500 = 500 lapsed. 500 < 3600. So not expired.
-            assert timeExpired('test', properties, mock_persistence_manager) is False
-            assert properties['lastExecution'] == 500
+            # Use persisted value 500. 1000 - 500 = 500 lapsed. 500 < 3600. So not expired.
+            assert timeExpired('test', properties, 500) is False
+            # timeExpired doesn't modify properties
+            assert properties.get('lastExecution') is None
 
 
 @pytest.mark.parametrize("input, expected", [
@@ -168,42 +169,44 @@ def testExecuteScrapperPreloadException(mock_selenium, mock_infojobs_run):
 
 
 class TestExecuteScrapper:
-    def test_success(self, mock_selenium, mock_infojobs_run):
+    def test_success(self, mock_selenium, mock_infojobs_run, mock_persistence_manager):
         properties = {}
         with patch('scrapper.main.RUN_IN_TABS', False):
-            executeScrapper('infojobs', properties, None)
-        mock_infojobs_run.assert_called_once_with(mock_selenium, False, None)
+            executeScrapper('infojobs', properties, mock_persistence_manager)
+        mock_infojobs_run.assert_called_once_with(mock_selenium, False, mock_persistence_manager)
 
-    def test_with_tabs(self, mock_selenium, mock_infojobs_run):
+    def test_with_tabs(self, mock_selenium, mock_infojobs_run, mock_persistence_manager):
         properties = {}
         with patch('scrapper.main.RUN_IN_TABS', True):
-            executeScrapper('infojobs', properties, None)
+            executeScrapper('infojobs', properties, mock_persistence_manager)
         assert mock_selenium.tab.call_count == 1
-        mock_infojobs_run.assert_called_once_with(mock_selenium, False, None)
+        mock_infojobs_run.assert_called_once_with(mock_selenium, False, mock_persistence_manager)
 
-    def test_with_close_tab(self, mock_selenium, mock_infojobs_run):
+    def test_with_close_tab(self, mock_selenium, mock_infojobs_run, mock_persistence_manager):
         properties = {}
         properties[CLOSE_TAB] = True
         with patch('scrapper.main.RUN_IN_TABS', True):
-            executeScrapper('infojobs', properties, None)
+            executeScrapper('infojobs', properties, mock_persistence_manager)
         mock_selenium.tabClose.assert_called_once_with('infojobs')
         mock_selenium.tab.assert_called()
 
-    def test_exception(self, mock_selenium, mock_infojobs_run):
+    def test_exception(self, mock_selenium, mock_infojobs_run, mock_persistence_manager):
         properties = {}
-        properties['lastExecution'] = datetime(2025, 1, 1)
         mock_infojobs_run.side_effect = Exception("Test exception")
         with patch('scrapper.main.RUN_IN_TABS', False):
-            executeScrapper('infojobs', properties, None)
-        assert properties['lastExecution'] is None
-        mock_infojobs_run.assert_called_once_with(mock_selenium, False, None)
+            executeScrapper('infojobs', properties, mock_persistence_manager)
+        # When exception occurs, update_last_execution is called with None
+        mock_persistence_manager.update_last_execution.assert_called_with('infojobs', None)
+        mock_infojobs_run.assert_called_once_with(mock_selenium, False, mock_persistence_manager)
 
-    def test_keyboard_interrupt(self, mock_selenium, mock_infojobs_run):
+    def test_keyboard_interrupt(self, mock_selenium, mock_infojobs_run, mock_persistence_manager):
         properties = {}
-        mock_infojobs_run.side_effect = Exception("Test exception")
+        mock_infojobs_run.side_effect = KeyboardInterrupt("Test interrupt")
         with patch('scrapper.main.RUN_IN_TABS', False):
-            executeScrapper('infojobs', properties, None)
-        mock_infojobs_run.assert_called_once_with(mock_selenium, False, None)
+            executeScrapper('infojobs', properties, mock_persistence_manager)
+        # When KeyboardInterrupt occurs, update_last_execution is called with None
+        mock_persistence_manager.update_last_execution.assert_called_with('infojobs', None)
+        mock_infojobs_run.assert_called_once_with(mock_selenium, False, mock_persistence_manager)
 
 
 class TestRunPreload:
@@ -338,30 +341,30 @@ class TestNewArchitecture:
         mock_infojobs_run.assert_called_once_with(mock_selenium, True, None)
         assert properties['preloaded'] is True
 
-    def test_new_architecture_scrapping_success(self, mock_selenium, mock_container, mock_scrapperService):
+    def test_new_architecture_scrapping_success(self, mock_selenium, mock_container, mock_scrapperService, mock_persistence_manager):
         """Test new architecture scrapping execution"""
         mock_container.get_scrapping_service.return_value = mock_scrapperService
         properties = {NEW_ARCH: True}
         with patch.dict('scrapper.main.SCRAPPERS', {'Linkedin': {NEW_ARCH: True}}), \
                 patch('scrapper.main.getEnv', return_value='java,python'):
-            executeScrapper('Linkedin', properties, None)
+            executeScrapper('Linkedin', properties, mock_persistence_manager)
         mock_scrapperService.executeScrapping.assert_called_once_with(
-            mock_selenium, ['java', 'python'], preloadOnly=False, persistenceManager=None
+            mock_selenium, ['java', 'python'], preloadOnly=False, persistenceManager=mock_persistence_manager
         )
 
-    def test_new_architecture_scrapping_exception_fallback(self, mock_selenium, mock_container, mock_linkedin_run):
+    def test_new_architecture_scrapping_exception_fallback(self, mock_selenium, mock_container, mock_linkedin_run, mock_persistence_manager):
         """Test new architecture exception falls back to old method"""
         mock_container.get_scrapping_service.side_effect = Exception("Container error")
-        executeScrapper('Linkedin', {}, None)
-        mock_linkedin_run.assert_called_once_with(mock_selenium, False, None)
+        executeScrapper('Linkedin', {}, mock_persistence_manager)
+        mock_linkedin_run.assert_called_once_with(mock_selenium, False, mock_persistence_manager)
 
-    def test_non_linkedin_scrapper_uses_old_architecture(self, mock_selenium, mock_infojobs_run):
+    def test_non_linkedin_scrapper_uses_old_architecture(self, mock_selenium, mock_infojobs_run, mock_persistence_manager):
         """Test non-LinkedIn scrappers still use old architecture"""
         executeScrapperPreload('Infojobs', {})
-        executeScrapper('Infojobs', {}, None)
+        executeScrapper('Infojobs', {}, mock_persistence_manager)
         assert mock_infojobs_run.call_count == 2
-        mock_infojobs_run.assert_any_call(mock_selenium, True, None)
-        mock_infojobs_run.assert_any_call(mock_selenium, False, None)
+        mock_infojobs_run.assert_any_call(mock_selenium, True, mock_persistence_manager)
+        mock_infojobs_run.assert_any_call(mock_selenium, False, mock_persistence_manager)
 
 
 class TestHelperFunctions:
