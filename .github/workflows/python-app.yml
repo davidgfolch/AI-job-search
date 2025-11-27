@@ -44,19 +44,7 @@ jobs:
           fi
           cd ../..
         done
-    - name: Tests MODULES
-      run: |
-        read -ra MODULE_ARR <<< "${MODULES}"
-        for MODULE in "${MODULE_ARR[@]}"; do
-          cd "${MODULE}"
-          if [ "${MODULE}" == "apps/aiEnrich" ]; then
-            uv run pytest
-          else
-            poetry run pytest
-          fi
-          cd ../..
-        done
-    - name: Coverage
+    - name: Tests and Coverage
       run: |
         read -ra MODULE_ARR <<< "${MODULES}"
         for MODULE in "${MODULE_ARR[@]}"; do
