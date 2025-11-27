@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Job Search Scrapper</title>
 </head>
+
 <body style="background-color: black; color: yellowgreen;">
     <h1>AI Job Search Scrapper</h1>
     <p>
-        <ul>
-            <li>Specific site scrappers will load on respective tabs.</li>
-            <li><b>Be sure to pass security filters on each page in the first load.</b></li>
-        </ul>
+    <ul>
+        <li>Specific site scrappers will load on respective tabs.</li>
+        <li><b>Be sure to pass security filters on each page in the first load.</b></li>
+    </ul>
     <p>Use the command line to run the scrapper with various options.</p>
     <ul>
         <li><strong>--wait</strong>: Wait for user input before starting the scrapper.</li>
@@ -20,5 +22,10 @@
     <p>Example usage:</p>
     <pre><code>poetry run python -m scrapper.main --wait starting Infojobs</code></pre>
     <pre><code>poetry run python -m scrapper.main LinkedIn</code></pre>
+    <p>Last execution times and interrupted scrappers are stored in
+        <a href="../scrapper_state.json" target="_blank">scrapper_state.json</a>.
+        So the scrapper/main script remembers where it left off.
+    </p>
 </body>
+
 </html>

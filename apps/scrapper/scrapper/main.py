@@ -1,10 +1,12 @@
 import sys
+import time
 from typing import Any, Callable, Optional
 
 from commonlib.util import getDatetimeNow, getEnv, getEnvBool, getSeconds, getTimeUnits, getSrcPath, consoleTimer
 from commonlib.terminalColor import cyan, red, yellow, green
 from scrapper.seleniumUtil import SeleniumUtil
 from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, indeed
+from scrapper.persistence_manager import PersistenceManager
 
 from scrapper.container.scrapper_container import ScrapperContainer
 
@@ -37,21 +39,24 @@ NEXT_SCRAP_TIMER = '10m'  # '10m'  # time to wait between scrapping executions
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()])
 
 seleniumUtil: SeleniumUtil = None  # None initialization needed for tests mocks only
+persistenceManager: PersistenceManager = None
+scrapperContainer: ScrapperContainer = None
+
+def lastExecution(name: str, properties: dict, persistenceManager: PersistenceManager):
+    lastExec = persistenceManager.get_last_execution(name)
+    if lastExec is None and properties.get('waitBeforeFirstRun'):
+        lastExec = persistenceManager.update_last_execution(name, getDatetimeNow())
+    return lastExec
 
 
-def timeExpired(name: str, properties: dict):
-    defaultLastExecution = getDatetimeNow() if properties['waitBeforeFirstRun'] else None
-    properties['lastExecution'] = properties.get('lastExecution', defaultLastExecution)
-    if last := properties['lastExecution']:
-        if last is None:
-            return True
-        lapsed = getDatetimeNow()-last
+def timeExpired(name: str, properties: dict, lastExecution: int):
+    if lastExecution:
+        lapsed = getDatetimeNow() - lastExecution
         timeoutSeconds = properties[TIMER]
-        timeLeft = getTimeUnits(timeoutSeconds-lapsed)
+        timeLeft = getTimeUnits(timeoutSeconds - lapsed)
         print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
         if lapsed + 1 <= timeoutSeconds:
             return False
-    properties['lastExecution'] = getDatetimeNow()
     return True
 
 
@@ -60,18 +65,19 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loops=99999999999
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
     print(f'Starting at : {startingAt}')
-    # for name, properties in SCRAPPERS.items():  THIS CAUSES PROBLEMS WITH URL LIB SOCKET DISCONNECTION & PROCESS HANGS LONG TIME.
-    #     executeScrapperPreload(name, properties)
+    print(cyan(f'DEBUG: waitBeforeFirstRuns={waitBeforeFirstRuns}, starting={starting}, startingAt={startingAt}'))
     count = 0
     while loops == 99999999999 or count < loops:
         count += 1
         toRun = []
         for name, properties in SCRAPPERS.items():
             properties['waitBeforeFirstRun'] = properties.get('waitBeforeFirstRun', waitBeforeFirstRuns)
-            if timeExpired(name, properties):
+            lastExec = lastExecution(name, properties, persistenceManager)
+            expired = timeExpired(name, properties, lastExec)
+            if expired:
                 notStartAtThisOne = (starting and startingAt != name)
                 if properties.get(IGNORE_AUTORUN, False) or notStartAtThisOne:
-                    print(f'Skipping : {name}')
+                    print(f'Skipping : {name} (IGNORE_AUTORUN={properties.get(IGNORE_AUTORUN, False)}, notStartAtThisOne={notStartAtThisOne})')
                     continue
                 properties['waitBeforeFirstRun'] = False
                 toRun.append({"name": name, "properties": properties})
@@ -80,25 +86,24 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loops=99999999999
             if RUN_IN_TABS:
                 seleniumUtil.tab(runThis['name'])
             if runPreload(runThis['properties']):
-                executeScrapperPreload(runThis['name'], runThis['properties'])
-            executeScrapper(runThis['name'], runThis['properties'])
+                if not executeScrapperPreload(runThis['name'], runThis['properties']):
+                    return
+            if not executeScrapper(runThis['name'], runThis['properties'], persistenceManager):
+                return
         waitBeforeFirstRuns = False
         consoleTimer("Waiting for next scrapping execution trigger, ", NEXT_SCRAP_TIMER)
 
 
 def runSpecifiedScrappers(scrappersList: list):
-    # Arguments specified in command line
     print(f'Executing specified scrappers: {scrappersList}')
-    # for arg in scrappersList:
-    #     if validScrapperName(arg):
-    #         properties = SCRAPPERS[arg.capitalize()]
-    #         executeScrapperPreload(arg.capitalize(), properties)
     for arg in scrappersList:
         if validScrapperName(arg):
-            properties = SCRAPPERS[arg.capitalize()]
+            properties = SCRAPPERS[arg.capitalize()]            
             if runPreload(properties):
-                executeScrapperPreload(arg.capitalize(), properties)
-            executeScrapper(arg.capitalize(), properties)
+                if not executeScrapperPreload(arg.capitalize(), properties):
+                    return
+            if not executeScrapper(arg.capitalize(), properties, persistenceManager):
+                return
 
 
 def runPreload(properties: dict) -> bool:
@@ -130,32 +135,38 @@ def hasNewArchitecture(name: str, properties: dict[str, dict[str, Any]]) -> bool
         return False
 
 
-def executeScrapperPreload(name: str, properties: dict):
+def executeScrapperPreload(name: str, properties: dict) -> bool:
+    """ returns True if KeyboardInterrupt """
     try:
         if RUN_IN_TABS:
             seleniumUtil.tab(name)
         if hasNewArchitecture(name, properties):
             runPreloadNewArchitecture(name)
         else:
-            runScrapper(name, True)
+            runScrapper(name, True, persistenceManager)
         properties['preloaded'] = True
     except Exception:
         baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:")
         properties['preloaded'] = False
+    except KeyboardInterrupt:
+        persistenceManager.update_last_execution(name, None)
+        if abortExecution():
+            return False
+    return True
 
 
-def runScrapper(name: str, preloadOnly: bool):
+def runScrapper(name: str, preloadOnly: bool, persistenceManager: PersistenceManager):
     match name.lower():
         case 'infojobs':
-            infojobs.run(seleniumUtil, preloadOnly)
+            infojobs.run(seleniumUtil, preloadOnly, persistenceManager)
         case 'tecnoempleo':
-            tecnoempleo.run(seleniumUtil, preloadOnly)
+            tecnoempleo.run(seleniumUtil, preloadOnly, persistenceManager)
         case 'linkedin':
-            linkedin.run(seleniumUtil, preloadOnly)
+            linkedin.run(seleniumUtil, preloadOnly, persistenceManager)
         case 'glassdoor':
-            glassdoor.run(seleniumUtil, preloadOnly)
+            glassdoor.run(seleniumUtil, preloadOnly, persistenceManager)
         case 'indeed':
-            indeed.run(seleniumUtil, preloadOnly)
+            indeed.run(seleniumUtil, preloadOnly, persistenceManager)
 
 
 def runPreloadNewArchitecture(name: str):
@@ -168,30 +179,44 @@ def runPreloadNewArchitecture(name: str):
         baseScrapper.debug(DEBUG)
 
 
-def executeScrapper(name: str, properties: dict):
+def executeScrapper(name: str, properties: dict, persistenceManager: PersistenceManager) -> bool:
+    """ returns False if double KeyboardInterrupt """
     try:
         if hasNewArchitecture(name, properties):
-            runScrapperNewArchitecture(name, properties)
+            runScrapperNewArchitecture(name, properties, persistenceManager)
         else:
-            runScrapper(name, False)
+            runScrapper(name, False, persistenceManager)
+        persistenceManager.update_last_execution(name, getDatetimeNow())
     except Exception:
         baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
-        properties['lastExecution'] = None  # re-execute resetting timer
+        persistenceManager.update_last_execution(name, None)
     except KeyboardInterrupt:
-        pass
+        persistenceManager.update_last_execution(name, None)
+        if abortExecution():
+            return False
     finally:
         if RUN_IN_TABS:
             if properties.get(CLOSE_TAB, False):
                 seleniumUtil.tabClose(name)
             seleniumUtil.tab()  # switches to default tab
+    return True
+
+def abortExecution() -> bool:
+    print(yellow("Scraper interrupted. Waiting 3 seconds... (Ctrl+C to stop all)"))
+    try:
+        time.sleep(3)
+    except KeyboardInterrupt:
+        print(red("Stopping all scrappers..."))
+        return True
+    return False
 
 
-def runScrapperNewArchitecture(name: str, properties: dict):
+def runScrapperNewArchitecture(name: str, properties: dict, persistenceManager: PersistenceManager):
     try:
         scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         # FIXME: NEXT LINE SHOULD BE SOMETHING LIKE: baseScrapper.getAndCheckEnvVars(name)
         keywords_list = getEnv('LINKEDIN_JOBS_SEARCH', getEnv('JOBS_SEARCH', '')).split(',')
-        results = scrapping_service.executeScrapping(seleniumUtil, keywords_list, preloadOnly=False)
+        results = scrapping_service.executeScrapping(seleniumUtil, keywords_list, preloadOnly=False, persistenceManager=persistenceManager)
         print(green(f"Scrapping completed for {name}:"))
         print(f"  Processed: {results['total_processed']} jobs")
         print(f"  Saved: {results['total_saved']} jobs")
@@ -237,6 +262,7 @@ if __name__ == '__main__':
         exit(0)
 
     with SeleniumUtil() as seleniumUtil:
+        persistenceManager = PersistenceManager()
         scrapperContainer = ScrapperContainer()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
         if len(args) == 1 or starting or wait:

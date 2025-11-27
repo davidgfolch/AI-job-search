@@ -1,9 +1,10 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable
 from ..interfaces.scrapper_interface import ScrapperInterface
 from ..interfaces.job_storage_interface import JobStorageInterface
 from ..seleniumUtil import SeleniumUtil
 from ..baseScrapper import printScrapperTitle
 from commonlib.terminalColor import green, yellow, red
+from ..persistence_manager import PersistenceManager
 
 
 class ScrappingService:
@@ -11,7 +12,7 @@ class ScrappingService:
         self.scrapper: ScrapperInterface = scrapper
         self.storage: JobStorageInterface = storage
 
-    def executeScrapping(self, selenium: SeleniumUtil, keywordsList: List[str], preloadOnly: bool = False) -> Dict[str, Any]:
+    def executeScrapping(self, selenium: SeleniumUtil, keywordsList: List[str], preloadOnly: bool = False, persistenceManager: PersistenceManager = None) -> Dict[str, Any]:
         printScrapperTitle(self.scrapper.getSiteName(), preloadOnly)
         results = {
             'site': self.scrapper.getSiteName(),
@@ -21,6 +22,14 @@ class ScrappingService:
             'errors': [],
             'login_success': False
         }
+        
+        saved_state = {}
+        if persistenceManager:
+            saved_state = persistenceManager.get_state(self.scrapper.getSiteName())
+        
+        saved_keyword = saved_state.get('keyword')
+        saved_page = saved_state.get('page', 1)
+
         try:
             if not hasattr(self.scrapper, 'login_success'):
                 loginResult = self.scrapper.login(selenium)
@@ -32,19 +41,51 @@ class ScrappingService:
                 results['login_success'] = self.scrapper.login_success
             if preloadOnly:
                 return results
+            
+            skip = True if saved_keyword else False
+            
             for keywords in keywordsList:
-                keywordResults = self._processKeywords(selenium, keywords.strip())
+                current_keyword = keywords.strip()
+                start_page = 1
+                
+                if saved_keyword:
+                    if saved_keyword == current_keyword:
+                        skip = False
+                        start_page = saved_page
+                    elif skip:
+                        print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
+                        continue
+                
+                def on_page_complete(page_num):
+                    if persistenceManager:
+                        persistenceManager.update_state(self.scrapper.getSiteName(), current_keyword, page_num + 1)
+
+                keywordResults = self._processKeywords(selenium, current_keyword, start_page, on_page_complete)
                 results['total_processed'] += keywordResults['processed']
                 results['total_saved'] += keywordResults['saved']
                 results['total_duplicates'] += keywordResults['duplicates']
                 results['errors'].extend(keywordResults['errors'])
+                
+                # After finishing a keyword, reset page for next keyword
+                if persistenceManager:
+                     # We might want to clear state or set to next keyword page 1, 
+                     # but since we loop, the next iteration will set the new keyword.
+                     # However, if we crash between keywords, we want to know we finished the previous one.
+                     # Setting page to 1 for the *next* keyword would be ideal, but we don't know it yet easily here without lookahead.
+                     # But since we update state on page complete, if we finish the loop, we are effectively done with this keyword.
+                     pass
+
             self.storage.mergeDuplicates()
+            # If we finished all keywords, we can clear the state for this site
+            if persistenceManager:
+                persistenceManager.clear_state(self.scrapper.getSiteName())
+
         except Exception as e:
             results['errors'].append(f"Critical error: {str(e)}")
             print(red(f"Critical error in scrapping service: {e}"))
         return results
 
-    def _processKeywords(self, selenium: SeleniumUtil, keywords: str) -> Dict[str, Any]:
+    def _processKeywords(self, selenium: SeleniumUtil, keywords: str, start_page: int = 1, on_page_complete: Callable[[int], None] = None) -> Dict[str, Any]:
         results = {
             'keywords': keywords,
             'processed': 0,
@@ -53,7 +94,7 @@ class ScrappingService:
             'errors': []
         }
         try:
-            jobs = self.scrapper.searchJobs(selenium, keywords)
+            jobs = self.scrapper.searchJobs(selenium, keywords, start_page, on_page_complete)
             for jobData in jobs:
                 results['processed'] += 1
                 if self._isDuplicateJob(jobData):

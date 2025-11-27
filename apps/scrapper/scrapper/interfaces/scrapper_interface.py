@@ -11,7 +11,7 @@ class ScrapperInterface(ABC):
         pass
     
     @abstractmethod
-    def searchJobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
+    def searchJobs(self, selenium: SeleniumUtil, keywords: str, startPage: int = 1, onPageComplete: Any = None) -> List[Dict[str, Any]]:
         """Search for jobs with given keywords"""
         pass
     

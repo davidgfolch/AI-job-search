@@ -23,6 +23,7 @@ from .selectors.infojobsSelectors import (
     CSS_SEL_NEXT_PAGE_BUTTON,
     CSS_SEL_SECURITY_FILTER1,
     CSS_SEL_SECURITY_FILTER2)
+from .persistence_manager import PersistenceManager
 
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
@@ -41,7 +42,7 @@ selenium: SeleniumUtil
 mysql: MysqlUtil
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
     """Process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
@@ -49,9 +50,32 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     if preloadPage:
         searchJobs(JOBS_SEARCH.split(',')[0], True)
         return
+    
+    saved_state = {}
+    if persistenceManager:
+        saved_state = persistenceManager.get_state('Infojobs')
+    
+    saved_keyword = saved_state.get('keyword')
+    saved_page = saved_state.get('page', 1)
+    skip = True if saved_keyword else False
+
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
-            searchJobs(keywords.strip(), False)
+            current_keyword = keywords.strip()
+            start_page = 1
+            
+            if saved_keyword:
+                if saved_keyword == current_keyword:
+                    skip = False
+                    start_page = saved_page
+                elif skip:
+                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
+                    continue
+
+            searchJobs(current_keyword, False, start_page, persistenceManager)
+            
+    if persistenceManager:
+        persistenceManager.clear_state('Infojobs')
 
 
 @retry(retries=10, delay=5, exception=NoSuchElementException)
@@ -134,7 +158,7 @@ def getJobUrlShort(url: str):
     return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
 
 
-def searchJobs(keywords: str, preloadPage: bool):
+def searchJobs(keywords: str, preloadPage: bool, startPage: int = 1, persistenceManager: PersistenceManager = None):
     try:
         print(yellow(f'Search keyword={keywords}'))
         loadSearchPage()
@@ -148,6 +172,21 @@ def searchJobs(keywords: str, preloadPage: bool):
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
+        
+        # Fast forward to startPage
+        if startPage > 1:
+            print(yellow(f"Fast forwarding to page {startPage}..."))
+            while page < startPage and currentItem < totalResults:
+                # We need to advance currentItem count roughly
+                currentItem += JOBS_X_PAGE # Approximation
+                if clickNextPage():
+                    page += 1
+                    selenium.waitUntilPageIsLoaded()
+                    time.sleep(2)
+                else:
+                    break
+            currentItem = (page - 1) * JOBS_X_PAGE
+
         while currentItem < totalResults:
             printPage(WEB_PAGE, page, totalPages, keywords)
             idx = 0
@@ -162,6 +201,8 @@ def searchJobs(keywords: str, preloadPage: bool):
                     page += 1
                     selenium.waitUntilPageIsLoaded()
                     time.sleep(5)
+                    if persistenceManager:
+                        persistenceManager.update_state('Infojobs', keywords, page)
                 else:
                     break  # exit while
         summarize(keywords, totalResults, currentItem)

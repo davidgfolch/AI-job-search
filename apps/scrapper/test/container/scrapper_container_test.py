@@ -71,3 +71,39 @@ class TestScrapperContainer:
             service1 = container.get_scrapping_service('linkedin')
             service2 = container.get_scrapping_service('linkedin')
             assert service1 == service2
+    
+    def test_get_nonexistent_service_raises_error(self, container):
+        """Test that getting non-existent service raises ValueError"""
+        with pytest.raises(ValueError) as exc_info:
+            container.get('nonexistent_service')
+        assert "Service 'nonexistent_service' not registered" in str(exc_info.value)
+    
+    @patch('scrapper.container.scrapper_container.MysqlUtil')
+    def test_register_custom_scrapper(self, mockMysqlUtil, container):
+        """Test registering a custom scrapper"""
+        class CustomScrapper:
+            def __init__(self):
+                self.name = 'custom'
+        
+        container.register_scrapper('custom', CustomScrapper)
+        assert 'custom_scrapper' in container._factories
+        
+        scrapper = container.get('custom_scrapper')
+        assert isinstance(scrapper, CustomScrapper)
+        assert scrapper.name == 'custom'
+    
+    @patch('scrapper.container.scrapper_container.MysqlUtil')
+    def test_multiple_scrappers_share_storage(self, mockMysqlUtil, container):
+        """Test that different scrappers share the same storage instance"""
+        class CustomScrapper:
+            pass
+        
+        with patch('scrapper.baseScrapper.getAndCheckEnvVars',
+                   return_value=('email', 'pwd', 'search')):
+            container.register_scrapper('custom', CustomScrapper)
+            
+            service1 = container.get_scrapping_service('linkedin')
+            service2 = container.get_scrapping_service('custom')
+            
+            # Both services should share the same storage instance
+            assert service1.storage is service2.storage

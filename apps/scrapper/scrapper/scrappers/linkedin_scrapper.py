@@ -45,11 +45,12 @@ class LinkedInScrapper(ScrapperInterface):
             baseDebug(DEBUG, 'Login failed', exception=True)
             return False
     
-    def searchJobs(self, selenium: SeleniumUtil, keywords: str) -> List[Dict[str, Any]]:
+    def searchJobs(self, selenium: SeleniumUtil, keywords: str, startPage: int = 1, onPageComplete: Any = None) -> List[Dict[str, Any]]:
         jobs = []
         try:
             print(yellow(f'Search keyword={keywords}'))
-            url = self._buildSearchUrl(keywords)
+            startOffset = (startPage - 1) * self.jobsPerPage
+            url = self._buildSearchUrl(keywords, startOffset)
             print(yellow(f'Loading page {url}'))
             selenium.loadPage(url)
             selenium.waitUntilPageIsLoaded()
@@ -58,15 +59,20 @@ class LinkedInScrapper(ScrapperInterface):
             self._hideUiElements(selenium)
             totalResults = self._getTotalResults(selenium, keywords)
             totalPages = math.ceil(totalResults / self.jobsPerPage)
-            page = 1
-            currentItem = 0
+            totalPages = math.ceil(totalResults / self.jobsPerPage)
+            page = startPage
+            currentItem = (startPage - 1) * self.jobsPerPage
             while True:
                 printPage(self.webPage, page, totalPages, keywords)
                 pageJobs = self._processPage(selenium, page, currentItem, totalResults)
                 jobs.extend(pageJobs)
                 currentItem += len(pageJobs)
                 if currentItem >= totalResults or page >= totalPages or not self._clickNextPage(selenium):
+                    if onPageComplete:
+                        onPageComplete(page)
                     break
+                if onPageComplete:
+                    onPageComplete(page)
                 page += 1
                 selenium.waitUntilPageIsLoaded()
             self._printSummary(keywords, totalResults, currentItem)
@@ -77,13 +83,14 @@ class LinkedInScrapper(ScrapperInterface):
     def extractJobData(self, selenium: SeleniumUtil, jobElement) -> Dict[str, Any]:
         return self._extractJobInfo(selenium, jobElement, '')
     
-    def _buildSearchUrl(self, keywords: str) -> str:
+    def _buildSearchUrl(self, keywords: str, start: int = 0) -> str:
         return join('https://www.linkedin.com/jobs/search/?',
                    '&'.join([
                        f'keywords={quote(keywords)}',
                        f'f_WT={self.remote}',
                        f'geoId={self.location}',
-                       f'f_TPR={self.fTpr}'
+                       f'f_TPR={self.fTpr}',
+                       f'start={start}'
                    ]))
     
     def _checkResults(self, selenium: SeleniumUtil, keywords: str, url: str) -> bool:

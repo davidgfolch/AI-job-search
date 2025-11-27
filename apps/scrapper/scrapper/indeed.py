@@ -11,6 +11,7 @@ from commonlib.util import getDatetimeNowStr
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from .seleniumUtil import SeleniumUtil, sleep
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from .persistence_manager import PersistenceManager
 from .selectors.indeedSelectors import (
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,
@@ -39,7 +40,7 @@ selenium: SeleniumUtil
 mysql: MysqlUtil
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
@@ -47,9 +48,32 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     if preloadPage:
         searchJobs(JOBS_SEARCH.split(',')[0], True)
         return
+    
+    saved_state = {}
+    if persistenceManager:
+        saved_state = persistenceManager.get_state('Indeed')
+    
+    saved_keyword = saved_state.get('keyword')
+    saved_page = saved_state.get('page', 1)
+    skip = True if saved_keyword else False
+
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
-            searchJobs(keywords.strip(), False)
+            current_keyword = keywords.strip()
+            start_page = 1
+            
+            if saved_keyword:
+                if saved_keyword == current_keyword:
+                    skip = False
+                    start_page = saved_page
+                elif skip:
+                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
+                    continue
+
+            searchJobs(current_keyword, False, start_page, persistenceManager)
+            
+    if persistenceManager:
+        persistenceManager.clear_state('Indeed')
 
 
 def getUrl(keywords):
@@ -125,7 +149,7 @@ def acceptCookies():
         '#onetrust-accept-btn-handler', 'Could not accept cookies')
 
 
-def searchJobs(keywords: str, securityFilter: bool):
+def searchJobs(keywords: str, securityFilter: bool, startPage: int = 1, persistenceManager: PersistenceManager = None):
     try:
         print(yellow(f'Search keyword={keywords}'))
         url = getUrl(keywords)
@@ -142,6 +166,18 @@ def searchJobs(keywords: str, securityFilter: bool):
         page = 0
         currentItem = 0
         totalResults = 0
+        
+        if startPage > 1:
+            print(yellow(f"Fast forwarding to page {startPage}..."))
+            while page < startPage - 1:
+                # Indeed pagination via clickNextPage
+                if clickNextPage():
+                    page += 1
+                    selenium.waitUntilPageIsLoaded()
+                    sleep(1, 2)
+                else:
+                    break
+        
         while True:
             page += 1
             printPage(WEB_PAGE, page, '?', keywords)
@@ -156,6 +192,8 @@ def searchJobs(keywords: str, securityFilter: bool):
             if clickNextPage():
                 selenium.waitUntilPageIsLoaded()
                 sleep(5, 6)
+                if persistenceManager:
+                    persistenceManager.update_state('Indeed', keywords, page + 1)
             else:
                 break  # exit while
         summarize(keywords, totalResults, currentItem)

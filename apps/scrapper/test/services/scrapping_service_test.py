@@ -145,3 +145,9 @@ class TestScrappingService:
         mockStorage.saveJob.side_effect = Exception('Save error')
         result = service._saveJob(jobData)
         assert result is False
+
+    def test_executeScrapping_with_persistence(self, service, mockScrapper, mockSelenium):
+        mockPersistence = MagicMock()
+        mockPersistence.get_state.return_value = {}
+        result = service.executeScrapping(mockSelenium, ['python'], preloadOnly=False, persistenceManager=mockPersistence)
+        mockPersistence.get_state.assert_called_once()

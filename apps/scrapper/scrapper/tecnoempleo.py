@@ -8,7 +8,6 @@ from commonlib.util import getDatetimeNowStr
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.decorator.retry import retry
 
-
 from . import baseScrapper
 from .baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
 from .seleniumUtil import SeleniumUtil, sleep
@@ -21,7 +20,7 @@ from .selectors.tecnoempleoSelectors import (CSS_SEL_JOB_DATA,
                                              CSS_SEL_COMPANY,
                                              CSS_SEL_JOB_TITLE,
                                              CSS_SEL_PAGINATION_LINKS)
-
+from .persistence_manager import PersistenceManager
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("TECNOEMPLEO")
 
@@ -37,7 +36,7 @@ print('Tecnoempleo scrapper init')
 selenium: SeleniumUtil
 mysql: MysqlUtil
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
@@ -49,9 +48,32 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
         print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
         selenium.waitUntilPageUrlContains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
         return
+    
+    saved_state = {}
+    if persistenceManager:
+        saved_state = persistenceManager.get_state('Tecnoempleo')
+    
+    saved_keyword = saved_state.get('keyword')
+    saved_page = saved_state.get('page', 1)
+    skip = True if saved_keyword else False
+
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
-            searchJobs(keywords.strip())
+            current_keyword = keywords.strip()
+            start_page = 1
+            
+            if saved_keyword:
+                if saved_keyword == current_keyword:
+                    skip = False
+                    start_page = saved_page
+                elif skip:
+                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
+                    continue
+
+            searchJobs(current_keyword, start_page, persistenceManager)
+            
+    if persistenceManager:
+        persistenceManager.clear_state('Tecnoempleo')
 
 @retry(retries=3, delay=10)
 def waitForUndetectedSecurityFilter():
@@ -175,7 +197,7 @@ def closeCreateAlert():
         selenium.waitAndClick(cssSel)
 
 
-def searchJobs(keywords: str):
+def searchJobs(keywords: str, startPage: int = 1, persistenceManager: PersistenceManager = None):
     try:
         print(yellow(f'Search keyword={keywords}'))
         url = getUrl(keywords)
@@ -189,6 +211,23 @@ def searchJobs(keywords: str):
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
+        
+        # Fast forward to startPage
+        if startPage > 1:
+            print(yellow(f"Fast forwarding to page {startPage}..."))
+            while page < startPage:
+                # Tecnoempleo pagination might be tricky.
+                # It uses clickNextPage which clicks CSS_SEL_PAGINATION_LINKS
+                # We can try to construct URL if possible, but getUrl uses keywords only.
+                # Let's use the loop.
+                currentItem += JOBS_X_PAGE # Approximation
+                if clickNextPage():
+                    page += 1
+                    selenium.waitUntilPageIsLoaded()
+                else:
+                    break
+            currentItem = (page - 1) * JOBS_X_PAGE
+
         while True: # Pagination
             errors = 0
             printPage(WEB_PAGE, page, totalPages, keywords)
@@ -213,6 +252,8 @@ def searchJobs(keywords: str):
                 break  # exit while
             page += 1
             selenium.waitUntilPageIsLoaded()
+            if persistenceManager:
+                persistenceManager.update_state('Tecnoempleo', keywords, page)
         summarize(keywords, totalResults, currentItem)
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
@@ -252,7 +293,7 @@ def processRow():
     location = ''
     url = selenium.getUrl()
     jobId = getJobId(url)
-    html = '\n'.join(['- '+selenium.getText(elm) for elm in selenium.getElms(CSS_SEL_JOB_DATA)]) + '\n' * 2
+    html = '\\n'.join(['- '+selenium.getText(elm) for elm in selenium.getElms(CSS_SEL_JOB_DATA)]) + '\\n' * 2
     html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
     md = htmlToMarkdown(html)
     easyApply = False

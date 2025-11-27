@@ -25,6 +25,7 @@ from .selectors.glassdoorSelectors import (
     CSS_SEL_LOCATION,
     CSS_SEL_JOB_TITLE,
     LI_JOB_TITLE_CSS_SUFFIX)
+from .persistence_manager import PersistenceManager
 
 
 SITE = "GLASSDOOR"
@@ -41,7 +42,7 @@ selenium: SeleniumUtil
 mysql: MysqlUtil
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
@@ -49,11 +50,34 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool):
     if preloadPage:
         loadMainPage()
         return
+    
+    saved_state = {}
+    if persistenceManager:
+        saved_state = persistenceManager.get_state('Glassdoor')
+    
+    saved_keyword = saved_state.get('keyword')
+    saved_page = saved_state.get('page', 1)
+    skip = True if saved_keyword else False
+
     with MysqlUtil() as mysql:
         for search in JOBS_SEARCH.split('|~|'):
+            current_keyword = search
+            start_page = 1
+            
+            if saved_keyword:
+                if saved_keyword == current_keyword:
+                    skip = False
+                    start_page = saved_page
+                elif skip:
+                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
+                    continue
+
             url = JOBS_SEARCH_BASE_URL.format(**{'search': search})
             print(yellow('Search list URL ', url))
-            searchJobs(url)
+            searchJobs(url, start_page, persistenceManager, current_keyword)
+
+    if persistenceManager:
+        persistenceManager.clear_state('Glassdoor')
 
 
 def loadMainPage():
@@ -128,7 +152,7 @@ def getJobId(url: str):
 
 
 @retry()  # (exceptionFnc=reInitSeleniumAndLogin)
-def searchJobs(url: str):
+def searchJobs(url: str, startPage: int = 1, persistenceManager: PersistenceManager = None, keyword_key: str = None):
     keywords = url.split('/')
     keywords = keywords[len(keywords)-1:]
     print(yellow(f'Search keyword={keywords}'))
@@ -150,6 +174,17 @@ def searchJobs(url: str):
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 0
         currentItem = 0
+        
+        if startPage > 1:
+            print(yellow(f"Fast forwarding to page {startPage}..."))
+            while page < startPage - 1:
+                if clickNextPage():
+                    page += 1
+                    selenium.waitUntilPageIsLoaded()
+                else:
+                    break
+            currentItem = page * JOBS_X_PAGE
+
         while currentItem < totalResults:
             page += 1
             printPage(WEB_PAGE, page, totalPages, keywords)
@@ -164,6 +199,8 @@ def searchJobs(url: str):
                 idx += 1
             if currentItem < totalResults:
                 clickNextPage()
+                if persistenceManager and keyword_key:
+                    persistenceManager.update_state('Glassdoor', keyword_key, page + 1)
         summarize(keywords, totalResults, currentItem)
 
 
