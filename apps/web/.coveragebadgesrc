@@ -1,0 +1,4 @@
+{
+  "source": "coverage/coverage-summary.json",
+  "output": "coverage/badges.svg"
+}

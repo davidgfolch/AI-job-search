@@ -8,7 +8,9 @@ cd ../..
 for app in ./apps/*/; do
     echo ""
     echo "Installing $(basename $app)..."
-    if [ "$app" == "./apps/aiEnrich/" ]; then
+    if [ -f "$app/package.json" ]; then
+        cd "$app" && npm install
+    elif [ "$app" == "./apps/aiEnrich/" ]; then
         cd "$app" && uv sync && uv tool install --force crewai
     else
         cd "$app" && poetry lock && poetry install

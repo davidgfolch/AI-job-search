@@ -1,0 +1,51 @@
+.job-table-container {
+    flex: 1;
+    overflow-y: auto;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.job-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.job-table thead {
+    position: sticky;
+    top: 0;
+    background: #1a1a1a;
+    z-index: 1;
+}
+
+.job-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    color: #667eea;
+    font-weight: 600;
+    border-bottom: 2px solid #667eea;
+}
+
+.job-table tbody tr {
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 1px solid #333;
+}
+
+.job-table tbody tr:hover {
+    background: #333;
+}
+
+.job-table tbody tr.selected {
+    background: linear-gradient(90deg, #667eea22, #764ba222);
+    border-left: 3px solid #667eea;
+}
+
+.job-table td {
+    padding: 0.75rem 1rem;
+    color: #ddd;
+}
+
+.job-table td:first-child {
+    font-weight: 500;
+    color: #76d7c4;
+}

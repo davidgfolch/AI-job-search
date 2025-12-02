@@ -13,7 +13,7 @@ permissions:
   contents: write
   
 env:
-  MODULES: "packages/commonlib apps/scrapper apps/viewer apps/aiEnrich"
+  MODULES: "packages/commonlib apps/scrapper apps/viewer apps/aiEnrich apps/api apps/web"
 
 jobs:
   build:
@@ -24,6 +24,10 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
     - name: Install package manager
       run: |
         cp '.env.example' .env
@@ -35,7 +39,9 @@ jobs:
         read -ra MODULE_ARR <<< "${MODULES}"
         for MODULE in "${MODULE_ARR[@]}"; do
           cd "${MODULE}"
-          if [ "${MODULE}" == "apps/aiEnrich" ]; then
+          if [ -f "package.json" ]; then
+            npm install
+          elif [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv tool update-shell
             uv tool install crewai
             crewai install
@@ -49,16 +55,19 @@ jobs:
         read -ra MODULE_ARR <<< "${MODULES}"
         for MODULE in "${MODULE_ARR[@]}"; do
           cd "${MODULE}"
-          if [ "${MODULE}" == "apps/aiEnrich" ]; then
+          if [ -f "package.json" ]; then
+            npm test -- run --coverage
+            npx coverage-badges
+          elif [ "${MODULE}" == "apps/aiEnrich" ]; then
             uv run coverage run -m pytest
             uv run coverage report -m
             uv run coverage xml
-            uv run coverage-badge -o coverage-badge.svg -f
+            uv run coverage-badge -o coverage.svg -f
           else
             poetry run coverage run -m pytest
             poetry run coverage report -m
             poetry run coverage xml
-            poetry run coverage-badge -o coverage-badge.svg -f
+            poetry run coverage-badge -o coverage.svg -f
           fi
           cd ../..
         done
@@ -70,11 +79,18 @@ jobs:
         read -ra MODULE_ARR <<< "${MODULES}"
         changes=false
         for MODULE in "${MODULE_ARR[@]}"; do
-          if git diff --quiet "${MODULE}/coverage-badge.svg"; then  # No changes in this file
+          cd "${MODULE}"
+          if [ -f "package.json" ]; then
+            badge_path="coverage/badges.svg"
+          else
+            badge_path="coverage.svg"
+          fi
+          cd ../..
+          if git diff --quiet "${MODULE}/${badge_path}"; then  # No changes in this file
             continue
           else
             changes=true
-            git add ${MODULE}/coverage-badge.svg
+            git add ${MODULE}/${badge_path}
           fi
         done
         if $changes; then

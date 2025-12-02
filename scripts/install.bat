@@ -3,10 +3,19 @@
 for /d %%a in (packages\* apps\*) do (
     echo.
     echo Installing %%~na...
-    if "%%a" == "apps\aiEnrich" (
-        @REM cd "%%a" && set UV_PROJECT_ENVIRONMENT=custom-venv && uv sync && uv tool install --force crewai && cd ..\..
-        cd "%%a" && uv sync && uv tool install --force crewai && cd ..\..
+    if exist "%%~fa\package.json" (
+        pushd "%%~fa"
+        call npm install
+        popd
+    ) else if "%%~nxa" == "aiEnrich" (
+        pushd "%%~fa"
+        call uv sync
+        call uv tool install --force crewai
+        popd
     ) else (
-        cd "%%a" && poetry lock && poetry install && cd ..\..
+        pushd "%%~fa"
+        call poetry lock
+        call poetry install
+        popd
     )
 )

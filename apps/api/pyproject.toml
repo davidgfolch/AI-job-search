@@ -1,0 +1,24 @@
+[tool.poetry]
+package-mode = false
+name = "api"
+version = "0.1.0"
+description = "AI Job Search API"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+commonlib = { path = "../../packages/commonlib/", develop = true }
+fastapi = ">=0.109.0"
+uvicorn = ">=0.27.0"
+mysql-connector-python = ">=9.0.0"
+pydantic = ">=2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+httpx = "^0.26.0"
+pytest-cov = "^7.0.0"
+coverage-badge = "^1.1.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

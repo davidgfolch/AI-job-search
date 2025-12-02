@@ -18,3 +18,4 @@ scripts/mysql/*backup.*
 apps/aiEnrich/*_CV.*
 **/coverage.xml
 apps/scrapper/scrapper_state.json
+

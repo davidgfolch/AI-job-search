@@ -17,30 +17,40 @@ rem ──────────────────────  Execute 
 for /d %%a in (packages\* apps\*) do (
     echo.
     echo Testing %%~nxa...
-    if "%%~nxa"=="aiEnrich" (
-        pushd "%%~fa"
-        @REM set "UV_PROJECT_ENVIRONMENT=custom-venv"
+    pushd "%%~fa"
+    if exist "%%~fa\package.json" (
         if !coverage!==0 (
-            uv run -m pytest
+            npm test -- run
         ) else (
-            uv run -m coverage run -m pytest
-            uv run -m coverage report -m
-            uv run -m coverage xml
-            uv run python -m coverage_badge -o coverage-badge.svg -f
+            npm test -- run --coverage
+            @ REM TODO: not working
+            npx coverage-badges --source coverage/coverage-summary.json --output coverage/badges.svg --rcfile=".coveragebadgesrc"
         )
-        popd
+    ) else if exist "%%~fa\pyproject.toml" (
+        if "%%~nxa"=="aiEnrich" (
+            @REM set "UV_PROJECT_ENVIRONMENT=custom-venv"
+            if !coverage!==0 (
+                uv run -m pytest
+            ) else (
+                uv run -m coverage run -m pytest
+                uv run -m coverage report -m
+                uv run -m coverage xml
+                uv run python -m coverage_badge -o coverage.svg -f
+            )
+        ) else (
+            if !coverage!==0 (
+                poetry run pytest
+            ) else (
+                poetry run coverage run -m pytest
+                poetry run coverage report -m
+                poetry run coverage xml
+                poetry run coverage-badge -o coverage.svg -f
+            )
+        )
     ) else (
-        pushd "%%~fa"
-        if !coverage!==0 (
-            poetry run pytest
-        ) else (
-            poetry run coverage run -m pytest
-            poetry run coverage report -m
-            poetry run coverage xml
-            poetry run coverage-badge -o coverage-badge.svg -f
-        )
-        popd
+        echo No known project type found in %%~nxa
     )
+    popd
 )
 
 endlocal
