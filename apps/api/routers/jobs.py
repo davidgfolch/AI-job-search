@@ -168,8 +168,10 @@ def get_job(job_id: int):
 @router.patch("/{job_id}", response_model=Job)
 def update_job(job_id: int, job_update: JobUpdate):
     with get_db() as db:
-        # Check if exists
-        if not db.jobExists(job_id):
+        # Check if exists using id field (not job_id string field)
+        check_query = "SELECT id FROM jobs WHERE id = %s"
+        existing = db.fetchOne(check_query, job_id)
+        if not existing:
             raise HTTPException(status_code=404, detail="Job not found")
             
         # Build update query

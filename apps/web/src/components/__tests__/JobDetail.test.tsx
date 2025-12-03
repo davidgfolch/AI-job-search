@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import JobDetail from '../JobDetail';
 import { Job } from '../../api/jobs';
 
@@ -31,40 +31,44 @@ const mockJob: Job = {
 
 describe('JobDetail', () => {
     it('renders job details correctly', () => {
-        const onUpdate = vi.fn();
-        render(<JobDetail job={mockJob} onUpdate={onUpdate} />);
+        render(<JobDetail job={mockJob} />);
 
         expect(screen.getByText('Software Engineer')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Tech Corp')).toBeInTheDocument();
+        expect(screen.getByText('Tech Corp')).toBeInTheDocument();
         expect(screen.getByText('Job Description Content')).toBeInTheDocument();
         expect(screen.getByText('React, TypeScript')).toBeInTheDocument();
+        expect(screen.getByText('Python')).toBeInTheDocument();
+        expect(screen.getByText('100k')).toBeInTheDocument();
+        expect(screen.getByText('Initial comment')).toBeInTheDocument();
     });
 
-    it('calls onUpdate when status is toggled', () => {
-        const onUpdate = vi.fn();
-        render(<JobDetail job={mockJob} onUpdate={onUpdate} />);
+    it('renders job link correctly', () => {
+        render(<JobDetail job={mockJob} />);
 
-        const appliedButton = screen.getByText('applied');
-        fireEvent.click(appliedButton);
-
-        expect(onUpdate).toHaveBeenCalledWith({ applied: true });
+        const link = screen.getByText('View Job →');
+        expect(link).toHaveAttribute('href', 'http://example.com');
+        expect(link).toHaveAttribute('target', '_blank');
     });
 
-    it('updates local state and calls onUpdate on save', () => {
-        const onUpdate = vi.fn();
-        render(<JobDetail job={mockJob} onUpdate={onUpdate} />);
+    it('displays CV match percentage when available', () => {
+        render(<JobDetail job={mockJob} />);
 
-        const commentsInput = screen.getByLabelText('Comments');
-        fireEvent.change(commentsInput, { target: { value: 'New comment' } });
+        expect(screen.getByText('90%')).toBeInTheDocument();
+    });
 
-        const saveButton = screen.getByText('Save Changes');
-        fireEvent.click(saveButton);
+    it('does not display optional fields when they are null', () => {
+        const jobWithoutOptionals: Job = {
+            ...mockJob,
+            company: '',
+            salary: '',
+            comments: '',
+            optional_technologies: '',
+        };
+        render(<JobDetail job={jobWithoutOptionals} />);
 
-        expect(onUpdate).toHaveBeenCalledWith({
-            comments: 'New comment',
-            salary: '100k',
-            company: 'Tech Corp',
-            client: 'Client A',
-        });
+        // These should not appear in the document
+        expect(screen.queryByText('Company:')).not.toBeInTheDocument();
+        expect(screen.queryByText('100k')).not.toBeInTheDocument();
+        expect(screen.queryByText('Initial comment')).not.toBeInTheDocument();
     });
 });

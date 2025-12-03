@@ -1,0 +1,138 @@
+.job-edit-form {
+    overflow-y: auto;
+    padding: 1rem;
+    height: 100%;
+}
+
+.job-edit-form h2 {
+    margin: 0 0 1.5rem 0;
+    color: #fff;
+    font-size: 1.3rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #444;
+}
+
+.job-edit-form .no-selection {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.status-form {
+    margin-bottom: 1.5rem;
+}
+
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.status-form h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+.save-btn-small {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.save-btn-small:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.status-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.status-pill {
+    padding: 0.5rem 1rem;
+    border: 1px solid #444;
+    border-radius: 20px;
+    background: #1a1a1a;
+    color: #999;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+    text-transform: capitalize;
+}
+
+.status-pill:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.status-pill.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: transparent;
+    color: white;
+    font-weight: 500;
+}
+
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-field label {
+    color: #667eea;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.form-field input,
+.form-field textarea {
+    padding: 0.75rem;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #1a1a1a;
+    color: white;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.save-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}

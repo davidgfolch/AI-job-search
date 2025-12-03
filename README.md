@@ -3,10 +3,10 @@
 [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml)
 
 | Module's coverage    |                                               | UI Module's coverage |                                      |
-|----------------------|-----------------------------------------------|----------------------|-------------------------------------|
-| packages/commonlib   | ![commonlib](packages/commonlib/coverage.svg) | apps/web (new UI)    | ![web](apps/web/coverage/badges.svg)          |
-| apps/aiEnrich        | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/viewer (old UI) | ![viewer](apps/viewer/coverage.svg)            |
-| apps/scrapper        | ![scrapper](apps/scrapper/coverage.svg)       | apps/api (new UI)    | ![api](apps/api/coverage.svg)                  |
+|----------------------|-----------------------------------------------|----------------------|--------------------------------------|
+| packages/commonlib   | ![commonlib](packages/commonlib/coverage.svg) | apps/viewer (old UI) | ![viewer](apps/viewer/coverage.svg)  |
+| apps/aiEnrich        | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/web (new UI)    | ![web](apps/web/coverage/badges.svg) |
+| apps/scrapper        | ![scrapper](apps/scrapper/coverage.svg)       | apps/api (new UI)    | ![api](apps/api/coverage.svg)        |
 
 
 

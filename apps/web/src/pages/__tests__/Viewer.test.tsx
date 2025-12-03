@@ -1,0 +1,285 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Viewer from '../Viewer';
+import { jobsApi } from '../../api/jobs';
+import type { Job } from '../../api/jobs';
+
+// Mock the jobs API
+vi.mock('../../api/jobs', async () => {
+    const actual = await vi.importActual('../../api/jobs');
+    return {
+        ...actual,
+        jobsApi: {
+            getJobs: vi.fn(),
+            updateJob: vi.fn(),
+        },
+    };
+});
+
+const mockJobs: Job[] = [
+    {
+        id: 1,
+        title: 'Job 1',
+        company: 'Company 1',
+        salary: '100k',
+        location: 'Remote',
+        url: 'http://example.com/1',
+        markdown: 'Description 1',
+        web_page: 'LinkedIn',
+        created: '2023-01-01',
+        modified: null,
+        flagged: false,
+        like: false,
+        ignored: false,
+        seen: false,
+        applied: false,
+        discarded: false,
+        closed: false,
+        interview_rh: false,
+        interview: false,
+        interview_tech: false,
+        interview_technical_test: false,
+        interview_technical_test_done: false,
+        ai_enriched: true,
+        easy_apply: false,
+        required_technologies: 'React',
+        optional_technologies: null,
+        client: null,
+        comments: null,
+        cv_match_percentage: 90,
+    },
+    {
+        id: 2,
+        title: 'Job 2',
+        company: 'Company 2',
+        salary: '120k',
+        location: 'Remote',
+        url: 'http://example.com/2',
+        markdown: 'Description 2',
+        web_page: 'Indeed',
+        created: '2023-01-02',
+        modified: null,
+        flagged: true,
+        like: false,
+        ignored: false,
+        seen: true,
+        applied: false,
+        discarded: false,
+        closed: false,
+        interview_rh: false,
+        interview: false,
+        interview_tech: false,
+        interview_technical_test: false,
+        interview_technical_test_done: false,
+        ai_enriched: false,
+        easy_apply: true,
+        required_technologies: 'Python',
+        optional_technologies: null,
+        client: null,
+        comments: null,
+        cv_match_percentage: 80,
+    },
+];
+
+const createTestQueryClient = () => new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: false,
+        },
+    },
+});
+
+describe('Viewer', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('renders loading state initially', () => {
+        (jobsApi.getJobs as any).mockReturnValue(new Promise(() => { })); // Never resolves
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <Viewer />
+            </QueryClientProvider>
+        );
+
+        expect(screen.getByText('Loading jobs...')).toBeInTheDocument();
+    });
+
+    it('renders job list after loading', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({
+            items: mockJobs,
+            total: 2,
+            page: 1,
+            size: 20,
+        });
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <Viewer />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => {
+            // Use getAllByText because "Job 1" might appear in multiple places if we are not careful,
+            // but here we just want to ensure it is present.
+            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Job 2').length).toBeGreaterThan(0);
+        });
+
+        expect(screen.getByText('Total results: 2 | Showing: 2')).toBeInTheDocument();
+    });
+
+    it('handles error state', async () => {
+        (jobsApi.getJobs as any).mockRejectedValue(new Error('Failed to fetch'));
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <Viewer />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Error loading jobs: Error: Failed to fetch')).toBeInTheDocument();
+        });
+    });
+
+    it('selects a job and displays details', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({
+            items: mockJobs,
+            total: 2,
+            page: 1,
+            size: 20,
+        });
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <Viewer />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
+        });
+
+        // Initially no selection
+        expect(screen.getByText('Select a job to view details')).toBeInTheDocument();
+
+        // Click first job in the list (use role cell to be specific to the table)
+        // Note: JobTable renders title in a cell
+        const jobLink = screen.getByRole('cell', { name: 'Job 1' });
+        fireEvent.click(jobLink);
+
+        // Should show details
+        expect(screen.getByText('Description 1')).toBeInTheDocument();
+
+        // Company 1 appears in list and detail, so we expect 2
+        expect(screen.getAllByText('Company 1')).toHaveLength(2);
+    });
+
+    it('switches between List and Edit tabs', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({
+            items: mockJobs,
+            total: 2,
+            page: 1,
+            size: 20,
+        });
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <Viewer />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
+        });
+
+        // Select a job first
+        const jobLink = screen.getByRole('cell', { name: 'Job 1' });
+        fireEvent.click(jobLink);
+
+        // Switch to Edit tab
+        fireEvent.click(screen.getByText('Edit'));
+
+        // Should show edit form
+        expect(screen.getByText('Save All')).toBeInTheDocument();
+        expect(screen.getByLabelText('Comments')).toBeInTheDocument();
+
+        // Switch back to List tab
+        fireEvent.click(screen.getByText('List'));
+
+        // Should show list again (check for table cell)
+        expect(screen.getByRole('cell', { name: 'Job 1' })).toBeInTheDocument();
+    });
+
+    it('handles pagination', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({
+            items: mockJobs,
+            total: 50,
+            page: 1,
+            size: 20,
+        });
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <Viewer />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+        });
+
+        const nextButton = screen.getByText('Next');
+        fireEvent.click(nextButton);
+
+        // Should call API with page 2
+        await waitFor(() => {
+            expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }));
+        });
+    });
+
+    it('updates job and refreshes list', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({
+            items: mockJobs,
+            total: 2,
+            page: 1,
+            size: 20,
+        });
+
+        (jobsApi.updateJob as any).mockResolvedValue({
+            ...mockJobs[0],
+            flagged: true,
+        });
+
+        render(
+            <QueryClientProvider client={createTestQueryClient()}>
+                <Viewer />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => {
+            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
+        });
+
+        // Select job
+        const jobLink = screen.getByRole('cell', { name: 'Job 1' });
+        fireEvent.click(jobLink);
+
+        // Go to edit tab
+        fireEvent.click(screen.getByText('Edit'));
+
+        // Click flagged pill
+        const flaggedPill = screen.getByText('flagged');
+        fireEvent.click(flaggedPill);
+
+        await waitFor(() => {
+            expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { flagged: true });
+        });
+
+        // Should invalidate queries (refetch jobs)
+        expect(jobsApi.getJobs).toHaveBeenCalledTimes(2); // Initial + Refetch
+    });
+});

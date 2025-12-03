@@ -23,7 +23,6 @@ for /d %%a in (packages\* apps\*) do (
             npm test -- run
         ) else (
             npm test -- run --coverage
-            @ REM TODO: not working
             npx coverage-badges --source coverage/coverage-summary.json --output coverage/badges.svg --rcfile=".coveragebadgesrc"
         )
     ) else if exist "%%~fa\pyproject.toml" (

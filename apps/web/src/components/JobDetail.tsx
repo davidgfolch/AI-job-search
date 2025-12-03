@@ -1,50 +1,12 @@
-import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { Job } from '../api/jobs';
 import './JobDetail.css';
 
 interface JobDetailProps {
     job: Job;
-    onUpdate: (data: Partial<Job>) => void;
 }
 
-const STATUS_FIELDS = [
-    'flagged',
-    'like',
-    'ignored',
-    'seen',
-    'applied',
-    'discarded',
-    'closed',
-    'ai_enriched',
-];
-
-export default function JobDetail({ job, onUpdate }: JobDetailProps) {
-    const [comments, setComments] = useState(job.comments || '');
-    const [salary, setSalary] = useState(job.salary || '');
-    const [company, setCompany] = useState(job.company || '');
-    const [client, setClient] = useState(job.client || '');
-
-    // Sync local state with job prop when it changes
-    useEffect(() => {
-        setComments(job.comments || '');
-        setSalary(job.salary || '');
-        setCompany(job.company || '');
-        setClient(job.client || '');
-    }, [job]);
-
-    const handleStatusToggle = (field: string) => {
-        onUpdate({ [field]: !job[field as keyof Job] });
-    };
-
-    const handleSave = () => {
-        onUpdate({
-            comments,
-            salary,
-            company,
-            client,
-        });
-    };
-
+export default function JobDetail({ job }: JobDetailProps) {
     const formatDate = (date: string | null) => {
         if (!date) return '-';
         return new Date(date).toLocaleDateString();
@@ -60,106 +22,37 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
             </div>
 
             <div className="job-info">
-                <div className="info-row">
-                    <strong>ID:</strong> {job.id}
-                </div>
-                <div className="info-row">
-                    <strong>Source:</strong> {job.web_page}
-                </div>
-                <div className="info-row">
-                    <strong>Location:</strong> {job.location || '-'}
-                </div>
-                <div className="info-row">
-                    <strong>Created:</strong> {formatDate(job.created)}
-                </div>
+                <div className="info-row"><strong>ID:</strong> {job.id}</div>
+                <div className="info-row"><strong>Source:</strong> {job.web_page}</div>
+                <div className="info-row"><strong>Location:</strong> {job.location || '-'}</div>
+                <div className="info-row"><strong>Created:</strong> {formatDate(job.created)}</div>
+                <div className="info-row"><strong>Modified:</strong> {formatDate(job.modified)}</div>
                 {job.cv_match_percentage !== null && job.cv_match_percentage >= 0 && (
-                    <div className="info-row">
-                        <strong>CV Match:</strong> {job.cv_match_percentage}%
-                    </div>
+                    <div className="info-row"><strong>CV Match:</strong> {job.cv_match_percentage}%</div>
                 )}
-            </div>
-
-            <div className="status-form">
-                <h3>Status</h3>
-                <div className="status-pills">
-                    {STATUS_FIELDS.map((field) => (
-                        <button
-                            key={field}
-                            className={`status-pill ${job[field as keyof Job] ? 'active' : ''}`}
-                            onClick={() => handleStatusToggle(field)}
-                        >
-                            {field.replace(/_/g, ' ')}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="form-fields">
-                <div className="form-field">
-                    <label htmlFor="comments">Comments</label>
-                    <textarea
-                        id="comments"
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        rows={4}
-                    />
-                </div>
-
-                <div className="form-field">
-                    <label htmlFor="salary">Salary</label>
-                    <input
-                        id="salary"
-                        type="text"
-                        value={salary}
-                        onChange={(e) => setSalary(e.target.value)}
-                    />
-                </div>
-
-                <div className="form-field">
-                    <label htmlFor="company">Company</label>
-                    <input
-                        id="company"
-                        type="text"
-                        value={company}
-                        onChange={(e) => setCompany(e.target.value)}
-                    />
-                </div>
-
-                <div className="form-field">
-                    <label htmlFor=" client">Client</label>
-                    <input
-                        id="client"
-                        type="text"
-                        value={client}
-                        onChange={(e) => setClient(e.target.value)}
-                    />
-                </div>
-
-                <button className="save-btn" onClick={handleSave}>
-                    Save Changes
-                </button>
+                {job.company && <div className="info-row"><strong>Company:</strong> {job.company}</div>}
+                {job.client && <div className="info-row"><strong>Client:</strong> {job.client}</div>}
+                {job.salary && <div className="info-row"><strong>Salary:</strong> {job.salary}</div>}
             </div>
 
             {job.required_technologies && (
-                <div className="technologies">
-                    <h3>Required Technologies</h3>
-                    <p>{job.required_technologies}</p>
-                </div>
+                <div className="technologies"><h3>Required Technologies</h3><p>{job.required_technologies}</p></div>
             )}
 
             {job.optional_technologies && (
-                <div className="technologies">
-                    <h3>Optional Technologies</h3>
-                    <p>{job.optional_technologies}</p>
+                <div className="technologies"><h3>Optional Technologies</h3><p>{job.optional_technologies}</p></div>
+            )}
+
+            {job.comments && (
+                <div className="job-comments">
+                    <h3>Comments</h3>
+                    <div className="markdown-content"><ReactMarkdown>{job.comments}</ReactMarkdown></div>
                 </div>
             )}
 
             {job.markdown && (
                 <div className="job-markdown">
-                    <h3>Description</h3>
-                    <div className="markdown-content">
-                        {job.markdown}
-                    </div>
+                    <div className="markdown-content"><ReactMarkdown>{job.markdown}</ReactMarkdown></div>
                 </div>
             )}
         </div>
