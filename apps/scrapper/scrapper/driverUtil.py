@@ -40,6 +40,8 @@ class DriverUtil:
         if self.useUndetected:
             chromePath = self._findChrome()
             if chromePath is not None:
+                version_main = self._getChromeVersion(chromePath)
+                print(f'Detected Chrome version: {version_main}')
                 if isWindowsOS():
                     # Avoid NoSuchElement when windows lock  https://www.perplexity.ai/search/python-selenium-undetected-chr-46Hdkb5EQCuDEmBpHh5A8Q
                     # TODO: try in linux & mac os
@@ -50,9 +52,9 @@ class DriverUtil:
                     # chrome_options.add_argument('--headless')  # optional, depending on need
                     temp_user_data_dir = tempfile.mkdtemp()
                     opts.add_argument(f'--user-data-dir={temp_user_data_dir}')
-                    self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts)
+                    self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
                 else:
-                    self.driver = uc.Chrome(browser_executable_path=chromePath)
+                    self.driver = uc.Chrome(browser_executable_path=chromePath, version_main=version_main)
             else:
                 print(yellow('WARNING: undetected-chromedriver requires Chrome installed. Falling back to standard Selenium.'))
                 self.useUndetected = False
@@ -97,6 +99,35 @@ class DriverUtil:
             if os.path.exists(path):
                 return path
         return None
+
+    def _getChromeVersion(self, chromePath: str) -> int:
+        """
+        Detects the major version of the installed Chrome browser.
+        Returns 0 if detection fails.
+        """
+        import subprocess
+        import re
+        
+        try:
+            if isWindowsOS():
+                # Use PowerShell to get the version on Windows
+                cmd = f'(Get-Item "{chromePath}").VersionInfo.ProductVersion'
+                result = subprocess.run(['powershell', '-Command', cmd], capture_output=True, text=True)
+                version_str = result.stdout.strip()
+            else:
+                # Use --version flag on Linux/Mac
+                result = subprocess.run([chromePath, '--version'], capture_output=True, text=True)
+                version_str = result.stdout.strip()
+                
+            # Extract the major version number
+            # Typical output: "Google Chrome 120.0.6099.109" or just "120.0.6099.109"
+            match = re.search(r'(\d+)\.', version_str)
+            if match:
+                return int(match.group(1))
+        except Exception as e:
+            print(yellow(f'WARNING: Failed to detect Chrome version: {e}'))
+            
+        return 0
 
     def _apply_stealth_scripts(self):
         """Apply advanced stealth techniques to bypass bot detection"""
