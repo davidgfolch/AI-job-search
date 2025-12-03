@@ -1,4 +1,5 @@
 from typing import Dict, Sequence, TypeVar, Union
+from contextlib import contextmanager
 import mysql.connector as mysqlConnector
 from mysql.connector.types import RowItemType
 
@@ -44,14 +45,41 @@ def getConnection() -> mysqlConnector.MySQLConnection:
     if conn is None:
         conn = mysqlConnector.connect(
             user='root', password='rootPass', database='jobs',
-            # pool_name='jobsPool',
+            pool_name='jobsPool',
             pool_size=20,
             # connection_timeout=10,
             # get_warnings=True
         )
     if DEBUG:
         print(conn.__repr__())
-    return conn
+    # When using pooling, we want to return a connection from the pool,
+    # not the pool object itself (which is what conn holds if we used mysqlConnector.pooling.MySQLConnectionPool directly,
+    # but here mysqlConnector.connect with pool_name returns a pooled connection?
+    # Actually, mysql.connector.connect(pool_name=...) returns a CMySQLConnection or MySQLConnection
+    # that is part of a pool.
+    # However, if we assign it to a global `conn`, we are holding onto one connection forever.
+    # We need to change this pattern.
+    
+    # If pool_name is specified, connect() returns a connection from the pool.
+    # But we want to get a NEW connection from the pool every time getConnection is called,
+    # or at least when we are starting a new unit of work.
+    
+    # The current implementation uses a global `conn` variable.
+    # If we enable pooling, we should probably change how we get connections.
+    
+    # Let's use mysql.connector.pooling explicitly or just rely on connect() returning a pooled connection
+    # IF we don't cache it globally.
+    
+    # But the existing code caches `conn` globally:
+    # if conn is None: conn = ...
+    
+    # If we want to use pooling correctly, we should NOT cache the connection globally
+    # if we want multiple threads to get different connections.
+    
+    # However, to minimize changes and risk, let's look at how to get a connection from the pool.
+    # If we use pool_name, subsequent calls to connect with the same pool_name return connections from the pool.
+    
+    return mysqlConnector.connect(pool_name='jobsPool')
 
 
 class MysqlUtil:
@@ -64,16 +92,34 @@ class MysqlUtil:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        pass
+        if self.conn:
+            self.conn.close()
+            self.conn = None
 
+    @contextmanager
     def cursor(self):
-        conn = self.conn if self.conn else getConnection()
+        should_close = False
+        if not self.conn:
+            self.conn = getConnection()
+            should_close = True
+            
+        conn = self.conn
+            
         if not conn.is_connected():
             print(f'Reconnecting to DB conn: {conn}', flush=True)
             conn.reconnect()
+            
         c = conn.cursor()
         c.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
-        return c
+        try:
+            yield c
+        except Exception:
+            raise
+        finally:
+            c.close()
+            if should_close:
+                conn.close()
+                self.conn = None
 
     def insert(self, params) -> int | None:
         try:
