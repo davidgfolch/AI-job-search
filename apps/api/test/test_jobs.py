@@ -206,3 +206,86 @@ def test_list_jobs_pagination(mock_get_db):
     assert data['page'] == 2
     assert data['size'] == 10
     assert data['total'] == 50
+
+
+@patch('routers.jobs.get_db')
+def test_list_jobs_with_boolean_filter_true(mock_get_db):
+    """Test listing jobs with boolean filter set to true"""
+    mock_db = Mock()
+    mock_db.count.return_value = 1
+    mock_db.fetchAll.return_value = [
+        (1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None, None),
+    ]
+    mock_db.getTableDdlColumnNames.return_value = [
+        'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
+        'web_page', 'created', 'modified', 'merged'
+    ]
+    mock_get_db.return_value = mock_db
+    
+    response = client.get("/api/jobs?flagged=true")
+    
+    assert response.status_code == 200
+    # Verify the query was called
+    mock_db.fetchAll.assert_called_once()
+    # Check that the WHERE clause includes the boolean filter
+    call_args = mock_db.fetchAll.call_args
+    query = call_args[0][0]
+    assert "`flagged` = 1" in query
+
+
+@patch('routers.jobs.get_db')
+def test_list_jobs_with_boolean_filter_false(mock_get_db):
+    """Test listing jobs with boolean filter set to false"""
+    mock_db = Mock()
+    mock_db.count.return_value = 1
+    mock_db.fetchAll.return_value = []
+    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_get_db.return_value = mock_db
+    
+    response = client.get("/api/jobs?applied=false")
+    
+    assert response.status_code == 200
+    # Verify the query includes the boolean filter for false
+    call_args = mock_db.fetchAll.call_args
+    query = call_args[0][0]
+    assert "`applied` = 0" in query
+
+
+@patch('routers.jobs.get_db')
+def test_list_jobs_with_multiple_boolean_filters(mock_get_db):
+    """Test listing jobs with multiple boolean filters"""
+    mock_db = Mock()
+    mock_db.count.return_value = 1
+    mock_db.fetchAll.return_value = []
+    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_get_db.return_value = mock_db
+    
+    response = client.get("/api/jobs?flagged=true&ai_enriched=true&ignored=false")
+    
+    assert response.status_code == 200
+    # Verify all boolean filters are in the query
+    call_args = mock_db.fetchAll.call_args
+    query = call_args[0][0]
+    assert "`flagged` = 1" in query
+    assert "`ai_enriched` = 1" in query
+    assert "`ignored` = 0" in query
+
+
+@patch('routers.jobs.get_db')
+def test_list_jobs_boolean_filters_with_other_filters(mock_get_db):
+    """Test boolean filters combined with other filters"""
+    mock_db = Mock()
+    mock_db.count.return_value = 1
+    mock_db.fetchAll.return_value = []
+    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_get_db.return_value = mock_db
+    
+    response = client.get("/api/jobs?search=Python&flagged=true&status=applied")
+    
+    assert response.status_code == 200
+    call_args = mock_db.fetchAll.call_args
+    query = call_args[0][0]
+    # Verify all filters are combined
+    assert "`flagged` = 1" in query
+    assert "`applied` = 1" in query
+    assert "LIKE" in query  # Search filter

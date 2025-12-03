@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Job } from '../api/jobs';
 import './JobDetail.css';
 
@@ -23,6 +23,14 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
     const [salary, setSalary] = useState(job.salary || '');
     const [company, setCompany] = useState(job.company || '');
     const [client, setClient] = useState(job.client || '');
+
+    // Sync local state with job prop when it changes
+    useEffect(() => {
+        setComments(job.comments || '');
+        setSalary(job.salary || '');
+        setCompany(job.company || '');
+        setClient(job.client || '');
+    }, [job]);
 
     const handleStatusToggle = (field: string) => {
         onUpdate({ [field]: !job[field as keyof Job] });

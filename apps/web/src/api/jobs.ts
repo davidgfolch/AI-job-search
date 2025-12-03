@@ -28,7 +28,13 @@ export interface Job {
   applied: boolean | null;
   discarded: boolean | null;
   closed: boolean | null;
+  interview_rh: boolean | null;
+  interview: boolean | null;
+  interview_tech: boolean | null;
+  interview_technical_test: boolean | null;
+  interview_technical_test_done: boolean | null;
   ai_enriched: boolean | null;
+  easy_apply: boolean | null;
   // Other fields
   required_technologies: string | null;
   optional_technologies: string | null;
@@ -50,6 +56,25 @@ export interface JobListParams {
   search?: string;
   status?: string;
   not_status?: string;
+  days_old?: number;
+  salary?: string;
+  order?: string;
+  // Boolean field filters
+  flagged?: boolean;
+  like?: boolean;
+  ignored?: boolean;
+  seen?: boolean;
+  applied?: boolean;
+  discarded?: boolean;
+  closed?: boolean;
+  interview_rh?: boolean;
+  interview?: boolean;
+  interview_tech?: boolean;
+  interview_technical_test?: boolean;
+  interview_technical_test_done?: boolean;
+  ai_enriched?: boolean;
+  easy_apply?: boolean;
+  sql_filter?: string;
 }
 
 export const jobsApi = {
