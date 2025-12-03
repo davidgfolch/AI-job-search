@@ -6,7 +6,7 @@
 |----------------------|-----------------------------------------------|----------------------|--------------------------------------|
 | packages/commonlib   | ![commonlib](packages/commonlib/coverage.svg) | apps/viewer (old UI) | ![viewer](apps/viewer/coverage.svg)  |
 | apps/aiEnrich        | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/web (new UI)    | ![web](apps/web/coverage/badges.svg) |
-| apps/scrapper        | ![scrapper](apps/scrapper/coverage.svg)       | apps/api (new UI)    | ![api](apps/api/coverage.svg)        |
+| apps/scrapper        | ![scrapper](apps/scrapper/coverage.svg)       | apps/backend (new UI)    | ![backend](apps/backend/coverage.svg)        |
 
 
 

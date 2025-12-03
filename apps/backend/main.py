@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import jobs
+from api import jobs
 
 app = FastAPI(title="AI Job Search API")
 

@@ -6,6 +6,20 @@ from models.job import Job
 
 client = TestClient(app)
 
+def create_mock_db(**kwargs):
+    """Helper to create a mock database that supports context manager"""
+    mock_db = Mock()
+    # Set default return values
+    mock_db.count.return_value = kwargs.get('count', 0)
+    mock_db.fetchAll.return_value = kwargs.get('fetchAll', [])
+    mock_db.fetchOne.return_value = kwargs.get('fetchOne', None)
+    mock_db.getTableDdlColumnNames.return_value = kwargs.get('columns', ['id', 'title', 'company'])
+    mock_db.executeAndCommit.return_value = kwargs.get('executeAndCommit', 1)
+    # Support context manager
+    mock_db.__enter__ = Mock(return_value=mock_db)
+    mock_db.__exit__ = Mock(return_value=False)
+    return mock_db
+
 
 def test_health_check():
     """Test the health check endpoint"""
@@ -14,13 +28,10 @@ def test_health_check():
     assert response.json() == {"status": "ok"}
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_empty(mock_get_db):
     """Test listing jobs when there are no results"""
-    mock_db = Mock()
-    mock_db.count.return_value = 0
-    mock_db.fetchAll.return_value = []
-    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_db = create_mock_db(count=0, fetchAll=[], columns=['id', 'title', 'company'])
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs")
@@ -33,19 +44,20 @@ def test_list_jobs_empty(mock_get_db):
     assert data['size'] == 20
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_with_data(mock_get_db):
     """Test listing jobs with actual data"""
-    mock_db = Mock()
-    mock_db.count.return_value = 2
-    mock_db.fetchAll.return_value = [
-        (1, 'Software Engineer', 'ACME Corp', 'Madrid', None, None, None, None, None, None, None),
-        (2, 'Data Scientist', 'Tech Inc', 'Barcelona', None, None, None, None, None, None, None),
-    ]
-    mock_db.getTableDdlColumnNames.return_value = [
-        'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
-        'web_page', 'created', 'modified', 'merged'
-    ]
+    mock_db = create_mock_db(
+        count=2,
+        fetchAll=[
+            (1, 'Software Engineer', 'ACME Corp', 'Madrid', None, None, None, None, None, None, None),
+            (2, 'Data Scientist', 'Tech Inc', 'Barcelona', None, None, None, None, None, None, None),
+        ],
+        columns=[
+            'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
+            'web_page', 'created', 'modified', 'merged'
+        ]
+    )
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?page=1&size=20")
@@ -58,18 +70,19 @@ def test_list_jobs_with_data(mock_get_db):
     assert data['items'][1]['company'] == 'Tech Inc'
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_with_search(mock_get_db):
     """Test listing jobs with search filter"""
-    mock_db = Mock()
-    mock_db.count.return_value = 1
-    mock_db.fetchAll.return_value = [
-        (1, 'Python Developer', 'ACME Corp', 'Madrid', None, None, None, None, None, None, None),
-    ]
-    mock_db.getTableDdlColumnNames.return_value = [
-        'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
-        'web_page', 'created', 'modified', 'merged'
-    ]
+    mock_db = create_mock_db(
+        count=1,
+        fetchAll=[
+            (1, 'Python Developer', 'ACME Corp', 'Madrid', None, None, None, None, None, None, None),
+        ],
+        columns=[
+            'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
+            'web_page', 'created', 'modified', 'merged'
+        ]
+    )
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?search=Python")
@@ -81,24 +94,25 @@ def test_list_jobs_with_search(mock_get_db):
     mock_db.fetchAll.assert_called_once()
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_get_job_by_id(mock_get_db):
     """Test getting a specific job by ID"""
-    mock_db = Mock()
-    mock_db.fetchOne.return_value = (
-        1, 'Senior Developer', 'ACME Corp', 'Remote', '50000-60000',
-        'https://example.com/job/1', '# Job Description', 'LinkedIn',
-        None, None, None
+    mock_db = create_mock_db(
+        fetchOne=(
+            1, 'Senior Developer', 'ACME Corp', 'Remote', '50000-60000',
+            'https://example.com/job/1', '# Job Description', 'LinkedIn',
+            None, None, None
+        ),
+        columns=[
+            'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
+            'web_page', 'created', 'modified', 'merged'
+        ]
     )
-    mock_db.getTableDdlColumnNames.return_value = [
-        'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
-        'web_page', 'created', 'modified', 'merged'
-    ]
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs/1")
     
-    assert response.status_code == 200
+    assert response.status_code ==200
     data = response.json()
     assert data['id'] == 1
     assert data['title'] == 'Senior Developer'
@@ -106,11 +120,10 @@ def test_get_job_by_id(mock_get_db):
     assert data['salary'] == '50000-60000'
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_get_job_not_found(mock_get_db):
     """Test getting a job that doesn't exist"""
-    mock_db = Mock()
-    mock_db.fetchOne.return_value = None
+    mock_db = create_mock_db(fetchOne=None)
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs/999")
@@ -119,14 +132,12 @@ def test_get_job_not_found(mock_get_db):
     assert response.json()['detail'] == 'Job not found'
 
 
-@patch('routers.jobs.get_db')
-@patch('routers.jobs.get_job')
+@patch('services.jobs_service.JobsService.get_db')
+@patch('services.jobs_service.JobsService.get_job')
 def test_update_job(mock_get_job, mock_get_db):
     """Test updating a job"""
     # Mock the existence check
-    mock_db = Mock()
-    mock_db.jobExists.return_value = True
-    mock_db.executeAndCommit.return_value = 1
+    mock_db = create_mock_db(fetchOne=(1,))
     mock_get_db.return_value = mock_db
     
     # Mock the get_job function that's called after update
@@ -155,11 +166,10 @@ def test_update_job(mock_get_job, mock_get_db):
     mock_db.executeAndCommit.assert_called_once()
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_update_job_not_found(mock_get_db):
     """Test updating a job that doesn't exist"""
-    mock_db = Mock()
-    mock_db.jobExists.return_value = False
+    mock_db = create_mock_db(fetchOne=None)
     mock_get_db.return_value = mock_db
     
     update_data = {'comments': 'Test'}
@@ -169,18 +179,19 @@ def test_update_job_not_found(mock_get_db):
     assert response.json()['detail'] == 'Job not found'
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_with_status_filter(mock_get_db):
     """Test listing jobs with status filter"""
-    mock_db = Mock()
-    mock_db.count.return_value = 1
-    mock_db.fetchAll.return_value = [
-        (1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None, None),
-    ]
-    mock_db.getTableDdlColumnNames.return_value = [
-        'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
-        'web_page', 'created', 'modified', 'merged'
-    ]
+    mock_db = create_mock_db(
+        count=1,
+        fetchAll=[
+            (1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None, None),
+        ],
+        columns=[
+            'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
+            'web_page', 'created', 'modified', 'merged'
+        ]
+    )
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?status=applied")
@@ -190,13 +201,14 @@ def test_list_jobs_with_status_filter(mock_get_db):
     mock_db.fetchAll.assert_called_once()
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_pagination(mock_get_db):
     """Test pagination parameters"""
-    mock_db = Mock()
-    mock_db.count.return_value = 50
-    mock_db.fetchAll.return_value = []
-    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_db = create_mock_db(
+        count=50,
+        fetchAll=[],
+        columns=['id', 'title', 'company']
+    )
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?page=2&size=10")
@@ -208,18 +220,19 @@ def test_list_jobs_pagination(mock_get_db):
     assert data['total'] == 50
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_with_boolean_filter_true(mock_get_db):
     """Test listing jobs with boolean filter set to true"""
-    mock_db = Mock()
-    mock_db.count.return_value = 1
-    mock_db.fetchAll.return_value = [
-        (1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None, None),
-    ]
-    mock_db.getTableDdlColumnNames.return_value = [
-        'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
-        'web_page', 'created', 'modified', 'merged'
-    ]
+    mock_db = create_mock_db(
+        count=1,
+        fetchAll=[
+            (1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None, None),
+        ],
+        columns=[
+            'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
+            'web_page', 'created', 'modified', 'merged'
+        ]
+    )
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?flagged=true")
@@ -233,13 +246,10 @@ def test_list_jobs_with_boolean_filter_true(mock_get_db):
     assert "`flagged` = 1" in query
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_with_boolean_filter_false(mock_get_db):
     """Test listing jobs with boolean filter set to false"""
-    mock_db = Mock()
-    mock_db.count.return_value = 1
-    mock_db.fetchAll.return_value = []
-    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title', 'company'])
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?applied=false")
@@ -251,13 +261,10 @@ def test_list_jobs_with_boolean_filter_false(mock_get_db):
     assert "`applied` = 0" in query
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_with_multiple_boolean_filters(mock_get_db):
     """Test listing jobs with multiple boolean filters"""
-    mock_db = Mock()
-    mock_db.count.return_value = 1
-    mock_db.fetchAll.return_value = []
-    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title', 'company'])
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?flagged=true&ai_enriched=true&ignored=false")
@@ -271,13 +278,10 @@ def test_list_jobs_with_multiple_boolean_filters(mock_get_db):
     assert "`ignored` = 0" in query
 
 
-@patch('routers.jobs.get_db')
+@patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_boolean_filters_with_other_filters(mock_get_db):
     """Test boolean filters combined with other filters"""
-    mock_db = Mock()
-    mock_db.count.return_value = 1
-    mock_db.fetchAll.return_value = []
-    mock_db.getTableDdlColumnNames.return_value = ['id', 'title', 'company']
+    mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title', 'company'])
     mock_get_db.return_value = mock_db
     
     response = client.get("/api/jobs?search=Python&flagged=true&status=applied")
