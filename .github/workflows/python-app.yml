@@ -94,6 +94,7 @@ jobs:
           fi
         done
         if $changes; then
+          git pull
           git commit -m "Update coverage badges"
           git push
         else
