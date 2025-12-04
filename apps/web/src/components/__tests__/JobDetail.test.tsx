@@ -45,6 +45,10 @@ const mockJob: Job = {
 const defaultProps = {
     job: mockJob,
     filters: mockFilters,
+    onSeen: vi.fn(),
+    onApplied: vi.fn(),
+    onDiscarded: vi.fn(),
+    onClosed: vi.fn(),
     onIgnore: vi.fn(),
     onNext: vi.fn(),
     onPrevious: vi.fn(),
@@ -98,9 +102,9 @@ describe('JobDetail', () => {
     it('renders permalink copy button', () => {
         render(<JobDetail {...defaultProps} />);
 
-        const copyButton = screen.getByTitle('Copy permalink');
+        const copyButton = screen.getByTitle('Copy permalink to clipboard');
         expect(copyButton).toBeInTheDocument();
-        expect(copyButton).toHaveTextContent('🔗 Copy Link');
+        expect(copyButton).toHaveTextContent('🔗');
     });
 
     it('renders ignore button and calls onIgnore when clicked', () => {
@@ -112,6 +116,50 @@ describe('JobDetail', () => {
 
         fireEvent.click(ignoreButton);
         expect(onIgnore).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders seen button and calls onSeen when clicked', () => {
+        const onSeen = vi.fn();
+        render(<JobDetail {...defaultProps} onSeen={onSeen} />);
+
+        const seenButton = screen.getByTitle('Mark as seen');
+        expect(seenButton).toBeInTheDocument();
+
+        fireEvent.click(seenButton);
+        expect(onSeen).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders applied button and calls onApplied when clicked', () => {
+        const onApplied = vi.fn();
+        render(<JobDetail {...defaultProps} onApplied={onApplied} />);
+
+        const appliedButton = screen.getByTitle('Mark as applied');
+        expect(appliedButton).toBeInTheDocument();
+
+        fireEvent.click(appliedButton);
+        expect(onApplied).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders discarded button and calls onDiscarded when clicked', () => {
+        const onDiscarded = vi.fn();
+        render(<JobDetail {...defaultProps} onDiscarded={onDiscarded} />);
+
+        const discardedButton = screen.getByTitle('Mark as discarded');
+        expect(discardedButton).toBeInTheDocument();
+
+        fireEvent.click(discardedButton);
+        expect(onDiscarded).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders closed button and calls onClosed when clicked', () => {
+        const onClosed = vi.fn();
+        render(<JobDetail {...defaultProps} onClosed={onClosed} />);
+
+        const closedButton = screen.getByTitle('Mark as closed');
+        expect(closedButton).toBeInTheDocument();
+
+        fireEvent.click(closedButton);
+        expect(onClosed).toHaveBeenCalledTimes(1);
     });
 
     it('renders navigation buttons', () => {

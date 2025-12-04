@@ -79,21 +79,32 @@ export default function JobDetail({ job, filters, onSeen, onApplied, onDiscarded
             </div>
 
             <div className="job-detail-content">
-                <div className="job-info">
-                    {job.company && <div className="info-row"><strong>Company:</strong> {job.company}</div>}
-                    {job.location && <div className="info-row"><strong>Location:</strong> {job.location}</div>}
-                    {job.salary && <div className="info-row"><strong>Salary:</strong> {job.salary}</div>}
-                    {job.required_technologies && (<div className="info-row"><strong>Required skills:</strong> {job.required_technologies}</div>)}
-                    {job.optional_technologies && (<div className="info-row"><strong>Optional skills:</strong> {job.optional_technologies}</div>)}
+                <ul className="job-info">
+                    {job.company && <li className="info-row">Company: <span>{job.company}</span></li>}
+                    {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
+                    {job.salary && <li className="info-row">Salary: <span>{job.salary}</span></li>}
 
-                    {job.created && <div className="info-row"><strong>Created:</strong> {formatDate(job.created)}</div>}
-                    {job.modified && <div className="info-row"><strong>Modified:</strong> {formatDate(job.modified)}</div>}
+                    {(job.required_technologies || job.optional_technologies) && (
+                        <li className="info-row">Skills:
+                            <ul>
+                                {job.required_technologies && <li>Required: <span>{job.required_technologies}</span></li>}
+                                {job.optional_technologies && <li>Optional: <span>{job.optional_technologies}</span></li>}
+                            </ul>
+                        </li>
+                    )}
+                    {job.web_page && (
+                        <li className="info-row">
+                            Source: <span>{job.web_page}</span>
+                            <ul>
+                                {job.created && <li className="info-row"><span>{formatDate(job.created)}</span> created</li>}
+                                {job.modified && formatDate(job.modified) !== formatDate(job.created) && <li className="info-row"><span>{formatDate(job.modified)}</span> modified</li>}
+                            </ul>
+                        </li>
+                    )}
 
-                    {job.id && <div className="info-row"><strong>ID:</strong> {job.id}</div>}
-                    {job.web_page && <div className="info-row"><strong>Source:</strong> {job.web_page}</div>}
-                    {job.client && <div className="info-row"><strong>Client:</strong> {job.client}</div>}
-                    {job.cv_match_percentage && <div className="info-row"><strong>CV Match:</strong> {job.cv_match_percentage}%</div>}
-                </div>
+                    {job.client && <li className="info-row">Client: <span>{job.client}</span></li>}
+                    {job.cv_match_percentage && <li className="info-row">CV Match: <span>{job.cv_match_percentage}%</span></li>}
+                </ul>
                 {job.comments && (
                     <div className="job-comments">
                         <h3>Comments</h3>

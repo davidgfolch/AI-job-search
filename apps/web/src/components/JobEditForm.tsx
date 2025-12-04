@@ -57,15 +57,6 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
         }
     };
 
-    const handleSave = () => {
-        onUpdate({
-            comments,
-            salary,
-            company,
-            client,
-        });
-    };
-
     // Auto-save handler with debouncing
     const handleAutoSave = (field: string, value: string) => {
         // Clear existing timer for this field
@@ -121,12 +112,6 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
     return (
         <div className="job-edit-form">
             <div className="status-form">
-                <div className="status-header">
-                    <h3>Status</h3>
-                    <button className="save-btn-small" onClick={handleSave}>
-                        Save All
-                    </button>
-                </div>
                 <div className="status-pills">
                     {STATUS_FIELDS.map((field) => (
                         <button

@@ -134,18 +134,23 @@
 .job-info {
     background: #1a1a1a;
     border-radius: 8px;
+    list-style: disc;
+    padding-left: 1.7rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.job-info ul {
+    padding-left: 1.2rem;
 }
 
 .info-row {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.1rem 0;
-    color: #ddd;
+    color: #a1a1a1;
+    padding: 0.2rem 0;
 }
 
-.info-row strong {
-    color: #667eea;
-    min-width: 100px;
+.info-row span {
+    color: #00c151;
 }
 
 .job-comments {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../api/jobs';
@@ -22,6 +22,12 @@ export default function Viewer() {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('list');
 
+    // Track when we need to auto-select next job after state change
+    const autoSelectNext = useRef<{ shouldSelect: boolean; previousJobId: number | null }>({
+        shouldSelect: false,
+        previousJobId: null,
+    });
+
     const { data, isLoading, error } = useQuery({
         queryKey: ['jobs', filters],
         queryFn: () => jobsApi.getJobs(filters),
@@ -38,6 +44,28 @@ export default function Viewer() {
             }
         },
     });
+
+    // Auto-select next job after data refetch when a state change occurred
+    useEffect(() => {
+        if (!autoSelectNext.current.shouldSelect || !data?.items || !autoSelectNext.current.previousJobId) {
+            return;
+        }
+        // Find the previous job in the new data
+        const previousIndex = data.items.findIndex(j => j.id === autoSelectNext.current.previousJobId);
+        if (previousIndex === -1) {
+            // Job was filtered out, select next available job
+            if (data.items.length > 0) {
+                // Try to select the job at the same index, or the last job if we're past the end
+                const indexToSelect = Math.min(previousIndex >= 0 ? previousIndex : 0, data.items.length - 1);
+                handleJobSelect(data.items[indexToSelect]);
+            } else {
+                // No jobs left in list
+                setSelectedJob(null);
+            }
+        }
+        // Reset the flag
+        autoSelectNext.current = { shouldSelect: false, previousJobId: null };
+    }, [data?.items]); // Trigger when data changes after refetch
 
     // Handle jobId URL parameter on mount
     useEffect(() => {
@@ -67,36 +95,52 @@ export default function Viewer() {
 
     const handleJobUpdate = (data: Partial<Job>) => {
         if (selectedJob) {
+            // Check if any state field is being updated
+            const stateFields = [
+                'ignored', 'seen', 'applied', 'discarded', 'closed',
+                'flagged', 'like', 'ai_enriched'
+            ];
+            const hasStateChange = stateFields.some(field => field in data);
+
+            if (hasStateChange) {
+                autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
+            }
+
             updateMutation.mutate({ id: selectedJob.id, data });
         }
     };
 
     const handleIgnoreJob = () => {
         if (selectedJob) {
+            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
             updateMutation.mutate({ id: selectedJob.id, data: { ignored: true } });
         }
     };
 
     const handleSeenJob = () => {
         if (selectedJob) {
+            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
             updateMutation.mutate({ id: selectedJob.id, data: { seen: true } });
         }
     };
 
     const handleAppliedJob = () => {
         if (selectedJob) {
+            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
             updateMutation.mutate({ id: selectedJob.id, data: { applied: true } });
         }
     };
 
     const handleDiscardedJob = () => {
         if (selectedJob) {
+            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
             updateMutation.mutate({ id: selectedJob.id, data: { discarded: true } });
         }
     };
 
     const handleClosedJob = () => {
         if (selectedJob) {
+            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
             updateMutation.mutate({ id: selectedJob.id, data: { closed: true } });
         }
     };
@@ -131,16 +175,10 @@ export default function Viewer() {
                     <div className="viewer-left">
                         <div className="tab-group">
                             <div className="tab-buttons">
-                                <button
-                                    className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('list')}
-                                >
+                                <button className={`tab-button ${activeTab === 'list' ? 'active' : ''}`} onClick={() => setActiveTab('list')}>
                                     List
                                 </button>
-                                <button
-                                    className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('edit')}
-                                >
+                                <button className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`} onClick={() => setActiveTab('edit')}>
                                     Edit
                                 </button>
                             </div>

@@ -181,6 +181,7 @@ describe('Viewer', () => {
             page: 1,
             size: 20,
         });
+        (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
 
         renderWithRouter(<Viewer />);
 
@@ -196,7 +197,6 @@ describe('Viewer', () => {
         fireEvent.click(screen.getByText('Edit'));
 
         // Should show edit form
-        expect(screen.getByText('Save All')).toBeInTheDocument();
         expect(screen.getByLabelText('Comments')).toBeInTheDocument();
 
         // Switch back to List tab
@@ -236,6 +236,7 @@ describe('Viewer', () => {
             page: 1,
             size: 20,
         });
+        (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
 
         (jobsApi.updateJob as any).mockResolvedValue({
             ...mockJobs[0],

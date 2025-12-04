@@ -57,8 +57,7 @@ describe('JobEditForm', () => {
     it('renders form with job data when job is selected', () => {
         render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
 
-        expect(screen.getByText('Status')).toBeInTheDocument();
-        expect(screen.getByText('Save All')).toBeInTheDocument();
+
         expect(screen.getByLabelText('Comments')).toHaveValue('Test comment');
         expect(screen.getByLabelText('Salary')).toHaveValue('100k');
         expect(screen.getByLabelText('Company')).toHaveValue('Tech Corp');
@@ -159,23 +158,7 @@ describe('JobEditForm', () => {
         expect(onUpdateMock).toHaveBeenCalledWith({ comments: 'Third' });
     });
 
-    it('Save All button saves all form fields', () => {
-        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
 
-        // Modify fields
-        fireEvent.change(screen.getByLabelText('Comments'), { target: { value: 'Updated comment' } });
-        fireEvent.change(screen.getByLabelText('Salary'), { target: { value: '150k' } });
-
-        const saveButton = screen.getByText('Save All');
-        fireEvent.click(saveButton);
-
-        expect(onUpdateMock).toHaveBeenCalledWith({
-            comments: 'Updated comment',
-            salary: '150k',
-            company: 'Tech Corp',
-            client: 'Client A',
-        });
-    });
 
     it('syncs form fields when job prop changes', () => {
         const { rerender } = render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
