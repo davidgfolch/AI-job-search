@@ -1,7 +1,14 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import JobDetail from '../JobDetail';
-import { Job } from '../../api/jobs';
+import type { Job, JobListParams } from '../../api/jobs';
+
+const mockFilters: JobListParams = {
+    page: 1,
+    size: 20,
+    search: 'test',
+    order: 'created desc',
+};
 
 const mockJob: Job = {
     id: 1,
@@ -21,7 +28,13 @@ const mockJob: Job = {
     applied: false,
     discarded: false,
     closed: false,
+    interview_rh: false,
+    interview: false,
+    interview_tech: false,
+    interview_technical_test: false,
+    interview_technical_test_done: false,
     ai_enriched: true,
+    easy_apply: false,
     required_technologies: 'React, TypeScript',
     optional_technologies: 'Python',
     client: 'Client A',
@@ -29,9 +42,19 @@ const mockJob: Job = {
     cv_match_percentage: 90,
 };
 
+const defaultProps = {
+    job: mockJob,
+    filters: mockFilters,
+    onIgnore: vi.fn(),
+    onNext: vi.fn(),
+    onPrevious: vi.fn(),
+    hasNext: true,
+    hasPrevious: true,
+};
+
 describe('JobDetail', () => {
     it('renders job details correctly', () => {
-        render(<JobDetail job={mockJob} />);
+        render(<JobDetail {...defaultProps} />);
 
         expect(screen.getByText('Software Engineer')).toBeInTheDocument();
         expect(screen.getByText('Tech Corp')).toBeInTheDocument();
@@ -43,15 +66,15 @@ describe('JobDetail', () => {
     });
 
     it('renders job link correctly', () => {
-        render(<JobDetail job={mockJob} />);
+        render(<JobDetail {...defaultProps} />);
 
-        const link = screen.getByText('View Job →');
+        const link = screen.getByText('Software Engineer');
         expect(link).toHaveAttribute('href', 'http://example.com');
         expect(link).toHaveAttribute('target', '_blank');
     });
 
     it('displays CV match percentage when available', () => {
-        render(<JobDetail job={mockJob} />);
+        render(<JobDetail {...defaultProps} />);
 
         expect(screen.getByText('90%')).toBeInTheDocument();
     });
@@ -59,16 +82,79 @@ describe('JobDetail', () => {
     it('does not display optional fields when they are null', () => {
         const jobWithoutOptionals: Job = {
             ...mockJob,
-            company: '',
-            salary: '',
-            comments: '',
-            optional_technologies: '',
+            company: null,
+            salary: null,
+            comments: null,
+            optional_technologies: null,
         };
-        render(<JobDetail job={jobWithoutOptionals} />);
+        render(<JobDetail {...defaultProps} job={jobWithoutOptionals} />);
 
         // These should not appear in the document
         expect(screen.queryByText('Company:')).not.toBeInTheDocument();
         expect(screen.queryByText('100k')).not.toBeInTheDocument();
         expect(screen.queryByText('Initial comment')).not.toBeInTheDocument();
+    });
+
+    it('renders permalink copy button', () => {
+        render(<JobDetail {...defaultProps} />);
+
+        const copyButton = screen.getByTitle('Copy permalink');
+        expect(copyButton).toBeInTheDocument();
+        expect(copyButton).toHaveTextContent('🔗 Copy Link');
+    });
+
+    it('renders ignore button and calls onIgnore when clicked', () => {
+        const onIgnore = vi.fn();
+        render(<JobDetail {...defaultProps} onIgnore={onIgnore} />);
+
+        const ignoreButton = screen.getByTitle('Mark as ignored');
+        expect(ignoreButton).toBeInTheDocument();
+
+        fireEvent.click(ignoreButton);
+        expect(onIgnore).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders navigation buttons', () => {
+        render(<JobDetail {...defaultProps} />);
+
+        const previousButton = screen.getByTitle('Previous job');
+        const nextButton = screen.getByTitle('Next job');
+
+        expect(previousButton).toBeInTheDocument();
+        expect(nextButton).toBeInTheDocument();
+    });
+
+    it('calls onNext when Next button is clicked', () => {
+        const onNext = vi.fn();
+        render(<JobDetail {...defaultProps} onNext={onNext} />);
+
+        const nextButton = screen.getByTitle('Next job');
+        fireEvent.click(nextButton);
+
+        expect(onNext).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls onPrevious when Previous button is clicked', () => {
+        const onPrevious = vi.fn();
+        render(<JobDetail {...defaultProps} onPrevious={onPrevious} />);
+
+        const previousButton = screen.getByTitle('Previous job');
+        fireEvent.click(previousButton);
+
+        expect(onPrevious).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables Previous button when hasPrevious is false', () => {
+        render(<JobDetail {...defaultProps} hasPrevious={false} />);
+
+        const previousButton = screen.getByTitle('Previous job');
+        expect(previousButton).toBeDisabled();
+    });
+
+    it('disables Next button when hasNext is false', () => {
+        render(<JobDetail {...defaultProps} hasNext={false} />);
+
+        const nextButton = screen.getByTitle('Next job');
+        expect(nextButton).toBeDisabled();
     });
 });

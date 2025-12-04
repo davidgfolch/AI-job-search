@@ -80,12 +80,13 @@ class JobsService:
             params_with_limit = params + [size, offset]
             
             rows = db.fetchAll(query, params_with_limit)
-            columns = db.getTableDdlColumnNames('jobs')
+            # Get raw column names without translation
+            columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
             
             items = []
             for row in rows:
-                # Convert column names to lowercase to match Pydantic model
-                item_dict = {col.lower(): val for col, val in zip(columns, row)}
+                # Use raw column names (they're already lowercase in MySQL)
+                item_dict = {col: val for col, val in zip(columns, row)}
                 items.append(item_dict)
             
         return {
@@ -103,9 +104,10 @@ class JobsService:
             if not row:
                 return None
                 
-            columns = db.getTableDdlColumnNames('jobs')
-            # Convert column names to lowercase to match Pydantic model
-            item_dict = {col.lower(): val for col, val in zip(columns, row)}
+            # Get raw column names without translation
+            columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
+            # Use raw column names (they're already lowercase in MySQL)
+            item_dict = {col: val for col, val in zip(columns, row)}
             return item_dict
 
     def update_job(self, job_id: int, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:

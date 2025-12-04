@@ -49,13 +49,34 @@
 .loading,
 .error,
 .no-selection {
-    padding: 2rem;
     text-align: center;
     color: var(--text-secondary);
 }
 
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
 .error {
     color: #ef4444;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .pagination {

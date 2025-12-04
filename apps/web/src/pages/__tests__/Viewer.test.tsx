@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Viewer from '../Viewer';
 import { jobsApi } from '../../api/jobs';
@@ -12,6 +13,7 @@ vi.mock('../../api/jobs', async () => {
         ...actual,
         jobsApi: {
             getJobs: vi.fn(),
+            getJob: vi.fn(),
             updateJob: vi.fn(),
         },
     };
@@ -90,6 +92,16 @@ const createTestQueryClient = () => new QueryClient({
     },
 });
 
+const renderWithRouter = (ui: React.ReactElement) => {
+    return render(
+        <BrowserRouter>
+            <QueryClientProvider client={createTestQueryClient()}>
+                {ui}
+            </QueryClientProvider>
+        </BrowserRouter>
+    );
+};
+
 describe('Viewer', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -98,11 +110,7 @@ describe('Viewer', () => {
     it('renders loading state initially', () => {
         (jobsApi.getJobs as any).mockReturnValue(new Promise(() => { })); // Never resolves
 
-        render(
-            <QueryClientProvider client={createTestQueryClient()}>
-                <Viewer />
-            </QueryClientProvider>
-        );
+        renderWithRouter(<Viewer />);
 
         expect(screen.getByText('Loading jobs...')).toBeInTheDocument();
     });
@@ -115,11 +123,7 @@ describe('Viewer', () => {
             size: 20,
         });
 
-        render(
-            <QueryClientProvider client={createTestQueryClient()}>
-                <Viewer />
-            </QueryClientProvider>
-        );
+        renderWithRouter(<Viewer />);
 
         await waitFor(() => {
             // Use getAllByText because "Job 1" might appear in multiple places if we are not careful,
@@ -134,11 +138,7 @@ describe('Viewer', () => {
     it('handles error state', async () => {
         (jobsApi.getJobs as any).mockRejectedValue(new Error('Failed to fetch'));
 
-        render(
-            <QueryClientProvider client={createTestQueryClient()}>
-                <Viewer />
-            </QueryClientProvider>
-        );
+        renderWithRouter(<Viewer />);
 
         await waitFor(() => {
             expect(screen.getByText('Error loading jobs: Error: Failed to fetch')).toBeInTheDocument();
@@ -153,11 +153,7 @@ describe('Viewer', () => {
             size: 20,
         });
 
-        render(
-            <QueryClientProvider client={createTestQueryClient()}>
-                <Viewer />
-            </QueryClientProvider>
-        );
+        renderWithRouter(<Viewer />);
 
         await waitFor(() => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
@@ -186,11 +182,7 @@ describe('Viewer', () => {
             size: 20,
         });
 
-        render(
-            <QueryClientProvider client={createTestQueryClient()}>
-                <Viewer />
-            </QueryClientProvider>
-        );
+        renderWithRouter(<Viewer />);
 
         await waitFor(() => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
@@ -222,11 +214,7 @@ describe('Viewer', () => {
             size: 20,
         });
 
-        render(
-            <QueryClientProvider client={createTestQueryClient()}>
-                <Viewer />
-            </QueryClientProvider>
-        );
+        renderWithRouter(<Viewer />);
 
         await waitFor(() => {
             expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
@@ -254,11 +242,7 @@ describe('Viewer', () => {
             flagged: true,
         });
 
-        render(
-            <QueryClientProvider client={createTestQueryClient()}>
-                <Viewer />
-            </QueryClientProvider>
-        );
+        renderWithRouter(<Viewer />);
 
         await waitFor(() => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
