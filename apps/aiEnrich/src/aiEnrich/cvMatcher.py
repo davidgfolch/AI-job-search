@@ -16,6 +16,7 @@ from commonlib.util import getEnv, getEnvBool
 
 VERBOSE = False
 DEBUG = False
+CV_LOCATION = './cv/cv.txt'
 LLM_CFG = LLM(
     # model="ollama/gemma3",
     model="ollama/llama3.2",
@@ -147,35 +148,27 @@ def loadCVContent():
     global cvContent
     if not getEnvBool('AI_CV_MATCH'):
         print(yellow('AI_CV_MATCH disabled'))
-        return
+        return False
     if cvContent is not None:
         return True
-    cvLocation = getEnv('AI_CV_MATCH_LOCATION')
-    print(yellow(f'Loading CV from: {cvLocation}'))
-    if not (cvLocation.endswith('.pdf') or cvLocation.endswith('.txt')):
-        print(yellow('AI_CV_MATCH is enabled but AI_CV_MATCH_LOCATION is not set, allowed formats: .txt, .pdf'))
-        return False
+    print(yellow(f'Loading CV from: {CV_LOCATION}'))
     try:
-        filePath = Path(cvLocation)
-        cvLocationTxt = cvLocation.replace('.pdf', '.txt')
+        filePath = Path(CV_LOCATION)
+        cvLocationTxt = CV_LOCATION.replace('.pdf', '.txt')
         filePathTxt = Path(cvLocationTxt)
         if not filePath.exists() and not filePathTxt.exists():
-            print(red(f'CV file not found: {cvLocation}'))
+            print(red(f'CV file not found: {CV_LOCATION}'))
             return False
         fileExtension = filePath.suffix.lower()
         if fileExtension == '.pdf' and not filePathTxt.exists():
-            cvContent = extractTextFromPDF(cvLocation)
-            print(yellow(f'CV (PDF) loaded from: {cvLocation} ({len(cvContent)} chars)'))
+            cvContent = extractTextFromPDF(CV_LOCATION)
+            print(yellow(f'CV (PDF) loaded from: {CV_LOCATION} ({len(cvContent)} chars)'))
             with open(cvLocationTxt, 'w', encoding='utf-8') as mdFile:
                 mdFile.write(cvContent)
         elif filePathTxt.exists():
             with open(cvLocationTxt, 'r', encoding='utf-8') as f:
                 cvContent = f.read()
             print(yellow(f'CV (text from PDF) loaded from: {cvLocationTxt} ({len(cvContent)} chars)'))
-        # elif fileExtension in ['.txt', '.md', '.markdown']:
-        #     with open(cvLocation, 'r', encoding='utf-8') as f:
-        #         cvContent = f.read()
-        #     print(yellow(f'CV (text) loaded from: {cvLocation} ({len(cvContent)} chars)'))
         else:
             print(red(f'Unsupported CV file format: {fileExtension}. Supported formats: .txt, .pdf'))
             return False
@@ -184,7 +177,7 @@ def loadCVContent():
             return False
         return True
     except FileNotFoundError:
-        print(red(f'CV file not found: {cvLocation}'))
+        print(red(f'CV file not found: {CV_LOCATION}'))
         return False
     except Exception:
         print(red(f'Error loading CV:'))
