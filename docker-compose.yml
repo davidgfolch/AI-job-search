@@ -1,15 +1,15 @@
+# Docker Compose for AI Job Search - Development Mode
 # Use root/rootPass as user/password credentials
-version: '3.1'
 
 services:
-
+  # MySQL Database
   mysql_db:
-    image: mysql
-    # container_name: ai-job-search-mysql
+    image: mysql:9 # MySQL 9 to match existing data version
+    container_name: ai-job-search-mysql
     volumes:
-      - /var/lib/mysql:/var/lib/mysql
+      - /var/lib/mysql:/var/lib/mysql # Original bind mount to preserve existing data
       - ./scripts/mysql:/docker-entrypoint-initdb.d
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootPass
       MYSQL_DATABASE: jobs
@@ -18,62 +18,151 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: ollama
-  #   restart: unless-stopped
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama-data:/var/lib/ollama
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:11434/v1/models"]
-  #     interval: 1m30s
-  #     timeout: 10s
-  #     retries: 3
-  # python31:
-  #   image: python:3.11-slim
-  #   container_name: ai-job-search-python311
-  #   working_dir: /app
-  #   volumes:
-  #     - ./:/app
-  #     - ./scripts/.venv:/app/.venv
-  #     - /app/.venv/lib/python3.11/site-packages
-  #     - /app/.venv/Lib/site-packages
-  #   run: bash -c "pip install --no-cache-dir -r requirements.txt && tail -f /dev/null"
-  # scrapper:
-  #   image: python:3.11-slim
-  #   container_name: ai-job-search-scrapper
-  #   working_dir: /app
-  #   volumes:
-  #     - ./:/app
-  #     - ./scripts/.venv:/app/.venv
-  #     - /app/.venv/lib/python3.11/site-packages
-  #     - /app/.venv/Lib/site-packages
-  #   run: bash -c "./scripts/run_2_Scrapper.sh"
-  #   depends_on:
-  #     mysql_db:
-  #       condition: service_healthy
-  #     python31:
-  #       condition: service_healthy
-  # aienricher:
-  #   image: python:3.11-slim
-  #   container_name: ai-job-search-aienricher
-  #   working_dir: /app
-  #   volumes:
-  #     - ./:/app
-  #     - ./scripts/.venv:/app/.venv
-  #     - /app/.venv/lib/python3.11/site-packages
-  #     - /app/.venv/Lib/site-packages
-  #   run: bash -c "./scripts/run_3_AiEnricher.sh"
-  #   depends_on:
-  #     mysql_db:
-  #       condition: service_healthy
-  #     ollama:
-  #       condition: service_healthy
-  #     python31:
-  #       condition: service_healthy
-    
+      interval: 10s
+    networks:
+      - ai-job-search
+
+  # Backend - FastAPI REST API
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: ai-job-search-backend
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./packages/commonlib:/app/packages/commonlib
+      - ./.env:/app/.env
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=mysql_db # MySQL service name for Docker networking
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web - React/Vite Frontend
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: ai-job-search-web
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules # Anonymous volume for node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+
+  # Viewer - Streamlit UI (Legacy)
+  viewer:
+    build:
+      context: .
+      dockerfile: apps/viewer/Dockerfile
+    container_name: ai-job-search-viewer
+    volumes:
+      - ./apps/viewer:/app/apps/viewer
+      - ./packages/commonlib:/app/packages/commonlib
+      - ./.env:/app/.env
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=mysql_db # MySQL service name for Docker networking
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+
+  # Ollama - LLM Service for AI Enrichment
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-job-search-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ${OLLAMA_MODELS_PATH:-~/.ollama}:/root/.ollama # Ollama models from host (set OLLAMA_MODELS_PATH in .env for Windows)
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:11434/api/tags" ]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ai-job-search
+    profiles:
+      - ai-services # Optional service, enable with --profile ai-services
+
+  # AI Enrichment - CrewAI Service
+  aienrich:
+    build:
+      context: .
+      dockerfile: apps/aiEnrich/Dockerfile
+    container_name: ai-job-search-aienrich
+    volumes:
+      - ./apps/aiEnrich:/app/apps/aiEnrich
+      - ./packages/commonlib:/app/packages/commonlib
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+    profiles:
+      - ai-services # Optional service, enable with --profile ai-services
+
+  # Scrapper - Job Scraping Service
+  scrapper:
+    build:
+      context: .
+      dockerfile: apps/scrapper/Dockerfile
+    container_name: ai-job-search-scrapper
+    volumes:
+      - ./apps/scrapper:/app/apps/scrapper
+      - ./packages/commonlib:/app/packages/commonlib
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DISPLAY=:99 # For headless Chrome
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    restart: "no" # Manual start for scrapper
+    networks:
+      - ai-job-search
+    profiles:
+      - scrapper # Optional service, enable with --profile scrapper
+    # Note: Scrapper runs as a batch job, not a long-running service
+    # Use: docker-compose run scrapper to execute manually
+
+networks:
+  ai-job-search:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

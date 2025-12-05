@@ -41,6 +41,8 @@ crewai install
 
 CV matching % against job offer can be enabled setting `AI_CV_MATCH=True` in your `.env` file.
 
+Copy your cv to `apps/aiEnrich/cv/cv.txt`
+
 ## Running the Project
 
 To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:

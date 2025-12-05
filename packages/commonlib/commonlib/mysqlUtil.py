@@ -41,9 +41,12 @@ conn: mysqlConnector.MySQLConnection = None
 
 
 def getConnection() -> mysqlConnector.MySQLConnection:
+    import os
     global conn
     if conn is None:
+        db_host = os.getenv('DB_HOST', '127.0.0.1')  # Docker: mysql_db, Local: 127.0.0.1
         conn = mysqlConnector.connect(
+            host=db_host,
             user='root', password='rootPass', database='jobs',
             pool_name='jobsPool',
             pool_size=20,

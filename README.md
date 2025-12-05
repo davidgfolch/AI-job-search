@@ -20,7 +20,38 @@ Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor, 
 
 See [README_INSTALL.md](./READMEs/README_INSTALL.md)
 
-## Run & lifecycle
+## Run with Docker (Development Mode) 🐳
+
+The easiest way to run all services in development mode is using Docker Compose:
+
+```bash
+# Start core services (MySQL + Backend + Web + Viewer)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Access services:
+# - Web UI: http://localhost:5173
+# - Backend API: http://localhost:8000/docs
+# - Viewer (Streamlit): http://localhost:8501
+```
+
+**Optional services:**
+```bash
+# With AI enrichment (includes Ollama)
+docker-compose --profile ai-services up -d
+
+# With scrapper (NOT WORKING IN WINDOWS)
+docker-compose --profile scrapper up -d scrapper
+
+# All services  (NOT WORKING IN WINDOWS)
+docker-compose --profile ai-services --profile scrapper up -d
+```
+
+See [DOCKER_DEV.md](./DOCKER_DEV.md) for detailed Docker commands and troubleshooting.
+
+## Run & lifecycle (Without Docker)
 
 Run scripts in separate terminals.
 
