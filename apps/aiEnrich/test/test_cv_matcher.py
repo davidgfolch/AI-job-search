@@ -113,8 +113,9 @@ class TestCVMatcher:
     def test_load_cv_content_disabled(self, mock_get_env_bool):
         mock_get_env_bool.return_value = False
         result = loadCVContent()
-        assert result is None
+        assert result is False
 
+    @patch('aiEnrich.cvMatcher.CV_LOCATION', 'test.doc')
     @patch('aiEnrich.cvMatcher.getEnvBool')
     @patch('aiEnrich.cvMatcher.getEnv')
     def test_load_cv_content_invalid_format(self, mock_get_env, mock_get_env_bool):
@@ -161,6 +162,7 @@ class TestCVMatcher:
             result = loadCVContent()
             assert result is True
 
+    @patch('aiEnrich.cvMatcher.CV_LOCATION', 'test.pdf')
     @patch('aiEnrich.cvMatcher.getEnvBool')
     @patch('aiEnrich.cvMatcher.getEnv')
     @patch('aiEnrich.cvMatcher.Path')
