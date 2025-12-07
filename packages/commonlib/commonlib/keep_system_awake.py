@@ -2,39 +2,47 @@ import ctypes
 import platform
 import sys
 from contextlib import AbstractContextManager
-from ctypes import wintypes
 
-# Windows API Constants and Structures
-ES_CONTINUOUS = 0x80000000
-ES_SYSTEM_REQUIRED = 0x00000001
-ES_DISPLAY_REQUIRED = 0x00000002
+if platform.system() == 'Windows':
+    from ctypes import wintypes
 
-POWER_REQUEST_CONTEXT_VERSION = 0
-POWER_REQUEST_CONTEXT_SIMPLE_STRING = 0x1
+    # Windows API Constants and Structures
+    ES_CONTINUOUS = 0x80000000
+    ES_SYSTEM_REQUIRED = 0x00000001
+    ES_DISPLAY_REQUIRED = 0x00000002
 
-PowerRequestSystemRequired = 0
-PowerRequestDisplayRequired = 1
+    POWER_REQUEST_CONTEXT_VERSION = 0
+    POWER_REQUEST_CONTEXT_SIMPLE_STRING = 0x1
 
-class DetailedStructure(ctypes.Structure):
-    _fields_ = [
-        ("LocalizedStringModule", wintypes.HMODULE),
-        ("LocalizedStringId", wintypes.ULONG),
-        ("ReasonStringCount", wintypes.ULONG),
-        ("ReasonStrings", ctypes.POINTER(wintypes.LPWSTR)),
-    ]
+    PowerRequestSystemRequired = 0
+    PowerRequestDisplayRequired = 1
 
-class ReasonUnion(ctypes.Union):
-    _fields_ = [
-        ("Detailed", DetailedStructure),
-        ("SimpleReasonString", wintypes.LPWSTR),
-    ]
+    class DetailedStructure(ctypes.Structure):
+        _fields_ = [
+            ("LocalizedStringModule", wintypes.HMODULE),
+            ("LocalizedStringId", wintypes.ULONG),
+            ("ReasonStringCount", wintypes.ULONG),
+            ("ReasonStrings", ctypes.POINTER(wintypes.LPWSTR)),
+        ]
 
-class REASON_CONTEXT(ctypes.Structure):
-    _fields_ = [
-        ("Version", wintypes.ULONG),
-        ("Flags", wintypes.DWORD),
-        ("Reason", ReasonUnion),
-    ]
+    class ReasonUnion(ctypes.Union):
+        _fields_ = [
+            ("Detailed", DetailedStructure),
+            ("SimpleReasonString", wintypes.LPWSTR),
+        ]
+
+    class REASON_CONTEXT(ctypes.Structure):
+        _fields_ = [
+            ("Version", wintypes.ULONG),
+            ("Flags", wintypes.DWORD),
+            ("Reason", ReasonUnion),
+        ]
+else:
+    # Define constants/placeholders for non-Windows systems to avoid name errors in IDEs or if accessed
+    wintypes = None 
+    ES_CONTINUOUS = 0
+    ES_SYSTEM_REQUIRED = 0
+    ES_DISPLAY_REQUIRED = 0
 
 class KeepSystemAwake(AbstractContextManager):
     """

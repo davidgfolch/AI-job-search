@@ -1,9 +1,12 @@
-
 import ctypes
 import math
 import platform
 import time
-from ctypes import wintypes
+
+if platform.system() == 'Windows':
+    from ctypes import wintypes
+else:
+    wintypes = None
 
 # Windows API constants
 CREATE_WAITABLE_TIMER_MANUAL_RESET = 0x00000001
