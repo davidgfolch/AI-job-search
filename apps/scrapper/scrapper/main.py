@@ -9,6 +9,7 @@ from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, i
 from scrapper.persistence_manager import PersistenceManager
 
 from scrapper.container.scrapper_container import ScrapperContainer
+from commonlib.keep_system_awake import KeepSystemAwake
 
 DEBUG = getEnvBool('SCRAPPER_DEBUG', False)
 TIMER = 'timer'
@@ -94,6 +95,8 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, loops=99999999999
         consoleTimer("Waiting for next scrapping execution trigger, ", NEXT_SCRAP_TIMER)
 
 
+
+
 def runSpecifiedScrappers(scrappersList: list):
     print(f'Executing specified scrappers: {scrappersList}')
     for arg in scrappersList:
@@ -138,12 +141,13 @@ def hasNewArchitecture(name: str, properties: dict[str, dict[str, Any]]) -> bool
 def executeScrapperPreload(name: str, properties: dict) -> bool:
     """ returns True if KeyboardInterrupt """
     try:
-        if RUN_IN_TABS:
-            seleniumUtil.tab(name)
-        if hasNewArchitecture(name, properties):
-            runPreloadNewArchitecture(name)
-        else:
-            runScrapper(name, True, persistenceManager)
+        with KeepSystemAwake():
+            if RUN_IN_TABS:
+                seleniumUtil.tab(name)
+            if hasNewArchitecture(name, properties):
+                runPreloadNewArchitecture(name)
+            else:
+                runScrapper(name, True, persistenceManager)
         properties['preloaded'] = True
     except Exception:
         baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:")
@@ -182,10 +186,11 @@ def runPreloadNewArchitecture(name: str):
 def executeScrapper(name: str, properties: dict, persistenceManager: PersistenceManager) -> bool:
     """ returns False if double KeyboardInterrupt """
     try:
-        if hasNewArchitecture(name, properties):
-            runScrapperNewArchitecture(name, properties, persistenceManager)
-        else:
-            runScrapper(name, False, persistenceManager)
+        with KeepSystemAwake():
+            if hasNewArchitecture(name, properties):
+                runScrapperNewArchitecture(name, properties, persistenceManager)
+            else:
+                runScrapper(name, False, persistenceManager)
         persistenceManager.update_last_execution(name, getDatetimeNow())
     except Exception:
         baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
@@ -256,7 +261,6 @@ if __name__ == '__main__':
     starting = hasArgument(args, 'starting', lambda: f"'starting' at {args[1]} ")
     url = hasArgument(args, 'url', lambda: f"scrapping only url page -> {args[1]} ")
 
-    # args always include AI-job-search\\apps\\scrapper\\scrapper\\main.py as first parameter
     if len(args) == 2 and url:
         runScrapperPageUrl(args[1])
         exit(0)

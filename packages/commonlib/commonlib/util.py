@@ -8,6 +8,7 @@ import os
 from typing import Iterator
 from dotenv import load_dotenv
 from .terminalColor import yellow
+from .wake_timer import WakeableTimer
 
 
 def getEnvModified() -> float | None:
@@ -94,7 +95,7 @@ def consoleTimer(message: str, timeUnit: str, end='\r'):
         print(yellow(message, f"{spinnerStr} I'll retry in {timeLeft} {spinnerStr}{' '*10}"), end=end)
         end='\r'
         spinner.nextTick()
-        sleep(1/spinner.tickXSec)
+        WakeableTimer().wait(1/spinner.tickXSec)
     if blankLine:
         print()
 

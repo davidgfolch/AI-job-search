@@ -9,11 +9,18 @@ client = TestClient(app)
 def create_mock_db(**kwargs):
     """Helper to create a mock database that supports context manager"""
     mock_db = Mock()
-    # Set default return values
+    columns = kwargs.get('columns', ['id', 'title', 'company'])
+    data_rows = kwargs.get('fetchAll', [])
+    
+    def fetch_all_side_effect(query, params=None):
+        if "SHOW COLUMNS" in str(query).upper():
+            return [(c,) for c in columns]
+        return data_rows
+
     mock_db.count.return_value = kwargs.get('count', 0)
-    mock_db.fetchAll.return_value = kwargs.get('fetchAll', [])
+    mock_db.fetchAll.side_effect = fetch_all_side_effect
     mock_db.fetchOne.return_value = kwargs.get('fetchOne', None)
-    mock_db.getTableDdlColumnNames.return_value = kwargs.get('columns', ['id', 'title', 'company'])
+    mock_db.getTableDdlColumnNames.return_value = columns
     mock_db.executeAndCommit.return_value = kwargs.get('executeAndCommit', 1)
     # Support context manager
     mock_db.__enter__ = Mock(return_value=mock_db)
@@ -91,7 +98,9 @@ def test_list_jobs_with_search(mock_get_db):
     data = response.json()
     assert data['total'] == 1
     # Verify search param was used in the query
-    mock_db.fetchAll.assert_called_once()
+    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    matched_query = next((q for q in queries if "SELECT" in q and "FROM" in q), "")
+    assert "LIKE" in matched_query
 
 
 @patch('services.jobs_service.JobsService.get_db')
@@ -112,7 +121,7 @@ def test_get_job_by_id(mock_get_db):
     
     response = client.get("/api/jobs/1")
     
-    assert response.status_code ==200
+    assert response.status_code == 200
     data = response.json()
     assert data['id'] == 1
     assert data['title'] == 'Senior Developer'
@@ -198,7 +207,8 @@ def test_list_jobs_with_status_filter(mock_get_db):
     
     assert response.status_code == 200
     # Verify the query was constructed with status filter
-    mock_db.fetchAll.assert_called_once()
+    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    assert any("`applied` = 1" in q for q in queries)
 
 
 @patch('services.jobs_service.JobsService.get_db')
@@ -239,12 +249,10 @@ def test_list_jobs_with_boolean_filter_true(mock_get_db):
     
     assert response.status_code == 200
     # Verify the query was called
-    mock_db.fetchAll.assert_called_once()
-    # Check that the WHERE clause includes the boolean filter
-    call_args = mock_db.fetchAll.call_args
-    query = call_args[0][0]
-    assert "`flagged` = 1" in query
-
+    # Check that ANY of the queries includes the boolean filter
+    # The first call might be for columns or count
+    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    assert any("`flagged` = 1" in q for q in queries)
 
 @patch('services.jobs_service.JobsService.get_db')
 def test_list_jobs_with_boolean_filter_false(mock_get_db):
@@ -256,9 +264,8 @@ def test_list_jobs_with_boolean_filter_false(mock_get_db):
     
     assert response.status_code == 200
     # Verify the query includes the boolean filter for false
-    call_args = mock_db.fetchAll.call_args
-    query = call_args[0][0]
-    assert "`applied` = 0" in query
+    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    assert any("`applied` = 0" in q for q in queries)
 
 
 @patch('services.jobs_service.JobsService.get_db')
@@ -271,11 +278,11 @@ def test_list_jobs_with_multiple_boolean_filters(mock_get_db):
     
     assert response.status_code == 200
     # Verify all boolean filters are in the query
-    call_args = mock_db.fetchAll.call_args
-    query = call_args[0][0]
-    assert "`flagged` = 1" in query
-    assert "`ai_enriched` = 1" in query
-    assert "`ignored` = 0" in query
+    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    matched_query = next((q for q in queries if "SELECT" in q and "FROM" in q), "")
+    assert "`flagged` = 1" in matched_query
+    assert "`ai_enriched` = 1" in matched_query
+    assert "`ignored` = 0" in matched_query
 
 
 @patch('services.jobs_service.JobsService.get_db')
@@ -287,9 +294,9 @@ def test_list_jobs_boolean_filters_with_other_filters(mock_get_db):
     response = client.get("/api/jobs?search=Python&flagged=true&status=applied")
     
     assert response.status_code == 200
-    call_args = mock_db.fetchAll.call_args
-    query = call_args[0][0]
+    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    matched_query = next((q for q in queries if "SELECT" in q and "FROM" in q), "")
     # Verify all filters are combined
-    assert "`flagged` = 1" in query
-    assert "`applied` = 1" in query
-    assert "LIKE" in query  # Search filter
+    assert "`flagged` = 1" in matched_query
+    assert "`applied` = 1" in matched_query
+    assert "LIKE" in matched_query  # Search filter

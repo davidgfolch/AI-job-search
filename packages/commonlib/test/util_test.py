@@ -40,24 +40,24 @@ class TestEnvironmentFunctions:
 
 
 class TestTimeFunctions:
-    @patch('commonlib.util.sleep')
-    def test_console_timer(self, mock_sleep):
+    @patch('commonlib.util.WakeableTimer')
+    def test_console_timer(self, mock_wakeable_timer):
         consoleTimer('Test message', '2s')
-        # consoleTimer uses Spinner with tickXSec=6, so it calls sleep multiple times
-        assert mock_sleep.called
+        # consoleTimer uses Spinner with tickXSec=6, so it calls wait multiple times
+        assert mock_wakeable_timer.return_value.wait.called
 
-    @patch('commonlib.util.sleep')
-    def test_console_timer_minutes(self, mock_sleep):
+    @patch('commonlib.util.WakeableTimer')
+    def test_console_timer_minutes(self, mock_wakeable_timer):
         consoleTimer('Test message', '1m')
-        assert mock_sleep.called
+        assert mock_wakeable_timer.return_value.wait.called
 
-    @patch('commonlib.util.sleep')
-    def test_console_timer_hours(self, mock_sleep):
+    @patch('commonlib.util.WakeableTimer')
+    def test_console_timer_hours(self, mock_wakeable_timer):
         consoleTimer('Test message', '1h')
-        assert mock_sleep.called
+        assert mock_wakeable_timer.return_value.wait.called
 
-    @patch('commonlib.util.sleep')
-    def test_console_timer_invalid_format(self, mock_sleep):
+    @patch('commonlib.util.WakeableTimer')
+    def test_console_timer_invalid_format(self, mock_wakeable_timer):
         with pytest.raises((KeyError, ValueError)):
             consoleTimer('Test message', 'invalid')
 
