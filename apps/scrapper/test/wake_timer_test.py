@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch, call
 from commonlib.util import consoleTimer, Spinner
 from commonlib.wake_timer import WakeableTimer
 
+import sys
+
 @pytest.fixture
 def mock_sleep():
     with patch('commonlib.wake_timer.time.sleep') as mock:
@@ -14,6 +16,7 @@ def mock_windows_api():
     with patch('ctypes.windll.kernel32') as mock:
         yield mock
 
+@pytest.mark.skipif(sys.platform != 'win32', reason="Windows only")
 @patch('platform.system')
 def test_wakeable_timer_windows(mock_platform, mock_windows_api):
     mock_platform.return_value = 'Windows'
