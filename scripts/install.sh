@@ -1,19 +1,16 @@
 #!/bin/bash
-set -x
-echo ""
-echo "Installing commonlib library..."
-cd packages/commonlib && poetry lock && poetry install
-cd ../..
+set -e
 
-for app in ./apps/*/; do
-    echo ""
-    echo "Installing $(basename $app)..."
-    if [ -f "$app/package.json" ]; then
-        cd "$app" && npm install
-    elif [ "$app" == "./apps/aiEnrich/" ]; then
-        cd "$app" && uv sync && uv tool install --force crewai
-    else
-        cd "$app" && poetry lock && poetry install
+for dir in packages/* apps/*; do
+    if [ -d "$dir" ]; then
+        echo ""
+        echo "Installing $(basename "$dir")..."
+        if [ -f "$dir/package.json" ]; then
+            (cd "$dir" && npm install)
+        elif [ "$(basename "$dir")" == "aiEnrich" ]; then
+            (cd "$dir" && uv sync && uv tool install --force crewai)
+        else
+            (cd "$dir" && poetry lock && poetry install)
+        fi
     fi
-    cd ../..
 done
