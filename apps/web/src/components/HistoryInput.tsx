@@ -44,6 +44,14 @@ export default function HistoryInput({
         });
     };
 
+    const removeFromHistory = (val: string) => {
+        setHistory(prev => {
+            const newHistory = prev.filter(h => h !== val);
+            localStorage.setItem(storageKey, JSON.stringify(newHistory));
+            return newHistory;
+        });
+    };
+
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
         // Delay closing to allow click on suggestion to register
         // But cleaner way is using mousedown on item effectively
@@ -103,6 +111,16 @@ export default function HistoryInput({
             }
         } else if (e.key === 'Escape') {
             setIsOpen(false);
+        } else if (e.key === 'Delete') {
+            if (isOpen && highlightIndex >= 0 && highlightIndex < filteredHistory.length) {
+                e.preventDefault();
+                const itemToDelete = filteredHistory[highlightIndex];
+                removeFromHistory(itemToDelete);
+                // Adjust highlight index if needed
+                if (highlightIndex >= filteredHistory.length - 1) {
+                    setHighlightIndex(Math.max(-1, filteredHistory.length - 2));
+                }
+            }
         }
 
         if (onKeyDown) onKeyDown(e);

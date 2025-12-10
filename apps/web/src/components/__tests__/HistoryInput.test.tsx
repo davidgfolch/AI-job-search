@@ -78,4 +78,26 @@ describe('HistoryInput', () => {
 
         expect(onValueChange).toHaveBeenCalledWith('clicked item');
     });
+    it('deletes suggestion on Delete key', async () => {
+        localStorage.setItem('test_history', JSON.stringify(['item1', 'item2', 'item3']));
+        render(<HistoryInput {...defaultProps} />);
+
+        const input = screen.getByRole('textbox');
+        fireEvent.focus(input);
+
+        // Highlight 'item1' (index 0)
+        fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+        // Delete 'item1'
+        fireEvent.keyDown(input, { key: 'Delete' });
+
+        expect(screen.queryByText('item1')).not.toBeInTheDocument();
+        expect(screen.getByText('item2')).toBeInTheDocument();
+        expect(screen.getByText('item3')).toBeInTheDocument();
+
+        // Verify localStorage update
+        const stored = JSON.parse(localStorage.getItem('test_history') || '[]');
+        expect(stored).not.toContain('item1');
+        expect(stored).toEqual(['item2', 'item3']);
+    });
 });
