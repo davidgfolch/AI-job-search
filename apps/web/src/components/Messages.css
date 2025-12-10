@@ -1,0 +1,24 @@
+.message {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-weight: 500;
+}
+
+.message:hover {
+    opacity: 0.8;
+}
+
+.message.success {
+    background: #10b981;
+    color: white;
+    border: 1px solid #059669;
+}
+
+.message.error {
+    background: #ef4444;
+    color: white;
+    border: 1px solid #dc2626;
+}

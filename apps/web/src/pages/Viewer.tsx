@@ -7,6 +7,7 @@ import JobDetail from '../components/JobDetail';
 import JobEditForm from '../components/JobEditForm';
 import Filters from '../components/Filters';
 import './Viewer.css';
+import Messages from '../components/Messages';
 
 type TabType = 'list' | 'edit';
 
@@ -21,6 +22,7 @@ export default function Viewer() {
     });
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('list');
+    const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
     // Track when we need to auto-select next job after state change
     const autoSelectNext = useRef<{ shouldSelect: boolean; previousJobId: number | null }>({
@@ -169,8 +171,25 @@ export default function Viewer() {
     return (
         <div className="viewer">
             <div className="viewer-container">
-                <Filters filters={filters} onFiltersChange={(newFilters) => setFilters({ ...filters, ...newFilters, page: 1 })} />
-                {error && <div className="error">Error loading jobs: {String(error)}</div>}
+                {message && (
+                    <Messages
+                        message={message.text}
+                        type={message.type}
+                        onDismiss={() => setMessage(null)}
+                    />
+                )}
+                {error && (
+                    <Messages
+                        message={`Error loading jobs: ${String(error)}`}
+                        type="error"
+                        onDismiss={() => { }}
+                    />
+                )}
+                <Filters
+                    filters={filters}
+                    onFiltersChange={(newFilters) => setFilters({ ...filters, ...newFilters, page: 1 })}
+                    onMessage={(text, type) => setMessage({ text, type })}
+                />
                 <div className="viewer-content">
                     <div className="viewer-left">
                         <div className="tab-group">

@@ -22,6 +22,11 @@ describe('Filters', () => {
         expect(screen.getByText(/Filters/)).toBeInTheDocument();
     });
 
+    it('renders FilterConfigurations component', () => {
+        render(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
+        expect(screen.getByLabelText(/Filter Configurations/i)).toBeInTheDocument();
+    });
+
     it('expands and collapses when toggle button is clicked', () => {
         render(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
 

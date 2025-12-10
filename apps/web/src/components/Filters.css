@@ -6,13 +6,20 @@
     margin-bottom: 1rem;
 }
 
+.boolean-filters-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+}
+
 .color-green {
     color: #10b981;
 }
 
 .toggle-button {
-    width: 100%;
-    padding: 0.75rem 1rem;
+    flex: 1;
+    padding: 0.5rem 1rem;
     background: none;
     border: none;
     color: var(--text-primary);
