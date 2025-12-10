@@ -5,6 +5,7 @@ import { jobsApi, type Job, type JobListParams } from '../api/jobs';
 import JobTable from '../components/JobTable';
 import JobDetail from '../components/JobDetail';
 import JobEditForm from '../components/JobEditForm';
+import JobActions from '../components/JobActions';
 import Filters from '../components/Filters';
 import './Viewer.css';
 import Messages from '../components/Messages';
@@ -200,6 +201,21 @@ export default function Viewer() {
                                 <button className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`} onClick={() => setActiveTab('edit')}>
                                     Edit
                                 </button>
+                                {selectedJob && (
+                                    <JobActions
+                                        job={selectedJob}
+                                        filters={filters}
+                                        onSeen={handleSeenJob}
+                                        onApplied={handleAppliedJob}
+                                        onDiscarded={handleDiscardedJob}
+                                        onClosed={handleClosedJob}
+                                        onIgnore={handleIgnoreJob}
+                                        onNext={handleNextJob}
+                                        onPrevious={handlePreviousJob}
+                                        hasNext={hasNext}
+                                        hasPrevious={hasPrevious}
+                                    />
+                                )}
                             </div>
                             <div className="tab-content">
                                 {activeTab === 'list' ? (
@@ -243,16 +259,6 @@ export default function Viewer() {
                         {selectedJob ? (
                             <JobDetail
                                 job={selectedJob}
-                                filters={filters}
-                                onSeen={handleSeenJob}
-                                onApplied={handleAppliedJob}
-                                onDiscarded={handleDiscardedJob}
-                                onClosed={handleClosedJob}
-                                onIgnore={handleIgnoreJob}
-                                onNext={handleNextJob}
-                                onPrevious={handlePreviousJob}
-                                hasNext={hasNext}
-                                hasPrevious={hasPrevious}
                             />
                         ) : (
                             <div className="no-selection">Select a job to view details</div>
