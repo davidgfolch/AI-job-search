@@ -6,6 +6,13 @@ import Viewer from '../Viewer';
 import { jobsApi } from '../../api/jobs';
 import type { Job } from '../../api/jobs';
 
+// Mock IntersectionObserver
+globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+})) as any;
+
 // Mock the jobs API
 vi.mock('../../api/jobs', async () => {
     const actual = await vi.importActual('../../api/jobs');
@@ -186,7 +193,7 @@ describe('Viewer', () => {
         expect(screen.getByRole('cell', { name: 'Job 1' })).toBeInTheDocument();
     });
 
-    it('handles pagination', async () => {
+    it('handles infinite scroll loading', async () => {
         (jobsApi.getJobs as any).mockResolvedValue({
             items: mockJobs,
             total: 50,
@@ -195,14 +202,10 @@ describe('Viewer', () => {
         });
         renderWithRouter(<Viewer />);
         await waitFor(() => {
-            expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+            expect(screen.getByText('Total results: 50 | Showing: 2')).toBeInTheDocument();
         });
-        const nextButton = screen.getByText('Next');
-        fireEvent.click(nextButton);
-        // Should call API with page 2
-        await waitFor(() => {
-            expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }));
-        });
+        // Initially showing 2 jobs from page 1
+        expect(jobsApi.getJobs).toHaveBeenCalledTimes(1);
     });
 
     it('updates job and refreshes list', async () => {

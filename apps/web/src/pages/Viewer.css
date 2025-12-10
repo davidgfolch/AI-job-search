@@ -98,6 +98,22 @@
     cursor: not-allowed;
 }
 
+.loading-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.loading-more .spinner {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
 .footer-info {
     text-align: center;
     font-size: 0.85rem;

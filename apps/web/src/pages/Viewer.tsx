@@ -21,6 +21,8 @@ export default function Viewer() {
         search: '',
         order: 'created desc',
     });
+    const [allJobs, setAllJobs] = useState<Job[]>([]);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('list');
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -36,6 +38,24 @@ export default function Viewer() {
         queryFn: () => jobsApi.getJobs(filters),
     });
 
+    // Update allJobs when data changes
+    useEffect(() => {
+        if (data?.items) {
+            if (filters.page === 1) {
+                // Reset on first page (new search/filter)
+                setAllJobs(data.items);
+            } else {
+                // Append on subsequent pages
+                setAllJobs(prev => {
+                    // Avoid duplicates
+                    const newItems = data.items.filter(item => !prev.some(p => p.id === item.id));
+                    return [...prev, ...newItems];
+                });
+            }
+            setIsLoadingMore(false);
+        }
+    }, [data, filters.page]);
+
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: number; data: Partial<Job> }) =>
             jobsApi.updateJob(id, data),
@@ -50,17 +70,17 @@ export default function Viewer() {
 
     // Auto-select next job after data refetch when a state change occurred
     useEffect(() => {
-        if (!autoSelectNext.current.shouldSelect || !data?.items || !autoSelectNext.current.previousJobId) {
+        if (!autoSelectNext.current.shouldSelect || !allJobs.length || !autoSelectNext.current.previousJobId) {
             return;
         }
         // Find the previous job in the new data
-        const previousIndex = data.items.findIndex(j => j.id === autoSelectNext.current.previousJobId);
+        const previousIndex = allJobs.findIndex(j => j.id === autoSelectNext.current.previousJobId);
         if (previousIndex === -1) {
             // Job was filtered out, select next available job
-            if (data.items.length > 0) {
+            if (allJobs.length > 0) {
                 // Try to select the job at the same index, or the last job if we're past the end
-                const indexToSelect = Math.min(previousIndex >= 0 ? previousIndex : 0, data.items.length - 1);
-                handleJobSelect(data.items[indexToSelect]);
+                const indexToSelect = Math.min(previousIndex >= 0 ? previousIndex : 0, allJobs.length - 1);
+                handleJobSelect(allJobs[indexToSelect]);
             } else {
                 // No jobs left in list
                 setSelectedJob(null);
@@ -68,7 +88,7 @@ export default function Viewer() {
         }
         // Reset the flag
         autoSelectNext.current = { shouldSelect: false, previousJobId: null };
-    }, [data?.items]); // Trigger when data changes after refetch
+    }, [allJobs]); // Trigger when allJobs changes after refetch
 
     // Handle jobId URL parameter on mount
     useEffect(() => {
@@ -77,7 +97,7 @@ export default function Viewer() {
             const jobId = parseInt(jobIdParam, 10);
             if (!isNaN(jobId)) {
                 // Try to find the job in the current list first
-                const job = data?.items.find(j => j.id === jobId);
+                const job = allJobs.find(j => j.id === jobId);
                 if (job) {
                     setSelectedJob(job);
                 } else {
@@ -149,24 +169,31 @@ export default function Viewer() {
     };
 
     const handleNextJob = () => {
-        if (!data?.items || !selectedJob) return;
-        const currentIndex = data.items.findIndex(j => j.id === selectedJob.id);
-        if (currentIndex >= 0 && currentIndex < data.items.length - 1) {
-            handleJobSelect(data.items[currentIndex + 1]);
+        if (!allJobs.length || !selectedJob) return;
+        const currentIndex = allJobs.findIndex(j => j.id === selectedJob.id);
+        if (currentIndex >= 0 && currentIndex < allJobs.length - 1) {
+            handleJobSelect(allJobs[currentIndex + 1]);
         }
     };
 
     const handlePreviousJob = () => {
-        if (!data?.items || !selectedJob) return;
-        const currentIndex = data.items.findIndex(j => j.id === selectedJob.id);
+        if (!allJobs.length || !selectedJob) return;
+        const currentIndex = allJobs.findIndex(j => j.id === selectedJob.id);
         if (currentIndex > 0) {
-            handleJobSelect(data.items[currentIndex - 1]);
+            handleJobSelect(allJobs[currentIndex - 1]);
+        }
+    };
+
+    const handleLoadMore = () => {
+        if (!isLoadingMore && !isLoading && allJobs.length < (data?.total || 0)) {
+            setIsLoadingMore(true);
+            setFilters(prev => ({ ...prev, page: (prev.page || 1) + 1 }));
         }
     };
 
     // Calculate navigation state
-    const selectedIndex = data?.items.findIndex(j => j.id === selectedJob?.id) ?? -1;
-    const hasNext = selectedIndex >= 0 && selectedIndex < (data?.items.length ?? 0) - 1;
+    const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;
+    const hasNext = selectedIndex >= 0 && selectedIndex < allJobs.length - 1;
     const hasPrevious = selectedIndex > 0;
 
     return (
@@ -229,21 +256,21 @@ export default function Viewer() {
                                             <div className="no-data">Unable to load jobs. Please check your filters and try again.</div>
                                         ) : (
                                             <>
-                                                <JobTable jobs={data?.items || []} selectedJob={selectedJob} onJobSelect={handleJobSelect} />
-                                                <div className="pagination">
-                                                    <button disabled={filters.page === 1} onClick={() => setFilters({ ...filters, page: (filters.page || 1) - 1 })}>
-                                                        Previous
-                                                    </button>
-                                                    <span>
-                                                        Page {filters.page} of {Math.ceil((data?.total || 0) / (filters.size || 20))}
-                                                    </span>
-                                                    <button disabled={(filters.page || 1) * (filters.size || 20) >= (data?.total || 0)}
-                                                        onClick={() => setFilters({ ...filters, page: (filters.page || 1) + 1 })}>
-                                                        Next
-                                                    </button>
-                                                </div>
+                                                <JobTable
+                                                    jobs={allJobs}
+                                                    selectedJob={selectedJob}
+                                                    onJobSelect={handleJobSelect}
+                                                    onLoadMore={handleLoadMore}
+                                                    hasMore={allJobs.length < (data?.total || 0)}
+                                                />
+                                                {isLoadingMore && (
+                                                    <div className="loading-more">
+                                                        <div className="spinner"></div>
+                                                        <span>Loading more jobs...</span>
+                                                    </div>
+                                                )}
                                                 <div className="footer-info">
-                                                    Total results: {data?.total || 0} | Showing: {data?.items.length || 0}
+                                                    Total results: {data?.total || 0} | Showing: {allJobs.length}
                                                 </div>
                                             </>
                                         )}
