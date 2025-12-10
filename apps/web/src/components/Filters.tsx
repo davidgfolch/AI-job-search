@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { JobListParams } from '../api/jobs';
 import './Filters.css';
+import HistoryInput from './HistoryInput';
 
 interface BooleanFiltersProps {
     filters: JobListParams;
@@ -61,11 +62,18 @@ export default function BooleanFilters({ filters, onFiltersChange }: BooleanFilt
             {isExpanded && (
                 <div className="filters-content">
                     <div className="general-filters">
-                        <label className="compact-filter">
-                            Search:
-                            <input type="text" placeholder="Search jobs..." value={filters.search}
-                                onChange={(e) => handleSearchChange(e.target.value)} className="compact-input" />
-                        </label>
+                        <div className="compact-filter">
+                            <label htmlFor="filter-search">Search:</label>
+                            <HistoryInput
+                                id="filter-search"
+                                storageKey="history_search"
+                                type="text"
+                                placeholder="Search jobs..."
+                                value={filters.search || ''}
+                                onValueChange={handleSearchChange}
+                                className="compact-input"
+                            />
+                        </div>
 
                         <label className="compact-filter">
                             Days old:
@@ -73,19 +81,29 @@ export default function BooleanFilters({ filters, onFiltersChange }: BooleanFilt
                                 onChange={(e) => onFiltersChange({ days_old: parseInt(e.target.value) || undefined })}
                                 className="compact-input" />
                         </label>
-                        <label className="compact-filter">
-                            Salary (Regex):
-                            <input type="text" value={filters.salary || ''}
-                                onChange={(e) => onFiltersChange({ salary: e.target.value })}
-                                className="compact-input" />
-                        </label>
-                        <label className="compact-filter sql-filter">
-                            SQL Where Filter:
-                            <input type="text" value={filters.sql_filter || ''}
-                                onChange={(e) => onFiltersChange({ sql_filter: e.target.value })}
+                        <div className="compact-filter">
+                            <label htmlFor="filter-salary">Salary (Regex):</label>
+                            <HistoryInput
+                                id="filter-salary"
+                                storageKey="history_salary"
+                                type="text"
+                                value={filters.salary || ''}
+                                onValueChange={(val) => onFiltersChange({ salary: val })}
+                                className="compact-input"
+                            />
+                        </div>
+                        <div className="compact-filter sql-filter">
+                            <label htmlFor="filter-sql">SQL Where Filter:</label>
+                            <HistoryInput
+                                id="filter-sql"
+                                storageKey="history_sql"
+                                type="text"
+                                value={filters.sql_filter || ''}
+                                onValueChange={(val) => onFiltersChange({ sql_filter: val })}
                                 placeholder="e.g. salary > 50000 AND title LIKE '%Senior%'"
-                                className="sql-input" />
-                        </label>
+                                className="sql-input"
+                            />
+                        </div>
                         <label className="compact-filter">
                             Sort:
                             <select value={filters.order || 'created desc'}

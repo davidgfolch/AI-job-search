@@ -4,7 +4,6 @@
     border-radius: 8px;
     border: 1px solid var(--border-color);
     margin-bottom: 1rem;
-    overflow: hidden;
 }
 
 .color-green {
