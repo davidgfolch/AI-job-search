@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Job } from '../api/jobs';
+import { BOOLEAN_FILTERS } from '../config/filterConfig';
 import './JobEditForm.css';
 
 interface JobEditFormProps {
@@ -7,16 +8,7 @@ interface JobEditFormProps {
     onUpdate: (data: Partial<Job>) => void;
 }
 
-const STATUS_FIELDS = [
-    'flagged',
-    'like',
-    'ignored',
-    'seen',
-    'applied',
-    'discarded',
-    'closed',
-    'ai_enriched',
-];
+
 
 export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
     const [comments, setComments] = useState(job?.comments || '');
@@ -40,8 +32,8 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
 
             // Update status state from job
             const newStatusState: Record<string, boolean> = {};
-            STATUS_FIELDS.forEach(field => {
-                newStatusState[field] = job[field as keyof Job] as boolean;
+            BOOLEAN_FILTERS.forEach(filter => {
+                newStatusState[filter.key] = job[filter.key as keyof Job] as boolean;
             });
             setStatusState(newStatusState);
         }
@@ -113,13 +105,13 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
         <div className="job-edit-form">
             <div className="status-form">
                 <div className="status-pills">
-                    {STATUS_FIELDS.map((field) => (
+                    {BOOLEAN_FILTERS.map((filter) => (
                         <button
-                            key={field}
-                            className={`status-pill ${statusState[field] ? 'active' : ''}`}
-                            onClick={() => handleStatusToggle(field)}
+                            key={filter.key}
+                            className={`status-pill ${statusState[filter.key] ? 'active' : ''}`}
+                            onClick={() => handleStatusToggle(filter.key)}
                         >
-                            {field.replace(/_/g, ' ')}
+                            {filter.label}
                         </button>
                     ))}
                 </div>

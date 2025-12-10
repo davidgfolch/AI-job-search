@@ -109,9 +109,7 @@ describe('Viewer', () => {
 
     it('renders loading state initially', () => {
         (jobsApi.getJobs as any).mockReturnValue(new Promise(() => { })); // Never resolves
-
         renderWithRouter(<Viewer />);
-
         expect(screen.getByText('Loading jobs...')).toBeInTheDocument();
     });
 
@@ -122,24 +120,19 @@ describe('Viewer', () => {
             page: 1,
             size: 20,
         });
-
         renderWithRouter(<Viewer />);
-
         await waitFor(() => {
             // Use getAllByText because "Job 1" might appear in multiple places if we are not careful,
             // but here we just want to ensure it is present.
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
             expect(screen.getAllByText('Job 2').length).toBeGreaterThan(0);
         });
-
         expect(screen.getByText('Total results: 2 | Showing: 2')).toBeInTheDocument();
     });
 
     it('handles error state', async () => {
         (jobsApi.getJobs as any).mockRejectedValue(new Error('Failed to fetch'));
-
         renderWithRouter(<Viewer />);
-
         await waitFor(() => {
             expect(screen.getByText('Error loading jobs: Error: Failed to fetch')).toBeInTheDocument();
         });
@@ -152,24 +145,18 @@ describe('Viewer', () => {
             page: 1,
             size: 20,
         });
-
         renderWithRouter(<Viewer />);
-
         await waitFor(() => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
         });
-
         // Initially no selection
         expect(screen.getByText('Select a job to view details')).toBeInTheDocument();
-
         // Click first job in the list (use role cell to be specific to the table)
         // Note: JobTable renders title in a cell
         const jobLink = screen.getByRole('cell', { name: 'Job 1' });
         fireEvent.click(jobLink);
-
         // Should show details
         expect(screen.getByText('Description 1')).toBeInTheDocument();
-
         // Company 1 appears in list and detail, so we expect 2
         expect(screen.getAllByText('Company 1')).toHaveLength(2);
     });
@@ -182,26 +169,19 @@ describe('Viewer', () => {
             size: 20,
         });
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
-
         renderWithRouter(<Viewer />);
-
         await waitFor(() => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
         });
-
         // Select a job first
         const jobLink = screen.getByRole('cell', { name: 'Job 1' });
         fireEvent.click(jobLink);
-
         // Switch to Edit tab
         fireEvent.click(screen.getByText('Edit'));
-
         // Should show edit form
         expect(screen.getByLabelText('Comments')).toBeInTheDocument();
-
         // Switch back to List tab
         fireEvent.click(screen.getByText('List'));
-
         // Should show list again (check for table cell)
         expect(screen.getByRole('cell', { name: 'Job 1' })).toBeInTheDocument();
     });
@@ -213,16 +193,12 @@ describe('Viewer', () => {
             page: 1,
             size: 20,
         });
-
         renderWithRouter(<Viewer />);
-
         await waitFor(() => {
             expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
         });
-
         const nextButton = screen.getByText('Next');
         fireEvent.click(nextButton);
-
         // Should call API with page 2
         await waitFor(() => {
             expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }));
@@ -237,33 +213,27 @@ describe('Viewer', () => {
             size: 20,
         });
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
-
         (jobsApi.updateJob as any).mockResolvedValue({
             ...mockJobs[0],
             flagged: true,
         });
-
         renderWithRouter(<Viewer />);
-
         await waitFor(() => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
         });
-
         // Select job
         const jobLink = screen.getByRole('cell', { name: 'Job 1' });
         fireEvent.click(jobLink);
-
         // Go to edit tab
         fireEvent.click(screen.getByText('Edit'));
-
-        // Click flagged pill
-        const flaggedPill = screen.getByText('flagged');
+        // Click flagged pill in the edit form (appears multiple times due to filters)
+        const flaggedPills = screen.getAllByText('Flagged');
+        // The last ones are in the Edit form's status pills
+        const flaggedPill = flaggedPills[flaggedPills.length - 1];
         fireEvent.click(flaggedPill);
-
         await waitFor(() => {
             expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { flagged: true });
         });
-
         // Should invalidate queries (refetch jobs)
         expect(jobsApi.getJobs).toHaveBeenCalledTimes(2); // Initial + Refetch
     });

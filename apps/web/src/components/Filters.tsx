@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { JobListParams } from '../api/jobs';
+import { BOOLEAN_FILTERS } from '../config/filterConfig';
 import './Filters.css';
 import HistoryInput from './HistoryInput';
 import FilterConfigurations from './FilterConfigurations';
@@ -10,32 +11,7 @@ interface BooleanFiltersProps {
     onMessage?: (text: string, type: 'success' | 'error') => void;
 }
 
-interface FilterItem {
-    key: keyof JobListParams;
-    label: string;
-}
 
-// Flattened list of all boolean filters
-const ALL_FILTERS: FilterItem[] = [
-    // Status Flags
-    { key: 'flagged', label: 'Flagged' },
-    { key: 'like', label: 'Like' },
-    { key: 'ignored', label: 'Ignored' },
-    { key: 'seen', label: 'Seen' },
-    // Application Status
-    { key: 'applied', label: 'Applied' },
-    { key: 'discarded', label: 'Discarded' },
-    { key: 'closed', label: 'Closed' },
-    // Interview Process
-    { key: 'interview_rh', label: 'Interview (RH)' },
-    { key: 'interview', label: 'Interview' },
-    { key: 'interview_tech', label: 'Interview (Tech)' },
-    { key: 'interview_technical_test', label: 'Technical Test' },
-    { key: 'interview_technical_test_done', label: 'Technical Test Done' },
-    // Other
-    { key: 'ai_enriched', label: 'AI Enriched' },
-    { key: 'easy_apply', label: 'Easy Apply' },
-];
 
 export default function BooleanFilters({ filters, onFiltersChange, onMessage }: BooleanFiltersProps) {
     const [isExpanded, setIsExpanded] = useState(true);
@@ -51,7 +27,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage }: 
         onFiltersChange({ [key]: (newValue === value ? undefined : value) });
     };
 
-    const hasActiveFilters = ALL_FILTERS.some(filter => filters[filter.key] !== undefined)
+    const hasActiveFilters = BOOLEAN_FILTERS.some(filter => filters[filter.key] !== undefined)
         || !!filters.sql_filter || !!filters.days_old || !!filters.salary;
 
     return (
@@ -133,7 +109,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage }: 
                                 <div className="filter-pills-row">
                                     <div className="pills-section">
                                         <span className="section-label">Include:</span>
-                                        {ALL_FILTERS.map((filter) => (
+                                        {BOOLEAN_FILTERS.map((filter) => (
                                             <button key={`${filter.key}-true`}
                                                 className={`filter-pill ${filters[filter.key] === true ? 'active-true' : ''}`}
                                                 onClick={() => handlePillClick(filter.key, true)}>
@@ -147,7 +123,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage }: 
                                 <div className="filter-pills-row">
                                     <div className="pills-section">
                                         <span className="section-label">Exclude:</span>
-                                        {ALL_FILTERS.map((filter) => (
+                                        {BOOLEAN_FILTERS.map((filter) => (
                                             <button key={`${filter.key}-false`}
                                                 className={`filter-pill ${filters[filter.key] === false ? 'active-false' : ''}`}
                                                 onClick={() => handlePillClick(filter.key, false)}>

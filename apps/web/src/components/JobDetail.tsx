@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Job, JobListParams } from '../api/jobs';
+import { BOOLEAN_FILTER_KEYS } from '../config/filterConfig';
 import './JobDetail.css';
 
 interface JobDetailProps {
@@ -37,12 +38,7 @@ export default function JobDetail({ job, filters, onSeen, onApplied, onDiscarded
         if (filters.sql_filter) params.set('sql_filter', filters.sql_filter);
 
         // Add boolean filters
-        const booleanFilters: (keyof JobListParams)[] = [
-            'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
-            'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
-            'interview_technical_test_done', 'ai_enriched', 'easy_apply'
-        ];
-        booleanFilters.forEach(key => {
+        BOOLEAN_FILTER_KEYS.forEach(key => {
             if (filters[key] !== undefined) {
                 params.set(key, String(filters[key]));
             }

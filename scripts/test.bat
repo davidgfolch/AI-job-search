@@ -23,7 +23,7 @@ for /d %%a in (packages\* apps\*) do (
             npm test -- run
         ) else (
             npm test -- run --coverage
-            npx coverage-badges --source coverage/coverage-summary.json --output coverage/badges.svg --rcfile=".coveragebadgesrc"
+            npx coverage-badges
         )
     ) else if exist "%%~fa\pyproject.toml" (
         if "%%~nxa"=="aiEnrich" (
