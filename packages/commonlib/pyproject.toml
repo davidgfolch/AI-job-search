@@ -26,6 +26,11 @@ source = ["commonlib"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 38
+exclude_lines = [
+    "pragma: no cover",
+    "if platform.system() == 'Windows':",
+    "if self.os_type != 'Windows':",
+]
 
 [tool.coverage.html]
 directory = "htmlcov"
