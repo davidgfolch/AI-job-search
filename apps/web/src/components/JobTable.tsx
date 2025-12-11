@@ -51,7 +51,7 @@ export default function JobTable({ jobs, selectedJob, onJobSelect, onLoadMore, h
                     {jobs.map((job, index) => (
                         <tr
                             key={job.id}
-                            ref={index === jobs.length - 3 ? observerTarget : undefined}
+                            ref={index === jobs.length - 1 ? observerTarget : undefined}
                             className={selectedJob?.id === job.id ? 'selected' : ''}
                             onClick={() => onJobSelect(job)}
                         >
