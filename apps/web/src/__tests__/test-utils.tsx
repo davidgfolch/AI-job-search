@@ -135,6 +135,7 @@ export function setupJobsApiMock() {
         getJobs: vi.fn(),
         getJob: vi.fn(),
         updateJob: vi.fn(),
+        getAppliedJobsByCompany: vi.fn(),
     };
 }
 

@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { Job } from '../api/jobs';
+import type { Job, AppliedCompanyJob } from '../api/jobs';
+import { jobsApi } from '../api/jobs';
 import './JobDetail.css';
 
 interface JobDetailProps {
@@ -7,6 +9,32 @@ interface JobDetailProps {
 }
 
 export default function JobDetail({ job }: JobDetailProps) {
+    const [appliedCompanyJobs, setAppliedCompanyJobs] = useState<AppliedCompanyJob[]>([]);
+    const [loadingApplied, setLoadingApplied] = useState(false);
+
+    useEffect(() => {
+        const fetchAppliedJobs = async () => {
+            if (!job.company) {
+                setAppliedCompanyJobs([]);
+                return;
+            }
+
+            console.log('Fetching applied jobs for company:', job.company, 'Client:', job.client);
+            setLoadingApplied(true);
+            try {
+                const jobs = await jobsApi.getAppliedJobsByCompany(job.company, job.client || undefined);
+                console.log('Applied company jobs response:', jobs);
+                setAppliedCompanyJobs(jobs);
+            } catch (error) {
+                console.error('Error fetching applied company jobs:', error);
+                setAppliedCompanyJobs([]);
+            } finally {
+                setLoadingApplied(false);
+            }
+        };
+        fetchAppliedJobs();
+    }, [job.company, job.client]);
+
     const formatDate = (date: string | null) => {
         if (!date) return '-';
         return new Date(date).toLocaleDateString();
@@ -20,7 +48,25 @@ export default function JobDetail({ job }: JobDetailProps) {
 
             <div className="job-detail-content">
                 <ul className="job-info">
-                    {job.company && <li className="info-row">Company: <span>{job.company}</span></li>}
+                    {job.company && (
+                        <li className="info-row">
+                            Company: <span>{job.company}</span>
+                            {!loadingApplied && appliedCompanyJobs.length > 0 && (
+                                <span className="applied-company-indicator">
+                                    {' '}👉 ⚠️ already applied ({appliedCompanyJobs.length})
+                                    {appliedCompanyJobs.map(aj => (
+                                        <span key={aj.id} className="applied-date">
+                                            {' '}📅 {aj.created ? new Date(aj.created).toLocaleDateString('en-GB', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: '2-digit'
+                                            }).replace(/\//g, '-') : '-'}
+                                        </span>
+                                    ))}
+                                </span>
+                            )}
+                        </li>
+                    )}
                     {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
                     {job.salary && <li className="info-row">Salary: <span>{job.salary}</span></li>}
 

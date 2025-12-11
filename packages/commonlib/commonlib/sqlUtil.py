@@ -92,3 +92,58 @@ def binaryColumnIgnoreCase(col: str) -> str:
     if col in ['comments', 'markdown']:
         return f'CONVERT({col} USING utf8mb4) COLLATE utf8mb4_0900_ai_ci'
     return col
+
+
+def sql_regex_chars(txt: str) -> str:
+    """Escape regex special characters for use in SQL RLIKE queries"""
+    return re.sub(r'([()[\]|*+])', r'\\\1', txt)
+
+
+def validate_safe_string(value: str, param_name: str = "parameter") -> str:
+    """
+    Validate that a string doesn't contain potentially dangerous SQL patterns.
+    
+    Args:
+        value: The string to validate
+        param_name: Name of the parameter for error messages
+        
+    Returns:
+        The validated string
+        
+    Raises:
+        ValueError: If dangerous SQL patterns are detected
+    """
+    if not value or not isinstance(value, str):
+        raise ValueError(f"{param_name} must be a non-empty string")
+    
+    # Check for common SQL injection patterns
+    dangerous_patterns = [
+        (r';', 'semicolon'),
+        (r'--', 'SQL comment'),
+        (r'/\*', 'multi-line comment start'),
+        (r'\*/', 'multi-line comment end'),
+        (r'\bunion\b', 'UNION keyword'),
+        (r'\bselect\b', 'SELECT keyword'),
+        (r'\bdrop\b', 'DROP keyword'),
+        (r'\binsert\b', 'INSERT keyword'),
+        (r'\bdelete\b', 'DELETE keyword'),
+        (r'\bupdate\b', 'UPDATE keyword'),
+        (r'\bexec\b', 'EXEC keyword'),
+        (r'\bexecute\b', 'EXECUTE keyword'),
+        (r'\binto\b', 'INTO keyword'),
+        (r'\bfrom\b', 'FROM keyword'),
+        (r'\bwhere\b', 'WHERE keyword'),
+        (r'\bor\b', 'OR keyword'),
+        (r'\band\b', 'AND keyword'),
+        (r'=', 'equals sign'),
+        (r'<', 'less than sign'),
+        (r'>', 'greater than sign'),
+    ]
+    
+    value_lower = value.lower()
+    
+    for pattern, description in dangerous_patterns:
+        if re.search(pattern, value_lower, re.IGNORECASE):
+            raise ValueError(f"{param_name} contains potentially dangerous pattern: {description}")
+    
+    return value

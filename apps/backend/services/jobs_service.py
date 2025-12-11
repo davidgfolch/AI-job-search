@@ -133,3 +133,60 @@ class JobsService:
             db.executeAndCommit(query, params)
             
         return self.get_job(job_id)
+
+    def get_applied_jobs_by_company_name(self, company: str, client: str = None) -> List[Dict[str, Any]]:
+        """
+        Get all applied jobs for the given company name.
+        
+        Args:
+            company: Company name to search for
+            client: Optional client name for Joppy special case
+            
+        Returns:
+            List of applied jobs with id and created date
+        """
+        with self.get_db() as db:
+            company_raw = company.lower().replace("'", "''") if company else ""
+            if not company_raw:
+                return []
+            
+            from commonlib.mysqlUtil import SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, SELECT_APPLIED_JOB_ORDER_BY
+            from commonlib.sqlUtil import sql_regex_chars
+            import re
+            
+            # Check for joppy BEFORE escaping
+            if company_raw == 'joppy' and client:
+                qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY
+                qry += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
+                qry += SELECT_APPLIED_JOB_ORDER_BY
+                company_escaped = sql_regex_chars(client)
+                params = {'company': company_escaped, 'id': '0', 'client': client}
+            else:
+                company_escaped = sql_regex_chars(company_raw)
+                params = {'company': company_escaped, 'id': '0'}
+                qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY + SELECT_APPLIED_JOB_ORDER_BY
+            
+            rows = db.fetchAll(qry.format(**params))
+            if len(rows) == 0:
+                # Pass the raw (unescaped) company name for partial search
+                rows = self._search_partial_company(company_raw, params, qry, db)
+            return [{'id': row[0], 'created': row[1].isoformat() if row[1] else None} for row in rows]
+
+
+    def _search_partial_company(self, company_raw: str, params: dict, query: str, db: MysqlUtil) -> list:
+        import re
+        # Work with raw company name, no pre-escaping needed
+        company_words = company_raw.split(' ')
+        rows = []
+        while len(company_words) > 1 and len(rows) == 0:
+            company_words = company_words[:-1]
+            words = ' '.join(company_words)
+            part1 = re.escape(words)
+            if len(part1) > 2 and part1 not in ['grupo']:
+                params['company'] = f'(^| ){part1}($| )'
+                try:
+                    rows = db.fetchAll(query.format(**params))
+                except Exception:
+                    pass
+                params['company'] = words
+        return rows

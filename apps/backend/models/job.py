@@ -47,3 +47,7 @@ class JobListResponse(BaseModel):
     total: int
     page: int
     size: int
+
+class AppliedCompanyJob(BaseModel):
+    id: int
+    created: Optional[str] = None

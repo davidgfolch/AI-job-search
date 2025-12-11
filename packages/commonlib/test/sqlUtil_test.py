@@ -12,14 +12,19 @@ from commonlib.sqlUtil import (
     binaryColumnIgnoreCase
 )
 import re
+from commonlib.sqlUtil import validate_safe_string, sql_regex_chars
+
 
 class TestSqlUtil:
-    def test_getAndFilter(self):
-        assert getAndFilter([], None) == ''
-        assert getAndFilter(['a=1'], None) == ' and not (a=1)'
-        assert getAndFilter(['a=1', 'b=2'], None) == ' and not (a=1 or b=2)'
-        assert getAndFilter(['a=1'], True) == ' and (a=1)'
-        assert getAndFilter(['a=1', 'b=2'], True) == ' and (a=1 and b=2)'
+    @pytest.mark.parametrize("filters,include,expected", [
+        ([], None, ''),
+        (['a=1'], None, ' and not (a=1)'),
+        (['a=1', 'b=2'], None, ' and not (a=1 or b=2)'),
+        (['a=1'], True, ' and (a=1)'),
+        (['a=1', 'b=2'], True, ' and (a=1 and b=2)'),
+    ])
+    def test_getAndFilter(self, filters, include, expected):
+        assert getAndFilter(filters, include) == expected
 
     def test_formatSql(self):
         query = "select * from table where a=1 and b=2"
@@ -35,9 +40,12 @@ class TestSqlUtil:
         subs = [(r'hello', r'hi')]
         assert regexSubs(txt, subs) == "hi world"
 
-    def test_getColumnTranslated(self):
-        assert getColumnTranslated('`my_column`') == 'My column'
-        assert getColumnTranslated('user_name') == 'User name'
+    @pytest.mark.parametrize("column,expected", [
+        ('`my_column`', 'My column'),
+        ('user_name', 'User name'),
+    ])
+    def test_getColumnTranslated(self, column, expected):
+        assert getColumnTranslated(column) == expected
 
     def test_updateFieldsQuery(self):
         ids = [1, 2]
@@ -98,6 +106,129 @@ class TestSqlUtil:
         ids = [1, 2, 3]
         assert inFilter(ids) == " in (1,2,3)"
 
-    def test_binaryColumnIgnoreCase(self):
-        assert binaryColumnIgnoreCase('comments') == 'CONVERT(comments USING utf8mb4) COLLATE utf8mb4_0900_ai_ci'
-        assert binaryColumnIgnoreCase('other') == 'other'
+    @pytest.mark.parametrize("column,expected", [
+        ('comments', 'CONVERT(comments USING utf8mb4) COLLATE utf8mb4_0900_ai_ci'),
+        ('other', 'other'),
+    ])
+    def test_binaryColumnIgnoreCase(self, column, expected):
+        assert binaryColumnIgnoreCase(column) == expected
+
+
+class TestValidateSafeString:
+    """Test the validate_safe_string function for SQL injection protection"""
+
+    @pytest.mark.parametrize("company_name", [
+        "Tech Corp",
+        "Google Inc.",
+        "ABC-123",
+        "Company & Co",
+        "O'Reilly Media",
+        "Company (USA)",
+    ])
+    def test_valid_inputs(self, company_name):
+        """Test that valid company names pass validation"""
+        assert validate_safe_string(company_name, "company") == company_name
+    
+    def test_semicolon(self):
+        """Test that semicolons are blocked"""
+        with pytest.raises(ValueError, match="semicolon"):
+            validate_safe_string("Company; DROP TABLE jobs--", "company")
+    
+    @pytest.mark.parametrize("malicious_input,expected_pattern", [
+        ("Company-- comment", "SQL comment"),
+        ("Company /* comment */", "multi-line comment"),
+    ])
+    def test_sql_comment(self, malicious_input, expected_pattern):
+        """Test that SQL comments are blocked"""
+        with pytest.raises(ValueError, match=expected_pattern):
+            validate_safe_string(malicious_input, "company")
+    
+    @pytest.mark.parametrize("malicious_input", [
+        "Company UNION SELECT",
+        "union all select",
+    ])
+    def test_union_keyword(self, malicious_input):
+        """Test that UNION keyword is blocked"""
+        with pytest.raises(ValueError, match="UNION keyword"):
+            validate_safe_string(malicious_input, "company")
+    
+    @pytest.mark.parametrize("malicious_input", [
+        "Company SELECT * FROM",
+        "select * from jobs",
+    ])
+    def test_select_keyword(self, malicious_input):
+        """Test that SELECT keyword is blocked"""
+        with pytest.raises(ValueError, match="SELECT keyword"):
+            validate_safe_string(malicious_input, "company")
+    
+    @pytest.mark.parametrize("malicious_input,expected_pattern", [
+        ("DROP TABLE jobs", "DROP keyword"),
+        ("DELETE FROM jobs", "DELETE keyword"),
+        ("INSERT INTO jobs", "INSERT keyword"),
+        ("UPDATE jobs SET", "UPDATE keyword"),
+        ("EXEC sp_", "EXEC keyword"),
+        ("EXECUTE procedure", "EXECUTE keyword"),
+    ])
+    def test_dangerous_keywords(self, malicious_input, expected_pattern):
+        """Test that various dangerous SQL keywords are blocked"""
+        with pytest.raises(ValueError, match=expected_pattern):
+            validate_safe_string(malicious_input, "company")
+    
+    @pytest.mark.parametrize("malicious_input,expected_pattern", [
+        ("Company id=1", "equals sign"),
+        ("Company id<100", "less than sign"),
+        ("Company id>0", "greater than sign"),
+    ])
+    def test_sql_operators(self, malicious_input, expected_pattern):
+        """Test that SQL operators are blocked"""
+        with pytest.raises(ValueError, match=expected_pattern):
+            validate_safe_string(malicious_input, "company")
+    
+    @pytest.mark.parametrize("malicious_input,expected_pattern", [
+        ("1 OR 1=1", "OR keyword"),
+        ("1 AND 1=1", "AND keyword"),
+    ])
+    def test_logical_operators(self, malicious_input, expected_pattern):
+        """Test that logical operators are blocked"""
+        with pytest.raises(ValueError, match=expected_pattern):
+            validate_safe_string(malicious_input, "company")
+    
+    @pytest.mark.parametrize("empty_value", [
+        "",
+        None,
+    ])
+    def test_empty_input(self, empty_value):
+        """Test that empty strings are rejected"""
+        with pytest.raises(ValueError, match="must be a non-empty string"):
+            validate_safe_string(empty_value, "company")
+    
+    @pytest.mark.parametrize("malicious_input,expected_pattern", [
+        ("SELECT * FROM jobs", "SELECT keyword"),
+        ("UnIoN SeLeCt", "UNION keyword"),
+    ])
+    def test_case_insensitive(self, malicious_input, expected_pattern):
+        """Test that validation is case-insensitive"""
+        with pytest.raises(ValueError, match=expected_pattern):
+            validate_safe_string(malicious_input, "company")
+    
+    def test_custom_param_name(self):
+        """Test that custom parameter names appear in error messages"""
+        with pytest.raises(ValueError, match="client contains"):
+            validate_safe_string("DROP TABLE", "client")
+
+
+class TestSqlRegexChars:
+    """Test the sql_regex_chars function for regex escaping"""
+    
+    @pytest.mark.parametrize("input_str,expected", [
+        ("Company (USA)", "Company \\(USA\\)"),
+        ("Company[123]", "Company\\[123\\]"),
+        ("A|B Company", "A\\|B Company"),
+        ("Company*", "Company\\*"),
+        ("C++ Developer", "C\\+\\+ Developer"),
+        ("(A|B)*[123]+", "\\(A\\|B\\)\\*\\[123\\]\\+"),
+        ("Regular Company Name", "Regular Company Name"),
+    ])
+    def test_sql_regex_chars(self, input_str, expected):
+        """Test that regex special characters are properly escaped"""
+        assert sql_regex_chars(input_str) == expected

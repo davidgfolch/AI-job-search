@@ -1,8 +1,17 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import JobDetail from '../JobDetail';
 import type { Job } from '../../api/jobs';
 import { createMockJob } from '../../__tests__/test-utils';
+
+vi.mock('../../api/jobs', () => ({
+    jobsApi: {
+        getJobs: vi.fn(),
+        getJob: vi.fn(),
+        updateJob: vi.fn(),
+        getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
+    },
+}));
 
 const mockJob = createMockJob({
     markdown: 'Job Description Content',
@@ -51,5 +60,48 @@ describe('JobDetail', () => {
         expect(screen.queryByText('Company:')).not.toBeInTheDocument();
         expect(screen.queryByText('100k')).not.toBeInTheDocument();
         expect(screen.queryByText('Initial comment')).not.toBeInTheDocument();
+    });
+
+    it('displays applied company jobs indicator when jobs exist', async () => {
+        const { jobsApi } = await import('../../api/jobs');
+        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        mockGetAppliedJobsByCompany.mockResolvedValueOnce([
+            { id: 2, created: '2024-01-15T10:00:00' },
+            { id: 3, created: '2024-02-20T15:30:00' },
+        ]);
+
+        render(<JobDetail job={mockJob} />);
+
+        await screen.findByText(/already applied/);
+        expect(screen.getByText(/already applied \(2\)/)).toBeInTheDocument();
+        expect(screen.getByText(/15-01-24/)).toBeInTheDocument();
+        expect(screen.getByText(/20-02-24/)).toBeInTheDocument();
+    });
+
+    it('does not display indicator when no applied jobs exist', async () => {
+        const { jobsApi } = await import('../../api/jobs');
+        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        mockGetAppliedJobsByCompany.mockResolvedValueOnce([]);
+
+        render(<JobDetail job={mockJob} />);
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(screen.queryByText(/already applied/)).not.toBeInTheDocument();
+    });
+
+    it('handles API error gracefully', async () => {
+        const { jobsApi } = await import('../../api/jobs');
+        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        mockGetAppliedJobsByCompany.mockRejectedValueOnce(new Error('API Error'));
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+        render(<JobDetail job={mockJob} />);
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(screen.queryByText(/already applied/)).not.toBeInTheDocument();
+        expect(consoleSpy).toHaveBeenCalledWith('Error fetching applied company jobs:', expect.any(Error));
+
+        consoleSpy.mockRestore();
     });
 });

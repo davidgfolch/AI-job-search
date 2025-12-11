@@ -267,3 +267,14 @@
 .markdown-content em {
     font-style: italic;
 }
+
+.applied-company-indicator {
+    font-size: small;
+    color: #f59e0b;
+    margin-left: 0.5rem;
+}
+
+.applied-date {
+    color: #a1a1a1;
+    font-size: small;
+}

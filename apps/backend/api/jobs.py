@@ -1,7 +1,8 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
-from models.job import Job, JobUpdate, JobListResponse
+from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob
 from services.jobs_service import JobsService
+from commonlib.sqlUtil import validate_safe_string
 
 router = APIRouter()
 
@@ -65,6 +66,21 @@ def list_jobs(
         boolean_filters=boolean_filters,
         sql_filter=sql_filter
     )
+
+@router.get("/applied-by-company", response_model=List[AppliedCompanyJob])
+def get_applied_jobs_by_company(
+    company: str = Query(..., description="Company name to search for"),
+    client: Optional[str] = Query(None, description="Optional client name for Joppy special case"),
+    service: JobsService = Depends(get_service)
+):
+    try:
+        validate_safe_string(company, "company")
+        if client:
+            validate_safe_string(client, "client")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    results = service.get_applied_jobs_by_company_name(company, client)
+    return [AppliedCompanyJob(**r) for r in results]
 
 @router.get("/{job_id}", response_model=Job)
 def get_job(job_id: int, service: JobsService = Depends(get_service)):

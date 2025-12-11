@@ -43,6 +43,11 @@ export interface Job {
   cv_match_percentage: number | null;
 }
 
+export interface AppliedCompanyJob {
+  id: number;
+  created: string | null;
+}
+
 export interface JobListResponse {
   items: Job[];
   total: number;
@@ -90,6 +95,16 @@ export const jobsApi = {
 
   updateJob: async (id: number, data: Partial<Job>): Promise<Job> => {
     const response = await apiClient.patch<Job>(`/jobs/${id}`, data);
+    return response.data;
+  },
+
+
+  getAppliedJobsByCompany: async (company: string, client?: string): Promise<AppliedCompanyJob[]> => {
+    const params: Record<string, string> = { company };
+    if (client) {
+      params.client = client;
+    }
+    const response = await apiClient.get<AppliedCompanyJob[]>('/jobs/applied-by-company', { params });
     return response.data;
   },
 };
