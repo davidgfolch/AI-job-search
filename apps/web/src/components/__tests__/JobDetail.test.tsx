@@ -2,38 +2,13 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import JobDetail from '../JobDetail';
 import type { Job } from '../../api/jobs';
+import { createMockJob } from '../../__tests__/test-utils';
 
-const mockJob: Job = {
-    id: 1,
-    title: 'Software Engineer',
-    company: 'Tech Corp',
-    salary: '100k',
-    location: 'Remote',
-    url: 'http://example.com',
+const mockJob = createMockJob({
     markdown: 'Job Description Content',
-    web_page: 'LinkedIn',
-    created: '2023-01-01',
-    modified: null,
-    flagged: false,
-    like: false,
-    ignored: false,
-    seen: false,
-    applied: false,
-    discarded: false,
-    closed: false,
-    interview_rh: false,
-    interview: false,
-    interview_tech: false,
-    interview_technical_test: false,
-    interview_technical_test_done: false,
-    ai_enriched: true,
-    easy_apply: false,
     required_technologies: 'React, TypeScript',
-    optional_technologies: 'Python',
-    client: 'Client A',
     comments: 'Initial comment',
-    cv_match_percentage: 90,
-};
+});
 
 describe('JobDetail', () => {
     it('renders job details correctly', () => {

@@ -7,11 +7,11 @@ import { jobsApi } from '../../api/jobs';
 import type { Job } from '../../api/jobs';
 
 // Mock IntersectionObserver
-globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-})) as any;
+globalThis.IntersectionObserver = vi.fn(function (this: any) {
+    this.observe = vi.fn();
+    this.unobserve = vi.fn();
+    this.disconnect = vi.fn();
+}) as any;
 
 // Mock the jobs API
 vi.mock('../../api/jobs', async () => {

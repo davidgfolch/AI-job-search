@@ -1,27 +1,22 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import FilterConfigurations from '../FilterConfigurations';
-import { JobListParams } from '../../api/jobs';
+import { createMockFilters, setupLocalStorage, setupWindowMocks, getStoredConfigs } from '../../__tests__/test-utils';
 
 describe('FilterConfigurations', () => {
-    const mockFilters: JobListParams = {
-        page: 1,
-        size: 20,
+    const mockFilters = createMockFilters({
         search: 'React Developer',
         flagged: true,
         like: false,
         days_old: 7,
-        order: 'created desc',
-    };
+    });
 
     let onLoadConfigMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         onLoadConfigMock = vi.fn();
-        localStorage.clear();
-        // Mock window.alert and window.confirm
-        vi.spyOn(window, 'alert').mockImplementation(() => { });
-        vi.spyOn(window, 'confirm').mockImplementation(() => true);
+        setupLocalStorage();
+        setupWindowMocks();
     });
 
     afterEach(() => {
@@ -46,10 +41,7 @@ describe('FilterConfigurations', () => {
         fireEvent.change(input, { target: { value: 'My Config' } });
         fireEvent.click(saveButton);
 
-        const stored = localStorage.getItem('filter_configurations');
-        expect(stored).toBeTruthy();
-
-        const configs = JSON.parse(stored!);
+        const configs = getStoredConfigs();
         expect(configs).toHaveLength(1);
         expect(configs[0].name).toBe('My Config');
         expect(configs[0].filters).toEqual(mockFilters);
@@ -64,10 +56,7 @@ describe('FilterConfigurations', () => {
         fireEvent.change(input, { target: { value: 'Quick Config' } });
         fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
-        const stored = localStorage.getItem('filter_configurations');
-        expect(stored).toBeTruthy();
-
-        const configs = JSON.parse(stored!);
+        const configs = getStoredConfigs();
         expect(configs[0].name).toBe('Quick Config');
     });
 

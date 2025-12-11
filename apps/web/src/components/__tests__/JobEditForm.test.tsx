@@ -1,52 +1,20 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import JobEditForm from '../JobEditForm';
-import type { Job } from '../../api/jobs';
+import { createMockJob, setupFakeTimers, cleanupFakeTimers } from '../../__tests__/test-utils';
 
-const mockJob: Job = {
-    id: 1,
-    title: 'Software Engineer',
-    company: 'Tech Corp',
-    salary: '100k',
-    location: 'Remote',
-    url: 'http://example.com',
-    markdown: 'Job Description',
-    web_page: 'LinkedIn',
-    created: '2023-01-01',
-    modified: null,
-    flagged: false,
-    like: false,
-    ignored: false,
-    seen: false,
-    applied: false,
-    discarded: false,
-    closed: false,
-    interview_rh: false,
-    interview: false,
-    interview_tech: false,
-    interview_technical_test: false,
-    interview_technical_test_done: false,
-    ai_enriched: true,
-    easy_apply: false,
-    required_technologies: 'React',
-    optional_technologies: 'Python',
-    client: 'Client A',
-    comments: 'Test comment',
-    cv_match_percentage: 90,
-};
+const mockJob = createMockJob();
 
 describe('JobEditForm', () => {
     let onUpdateMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         onUpdateMock = vi.fn();
-        vi.clearAllTimers();
-        vi.useFakeTimers();
+        setupFakeTimers();
     });
 
     afterEach(() => {
-        vi.restoreAllMocks();
-        vi.useRealTimers();
+        cleanupFakeTimers();
     });
 
     it('renders "Select a job to edit" when no job is selected', () => {

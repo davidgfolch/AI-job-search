@@ -1,15 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Filters from '../Filters';
-import { JobListParams } from '../../api/jobs';
+import type { JobListParams } from '../../api/jobs';
+import { createMockFilters } from '../../__tests__/test-utils';
 
 describe('Filters', () => {
-    const mockFilters: JobListParams = {
-        page: 1,
-        size: 20,
-        search: '',
-        order: 'created desc',
-    };
+    const mockFilters = createMockFilters();
 
     let onFiltersChangeMock: ReturnType<typeof vi.fn>;
 

@@ -1,72 +1,24 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import JobTable from '../JobTable';
-import { Job } from '../../api/jobs';
+import { createMockJobs } from '../../__tests__/test-utils';
 
-const mockJobs: Job[] = [
-    {
-        id: 1,
-        title: 'Software Engineer',
-        company: 'Tech Corp',
-        salary: '100k',
-        location: 'Remote',
-        url: 'http://example.com',
-        markdown: 'Description',
-        web_page: 'LinkedIn',
-        created: '2023-01-01',
-        modified: null,
-        flagged: false,
-        like: false,
-        ignored: false,
-        seen: false,
-        applied: false,
-        discarded: false,
-        closed: false,
-        ai_enriched: true,
-        required_technologies: 'React',
-        optional_technologies: 'Python',
-        client: null,
-        comments: null,
-        cv_match_percentage: 90,
-    },
-    {
-        id: 2,
-        title: 'Product Manager',
-        company: 'Product Inc',
-        salary: '120k',
-        location: 'New York',
-        url: 'http://example.com/2',
-        markdown: 'Description 2',
-        web_page: 'Indeed',
-        created: '2023-01-02',
-        modified: null,
-        flagged: false,
-        like: false,
-        ignored: false,
-        seen: false,
-        applied: false,
-        discarded: false,
-        closed: false,
-        ai_enriched: true,
-        required_technologies: 'Agile',
-        optional_technologies: 'Jira',
-        client: null,
-        comments: null,
-        cv_match_percentage: 85,
-    },
-];
+const mockJobs = createMockJobs(2, {
+    required_technologies: 'React',
+    optional_technologies: 'Python',
+});
 
 describe('JobTable', () => {
     it('renders job list correctly', () => {
         const onJobSelect = vi.fn();
         render(<JobTable jobs={mockJobs} selectedJob={null} onJobSelect={onJobSelect} />);
 
-        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
-        expect(screen.getByText('Tech Corp')).toBeInTheDocument();
+        expect(screen.getByText('Job 1')).toBeInTheDocument();
+        expect(screen.getByText('Company 1')).toBeInTheDocument();
         expect(screen.getByText('100k')).toBeInTheDocument();
 
-        expect(screen.getByText('Product Manager')).toBeInTheDocument();
-        expect(screen.getByText('Product Inc')).toBeInTheDocument();
+        expect(screen.getByText('Job 2')).toBeInTheDocument();
+        expect(screen.getByText('Company 2')).toBeInTheDocument();
         expect(screen.getByText('120k')).toBeInTheDocument();
     });
 
@@ -84,7 +36,7 @@ describe('JobTable', () => {
         const onJobSelect = vi.fn();
         render(<JobTable jobs={mockJobs} selectedJob={null} onJobSelect={onJobSelect} />);
 
-        fireEvent.click(screen.getByText('Software Engineer'));
+        fireEvent.click(screen.getByText('Job 1'));
         expect(onJobSelect).toHaveBeenCalledWith(mockJobs[0]);
     });
 });
