@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Viewer from '../Viewer';
 import { jobsApi } from '../../api/jobs';
@@ -99,13 +99,13 @@ const createTestQueryClient = () => new QueryClient({
     },
 });
 
-const renderWithRouter = (ui: React.ReactElement) => {
+const renderWithRouter = (ui: React.ReactElement, { initialEntries = ['/'] }: { initialEntries?: string[] } = {}) => {
     return render(
-        <BrowserRouter>
+        <MemoryRouter initialEntries={initialEntries}>
             <QueryClientProvider client={createTestQueryClient()}>
                 {ui}
             </QueryClientProvider>
-        </BrowserRouter>
+        </MemoryRouter>
     );
 };
 
@@ -239,5 +239,22 @@ describe('Viewer', () => {
         });
         // Should invalidate queries (refetch jobs)
         expect(jobsApi.getJobs).toHaveBeenCalledTimes(2); // Initial + Refetch
+    });
+    it('filters jobs by ids from URL', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({
+            items: mockJobs,
+            total: 2,
+            page: 1,
+            size: 20,
+        });
+
+        renderWithRouter(<Viewer />, { initialEntries: ['/?ids=1,2'] });
+
+        await waitFor(() => {
+            expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({
+                ids: [1, 2],
+                page: 1,
+            }));
+        });
     });
 });

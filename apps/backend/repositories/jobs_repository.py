@@ -9,9 +9,9 @@ class JobsRepository:
     def list_jobs(self, page: int, size: int, search: Optional[str] = None, status: Optional[str] = None,
         not_status: Optional[str] = None, days_old: Optional[int] = None, salary: Optional[str] = None,
         order: Optional[str] = "created desc", boolean_filters: Dict[str, Optional[bool]] = None,
-        sql_filter: Optional[str] = None) -> Dict[str, Any]:
+        sql_filter: Optional[str] = None, ids: Optional[List[int]] = None) -> Dict[str, Any]:
         offset = (page - 1) * size
-        where, params = self._build_where(search, status, not_status, days_old, salary, sql_filter, boolean_filters)
+        where, params = self._build_where(search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids)
         where = " AND ".join(where)
         with self.get_db() as db:
             total = self._count_jobs(db, where, params)
@@ -20,7 +20,7 @@ class JobsRepository:
 
     def _build_where(self, search: Optional[str], status: Optional[str], not_status: Optional[str],
         days_old: Optional[int], salary: Optional[str], sql_filter: Optional[str],
-        boolean_filters: Dict[str, Optional[bool]]):
+        boolean_filters: Dict[str, Optional[bool]], ids: Optional[List[int]] = None):
         where = ["1=1"]
         params = []
         if search:
@@ -46,6 +46,10 @@ class JobsRepository:
             for field_name, field_value in boolean_filters.items():
                 if field_value is not None:
                     where.append(f"`{field_name}` = {1 if field_value else 0}")
+        if ids:
+            placeholders = ', '.join(['%s'] * len(ids))
+            where.append(f"id IN ({placeholders})")
+            params.extend(ids)
         return where, params
 
     def _count_jobs(self, db: MysqlUtil, where: str, params: list):

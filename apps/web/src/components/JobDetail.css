@@ -268,13 +268,13 @@
     font-style: italic;
 }
 
-.applied-company-indicator {
-    font-size: small;
-    color: #f59e0b;
+.info-row .applied-company-indicator {
+    font-size: 0.7rem;
+    color: #ffd700;
     margin-left: 0.5rem;
 }
 
-.applied-date {
-    color: #a1a1a1;
-    font-size: small;
+.info-row .applied-company-indicator span {
+    color: inherit;
+    font-size: inherit;
 }

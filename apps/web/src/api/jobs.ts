@@ -7,6 +7,19 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  paramsSerializer: (params) => {
+    const searchParams = new URLSearchParams();
+    Object.keys(params).forEach(key => {
+      const value = params[key];
+      if (value === undefined || value === null) return;
+      if (Array.isArray(value)) {
+        value.forEach(v => searchParams.append(key, v.toString()));
+      } else {
+        searchParams.append(key, value.toString());
+      }
+    });
+    return searchParams.toString();
+  },
 });
 
 export interface Job {
@@ -80,6 +93,7 @@ export interface JobListParams {
   ai_enriched?: boolean;
   easy_apply?: boolean;
   sql_filter?: string;
+  ids?: number[];
 }
 
 export const jobsApi = {

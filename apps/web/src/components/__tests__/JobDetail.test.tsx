@@ -73,7 +73,11 @@ describe('JobDetail', () => {
         render(<JobDetail job={mockJob} />);
 
         await screen.findByText(/already applied/);
-        expect(screen.getByText(/already applied \(2\)/)).toBeInTheDocument();
+        const link = screen.getByText(/already applied to 2/);
+        expect(link).toBeInTheDocument();
+        expect(link).toHaveAttribute('href', '/?ids=2,3');
+        expect(link).toHaveAttribute('target', '_blank');
+
         expect(screen.getByText(/15-01-24/)).toBeInTheDocument();
         expect(screen.getByText(/20-02-24/)).toBeInTheDocument();
     });

@@ -53,7 +53,17 @@ export default function JobDetail({ job }: JobDetailProps) {
                             Company: <span>{job.company}</span>
                             {!loadingApplied && appliedCompanyJobs.length > 0 && (
                                 <span className="applied-company-indicator">
-                                    {' '}👉 ⚠️ already applied ({appliedCompanyJobs.length})
+                                    {' '}👉 ⚠️{' '}
+                                    <a
+                                        href={`/?ids=${appliedCompanyJobs.map(j => j.id).join(',')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="already-applied-link"
+                                        style={{ cursor: 'pointer', textDecoration: 'underline', color: 'inherit' }}
+                                        title="Open in new tab showing these specific jobs"
+                                    >
+                                        already applied to {appliedCompanyJobs.length}
+                                    </a>
                                     {appliedCompanyJobs.map(aj => (
                                         <span key={aj.id} className="applied-date">
                                             {' '}📅 {aj.created ? new Date(aj.created).toLocaleDateString('en-GB', {

@@ -35,6 +35,7 @@ def list_jobs(
     ai_enriched: Optional[bool] = None,
     easy_apply: Optional[bool] = None,
     sql_filter: Optional[str] = None,
+    ids: Optional[List[int]] = Query(None),
     service: JobsService = Depends(get_service)
 ):
     boolean_filters = {
@@ -64,7 +65,8 @@ def list_jobs(
         salary=salary,
         order=order,
         boolean_filters=boolean_filters,
-        sql_filter=sql_filter
+        sql_filter=sql_filter,
+        ids=ids
     )
 
 @router.get("/applied-by-company", response_model=List[AppliedCompanyJob])

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../api/jobs';
-import JobTable from '../components/JobTable';
+import JobList from '../components/JobList';
 import JobDetail from '../components/JobDetail';
 import JobEditForm from '../components/JobEditForm';
 import JobActions from '../components/JobActions';
@@ -90,9 +90,22 @@ export default function Viewer() {
         autoSelectNext.current = { shouldSelect: false, previousJobId: null };
     }, [allJobs]); // Trigger when allJobs changes after refetch
 
-    // Handle jobId URL parameter on mount
+    // Handle URL parameters on mount
     useEffect(() => {
         const jobIdParam = searchParams.get('jobId');
+        const idsParam = searchParams.get('ids');
+        if (idsParam) {
+            const ids = idsParam.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+            if (ids.length > 0) {
+                // Check if filters already have these ids to avoid infinite loop if searchParams checks cause re-renders
+                // JSON.stringify comparison is a simple way to check equality for number arrays
+                setFilters(prev => {
+                    if (JSON.stringify(prev.ids) === JSON.stringify(ids)) return prev;
+                    return { ...prev, ids, page: 1 };
+                });
+            }
+        }
+
         if (jobIdParam) {
             const jobId = parseInt(jobIdParam, 10);
             if (!isNaN(jobId)) {
@@ -106,7 +119,7 @@ export default function Viewer() {
                 }
             }
         }
-    }, [searchParams, data?.items]);
+    }, [searchParams, allJobs]); // Changed dependency from data?.items to allJobs which is derived from it
 
     const handleJobSelect = (job: Job) => {
         setSelectedJob(job);
@@ -124,11 +137,9 @@ export default function Viewer() {
                 'flagged', 'like', 'ai_enriched'
             ];
             const hasStateChange = stateFields.some(field => field in data);
-
             if (hasStateChange) {
                 autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
             }
-
             updateMutation.mutate({ id: selectedJob.id, data });
         }
     };
@@ -196,28 +207,15 @@ export default function Viewer() {
     const hasNext = selectedIndex >= 0 && selectedIndex < allJobs.length - 1;
     const hasPrevious = selectedIndex > 0;
 
+
+
     return (
         <div className="viewer">
             <div className="viewer-container">
-                {message && (
-                    <Messages
-                        message={message.text}
-                        type={message.type}
-                        onDismiss={() => setMessage(null)}
-                    />
-                )}
-                {error && (
-                    <Messages
-                        message={`Error loading jobs: ${String(error)}`}
-                        type="error"
-                        onDismiss={() => { }}
-                    />
-                )}
-                <Filters
-                    filters={filters}
-                    onFiltersChange={(newFilters) => setFilters({ ...filters, ...newFilters, page: 1 })}
-                    onMessage={(text, type) => setMessage({ text, type })}
-                />
+                {message && (<Messages message={message.text} type={message.type} onDismiss={() => setMessage(null)} />)}
+                {error && (<Messages message={`Error loading jobs: ${String(error)}`} type="error" onDismiss={() => { }} />)}
+                <Filters filters={filters} onFiltersChange={(newFilters) => setFilters({ ...filters, ...newFilters, page: 1 })}
+                    onMessage={(text, type) => setMessage({ text, type })} />
                 <div className="viewer-content">
                     <div className="viewer-left">
                         <div className="tab-group">
@@ -246,50 +244,25 @@ export default function Viewer() {
                             </div>
                             <div className="tab-content">
                                 {activeTab === 'list' ? (
-                                    <>
-                                        {isLoading ? (
-                                            <div className="loading">
-                                                <div className="spinner"></div>
-                                                <span>Loading jobs...</span>
-                                            </div>
-                                        ) : error ? (
-                                            <div className="no-data">Unable to load jobs. Please check your filters and try again.</div>
-                                        ) : (
-                                            <>
-                                                <JobTable
-                                                    jobs={allJobs}
-                                                    selectedJob={selectedJob}
-                                                    onJobSelect={handleJobSelect}
-                                                    onLoadMore={handleLoadMore}
-                                                    hasMore={allJobs.length < (data?.total || 0)}
-                                                />
-                                                {isLoadingMore && (
-                                                    <div className="loading-more">
-                                                        <div className="spinner"></div>
-                                                        <span>Loading more jobs...</span>
-                                                    </div>
-                                                )}
-                                                <div className="footer-info">
-                                                    Total results: {data?.total || 0} | Showing: {allJobs.length}
-                                                </div>
-                                            </>
-                                        )}
-                                    </>
-                                ) : (
-                                    <JobEditForm job={selectedJob} onUpdate={handleJobUpdate} />
+                                    <JobList
+                                        isLoading={isLoading}
+                                        error={error}
+                                        jobs={allJobs}
+                                        selectedJob={selectedJob}
+                                        onJobSelect={handleJobSelect}
+                                        onLoadMore={handleLoadMore}
+                                        isLoadingMore={isLoadingMore}
+                                        totalResults={data?.total || 0}
+                                        hasMore={allJobs.length < (data?.total || 0)}
+                                    />
+                                ) : (<JobEditForm job={selectedJob} onUpdate={handleJobUpdate} />
                                 )}
                             </div>
                         </div>
                     </div>
 
                     <div className="viewer-right">
-                        {selectedJob ? (
-                            <JobDetail
-                                job={selectedJob}
-                            />
-                        ) : (
-                            <div className="no-selection">Select a job to view details</div>
-                        )}
+                        {selectedJob ? <JobDetail job={selectedJob} /> : <div className="no-selection">Select a job to view details</div>}
                     </div>
                 </div>
             </div>

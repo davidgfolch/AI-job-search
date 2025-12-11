@@ -10,9 +10,9 @@ class JobsService:
                     status: Optional[str] = None, not_status: Optional[str] = None,
                     days_old: Optional[int] = None, salary: Optional[str] = None,
                     order: Optional[str] = "created desc", boolean_filters: Dict[str, Optional[bool]] = None,
-                    sql_filter: Optional[str] = None) -> Dict[str, Any]:
+                    sql_filter: Optional[str] = None, ids: Optional[List[int]] = None) -> Dict[str, Any]:
         return self.repo.list_jobs(page, size, search, status, not_status,
-            days_old, salary, order, boolean_filters, sql_filter)
+            days_old, salary, order, boolean_filters, sql_filter, ids)
 
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:
         with self.repo.get_db() as db:
