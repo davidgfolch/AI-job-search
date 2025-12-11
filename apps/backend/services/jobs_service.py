@@ -1,181 +1,46 @@
-from typing import List, Optional, Dict, Any
-from commonlib.mysqlUtil import MysqlUtil, getConnection
+from typing import Optional, Dict, Any, List
+from repositories.jobs_repository import JobsRepository
+
 
 class JobsService:
-    def get_db(self):
-        return MysqlUtil(getConnection())
+    def __init__(self, repo: JobsRepository = None):
+        self.repo = repo or JobsRepository()
 
-    def list_jobs(
-        self,
-        page: int,
-        size: int,
-        search: Optional[str] = None,
-        status: Optional[str] = None,
-        not_status: Optional[str] = None,
-        days_old: Optional[int] = None,
-        salary: Optional[str] = None,
-        order: Optional[str] = "created desc",
-        boolean_filters: Dict[str, Optional[bool]] = None,
-        sql_filter: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        offset = (page - 1) * size
-        
-        # Build query
-        where_clauses = ["1=1"]
-        params = []
-        
-        if search:
-            # Simple search in title or company
-            where_clauses.append("(title LIKE %s OR company LIKE %s)")
-            params.extend([f"%{search}%", f"%{search}%"])
-            
-        if status:
-            statuses = status.split(',')
-            for s in statuses:
-                where_clauses.append(f"`{s.strip()}` = 1")
-                
-        if not_status:
-            statuses = not_status.split(',')
-            for s in statuses:
-                where_clauses.append(f"`{s.strip()}` = 0")
-
-        if days_old:
-            where_clauses.append("DATE(created) >= DATE_SUB(CURDATE(), INTERVAL %s DAY)")
-            params.append(days_old)
-
-        if salary:
-            where_clauses.append("salary RLIKE %s")
-            params.append(salary)
-
-        if sql_filter:
-            where_clauses.append(f"({sql_filter})")
-        
-        if boolean_filters:
-            for field_name, field_value in boolean_filters.items():
-                if field_value is not None:
-                    where_clauses.append(f"`{field_name}` = {1 if field_value else 0}")
-                
-        where_str = " AND ".join(where_clauses)
-        
-        # Count total
-        count_query = f"SELECT COUNT(*) FROM jobs WHERE {where_str}"
-        
-        with self.get_db() as db:
-            total = db.count(count_query, params)
-            
-            # Fetch items
-            # Validate order to prevent SQL injection
-            allowed_sort_columns = ["created", "modified", "salary", "title", "company", "cv_match_percentage"]
-            sort_col, sort_dir = "created", "desc"
-            
-            if order:
-                parts = order.split()
-                if len(parts) >= 1 and parts[0] in allowed_sort_columns:
-                    sort_col = parts[0]
-                if len(parts) >= 2 and parts[1].lower() in ["asc", "desc"]:
-                    sort_dir = parts[1].lower()
-                    
-            query = f"SELECT * FROM jobs WHERE {where_str} ORDER BY {sort_col} {sort_dir} LIMIT %s OFFSET %s"
-            
-            params_with_limit = params + [size, offset]
-            
-            rows = db.fetchAll(query, params_with_limit)
-            # Get raw column names without translation
-            columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
-            
-            items = []
-            for row in rows:
-                # Use raw column names (they're already lowercase in MySQL)
-                item_dict = {col: val for col, val in zip(columns, row)}
-                items.append(item_dict)
-            
-        return {
-            "items": items,
-            "total": total,
-            "page": page,
-            "size": size
-        }
+    def list_jobs(self, page: int, size: int, search: Optional[str] = None,
+                    status: Optional[str] = None, not_status: Optional[str] = None,
+                    days_old: Optional[int] = None, salary: Optional[str] = None,
+                    order: Optional[str] = "created desc", boolean_filters: Dict[str, Optional[bool]] = None,
+                    sql_filter: Optional[str] = None) -> Dict[str, Any]:
+        return self.repo.list_jobs(page, size, search, status, not_status,
+            days_old, salary, order, boolean_filters, sql_filter)
 
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:
-        with self.get_db() as db:
-            query = "SELECT * FROM jobs WHERE id = %s"
-            row = db.fetchOne(query, job_id)
-            
+        with self.repo.get_db() as db:
+            row = self.repo.fetch_job_row(db, job_id)
             if not row:
                 return None
-                
-            # Get raw column names without translation
-            columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
-            # Use raw column names (they're already lowercase in MySQL)
-            item_dict = {col: val for col, val in zip(columns, row)}
-            return item_dict
+            columns = self.repo.fetch_columns(db)
+            return {col: val for col, val in zip(columns, row)}
 
     def update_job(self, job_id: int, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        with self.get_db() as db:
-            # Check if exists
-            check_query = "SELECT id FROM jobs WHERE id = %s"
-            existing = db.fetchOne(check_query, job_id)
-            if not existing:
-                return None
-                
-            if not update_data:
-                return self.get_job(job_id)
-                
-            set_clauses = []
-            params = []
-            for key, value in update_data.items():
-                set_clauses.append(f"`{key}` = %s")
-                params.append(value)
-                
-            params.append(job_id)
-            query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id = %s"
-            
-            db.executeAndCommit(query, params)
-            
+        result = self.repo.update_job(job_id, update_data)
+        if result is None:
+            return None
         return self.get_job(job_id)
 
     def get_applied_jobs_by_company_name(self, company: str, client: str = None) -> List[Dict[str, Any]]:
-        """
-        Get all applied jobs for the given company name.
-        
-        Args:
-            company: Company name to search for
-            client: Optional client name for Joppy special case
-            
-        Returns:
-            List of applied jobs with id and created date
-        """
-        with self.get_db() as db:
-            company_raw = company.lower().replace("'", "''") if company else ""
-            if not company_raw:
-                return []
-            
-            from commonlib.mysqlUtil import SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, SELECT_APPLIED_JOB_ORDER_BY
-            from commonlib.sqlUtil import sql_regex_chars
-            import re
-            
-            # Check for joppy BEFORE escaping
-            if company_raw == 'joppy' and client:
-                qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY
-                qry += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
-                qry += SELECT_APPLIED_JOB_ORDER_BY
-                company_escaped = sql_regex_chars(client)
-                params = {'company': company_escaped, 'id': '0', 'client': client}
-            else:
-                company_escaped = sql_regex_chars(company_raw)
-                params = {'company': company_escaped, 'id': '0'}
-                qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY + SELECT_APPLIED_JOB_ORDER_BY
-            
-            rows = db.fetchAll(qry.format(**params))
-            if len(rows) == 0:
-                # Pass the raw (unescaped) company name for partial search
-                rows = self._search_partial_company(company_raw, params, qry, db)
-            return [{'id': row[0], 'created': row[1].isoformat() if row[1] else None} for row in rows]
+        company_raw = company.lower().replace("'", "''") if company else ""
 
+        if company_raw == 'joppy' and client:
+            rows = self.repo.find_applied_by_company(client, client)
+        else:
+            rows = self.repo.find_applied_by_company(company_raw)
+        if len(rows) == 0:
+            rows = self._search_partial_company(company_raw)
+        return [{'id': row[0], 'created': row[1].isoformat() if row[1] else None} for row in rows]
 
-    def _search_partial_company(self, company_raw: str, params: dict, query: str, db: MysqlUtil) -> list:
+    def _search_partial_company(self, company_raw: str) -> list:
         import re
-        # Work with raw company name, no pre-escaping needed
         company_words = company_raw.split(' ')
         rows = []
         while len(company_words) > 1 and len(rows) == 0:
@@ -183,10 +48,9 @@ class JobsService:
             words = ' '.join(company_words)
             part1 = re.escape(words)
             if len(part1) > 2 and part1 not in ['grupo']:
-                params['company'] = f'(^| ){part1}($| )'
+                regex_lookup = f'(^| ){part1}($| )'
                 try:
-                    rows = db.fetchAll(query.format(**params))
+                    rows = self.repo.find_applied_jobs_by_regex(regex_lookup)
                 except Exception:
                     pass
-                params['company'] = words
         return rows

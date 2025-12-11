@@ -12,7 +12,7 @@ def test_health_check(client):
     assert response.json() == {"status": "ok"}
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_empty(mock_get_db, client):
     """Test listing jobs when there are no results"""
     mock_db = create_mock_db(count=0, fetchAll=[], columns=['id', 'title', 'company'])
@@ -28,7 +28,7 @@ def test_list_jobs_empty(mock_get_db, client):
     assert data['size'] == 20
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_with_data(mock_get_db, client):
     """Test listing jobs with actual data"""
     mock_db = create_mock_db(
@@ -51,7 +51,7 @@ def test_list_jobs_with_data(mock_get_db, client):
     assert data['items'][1]['company'] == 'Tech Inc'
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_get_job_by_id(mock_get_db, client):
     """Test getting a specific job by ID"""
     mock_db = create_mock_db(
@@ -74,7 +74,7 @@ def test_get_job_by_id(mock_get_db, client):
     assert data['salary'] == '50000-60000'
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_get_job_not_found(mock_get_db, client):
     """Test getting a job that doesn't exist"""
     mock_db = create_mock_db(fetchOne=None)
@@ -86,7 +86,7 @@ def test_get_job_not_found(mock_get_db, client):
     assert response.json()['detail'] == 'Job not found'
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 @patch('services.jobs_service.JobsService.get_job')
 def test_update_job(mock_get_job, mock_get_db, client):
     """Test updating a job"""
@@ -116,7 +116,7 @@ def test_update_job(mock_get_job, mock_get_db, client):
     mock_db.executeAndCommit.assert_called_once()
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_update_job_not_found(mock_get_db, client):
     """Test updating a job that doesn't exist"""
     mock_db = create_mock_db(fetchOne=None)

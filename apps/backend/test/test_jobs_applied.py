@@ -28,7 +28,7 @@ create_mock_db = pytest.create_mock_db
         ['2024-03-10']
     ),
 ], ids=["valid_company", "empty_result", "with_client_param"])
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_get_applied_jobs_by_company(mock_get_db, client, url, mock_data, expected_count, expected_ids, expected_dates):
     """Test getting applied jobs by company with various scenarios"""
     mock_db = create_mock_db(fetchAll=mock_data)
@@ -46,7 +46,7 @@ def test_get_applied_jobs_by_company(mock_get_db, client, url, mock_data, expect
     "O%27Reilly%20Media",
     "Company%20%26%20Co",
 ], ids=["apostrophe", "ampersand"])
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_get_applied_jobs_by_company_special_characters(mock_get_db, client, company_param):
     """Test that companies with special characters (non-SQL) work correctly"""
     mock_db = create_mock_db(fetchAll=[(10, datetime(2024, 4, 1))])

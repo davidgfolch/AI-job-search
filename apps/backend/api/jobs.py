@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob
 from services.jobs_service import JobsService
-from commonlib.sqlUtil import validate_safe_string
+
 
 router = APIRouter()
 
@@ -74,12 +74,9 @@ def get_applied_jobs_by_company(
     service: JobsService = Depends(get_service)
 ):
     try:
-        validate_safe_string(company, "company")
-        if client:
-            validate_safe_string(client, "client")
+        results = service.get_applied_jobs_by_company_name(company, client)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    results = service.get_applied_jobs_by_company_name(company, client)
     return [AppliedCompanyJob(**r) for r in results]
 
 @router.get("/{job_id}", response_model=Job)

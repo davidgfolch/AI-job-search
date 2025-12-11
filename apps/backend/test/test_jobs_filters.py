@@ -4,7 +4,7 @@ from unittest.mock import patch
 create_mock_db = pytest.create_mock_db
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_with_search(mock_get_db, client):
     """Test listing jobs with search filter"""
     mock_db = create_mock_db(
@@ -29,7 +29,7 @@ def test_list_jobs_with_search(mock_get_db, client):
     assert "LIKE" in matched_query
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_with_status_filter(mock_get_db, client):
     """Test listing jobs with status filter"""
     mock_db = create_mock_db(
@@ -51,7 +51,7 @@ def test_list_jobs_with_status_filter(mock_get_db, client):
     assert any("`applied` = 1" in q for q in queries)
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_pagination(mock_get_db, client):
     """Test pagination parameters"""
     mock_db = create_mock_db(
@@ -70,7 +70,7 @@ def test_list_jobs_pagination(mock_get_db, client):
     assert data['total'] == 50
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_with_boolean_filter_true(mock_get_db, client):
     """Test listing jobs with boolean filter set to true"""
     mock_db = create_mock_db(
@@ -92,7 +92,7 @@ def test_list_jobs_with_boolean_filter_true(mock_get_db, client):
     assert any("`flagged` = 1" in q for q in queries)
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_with_boolean_filter_false(mock_get_db, client):
     """Test listing jobs with boolean filter set to false"""
     mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title', 'company'])
@@ -105,7 +105,7 @@ def test_list_jobs_with_boolean_filter_false(mock_get_db, client):
     assert any("`applied` = 0" in q for q in queries)
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_with_multiple_boolean_filters(mock_get_db, client):
     """Test listing jobs with multiple boolean filters"""
     mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title', 'company'])
@@ -121,7 +121,7 @@ def test_list_jobs_with_multiple_boolean_filters(mock_get_db, client):
     assert "`ignored` = 0" in matched_query
 
 
-@patch('services.jobs_service.JobsService.get_db')
+@patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_boolean_filters_with_other_filters(mock_get_db, client):
     """Test boolean filters combined with other filters"""
     mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title', 'company'])

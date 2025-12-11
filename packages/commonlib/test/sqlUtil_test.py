@@ -12,7 +12,7 @@ from commonlib.sqlUtil import (
     binaryColumnIgnoreCase
 )
 import re
-from commonlib.sqlUtil import validate_safe_string, sql_regex_chars
+from commonlib.sqlUtil import avoidInjection, scapeRegexChars
 
 
 class TestSqlUtil:
@@ -115,7 +115,7 @@ class TestSqlUtil:
 
 
 class TestValidateSafeString:
-    """Test the validate_safe_string function for SQL injection protection"""
+    """Test the avoidInjection function for SQL injection protection"""
 
     @pytest.mark.parametrize("company_name", [
         "Tech Corp",
@@ -127,12 +127,12 @@ class TestValidateSafeString:
     ])
     def test_valid_inputs(self, company_name):
         """Test that valid company names pass validation"""
-        assert validate_safe_string(company_name, "company") == company_name
+        assert avoidInjection(company_name, "company") == company_name
     
     def test_semicolon(self):
         """Test that semicolons are blocked"""
         with pytest.raises(ValueError, match="semicolon"):
-            validate_safe_string("Company; DROP TABLE jobs--", "company")
+            avoidInjection("Company; DROP TABLE jobs--", "company")
     
     @pytest.mark.parametrize("malicious_input,expected_pattern", [
         ("Company-- comment", "SQL comment"),
@@ -141,7 +141,7 @@ class TestValidateSafeString:
     def test_sql_comment(self, malicious_input, expected_pattern):
         """Test that SQL comments are blocked"""
         with pytest.raises(ValueError, match=expected_pattern):
-            validate_safe_string(malicious_input, "company")
+            avoidInjection(malicious_input, "company")
     
     @pytest.mark.parametrize("malicious_input", [
         "Company UNION SELECT",
@@ -150,7 +150,7 @@ class TestValidateSafeString:
     def test_union_keyword(self, malicious_input):
         """Test that UNION keyword is blocked"""
         with pytest.raises(ValueError, match="UNION keyword"):
-            validate_safe_string(malicious_input, "company")
+            avoidInjection(malicious_input, "company")
     
     @pytest.mark.parametrize("malicious_input", [
         "Company SELECT * FROM",
@@ -159,7 +159,7 @@ class TestValidateSafeString:
     def test_select_keyword(self, malicious_input):
         """Test that SELECT keyword is blocked"""
         with pytest.raises(ValueError, match="SELECT keyword"):
-            validate_safe_string(malicious_input, "company")
+            avoidInjection(malicious_input, "company")
     
     @pytest.mark.parametrize("malicious_input,expected_pattern", [
         ("DROP TABLE jobs", "DROP keyword"),
@@ -172,7 +172,7 @@ class TestValidateSafeString:
     def test_dangerous_keywords(self, malicious_input, expected_pattern):
         """Test that various dangerous SQL keywords are blocked"""
         with pytest.raises(ValueError, match=expected_pattern):
-            validate_safe_string(malicious_input, "company")
+            avoidInjection(malicious_input, "company")
     
     @pytest.mark.parametrize("malicious_input,expected_pattern", [
         ("Company id=1", "equals sign"),
@@ -182,7 +182,7 @@ class TestValidateSafeString:
     def test_sql_operators(self, malicious_input, expected_pattern):
         """Test that SQL operators are blocked"""
         with pytest.raises(ValueError, match=expected_pattern):
-            validate_safe_string(malicious_input, "company")
+            avoidInjection(malicious_input, "company")
     
     @pytest.mark.parametrize("malicious_input,expected_pattern", [
         ("1 OR 1=1", "OR keyword"),
@@ -191,7 +191,7 @@ class TestValidateSafeString:
     def test_logical_operators(self, malicious_input, expected_pattern):
         """Test that logical operators are blocked"""
         with pytest.raises(ValueError, match=expected_pattern):
-            validate_safe_string(malicious_input, "company")
+            avoidInjection(malicious_input, "company")
     
     @pytest.mark.parametrize("empty_value", [
         "",
@@ -200,7 +200,7 @@ class TestValidateSafeString:
     def test_empty_input(self, empty_value):
         """Test that empty strings are rejected"""
         with pytest.raises(ValueError, match="must be a non-empty string"):
-            validate_safe_string(empty_value, "company")
+            avoidInjection(empty_value, "company")
     
     @pytest.mark.parametrize("malicious_input,expected_pattern", [
         ("SELECT * FROM jobs", "SELECT keyword"),
@@ -209,16 +209,16 @@ class TestValidateSafeString:
     def test_case_insensitive(self, malicious_input, expected_pattern):
         """Test that validation is case-insensitive"""
         with pytest.raises(ValueError, match=expected_pattern):
-            validate_safe_string(malicious_input, "company")
+            avoidInjection(malicious_input, "company")
     
     def test_custom_param_name(self):
         """Test that custom parameter names appear in error messages"""
         with pytest.raises(ValueError, match="client contains"):
-            validate_safe_string("DROP TABLE", "client")
+            avoidInjection("DROP TABLE", "client")
 
 
 class TestSqlRegexChars:
-    """Test the sql_regex_chars function for regex escaping"""
+    """Test the scapeRegexChars function for regex escaping"""
     
     @pytest.mark.parametrize("input_str,expected", [
         ("Company (USA)", "Company \\(USA\\)"),
@@ -231,4 +231,4 @@ class TestSqlRegexChars:
     ])
     def test_sql_regex_chars(self, input_str, expected):
         """Test that regex special characters are properly escaped"""
-        assert sql_regex_chars(input_str) == expected
+        assert scapeRegexChars(input_str) == expected

@@ -94,12 +94,12 @@ def binaryColumnIgnoreCase(col: str) -> str:
     return col
 
 
-def sql_regex_chars(txt: str) -> str:
+def scapeRegexChars(txt: str) -> str:
     """Escape regex special characters for use in SQL RLIKE queries"""
     return re.sub(r'([()[\]|*+])', r'\\\1', txt)
 
 
-def validate_safe_string(value: str, param_name: str = "parameter") -> str:
+def avoidInjection(value: str, param_name: str = "parameter") -> str:
     """
     Validate that a string doesn't contain potentially dangerous SQL patterns.
     
@@ -115,7 +115,6 @@ def validate_safe_string(value: str, param_name: str = "parameter") -> str:
     """
     if not value or not isinstance(value, str):
         raise ValueError(f"{param_name} must be a non-empty string")
-    
     # Check for common SQL injection patterns
     dangerous_patterns = [
         (r';', 'semicolon'),
@@ -139,11 +138,8 @@ def validate_safe_string(value: str, param_name: str = "parameter") -> str:
         (r'<', 'less than sign'),
         (r'>', 'greater than sign'),
     ]
-    
     value_lower = value.lower()
-    
     for pattern, description in dangerous_patterns:
         if re.search(pattern, value_lower, re.IGNORECASE):
             raise ValueError(f"{param_name} contains potentially dangerous pattern: {description}")
-    
     return value

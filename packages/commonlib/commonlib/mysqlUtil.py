@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import mysql.connector as mysqlConnector
 from mysql.connector.types import RowItemType
 
-from commonlib.sqlUtil import error, getColumnTranslated, sql_regex_chars, validate_safe_string
+from commonlib.sqlUtil import error, getColumnTranslated, scapeRegexChars, avoidInjection
 
 from .decorator.retry import retry
 from .terminalColor import green, red, yellow
