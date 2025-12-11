@@ -22,6 +22,9 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
     // Ref to track debounce timers for auto-save
     const debounceTimers = useRef<Record<string, number>>({});
 
+    // Ref for textarea auto-resize
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
     // Sync local state with job prop when it changes
     useEffect(() => {
         if (job) {
@@ -68,6 +71,16 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
         handleAutoSave('comments', value);
     };
 
+    // Auto-resize textarea based on content
+    useEffect(() => {
+        if (textareaRef.current) {
+            // Reset height to auto to get the correct scrollHeight
+            textareaRef.current.style.height = 'auto';
+            // Set height to scrollHeight to fit content
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [comments]);
+
     const handleSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSalary(value);
@@ -106,11 +119,8 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
             <div className="status-form">
                 <div className="status-pills">
                     {BOOLEAN_FILTERS.map((filter) => (
-                        <button
-                            key={filter.key}
-                            className={`status-pill ${statusState[filter.key] ? 'active' : ''}`}
-                            onClick={() => handleStatusToggle(filter.key)}
-                        >
+                        <button key={filter.key} className={`status-pill ${statusState[filter.key] ? 'active' : ''}`}
+                            onClick={() => handleStatusToggle(filter.key)}>
                             {filter.label}
                         </button>
                     ))}
@@ -119,45 +129,24 @@ export default function JobEditForm({ job, onUpdate }: JobEditFormProps) {
 
             <div className="form-fields">
                 <div className="form-field">
+                    <label htmlFor="salary">Salary</label>
+                    <input id="salary" type="text" value={salary} onChange={handleSalaryChange} placeholder="Auto-saves as you type..." />
+                </div>
+                <div className="form-field">
+                    <label htmlFor="company">Company</label>
+                    <input id="company" type="text" value={company} onChange={handleCompanyChange} placeholder="Auto-saves as you type..." />
+                </div>
+                <div className="form-field">
+                    <label htmlFor="client">Client</label>
+                    <input id="client" type="text" value={client} onChange={handleClientChange} placeholder="Auto-saves as you type..." />
+                </div>
+                <div className="form-field">
                     <label htmlFor="comments">Comments</label>
                     <textarea
+                        ref={textareaRef}
                         id="comments"
                         value={comments}
                         onChange={handleCommentsChange}
-                        rows={4}
-                        placeholder="Auto-saves as you type..."
-                    />
-                </div>
-
-                <div className="form-field">
-                    <label htmlFor="salary">Salary</label>
-                    <input
-                        id="salary"
-                        type="text"
-                        value={salary}
-                        onChange={handleSalaryChange}
-                        placeholder="Auto-saves as you type..."
-                    />
-                </div>
-
-                <div className="form-field">
-                    <label htmlFor="company">Company</label>
-                    <input
-                        id="company"
-                        type="text"
-                        value={company}
-                        onChange={handleCompanyChange}
-                        placeholder="Auto-saves as you type..."
-                    />
-                </div>
-
-                <div className="form-field">
-                    <label htmlFor="client">Client</label>
-                    <input
-                        id="client"
-                        type="text"
-                        value={client}
-                        onChange={handleClientChange}
                         placeholder="Auto-saves as you type..."
                     />
                 </div>

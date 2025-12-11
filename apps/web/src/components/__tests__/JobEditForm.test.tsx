@@ -147,4 +147,27 @@ describe('JobEditForm', () => {
         expect(screen.getByLabelText('Comments')).toHaveValue('Updated from outside');
     });
 
+    it('auto-resizes textarea based on content', () => {
+        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
+        const textarea = screen.getByLabelText('Comments') as HTMLTextAreaElement;
+
+        // Mock scrollHeight to simulate content height changes
+        Object.defineProperty(textarea, 'scrollHeight', {
+            configurable: true,
+            get: function () {
+                return this.value.length > 50 ? 200 : 100;
+            }
+        });
+
+        // Change to short content
+        fireEvent.change(textarea, { target: { value: 'Short text' } });
+        // Height should be set to 'auto' first, then to scrollHeight
+        expect(textarea.style.height).toBe('100px');
+
+        // Change to longer content
+        const longText = 'This is a much longer comment that would require more vertical space to display properly';
+        fireEvent.change(textarea, { target: { value: longText } });
+        expect(textarea.style.height).toBe('200px');
+    });
+
 });

@@ -93,6 +93,21 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* Auto-resizing textarea for comments with height constraints */
+.form-field textarea {
+    min-height: 3rem;
+    max-height: 50vh; /* Don't exceed 50% of viewport height on larger screens */
+    resize: none; /* Disable manual resize to use auto-resize */
+    overflow-y: auto; /* Show scrollbar if content exceeds max-height */
+}
+
+/* On small screens, allow textarea to grow without max-height constraint */
+@media (max-width: 768px) {
+    .form-field textarea {
+        max-height: none;
+    }
+}
+
 .save-btn {
     padding: 0.75rem 1.5rem;
     border: none;
