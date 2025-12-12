@@ -96,20 +96,29 @@ export interface JobListParams {
   ids?: number[];
 }
 
+const handleRequest = async <T>(request: Promise<{ data: T }>, errorMessage: string): Promise<T> => {
+  try {
+    const response = await request;
+    return response.data;
+  } catch (error) {
+    throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
+
 export const jobsApi = {
   getJobs: async (params: JobListParams = {}): Promise<JobListResponse> => {
-    const response = await apiClient.get<JobListResponse>('/jobs', { params });
-    return response.data;
+    return handleRequest(apiClient.get<JobListResponse>('/jobs', { params }),
+      'Error loading jobs');
   },
 
   getJob: async (id: number): Promise<Job> => {
-    const response = await apiClient.get<Job>(`/jobs/${id}`);
-    return response.data;
+    return handleRequest(apiClient.get<Job>(`/jobs/${id}`),
+      'Error loading job details');
   },
 
   updateJob: async (id: number, data: Partial<Job>): Promise<Job> => {
-    const response = await apiClient.patch<Job>(`/jobs/${id}`, data);
-    return response.data;
+    return handleRequest(apiClient.patch<Job>(`/jobs/${id}`, data),
+      'Error updating job');
   },
 
 
@@ -118,7 +127,7 @@ export const jobsApi = {
     if (client) {
       params.client = client;
     }
-    const response = await apiClient.get<AppliedCompanyJob[]>('/jobs/applied-by-company', { params });
-    return response.data;
+    return handleRequest(apiClient.get<AppliedCompanyJob[]>('/jobs/applied-by-company', { params }),
+      'Error loading applied jobs');
   },
 };

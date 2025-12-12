@@ -156,14 +156,16 @@
 .job-comments {
     margin-top: 0.5rem;
     padding: 0rem 0.5rem 0rem 0.5rem;
-    background: #1a1a1a;
+    background: #2e2e2e;
     border-radius: 8px;
-    border-left: 3px solid #667eea;
+    border: 1px solid #707070;
+    margin-right: 0.5rem;
 }
 
 .job-comments h3 {
     color: #667eea;
     font-size: 1rem;
+    padding-top: 0.4rem;
 }
 
 .job-markdown {

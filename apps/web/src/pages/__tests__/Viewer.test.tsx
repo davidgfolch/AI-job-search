@@ -28,75 +28,23 @@ vi.mock('../../api/jobs', async () => {
 
 const mockJobs: Job[] = [
     {
-        id: 1,
-        title: 'Job 1',
-        company: 'Company 1',
-        salary: '100k',
-        location: 'Remote',
-        url: 'http://example.com/1',
-        markdown: 'Description 1',
-        web_page: 'LinkedIn',
-        created: '2023-01-01',
-        modified: null,
-        flagged: false,
-        like: false,
-        ignored: false,
-        seen: false,
-        applied: false,
-        discarded: false,
-        closed: false,
-        interview_rh: false,
-        interview: false,
-        interview_tech: false,
-        interview_technical_test: false,
-        interview_technical_test_done: false,
-        ai_enriched: true,
-        easy_apply: false,
-        required_technologies: 'React',
-        optional_technologies: null,
-        client: null,
-        comments: null,
-        cv_match_percentage: 90,
+        id: 1, title: 'Job 1', company: 'Company 1', salary: '100k', location: 'Remote', url: 'http://example.com/1', markdown: 'Description 1',
+        web_page: 'LinkedIn', created: '2023-01-01', modified: null, flagged: false, like: false, ignored: false, seen: false, applied: false,
+        discarded: false, closed: false, interview_rh: false, interview: false, interview_tech: false, interview_technical_test: false,
+        interview_technical_test_done: false, ai_enriched: true, easy_apply: false, required_technologies: 'React', optional_technologies: null,
+        client: null, comments: null, cv_match_percentage: 90,
     },
     {
-        id: 2,
-        title: 'Job 2',
-        company: 'Company 2',
-        salary: '120k',
-        location: 'Remote',
-        url: 'http://example.com/2',
-        markdown: 'Description 2',
-        web_page: 'Indeed',
-        created: '2023-01-02',
-        modified: null,
-        flagged: true,
-        like: false,
-        ignored: false,
-        seen: true,
-        applied: false,
-        discarded: false,
-        closed: false,
-        interview_rh: false,
-        interview: false,
-        interview_tech: false,
-        interview_technical_test: false,
-        interview_technical_test_done: false,
-        ai_enriched: false,
-        easy_apply: true,
-        required_technologies: 'Python',
-        optional_technologies: null,
-        client: null,
-        comments: null,
-        cv_match_percentage: 80,
+        id: 2, title: 'Job 2', company: 'Company 2', salary: '120k', location: 'Remote', url: 'http://example.com/2', markdown: 'Description 2',
+        web_page: 'Indeed', created: '2023-01-02', modified: null, flagged: true, like: false, ignored: false, seen: true, applied: false,
+        discarded: false, closed: false, interview_rh: false, interview: false, interview_tech: false, interview_technical_test: false,
+        interview_technical_test_done: false, ai_enriched: false, easy_apply: true, required_technologies: 'Python', optional_technologies: null,
+        client: null, comments: null, cv_match_percentage: 80,
     },
 ];
 
 const createTestQueryClient = () => new QueryClient({
-    defaultOptions: {
-        queries: {
-            retry: false,
-        },
-    },
+    defaultOptions: { queries: { retry: false, }, },
 });
 
 const renderWithRouter = (ui: React.ReactElement, { initialEntries = ['/'] }: { initialEntries?: string[] } = {}) => {
@@ -121,12 +69,7 @@ describe('Viewer', () => {
     });
 
     it('renders job list after loading', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({
-            items: mockJobs,
-            total: 2,
-            page: 1,
-            size: 20,
-        });
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
         renderWithRouter(<Viewer />);
         await waitFor(() => {
             // Use getAllByText because "Job 1" might appear in multiple places if we are not careful,
@@ -141,17 +84,12 @@ describe('Viewer', () => {
         (jobsApi.getJobs as any).mockRejectedValue(new Error('Failed to fetch'));
         renderWithRouter(<Viewer />);
         await waitFor(() => {
-            expect(screen.getByText('Error loading jobs: Error: Failed to fetch')).toBeInTheDocument();
+            expect(screen.getByText('Failed to fetch')).toBeInTheDocument();
         });
     });
 
     it('selects a job and displays details', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({
-            items: mockJobs,
-            total: 2,
-            page: 1,
-            size: 20,
-        });
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
         renderWithRouter(<Viewer />);
         await waitFor(() => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
@@ -169,12 +107,7 @@ describe('Viewer', () => {
     });
 
     it('switches between List and Edit tabs', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({
-            items: mockJobs,
-            total: 2,
-            page: 1,
-            size: 20,
-        });
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
         renderWithRouter(<Viewer />);
         await waitFor(() => {
@@ -194,12 +127,7 @@ describe('Viewer', () => {
     });
 
     it('handles infinite scroll loading', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({
-            items: mockJobs,
-            total: 50,
-            page: 1,
-            size: 20,
-        });
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 50, page: 1, size: 20, });
         renderWithRouter(<Viewer />);
         await waitFor(() => {
             expect(screen.getByText('Total results: 50 | Showing: 2')).toBeInTheDocument();
@@ -209,12 +137,7 @@ describe('Viewer', () => {
     });
 
     it('updates job and refreshes list', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({
-            items: mockJobs,
-            total: 2,
-            page: 1,
-            size: 20,
-        });
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
         (jobsApi.updateJob as any).mockResolvedValue({
             ...mockJobs[0],
@@ -241,15 +164,8 @@ describe('Viewer', () => {
         expect(jobsApi.getJobs).toHaveBeenCalledTimes(2); // Initial + Refetch
     });
     it('filters jobs by ids from URL', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({
-            items: mockJobs,
-            total: 2,
-            page: 1,
-            size: 20,
-        });
-
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
         renderWithRouter(<Viewer />, { initialEntries: ['/?ids=1,2'] });
-
         await waitFor(() => {
             expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({
                 sql_filter: 'id IN (1,2)',

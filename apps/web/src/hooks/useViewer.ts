@@ -65,6 +65,9 @@ export const useViewer = () => {
         setSearchParams(newParams);
     }, [searchParams, setSearchParams]);
 
+    // Track if we are in the middle of an auto-selection to prevent race conditions with URL effect
+    const isAutoSelecting = useRef(false);
+
     // Auto-select next job after data refetch when a state change occurred
     useEffect(() => {
         if (!autoSelectNext.current.shouldSelect || !allJobs.length || !autoSelectNext.current.previousJobId) {
@@ -77,6 +80,7 @@ export const useViewer = () => {
             if (allJobs.length > 0) {
                 // Try to select the job at the same index, or the last job if we're past the end
                 const indexToSelect = Math.min(previousIndex >= 0 ? previousIndex : 0, allJobs.length - 1);
+                isAutoSelecting.current = true;
                 handleJobSelect(allJobs[indexToSelect]);
             } else {
                 // No jobs left in list
@@ -89,6 +93,11 @@ export const useViewer = () => {
 
     // Handle URL parameters on mount
     useEffect(() => {
+        if (isAutoSelecting.current) {
+            isAutoSelecting.current = false;
+            return;
+        }
+
         const jobIdParam = searchParams.get('jobId');
         const idsParam = searchParams.get('ids');
         if (idsParam) {
@@ -130,61 +139,21 @@ export const useViewer = () => {
                 'flagged', 'like', 'ai_enriched'
             ];
             const hasStateChange = stateFields.some(field => field in data);
-            if (hasStateChange) {
+            if (hasStateChange && activeTab === 'list') {
                 autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
             }
             updateMutation.mutate({ id: selectedJob.id, data });
         }
-    }, [selectedJob, updateMutation]);
+    }, [selectedJob, updateMutation, activeTab]);
 
-    const handleIgnoreJob = useCallback(() => {
-        if (selectedJob) {
-            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
-            updateMutation.mutate({ id: selectedJob.id, data: { ignored: true } });
-        }
-    }, [selectedJob, updateMutation]);
-
-    const handleSeenJob = useCallback(() => {
-        if (selectedJob) {
-            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
-            updateMutation.mutate({ id: selectedJob.id, data: { seen: true } });
-        }
-    }, [selectedJob, updateMutation]);
-
-    const handleAppliedJob = useCallback(() => {
-        if (selectedJob) {
-            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
-            updateMutation.mutate({ id: selectedJob.id, data: { applied: true } });
-        }
-    }, [selectedJob, updateMutation]);
-
-    const handleDiscardedJob = useCallback(() => {
-        if (selectedJob) {
-            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
-            updateMutation.mutate({ id: selectedJob.id, data: { discarded: true } });
-        }
-    }, [selectedJob, updateMutation]);
-
-    const handleClosedJob = useCallback(() => {
-        if (selectedJob) {
-            autoSelectNext.current = { shouldSelect: true, previousJobId: selectedJob.id };
-            updateMutation.mutate({ id: selectedJob.id, data: { closed: true } });
-        }
-    }, [selectedJob, updateMutation]);
-
-    const handleNextJob = useCallback(() => {
+    const navigateJob = useCallback((direction: 'next' | 'previous') => {
         if (!allJobs.length || !selectedJob) return;
         const currentIndex = allJobs.findIndex(j => j.id === selectedJob.id);
-        if (currentIndex >= 0 && currentIndex < allJobs.length - 1) {
-            handleJobSelect(allJobs[currentIndex + 1]);
-        }
-    }, [allJobs, selectedJob, handleJobSelect]);
+        if (currentIndex === -1) return;
 
-    const handlePreviousJob = useCallback(() => {
-        if (!allJobs.length || !selectedJob) return;
-        const currentIndex = allJobs.findIndex(j => j.id === selectedJob.id);
-        if (currentIndex > 0) {
-            handleJobSelect(allJobs[currentIndex - 1]);
+        const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+        if (nextIndex >= 0 && nextIndex < allJobs.length) {
+            handleJobSelect(allJobs[nextIndex]);
         }
     }, [allJobs, selectedJob, handleJobSelect]);
 
@@ -201,34 +170,35 @@ export const useViewer = () => {
     const hasPrevious = selectedIndex > 0;
 
     return {
-        // State
-        filters,
-        setFilters,
-        allJobs,
-        isLoadingMore,
-        selectedJob,
-        activeTab,
-        setActiveTab,
-        message,
-        setMessage,
-        isLoading,
-        error,
-        data,
-
-        // Handlers
-        handleJobSelect,
-        handleJobUpdate,
-        handleIgnoreJob,
-        handleSeenJob,
-        handleAppliedJob,
-        handleDiscardedJob,
-        handleClosedJob,
-        handleNextJob,
-        handlePreviousJob,
-        handleLoadMore,
-
-        // Derived
-        hasNext,
-        hasPrevious,
+        state: {
+            filters,
+            allJobs,
+            selectedJob,
+            activeTab,
+            message,
+            data,
+        },
+        status: {
+            isLoading,
+            isLoadingMore,
+            error,
+            hasNext,
+            hasPrevious,
+        },
+        actions: {
+            setFilters,
+            setActiveTab,
+            setMessage,
+            selectJob: handleJobSelect,
+            updateJob: handleJobUpdate,
+            ignoreJob: () => handleJobUpdate({ ignored: true }),
+            seenJob: () => handleJobUpdate({ seen: true }),
+            appliedJob: () => handleJobUpdate({ applied: true }),
+            discardedJob: () => handleJobUpdate({ discarded: true }),
+            closedJob: () => handleJobUpdate({ closed: true }),
+            nextJob: () => navigateJob('next'),
+            previousJob: () => navigateJob('previous'),
+            loadMore: handleLoadMore,
+        },
     };
 };

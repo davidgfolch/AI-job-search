@@ -1,0 +1,107 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { Job } from '../../api/jobs';
+
+export const mockJobs: Job[] = [
+    {
+        id: 1,
+        title: 'Job 1',
+        company: 'Company A',
+        location: 'Remote',
+        markdown: 'Desc 1',
+        created: '2023-01-01',
+        url: 'http://example.com/1',
+        salary: '100k',
+        web_page: null,
+        modified: null,
+        seen: false,
+        applied: false,
+        ignored: false,
+        discarded: false,
+        closed: false,
+        flagged: false,
+        like: false,
+        ai_enriched: false,
+        interview_rh: false,
+        interview: false,
+        interview_tech: false,
+        interview_technical_test: false,
+        interview_technical_test_done: false,
+        easy_apply: false,
+        required_technologies: null,
+        optional_technologies: null,
+        client: null,
+        comments: null,
+        cv_match_percentage: null
+    },
+    {
+        id: 2,
+        title: 'Job 2',
+        company: 'Company B',
+        location: 'Remote',
+        markdown: 'Desc 2',
+        created: '2023-01-02',
+        url: 'http://example.com/2',
+        salary: '120k',
+        web_page: null,
+        modified: null,
+        seen: false,
+        applied: false,
+        ignored: false,
+        discarded: false,
+        closed: false,
+        flagged: false,
+        like: false,
+        ai_enriched: false,
+        interview_rh: false,
+        interview: false,
+        interview_tech: false,
+        interview_technical_test: false,
+        interview_technical_test_done: false,
+        easy_apply: false,
+        required_technologies: null,
+        optional_technologies: null,
+        client: null,
+        comments: null,
+        cv_match_percentage: null
+    },
+    {
+        id: 3,
+        title: 'Job 3',
+        company: 'Company C',
+        location: 'Remote',
+        markdown: 'Desc 3',
+        created: '2023-01-03',
+        url: 'http://example.com/3',
+        salary: '130k',
+        web_page: null,
+        modified: null,
+        seen: false,
+        applied: false,
+        ignored: false,
+        discarded: false,
+        closed: false,
+        flagged: false,
+        like: false,
+        ai_enriched: false,
+        interview_rh: false,
+        interview: false,
+        interview_tech: false,
+        interview_technical_test: false,
+        interview_technical_test_done: false,
+        easy_apply: false,
+        required_technologies: null,
+        optional_technologies: null,
+        client: null,
+        comments: null,
+        cv_match_percentage: null
+    },
+];
+
+export const createWrapper = (queryClient: QueryClient) => ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+            {children}
+        </MemoryRouter>
+    </QueryClientProvider>
+);
