@@ -60,7 +60,7 @@ class TestExecuteScrapper:
             if error: run_mocks['infojobs'].side_effect = error
             executeScrapperPreload('infojobs', props)
             assert props.get('preloaded') is (False if error else preload)
-            run_mocks['infojobs'].assert_called_with(mocks['sel'], True, None)
+            run_mocks['infojobs'].assert_called_with(mocks['sel'], True, mocks['pm'])
 
     @pytest.mark.parametrize("in_tabs, close, error", [
         (False, False, None), (True, False, None), (True, True, None), (False, False, Exception)
