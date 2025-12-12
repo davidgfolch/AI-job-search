@@ -98,14 +98,19 @@ export const useViewer = () => {
         if (idsParam) {
             const ids = idsParam.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
             if (ids.length > 0) {
-                // Check if filters already have these ids to avoid infinite loop
+                const sqlFilter = `id IN (${ids.join(',')})`;
                 setFilters(prev => {
-                    if (JSON.stringify(prev.ids) === JSON.stringify(ids)) return prev;
-                    return { ...prev, ids, page: 1 };
+                    if (prev.sql_filter === sqlFilter) return prev;
+                    return { ...prev, sql_filter: sqlFilter, page: 1 };
+                });
+                // Remove ids from URL so form works properly
+                setSearchParams(prev => {
+                    const newParams = new URLSearchParams(prev);
+                    newParams.delete('ids');
+                    return newParams;
                 });
             }
         }
-
         if (jobIdParam) {
             const jobId = parseInt(jobIdParam, 10);
             if (!isNaN(jobId)) {

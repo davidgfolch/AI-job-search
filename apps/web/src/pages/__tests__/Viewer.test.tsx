@@ -252,7 +252,7 @@ describe('Viewer', () => {
 
         await waitFor(() => {
             expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({
-                ids: [1, 2],
+                sql_filter: 'id IN (1,2)',
                 page: 1,
             }));
         });
