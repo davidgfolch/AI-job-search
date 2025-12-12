@@ -34,13 +34,10 @@ export const useViewer = () => {
     // Update allJobs when data changes
     useEffect(() => {
         if (data?.items) {
-            if (filters.page === 1) {
-                // Reset on first page (new search/filter)
+            if (filters.page === 1) { // Reset on first page (new search/filter)
                 setAllJobs(data.items);
-            } else {
-                // Append on subsequent pages
-                setAllJobs(prev => {
-                    // Avoid duplicates
+            } else { // Append on subsequent pages
+                setAllJobs(prev => { // Avoid duplicates
                     const newItems = data.items.filter(item => !prev.some(p => p.id === item.id));
                     return [...prev, ...newItems];
                 });
@@ -54,8 +51,7 @@ export const useViewer = () => {
             jobsApi.updateJob(id, data),
         onSuccess: (updatedJob) => {
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
-            // Update selectedJob with the fresh data from the mutation response
-            if (selectedJob && updatedJob.id === selectedJob.id) {
+            if (selectedJob && updatedJob.id === selectedJob.id) { // Update selectedJob with the fresh data from the mutation response
                 setSelectedJob(updatedJob);
             }
         },

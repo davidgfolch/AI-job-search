@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdownCustom from './ReactMarkdownCustom';
 import type { Job, AppliedCompanyJob } from '../api/jobs';
 import { jobsApi } from '../api/jobs';
 import './JobDetail.css';
@@ -104,12 +104,16 @@ export default function JobDetail({ job }: JobDetailProps) {
                 {job.comments && (
                     <div className="job-comments">
                         <h3>Comments</h3>
-                        <div className="markdown-content"><ReactMarkdown>{job.comments}</ReactMarkdown></div>
+                        <div className="markdown-content">
+                            <ReactMarkdownCustom>{job.comments}</ReactMarkdownCustom>
+                        </div>
                     </div>
                 )}
                 {job.markdown && (
                     <div className="job-markdown">
-                        <div className="markdown-content"><ReactMarkdown>{job.markdown}</ReactMarkdown></div>
+                        <div className="markdown-content">
+                            <ReactMarkdownCustom>{job.markdown}</ReactMarkdownCustom>
+                        </div>
                     </div>
                 )}
             </div>
