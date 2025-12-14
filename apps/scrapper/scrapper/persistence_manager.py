@@ -41,3 +41,20 @@ class PersistenceManager:
         self.state[site]['last_execution'] = timestamp
         self.save()
         return timestamp
+
+    def prepare_resume(self, site: str):
+        state = self.get_state(site)
+        self._resume_keyword = state.get('keyword')
+        self._resume_page = state.get('page', 1)
+        self._is_skipping = bool(self._resume_keyword)
+
+    def should_skip_keyword(self, current_keyword: str) -> tuple[bool, int]:
+        """Returns (should_skip, start_page)"""
+        start_page = 1
+        if hasattr(self, '_resume_keyword') and self._resume_keyword:
+            if self._resume_keyword == current_keyword:
+                self._is_skipping = False
+                start_page = self._resume_page
+            elif self._is_skipping:
+                return True, 1
+        return False, start_page

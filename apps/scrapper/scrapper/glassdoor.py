@@ -10,21 +10,9 @@ from commonlib.terminalColor import green, printHR, yellow
 from commonlib.util import getDatetimeNowStr, getEnv
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
-from .selectors.glassdoorSelectors import (
-    CSS_SEL_COMPANY2,
-    CSS_SEL_COOKIES_ACCEPT,
-    CSS_SEL_DIALOG_CLOSE,
-    CSS_SEL_INPUT_PASS,
-    CSS_SEL_JOB_DESCRIPTION,
-    CSS_SEL_JOB_EASY_APPLY,
-    CSS_SEL_JOB_LI,
-    CSS_SEL_NEXT_PAGE_BUTTON,
-    CSS_SEL_PASSWORD_SUBMIT,
-    CSS_SEL_SEARCH_RESULT_TOTAL,
-    CSS_SEL_COMPANY,
-    CSS_SEL_LOCATION,
-    CSS_SEL_JOB_TITLE,
-    LI_JOB_TITLE_CSS_SUFFIX)
+from .selectors.glassdoorSelectors import (CSS_SEL_COMPANY2, CSS_SEL_COOKIES_ACCEPT, CSS_SEL_DIALOG_CLOSE, CSS_SEL_INPUT_PASS,
+    CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_LI, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_PASSWORD_SUBMIT,
+    CSS_SEL_SEARCH_RESULT_TOTAL, CSS_SEL_COMPANY, CSS_SEL_LOCATION, CSS_SEL_JOB_TITLE, LI_JOB_TITLE_CSS_SUFFIX)
 from .persistence_manager import PersistenceManager
 
 
@@ -33,7 +21,6 @@ USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars(SITE)
 JOBS_SEARCH_BASE_URL = getEnv(f'{SITE}_JOBS_SEARCH_BASE_URL')
 
 DEBUG = False
-
 WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
 
@@ -42,7 +29,7 @@ selenium: SeleniumUtil = None
 mysql: MysqlUtil = None
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
@@ -50,33 +37,19 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: Persi
     if preloadPage:
         loadMainPage()
         return
-    saved_state = {}
-    if persistenceManager:
-        saved_state = persistenceManager.get_state('Glassdoor')
-    
-    saved_keyword = saved_state.get('keyword')
-    saved_page = saved_state.get('page', 1)
-    skip = True if saved_keyword else False
-
+    persistenceManager.prepare_resume('Glassdoor')
     with MysqlUtil() as mysql:
         for search in JOBS_SEARCH.split('|~|'):
-            current_keyword = search
-            start_page = 1
-            
-            if saved_keyword:
-                if saved_keyword == current_keyword:
-                    skip = False
-                    start_page = saved_page
-                elif skip:
-                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
-                    continue
-
+            keyword = search
+            page = 1
+            skip, page = persistenceManager.should_skip_keyword(keyword)
+            if skip:
+                print(yellow(f"Skipping keyword '{keyword}' (already processed)"))
+                continue
             url = JOBS_SEARCH_BASE_URL.format(**{'search': search})
             print(yellow('Search list URL ', url))
-            searchJobs(url, start_page, persistenceManager, current_keyword)
-
-    if persistenceManager:
-        persistenceManager.clear_state('Glassdoor')
+            searchJobs(url, page, persistenceManager, keyword)
+    persistenceManager.clear_state('Glassdoor')
 
 
 def loadMainPage():
@@ -151,7 +124,7 @@ def getJobId(url: str):
 
 
 @retry()  # (exceptionFnc=reInitSeleniumAndLogin)
-def searchJobs(url: str, startPage: int = 1, persistenceManager: PersistenceManager = None, keyword_key: str = None):
+def searchJobs(url: str, startPage: int, persistenceManager: PersistenceManager, keyword_key: str = None):
     keywords = url.split('/')
     keywords = keywords[len(keywords)-1:]
     print(yellow(f'Search keyword={keywords}'))
@@ -198,7 +171,7 @@ def searchJobs(url: str, startPage: int = 1, persistenceManager: PersistenceMana
                 idx += 1
             if currentItem < totalResults:
                 clickNextPage()
-                if persistenceManager and keyword_key:
+                if keyword_key:
                     persistenceManager.update_state('Glassdoor', keyword_key, page + 1)
         summarize(keywords, totalResults, currentItem)
 

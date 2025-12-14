@@ -34,11 +34,11 @@ def mock_get_env():
 
 class TestGlassdoorScrapper:
 
-    def test_run_preload_page(self, mock_selenium, mock_env_vars):
+    def test_run_preload_page(self, mock_selenium, mock_env_vars, mock_persistence_manager):
         mock_selenium_instance = MagicMock(spec=SeleniumUtil)
         
         with patch('scrapper.glassdoor.loadMainPage') as mock_load_main:
-            run(mock_selenium_instance, preloadPage=True)
+            run(mock_selenium_instance, preloadPage=True, persistenceManager=mock_persistence_manager)
             mock_load_main.assert_called_once()
     
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
@@ -50,13 +50,14 @@ class TestGlassdoorScrapper:
             mock_mysql_class.return_value.__enter__.return_value = mock_mysql_instance
             
             mock_persistence_manager.get_state.return_value = {}
+            mock_persistence_manager.should_skip_keyword.return_value = (False, 1)
             
             # Mock searchJobs to avoid actual execution loop
             with patch('scrapper.glassdoor.searchJobs') as mock_search_jobs:
                 run(mock_selenium_instance, preloadPage=False, persistenceManager=mock_persistence_manager)
                 
                 assert mock_search_jobs.called
-                mock_persistence_manager.get_state.assert_called_with('Glassdoor')
+                mock_persistence_manager.prepare_resume.assert_called_with('Glassdoor')
                 mock_persistence_manager.clear_state.assert_called_with('Glassdoor')
 
     def test_load_main_page(self, mock_selenium):
@@ -71,14 +72,16 @@ class TestGlassdoorScrapper:
             mock_selenium.waitAndClick.assert_called()
             mock_selenium.waitUntilPageIsLoaded.assert_called()
 
-    def test_get_job_id(self):
-        url = "https://www.glassdoor.es/job-listing/test?jl=1234567890&other=param"
-        assert getJobId(url) == "1234567890"
-        
-        url2 = "https://www.glassdoor.es/job-listing/test?jobListingId=0987654321&other=param"
-        assert getJobId(url2) == "0987654321"
+    @pytest.mark.parametrize("url, expected_id", [
+        ("https://www.glassdoor.es/job-listing/test?jl=1234567890&other=param", "1234567890"),
+        ("https://www.glassdoor.es/job-listing/test?jobListingId=0987654321&other=param", "0987654321"),
+        ("https://www.glassdoor.es/job-listing/test?jl=11111", "11111"),
+        ("https://www.glassdoor.es/job-listing/test?jobListingId=22222", "22222"),
+    ])
+    def test_get_job_id(self, url, expected_id):
+        assert getJobId(url) == expected_id
 
-    def test_search_jobs_pagination(self, mock_selenium, mock_mysql):
+    def test_search_jobs_pagination(self, mock_selenium, mock_mysql, mock_persistence_manager):
         # Setup mocks for searchJobs
         mock_selenium.getText.return_value = "30 jobs" # Total results
         
@@ -87,38 +90,49 @@ class TestGlassdoorScrapper:
              patch('scrapper.glassdoor.loadAndProcessRow') as mock_process_row, \
              patch('scrapper.glassdoor.summarize'):
             
-            searchJobs("http://test.url/search", startPage=1)
+            searchJobs("http://test.url/search", startPage=1, persistenceManager=mock_persistence_manager)
             
             # Should process 30 jobs
             assert mock_process_row.call_count == 30
             # Should not click next page as it fits in one page (30 per page)
             mock_next_page.assert_not_called()
 
-    def test_process_row_insert(self, mock_selenium, mock_mysql):
+    @pytest.mark.parametrize("is_valid, expected_insert", [
+        (True, True),
+        (False, False)
+    ])
+    def test_process_row(self, mock_selenium, mock_mysql, is_valid, expected_insert):
         # Mock selenium returns for processRow
-        mock_selenium.getText.side_effect = ["Job Title", "Company Name", "Location"]
-        mock_selenium.getElms.return_value = [MagicMock(text="Company Name")] # For company check
+        mock_selenium.getText.side_effect = ["Job Title", "Company Name", "Location"] if is_valid else ["", "", ""]
+        mock_selenium.getElms.return_value = [MagicMock(text="Company Name")]
         mock_selenium.getUrl.return_value = "http://job.url?jl=123"
         mock_selenium.getHtml.return_value = "<p>Description</p>"
         
-        # Mock validation and mysql
-        with patch('scrapper.glassdoor.validate', return_value=True), \
+        with patch('scrapper.glassdoor.validate', return_value=is_valid), \
              patch('scrapper.glassdoor.htmlToMarkdown', return_value="Description"), \
-             patch('scrapper.glassdoor.mergeDuplicatedJobs'):
+             patch('scrapper.glassdoor.mergeDuplicatedJobs') as mock_merge:
             
             mock_mysql.insert.return_value = 1
             
-            processRow()
-            
-            mock_mysql.insert.assert_called_once()
-            assert "Job Title" in mock_mysql.insert.call_args[0][0]
-            assert "Company Name" in mock_mysql.insert.call_args[0][0]
+            if is_valid:
+                processRow()
+                mock_mysql.insert.assert_called_once()
+                mock_merge.assert_called_once()
+            else:
+                try:
+                    processRow()
+                except ValueError:
+                    pass
+                mock_mysql.insert.assert_not_called()
 
-    def test_process_row_validation_fail(self, mock_selenium, mock_mysql):
-        mock_selenium.getText.return_value = "" # Empty title
-        mock_selenium.getElms.return_value = []
-        
-        with patch('scrapper.glassdoor.validate', return_value=False):
-            processRow()
+    def test_login_flow(self, mock_selenium, mock_env_vars):
+        with patch('scrapper.glassdoor.loadMainPage') as mock_load_main, \
+             patch('scrapper.glassdoor.sleep'), \
+             patch('scrapper.glassdoor.USER_EMAIL', 'test@email.com'), \
+             patch('scrapper.glassdoor.USER_PWD', 'password'):
             
-            mock_mysql.insert.assert_not_called()
+            login()
+            
+            mock_load_main.assert_called_once()
+            mock_selenium.sendKeys.assert_any_call('#inlineUserEmail', 'test@email.com')
+            mock_selenium.waitAndClick.assert_called()

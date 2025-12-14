@@ -33,10 +33,10 @@ WEB_PAGE = 'Tecnoempleo'
 JOBS_X_PAGE = 30
 
 print('Tecnoempleo scrapper init')
-selenium: SeleniumUtil
-mysql: MysqlUtil
+selenium: SeleniumUtil = None
+mysql: MysqlUtil = None
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
@@ -48,32 +48,17 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: Persi
         print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
         selenium.waitUntilPageUrlContains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
         return
-    
-    saved_state = {}
-    if persistenceManager:
-        saved_state = persistenceManager.get_state('Tecnoempleo')
-    
-    saved_keyword = saved_state.get('keyword')
-    saved_page = saved_state.get('page', 1)
-    skip = True if saved_keyword else False
-
+    persistenceManager.prepare_resume('Tecnoempleo')
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
-            current_keyword = keywords.strip()
-            start_page = 1
-            
-            if saved_keyword:
-                if saved_keyword == current_keyword:
-                    skip = False
-                    start_page = saved_page
-                elif skip:
-                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
-                    continue
-
-            searchJobs(current_keyword, start_page, persistenceManager)
-            
-    if persistenceManager:
-        persistenceManager.clear_state('Tecnoempleo')
+            keyword = keywords.strip()
+            page = 1
+            skip, page = persistenceManager.should_skip_keyword(keyword)
+            if skip:
+                print(yellow(f"Skipping keyword '{keyword}' (already processed)"))
+                continue
+            searchJobs(keyword, page, persistenceManager)
+    persistenceManager.clear_state('Tecnoempleo')
 
 @retry(retries=3, delay=10)
 def waitForUndetectedSecurityFilter():
@@ -197,7 +182,7 @@ def closeCreateAlert():
         selenium.waitAndClick(cssSel)
 
 
-def searchJobs(keywords: str, startPage: int = 1, persistenceManager: PersistenceManager = None):
+def searchJobs(keywords: str, startPage: int, persistenceManager: PersistenceManager):
     try:
         print(yellow(f'Search keyword={keywords}'))
         url = getUrl(keywords)
@@ -252,8 +237,7 @@ def searchJobs(keywords: str, startPage: int = 1, persistenceManager: Persistenc
                 break  # exit while
             page += 1
             selenium.waitUntilPageIsLoaded()
-            if persistenceManager:
-                persistenceManager.update_state('Tecnoempleo', keywords, page)
+            persistenceManager.update_state('Tecnoempleo', keywords, page)
         summarize(keywords, totalResults, currentItem)
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)

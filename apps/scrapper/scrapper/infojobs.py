@@ -12,25 +12,14 @@ from commonlib.decorator.retry import retry
 from commonlib.util import getDatetimeNowStr
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
-from .selectors.infojobsSelectors import (
-    CSS_SEL_JOB_DETAIL,
-    CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
-    CSS_SEL_COMPANY,
-    CSS_SEL_LOCATION,
-    CSS_SEL_JOB_TITLE,
-    CSS_SEL_JOB_LI,
-    CSS_SEL_JOB_LINK,
-    CSS_SEL_NEXT_PAGE_BUTTON,
-    CSS_SEL_SECURITY_FILTER1,
-    CSS_SEL_SECURITY_FILTER2)
+from .selectors.infojobsSelectors import (CSS_SEL_JOB_DETAIL, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_COMPANY, CSS_SEL_LOCATION,
+    CSS_SEL_JOB_TITLE, CSS_SEL_JOB_LI, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SECURITY_FILTER1, CSS_SEL_SECURITY_FILTER2)
 from .persistence_manager import PersistenceManager
 
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 
-# Set to True to stop selenium driver navigating if any error occurs
 DEBUG = False
-
 WEB_PAGE = 'Infojobs'
 LIST_URL = 'https://www.infojobs.net/ofertas-trabajo'
 JOBS_X_PAGE = 22  # NOT ALWAYS, SOMETIMES LESS REGARDLESS totalResults
@@ -42,40 +31,30 @@ selenium: SeleniumUtil = None
 mysql: MysqlUtil = None
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
     """Process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
     printScrapperTitle('Infojobs', preloadPage)
     if preloadPage:
-        searchJobs(JOBS_SEARCH.split(',')[0], True)
+        searchJobs(JOBS_SEARCH.split(',')[0], True, 1, persistenceManager)
         return
     
-    saved_state = {}
-    if persistenceManager:
-        saved_state = persistenceManager.get_state('Infojobs')
-    
-    saved_keyword = saved_state.get('keyword')
-    saved_page = saved_state.get('page', 1)
-    skip = True if saved_keyword else False
+    persistenceManager.prepare_resume('Infojobs')
 
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
             current_keyword = keywords.strip()
             start_page = 1
             
-            if saved_keyword:
-                if saved_keyword == current_keyword:
-                    skip = False
-                    start_page = saved_page
-                elif skip:
-                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
-                    continue
+            should_skip, start_page = persistenceManager.should_skip_keyword(current_keyword)
+            if should_skip:
+                print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
+                continue
 
             searchJobs(current_keyword, False, start_page, persistenceManager)
             
-    if persistenceManager:
-        persistenceManager.clear_state('Infojobs')
+    persistenceManager.clear_state('Infojobs')
 
 
 @retry(retries=10, delay=5, exception=NoSuchElementException)
@@ -158,7 +137,7 @@ def getJobUrlShort(url: str):
     return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
 
 
-def searchJobs(keywords: str, preloadPage: bool, startPage: int = 1, persistenceManager: PersistenceManager = None):
+def searchJobs(keywords: str, preloadPage: bool, startPage: int, persistenceManager: PersistenceManager):
     try:
         print(yellow(f'Search keyword={keywords}'))
         loadSearchPage()
@@ -201,8 +180,7 @@ def searchJobs(keywords: str, preloadPage: bool, startPage: int = 1, persistence
                     page += 1
                     selenium.waitUntilPageIsLoaded()
                     time.sleep(5)
-                    if persistenceManager:
-                        persistenceManager.update_state('Infojobs', keywords, page)
+                    persistenceManager.update_state('Infojobs', keywords, page)
                 else:
                     break  # exit while
         summarize(keywords, totalResults, currentItem)

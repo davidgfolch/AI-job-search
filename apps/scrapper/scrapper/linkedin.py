@@ -47,7 +47,7 @@ selenium: SeleniumUtil = None
 mysql: MysqlUtil = None
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
+def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil
@@ -57,38 +57,24 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: Persi
         print(yellow('Waiting for LinkedIn to redirect to feed page... (Maybe you need to solve a security filter first)'))
         selenium.waitUntilPageUrlContains('https://www.linkedin.com/feed/', 60)
         return
-    
-    saved_state = {}
-    if persistenceManager:
-        saved_state = persistenceManager.get_state('Linkedin')
-    
-    saved_keyword = saved_state.get('keyword')
-    saved_page = saved_state.get('page', 1)
-    skip = True if saved_keyword else False
-
+    persistenceManager.prepare_resume('Linkedin')
     with MysqlUtil() as mysql:
         for keywords in JOBS_SEARCH.split(','):
-            current_keyword = keywords.strip()
-            start_page = 1
-            
-            if saved_keyword:
-                if saved_keyword == current_keyword:
-                    skip = False
-                    start_page = saved_page
-                elif skip:
-                    print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
-                    continue
-
+            keyword = keywords.strip()
+            page = 1
+            skip, start_page = persistenceManager.should_skip_keyword(keyword)
+            if skip:
+                print(yellow(f"Skipping keyword '{keyword}' (already processed)"))
+                continue
+            page = start_page
             try:
-                url = loadPage(current_keyword)
-                checkLoginPopup(current_keyword)
-                if checkResults(current_keyword, url):
-                    searchJobs(current_keyword, start_page, persistenceManager)
+                url = loadPage(keyword)
+                checkLoginPopup(keyword)
+                if checkResults(keyword, url):
+                    searchJobs(keyword, page, persistenceManager)
             except Exception:
                 baseScrapper.debug(DEBUG)
-    
-    if persistenceManager:
-        persistenceManager.clear_state('Linkedin')
+    persistenceManager.clear_state('Linkedin')
 
 
 def loadPage(keywords: str) -> str:
@@ -215,7 +201,7 @@ def getJobUrlShort(url: str):
     return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
 
 
-def searchJobs(keywords: str, startPage: int = 1, persistenceManager: PersistenceManager = None):
+def searchJobs(keywords: str, startPage: int, persistenceManager: PersistenceManager):
     try:
         selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')        
         totalResults = getTotalResultsFromHeader(keywords)
@@ -253,8 +239,7 @@ def searchJobs(keywords: str, startPage: int = 1, persistenceManager: Persistenc
                 break  # exit while
             page += 1
             selenium.waitUntilPageIsLoaded()
-            if persistenceManager:
-                persistenceManager.update_state('Linkedin', keywords, page)
+            persistenceManager.update_state('Linkedin', keywords, page)
         summarize(keywords, totalResults, currentItem)
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
