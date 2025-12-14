@@ -1,6 +1,9 @@
 import pytest
 from unittest.mock import patch
 
+from unittest.mock import patch, MagicMock
+from repositories.jobs_repository import JobsRepository
+
 create_mock_db = pytest.create_mock_db
 JOB_COLUMNS = pytest.JOB_COLUMNS
 
@@ -10,6 +13,20 @@ def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+@patch('repositories.jobs_repository.MysqlUtil')
+@patch('repositories.jobs_repository.getConnection')
+def test_get_db(mock_get_connection, mock_mysql_util):
+    """Test the get_db method"""
+    repo = JobsRepository()
+    mock_conn = MagicMock()
+    mock_get_connection.return_value = mock_conn
+    
+    repo.get_db()
+    
+    mock_get_connection.assert_called_once()
+    mock_mysql_util.assert_called_once_with(mock_conn)
 
 
 @patch('repositories.jobs_repository.JobsRepository.get_db')
