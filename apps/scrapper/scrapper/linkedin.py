@@ -1,5 +1,6 @@
 import math
 import re
+from typing import List, Optional
 from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
 
@@ -12,20 +13,9 @@ from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from .seleniumUtil import SeleniumUtil, sleep
 from .persistence_manager import PersistenceManager
-from .selectors.linkedinSelectors import (
-    # CSS_SEL_GLOBAL_ALERT_HIDE,
-    CSS_SEL_JOB_DESCRIPTION,
-    CSS_SEL_JOB_EASY_APPLY,
-    CSS_SEL_JOB_HEADER,
-    CSS_SEL_NO_RESULTS,
-    CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
-    CSS_SEL_JOB_LI_IDX,
-    CSS_SEL_COMPANY,
-    CSS_SEL_LOCATION,
-    LI_JOB_TITLE_CSS_SUFFIX,
-    CSS_SEL_JOB_LINK,
-    CSS_SEL_NEXT_PAGE_BUTTON,
-    CSS_SEL_MESSAGES_HIDE)
+from .selectors.linkedinSelectors import (CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_HEADER, CSS_SEL_NO_RESULTS,
+    CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_LI_IDX, CSS_SEL_COMPANY, CSS_SEL_LOCATION, LI_JOB_TITLE_CSS_SUFFIX, CSS_SEL_JOB_LINK, 
+    CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_MESSAGES_HIDE)
 
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("LINKEDIN")
@@ -69,7 +59,8 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: Persi
             page = start_page
             try:
                 url = loadPage(keyword)
-                checkLoginPopup(keyword)
+                if checkLoginPopup():
+                    url = loadPage(keyword)
                 if checkResults(keyword, url):
                     searchJobs(keyword, page, persistenceManager)
             except Exception:
@@ -79,18 +70,18 @@ def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: Persi
 
 def loadPage(keywords: str) -> str:
     print(yellow(f'Search keyword={keywords}'))
-    url = getUrl(keywords)
+    url = f'https://www.linkedin.com/jobs/search/?keywords={quote(keywords)}&f_WT={remote}&geoId={location}&f_TPR={f_TPR}'
     print(yellow(f'Loading page {url}'))
     selenium.loadPage(url)
     selenium.waitUntilPageIsLoaded()
     return url
 
-def checkLoginPopup(keywords) -> bool:
+def checkLoginPopup() -> bool:
     sleep(2, 3)
     if selenium.waitAndClick_noError("#base-contextual-sign-in-modal > div > section > div > div > div > div.sign-in-modal > button", "Checking linkedin login popup is present", showException=False):
         login()
-        loadPage(keywords.strip())
-    return True
+        return True
+    return False
 
 
 def login():
@@ -105,13 +96,6 @@ def login():
     except Exception:
         print(yellow('Could not click on "remember me" checkbox'))
     selenium.waitAndClick('form button[type=submit]')
-
-
-def getUrl(keywords):
-    return join('https://www.linkedin.com/jobs/search/?',
-                '&'.join([
-                    f'keywords={quote(keywords)}', f'f_WT={remote}',
-                    f'geoId={location}', f'f_TPR={f_TPR}']))
 
 
 def checkResults(keywords: str, url: str):
@@ -171,16 +155,13 @@ def scrollJobsListRetry(idx):
 
 @retry(exception=NoSuchElementException, raiseException=False)
 def clickNextPage():
-    """Click on next to load next page.
-    If there isn't next button in pagination we are in the last page,
-    so return false to exit loop (stop processing)"""
+    """Click on next to load next page.  If there isn't next button in pagination we are in the last page, so return false to exit loop (stop processing)"""
     selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
     return True
 
 
 def loadJobDetail(jobExists: bool, idx: int, cssSel):
-    # first job in page loads automatically
-    # if job exists in DB no need to load details (rate limit)
+    # first job in page loads automatically, if job exists in DB no need to load details (rate limit)
     if jobExists or idx == 1:
         return
     print(yellow('loading...'), end='', flush=True)
@@ -208,7 +189,6 @@ def searchJobs(keywords: str, startPage: int, persistenceManager: PersistenceMan
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
-        
         # Fast forward to startPage
         if startPage > 1:
             print(yellow(f"Fast forwarding to page {startPage}..."))
@@ -222,7 +202,6 @@ def searchJobs(keywords: str, startPage: int, persistenceManager: PersistenceMan
                 else:
                     break
             currentItem = (page - 1) * JOBS_X_PAGE
-
         while True:
             printPage(WEB_PAGE, page, totalPages, keywords)
             rowErrors = 0
@@ -268,6 +247,9 @@ def processUrl(url: str):
     with MysqlUtil() as mysql, SeleniumUtil() as selenium:
         selenium.loadPage(url)
         selenium.waitUntilPageIsLoaded()
+        if checkLoginPopup():
+            selenium.loadPage(url)
+            selenium.waitUntilPageIsLoaded()
         processRow(None)
 
 
@@ -305,16 +287,13 @@ def printJob(title, company, location, url, jobId, html, md):
 
 
 def getJobDataInDetailPage():
-    # TODO: finish this, maybe update DB
-    selenium.waitUntil_presenceLocatedElement('section[aria-modal=true][role=dialog]')
-    selenium.sendEscapeKey()
-    selenium.waitUntilClickable('section.top-card-layout h1')
-    title = selenium.getText('section.top-card-layout h1')
-    company = selenium.getText('section.top-card-layout h4 a.topcard__org-name-link')
-    location = selenium.getText('section.top-card-layout h4 span')
-    selenium.waitAndClick('button.show-more-less-html__button--more')
+    selenium.waitUntilClickable('div.jobs-description > footer > button')
+    title = selenium.getText('.job-view-layout.jobs-details h1')
+    company = selenium.getText('.job-view-layout.jobs-details .job-details-jobs-unified-top-card__company-name')
+    location = selenium.getText('.job-view-layout.jobs-details .job-details-jobs-unified-top-card__primary-description-container > div > span > span:nth-child(1)')
+    selenium.waitAndClick('div.jobs-description > footer > button') # See more
     url = selenium.getUrl()
-    html = selenium.getHtml('div.show-more-less-html__markup')
+    html = selenium.getHtml('article div.jobs-box__html-content div.mt4')
     return title, company, location, url, html
 
 

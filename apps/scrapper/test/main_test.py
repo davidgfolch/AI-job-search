@@ -132,13 +132,29 @@ class TestHelpers:
         runScrapper(name, False, None)
         run_mocks[name].assert_called_once_with(mocks['sel'], False, None)
 
-    def test_run_scrapper_page_url(self):
-        with patch.dict(SCRAPPERS, {'Infojobs': {SCRAP_PAGE_FUNCTION: MagicMock()}}) as s:
-            runScrapperPageUrl('https://www.infojobs.net/job/123')
-            s['Infojobs'][SCRAP_PAGE_FUNCTION].assert_called()
 
     def test_has_new_architecture(self, mocks):
         mocks['cont'].get_scrapping_service.return_value = MagicMock()
         assert hasNewArchitecture('L', {NEW_ARCH: True}) is True
         mocks['cont'].get_scrapping_service.side_effect = Exception
         assert hasNewArchitecture('L', {NEW_ARCH: True}) is False
+
+
+class TestRunScrapperPageUrl:
+    def test_linkedin_url(self, mocks):
+        url = "https://www.linkedin.com/jobs/view/123"
+        with patch('scrapper.main.linkedin.processUrl') as mock_process:
+            runScrapperPageUrl(url)
+            mock_process.assert_called_once_with(url)
+
+    def test_unimplemented_scrapper(self):
+        url = "https://www.infojobs.net/job/123"
+        with pytest.raises(Exception) as excinfo:
+            runScrapperPageUrl(url)
+        assert "Invalid scrapper web page name Infojobs, only linkedin is implemented" in str(excinfo.value)
+
+    def test_unknown_url(self):
+        url = "https://www.google.com"
+        with patch('scrapper.main.linkedin.processUrl') as mock_process:
+            runScrapperPageUrl(url)
+            mock_process.assert_not_called()

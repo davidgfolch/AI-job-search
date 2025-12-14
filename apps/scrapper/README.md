@@ -12,7 +12,7 @@ The automatic scrapper `./run_2_Scrapper.sh` (without parameters) keeps running 
 
 ## ASRF & rate limits
 
-To minimize Anti Robot Security Filters (**ASRF**), Selenium operations on each website are implemented with waits & mouse moves to mimic human behavior, but still **ASRF** could appear sometimes (or always as in Infojobs).  You can try an VPN to bypass **ASRF** Cloudflare.  Be aware that your fixed IP could be banned by Cloudflare **ASRF** if you exceed rate limits.
+To minimize Anti Robot Security Filters (**ASRF**), Selenium operations on each website are implemented with waits & mouse moves to mimic human behavior, but still **ASRF** could appear sometimes (or always as in Infojobs). You can try an VPN to bypass **ASRF** Cloudflare. Be aware that your fixed IP could be banned by Cloudflare **ASRF** if you exceed rate limits.
 
 ### Bypass Cloudflare with undetected-chromedriver
 
@@ -22,11 +22,11 @@ Set `USE_UNDETECTED_CHROMEDRIVER=true` in your `.env` file to use undetected-chr
 
 Also a @retry mechanism is implemented for random fails (page load's timeouts, etc).
 
-To avoid **RATE LIMITS** security filters, job search's are limited to last 24 hours only, so scrappers must run at least each day to not miss job offers.  The automatic scrapper script `./run_2_Scrapper.sh`, control the times each web-site scrapping is executed to avoid security filters.
+To avoid **RATE LIMITS** security filters, job search's are limited to last 24 hours only, so scrappers must run at least each day to not miss job offers. The automatic scrapper script `./run_2_Scrapper.sh`, control the times each web-site scrapping is executed to avoid security filters.
 
 ## Merge duplicated jobs
 
-Duplicated jobs will be created in database when the origin web-site `jobId` is different for the same real job. So an automatic `mergeDuplicates.py` script is called after each insert in database.  It finds duplicated jobs by title-company & merges old jobs information into the newest one, copying states, ai-enriched fields & comments into the last one & deleting older ones.
+Duplicated jobs will be created in database when the origin web-site `jobId` is different for the same real job. So an automatic `mergeDuplicates.py` script is called after each insert in database. It finds duplicated jobs by title-company & merges old jobs information into the newest one, copying states, ai-enriched fields & comments into the last one & deleting older ones.
 
 ## Implementations
 
@@ -42,12 +42,14 @@ First time run is failing in the last days I've tried.
 
 Linkedin scraper works fine, but when I was developing the scrapper found several problems because I did too much requests:
 
-- Rate limits: LinkedIn has rate limit even for authenticated users, so if you execute **`scrapper/linkedin.py`** several times or have too much `JOBS_SEARCH` keywords you will be spending LinkedIn rate limit.  If rate limit is exhausted all request will return a HTTP STATUS CODE = 429
+- Rate limits: LinkedIn has rate limit even for authenticated users, so if you execute **`scrapper/linkedin.py`** several times or have too much `JOBS_SEARCH` keywords you will be spending LinkedIn rate limit. If rate limit is exhausted all request will return a HTTP STATUS CODE = 429
 - After some days executing the selenium script we also found a security human check, so we have to pause execution after login and solve puzzle manually.
+
+Linkedin implementation also allows to run a single job url. Example: `scrapper/run.bat url <job_url>` (or run.sh).
 
 ### Glassdoor
 
-**ASRF** will appear usually, randomly & page hangs eventually.  Auto-scrapper re-inits selenium driver when it fails.
+**ASRF** will appear usually, randomly & page hangs eventually. Auto-scrapper re-inits selenium driver when it fails.
 
 ## Specific scrapper paramters
 

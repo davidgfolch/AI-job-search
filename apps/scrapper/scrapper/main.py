@@ -238,7 +238,11 @@ def runScrapperPageUrl(url: str):
     for name, properties in SCRAPPERS.items():
         if url.find(name.lower()) != -1:
             print(cyan(f'Running scrapper for pageUrl: {url}'))
-            properties[SCRAP_PAGE_FUNCTION](url)
+            match name.lower():
+                case 'linkedin':
+                    linkedin.processUrl(url)
+                case _:
+                    raise Exception(f"Invalid scrapper web page name {name}, only linkedin is implemented")
 
 
 def hasArgument(args: list, name: str, info: Callable = (lambda: str)) -> bool:
