@@ -52,7 +52,10 @@ def retry(retries: int = 5,
                     if stackStrace == StackTrace.ALWAYS:
                         print(red(traceback.format_exc()), flush=True)
                     if exceptionFnc is not None:
-                        exceptionFnc()
+                        try:
+                            exceptionFnc(*args, **kwargs)
+                        except TypeError:
+                            exceptionFnc()
                     sleep(delay)
 
         return wrapper

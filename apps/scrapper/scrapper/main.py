@@ -150,7 +150,7 @@ def executeScrapperPreload(name: str, properties: dict) -> bool:
                 runScrapper(name, True, persistenceManager)
         properties['preloaded'] = True
     except Exception:
-        baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:")
+        baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:", True)
         properties['preloaded'] = False
     except KeyboardInterrupt:
         persistenceManager.update_last_execution(name, None)

@@ -1,90 +1,59 @@
 import math
 from urllib.parse import quote
-from selenium.common.exceptions import NoSuchElementException
-
-from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
-from commonlib.terminalColor import green, printHR, yellow
+from commonlib.terminalColor import green, yellow
+from commonlib.mysqlUtil import MysqlUtil
 from commonlib.util import getDatetimeNowStr
-from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
-from commonlib.decorator.retry import retry
-
 from . import baseScrapper
-from .baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
-from .seleniumUtil import SeleniumUtil, sleep
-from .selectors.tecnoempleoSelectors import (CSS_SEL_JOB_DATA,
-                                             CSS_SEL_JOB_DESCRIPTION,
-                                             CSS_SEL_JOB_LI_IDX,
-                                             CSS_SEL_NO_RESULTS,
-                                             CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
-                                             CSS_SEL_JOB_LI_IDX_LINK,
-                                             CSS_SEL_COMPANY,
-                                             CSS_SEL_JOB_TITLE,
-                                             CSS_SEL_PAGINATION_LINKS)
+from .baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
+from .seleniumUtil import SeleniumUtil
 from .persistence_manager import PersistenceManager
+from .selenium.tecnoempleo_selenium import TecnoempleoNavigator
+from .services.job_services.tecnoempleo_job_service import TecnoempleoJobService
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("TECNOEMPLEO")
 
 remote = ',1,'
 las24Hours = '1'  # last 24 hours
-# Set to True to stop selenium driver navigating if any error occurs
 DEBUG = False
-
 WEB_PAGE = 'Tecnoempleo'
 JOBS_X_PAGE = 30
 
 print('Tecnoempleo scrapper init')
-selenium: SeleniumUtil = None
-mysql: MysqlUtil = None
+navigator: TecnoempleoNavigator = None
+service: TecnoempleoJobService = None
 
 def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
-    global selenium, mysql
-    selenium = seleniumUtil
+    global navigator, service
+    navigator = TecnoempleoNavigator(seleniumUtil)
+    
     printScrapperTitle('Tecnoempleo', preloadPage)
+    
     if preloadPage:
-        selenium.loadPage('https://www.tecnoempleo.com')
-        selenium.waitUntilPageIsLoaded()
-        login()
+        navigator.load_page('https://www.tecnoempleo.com')
+        navigator.login(USER_EMAIL, USER_PWD)
         print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
-        selenium.waitUntilPageUrlContains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
+        navigator.wait_until_page_url_contains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
         return
-    persistenceManager.prepare_resume('Tecnoempleo')
+
     with MysqlUtil() as mysql:
+        service = TecnoempleoJobService(mysql, persistenceManager)
+        service.set_debug(DEBUG)
+        service.prepare_resume()
+        
         for keywords in JOBS_SEARCH.split(','):
             keyword = keywords.strip()
-            page = 1
-            skip, page = persistenceManager.should_skip_keyword(keyword)
-            if skip:
+            
+            should_skip, page = service.should_skip_keyword(keyword)
+            if should_skip:
                 print(yellow(f"Skipping keyword '{keyword}' (already processed)"))
                 continue
-            searchJobs(keyword, page, persistenceManager)
-    persistenceManager.clear_state('Tecnoempleo')
+                
+            search_jobs(keyword, page)
+            
+    service.clear_state()
 
-@retry(retries=3, delay=10)
-def waitForUndetectedSecurityFilter():
-    selenium.waitUntil_presenceLocatedElement('#e_mail', 20) 
-
-def login():
-    sleep(2, 2)
-    selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
-    selenium.waitUntilPageIsLoaded()
-    if selenium.driverUtil.useUndetected:
-        waitForUndetectedSecurityFilter()
-    else:
-        cloudFlareSecurityFilter()
-    selenium.sendKeys('#e_mail', USER_EMAIL)
-    selenium.sendKeys('#password', USER_PWD)
-    selenium.waitAndClick('form input[type=submit]')
-
-
-@retry(retries=60, delay=5, exception=NoSuchElementException)
-def cloudFlareSecurityFilter():
-    print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
-    sleep(4, 4)
-    selenium.getElm('#e_mail')
-
-
-def getUrl(keywords):
+def get_url(keywords):
     return join('https://www.tecnoempleo.com/ofertas-trabajo/?',
                 '&'.join([
                     f'te={quote(keywords)}',
@@ -92,123 +61,30 @@ def getUrl(keywords):
                     # f'ult_24h={las24Hours}'
                 ]))
 
-
-def checkResults(keywords: str, url: str):
-    noResultElm = selenium.getElms(CSS_SEL_NO_RESULTS)
-    if len(noResultElm) > 0:
-        print(Exception(
-            join('No results for job search on Tecnoempleo for',
-                 f'keywords={keywords}', f'remote={remote}',
-                 )))
-        return False
-    return True
-
-
-def replaceIndex(cssSelector: str, idx: int):
-    return cssSelector.replace('##idx##', str(idx))
-
-
-def getTotalResultsFromHeader(keywords: str) -> int:
-    total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-    printHR(green)
-    print(green(join(f'{total} total results for search: {keywords}',
-                     f'(remote={remote})')))
-    printHR(green)
-    return int(total)
-
-
-def summarize(keywords, totalResults, currentItem):
-    printHR()
-    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords} (remote={remote})')
-    printHR()
-    print()
-
-
-def scrollJobsList(idx):
-    cssSel = replaceIndex(CSS_SEL_JOB_LI_IDX, idx)
-    # in last page could not exist
-    scrollJobsListRetry(cssSel)
-    cssSel = replaceIndex(CSS_SEL_JOB_LI_IDX_LINK, idx)
-    selenium.waitUntilClickable(cssSel)
-    return cssSel
-
-
-def scrollToBottom():
-    selenium.scrollIntoView('nav[aria-label=pagination]')
-
-
-@retry(exceptionFnc=scrollToBottom)
-def scrollJobsListRetry(cssSel):
-    selenium.scrollIntoView(cssSel)
-
-
-@retry(exception=NoSuchElementException, raiseException=False)
-def clickNextPage():
-    """Click on next to load next page.
-    If there isn't next button in pagination we are in the last page,
-    so return false to exit loop (stop processing)"""
-    nextPageElms = selenium.getElms(CSS_SEL_PAGINATION_LINKS)
-    if len(nextPageElms) == 0:
-        return False
-    nextPageElm = nextPageElms[-1]
-    if selenium.getText(nextPageElm).isnumeric():  # last link is not "next"
-        return False
-    selenium.waitAndClick(nextPageElm, scrollIntoView=True)
-    return True
-
-
-def jobExistsInDB(cssSel):
-    url = selenium.getAttr(cssSel, 'href')
-    jobId = getJobId(url)
-    return (jobId, mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
-
-
-def getJobId(url: str):
-    # https://www.tecnoempleo.com/integration-specialist-gstock-web-app/php-mysql-git-symfony-api-etl-sql-ja/rf-b14e1d3282dea3a42b40
-    return url.split('/')[-1]
-
-
-def acceptCookies():
-    sleep(1, 2)
-    closeCreateAlert()
-    cssSel = '#capa_cookie_rgpd > div.row > div:nth-child(1) > a'
-    if len(selenium.getElms(cssSel)) > 0:
-        selenium.waitAndClick(cssSel)
-
-
-def closeCreateAlert():
-    cssSel = '#wrapper_toast_br > div > div > button > span:nth-child(1)'
-    if len(selenium.getElms(cssSel)) > 0:
-        selenium.waitAndClick(cssSel)
-
-
-def searchJobs(keywords: str, startPage: int, persistenceManager: PersistenceManager):
+def search_jobs(keywords: str, start_page: int):
     try:
         print(yellow(f'Search keyword={keywords}'))
-        url = getUrl(keywords)
+        url = get_url(keywords)
         print(yellow(f'Loading page {url}'))
-        selenium.loadPage(url)
-        selenium.waitUntilPageIsLoaded()
-        if not checkResults(keywords, url):
+        navigator.load_page(url)
+        
+        if not navigator.check_results(keywords, url, remote):
             return
-        acceptCookies()
-        totalResults = getTotalResultsFromHeader(keywords)
+            
+        navigator.accept_cookies()
+        totalResults = navigator.get_total_results_from_header(keywords, remote)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = 1
         currentItem = 0
         
         # Fast forward to startPage
-        if startPage > 1:
-            print(yellow(f"Fast forwarding to page {startPage}..."))
-            while page < startPage:
-                # Tecnoempleo pagination might be tricky.
-                # It uses clickNextPage which clicks CSS_SEL_PAGINATION_LINKS
-                # We can try to construct URL if possible, but getUrl uses keywords only.
-                # Let's use the loop.
-                currentItem += JOBS_X_PAGE # Approximation
-                if clickNextPage():
+        if start_page > 1:
+            print(yellow(f"Fast forwarding to page {start_page}..."))
+            while page < start_page:
+                currentItem += JOBS_X_PAGE 
+                if navigator.click_next_page():
                     page += 1
-                    selenium.waitUntilPageIsLoaded()
+                    navigator.wait_until_page_is_loaded()
                 else:
                     break
             currentItem = (page - 1) * JOBS_X_PAGE
@@ -222,69 +98,58 @@ def searchJobs(keywords: str, startPage: int, persistenceManager: PersistenceMan
                 currentItem += 1
                 print(green(f'pg {page} job {idx} - '), end='')
                 liIdx = 3+(idx-1)*2  # li starts at 3 & step 2
-                ok = loadAndProcessRow(liIdx)
-                # if page == 1:
-                #     closeCreateAlert()
+                ok = load_and_process_row(liIdx)
+
                 if not ok:
-                    if selenium.getText('div.cf-wrapper header').find('You are being rate limited')>-1:
+                    if navigator.check_rate_limit():
                         return False
                 errors += 0 if ok else 1
                 if errors > 1:  # exit page loop, some pages has less items
                     break
+            
             if currentItem >= totalResults:
                 break  # exit while
-            if not clickNextPage():
+            if not navigator.click_next_page():
                 break  # exit while
             page += 1
-            selenium.waitUntilPageIsLoaded()
-            persistenceManager.update_state('Tecnoempleo', keywords, page)
+            navigator.wait_until_page_is_loaded()
+            service.update_state(keywords, page)
+            
         summarize(keywords, totalResults, currentItem)
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
 
-
-def loadAndProcessRow(idx):
+def load_and_process_row(idx):
     pageLoaded = False
     try:
-        cssSelLink = scrollJobsList(idx)
-        jobId, jobExists = jobExistsInDB(cssSelLink)
-        if jobExists:
-            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
+        cssSelLink = navigator.scroll_jobs_list(idx)
+        url = navigator.get_attribute(cssSelLink, 'href')
+        
+        job_id, job_exists = service.job_exists_in_db(url)
+        
+        if job_exists:
+            print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='')
             return True
+            
         print(yellow('loading...'), end='')
-        pageLoaded = loadDetail(cssSelLink)
-        processRow()
+        pageLoaded = navigator.load_detail(cssSelLink)
+        process_row()
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
         return False
     finally:
         print(flush=True)
         if pageLoaded:
-            selenium.back()
+            navigator.go_back()
     return True
 
+def process_row():
+    title, company, location, url, html = navigator.get_job_data()
+    return service.process_job(title, company, location, url, html)
 
-@retry(raiseException=False)
-def loadDetail(cssSelLink: str):
-    selenium.waitAndClick(cssSelLink)
-    return True
-
-
-@retry()
-def processRow():
-    title = selenium.getText(CSS_SEL_JOB_TITLE)
-    company = selenium.getText(CSS_SEL_COMPANY)
-    location = ''
-    url = selenium.getUrl()
-    jobId = getJobId(url)
-    html = '\\n'.join(['- '+selenium.getText(elm) for elm in selenium.getElms(CSS_SEL_JOB_DATA)]) + '\\n' * 2
-    html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-    md = htmlToMarkdown(html)
-    easyApply = False
-    print(f'{jobId}, {title}, {company}, {location}, ', f'easy_apply={easyApply} - ', end='')
-    if validate(title, url, company, md, DEBUG):
-        if id := mysql.insert((jobId, title, company, location, url, md, easyApply, WEB_PAGE)):
-            print(green(f'INSERTED {id}!'), end='')
-            mergeDuplicatedJobs(mysql, getSelect())
-    else:
-        raise ValueError('Validation failed')
+def summarize(keywords, totalResults, currentItem):
+    from commonlib.terminalColor import printHR
+    printHR()
+    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords} (remote={remote})')
+    printHR()
+    print()
