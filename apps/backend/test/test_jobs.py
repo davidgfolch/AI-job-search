@@ -127,3 +127,19 @@ def test_update_job_not_found(mock_get_db, client):
     
     assert response.status_code == 404
     assert response.json()['detail'] == 'Job not found'
+    assert response.json()['detail'] == 'Job not found'
+
+
+@patch('repositories.jobs_repository.JobsRepository.get_db')
+@patch('services.jobs_service.JobsService.get_job')
+def test_update_job_empty_data(mock_get_job, mock_get_db, client):
+    """Test updating a job with no data"""
+    mock_db = create_mock_db(fetchOne=(1,))
+    mock_get_db.return_value = mock_db
+    mock_get_job.return_value = {'id': 1} # Mock return of get_job
+
+    response = client.patch("/api/jobs/1", json={})
+    
+    assert response.status_code == 200
+    # Should not call executeAndCommit
+    mock_db.executeAndCommit.assert_not_called()

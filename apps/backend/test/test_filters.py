@@ -18,37 +18,27 @@ def mock_db_session():
     with patch('repositories.jobs_repository.JobsRepository.get_db', return_value=mock_db):
         yield mock_db
 
-def test_list_jobs_with_days_old(mock_db_session, client):
-    """Test listing jobs with days_old filter"""
-    response = _request_jobs(client, "days_old=7")
+@pytest.mark.parametrize("query_param, expected_query_part, expected_param_value", [
+    ("days_old=7", "DATE(created) >= DATE_SUB(CURDATE(), INTERVAL %s DAY)", 7),
+    ("salary=50k", "salary RLIKE %s", "50k"),
+], ids=["days_old", "salary"])
+def test_list_jobs_with_regex_date_filters(mock_db_session, client, query_param, expected_query_part, expected_param_value):
+    """Test listing jobs with date and regex filters"""
+    response = _request_jobs(client, query_param)
     matched_query = _get_query_from_mock(mock_db_session)
-    assert "DATE(created) >= DATE_SUB(CURDATE(), INTERVAL %s DAY)" in matched_query
-    # Check params in the matched call
+    assert expected_query_part in matched_query
+    
     matched_call = next((call for call in mock_db_session.fetchAll.call_args_list if "SELECT" in str(call[0][0])), None)
     if matched_call:
         params = matched_call[0][1]
-        assert 7 in params
+        assert expected_param_value in params
 
-def test_list_jobs_with_salary(mock_db_session, client):
-    """Test listing jobs with salary regex filter"""
-    response = _request_jobs(client, "salary=50k")
+@pytest.mark.parametrize("query_param, expected_order_clause", [
+    ("order=salary asc", "ORDER BY salary asc"),
+    ("order=invalid_col invalid_dir", "ORDER BY created desc"),
+], ids=["valid_order", "invalid_order"])
+def test_list_jobs_with_ordering(mock_db_session, client, query_param, expected_order_clause):
+    """Test listing jobs with custom and invalid ordering"""
+    response = _request_jobs(client, query_param)
     matched_query = _get_query_from_mock(mock_db_session)
-    assert "salary RLIKE %s" in matched_query
-    matched_call = next((call for call in mock_db_session.fetchAll.call_args_list if "SELECT" in str(call[0][0])), None)
-    if matched_call:
-        params = matched_call[0][1]
-        assert "50k" in params
-
-def test_list_jobs_with_order(mock_db_session, client):
-    """Test listing jobs with custom order"""
-    response = _request_jobs(client, "order=salary asc")
-    matched_query = _get_query_from_mock(mock_db_session)
-    assert "ORDER BY salary asc" in matched_query
-
-def test_list_jobs_with_invalid_order(mock_db_session, client):
-    """Test listing jobs with invalid order defaults to created desc"""
-    response = _request_jobs(client, "order=invalid_col invalid_dir")
-    matched_query = _get_query_from_mock(mock_db_session)
-    # Should fall back to default or partial match. 
-    # Our implementation defaults sort_col to "created" if invalid, and sort_dir to "desc" if invalid.
-    assert "ORDER BY created desc" in matched_query
+    assert expected_order_clause in matched_query

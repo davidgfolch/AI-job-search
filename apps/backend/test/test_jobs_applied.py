@@ -53,3 +53,25 @@ def test_get_applied_jobs_by_company_special_characters(mock_get_db, client, com
     mock_get_db.return_value = mock_db
     response = client.get(f"/api/jobs/applied-by-company?company={company_param}")
     assert response.status_code == 200
+    assert response.status_code == 200
+
+
+@patch('repositories.jobs_repository.JobsRepository.get_db')
+@patch('repositories.jobs_repository.JobsRepository.find_applied_jobs_by_regex') 
+def test_get_applied_jobs_partial_search_exception(mock_find_regex, mock_get_db, client):
+    """Test exception handling in partial company search"""
+    mock_db = create_mock_db(fetchAll=[]) # First call returns empty to trigger partial search
+    mock_get_db.return_value = mock_db
+    
+    # partial search calls find_applied_jobs_by_regex
+    # We want it to fail ON THE SECOND CALL (partial search), but return empty on first call (exact search)
+    mock_find_regex.side_effect = [[], Exception("DB Error")]
+    
+    # A company name with multiple words to trigger the loop in _search_partial_company
+    # and not 'grupo'
+    company = "Big Tech Company" 
+    
+    response = client.get(f"/api/jobs/applied-by-company?company={company}")
+    
+    assert response.status_code == 200
+    assert response.json() == [] 
