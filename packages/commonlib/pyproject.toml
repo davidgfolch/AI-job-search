@@ -28,7 +28,10 @@ show_missing = true
 fail_under = 38
 exclude_lines = [
     "pragma: no cover",
-    "if platform.system() == 'Windows':",
+    # Exclude Windows-specific blocks from coverage on Linux/macOS
+    # Note: Parentheses are escaped because coverage uses regex matching
+    "if platform\\.system\\(\\) == 'Windows':",
+    # Exclude non-Windows blocks from coverage on Windows (if any)
     "if self.os_type != 'Windows':",
 ]
 
