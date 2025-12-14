@@ -2,11 +2,23 @@
 import pytest
 import warnings
 from architecture_util import *
+from commonlib.terminalColor import YELLOW, RED, ORANGE, RESET
 
 def test_files_exceed_200_lines():
     if files := getLongFiles():
         files.sort(key=lambda x: x[1], reverse=True)
-        message = "\nFound files with more than 200 lines:\n" + "\n".join(f"{f[0]}: {f[1]} lines" for f in files)
+        
+        def format_line(f):
+            path, lines = f
+            if lines >= 300:
+                color = RED
+            elif lines >= 250:
+                color = ORANGE
+            else:
+                color = YELLOW
+            return f"{color}{path}: {lines} lines{RESET}"
+            
+        message = "\nFound files with more than 200 lines:\n" + "\n".join(format_line(f) for f in files)
         warnings.warn(UserWarning(message))
 
 @pytest.mark.parametrize("layer_name, required_deps, forbidden_deps, ignore_files", [
