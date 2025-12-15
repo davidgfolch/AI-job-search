@@ -12,7 +12,7 @@ FastAPI-based backend for the AI Job Search application. It serves the data to t
 
 - **Framework**: FastAPI
 - **Server**: Uvicorn
-- **Package Manager**: Poetry
+- **Package Manager**: uv
 - **Database**: MySQL (via `commonlib`)
 
 ## Setup & Running
@@ -20,13 +20,13 @@ FastAPI-based backend for the AI Job Search application. It serves the data to t
 ### Installation
 
 ```bash
-poetry install
+uv sync
 ```
 
 ### Running Development Server
 
 ```bash
-poetry run uvicorn main:app --reload --port 8000
+uv run uvicorn main:app --reload --port 8000
 ```
 
 The API will be available at `http://localhost:8000`.
@@ -43,7 +43,7 @@ Once running, you can access the interactive API docs at:
 Run unit tests with pytest:
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 ## Structure

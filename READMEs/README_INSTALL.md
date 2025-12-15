@@ -11,8 +11,8 @@
 
 This project uses different package managers for different components:
 
-- **Poetry**: Used by `apps/backend`, `apps/scrapper`, `packages/commonlib`, and `apps/viewer`.
-- **uv**: Used by `apps/aiEnrich` (CrewAI requirement).
+- **Poetry**: Used by `apps/scrapper`, `packages/commonlib`, and `apps/viewer`.
+- **uv**: Used by `apps/backend` and `apps/aiEnrich`.
 - **npm**: Used by `apps/web`.
 
 ## Installation Steps
@@ -53,8 +53,8 @@ Or install manually:
 
 ```bash
 cd packages/commonlib && poetry install && cd ../..
-cd apps/backend && poetry install && cd ../..
 cd apps/scrapper && poetry install && cd ../..
+cd apps/backend && uv sync && cd ../..
 ```
 
 **Web Frontend:**

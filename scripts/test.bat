@@ -26,7 +26,7 @@ for /d %%a in (packages\* apps\*) do (
             npx coverage-badges
         )
     ) else if exist "%%~fa\pyproject.toml" (
-        if "%%~nxa"=="aiEnrich" (
+        if exist "%%~fa\uv.lock" (
             @REM set "UV_PROJECT_ENVIRONMENT=custom-venv"
             if !coverage!==0 (
                 uv run -m pytest
