@@ -21,10 +21,10 @@ for /d %%a in (packages\* apps\*) do (
     pushd "%%~fa"
     if exist "%%~fa\package.json" (
         if !coverage!==0 (
-            npm test -- run
+            call npm test -- run
         ) else (
-            npm test -- run --coverage
-            npx coverage-badges
+            call npm test -- run --coverage
+            call npx coverage-badges
         )
     ) else if exist "%%~fa\pyproject.toml" (
         if exist "%%~fa\uv.lock" (
