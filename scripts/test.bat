@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
+set VIRTUAL_ENV=
 
 rem ──────────────────────  Parse command‑line  ─────────────────────
 set coverage=0
