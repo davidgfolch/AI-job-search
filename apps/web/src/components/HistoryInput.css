@@ -14,7 +14,9 @@
     left: 0;
     right: 0;
     background: var(--bg-primary);
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     border-radius: 4px;
     margin-top: 4px;
     padding: 0;

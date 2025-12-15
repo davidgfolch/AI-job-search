@@ -22,6 +22,7 @@ vi.mock('../../api/jobs', async () => {
             getJobs: vi.fn(),
             getJob: vi.fn(),
             updateJob: vi.fn(),
+            getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
         },
     };
 });
@@ -171,6 +172,58 @@ describe('Viewer', () => {
                 sql_filter: 'id IN (1,2)',
                 page: 1,
             }));
+        });
+    });
+    it('interactions with filters trigger API calls', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
+        renderWithRouter(<Viewer />);
+        
+        await waitFor(() => {
+            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
+        });
+
+        // Toggle a filter explicitly (e.g. "Flagged")
+        // We have two "Flagged" buttons (Include and Exclude). 
+        // We want to click the one in "Include" section.
+        // We can find all buttons with text "Flagged" and click the first one.
+        const flaggedButtons = screen.getAllByRole('button', { name: /Flagged/i });
+        fireEvent.click(flaggedButtons[0]);
+
+        await waitFor(() => {
+            expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({
+                flagged: true,
+                page: 1
+            }));
+        });
+    });
+
+    it('dismisses message when close button is clicked', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
+        renderWithRouter(<Viewer />);
+        
+        await waitFor(() => {
+            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
+        });
+
+        // Toggle filters to show configurations
+        const toggleBtn = screen.getByText(/Filters/);
+        fireEvent.click(toggleBtn);
+
+        // Find Save button in FilterConfigurations and click it empty
+        const saveBtn = screen.getByText('Save');
+        fireEvent.click(saveBtn);
+
+        // Should show error message from validation
+        await waitFor(() => {
+            expect(screen.getByText('Please enter a name for the configuration')).toBeInTheDocument();
+        });
+
+        // Dismiss it
+        const messageEl = screen.getByText('Please enter a name for the configuration');
+        fireEvent.click(messageEl);
+
+        await waitFor(() => {
+            expect(screen.queryByText('Please enter a name for the configuration')).not.toBeInTheDocument();
         });
     });
 });

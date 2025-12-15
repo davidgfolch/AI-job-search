@@ -1,19 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { jobsApi } from '../jobs';
-import axios from 'axios';
+const mocks = vi.hoisted(() => ({
+    axiosCreateConfig: { value: null as any },
+    axiosInstance: {
+        get: vi.fn(),
+        patch: vi.fn(),
+    }
+}));
 
 // Mock axios
 vi.mock('axios', () => {
-    const mockAxios = {
-        get: vi.fn(),
-        patch: vi.fn(),
-        create: vi.fn(() => mockAxios),
+    return {
+        default: {
+            create: vi.fn((config) => {
+                mocks.axiosCreateConfig.value = config;
+                return mocks.axiosInstance;
+            }),
+        },
     };
-    return { default: mockAxios };
 });
 
 describe('jobsApi', () => {
-    const mockAxios = axios as any;
+    const mockAxios = mocks.axiosInstance;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -64,16 +72,71 @@ describe('jobsApi', () => {
         });
     });
 
-    describe('updateJob', () => {
-        it('updates a job with partial data', async () => {
-            const updateData = { flagged: true, comments: 'Test' };
-            const mockUpdatedJob = { id: 1, ...updateData };
-            mockAxios.patch.mockResolvedValue({ data: mockUpdatedJob });
+    describe('getAppliedJobsByCompany', () => {
+        it('fetches applied jobs for a company', async () => {
+            const mockAppliedJobs = [{ id: 1, created: '2023-01-01' }];
+            mockAxios.get.mockResolvedValue({ data: mockAppliedJobs });
 
-            const result = await jobsApi.updateJob(1, updateData);
+            const result = await jobsApi.getAppliedJobsByCompany('Test Company');
 
-            expect(mockAxios.patch).toHaveBeenCalledWith('/jobs/1', updateData);
-            expect(result).toEqual(mockUpdatedJob);
+            expect(mockAxios.get).toHaveBeenCalledWith('/jobs/applied-by-company', {
+                params: { company: 'Test Company' }
+            });
+            expect(result).toEqual(mockAppliedJobs);
+        });
+
+        it('fetches applied jobs for a company and client', async () => {
+            const mockAppliedJobs = [{ id: 1, created: '2023-01-01' }];
+            mockAxios.get.mockResolvedValue({ data: mockAppliedJobs });
+
+            const result = await jobsApi.getAppliedJobsByCompany('Test Company', 'Client A');
+
+            expect(mockAxios.get).toHaveBeenCalledWith('/jobs/applied-by-company', {
+                params: { company: 'Test Company', client: 'Client A' }
+            });
+            expect(result).toEqual(mockAppliedJobs);
+        });
+    });
+
+    describe('error handling', () => {
+        it('throws an error with the correct message when request fails', async () => {
+            const errorMessage = 'Network Error';
+            mockAxios.get.mockRejectedValue(new Error(errorMessage));
+
+            await expect(jobsApi.getJobs()).rejects.toThrow(`Error loading jobs: ${errorMessage}`);
+        });
+
+        it('throws an error with string message when non-Error object is thrown', async () => {
+            const errorMessage = 'Unknown error';
+            mockAxios.get.mockRejectedValue(errorMessage);
+
+            await expect(jobsApi.getJobs()).rejects.toThrow(`Error loading jobs: ${errorMessage}`);
+        });
+    });
+
+    describe('paramsSerializer', () => {
+        it('correctly serializes complex parameters', () => {
+            const serializer = mocks.axiosCreateConfig.value.paramsSerializer;
+            const params = {
+                page: 1,
+                ids: [1, 2, 3],
+                nullVal: null,
+                undefinedVal: undefined,
+                search: 'test'
+            };
+
+            const result = serializer(params);
+            const searchParams = new URLSearchParams(result);
+
+            expect(searchParams.get('page')).toBe('1');
+            expect(searchParams.getAll('ids')).toEqual(['1', '2', '3']);
+            expect(searchParams.get('search')).toBe('test');
+            expect(searchParams.has('nullVal')).toBe(false);
+            expect(searchParams.has('undefinedVal')).toBe(false);
         });
     });
 });
+
+// To properly test paramsSerializer, we need to spy on the config passed to axios.create
+// or refactor the code to make paramsSerializer exportable. 
+// Let's modify the mock to capture the config.

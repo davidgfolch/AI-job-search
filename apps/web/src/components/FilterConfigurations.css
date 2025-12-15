@@ -18,7 +18,9 @@
     min-width: 200px;
     max-width: 100rem;
     padding: 0.4rem 0.6rem;
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     border-radius: 4px;
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -31,7 +33,9 @@
 
 .config-save-btn {
     padding: 0.4rem 0.8rem;
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     border-radius: 4px;
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -62,7 +66,9 @@
     max-height: 300px;
     overflow-y: auto;
     background: var(--bg-primary);
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     border-radius: 4px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     list-style: none;

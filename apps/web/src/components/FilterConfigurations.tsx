@@ -52,7 +52,11 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
 
     const saveConfiguration = () => {
         if (!configName.trim()) {
-            alert('Please enter a name for the configuration');
+            if (onMessage) {
+                onMessage('Please enter a name for the configuration', 'error');
+            } else {
+                alert('Please enter a name for the configuration');
+            }
             return;
         }
 

@@ -1,103 +1,117 @@
-// @vitest-environment jsdom
-import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import HistoryInput from '../HistoryInput';
-import userEvent from '@testing-library/user-event';
 
 describe('HistoryInput', () => {
     const defaultProps = {
-        storageKey: 'test_history',
+        storageKey: 'test-history',
         value: '',
         onValueChange: vi.fn(),
+        placeholder: 'Search...',
     };
 
-
     beforeEach(() => {
+        localStorage.clear();
         vi.clearAllMocks();
     });
 
-    it('renders input field', () => {
-        render(<HistoryInput {...defaultProps} placeholder="Type here" />);
-        expect(screen.getByPlaceholderText('Type here')).toBeInTheDocument();
+    it('renders input with placeholder', () => {
+        render(<HistoryInput {...defaultProps} />);
+        expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
     });
 
     it('loads history from localStorage', () => {
-        localStorage.setItem('test_history', JSON.stringify(['previous value']));
+        localStorage.setItem('test-history', JSON.stringify(['react', 'vue']));
         render(<HistoryInput {...defaultProps} />);
-
-        const input = screen.getByRole('textbox');
-        fireEvent.focus(input);
-
-        expect(screen.getByText('previous value')).toBeInTheDocument();
+        
+        // Focus to show suggestions
+        fireEvent.focus(screen.getByPlaceholderText('Search...'));
+        
+        expect(screen.getByText('react')).toBeInTheDocument();
+        expect(screen.getByText('vue')).toBeInTheDocument();
     });
 
-    it('saves to history on Enter', async () => {
-        const user = userEvent.setup();
-        render(<HistoryInput {...defaultProps} value="new value" />);
+    it('adds value to history on submit (Enter)', () => {
+        render(<HistoryInput {...defaultProps} value="angular" />);
+        
+        const input = screen.getByPlaceholderText('Search...');
+        fireEvent.keyDown(input, { key: 'Enter' });
 
-        const input = screen.getByRole('textbox');
-        await user.type(input, '{Enter}');
-
-        const stored = JSON.parse(localStorage.getItem('test_history') || '[]');
-        expect(stored).toContain('new value');
+        const stored = JSON.parse(localStorage.getItem('test-history') || '[]');
+        expect(stored).toContain('angular');
     });
 
-    it('shows suggestions on focus', async () => {
-        localStorage.setItem('test_history', JSON.stringify(['item1', 'item2']));
+    it('adds value to history on blur if not empty', () => {
+        render(<HistoryInput {...defaultProps} value="svelte" />);
+        
+        const input = screen.getByPlaceholderText('Search...');
+        fireEvent.blur(input);
+
+        const stored = JSON.parse(localStorage.getItem('test-history') || '[]');
+        expect(stored).toContain('svelte');
+    });
+
+    it('filters history based on input', () => {
+        localStorage.setItem('test-history', JSON.stringify(['react', 'redux', 'vue']));
+        render(<HistoryInput {...defaultProps} value="re" />);
+        
+        fireEvent.focus(screen.getByPlaceholderText('Search...'));
+
+        expect(screen.getByText('react')).toBeInTheDocument();
+        expect(screen.getByText('redux')).toBeInTheDocument();
+        expect(screen.queryByText('vue')).not.toBeInTheDocument();
+    });
+
+    it('selects item from history on click', () => {
+        localStorage.setItem('test-history', JSON.stringify(['react']));
         render(<HistoryInput {...defaultProps} />);
+        
+        fireEvent.focus(screen.getByPlaceholderText('Search...'));
+        fireEvent.click(screen.getByText('react'));
 
-        const input = screen.getByRole('textbox');
-        fireEvent.focus(input);
-
-        expect(screen.getByText('item1')).toBeInTheDocument();
-        expect(screen.getByText('item2')).toBeInTheDocument();
+        expect(defaultProps.onValueChange).toHaveBeenCalledWith('react');
     });
 
-    it('filters suggestions based on input', () => {
-        localStorage.setItem('test_history', JSON.stringify(['apple', 'banana', 'apricot']));
-        render(<HistoryInput {...defaultProps} value="ap" />);
-
-        const input = screen.getByRole('textbox');
-        fireEvent.focus(input);
-
-        expect(screen.getByText('apple')).toBeInTheDocument();
-        expect(screen.getByText('apricot')).toBeInTheDocument();
-        expect(screen.queryByText('banana')).not.toBeInTheDocument();
-    });
-
-    it('selects suggestion on click', async () => {
-        const onValueChange = vi.fn();
-        localStorage.setItem('test_history', JSON.stringify(['clicked item']));
-        render(<HistoryInput {...defaultProps} onValueChange={onValueChange} />);
-
-        const input = screen.getByRole('textbox');
-        fireEvent.focus(input);
-
-        const suggestion = screen.getByText('clicked item');
-        fireEvent.click(suggestion);
-
-        expect(onValueChange).toHaveBeenCalledWith('clicked item');
-    });
-    it('deletes suggestion on Delete key', async () => {
-        localStorage.setItem('test_history', JSON.stringify(['item1', 'item2', 'item3']));
+    it('navigates history with keyboard', () => {
+        localStorage.setItem('test-history', JSON.stringify(['first', 'second']));
         render(<HistoryInput {...defaultProps} />);
-
-        const input = screen.getByRole('textbox');
+        
+        const input = screen.getByPlaceholderText('Search...');
         fireEvent.focus(input);
-
-        // Highlight 'item1' (index 0)
+        
+        // Arrow Down -> highlight first
         fireEvent.keyDown(input, { key: 'ArrowDown' });
+        expect(screen.getByText('first')).toHaveClass('active');
+        
+        // Arrow Down -> highlight second
+        fireEvent.keyDown(input, { key: 'ArrowDown' });
+        expect(screen.getByText('second')).toHaveClass('active');
 
-        // Delete 'item1'
+        // Arrow Up -> highlight first
+        fireEvent.keyDown(input, { key: 'ArrowUp' });
+        expect(screen.getByText('first')).toHaveClass('active');
+
+        // Enter -> select first
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(defaultProps.onValueChange).toHaveBeenCalledWith('first');
+    });
+
+    it('deletes item from history with keyboard', () => {
+        localStorage.setItem('test-history', JSON.stringify(['todelete', 'keep']));
+        render(<HistoryInput {...defaultProps} />);
+        
+        const input = screen.getByPlaceholderText('Search...');
+        fireEvent.focus(input);
+        
+        // Highlight first
+        fireEvent.keyDown(input, { key: 'ArrowDown' });
+        
+        // Delete
         fireEvent.keyDown(input, { key: 'Delete' });
-
-        expect(screen.queryByText('item1')).not.toBeInTheDocument();
-        expect(screen.getByText('item2')).toBeInTheDocument();
-        expect(screen.getByText('item3')).toBeInTheDocument();
-
-        // Verify localStorage update
-        const stored = JSON.parse(localStorage.getItem('test_history') || '[]');
-        expect(stored).not.toContain('item1');
-        expect(stored).toEqual(['item2', 'item3']);
+        
+        const stored = JSON.parse(localStorage.getItem('test-history') || '[]');
+        expect(stored).not.toContain('todelete');
+        expect(stored).toContain('keep');
+        expect(screen.queryByText('todelete')).not.toBeInTheDocument();
     });
 });

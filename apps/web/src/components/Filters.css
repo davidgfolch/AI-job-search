@@ -2,7 +2,9 @@
     width: 100%;
     background: var(--bg-secondary);
     border-radius: 8px;
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     margin-bottom: 1rem;
 }
 
@@ -65,7 +67,9 @@
 .compact-input,
 .compact-select {
     padding: 0.4rem 0.6rem;
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     border-radius: 4px;
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -80,7 +84,9 @@
 .sql-input {
     width: 100%;
     padding: 0.4rem 0.6rem;
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     border-radius: 4px;
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -129,7 +135,9 @@
 .filter-pill {
     padding: 0.25rem 0.75rem;
     border-radius: 999px;
-    border: 1px solid var(--border-color);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
     background: var(--bg-primary);
     color: var(--text-secondary);
     cursor: pointer;

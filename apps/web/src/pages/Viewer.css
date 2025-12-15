@@ -1,170 +1,176 @@
 .viewer {
-    height: 94vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background-color: var(--bg-primary);
+  height: 94vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg-primary);
 }
 
 .viewer-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 1rem;
-    overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  overflow: hidden;
 }
 
 .viewer-content {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    min-height: 0;
-    /* Important for nested scroll */
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+  /* Important for nested scroll */
 }
 
 .viewer-left {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    min-width: 0;
-    padding-right: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding-right: 1rem;
 }
 
 .viewer-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    overflow-y: hidden;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-y: hidden;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border-color);
 }
 
 .loading,
 .error,
 .no-selection {
-    text-align: center;
-    color: var(--text-secondary);
+  text-align: center;
+  color: var(--text-secondary);
 }
 
 .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
 .error {
-    color: #ef4444;
+  color: #ef4444;
 }
 
 .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid var(--border-color);
-    border-top-color: #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 0;
-    border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--border-color);
 }
 
 .pagination button {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border-radius: 4px;
-    cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .pagination button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .loading-more {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 1rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .loading-more .spinner {
-    width: 20px;
-    height: 20px;
-    border-width: 2px;
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
 }
 
 .footer-info {
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--text-tertiary);
-    padding-bottom: 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  padding-bottom: 0.5rem;
 }
 
 /* Tab Group Styles */
 .tab-group {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 .tab-buttons {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    border-radius: 8px 8px 0 0;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 8px 8px 0 0;
 }
 
 .tab-button {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .tab-button:hover {
-    background: var(--bg-secondary);
-    border-color: #667eea;
+  background: var(--bg-secondary);
+  border-color: #667eea;
 }
 
 .tab-button.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    border-color: transparent;
-    color: white;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: transparent;
+  color: white;
 }
 
 .tab-content {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }

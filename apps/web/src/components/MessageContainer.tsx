@@ -18,7 +18,7 @@ export default function MessageContainer({ message, error, onDismissMessage }: M
                 <Messages message={message.text} type={message.type} onDismiss={onDismissMessage} />
             )}
             {error && (
-                <Messages message={errorMessage} type="error" onDismiss={() => { }} />
+                <Messages message={errorMessage} type="error" onDismiss={onDismissMessage} />
             )}
         </>
     );
