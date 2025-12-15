@@ -6,13 +6,21 @@ import JobActions from '../components/JobActions';
 import Filters from '../components/Filters';
 import MessageContainer from '../components/MessageContainer';
 import ViewTabs from '../components/ViewTabs';
+import ConfirmModal from '../components/ConfirmModal';
 import './Viewer.css';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
+    const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
 
     return (
         <div className="viewer">
+            <ConfirmModal
+                isOpen={state.confirmModal.isOpen}
+                message={state.confirmModal.message}
+                onConfirm={state.confirmModal.onConfirm}
+                onCancel={actions.closeConfirmModal}
+            />
             <div className="viewer-container">
                 <MessageContainer message={state.message} error={status.error}
                     onDismissMessage={() => actions.setMessage(null)} />
@@ -24,7 +32,12 @@ export default function Viewer() {
                         <div className="tab-group">
                             <div className="tab-buttons">
                                 <ViewTabs activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
-                                {state.selectedJob && (
+                                {state.activeTab === 'list' && (
+                                    <div className="list-summary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>
+                                        <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span>&nbsp;loaded |&nbsp;<span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span>&nbsp;Selected
+                                    </div>
+                                )}
+                                {(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0) && (
                                     <JobActions
                                         job={state.selectedJob}
                                         filters={state.filters}
@@ -32,11 +45,12 @@ export default function Viewer() {
                                         onApplied={actions.appliedJob}
                                         onDiscarded={actions.discardedJob}
                                         onClosed={actions.closedJob}
-                                        onIgnore={actions.ignoreJob}
+                                        onIgnore={isBulk ? actions.ignoreSelected : actions.ignoreJob}
                                         onNext={actions.nextJob}
                                         onPrevious={actions.previousJob}
                                         hasNext={status.hasNext}
                                         hasPrevious={status.hasPrevious}
+                                        isBulk={isBulk}
                                     />
                                 )}
                             </div>
@@ -50,15 +64,17 @@ export default function Viewer() {
                                         onJobSelect={actions.selectJob}
                                         onLoadMore={actions.loadMore}
                                         isLoadingMore={status.isLoadingMore}
-                                        totalResults={state.data?.total || 0}
                                         hasMore={state.allJobs.length < (state.data?.total || 0)}
+                                        selectedIds={state.selectedIds}
+                                        selectionMode={state.selectionMode}
+                                        onToggleSelectJob={actions.toggleSelectJob}
+                                        onToggleSelectAll={actions.toggleSelectAll}
                                     />
                                 ) : (<JobEditForm job={state.selectedJob} onUpdate={actions.updateJob} />
                                 )}
                             </div>
                         </div>
                     </div>
-
                     <div className="viewer-right">
                         {state.selectedJob ? <JobDetail job={state.selectedJob} /> : <div className="no-selection">Select a job to view details</div>}
                     </div>

@@ -10,8 +10,12 @@ interface JobListProps {
     onJobSelect: (job: Job) => void;
     onLoadMore: () => void;
     isLoadingMore: boolean;
-    totalResults: number;
+    isLoadingMore: boolean;
     hasMore: boolean;
+    selectedIds: Set<number>;
+    selectionMode: 'none' | 'manual' | 'all';
+    onToggleSelectJob: (id: number) => void;
+    onToggleSelectAll: () => void;
 }
 
 const JobList: React.FC<JobListProps> = ({
@@ -22,8 +26,11 @@ const JobList: React.FC<JobListProps> = ({
     onJobSelect,
     onLoadMore,
     isLoadingMore,
-    totalResults,
-    hasMore
+    hasMore,
+    selectedIds,
+    selectionMode,
+    onToggleSelectJob,
+    onToggleSelectAll
 }) => {
     if (isLoading) {
         return (
@@ -48,6 +55,10 @@ const JobList: React.FC<JobListProps> = ({
                 onJobSelect={onJobSelect}
                 onLoadMore={onLoadMore}
                 hasMore={hasMore}
+                selectedIds={selectedIds}
+                selectionMode={selectionMode}
+                onToggleSelectJob={onToggleSelectJob}
+                onToggleSelectAll={onToggleSelectAll}
             />
             {isLoadingMore && (
                 <div className="loading-more">
@@ -55,9 +66,6 @@ const JobList: React.FC<JobListProps> = ({
                     <span>Loading more jobs...</span>
                 </div>
             )}
-            <div className="footer-info">
-                Total results: {totalResults} | Showing: {jobs.length}
-            </div>
         </>
     );
 };

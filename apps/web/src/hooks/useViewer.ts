@@ -19,6 +19,15 @@ export const useViewer = () => {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('list');
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [selectionMode, setSelectionMode] = useState<'none' | 'manual' | 'all'>('none');
+    
+    // Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        message: string;
+        onConfirm: () => void;
+    }>({ isOpen: false, message: '', onConfirm: () => {} });
 
     // Track when we need to auto-select next job after state change
     const autoSelectNext = useRef<{ shouldSelect: boolean; previousJobId: number | null }>({
@@ -46,6 +55,12 @@ export const useViewer = () => {
         }
     }, [data, filters.page]);
 
+    // Reset selection when filters change (except page)
+    useEffect(() => {
+        setSelectionMode('none');
+        setSelectedIds(new Set());
+    }, [filters.search, filters.status, filters.not_status, filters.days_old, filters.salary, filters.order, filters.sql_filter]);
+
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: number; data: Partial<Job> }) =>
             jobsApi.updateJob(id, data),
@@ -57,8 +72,25 @@ export const useViewer = () => {
         },
     });
 
+    const bulkUpdateMutation = useMutation({
+        mutationFn: (payload: { ids?: number[]; filters?: JobListParams; update: Partial<Job>; select_all?: boolean }) =>
+            jobsApi.bulkUpdateJobs(payload),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['jobs'] });
+            setMessage({ text: `Updated ${data.updated} jobs`, type: 'success' });
+            setSelectionMode('none');
+            setSelectedIds(new Set());
+        },
+        onError: (err) => {
+            setMessage({ text: err instanceof Error ? err.message : 'Error updating jobs', type: 'error' });
+        }
+    });
+
     const handleJobSelect = useCallback((job: Job) => {
         setSelectedJob(job);
+        // Sync selection state with the clicked job
+        setSelectedIds(new Set([job.id]));
+        setSelectionMode('manual');
         // Update URL with jobId parameter
         const newParams = new URLSearchParams(searchParams);
         newParams.set('jobId', job.id.toString());
@@ -97,7 +129,6 @@ export const useViewer = () => {
             isAutoSelecting.current = false;
             return;
         }
-
         const jobIdParam = searchParams.get('jobId');
         const idsParam = searchParams.get('ids');
         if (idsParam) {
@@ -150,7 +181,6 @@ export const useViewer = () => {
         if (!allJobs.length || !selectedJob) return;
         const currentIndex = allJobs.findIndex(j => j.id === selectedJob.id);
         if (currentIndex === -1) return;
-
         const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
         if (nextIndex >= 0 && nextIndex < allJobs.length) {
             handleJobSelect(allJobs[nextIndex]);
@@ -177,6 +207,9 @@ export const useViewer = () => {
             activeTab,
             message,
             data,
+            selectedIds,
+            selectionMode,
+            confirmModal,
         },
         status: {
             isLoading,
@@ -199,6 +232,45 @@ export const useViewer = () => {
             nextJob: () => navigateJob('next'),
             previousJob: () => navigateJob('previous'),
             loadMore: handleLoadMore,
+            toggleSelectJob: (id: number) => {
+                const newSelected = new Set(selectedIds);
+                if (newSelected.has(id)) {
+                    newSelected.delete(id);
+                    if (selectionMode === 'all') setSelectionMode('manual');
+                } else {
+                    newSelected.add(id);
+                    setSelectionMode('manual');
+                }
+                setSelectedIds(newSelected);
+            },
+            toggleSelectAll: () => {
+                if (selectionMode === 'all') {
+                    setSelectionMode('none');
+                    setSelectedIds(new Set());
+                } else {
+                    setSelectionMode('all');
+                }
+            },
+            ignoreSelected: () => {
+                const count = selectionMode === 'all' ? 'all' : selectedIds.size;
+                const message = selectionMode === 'all' 
+                    ? "Are you sure you want to ignore ALL jobs matching the current filters?"
+                    : `Are you sure you want to ignore ${count} selected jobs?`;
+
+                setConfirmModal({
+                    isOpen: true,
+                    message,
+                    onConfirm: () => {
+                        if (selectionMode === 'all') {
+                            bulkUpdateMutation.mutate({ select_all: true, filters, update: { ignored: true } });
+                        } else if (selectedIds.size > 0) {
+                            bulkUpdateMutation.mutate({ ids: Array.from(selectedIds), update: { ignored: true } });
+                        }
+                        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                    }
+                });
+            },
+            closeConfirmModal: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
         },
     };
 };

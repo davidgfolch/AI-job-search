@@ -78,7 +78,8 @@ describe('Viewer', () => {
             expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
             expect(screen.getAllByText('Job 2').length).toBeGreaterThan(0);
         });
-        expect(screen.getByText('Total results: 2 | Showing: 2')).toBeInTheDocument();
+        const summary = screen.getByText(/ loaded \| /);
+        expect(summary).toHaveTextContent(/2\/2 loaded \| 0 Selected/);
     });
 
     it('handles error state', async () => {
@@ -131,7 +132,8 @@ describe('Viewer', () => {
         (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 50, page: 1, size: 20, });
         renderWithRouter(<Viewer />);
         await waitFor(() => {
-            expect(screen.getByText('Total results: 50 | Showing: 2')).toBeInTheDocument();
+            const summary = screen.getByText(/ loaded \| /);
+            expect(summary).toHaveTextContent(/2\/50 loaded \| 0 Selected/);
         });
         // Initially showing 2 jobs from page 1
         expect(jobsApi.getJobs).toHaveBeenCalledTimes(1);

@@ -30,7 +30,6 @@ class JobsService:
 
     def get_applied_jobs_by_company_name(self, company: str, client: str = None) -> List[Dict[str, Any]]:
         company_raw = company.lower().replace("'", "''") if company else ""
-
         if company_raw == 'joppy' and client:
             rows = self.repo.find_applied_by_company(client, client)
         else:
@@ -54,3 +53,36 @@ class JobsService:
                 except Exception:
                     pass
         return rows
+
+    def bulk_update_jobs(self, update_data: Dict[str, Any], ids: Optional[List[int]] = None,
+                         filters: Optional[Dict[str, Any]] = None, select_all: bool = False) -> int:
+        """
+        Updates multiple jobs.
+        If select_all is True and filters are provided, updates all jobs matching the filters.
+        Otherwise, updates the jobs specified in ids.
+        """
+        if select_all and filters:
+            # Extract filter parameters matching list_jobs signature
+            page = 1 # Not used for update
+            size = 20 # Not used for update
+            search = filters.get('search')
+            status = filters.get('status')
+            not_status = filters.get('not_status')
+            days_old = filters.get('days_old')
+            salary = filters.get('salary')
+            order = filters.get('order') # Not used for update but part of params
+            sql_filter = filters.get('sql_filter')
+            # Extract boolean filters
+            boolean_keys = [
+                'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
+                'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
+                'interview_technical_test_done', 'ai_enriched', 'easy_apply'
+            ]
+            boolean_filters = {k: filters.get(k) for k in boolean_keys}
+            where, params = self.repo.build_where(
+                search, status, not_status, days_old, salary, sql_filter, boolean_filters
+            )
+            return self.repo.update_jobs_by_filter(where, params, update_data)
+        elif ids:
+            return self.repo.update_jobs_by_ids(ids, update_data)
+        return 0

@@ -2,9 +2,18 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob
 from services.jobs_service import JobsService
+from pydantic import BaseModel
+
 
 
 router = APIRouter()
+
+class BulkJobUpdate(BaseModel):
+    ids: Optional[List[int]] = None
+    filters: Optional[dict] = None
+    update: JobUpdate
+    select_all: bool = False
+
 
 def get_service():
     return JobsService()
@@ -95,3 +104,17 @@ def update_job(job_id: int, job_update: JobUpdate, service: JobsService = Depend
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+@router.post("/bulk", response_model=dict)
+def bulk_update_jobs(bulk_update: BulkJobUpdate, service: JobsService = Depends(get_service)):
+    update_data = bulk_update.update.model_dump(exclude_unset=True)
+    count = service.bulk_update_jobs(
+        update_data=update_data,
+        ids=bulk_update.ids,
+        filters=bulk_update.filters,
+        select_all=bulk_update.select_all
+    )
+    return {"updated": count}

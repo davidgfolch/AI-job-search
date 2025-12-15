@@ -3,7 +3,7 @@ import { BOOLEAN_FILTER_KEYS } from '../config/filterConfig';
 import './JobActions.css';
 
 interface JobActionsProps {
-    job: Job;
+    job?: Job | null;
     filters: JobListParams;
     onSeen: () => void;
     onApplied: () => void;
@@ -14,6 +14,8 @@ interface JobActionsProps {
     onPrevious: () => void;
     hasNext: boolean;
     hasPrevious: boolean;
+    hasPrevious: boolean;
+    isBulk?: boolean;
 }
 
 export default function JobActions({
@@ -28,8 +30,11 @@ export default function JobActions({
     onPrevious,
     hasNext,
     hasPrevious,
+    isBulk = false,
 }: JobActionsProps) {
+
     const handleCopyPermalink = () => {
+        if (!job) return;
         const params = new URLSearchParams();
         params.set('jobId', job.id.toString());
         if (filters.search) params.set('search', filters.search);
@@ -49,15 +54,15 @@ export default function JobActions({
 
     return (
         <div className="header-actions">
-            <button className="header-button state-button seen-button" onClick={onSeen} title="Mark as seen">👁️</button>
-            <button className="header-button state-button applied-button" onClick={onApplied} title="Mark as applied">✅</button>
-            <button className="header-button state-button discarded-button" onClick={onDiscarded} title="Mark as discarded">❌</button>
-            <button className="header-button state-button closed-button" onClick={onClosed} title="Mark as closed">🔒</button>
+            <button className="header-button state-button seen-button" onClick={onSeen} title="Mark as seen" disabled={isBulk || !job}>👁️</button>
+            <button className="header-button state-button applied-button" onClick={onApplied} title="Mark as applied" disabled={isBulk || !job}>✅</button>
+            <button className="header-button state-button discarded-button" onClick={onDiscarded} title="Mark as discarded" disabled={isBulk || !job}>❌</button>
+            <button className="header-button state-button closed-button" onClick={onClosed} title="Mark as closed" disabled={isBulk || !job}>🔒</button>
             <button className="header-button state-button ignore-button" onClick={onIgnore} title="Mark as ignored">🚫</button>
             <div className="button-separator"></div>
-            <button className="header-button copy-button" onClick={handleCopyPermalink} title="Copy permalink to clipboard">🔗</button>
-            <button className="header-button nav-button" onClick={onPrevious} disabled={!hasPrevious} title="Previous job">⏮</button>
-            <button className="header-button nav-button" onClick={onNext} disabled={!hasNext} title="Next job">⏭</button>
+            <button className="header-button copy-button" onClick={handleCopyPermalink} title="Copy permalink to clipboard" disabled={isBulk || !job}>🔗</button>
+            <button className="header-button nav-button" onClick={onPrevious} disabled={isBulk || !hasPrevious || !job} title="Previous job">⏮</button>
+            <button className="header-button nav-button" onClick={onNext} disabled={isBulk || !hasNext || !job} title="Next job">⏭</button>
         </div>
     );
 }

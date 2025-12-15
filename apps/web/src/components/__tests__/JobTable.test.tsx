@@ -9,9 +9,18 @@ const mockJobs = createMockJobs(2, {
 });
 
 describe('JobTable', () => {
+    const defaultProps = {
+        jobs: mockJobs,
+        selectedJob: null,
+        onJobSelect: vi.fn(),
+        selectedIds: new Set<number>(),
+        selectionMode: 'none' as const,
+        onToggleSelectJob: vi.fn(),
+        onToggleSelectAll: vi.fn(),
+    };
+
     it('renders job list correctly', () => {
-        const onJobSelect = vi.fn();
-        render(<JobTable jobs={mockJobs} selectedJob={null} onJobSelect={onJobSelect} />);
+        render(<JobTable {...defaultProps} />);
 
         expect(screen.getByText('Job 1')).toBeInTheDocument();
         expect(screen.getByText('Company 1')).toBeInTheDocument();
@@ -23,8 +32,7 @@ describe('JobTable', () => {
     });
 
     it('highlights selected job', () => {
-        const onJobSelect = vi.fn();
-        render(<JobTable jobs={mockJobs} selectedJob={mockJobs[0]} onJobSelect={onJobSelect} />);
+        render(<JobTable {...defaultProps} selectedJob={mockJobs[0]} />);
 
         const rows = screen.getAllByRole('row');
         // Header + 2 data rows. First data row should be selected.
@@ -34,7 +42,7 @@ describe('JobTable', () => {
 
     it('calls onJobSelect when a row is clicked', () => {
         const onJobSelect = vi.fn();
-        render(<JobTable jobs={mockJobs} selectedJob={null} onJobSelect={onJobSelect} />);
+        render(<JobTable {...defaultProps} onJobSelect={onJobSelect} />);
 
         fireEvent.click(screen.getByText('Job 1'));
         expect(onJobSelect).toHaveBeenCalledWith(mockJobs[0]);

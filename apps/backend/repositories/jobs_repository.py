@@ -11,14 +11,14 @@ class JobsRepository:
         order: Optional[str] = "created desc", boolean_filters: Dict[str, Optional[bool]] = None,
         sql_filter: Optional[str] = None, ids: Optional[List[int]] = None) -> Dict[str, Any]:
         offset = (page - 1) * size
-        where, params = self._build_where(search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids)
+        where, params = self.build_where(search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids)
         where = " AND ".join(where)
         with self.get_db() as db:
             total = self._count_jobs(db, where, params)
             items = self._fetch_jobs(db, where, params, order, size, offset)
         return { "items": items, "total": total, "page": page, "size": size }
 
-    def _build_where(self, search: Optional[str], status: Optional[str], not_status: Optional[str],
+    def build_where(self, search: Optional[str], status: Optional[str], not_status: Optional[str],
         days_old: Optional[int], salary: Optional[str], sql_filter: Optional[str],
         boolean_filters: Dict[str, Optional[bool]], ids: Optional[List[int]] = None):
         where = ["1=1"]
@@ -102,6 +102,46 @@ class JobsRepository:
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id = %s"
             db.executeAndCommit(query, params)
         return job_id
+
+    def update_jobs_by_ids(self, job_ids: List[int], update_data: Dict[str, Any]) -> int:
+        if not job_ids or not update_data:
+            return 0
+        
+        with self.get_db() as db:
+            set_clauses = []
+            params = []
+            for key, value in update_data.items():
+                set_clauses.append(f"`{key}` = %s")
+                params.append(value)
+            
+            placeholders = ', '.join(['%s'] * len(job_ids))
+            params.extend(job_ids)
+            
+            query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id IN ({placeholders})"
+            db.executeAndCommit(query, params)
+            return len(job_ids)
+
+    def update_jobs_by_filter(self, where_clauses: List[str], params: List[Any], update_data: Dict[str, Any]) -> int:
+        if not update_data:
+            return 0
+            
+        with self.get_db() as db:
+            set_clauses = []
+            update_params = []
+            for key, value in update_data.items():
+                set_clauses.append(f"`{key}` = %s")
+                update_params.append(value)
+            
+            # Combine update params with where clause params
+            full_params = update_params + params
+            where_str = " AND ".join(where_clauses)
+            
+            query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE {where_str}"
+            db.executeAndCommit(query, full_params)
+            # Row count might not be accurate for matched rows vs changed rows in MySQL, but it's okay for now.
+            # Ideally we'd select count first if we need the exact number of matched rows.
+            return db.cursor.rowcount if hasattr(db, 'cursor') and db.cursor else 0
+
 
     def find_applied_by_company(self, company: str, client: str = None) -> List[tuple]:
         avoidInjection(company, "company")

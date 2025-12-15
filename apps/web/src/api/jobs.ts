@@ -130,4 +130,14 @@ export const jobsApi = {
     return handleRequest(apiClient.get<AppliedCompanyJob[]>('/jobs/applied-by-company', { params }),
       'Error loading applied jobs');
   },
+
+  bulkUpdateJobs: async (payload: {
+    ids?: number[];
+    filters?: JobListParams;
+    update: Partial<Job>;
+    select_all?: boolean;
+  }): Promise<{ updated: number }> => {
+    return handleRequest(apiClient.post<{ updated: number }>('/jobs/bulk', payload),
+      'Error updating jobs');
+  },
 };
