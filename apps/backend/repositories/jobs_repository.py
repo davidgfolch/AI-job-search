@@ -137,10 +137,7 @@ class JobsRepository:
             where_str = " AND ".join(where_clauses)
             
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE {where_str}"
-            db.executeAndCommit(query, full_params)
-            # Row count might not be accurate for matched rows vs changed rows in MySQL, but it's okay for now.
-            # Ideally we'd select count first if we need the exact number of matched rows.
-            return db.cursor.rowcount if hasattr(db, 'cursor') and db.cursor else 0
+            return db.executeAndCommit(query, full_params)
 
 
     def find_applied_by_company(self, company: str, client: str = None) -> List[tuple]:
