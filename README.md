@@ -1,112 +1,92 @@
-# AI job search
+# AI Job Search Monorepo
 
 [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml)
 
-| Module's coverage    |                                               | UI Module's coverage |                                      |
-|----------------------|-----------------------------------------------|----------------------|--------------------------------------|
-| packages/commonlib   | ![commonlib](packages/commonlib/coverage.svg) | apps/viewer (old UI) | ![viewer](apps/viewer/coverage.svg)  |
-| apps/aiEnrich        | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/web (new UI)    | ![web](apps/web/coverage/badges.svg) |
-| apps/scrapper        | ![scrapper](apps/scrapper/coverage.svg)       | apps/backend (new UI)    | ![backend](apps/backend/coverage.svg)        |
+A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 
+## Project Structure
 
+This is a monorepo containing several applications and packages:
 
-Application to search & find jobs, scrappers for LinkedIn, Infojobs, Glassdoor, Tecnoempleo...
+| Component     | Path                                                 | Description                               | Tech Stack              | Status           |
+| ------------- | ---------------------------------------------------- | ----------------------------------------- | ----------------------- | ---------------- |
+| **Web UI**    | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management. | React, TypeScript, Vite | **NEW** (Active) |
+| **Backend**   | [`apps/backend`](apps/backend/README.md)             | FastAPI services for the Web UI.          | Python, FastAPI         | **NEW** (Active) |
+| **Viewer**    | [`apps/viewer`](apps/viewer/README.md)               | Streamlit UI.                             | Python, Streamlit       | **LEGACY**       |
+| **Scrapper**  | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.              | Python, Selenium        | Active           |
+| **AI Enrich** | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI agent to analyze job details.          | Python, CrewAI, uv      | Active           |
+| **Common**    | [`packages/commonlib`](packages/commonlib/README.md) | Shared logic.                             | Python                  | Shared           |
 
-- Selenium sites scrappers to store in local mysql database.
-- Artificial intelligence to enrich the job offer with structured information (salary, required technologies, ...).
-- User interface to filter, see, manage & clean jobs in database.
+> **Note**: The **Viewer** application is the legacy interface. The **Web UI** + the **Backend** is the new, recommended implementation.
 
-## Setup
+## Getting Started
 
-See [README_INSTALL.md](./READMEs/README_INSTALL.md)
+### Installation
 
-## Run with Docker (Development Mode) 🐳
+Please see [README_INSTALL.md](READMEs/README_INSTALL.md) for detailed setup instructions.
 
-The easiest way to run all services in development mode is using Docker Compose:
+### Run with Docker (Recommended for dev) 🐳
 
 ```bash
-# Start core services (MySQL + Backend + Web + Viewer)
 docker-compose up -d
-
-# View logs
 docker-compose logs -f
-
-# Access services:
-# - Web UI: http://localhost:5173
-# - Backend API: http://localhost:8000/docs
-# - Viewer (Streamlit): http://localhost:8501
 ```
 
-**Optional services:**
-```bash
-# With AI enrichment (includes Ollama)
-docker-compose --profile ai-services up -d
+See [DOCKER_DEV.md](DOCKER_DEV.md).
 
-# With scrapper (NOT WORKING IN WINDOWS)
-docker-compose --profile scrapper up -d scrapper
+### Run Manually (Using Helper Scripts)
 
-# All services  (NOT WORKING IN WINDOWS)
-docker-compose --profile ai-services --profile scrapper up -d
-```
+Each application includes convenience scripts (`run.sh` / `run.bat`) to start them easily.
 
-See [DOCKER_DEV.md](./DOCKER_DEV.md) for detailed Docker commands and troubleshooting.
-
-## Run & lifecycle (Without Docker)
-
-Run scripts in separate terminals.
-
-### Linux
+#### Linux / macOS (`.sh`)
 
 ```bash
-# Start mysql with docker compose
-./scripts/run_1_Mysql.sh
-# Start all scrappers (follow browser & console to solve robot security filters)
-./apps/scrapper/run.sh  # or
-./apps/scrapper/run.sh Linkedin Infojobs Glassdoor  # Run specific scrappers
-# OPTIONAL: Process each job offer with AI/LLM inference in database, extracting salary, required technologies, etc...
+# 1. Database
+./scripts/runMysql.sh
+
+# 2. Scrappers
+./apps/scrapper/run.sh
+
+# 3. AI Enrichment
 ./apps/aiEnrich/run.sh
-# Run User interface to edit
+
+# 4. New UI (Backend + Web)
+./apps/backend/run.sh
+./apps/web/run.sh
+
+# 5. Legacy Viewer
 ./apps/viewer/run.sh
 ```
 
-### Windows
+#### Windows (`.bat`)
 
-```shell
-docker compose up -d  # Start mysql with docker compose
-# Start all scrappers (follow browser & console to solve robot security filters)
+```cmd
+:: 1. Database
+docker compose up -d
+
+:: 2. Scrappers
 .\apps\scrapper\run.bat
-# OPTIONAL: Process each job offer with AI/LLM inference in database, extracting salary, required technologies, etc...
+
+:: 3. AI Enrichment
 .\apps\aiEnrich\run.bat
+
+:: 4. New UI (Backend + Web)
+.\apps\backend\run.bat
+.\apps\web\run.bat
+
+:: 5. Legacy Viewer
 .\apps\viewer\run.bat
 ```
 
-## Scrapers
+## Testing
 
-The automatic scrapper (`./apps/scrapper/run.sh` without parameters) keeps running in a infinite loop in console.  Different timeouts are configured in `scrapper/main.py` for each site scrapper.
+Run all tests across the monorepo:
 
-See [module README.md](apps/scrapper/README.md)
+- **Linux**: `./scripts/test.sh` (Optional: `--coverage`)
+- **Windows**: `.\scripts\test.bat` (Optional: `--coverage`)
 
-## AI enricher (optional)
+## Documentation
 
-This will use LLM to extract structured data from job offers (salary, required_technologies, ...).  Using CrewAI framework & local Ollama LLM.
-
-The automatic script `./apps/aiEnrich/run.sh` keeps running in a infinite loop in console, waiting for jobs not `ai_enriched` in database.
-
-## Viewer
-
-User interface available to see & manage jobs with many capabilities:
-
-- **View & manage** tab:
-  - Search jobs using the filter form:
-    - Configurable defaults saved to local storage files (`.stSessionState`).
-    - Select one (or more) in search results to edit.
-      - Add comments in each offer in interviews or calls.
-      - Change states (ignored, seen, applied, closed, discarded, etc.)
-- **Clean** tab:
-  - Set some expressions to select jobs offers to be automatically ignored.
-  - Delete old job offers from database.
-- **Statistics** tab.
-
-## Contribute
-
-[See README_CONTRIBUTE.md](READMEs/README_CONTRIBUTE.md)
+- **Installation**: [README_INSTALL.md](READMEs/README_INSTALL.md)
+- **Contributing**: [README_CONTRIBUTE.md](READMEs/README_CONTRIBUTE.md)
+- **Docker**: [DOCKER_DEV.md](DOCKER_DEV.md)

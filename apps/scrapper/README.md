@@ -1,73 +1,99 @@
-# Scrapers
+# Job Scrappers
 
-The automatic scrapper `./run_2_Scrapper.sh` (without parameters) keeps running in a infinite loop in console:
+Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glassdoor, Tecnoempleo).
 
-> Different intervals have been set in `scrapper.py` for the execution times of each scraper, taking into account the volume of listings, the Anti Robot Security Filters (**ARSF**) & **RATE LIMITS** of each website.
+## Architecture
 
-- **Infojobs**: works fine, but it will show **ARSF** at the beginning of scrape.
-- **LinkedIn**: works fine.
-- **Glassdoor**: could show **ARSF** "all the time", scrapper just re-run selenium browser on error.
-- **Tecnoempleo**: works fine.
-- ~~**Indeed** **ARSF** all the time (DISABLED)~~
+Refactored to a modular architecture:
 
-## ASRF & rate limits
+- **Navigators (`scrapper/selenium/`)**: Specialized classes that handle Selenium browser interactions for each site (e.g., `LinkedinSelenium.py`, `InfojobsSelenium.py`). All inherit from `SeleniumUtil`.
+- **Services (`scrapper/services/`)**: Business logic and orchestration for job fetching and processing (`job_services/`).
+- **Coordinators**: Top-level scripts (`linkedin.py`, `infojobs.py`, etc.) that coordinate the scraping process.
 
-To minimize Anti Robot Security Filters (**ASRF**), Selenium operations on each website are implemented with waits & mouse moves to mimic human behavior, but still **ASRF** could appear sometimes (or always as in Infojobs). You can try an VPN to bypass **ASRF** Cloudflare. Be aware that your fixed IP could be banned by Cloudflare **ASRF** if you exceed rate limits.
+## Features
 
-### Bypass Cloudflare with undetected-chromedriver
+- **Anti-Bot Measures**: Implements delays, mouse movements, and other techniques to mimic human behavior.
+- **Undetected ChromeDriver**: Option to use `undetected-chromedriver` to bypass strict protections (Cloudflare).
+- **Duplicate Management**: Automatically merges duplicate job listings (`mergeDuplicates.py` from `commonlib`).
+- **Resilience**: Retry mechanisms for network failures and element loading issues.
 
-Set `USE_UNDETECTED_CHROMEDRIVER=true` in your `.env` file to use undetected-chromedriver instead of standard Selenium. This helps bypass Cloudflare and other bot detection systems (recommended for Infojobs and Glassdoor).
+## Supported Sites
 
-**Note:** Requires Google Chrome installed. If Chrome is not detected, falls back to standard Selenium with ChromeDriver.
+- **LinkedIn**: Works fine. Careful with rate limits.
+- **Infojobs**: Works fine.
+- **Tecnoempleo**: Works fine.
+- **Glassdoor**: Prone to strict bot detection.
 
-Also a @retry mechanism is implemented for random fails (page load's timeouts, etc).
+## Setup & Running
 
-To avoid **RATE LIMITS** security filters, job search's are limited to last 24 hours only, so scrappers must run at least each day to not miss job offers. The automatic scrapper script `./run_2_Scrapper.sh`, control the times each web-site scrapping is executed to avoid security filters.
+### Prerequisites
 
-## Merge duplicated jobs
+- Python 3.10+
+- Google Chrome installed.
 
-Duplicated jobs will be created in database when the origin web-site `jobId` is different for the same real job. So an automatic `mergeDuplicates.py` script is called after each insert in database. It finds duplicated jobs by title-company & merges old jobs information into the newest one, copying states, ai-enriched fields & comments into the last one & deleting older ones.
+### Installation
 
-## Implementations
+```bash
+poetry install
+```
 
-### Infojobs
+### Configuration
 
-**ASRF** will appear on first page load, you'll need to solve it manually.
+Scraper behavior is configured via environment variables and configuration files (`scrapper_config.py`).
+See `.env.example` in `scripts/`.
 
-> That's why is the first one to execute in `./run_2_Scrapper.sh`, to after solved you can leave it working.
+**Key Environment Variables:**
 
-First time run is failing in the last days I've tried.
+- `USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
 
-### Linkedin
-
-Linkedin scraper works fine, but when I was developing the scrapper found several problems because I did too much requests:
-
-- Rate limits: LinkedIn has rate limit even for authenticated users, so if you execute **`scrapper/linkedin.py`** several times or have too much `JOBS_SEARCH` keywords you will be spending LinkedIn rate limit. If rate limit is exhausted all request will return a HTTP STATUS CODE = 429
-- After some days executing the selenium script we also found a security human check, so we have to pause execution after login and solve puzzle manually.
-
-Linkedin implementation also allows to run a single job url. Example: `scrapper/run.bat url <job_url>` (or run.sh).
-
-### Glassdoor
-
-**ASRF** will appear usually, randomly & page hangs eventually. Auto-scrapper re-inits selenium driver when it fails.
-
-## Specific scrapper paramters
-
-There are other parameters you can change in **`scrapper/*.py`**
-
-### Linkedin example
+**Specific Scraper Parameters:**
+You can modify parameters in `scrapper/*.py` (e.g., `linkedin.py`):
 
 ```python
 remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
-# Spain if you need other make a manual search and get your country code
-location = '105646813'
+location = '105646813' # Spain (or other country code)
 f_TPR = 'r86400'  # last 24 hours
-# Set to True to stop selenium driver navigating if any error occurs
-DEBUG = False
+DEBUG = False # Set to True to stop selenium driver on error
 ```
 
-> NOTE: changing those could cause violation of LinkedIn rate limit
+> **Note**: Changing these could cause violation of LinkedIn rate limits.
 
-### Glassdoor example
+### Running Scrapers
 
-Glassdoor has an strange constructing the url with filters to show the list results, see `GLASSDOOR_JOBS_SEARCH`
+**Automatic Loop Scraper:**
+
+```bash
+./run_2_Scrapper.sh # Linux/Mac
+# or
+.\run.bat # Windows
+```
+
+This runs an infinite loop checking for new jobs based on configured intervals.
+
+**Run Specific Scraper:**
+
+You can run individual scrapers manually:
+
+```bash
+poetry run python scrapper/linkedin.py
+poetry run python scrapper/infojobs.py
+```
+
+**Run Single Job URL (LinkedIn):**
+
+```bash
+poetry run python scrapper/linkedin.py url <job_url>
+```
+
+## Testing
+
+Run tests with pytest:
+
+```bash
+poetry run pytest
+```
+
+## Troubleshooting
+
+- **Rate Limits**: If you get 429 errors or captchas, increase delays or stop scraping for a while.
+- **ARSF (Anti Robot Security Filters)**: If Chrome opens but gets blocked, try `USE_UNDETECTED_CHROMEDRIVER=true` or use a VPN.

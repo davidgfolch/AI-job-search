@@ -1,98 +1,97 @@
-# Setup
+# Setup Guide
 
-Use python 3.10.
+## System Requirements
 
-Python 3.12 has incompatibility with Streamlit required libraries for mysql,
-and 3.11 incompatibility with other crewAi libraries.
+- **Python**: 3.10 required.
+  - Python 3.12 has incompatibilities with some libraries used.
+- **Node.js**: LTS version (for `apps/web`).
+- **Docker**: For running services in containers.
 
-## Prerequisites
+## Package Managers
 
-- [Docker & docker-compose](https://docs.docker.com/compose/install/)
-- [Local Ollama](https://github.com/davidgfolch/OpenAI-local-ollama-chat/blob/main/README_OLLAMA.md) (OPTIONAL, for AI enrichment)
-- Python 3.10 & libraries:
+This project uses different package managers for different components:
 
-```bash
-sudo apt install python3.10
-```
+- **Poetry**: Used by `apps/backend`, `apps/scrapper`, `packages/commonlib`, and `apps/viewer`.
+- **uv**: Used by `apps/aiEnrich` (CrewAI requirement).
+- **npm**: Used by `apps/web`.
 
-### Package managers install
+## Installation Steps
 
-All ´apps´ & packages use poetry except `apps/aiEnrich` crewAi that uses UV [See README](/apps/aiEnrich/README.md)
-
-#### Poetry (all modules except apps/aiEnrich)
+### 1. Install Poetry (Python)
 
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
 ```
 
-## Install project dependencies
+### 2. Install uv (Python)
 
-In project root folder execute `./scripts/install.sh`
-
-> If problems found installing mysql client library for Streamlit, follow this:
-> `sudo apt-get install pkg-config python3-dev default-libmysqlclient-dev build-essential`
-
-## Setup credentials & other settings
-
-Set your cretentials in `.env` file.
-You have an `scripts/.env.example` you can copy:
+Required for `apps/aiEnrich`.
 
 ```bash
-cp scripts/.env.example .env
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Then edit your `.env` file.
+### 3. Install Node.js & npm
 
-## Setup database
+Download and install from [nodejs.org](https://nodejs.org/).
 
-After executing for first time `docker-compose up` or `docker compose up` or `./scripts/run_1_Mysql.sh`, you must create database tables with the ddl script:  `scripts/mysql/ddl.sql`
+### 4. Install Project Dependencies
+
+You can use the helper script in the project root:
 
 ```bash
-docker exec -it ai-job-search-mysql_db-1 bash
-# Execute next lines inside the docker container
-mysql -uroot -prootPass jobs < docker-entrypoint-initdb.d/ddl.sql
+./scripts/install.sh # or .\scripts\install.bat
 ```
 
-[Mysql docker doc reference](https://hub.docker.com/_/mysql)
+Or install manually:
 
---------------
-
-## Database backup
-
-```bash
-# backup
-docker exec ai-job-search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootPass jobs > scripts/mysql/20251029_backup.sql
-# restore
-cat scripts/mysql/backup.sql | docker exec -i ai_job_search-mysql_db-1 /usr/bin/mysql -uroot -prootPass jobs
-```
-
-## Managing dependencies
-
-This monorepo has a `packages/commonlib` shared for all `apps/*`
+**Backend & Scrapper & Commonlib:**
 
 ```bash
 cd packages/commonlib && poetry install && cd ../..
+cd apps/backend && poetry install && cd ../..
 cd apps/scrapper && poetry install && cd ../..
-cd apps/viewer && poetry install && cd ../..
 ```
 
-Then install [AiEnrich following it's readme](/apps/aiEnrich/README.md).
-
-### Add main dependency
+**Web Frontend:**
 
 ```bash
-poetry add selenium
+cd apps/web
+npm install
+cd ../..
 ```
 
-### Upgrading existing dependencies
+**AI Enrich:**
+
+Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md).
+
+## Configuration
+
+1. Copy the example environment file:
+   ```bash
+   cp scripts/.env.example .env
+   ```
+2. Edit `.env` with your credentials and configuration.
+
+## Database Setup
+
+After starting the MySQL container (via docker-compose or script), verify the database is initialized.
+If needed, manually import schema:
 
 ```bash
-poetry show --outdated
-poetry update
+docker exec -i ai-job-search-mysql_db-1 mysql -uroot -prootPass jobs < scripts/mysql/ddl.sql
 ```
 
-### Remove dependency
+## Database Backup & Restore
 
 ```bash
-poetry remove selenium
+# backup
+docker exec ai-job-search-mysql_db-1 /usr/bin/mysqldump -u root --password=rootPass jobs > scripts/mysql/backup.sql
+
+# restore
+cat scripts/mysql/backup.sql | docker exec -i ai_job_search-mysql_db-1 /usr/bin/mysql -uroot -prootPass jobs
 ```
