@@ -19,8 +19,7 @@ def hasArgument(args: list, name: str, info: Callable = (lambda: str)) -> bool:
     return exists
 
 
-if __name__ == '__main__':
-    args = sys.argv
+def main(args):
     print(cyan('Scrapper init'))
     print(cyan('Usage: scrapper.py wait starting scrapperName'))
     print(cyan('wait -> waits for scrapper timeout before executing'))
@@ -33,7 +32,7 @@ if __name__ == '__main__':
 
     if len(args) == 2 and url:
         runScrapperPageUrl(args[1])
-        exit(0)
+        return
 
     with SeleniumUtil() as seleniumUtil:
         persistenceManager = PersistenceManager()
@@ -44,4 +43,8 @@ if __name__ == '__main__':
             runAllScrappers(wait, starting, startingAt, persistenceManager, seleniumUtil, scrapperContainer)
         else:
             runSpecifiedScrappers(args[1:], persistenceManager, seleniumUtil, scrapperContainer)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
 

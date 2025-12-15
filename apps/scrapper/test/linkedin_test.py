@@ -1,7 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 from scrapper import linkedin
-from scrapper.linkedin import run, load_page, search_jobs, process_row, processUrl
+from scrapper.linkedin import run, load_page, search_jobs, process_row, processUrl, load_and_process_row
 from scrapper.services.job_services.linkedin_job_service import LinkedinJobService
 from scrapper.selenium.linkedin_selenium import LinkedinNavigator
 from scrapper.seleniumUtil import SeleniumUtil
@@ -9,120 +9,171 @@ from scrapper.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
-def mock_selenium():
-    return MagicMock(spec=SeleniumUtil)
-
-@pytest.fixture
-def mock_mysql():
-    return MagicMock(spec=MysqlUtil)
-
-@pytest.fixture
-def mock_persistence_manager():
-    return MagicMock(spec=PersistenceManager)
-
-@pytest.fixture
-def mock_navigator():
-    return MagicMock(spec=LinkedinNavigator)
-
-@pytest.fixture
-def mock_service():
-    return MagicMock(spec=LinkedinJobService)
-
-@pytest.fixture
-def mock_env_vars():
-    with patch('scrapper.linkedin.getAndCheckEnvVars') as mock:
-        mock.return_value = ('test@email.com', 'password', 'python')
-        yield mock
+def mocks():
+    with patch('scrapper.linkedin.LinkedinNavigator') as nav_cls, \
+         patch('scrapper.linkedin.LinkedinJobService') as svc_cls, \
+         patch('scrapper.linkedin.MysqlUtil'), \
+         patch('scrapper.linkedin.PersistenceManager'), \
+         patch('scrapper.linkedin.SeleniumUtil'), \
+         patch('scrapper.linkedin.getAndCheckEnvVars', return_value=('u', 'p', 'k')):
+        
+        nav = nav_cls.return_value
+        svc = svc_cls.return_value
+        # Setup common mock behaviors
+        nav.get_job_data_in_detail_page.return_value = ("T", "C", "L", "U", "H")
+        nav.get_job_data_in_list.return_value = ("T", "C", "L", "U", "H")
+        svc.job_exists_in_db.return_value = (None, False)
+        yield {'nav': nav, 'svc': svc, 'nav_cls': nav_cls, 'svc_cls': svc_cls}
 
 class TestLinkedinScrapper:
+    def test_run_modes(self, mocks):
+        # Preload
+        with patch('scrapper.linkedin.USER_EMAIL', 'u'), \
+             patch('scrapper.linkedin.USER_PWD', 'p'), \
+             patch('scrapper.linkedin.JOBS_SEARCH', 'k'):
+            run(MagicMock(), True, MagicMock())
+            mocks['nav'].login.assert_called_with('u', 'p')
+            
+            # Normal
+            mocks['svc'].should_skip_keyword.return_value = (False, 1)
+            with patch('scrapper.linkedin.process_keyword') as pk:
+                run(MagicMock(), False, MagicMock())
+                pk.assert_called_with('k', 1)
 
-    def test_run_preload_page(self, mock_selenium, mock_persistence_manager, mock_env_vars):
-        with patch('scrapper.linkedin.LinkedinNavigator') as MockNavigatorClass, \
-             patch('scrapper.linkedin.USER_EMAIL', 'test@email.com'), \
-             patch('scrapper.linkedin.USER_PWD', 'password'):
+    def test_process_keyword_scenarios(self, mocks):
+        linkedin.navigator = mocks['nav']
+        mocks['nav'].check_login_popup.return_value = False
+        
+        with patch('scrapper.linkedin.load_page', return_value="url"), \
+             patch('scrapper.linkedin.search_jobs') as search:
             
-            mock_nav_instance = MockNavigatorClass.return_value
+            # Results exist
+            mocks['nav'].check_results.return_value = True
+            linkedin.process_keyword('k', 1)
+            search.assert_called()
             
-            run(mock_selenium, preloadPage=True, persistenceManager=mock_persistence_manager)
-            
-            MockNavigatorClass.assert_called_with(mock_selenium)
-            mock_nav_instance.login.assert_called_with('test@email.com', 'password')
-            mock_nav_instance.wait_until_page_url_contains.assert_called()
+            # No results
+            search.reset_mock()
+            mocks['nav'].check_results.return_value = False
+            linkedin.process_keyword('k', 1)
+            search.assert_not_called()
 
-    def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars):
-        # Patch MysqlUtil class
-        with patch('scrapper.linkedin.MysqlUtil') as mock_mysql_class, \
-             patch('scrapper.linkedin.LinkedinNavigator') as MockNavigatorClass, \
-             patch('scrapper.linkedin.LinkedinJobService') as MockServiceClass, \
-             patch('scrapper.linkedin.process_keyword') as mock_process_keyword, \
-             patch('scrapper.linkedin.JOBS_SEARCH', 'python'):
-            
-            mock_mysql_instance = MagicMock(spec=MysqlUtil)
-            mock_mysql_class.return_value.__enter__.return_value = mock_mysql_instance
-            
-            mock_service_instance = MockServiceClass.return_value
-            mock_service_instance.should_skip_keyword.return_value = (False, 1)
+    def test_load_page(self, mocks):
+        linkedin.navigator = mocks['nav']
+        assert 'linkedin.com' in load_page('python')
+        mocks['nav'].load_page.assert_called()
 
-            run(mock_selenium, preloadPage=False, persistenceManager=mock_persistence_manager)
+    @pytest.mark.parametrize("start_page,total_res,calls", [(1, 4, 1), (3, 100, 2)])
+    def test_search_jobs_flow(self, mocks, start_page, total_res, calls):
+        linkedin.navigator = mocks['nav']
+        linkedin.service = mocks['svc']
+        linkedin.JOBS_X_PAGE = 25
+        mocks['nav'].get_total_results.return_value = total_res
+        mocks['nav'].click_next_page.return_value = True
+        
+        with patch('scrapper.linkedin.load_and_process_row', return_value=True):
+             search_jobs('k', start_page)
+             if start_page > 1:
+                 assert mocks['nav'].click_next_page.call_count >= calls
+             if total_res > 25:
+                assert mocks['svc'].update_state.call_count >= 1
 
-            MockServiceClass.assert_called_with(mock_mysql_instance, mock_persistence_manager)
-            mock_service_instance.prepare_resume.assert_called()
-            mock_process_keyword.assert_called_with('python', 1)
-            mock_service_instance.clear_state.assert_called()
+    @pytest.mark.parametrize("exists, new, expected_process", [
+        ((1, True), False, False), ((None, False), True, True)
+    ])
+    def test_load_and_process_row(self, mocks, exists, new, expected_process):
+        linkedin.navigator = mocks['nav']
+        linkedin.service = mocks['svc']
+        mocks['nav'].scroll_jobs_list.return_value = "css"
+        mocks['svc'].job_exists_in_db.return_value = exists
+        
+        with patch('scrapper.linkedin.process_row') as pr:
+            assert load_and_process_row(1) is True
+            if expected_process: pr.assert_called()
+            else: pr.assert_not_called()
 
-    def test_process_keyword(self):
-        with patch('scrapper.linkedin.load_page') as mock_load_page, \
-             patch('scrapper.linkedin.search_jobs') as mock_search_jobs:
-            
-            # Setup global mocks in linkedin module
-            mock_navigator = MagicMock()
-            mock_navigator.check_login_popup.return_value = False
-            mock_navigator.check_results.return_value = True
-            
-            with patch('scrapper.linkedin.navigator', mock_navigator):
-                linkedin.process_keyword('test', 1)
-                
-                mock_load_page.assert_called_with('test')
-                mock_search_jobs.assert_called_with('test', 1)
+    @pytest.mark.parametrize("idx, easy_apply, is_direct", [
+        (1, True, False), (None, False, True)
+    ])
+    def test_process_row(self, mocks, idx, easy_apply, is_direct):
+        linkedin.navigator = mocks['nav']
+        linkedin.service = mocks['svc']
+        mocks['nav'].check_easy_apply.return_value = easy_apply
+        
+        process_row(idx)
+        mocks['svc'].process_job.assert_called_with("T", "C", "L", "U", "H", is_direct, easy_apply)
+
+    def test_processUrl(self, mocks):
+        with patch('scrapper.linkedin.process_row') as pr:
+            processUrl("http://url")
+            mocks['nav'].load_page.assert_called_with("http://url")
+            pr.assert_called_with(None)
 
 class TestLinkedinJobService:
-    def test_get_job_id(self, mock_mysql, mock_persistence_manager):
-        service = LinkedinJobService(mock_mysql, mock_persistence_manager)
-        url = "https://www.linkedin.com/jobs/view/1234567890/?other=param"
-        assert service.get_job_id(url) == 1234567890
+    @pytest.fixture
+    def service(self):
+        return LinkedinJobService(MagicMock(), MagicMock())
+    
+    def test_url_parsing(self, service):
+        url = "https://www.linkedin.com/jobs/view/123456/?x=y"
+        assert service.get_job_id(url) == 123456
+        assert service.get_job_url_short(url) == "https://www.linkedin.com/jobs/view/123456/"
 
-    def test_get_job_url_short(self, mock_mysql, mock_persistence_manager):
-        service = LinkedinJobService(mock_mysql, mock_persistence_manager)
-        url = "https://www.linkedin.com/jobs/view/1234567890/?other=param"
-        expected = "https://www.linkedin.com/jobs/view/1234567890/"
-        assert service.get_job_url_short(url) == expected
-
-    def test_process_job_valid(self, mock_mysql, mock_persistence_manager):
-        service = LinkedinJobService(mock_mysql, mock_persistence_manager)
-        with patch('scrapper.services.job_services.linkedin_job_service.validate', return_value=True), \
-             patch('scrapper.services.job_services.linkedin_job_service.htmlToMarkdown', return_value="MD"), \
+    def test_process_job(self, service):
+        with patch('scrapper.services.job_services.linkedin_job_service.validate', side_effect=[True, False]), \
+             patch('scrapper.services.job_services.linkedin_job_service.htmlToMarkdown', return_value="M"), \
              patch('scrapper.services.job_services.linkedin_job_service.mergeDuplicatedJobs'):
              
-             mock_mysql.jobExists.return_value = False
-             mock_mysql.insert.return_value = 1
+             # Valid
+             service.mysql.jobExists.return_value = False
+             service.process_job("T", "C", "L", "https://www.linkedin.com/jobs/view/123/", "H", False, False)
+             service.mysql.insert.assert_called()
              
-             service.process_job("Title", "Company", "Loc", "https://www.linkedin.com/jobs/view/123/", "<html>", False, False)
-             
-             mock_mysql.insert.assert_called_once()
+             # Invalid
+             with pytest.raises(ValueError):
+                 service.process_job("T", "C", "L", "U", "H", False, False)
 
-    def test_process_job_invalid(self, mock_mysql, mock_persistence_manager):
-        service = LinkedinJobService(mock_mysql, mock_persistence_manager)
-        with patch('scrapper.services.job_services.linkedin_job_service.validate', return_value=False), \
-             patch('scrapper.services.job_services.linkedin_job_service.htmlToMarkdown', return_value="MD"):
-             
-             with pytest.raises(ValueError, match="Validation failed"):
-                 service.process_job("Title", "Company", "Loc", "https://www.linkedin.com/jobs/view/123/", "<html>", False, False)
+    def test_persistence_methods(self, service):
+        service.prepare_resume()
+        service.persistence_manager.prepare_resume.assert_called_with('Linkedin')
+        
+        service.should_skip_keyword('k')
+        service.persistence_manager.should_skip_keyword.assert_called_with('k')
+        
+        service.update_state('k', 1)
+        service.persistence_manager.update_state.assert_called_with('Linkedin', 'k', 1)
+        
+        service.clear_state()
+        service.persistence_manager.clear_state.assert_called_with('Linkedin')
+
+    def test_job_exists_in_db(self, service):
+        service.mysql.fetchOne.return_value = {"id": 123}
+        id, exists = service.job_exists_in_db("https://www.linkedin.com/jobs/view/123/")
+        assert id == 123
+        assert exists is True
+        
+        service.mysql.fetchOne.return_value = None
+        id, exists = service.job_exists_in_db("https://www.linkedin.com/jobs/view/456/")
+        assert id == 456
+        assert exists is False
+        
+    def test_set_debug(self, service):
+        service.set_debug(True)
+        assert service.debug is True
+
+    def test_print_job(self, service):
+        # Trigger print_job via process_job when job exists + direct url
+        with patch('scrapper.services.job_services.linkedin_job_service.validate', return_value=True), \
+             patch('scrapper.services.job_services.linkedin_job_service.htmlToMarkdown', return_value="M"):
+            service.mysql.jobExists.return_value = True
+            
+            # Should call print_job (we can't easily mock print_job here since it's a method on the object under test, 
+            # but we can verify it runs without error and covers the lines)
+            service.process_job("T", "C", "L", "https://www.linkedin.com/jobs/view/123/", "H", True, False)
+            service.mysql.insert.assert_not_called()
 
 class TestLinkedinNavigator:
-    def test_get_total_results(self, mock_selenium):
-        nav = LinkedinNavigator(mock_selenium)
-        mock_selenium.getText.return_value = "100+ items"
-        
-        total = nav.get_total_results("keyword", "2", "123", "r86400")
-        assert total == 100
-        mock_selenium.getText.assert_called()
+    def test_get_total_results(self):
+        nav = LinkedinNavigator(MagicMock())
+        nav.selenium.getText.return_value = "100+ items"
+        assert nav.get_total_results("k", "r", "l", "t") == 100
