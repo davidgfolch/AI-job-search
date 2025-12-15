@@ -16,11 +16,11 @@ This is a monorepo containing several applications and packages:
 
 | Component       | Path                                                 | Description                                       | Tech Stack                   |
 | --------------- | ---------------------------------------------------- | ------------------------------------------------- | ---------------------------- |
+| **Common Lib**  | [`packages/commonlib`](packages/commonlib/README.md) | Shared Python utilities and database logic.       | Python, Poetry               |
 | **Web UI**      | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.         | React, TypeScript, Vite, npm |
 | **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
 | **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
 | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI agent to analyze job details (salary, skills). | Python, CrewAI, uv           |
-| **Common Lib**  | [`packages/commonlib`](packages/commonlib/README.md) | Shared Python utilities and database logic.       | Python, Poetry               |
 | **Viewer**      | [`apps/viewer`](apps/viewer/README.md)               | Legacy Streamlit UI.                              | Python, Streamlit, Poetry    |
 
 > **Note**: The **Viewer** application is the legacy interface. The **Web UI** + the **Backend** is the new, recommended implementation.
