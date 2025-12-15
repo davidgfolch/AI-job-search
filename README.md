@@ -2,20 +2,26 @@
 
 [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml)
 
+| Module's coverage  |                                               | UI Module's coverage  |                                       |
+| ------------------ | --------------------------------------------- | --------------------- | ------------------------------------- |
+| packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/viewer (old UI)  | ![viewer](apps/viewer/coverage.svg)   |
+| apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/web (new UI)     | ![web](apps/web/coverage/badges.svg)  |
+| apps/scrapper      | ![scrapper](apps/scrapper/coverage.svg)       | apps/backend (new UI) | ![backend](apps/backend/coverage.svg) |
+
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 
 ## Project Structure
 
 This is a monorepo containing several applications and packages:
 
-| Component     | Path                                                 | Description                               | Tech Stack              | Status           |
-| ------------- | ---------------------------------------------------- | ----------------------------------------- | ----------------------- | ---------------- |
-| **Web UI**    | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management. | React, TypeScript, Vite | **NEW** (Active) |
-| **Backend**   | [`apps/backend`](apps/backend/README.md)             | FastAPI services for the Web UI.          | Python, FastAPI         | **NEW** (Active) |
-| **Viewer**    | [`apps/viewer`](apps/viewer/README.md)               | Streamlit UI.                             | Python, Streamlit       | **LEGACY**       |
-| **Scrapper**  | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.              | Python, Selenium        | Active           |
-| **AI Enrich** | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI agent to analyze job details.          | Python, CrewAI, uv      | Active           |
-| **Common**    | [`packages/commonlib`](packages/commonlib/README.md) | Shared logic.                             | Python                  | Shared           |
+| Component       | Path                                                 | Description                                       | Tech Stack                   |
+| --------------- | ---------------------------------------------------- | ------------------------------------------------- | ---------------------------- |
+| **Web UI**      | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.         | React, TypeScript, Vite, npm |
+| **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
+| **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
+| **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI agent to analyze job details (salary, skills). | Python, CrewAI, uv           |
+| **Common Lib**  | [`packages/commonlib`](packages/commonlib/README.md) | Shared Python utilities and database logic.       | Python, Poetry               |
+| **Viewer**      | [`apps/viewer`](apps/viewer/README.md)               | Legacy Streamlit UI.                              | Python, Streamlit, Poetry    |
 
 > **Note**: The **Viewer** application is the legacy interface. The **Web UI** + the **Backend** is the new, recommended implementation.
 
