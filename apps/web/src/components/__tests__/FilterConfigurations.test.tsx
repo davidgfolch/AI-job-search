@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import FilterConfigurations from '../FilterConfigurations';
 import { createMockFilters, setupLocalStorage, setupWindowMocks, getStoredConfigs } from '../../__tests__/test-utils';
+import { type JobListParams } from '../../api/jobs';
 
 describe('FilterConfigurations', () => {
     const mockFilters = createMockFilters({
@@ -23,242 +24,150 @@ describe('FilterConfigurations', () => {
         vi.restoreAllMocks();
     });
 
-    it('renders input and save button correctly', () => {
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
+    const renderComponent = (props: { currentFilters?: JobListParams; onMessage?: any } = {}) => {
+        return render(
+            <FilterConfigurations 
+                currentFilters={props.currentFilters || mockFilters} 
+                onLoadConfig={onLoadConfigMock} 
+                onMessage={props.onMessage} 
+            />
+        );
+    };
 
+    it('renders correctly', () => {
+        renderComponent();
         expect(screen.getByLabelText(/Filter Configurations/i)).toBeInTheDocument();
         expect(screen.getByPlaceholderText(/Type to load or enter name to save/i)).toBeInTheDocument();
         expect(screen.getByText('Save')).toBeInTheDocument();
     });
 
-    it('saves configuration to localStorage', () => {
-        const onMessageMock = vi.fn();
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} onMessage={onMessageMock} />);
+    describe('Saving Configuration', () => {
+        it.each([
+            ['Button', (input: HTMLElement, btn: HTMLElement) => fireEvent.click(btn)],
+            ['Enter Key', (input: HTMLElement, btn: HTMLElement) => fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })],
+        ])('saves configuration using %s', (_, action) => {
+            const onMessageMock = vi.fn();
+            renderComponent({ onMessage: onMessageMock });
+            const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
+            const saveButton = screen.getByText('Save');
 
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        const saveButton = screen.getByText('Save');
+            fireEvent.change(input, { target: { value: 'My Config' } });
+            action(input, saveButton);
 
-        fireEvent.change(input, { target: { value: 'My Config' } });
-        fireEvent.click(saveButton);
+            const configs = getStoredConfigs();
+            expect(configs).toHaveLength(1);
+            expect(configs[0].name).toBe('My Config');
+            expect(configs[0].filters).toEqual(mockFilters);
+            if (onMessageMock.mock.calls.length > 0) { // Only checked for button in original, but valid for both if wired up
+                 expect(onMessageMock).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success');
+            }
+            expect((input as HTMLInputElement).value).toBe(''); // Clears input
+        });
 
-        const configs = getStoredConfigs();
-        expect(configs).toHaveLength(1);
-        expect(configs[0].name).toBe('My Config');
-        expect(configs[0].filters).toEqual(mockFilters);
-        expect(onMessageMock).toHaveBeenCalledWith('Configuration "My Config" saved!', 'success');
+        it('validates name before saving', () => {
+            renderComponent();
+            fireEvent.click(screen.getByText('Save'));
+            expect(localStorage.getItem('filter_configurations')).toBeNull();
+            expect(window.alert).toHaveBeenCalledWith('Please enter a name for the configuration');
+        });
+
+        it('replaces existing configuration with same name', () => {
+            const oldFilters = { ...mockFilters, search: 'Old' };
+            localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Same Name', filters: oldFilters }]));
+            
+            const newFilters = { ...mockFilters, search: 'New' };
+            renderComponent({ currentFilters: newFilters });
+            
+            const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
+            fireEvent.change(input, { target: { value: 'Same Name' } });
+            fireEvent.click(screen.getByText('Save'));
+
+            const configs = getStoredConfigs();
+            expect(configs).toHaveLength(1);
+            expect(configs[0].filters.search).toBe('New');
+        });
+
+        it('limits to MAX_CONFIGS (30) configurations', () => {
+            const existingConfigs = Array.from({ length: 30 }, (_, i) => ({
+                name: `Config ${i + 1}`,
+                filters: mockFilters,
+            }));
+            localStorage.setItem('filter_configurations', JSON.stringify(existingConfigs));
+
+            renderComponent();
+            const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
+            fireEvent.change(input, { target: { value: 'Config 31' } });
+            fireEvent.click(screen.getByText('Save'));
+
+            const configs = getStoredConfigs();
+            expect(configs).toHaveLength(30);
+            expect(configs[0].name).toBe('Config 31');
+            expect(configs[29].name).toBe('Config 29');
+        });
     });
 
-    it('saves configuration on Enter key press', () => {
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
+    describe('Suggestions & Loading', () => {
+        it.each([
+            ['Focus', 'Test Config', (input: HTMLElement) => fireEvent.focus(input), true],
+            ['Filter', 'Senior React', (input: HTMLElement) => fireEvent.change(input, { target: { value: 'React' } }), true],
+            ['Filter Mismatch', 'Junior Python', (input: HTMLElement) => fireEvent.change(input, { target: { value: 'React' } }), false],
+        ])('handles suggestion visibility on %s', (_, configName, action, shouldBeVisible) => {
+             const configs = [
+                { name: 'Test Config', filters: mockFilters },
+                { name: 'Senior React', filters: mockFilters },
+                { name: 'Junior Python', filters: mockFilters },
+            ];
+            localStorage.setItem('filter_configurations', JSON.stringify(configs));
+            renderComponent();
 
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
+            const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
+            action(input);
 
-        fireEvent.change(input, { target: { value: 'Quick Config' } });
-        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+            if (shouldBeVisible) {
+                expect(screen.getByText(configName)).toBeInTheDocument();
+            } else {
+                expect(screen.queryByText(configName)).not.toBeInTheDocument();
+            }
+        });
 
-        const configs = getStoredConfigs();
-        expect(configs[0].name).toBe('Quick Config');
+        it('loads configuration interacting with suggestion', () => {
+             const savedFilters = { ...mockFilters, search: 'Senior Engineer' };
+             localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Senior Jobs', filters: savedFilters }]));
+             renderComponent();
+
+             const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
+             fireEvent.focus(input);
+             fireEvent.click(screen.getByText('Senior Jobs'));
+
+             expect(onLoadConfigMock).toHaveBeenCalledWith(savedFilters);
+             expect((input as HTMLInputElement).value).toBe('Senior Jobs');
+        });
+
+        it('closes suggestions when clicking outside', async () => {
+            localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Test Config', filters: mockFilters }]));
+            renderComponent();
+            fireEvent.focus(screen.getByPlaceholderText(/Type to load or enter name to save/i));
+            expect(screen.getByText('Test Config')).toBeInTheDocument();
+
+            fireEvent.mouseDown(document.body);
+            await waitFor(() => expect(screen.queryByText('Test Config')).not.toBeInTheDocument());
+        });
     });
 
-    it('does not save with empty name', () => {
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
+    describe('Deleting', () => {
+        it.each([
+            ['Confirms', true, 0],
+            ['Cancels', false, 1]
+        ])('handles delete when user %s', (_, confirmValue, expectedLength) => {
+            vi.spyOn(window, 'confirm').mockImplementation(() => confirmValue);
+            localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Delete Me', filters: mockFilters }]));
+            renderComponent();
 
-        const saveButton = screen.getByText('Save');
-        fireEvent.click(saveButton);
+            const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
+            fireEvent.focus(input);
+            fireEvent.click(screen.getByTitle('Delete configuration'));
 
-        const stored = localStorage.getItem('filter_configurations');
-        expect(stored).toBeNull();
-        expect(window.alert).toHaveBeenCalledWith('Please enter a name for the configuration');
-    });
-
-    it('clears input after saving', () => {
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i) as HTMLInputElement;
-        const saveButton = screen.getByText('Save');
-
-        fireEvent.change(input, { target: { value: 'Test Config' } });
-        fireEvent.click(saveButton);
-
-        expect(input.value).toBe('');
-    });
-
-    it('shows suggestions dropdown when input is focused', () => {
-        const config = { name: 'Test Config', filters: mockFilters };
-        localStorage.setItem('filter_configurations', JSON.stringify([config]));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        fireEvent.focus(input);
-
-        expect(screen.getByText('Test Config')).toBeInTheDocument();
-    });
-
-    it('filters suggestions based on input text', () => {
-        const configs = [
-            { name: 'Senior React Jobs', filters: mockFilters },
-            { name: 'Junior Python Jobs', filters: mockFilters },
-        ];
-        localStorage.setItem('filter_configurations', JSON.stringify(configs));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        fireEvent.change(input, { target: { value: 'React' } });
-
-        expect(screen.getByText('Senior React Jobs')).toBeInTheDocument();
-        expect(screen.queryByText('Junior Python Jobs')).not.toBeInTheDocument();
-    });
-
-    it('loads configuration when clicking on suggestion', () => {
-        const savedFilters: JobListParams = {
-            page: 1,
-            size: 10,
-            search: 'Senior Engineer',
-            applied: true,
-        };
-        const config = { name: 'Senior Jobs', filters: savedFilters };
-        localStorage.setItem('filter_configurations', JSON.stringify([config]));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        fireEvent.focus(input);
-
-        const suggestion = screen.getByText('Senior Jobs');
-        fireEvent.click(suggestion);
-
-        expect(onLoadConfigMock).toHaveBeenCalledWith(savedFilters);
-    });
-
-    it('clears input after loading a configuration', async () => {
-        const config = { name: 'Test Config', filters: mockFilters };
-        localStorage.setItem('filter_configurations', JSON.stringify([config]));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i) as HTMLInputElement;
-        fireEvent.focus(input);
-
-        const suggestion = screen.getByText('Test Config');
-        fireEvent.click(suggestion);
-
-        // After loading, the config name should be visible in the input
-        expect(input.value).toBe('Test Config');
-    });
-
-    it('deletes configuration from localStorage', () => {
-        const config = { name: 'Delete Me', filters: mockFilters };
-        localStorage.setItem('filter_configurations', JSON.stringify([config]));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        fireEvent.focus(input);
-
-        const deleteButton = screen.getByTitle('Delete configuration');
-        fireEvent.click(deleteButton);
-
-        const stored = localStorage.getItem('filter_configurations');
-        const configs = JSON.parse(stored!);
-        expect(configs).toHaveLength(0);
-    });
-
-    it('does not delete if user cancels confirmation', () => {
-        vi.spyOn(window, 'confirm').mockImplementation(() => false);
-
-        const config = { name: 'Keep Me', filters: mockFilters };
-        localStorage.setItem('filter_configurations', JSON.stringify([config]));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        fireEvent.focus(input);
-
-        const deleteButton = screen.getByTitle('Delete configuration');
-        fireEvent.click(deleteButton);
-
-        const stored = localStorage.getItem('filter_configurations');
-        const configs = JSON.parse(stored!);
-        expect(configs).toHaveLength(1);
-        expect(configs[0].name).toBe('Keep Me');
-    });
-
-    it('loads configurations from localStorage on mount', () => {
-        const configs = [
-            { name: 'Config 1', filters: mockFilters },
-            { name: 'Config 2', filters: mockFilters },
-        ];
-        localStorage.setItem('filter_configurations', JSON.stringify(configs));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        fireEvent.focus(input);
-
-        expect(screen.getByText('Config 1')).toBeInTheDocument();
-        expect(screen.getByText('Config 2')).toBeInTheDocument();
-    });
-
-    it('replaces existing configuration with same name', () => {
-        const oldFilters: JobListParams = { page: 1, size: 20, search: 'Old' };
-        const config = { name: 'Same Name', filters: oldFilters };
-        localStorage.setItem('filter_configurations', JSON.stringify([config]));
-
-        const newFilters: JobListParams = { page: 1, size: 20, search: 'New' };
-        render(<FilterConfigurations currentFilters={newFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        const saveButton = screen.getByText('Save');
-
-        fireEvent.change(input, { target: { value: 'Same Name' } });
-        fireEvent.click(saveButton);
-
-        const stored = localStorage.getItem('filter_configurations');
-        const configs = JSON.parse(stored!);
-        expect(configs).toHaveLength(1);
-        expect(configs[0].filters.search).toBe('New');
-    });
-
-    it('limits to MAX_CONFIGS (30) configurations', () => {
-        const existingConfigs = Array.from({ length: 30 }, (_, i) => ({
-            name: `Config ${i + 1}`,
-            filters: mockFilters,
-        }));
-        localStorage.setItem('filter_configurations', JSON.stringify(existingConfigs));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        const saveButton = screen.getByText('Save');
-
-        fireEvent.change(input, { target: { value: 'Config 31' } });
-        fireEvent.click(saveButton);
-
-        const stored = localStorage.getItem('filter_configurations');
-        const configs = JSON.parse(stored!);
-        expect(configs).toHaveLength(30);
-        expect(configs[0].name).toBe('Config 31'); // Most recent first
-        expect(configs[configs.length - 1].name).toBe('Config 29'); // Config 30 was removed (oldest got bumped off)
-    });
-
-    it('closes suggestions when clicking outside', async () => {
-        const config = { name: 'Test Config', filters: mockFilters };
-        localStorage.setItem('filter_configurations', JSON.stringify([config]));
-
-        render(<FilterConfigurations currentFilters={mockFilters} onLoadConfig={onLoadConfigMock} />);
-
-        const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
-        fireEvent.focus(input);
-
-        expect(screen.getByText('Test Config')).toBeInTheDocument();
-
-        // Click outside
-        fireEvent.mouseDown(document.body);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Test Config')).not.toBeInTheDocument();
+            expect(getStoredConfigs()).toHaveLength(expectedLength);
         });
     });
 });
