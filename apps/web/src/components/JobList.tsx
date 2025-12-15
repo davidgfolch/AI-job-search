@@ -10,7 +10,7 @@ interface JobListProps {
     onJobSelect: (job: Job) => void;
     onLoadMore: () => void;
     isLoadingMore: boolean;
-    isLoadingMore: boolean;
+
     hasMore: boolean;
     selectedIds: Set<number>;
     selectionMode: 'none' | 'manual' | 'all';

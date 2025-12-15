@@ -116,4 +116,35 @@ describe('useViewer', () => {
         await act(async () => result.current.actions.updateJob({ comments: 'New Comment' }));
         expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { comments: 'New Comment' });
     });
+    it('does not set global isLoading when loading more pages', async () => {
+        // Override mock for this test to support pagination simulation
+        let resolvePage2: (val: any) => void;
+        (jobsApi.getJobs as any).mockImplementation((params: any) => {
+            if (params.page === 2) {
+                return new Promise(resolve => {
+                    resolvePage2 = resolve;
+                });
+            }
+            // Page 1 return
+            return Promise.resolve({ items: mockJobs, total: 20, page: 1, size: 20 });
+        });
+
+        const { result } = renderViewer();
+        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
+
+        // Trigger load more
+        act(() => result.current.actions.loadMore());
+        
+        // Wait for page update
+        await waitFor(() => expect(result.current.state.filters.page).toBe(2));
+        
+        // Assert: isLoading should be false (masked), isLoadingMore should be true
+        expect(result.current.status.isLoading).toBe(false);
+        expect(result.current.status.isLoadingMore).toBe(true);
+
+        // Resolve page 2 to complete test cleanly
+        await act(async () => {
+            if (resolvePage2) resolvePage2({ items: [], total: 20, page: 2, size: 20 });
+        });
+    });
 });

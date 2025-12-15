@@ -212,7 +212,7 @@ export const useViewer = () => {
             confirmModal,
         },
         status: {
-            isLoading,
+            isLoading: isLoading && (filters.page || 1) === 1,
             isLoadingMore,
             error,
             hasNext,
