@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { JobListParams } from '../api/jobs';
+import { persistenceApi } from '../api/persistence';
 import './FilterConfigurations.css';
 
 interface FilterConfig {
@@ -24,16 +25,15 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
     const [savedConfigName, setSavedConfigName] = useState(''); // Track the loaded config name
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    // Load saved configurations from localStorage
+    // Load saved configurations from persistence API
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                setSavedConfigs(JSON.parse(stored));
+        const loadConfigs = async () => {
+            const stored = await persistenceApi.getValue<FilterConfig[]>(STORAGE_KEY);
+            if (stored && Array.isArray(stored)) {
+                setSavedConfigs(stored);
             }
-        } catch (e) {
-            console.error('Failed to load filter configurations', e);
-        }
+        };
+        loadConfigs();
     }, []);
 
     // Close dropdown when clicking outside
@@ -50,7 +50,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         }
     }, [isOpen]);
 
-    const saveConfiguration = () => {
+    const saveConfiguration = async () => {
         if (!configName.trim()) {
             if (onMessage) {
                 onMessage('Please enter a name for the configuration', 'error');
@@ -65,19 +65,25 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
             filters: currentFilters,
         };
 
-        setSavedConfigs(prev => {
-            // Remove existing config with same name if exists
-            const filtered = prev.filter(c => c.name !== newConfig.name);
-            // Add new config at the beginning and limit to MAX_CONFIGS
-            const updated = [newConfig, ...filtered].slice(0, MAX_CONFIGS);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-            return updated;
-        });
+        // Calculate new state
+        const filtered = savedConfigs.filter(c => c.name !== newConfig.name);
+        // Add new config at the beginning and limit to MAX_CONFIGS
+        const updated = [newConfig, ...filtered].slice(0, MAX_CONFIGS);
+        
+        // Optimistic update
+        setSavedConfigs(updated);
 
-        setConfigName('');
-        setIsOpen(false);
-        if (onMessage) {
-            onMessage(`Configuration "${newConfig.name}" saved!`, 'success');
+        try {
+            await persistenceApi.setValue(STORAGE_KEY, updated);
+            setConfigName('');
+            setIsOpen(false);
+            if (onMessage) {
+               onMessage(`Configuration "${newConfig.name}" saved!`, 'success');
+            }
+        } catch (e) {
+            console.error("Failed to save configuration", e);
+            if (onMessage) onMessage("Failed to save configuration", "error");
+            // Revert could be here, strict optimistic for now
         }
     };
 
@@ -89,14 +95,18 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         setHighlightIndex(-1);
     };
 
-    const deleteConfiguration = (name: string, event: React.MouseEvent) => {
+    const deleteConfiguration = async (name: string, event: React.MouseEvent) => {
         event.stopPropagation();
         if (confirm(`Delete configuration "${name}"?`)) {
-            setSavedConfigs(prev => {
-                const updated = prev.filter(c => c.name !== name);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-                return updated;
-            });
+            // Optimistic update
+            const updated = savedConfigs.filter(c => c.name !== name);
+            setSavedConfigs(updated);
+            
+            try {
+                await persistenceApi.setValue(STORAGE_KEY, updated);
+            } catch (e) {
+                console.error("Failed to delete configuration", e);
+            }
         }
     };
 
@@ -162,6 +172,27 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         }, 200);
     };
 
+    const exportToDefaults = async () => {
+        const stored = await persistenceApi.getValue<FilterConfig[]>(STORAGE_KEY);
+        if (!stored || stored.length === 0) {
+            if (onMessage) onMessage('No configurations to export.', 'error');
+            return;
+        }
+
+        const exportString = `// Paste this into apps/web/src/data/defaults.ts\nexport const defaultFilterConfigurations = ${JSON.stringify(stored, null, 4)};`;
+        
+        try {
+            await navigator.clipboard.writeText(exportString);
+            if (onMessage) {
+                onMessage('Configuration copied to clipboard! Paste into defaults.ts', 'success');
+            }
+        } catch (err) {
+            console.error('Failed to copy', err);
+            if (onMessage) onMessage('Failed to copy to clipboard. Check console.', 'error');
+            console.log(exportString);
+        }
+    };
+
     // Filter configurations based on input
     const filteredConfigs = savedConfigs.filter(config =>
         config.name.toLowerCase().includes((configName || '').toLowerCase())
@@ -191,6 +222,15 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                     title="Save current filters with the name above"
                 >
                     Save
+                </button>
+                <button
+                    type="button"
+                    onClick={exportToDefaults}
+                    className="config-export-btn"
+                    title="Copy configurations to clipboard for defaults.ts"
+                    style={{ marginLeft: '0.5rem', backgroundColor: '#4a5568' }}
+                >
+                    Export
                 </button>
                 {isOpen && filteredConfigs.length > 0 && (
                     <ul className="config-suggestions">

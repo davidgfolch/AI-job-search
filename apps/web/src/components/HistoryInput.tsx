@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { persistenceApi } from '../api/persistence';
 import './HistoryInput.css';
 
 interface HistoryInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -23,33 +24,41 @@ export default function HistoryInput({
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(storageKey);
-            if (stored) {
-                setHistory(JSON.parse(stored));
-            }
-        } catch (e) {
-            console.error('Failed to load history', e);
-        }
+        const loadHistory = async () => {
+             const stored = await persistenceApi.getValue<string[]>(storageKey);
+             if (stored && Array.isArray(stored)) {
+                 setHistory(stored);
+             }
+        };
+        loadHistory();
     }, [storageKey]);
 
-    const addToHistory = (val: string) => {
+    const addToHistory = async (val: string) => {
         if (!val || val.trim() === '') return;
         const trimmed = val.trim();
 
-        setHistory(prev => {
-            const newHistory = [trimmed, ...prev.filter(h => h !== trimmed)].slice(0, 20);
-            localStorage.setItem(storageKey, JSON.stringify(newHistory));
-            return newHistory;
-        });
+        // Optimistically update
+        const newHistory = [trimmed, ...history.filter(h => h !== trimmed)].slice(0, 20);
+        setHistory(newHistory);
+        
+        try {
+            await persistenceApi.setValue(storageKey, newHistory);
+        } catch (e) {
+            console.error('Failed to save history', e);
+            // Optionally revert on error, but simple logging is likely enough for now
+        }
     };
 
-    const removeFromHistory = (val: string) => {
-        setHistory(prev => {
-            const newHistory = prev.filter(h => h !== val);
-            localStorage.setItem(storageKey, JSON.stringify(newHistory));
-            return newHistory;
-        });
+    const removeFromHistory = async (val: string) => {
+        // Optimistically update
+        const newHistory = history.filter(h => h !== val);
+        setHistory(newHistory);
+        
+        try {
+           await persistenceApi.setValue(storageKey, newHistory);
+        } catch (e) {
+           console.error('Failed to remove from history', e);
+        }
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
