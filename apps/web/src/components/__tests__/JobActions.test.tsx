@@ -11,7 +11,6 @@ const mockJob: Job = {
     salary: '100k',
     url: 'http://test.com',
     created: new Date().toISOString(),
-    created: new Date().toISOString(),
     status: 'new',
     seen: false,
     applied: false,
