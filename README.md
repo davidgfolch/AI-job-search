@@ -27,6 +27,18 @@ This is a monorepo containing several applications and packages:
 
 ## Getting Started
 
+### Quick Start
+
+- Run dockerized applications, by default should run only:
+  - MySQL
+  - Backend API
+  - Web UI
+- Install Ollama & llama3.2 model
+- Run scrappers and aiEnrich in separated terminals manually.
+- Navigate to UI at [http://localhost:5173](http://localhost:5173)
+
+NOTE: Ollama, scrapper & aiEnrich are not tested in docker yet, so you need to run them manually.
+
 ### Installation
 
 Please see [README_INSTALL.md](READMEs/README_INSTALL.md) for detailed setup instructions.

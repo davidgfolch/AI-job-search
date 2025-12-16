@@ -39,7 +39,17 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 Download and install from [nodejs.org](https://nodejs.org/).
 
-### 4. Install Project Dependencies
+### 4. Install Ollama & llama3.2 model
+
+Download and install from [ollama.com/download](https://ollama.com/download).
+
+Run the following command to install the llama3.2 model:
+
+```bash
+ollama pull llama3.2
+```
+
+### 5. Install Project Dependencies
 
 You can use the helper script in the project root:
 
@@ -49,7 +59,7 @@ You can use the helper script in the project root:
 
 Or install manually:
 
-**Backend & Scrapper & Commonlib:**
+**Commonlib, Backend & Scrapper:**
 
 ```bash
 cd packages/commonlib && poetry install && cd ../..
@@ -60,9 +70,7 @@ cd apps/backend && uv sync && cd ../..
 **Web Frontend:**
 
 ```bash
-cd apps/web
-npm install
-cd ../..
+cd apps/web && npm install && cd ../..
 ```
 
 **AI Enrich:**
