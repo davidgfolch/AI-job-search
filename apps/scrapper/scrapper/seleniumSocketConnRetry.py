@@ -9,7 +9,7 @@ import urllib3
 from commonlib.decorator.retry import retry
 
 
-@retry(retries=20, delay=10, exception=urllib3.exceptions.ReadTimeoutError)
+@retry(retries=20, delay=3, exception=urllib3.exceptions.ReadTimeoutError)
 def seleniumSocketConnRetry() -> Callable:
     """
     Default retry configuration for SeleniumUtil socket disconnection problems
