@@ -31,7 +31,7 @@
     border-color: var(--primary-color);
 }
 
-.config-save-btn {
+.config-btn {
     padding: 0.4rem 0.8rem;
     border-width: 1px;
     border-style: solid;
@@ -45,13 +45,13 @@
     font-size: 0.875rem;
 }
 
-.config-save-btn:hover:not(:disabled) {
+.config-btn:hover:not(:disabled) {
     background: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
 }
 
-.config-save-btn:disabled {
+.config-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }

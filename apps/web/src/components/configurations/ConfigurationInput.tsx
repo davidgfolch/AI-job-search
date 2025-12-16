@@ -39,7 +39,7 @@ export function ConfigurationInput({
             <button
                 type="button"
                 onClick={onSave}
-                className="config-save-btn"
+                className="config-btn"
                 title="Save current filters with the name above"
             >
                 Save
@@ -47,7 +47,7 @@ export function ConfigurationInput({
             <button
                 type="button"
                 onClick={onExport}
-                className="config-export-btn"
+                className="config-btn"
                 title="Copy configurations to clipboard for defaults.ts"
                 style={{ marginLeft: '0.5rem', backgroundColor: '#4a5568' }}
             >
