@@ -1,5 +1,5 @@
 import React from 'react';
-import { FilterConfig } from '../../hooks/useFilterConfigurations';
+import type { FilterConfig } from '../../hooks/useFilterConfigurations';
 
 interface ConfigurationDropdownProps {
     isOpen: boolean;
