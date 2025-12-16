@@ -20,8 +20,9 @@ const mockJob = createMockJob({
 });
 
 describe('JobDetail', () => {
-    it('renders job details correctly', () => {
+    it('renders job details correctly', async () => {
         render(<JobDetail job={mockJob} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
 
         expect(screen.getByText('Software Engineer')).toBeInTheDocument();
         expect(screen.getByText('Tech Corp')).toBeInTheDocument();
@@ -32,21 +33,23 @@ describe('JobDetail', () => {
         expect(screen.getByText('Initial comment')).toBeInTheDocument();
     });
 
-    it('renders job link correctly', () => {
+    it('renders job link correctly', async () => {
         render(<JobDetail job={mockJob} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
 
         const link = screen.getByText('Software Engineer');
         expect(link).toHaveAttribute('href', 'http://example.com');
         expect(link).toHaveAttribute('target', '_blank');
     });
 
-    it('displays CV match percentage when available', () => {
+    it('displays CV match percentage when available', async () => {
         render(<JobDetail job={mockJob} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
 
         expect(screen.getByText('90%')).toBeInTheDocument();
     });
 
-    it('does not display optional fields when they are null', () => {
+    it('does not display optional fields when they are null', async () => {
         const jobWithoutOptionals: Job = {
             ...mockJob,
             company: null,
@@ -55,6 +58,7 @@ describe('JobDetail', () => {
             optional_technologies: null,
         };
         render(<JobDetail job={jobWithoutOptionals} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
 
         // These should not appear in the document
         expect(screen.queryByText('Company:')).not.toBeInTheDocument();
@@ -90,7 +94,7 @@ describe('JobDetail', () => {
         render(<JobDetail job={mockJob} />);
 
         // Wait for the async effect to complete (state update) to avoid act warning
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
         
         expect(screen.queryByText(/already applied/)).not.toBeInTheDocument();
     });

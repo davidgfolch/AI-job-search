@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -58,15 +58,22 @@ const renderWithRouter = (ui: React.ReactElement, { initialEntries = ['/'] }: { 
     );
 };
 
+const waitForAsync = async () => {
+    await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+    });
+};
+
 describe('Viewer', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('renders loading state initially', () => {
+    it('renders loading state initially', async () => {
         (jobsApi.getJobs as any).mockReturnValue(new Promise(() => { })); // Never resolves
         renderWithRouter(<Viewer />);
         expect(screen.getByText('Loading jobs...')).toBeInTheDocument();
+        await waitForAsync();
     });
 
     it('renders job list after loading', async () => {
@@ -106,6 +113,8 @@ describe('Viewer', () => {
         expect(screen.getByText('Description 1')).toBeInTheDocument();
         // Company 1 appears in list and detail, so we expect 2
         expect(screen.getAllByText('Company 1')).toHaveLength(2);
+        
+        await waitForAsync();
     });
 
     it('switches between List and Edit tabs', async () => {
@@ -126,6 +135,8 @@ describe('Viewer', () => {
         fireEvent.click(screen.getByText('List'));
         // Should show list again (check for table cell)
         expect(screen.getByRole('cell', { name: 'Job 1' })).toBeInTheDocument();
+        
+        await waitForAsync();
     });
 
     it('handles infinite scroll loading', async () => {
@@ -165,6 +176,8 @@ describe('Viewer', () => {
         });
         // Should invalidate queries (refetch jobs)
         expect(jobsApi.getJobs).toHaveBeenCalledTimes(2); // Initial + Refetch
+        
+        await waitForAsync();
     });
     it('filters jobs by ids from URL', async () => {
         (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });

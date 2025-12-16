@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import FilterConfigurations from '../FilterConfigurations';
 import { createMockFilters, setupLocalStorage, setupWindowMocks, getStoredConfigs } from '../../__tests__/test-utils';
@@ -17,6 +17,8 @@ describe('FilterConfigurations', () => {
     beforeEach(() => {
         onLoadConfigMock = vi.fn();
         setupLocalStorage();
+        // Initialize with empty array to avoid fallback to defaults from persistenceApi
+        localStorage.setItem('filter_configurations', JSON.stringify([]));
         setupWindowMocks();
     });
 
@@ -24,18 +26,22 @@ describe('FilterConfigurations', () => {
         vi.restoreAllMocks();
     });
 
-    const renderComponent = (props: { currentFilters?: JobListParams; onMessage?: any } = {}) => {
-        return render(
+    const renderComponent = async (props: { currentFilters?: JobListParams; onMessage?: any } = {}) => {
+        const result = render(
             <FilterConfigurations 
                 currentFilters={props.currentFilters || mockFilters} 
                 onLoadConfig={onLoadConfigMock as any} 
                 onMessage={props.onMessage} 
             />
         );
+        await act(async () => {
+            await new Promise(resolve => setTimeout(resolve, 0));
+        });
+        return result;
     };
 
-    it('renders correctly', () => {
-        renderComponent();
+    it('renders correctly', async () => {
+        await renderComponent();
         expect(screen.getByLabelText(/Filter Configurations/i)).toBeInTheDocument();
         expect(screen.getByPlaceholderText(/Type to load or enter name to save/i)).toBeInTheDocument();
         expect(screen.getByText('Save')).toBeInTheDocument();
@@ -47,40 +53,35 @@ describe('FilterConfigurations', () => {
             ['Enter Key', (input: HTMLElement, _btn: HTMLElement) => fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })],
         ])('saves configuration using %s', async (_, action) => {
             const onMessageMock = vi.fn();
-            renderComponent({ onMessage: onMessageMock });
+            await renderComponent({ onMessage: onMessageMock });
             const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
             const saveButton = screen.getByText('Save');
-
             fireEvent.change(input, { target: { value: 'My Config' } });
             action(input, saveButton);
-
             await waitFor(() => {
                 const configs = getStoredConfigs();
                 expect(configs).toHaveLength(1);
                 expect(configs[0].name).toBe('My Config');
                 expect(configs[0].filters).toEqual(mockFilters);
             });
-
             if (onMessageMock.mock.calls.length > 0) { 
                  expect(onMessageMock).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success');
             }
             expect((input as HTMLInputElement).value).toBe(''); // Clears input
         });
 
-        it('validates name before saving', () => {
-            renderComponent();
+        it('validates name before saving', async () => {
+            await renderComponent();
             fireEvent.click(screen.getByText('Save'));
-            expect(localStorage.getItem('filter_configurations')).toBeNull();
+            expect(localStorage.getItem('filter_configurations')).toBe('[]');
             expect(window.alert).toHaveBeenCalledWith('Please enter a name for the configuration');
         });
 
         it('replaces existing configuration with same name', async () => {
             const oldFilters = { ...mockFilters, search: 'Old' };
             localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Same Name', filters: oldFilters }]));
-            
             const newFilters = { ...mockFilters, search: 'New' };
-            renderComponent({ currentFilters: newFilters });
-            
+            await renderComponent({ currentFilters: newFilters });
             // Wait for initial load to avoid overwriting state with empty if effect runs late (though here we are saving new state based on props)
             // Actually saveConfiguration uses `savedConfigs` state to append/replace. 
             // So we MUST wait for initial load, otherwise savedConfigs is empty and we might duplicate or lose history if we had logic for that.
@@ -95,10 +96,8 @@ describe('FilterConfigurations', () => {
             const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
             fireEvent.focus(input);
             await screen.findByText('Same Name'); // Wait for it to be loaded
-
             fireEvent.change(input, { target: { value: 'Same Name' } });
             fireEvent.click(screen.getByText('Save'));
-
             await waitFor(() => {
                 const configs = getStoredConfigs();
                 expect(configs).toHaveLength(1);
@@ -112,17 +111,13 @@ describe('FilterConfigurations', () => {
                 filters: mockFilters,
             }));
             localStorage.setItem('filter_configurations', JSON.stringify(existingConfigs));
-
-            renderComponent();
-
+            await renderComponent();
             // Wait for load
             const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
             fireEvent.focus(input);
             await screen.findByText('Config 1');
-
             fireEvent.change(input, { target: { value: 'Config 31' } });
             fireEvent.click(screen.getByText('Save'));
-
             await waitFor(() => {
                 const configs = getStoredConfigs();
                 expect(configs).toHaveLength(30);
@@ -144,7 +139,7 @@ describe('FilterConfigurations', () => {
                 { name: 'Junior Python', filters: mockFilters },
             ];
             localStorage.setItem('filter_configurations', JSON.stringify(configs));
-            renderComponent();
+            await renderComponent();
 
             const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
             // We need to wait for data load before interacting for filter check
@@ -158,9 +153,7 @@ describe('FilterConfigurations', () => {
                  // Or just wait for "Test Config" to appear (load complete) then filter
                  await screen.findByText('Test Config');
             }
-
             action(input); // Now perform the specific action (focus again or change)
-
             if (shouldBeVisible) {
                 await screen.findByText(configName); // Should still be there or appear
             } else {
@@ -171,25 +164,20 @@ describe('FilterConfigurations', () => {
         it('loads configuration interacting with suggestion', async () => {
              const savedFilters = { ...mockFilters, search: 'Senior Engineer' };
              localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Senior Jobs', filters: savedFilters }]));
-             renderComponent();
-
+             await renderComponent();
              const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
              fireEvent.focus(input);
-             
              const suggestion = await screen.findByText('Senior Jobs');
              fireEvent.click(suggestion);
-
              expect(onLoadConfigMock).toHaveBeenCalledWith(savedFilters);
              expect((input as HTMLInputElement).value).toBe('Senior Jobs');
         });
 
         it('closes suggestions when clicking outside', async () => {
             localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Test Config', filters: mockFilters }]));
-            renderComponent();
+            await renderComponent();
             fireEvent.focus(screen.getByPlaceholderText(/Type to load or enter name to save/i));
-            
             await screen.findByText('Test Config');
-
             fireEvent.mouseDown(document.body);
             await waitFor(() => expect(screen.queryByText('Test Config')).not.toBeInTheDocument());
         });
@@ -202,11 +190,9 @@ describe('FilterConfigurations', () => {
         ])('handles delete when user %s', async (_, confirmValue, expectedLength) => {
             vi.spyOn(window, 'confirm').mockImplementation(() => confirmValue);
             localStorage.setItem('filter_configurations', JSON.stringify([{ name: 'Delete Me', filters: mockFilters }]));
-            renderComponent();
-
+            await renderComponent();
             const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
             fireEvent.focus(input);
-            
             // Wait for item
             const item = await screen.findByText('Delete Me');
             // Find delete button within the item
@@ -214,9 +200,7 @@ describe('FilterConfigurations', () => {
             // Using closest li might be safer
             const li = item.closest('li');
             const deleteBtn = li?.querySelector('.config-delete-btn');
-            
             fireEvent.click(deleteBtn!);
-
             await waitFor(() => {
                 expect(getStoredConfigs()).toHaveLength(expectedLength);
             });
