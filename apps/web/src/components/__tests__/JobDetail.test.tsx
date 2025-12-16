@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import JobDetail from '../JobDetail';
 import type { Job } from '../../api/jobs';
@@ -89,7 +89,9 @@ describe('JobDetail', () => {
 
         render(<JobDetail job={mockJob} />);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for the async effect to complete (state update) to avoid act warning
+        await new Promise(resolve => setTimeout(resolve, 0));
+        
         expect(screen.queryByText(/already applied/)).not.toBeInTheDocument();
     });
 
@@ -102,10 +104,14 @@ describe('JobDetail', () => {
 
         render(<JobDetail job={mockJob} />);
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for the error log, which confirms the catch block and state updates have run
+        await waitFor(() => {
+            expect(consoleSpy).toHaveBeenCalledWith('Error fetching applied company jobs:', expect.any(Error));
+        });
+        
         expect(screen.queryByText(/already applied/)).not.toBeInTheDocument();
-        expect(consoleSpy).toHaveBeenCalledWith('Error fetching applied company jobs:', expect.any(Error));
 
         consoleSpy.mockRestore();
     });
 });
+

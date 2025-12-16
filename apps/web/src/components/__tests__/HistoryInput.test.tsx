@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import HistoryInput from '../HistoryInput';
 
 describe('HistoryInput', () => {
@@ -15,8 +15,29 @@ describe('HistoryInput', () => {
         vi.clearAllMocks();
     });
 
-    it('renders input with placeholder', () => {
-        render(<HistoryInput {...defaultProps} />);
+    // Helper to render and wait for initial async load
+    const renderAndWait = async (props = defaultProps) => {
+        const result = render(<HistoryInput {...props} />);
+        // The effect in HistoryInput calls persistenceApi.getValue which is async.
+        // It then calls setHistory. We need to wait for this cycle to finish.
+        // Since we don't know exactly when it finishes without a visual cue that always appears,
+        // we can assume 'persistenceApi' is working.
+        // But the best way is to wait for the state update.
+        // If the history is empty, there is no visual change unless we look at internals.
+        // However, we know 'test-history' defaults to something in persistence.ts (we saw defaultHistory).
+        // Let's verify defaults.ts has 'React'.
+        
+        // Wait for potential effects to settle.
+        // In real app, we might check for a data-loaded attribute or similar if this was critical,
+        // but here we can just wait for a known item or a small tick if empty.
+        // Actually, let's just wait for a tick or verify behavior.
+        // The warning happens because the test finishes before the effect does.
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0))); 
+        return result;
+    };
+
+    it('renders input with placeholder', async () => {
+        await renderAndWait();
         expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
     });
 
@@ -24,25 +45,32 @@ describe('HistoryInput', () => {
         localStorage.setItem('test-history', JSON.stringify(['react', 'vue']));
         render(<HistoryInput {...defaultProps} />);
         
-        // Focus to show suggestions
         fireEvent.focus(screen.getByPlaceholderText('Search...'));
         
-        // Wait for async load
         expect(await screen.findByText('react')).toBeInTheDocument();
         expect(screen.getByText('vue')).toBeInTheDocument();
     });
 
     it('adds value to history on submit (Enter)', async () => {
-        render(<HistoryInput {...defaultProps} value="angular" />);
+        // Render with empty value first to allow default history to show up
+        const { rerender } = render(<HistoryInput {...defaultProps} value="" />);
         
         const input = screen.getByPlaceholderText('Search...');
+        fireEvent.focus(input);
+        
+        // Wait for defaults to load -> cleaner handling of the initial async effect
+        await screen.findByText('React'); 
+        
+        // Now update to the test value
+        rerender(<HistoryInput {...defaultProps} value="angular" />);
+        
+        // We need to re-query elements if they might have changed, though input ref is likely stable, safest to get again or use same if stable.
+        // But fireEvent works on the element reference.
+        
+        // Trigger submit
         fireEvent.keyDown(input, { key: 'Enter' });
 
         // Wait for persistence to happen (it's async)
-        // We can check localStorage but might need a small wait if the implementation doesn't await the setItem in the effect or handler
-        // The implementation does `await persistenceApi.setValue` but it's fire-and-forget from the handler's perspective (handler is sync)
-        
-        // Wait for the value to appear in local storage
         await vi.waitUntil(() => {
              const stored = JSON.parse(localStorage.getItem('test-history') || '[]');
              return stored.includes('angular');
@@ -50,9 +78,14 @@ describe('HistoryInput', () => {
     });
 
     it('adds value to history on blur if not empty', async () => {
-        render(<HistoryInput {...defaultProps} value="svelte" />);
+        const { rerender } = render(<HistoryInput {...defaultProps} value="" />);
         
         const input = screen.getByPlaceholderText('Search...');
+        fireEvent.focus(input);
+        await screen.findByText('React');
+
+        rerender(<HistoryInput {...defaultProps} value="svelte" />);
+
         fireEvent.blur(input);
 
         await vi.waitUntil(() => {
@@ -67,7 +100,6 @@ describe('HistoryInput', () => {
         
         fireEvent.focus(screen.getByPlaceholderText('Search...'));
 
-        // Wait for loading
         expect(await screen.findByText('react')).toBeInTheDocument();
         expect(screen.getByText('redux')).toBeInTheDocument();
         expect(screen.queryByText('vue')).not.toBeInTheDocument();
@@ -92,22 +124,17 @@ describe('HistoryInput', () => {
         const input = screen.getByPlaceholderText('Search...');
         fireEvent.focus(input);
         
-        // Wait for items to load
         await screen.findByText('first');
 
-        // Arrow Down -> highlight first
         fireEvent.keyDown(input, { key: 'ArrowDown' });
         expect(screen.getByText('first')).toHaveClass('active');
         
-        // Arrow Down -> highlight second
         fireEvent.keyDown(input, { key: 'ArrowDown' });
         expect(screen.getByText('second')).toHaveClass('active');
 
-        // Arrow Up -> highlight first
         fireEvent.keyDown(input, { key: 'ArrowUp' });
         expect(screen.getByText('first')).toHaveClass('active');
 
-        // Enter -> select first
         fireEvent.keyDown(input, { key: 'Enter' });
         expect(defaultProps.onValueChange).toHaveBeenCalledWith('first');
     });
@@ -119,22 +146,18 @@ describe('HistoryInput', () => {
         const input = screen.getByPlaceholderText('Search...');
         fireEvent.focus(input);
         
-        // Wait for items
         await screen.findByText('todelete');
 
-        // Highlight first
         fireEvent.keyDown(input, { key: 'ArrowDown' });
         
-        // Delete
         fireEvent.keyDown(input, { key: 'Delete' });
         
-        // Wait for removal from storage
         await vi.waitUntil(() => {
              const stored = JSON.parse(localStorage.getItem('test-history') || '[]');
              return !stored.includes('todelete') && stored.includes('keep');
         });
 
-        // UI update check (it filters based on state, state updates optimistically)
         expect(screen.queryByText('todelete')).not.toBeInTheDocument();
     });
 });
+

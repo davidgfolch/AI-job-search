@@ -18,12 +18,9 @@ export default function JobDetail({ job }: JobDetailProps) {
                 setAppliedCompanyJobs([]);
                 return;
             }
-
-            console.log('Fetching applied jobs for company:', job.company, 'Client:', job.client);
             setLoadingApplied(true);
             try {
                 const jobs = await jobsApi.getAppliedJobsByCompany(job.company, job.client || undefined);
-                console.log('Applied company jobs response:', jobs);
                 setAppliedCompanyJobs(jobs);
             } catch (error) {
                 console.error('Error fetching applied company jobs:', error);
