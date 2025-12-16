@@ -6,14 +6,13 @@ import Viewer from '../Viewer';
 import { jobsApi } from '../../api/jobs';
 import type { Job } from '../../api/jobs';
 
-// Mock IntersectionObserver
+// --- Mocks ---
 globalThis.IntersectionObserver = vi.fn(function (this: any) {
     this.observe = vi.fn();
     this.unobserve = vi.fn();
     this.disconnect = vi.fn();
 }) as any;
 
-// Mock the jobs API
 vi.mock('../../api/jobs', async () => {
     const actual = await vi.importActual('../../api/jobs');
     return {
@@ -27,6 +26,7 @@ vi.mock('../../api/jobs', async () => {
     };
 });
 
+// --- Constants & Helpers ---
 const mockJobs: Job[] = [
     {
         id: 1, title: 'Job 1', company: 'Company 1', salary: '100k', location: 'Remote', url: 'http://example.com/1', markdown: 'Description 1',
@@ -44,201 +44,136 @@ const mockJobs: Job[] = [
     },
 ];
 
-const createTestQueryClient = () => new QueryClient({
-    defaultOptions: { queries: { retry: false, }, },
-});
-
-const renderWithRouter = (ui: React.ReactElement, { initialEntries = ['/'] }: { initialEntries?: string[] } = {}) => {
+const renderViewer = (initialEntries = ['/']) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
         <MemoryRouter initialEntries={initialEntries}>
-            <QueryClientProvider client={createTestQueryClient()}>
-                {ui}
-            </QueryClientProvider>
+            <QueryClientProvider client={client}><Viewer /></QueryClientProvider>
         </MemoryRouter>
     );
 };
 
-const waitForAsync = async () => {
-    await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
-    });
-};
+const waitForAsync = async () => await act(async () => { await new Promise(r => setTimeout(r, 0)); });
 
+// --- Tests ---
 describe('Viewer', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    const stateTestCases = [
+        {
+            name: 'renders loading state initially',
+            mockSetup: () => (jobsApi.getJobs as any).mockReturnValue(new Promise(() => { })),
+            assertion: async () => {
+                expect(screen.getByText('Loading jobs...')).toBeInTheDocument();
+                await waitForAsync();
+            }
+        },
+        {
+            name: 'renders job list after loading',
+            mockSetup: () => (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 }),
+            assertion: async () => {
+                await waitFor(() => {
+                    expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
+                    expect(screen.getAllByText('Job 2').length).toBeGreaterThan(0);
+                });
+                const summary = screen.getByText(/ loaded \| /);
+                expect(summary).toHaveTextContent(/2\/2 loaded \| 0 Selected/);
+            }
+        },
+        {
+            name: 'handles error state',
+            mockSetup: () => (jobsApi.getJobs as any).mockRejectedValue(new Error('Failed to fetch')),
+            assertion: async () => await waitFor(() => expect(screen.getByText('Failed to fetch')).toBeInTheDocument())
+        }
+    ];
+
+    it.each(stateTestCases)('$name', async ({ mockSetup, assertion }) => {
+        mockSetup();
+        renderViewer();
+        await assertion();
     });
 
-    it('renders loading state initially', async () => {
-        (jobsApi.getJobs as any).mockReturnValue(new Promise(() => { })); // Never resolves
-        renderWithRouter(<Viewer />);
-        expect(screen.getByText('Loading jobs...')).toBeInTheDocument();
-        await waitForAsync();
-    });
+    it('handles user interactions: select, verify details, partial filter', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
+        renderViewer();
+        await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
 
-    it('renders job list after loading', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
-        renderWithRouter(<Viewer />);
-        await waitFor(() => {
-            // Use getAllByText because "Job 1" might appear in multiple places if we are not careful,
-            // but here we just want to ensure it is present.
-            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-            expect(screen.getAllByText('Job 2').length).toBeGreaterThan(0);
-        });
-        const summary = screen.getByText(/ loaded \| /);
-        expect(summary).toHaveTextContent(/2\/2 loaded \| 0 Selected/);
-    });
-
-    it('handles error state', async () => {
-        (jobsApi.getJobs as any).mockRejectedValue(new Error('Failed to fetch'));
-        renderWithRouter(<Viewer />);
-        await waitFor(() => {
-            expect(screen.getByText('Failed to fetch')).toBeInTheDocument();
-        });
-    });
-
-    it('selects a job and displays details', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
-        renderWithRouter(<Viewer />);
-        await waitFor(() => {
-            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-        });
-        // Initially no selection
+        // Interaction: Select Job
         expect(screen.getByText('Select a job to view details')).toBeInTheDocument();
-        // Click first job in the list (use role cell to be specific to the table)
-        // Note: JobTable renders title in a cell
-        const jobLink = screen.getByRole('cell', { name: 'Job 1' });
-        fireEvent.click(jobLink);
-        // Should show details
+        fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
         expect(screen.getByText('Description 1')).toBeInTheDocument();
-        // Company 1 appears in list and detail, so we expect 2
         expect(screen.getAllByText('Company 1')).toHaveLength(2);
+
+        // Interaction: Filter (Flagged)
+        const flaggedButtons = screen.getAllByRole('button', { name: /Flagged/i });
+        fireEvent.click(flaggedButtons[0]);
+        await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ flagged: true, page: 1 })));
         
         await waitForAsync();
     });
 
-    it('switches between List and Edit tabs', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
+    it('handles tab switching and edit interactions', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
-        renderWithRouter(<Viewer />);
-        await waitFor(() => {
-            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-        });
-        // Select a job first
-        const jobLink = screen.getByRole('cell', { name: 'Job 1' });
-        fireEvent.click(jobLink);
-        // Switch to Edit tab
+        renderViewer();
+        await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
+
+        // Select and Switch to Edit
+        fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
         fireEvent.click(screen.getByText('Edit'));
-        // Should show edit form
         expect(screen.getByLabelText('Comments')).toBeInTheDocument();
-        // Switch back to List tab
+
+        // Switch back to List
         fireEvent.click(screen.getByText('List'));
-        // Should show list again (check for table cell)
         expect(screen.getByRole('cell', { name: 'Job 1' })).toBeInTheDocument();
         
         await waitForAsync();
     });
 
-    it('handles infinite scroll loading', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 50, page: 1, size: 20, });
-        renderWithRouter(<Viewer />);
+    it('handles infinite scroll', async () => {
+         // Infinite Scroll
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 50, page: 1, size: 20 });
+        renderViewer();
         await waitFor(() => {
             const summary = screen.getByText(/ loaded \| /);
             expect(summary).toHaveTextContent(/2\/50 loaded \| 0 Selected/);
         });
-        // Initially showing 2 jobs from page 1
         expect(jobsApi.getJobs).toHaveBeenCalledTimes(1);
     });
 
-    it('updates job and refreshes list', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
+    it('updates job and refreshes list (isolated)', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
-        (jobsApi.updateJob as any).mockResolvedValue({
-            ...mockJobs[0],
-            flagged: true,
-        });
-        renderWithRouter(<Viewer />);
-        await waitFor(() => {
-            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-        });
-        // Select job
-        const jobLink = screen.getByRole('cell', { name: 'Job 1' });
-        fireEvent.click(jobLink);
-        // Go to edit tab
-        fireEvent.click(screen.getByText('Edit'));
-        // Click flagged pill in the edit form (appears multiple times due to filters)
-        const flaggedPills = screen.getAllByText('Flagged');
-        // The last ones are in the Edit form's status pills
-        const flaggedPill = flaggedPills[flaggedPills.length - 1];
-        fireEvent.click(flaggedPill);
-        await waitFor(() => {
-            expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { flagged: true });
-        });
-        // Should invalidate queries (refetch jobs)
-        expect(jobsApi.getJobs).toHaveBeenCalledTimes(2); // Initial + Refetch
+        (jobsApi.updateJob as any).mockResolvedValue({ ...mockJobs[0], flagged: true });
+        renderViewer();
         
+        await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
+        fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
+        fireEvent.click(screen.getByText('Edit'));
+
+        const flaggedPills = screen.getAllByText('Flagged');
+        fireEvent.click(flaggedPills[flaggedPills.length - 1]);
+        await waitFor(() => expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { flagged: true }));
+        expect(jobsApi.getJobs).toHaveBeenCalledTimes(2);
         await waitForAsync();
     });
-    it('filters jobs by ids from URL', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20, });
-        renderWithRouter(<Viewer />, { initialEntries: ['/?ids=1,2'] });
-        await waitFor(() => {
-            expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({
-                sql_filter: 'id IN (1,2)',
-                page: 1,
-            }));
-        });
-    });
-    it('interactions with filters trigger API calls', async () => {
+
+    it('filters by URL ids', async () => {
         (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
-        renderWithRouter(<Viewer />);
-        
-        await waitFor(() => {
-            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-        });
-
-        // Toggle a filter explicitly (e.g. "Flagged")
-        // We have two "Flagged" buttons (Include and Exclude). 
-        // We want to click the one in "Include" section.
-        // We can find all buttons with text "Flagged" and click the first one.
-        const flaggedButtons = screen.getAllByRole('button', { name: /Flagged/i });
-        fireEvent.click(flaggedButtons[0]);
-
-        await waitFor(() => {
-            expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({
-                flagged: true,
-                page: 1
-            }));
-        });
+        renderViewer(['/?ids=1,2']);
+        await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ sql_filter: 'id IN (1,2)', page: 1 })));
     });
 
-    it('dismisses message when close button is clicked', async () => {
+    it('validates configuration name on save', async () => {
         (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
-        renderWithRouter(<Viewer />);
+        renderViewer();
+        await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
+
+        fireEvent.click(screen.getByText(/Filters/));
+        fireEvent.click(screen.getByText('Save'));
+        await waitFor(() => expect(screen.getByText('Please enter a name for the configuration')).toBeInTheDocument());
         
-        await waitFor(() => {
-            expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-        });
-
-        // Toggle filters to show configurations
-        const toggleBtn = screen.getByText(/Filters/);
-        fireEvent.click(toggleBtn);
-
-        // Find Save button in FilterConfigurations and click it empty
-        const saveBtn = screen.getByText('Save');
-        fireEvent.click(saveBtn);
-
-        // Should show error message from validation
-        await waitFor(() => {
-            expect(screen.getByText('Please enter a name for the configuration')).toBeInTheDocument();
-        });
-
-        // Dismiss it
-        const messageEl = screen.getByText('Please enter a name for the configuration');
-        fireEvent.click(messageEl);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Please enter a name for the configuration')).not.toBeInTheDocument();
-        });
+        fireEvent.click(screen.getByText('Please enter a name for the configuration'));
+        await waitFor(() => expect(screen.queryByText('Please enter a name for the configuration')).not.toBeInTheDocument());
     });
 });
