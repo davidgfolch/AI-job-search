@@ -4,13 +4,13 @@ from scrapper import tecnoempleo
 from scrapper.tecnoempleo import run
 from scrapper.selenium.tecnoempleo_selenium import TecnoempleoNavigator
 from scrapper.services.job_services.tecnoempleo_job_service import TecnoempleoJobService
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mock_selenium():
-    mock = MagicMock(spec=SeleniumUtil)
+    mock = MagicMock(spec=SeleniumService)
     mock.driverUtil = MagicMock()
     mock.driverUtil.useUndetected = False
     return mock

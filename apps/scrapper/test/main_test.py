@@ -4,7 +4,7 @@ from scrapper.main import main, hasArgument
 
 @pytest.fixture
 def mocks():
-    with patch('scrapper.main.SeleniumUtil') as mock_selenium_cls, \
+    with patch('scrapper.main.SeleniumService') as mock_selenium_cls, \
          patch('scrapper.main.PersistenceManager') as mock_pm_cls, \
          patch('scrapper.main.ScrapperContainer') as mock_container_cls, \
          patch('scrapper.main.runScrapperPageUrl') as mock_run_url, \

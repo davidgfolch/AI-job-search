@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Callable
 from ..interfaces.scrapper_interface import ScrapperInterface
 from ..interfaces.job_storage_interface import JobStorageInterface
-from ..seleniumUtil import SeleniumUtil
+from ..services.selenium.seleniumService import SeleniumService
 from ..baseScrapper import printScrapperTitle
 from commonlib.terminalColor import green, yellow, red
 from ..persistence_manager import PersistenceManager
@@ -12,7 +12,7 @@ class ScrappingService:
         self.scrapper: ScrapperInterface = scrapper
         self.storage: JobStorageInterface = storage
 
-    def executeScrapping(self, selenium: SeleniumUtil, keywordsList: List[str], preloadOnly: bool = False, persistenceManager: PersistenceManager = None) -> Dict[str, Any]:
+    def executeScrapping(self, selenium: SeleniumService, keywordsList: List[str], preloadOnly: bool = False, persistenceManager: PersistenceManager = None) -> Dict[str, Any]:
         printScrapperTitle(self.scrapper.getSiteName(), preloadOnly)
         results = {
             'site': self.scrapper.getSiteName(),
@@ -85,7 +85,7 @@ class ScrappingService:
             print(red(f"Critical error in scrapping service: {e}"))
         return results
 
-    def _processKeywords(self, selenium: SeleniumUtil, keywords: str, start_page: int = 1, on_page_complete: Callable[[int], None] = None) -> Dict[str, Any]:
+    def _processKeywords(self, selenium: SeleniumService, keywords: str, start_page: int = 1, on_page_complete: Callable[[int], None] = None) -> Dict[str, Any]:
         results = {
             'keywords': keywords,
             'processed': 0,

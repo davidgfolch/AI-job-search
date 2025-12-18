@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from selenium.webdriver.common.by import By
 
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 
 
 @pytest.fixture(scope='class')
@@ -16,14 +16,14 @@ def mock_driver():
 
 @pytest.fixture(scope='class')
 def selenium_util(mock_driver):
-    """Shared SeleniumUtil instance with mocked driver"""
+    """Shared SeleniumService instance with mocked driver"""
     with patch('scrapper.driverUtil.getEnvBool', return_value=False), \
          patch('scrapper.driverUtil.webdriver.Chrome', return_value=mock_driver):
-        util = SeleniumUtil()
+        util = SeleniumService()
         yield util
 
 
-class TestSeleniumUtil:
+class TestSeleniumService:
     def test_initialization(self, selenium_util, mock_driver):
         assert selenium_util.driver == mock_driver
 
@@ -53,7 +53,7 @@ class TestSeleniumUtil:
     def test_send_keys(self, selenium_util, mock_driver):
         mock_element = MagicMock()
         mock_driver.find_element.return_value = mock_element
-        with patch.object(selenium_util, 'moveToElement'):
+        with patch.object(selenium_util.element_service, 'moveToElement'):
             selenium_util.sendKeys('#test-id', 'test text')
             mock_element.send_keys.assert_called_with('test text')
 
@@ -75,14 +75,14 @@ class TestSeleniumUtil:
     def test_scroll_into_view(self, selenium_util, mock_driver):
         mock_element = MagicMock()
         mock_driver.find_element.return_value = mock_element
-        with patch.object(selenium_util, 'waitUntilVisible'), \
-             patch.object(selenium_util, 'moveToElement'):
+        with patch.object(selenium_util.element_service, 'waitUntilVisible'), \
+             patch.object(selenium_util.element_service, 'moveToElement'):
             selenium_util.scrollIntoView('#test-id')
             mock_driver.execute_script.assert_called()
 
     def test_tab_creation(self, selenium_util, mock_driver):
         mock_driver.current_window_handle = 'new_tab'
-        with patch.object(selenium_util, 'waitUntilPageIsLoaded'):
+        with patch.object(selenium_util.browser_service, 'waitUntilPageIsLoaded'):
             selenium_util.tab('test_tab')
             assert 'test_tab' in selenium_util.tabs
 
@@ -92,14 +92,14 @@ class TestSeleniumUtil:
         mock_driver.close.assert_called()
         assert 'test_tab' not in selenium_util.tabs
 
-    @patch('scrapper.seleniumUtil.WebDriverWait')
+    @patch('scrapper.services.selenium.browser_service.WebDriverWait')
     def test_wait_until_page_is_loaded(self, mock_wait, selenium_util, mock_driver):
         mock_wait_instance = MagicMock()
         mock_wait.return_value = mock_wait_instance
         selenium_util.waitUntilPageIsLoaded(10)
         mock_wait.assert_called_with(mock_driver, 10)
 
-    @patch('scrapper.seleniumUtil.sleep')
+    @patch('scrapper.services.selenium.browser_service.sleep')
     def test_scroll_progressive_down(self, mock_sleep, selenium_util, mock_driver):
         mock_driver.execute_script.side_effect = [100] + [None] * 20
         selenium_util.scrollProgressive(200)
@@ -107,7 +107,7 @@ class TestSeleniumUtil:
         final_call = mock_driver.execute_script.call_args_list[-1]
         assert 'window.scrollTo(0, 300)' in str(final_call)
 
-    @patch('scrapper.seleniumUtil.sleep')
+    @patch('scrapper.services.selenium.browser_service.sleep')
     def test_scroll_progressive_up(self, mock_sleep, selenium_util, mock_driver):
         mock_driver.execute_script.side_effect = [500] + [None] * 20
         selenium_util.scrollProgressive(-200)
@@ -115,7 +115,7 @@ class TestSeleniumUtil:
         final_call = mock_driver.execute_script.call_args_list[-1]
         assert 'window.scrollTo(0, 300)' in str(final_call)
 
-    @patch('scrapper.seleniumUtil.sleep')
+    @patch('scrapper.services.selenium.browser_service.sleep')
     def test_scroll_progressive_zero(self, mock_sleep, selenium_util, mock_driver):
         mock_driver.execute_script.side_effect = [100, None]
         selenium_util.scrollProgressive(0)
@@ -123,7 +123,7 @@ class TestSeleniumUtil:
         assert 'window.scrollTo(0, 100)' in str(final_call)
 
     def test_send_escape_key(self, selenium_util):
-        with patch('scrapper.seleniumUtil.webdriver.ActionChains') as mock_action:
+        with patch('scrapper.services.selenium.browser_service.webdriver.ActionChains') as mock_action:
             mock_chain = MagicMock()
             mock_action.return_value = mock_chain
             selenium_util.sendEscapeKey()
@@ -137,7 +137,7 @@ class TestSeleniumUtil:
         mock_driver.execute_script.return_value = None
         mock_driver.execute_script.side_effect = None
 
-        with patch.object(selenium_util, 'moveToElement'):
+        with patch.object(selenium_util.element_service, 'moveToElement'):
             selenium_util.checkboxUnselect('#checkbox')
             mock_driver.execute_script.assert_called()
 
@@ -145,18 +145,18 @@ class TestSeleniumUtil:
         mock_element = MagicMock()
         mock_driver.find_element.return_value = mock_element
 
-        with patch.object(selenium_util, 'waitUntilClickable'), \
-             patch.object(selenium_util, 'moveToElement'):
+        with patch.object(selenium_util.element_service, 'waitUntilClickable'), \
+             patch.object(selenium_util.element_service, 'moveToElement'):
             selenium_util.waitAndClick('#test-id')
             mock_element.click.assert_called()
 
     def test_wait_and_click_no_error_success(self, selenium_util):
-        with patch.object(selenium_util, 'waitAndClick'):
+        with patch.object(selenium_util.element_service, 'waitAndClick'):
             result = selenium_util.waitAndClick_noError('#test-id', 'test message')
             assert result is True
 
     def test_wait_and_click_no_error_failure(self, selenium_util):
-        with patch.object(selenium_util, 'waitAndClick', side_effect=Exception('error')):
+        with patch.object(selenium_util.element_service, 'waitAndClick', side_effect=Exception('error')):
             result = selenium_util.waitAndClick_noError('#test-id', 'test message')
             assert result is False
 

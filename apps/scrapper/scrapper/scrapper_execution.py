@@ -6,7 +6,7 @@ from commonlib.terminalColor import cyan, red, yellow, green
 from commonlib.keep_system_awake import KeepSystemAwake
 from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, indeed
 from scrapper.persistence_manager import PersistenceManager
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.container.scrapper_container import ScrapperContainer
 from scrapper.scrapper_config import (
     NEW_ARCH, CLOSE_TAB, RUN_IN_TABS, DEBUG, SCRAPPERS
@@ -36,7 +36,7 @@ def hasNewArchitecture(name: str, properties: dict[str, Any], scrapperContainer:
         baseScrapper.debug(DEBUG, f"⚠️  Using OLD architecture for {name}, new architecture not available")
         return False
 
-def runScrapper(name: str, preloadOnly: bool, persistenceManager: PersistenceManager, seleniumUtil: SeleniumUtil):
+def runScrapper(name: str, preloadOnly: bool, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService):
     match name.lower():
         case 'infojobs':
             infojobs.run(seleniumUtil, preloadOnly, persistenceManager)
@@ -49,7 +49,7 @@ def runScrapper(name: str, preloadOnly: bool, persistenceManager: PersistenceMan
         case 'indeed':
             indeed.run(seleniumUtil, preloadOnly, persistenceManager)
 
-def runPreloadNewArchitecture(name: str, scrapperContainer: ScrapperContainer, seleniumUtil: SeleniumUtil):
+def runPreloadNewArchitecture(name: str, scrapperContainer: ScrapperContainer, seleniumUtil: SeleniumService):
     try:
         scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         results = scrapping_service.executeScrapping(seleniumUtil, [], preloadOnly=True)
@@ -58,7 +58,7 @@ def runPreloadNewArchitecture(name: str, scrapperContainer: ScrapperContainer, s
     except Exception:
         baseScrapper.debug(DEBUG)
 
-def runScrapperNewArchitecture(name: str, properties: dict, persistenceManager: PersistenceManager, scrapperContainer: ScrapperContainer, seleniumUtil: SeleniumUtil):
+def runScrapperNewArchitecture(name: str, properties: dict, persistenceManager: PersistenceManager, scrapperContainer: ScrapperContainer, seleniumUtil: SeleniumService):
     try:
         scrapping_service = scrapperContainer.get_scrapping_service(name.lower())
         # FIXME: NEXT LINE SHOULD BE SOMETHING LIKE: baseScrapper.getAndCheckEnvVars(name)
@@ -75,7 +75,7 @@ def runScrapperNewArchitecture(name: str, properties: dict, persistenceManager: 
     except Exception:
         baseScrapper.debug(DEBUG)
 
-def executeScrapperPreload(name: str, properties: dict, seleniumUtil: SeleniumUtil, scrapperContainer: ScrapperContainer, persistenceManager: PersistenceManager) -> bool:
+def executeScrapperPreload(name: str, properties: dict, seleniumUtil: SeleniumService, scrapperContainer: ScrapperContainer, persistenceManager: PersistenceManager) -> bool:
     """ returns True if KeyboardInterrupt """
     try:
         with KeepSystemAwake():
@@ -95,7 +95,7 @@ def executeScrapperPreload(name: str, properties: dict, seleniumUtil: SeleniumUt
             return False
     return True
 
-def executeScrapper(name: str, properties: dict, persistenceManager: PersistenceManager, seleniumUtil: SeleniumUtil, scrapperContainer: ScrapperContainer) -> bool:
+def executeScrapper(name: str, properties: dict, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService, scrapperContainer: ScrapperContainer) -> bool:
     """ returns False if double KeyboardInterrupt """
     try:
         with KeepSystemAwake():

@@ -4,7 +4,7 @@ from scrapper import linkedin
 from scrapper.linkedin import run, load_page, search_jobs, process_row, processUrl, load_and_process_row
 from scrapper.services.job_services.linkedin_job_service import LinkedinJobService
 from scrapper.selenium.linkedin_selenium import LinkedinNavigator
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
@@ -14,7 +14,7 @@ def mocks():
          patch('scrapper.linkedin.LinkedinJobService') as svc_cls, \
          patch('scrapper.linkedin.MysqlUtil'), \
          patch('scrapper.linkedin.PersistenceManager'), \
-         patch('scrapper.linkedin.SeleniumUtil'), \
+         patch('scrapper.linkedin.SeleniumService'), \
          patch('scrapper.linkedin.getAndCheckEnvVars', return_value=('u', 'p', 'k')):
         
         nav = nav_cls.return_value

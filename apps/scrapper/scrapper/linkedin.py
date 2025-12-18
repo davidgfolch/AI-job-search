@@ -5,7 +5,7 @@ from . import baseScrapper
 from .baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from commonlib.terminalColor import yellow, green
 from commonlib.mysqlUtil import MysqlUtil
-from .seleniumUtil import SeleniumUtil
+from .services.selenium.seleniumService import SeleniumService
 from .persistence_manager import PersistenceManager
 from .selenium.linkedin_selenium import LinkedinNavigator
 from .services.job_services.linkedin_job_service import LinkedinJobService
@@ -26,7 +26,7 @@ print('Linkedin scrapper init')
 navigator: LinkedinNavigator = None
 service: LinkedinJobService = None
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
+def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
     global navigator, service
     navigator = LinkedinNavigator(seleniumUtil)
@@ -154,7 +154,7 @@ def process_row(idx):
 
 def processUrl(url: str):
     global navigator, service
-    with MysqlUtil() as mysql, SeleniumUtil() as seleniumUtil:
+    with MysqlUtil() as mysql, SeleniumService() as seleniumUtil:
         navigator = LinkedinNavigator(seleniumUtil)
         service = LinkedinJobService(mysql, PersistenceManager())
         service.set_debug(DEBUG)

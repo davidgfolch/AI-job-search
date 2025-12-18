@@ -13,7 +13,7 @@ def mock_sleep():
     Reduces sleep times and WebDriverWait timeouts to minimum.
     """
     # Mock the custom sleep function from seleniumUtil
-    with patch('scrapper.seleniumUtil.sleep', return_value=None) as mock_selenium_sleep:
+    with patch('scrapper.services.selenium.seleniumService.sleep', return_value=None) as mock_selenium_sleep:
         # Mock time.sleep across all modules
         with patch('time.sleep', return_value=None) as mock_time_sleep:
             # Mock WebDriverWait to avoid timeout delays

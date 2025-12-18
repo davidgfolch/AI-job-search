@@ -4,7 +4,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 from . import baseScrapper
 from .baseScrapper import (getAndCheckEnvVars, htmlToMarkdown, printPage, printScrapperTitle, validate)
-from .seleniumUtil import SeleniumUtil, sleep
+from .services.selenium.seleniumService import SeleniumService, sleep
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, printHR, yellow
 from commonlib.util import getDatetimeNowStr, getEnv
@@ -25,11 +25,11 @@ WEB_PAGE = 'Glassdoor'
 JOBS_X_PAGE = 30
 
 print('Glassdoor scrapper init')
-selenium: SeleniumUtil = None
+selenium: SeleniumService = None
 mysql: MysqlUtil = None
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
+def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil

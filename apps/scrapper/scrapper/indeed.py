@@ -9,7 +9,7 @@ from commonlib.terminalColor import green, printHR, red, yellow
 from commonlib.decorator.retry import retry
 from commonlib.util import getDatetimeNowStr
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
-from .seleniumUtil import SeleniumUtil, sleep
+from .services.selenium.seleniumService import SeleniumService, sleep
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .persistence_manager import PersistenceManager
 from .selectors.indeedSelectors import (
@@ -36,11 +36,11 @@ JOBS_X_PAGE = 15
 LOGIN_WAIT_DISABLE = True
 
 print('Indeed scrapper init')
-selenium: SeleniumUtil = None
+selenium: SeleniumService = None
 mysql: MysqlUtil = None
 
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager = None):
+def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager = None):
     """Login, process jobs in search paginated list results"""
     global selenium, mysql
     selenium = seleniumUtil

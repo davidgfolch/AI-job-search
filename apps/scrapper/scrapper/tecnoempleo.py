@@ -5,7 +5,7 @@ from commonlib.mysqlUtil import MysqlUtil
 from commonlib.util import getDatetimeNowStr
 from . import baseScrapper
 from .baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
-from .seleniumUtil import SeleniumUtil
+from .services.selenium.seleniumService import SeleniumService
 from .persistence_manager import PersistenceManager
 from .selenium.tecnoempleo_selenium import TecnoempleoNavigator
 from .services.job_services.tecnoempleo_job_service import TecnoempleoJobService
@@ -22,7 +22,7 @@ print('Tecnoempleo scrapper init')
 navigator: TecnoempleoNavigator = None
 service: TecnoempleoJobService = None
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
+def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
     global navigator, service
     navigator = TecnoempleoNavigator(seleniumUtil)

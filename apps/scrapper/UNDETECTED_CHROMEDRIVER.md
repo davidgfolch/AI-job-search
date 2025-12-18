@@ -17,13 +17,13 @@ USE_UNDETECTED_CHROMEDRIVER=true
 ### Option 2: Programmatic
 
 ```python
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 
 # Use undetected-chromedriver
-selenium = SeleniumUtil(useUndetected=True)
+selenium = SeleniumService(useUndetected=True)
 
 # Use standard Selenium
-selenium = SeleniumUtil(useUndetected=False)
+selenium = SeleniumService(useUndetected=False)
 ```
 
 ## Benefits

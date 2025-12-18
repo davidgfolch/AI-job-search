@@ -2,13 +2,13 @@ import pytest
 from unittest.mock import MagicMock, patch, call
 from scrapper import glassdoor
 from scrapper.glassdoor import run, loadMainPage, login, searchJobs, loadAndProcessRow, processRow, getJobId
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mock_selenium():
-    with patch('scrapper.glassdoor.selenium', spec=SeleniumUtil) as mock:
+    with patch('scrapper.glassdoor.selenium', spec=SeleniumService) as mock:
         yield mock
 
 @pytest.fixture
@@ -35,14 +35,14 @@ def mock_get_env():
 class TestGlassdoorScrapper:
 
     def test_run_preload_page(self, mock_selenium, mock_env_vars, mock_persistence_manager):
-        mock_selenium_instance = MagicMock(spec=SeleniumUtil)
+        mock_selenium_instance = MagicMock(spec=SeleniumService)
         
         with patch('scrapper.glassdoor.loadMainPage') as mock_load_main:
             run(mock_selenium_instance, preloadPage=True, persistenceManager=mock_persistence_manager)
             mock_load_main.assert_called_once()
     
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
-        mock_selenium_instance = MagicMock(spec=SeleniumUtil)
+        mock_selenium_instance = MagicMock(spec=SeleniumService)
         
         # Patch MysqlUtil class because run() instantiates it
         with patch('scrapper.glassdoor.MysqlUtil') as mock_mysql_class:

@@ -3,7 +3,7 @@ from typing import Callable
 
 from commonlib.util import getSrcPath
 from commonlib.terminalColor import cyan
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager
 from scrapper.container.scrapper_container import ScrapperContainer
 
@@ -34,7 +34,7 @@ def main(args):
         runScrapperPageUrl(args[1])
         return
 
-    with SeleniumUtil() as seleniumUtil:
+    with SeleniumService() as seleniumUtil:
         persistenceManager = PersistenceManager()
         scrapperContainer = ScrapperContainer()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")

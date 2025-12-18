@@ -2,13 +2,13 @@ import pytest
 from unittest.mock import MagicMock, patch, call
 from scrapper import indeed
 from scrapper.indeed import run, searchJobs, loadAndProcessRow, processRow, getJobId, postProcessMarkdown
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mock_selenium():
-    with patch('scrapper.indeed.selenium', spec=SeleniumUtil) as mock:
+    with patch('scrapper.indeed.selenium', spec=SeleniumService) as mock:
         yield mock
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def mock_env_vars():
 class TestIndeedScrapper:
 
     def test_run_preload_page(self, mock_selenium, mock_env_vars):
-        mock_selenium_instance = MagicMock(spec=SeleniumUtil)
+        mock_selenium_instance = MagicMock(spec=SeleniumService)
         
         with patch('scrapper.indeed.JOBS_SEARCH', 'python developer'), \
              patch('scrapper.indeed.searchJobs') as mock_search_jobs:
@@ -37,7 +37,7 @@ class TestIndeedScrapper:
             mock_search_jobs.assert_called_with('python developer', True)
     
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars):
-        mock_selenium_instance = MagicMock(spec=SeleniumUtil)
+        mock_selenium_instance = MagicMock(spec=SeleniumService)
         
         # Patch MysqlUtil class because run() instantiates it
         with patch('scrapper.indeed.MysqlUtil') as mock_mysql_class:

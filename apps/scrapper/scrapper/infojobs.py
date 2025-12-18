@@ -4,7 +4,7 @@ from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
 from . import baseScrapper
 from .baseScrapper import getAndCheckEnvVars, printScrapperTitle
-from .seleniumUtil import SeleniumUtil
+from .services.selenium.seleniumService import SeleniumService
 from .persistence_manager import PersistenceManager
 from .selenium.infojobs_selenium import InfojobsNavigator
 from .services.job_services.infojobs_job_service import InfojobsJobService
@@ -20,7 +20,7 @@ print('Infojobs scrapper init')
 navigator: InfojobsNavigator = None
 service: InfojobsJobService = None
 
-def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
+def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Process jobs in search paginated list results"""
     global navigator, service
     navigator = InfojobsNavigator(seleniumUtil)

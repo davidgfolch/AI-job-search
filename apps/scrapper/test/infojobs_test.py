@@ -4,13 +4,13 @@ from scrapper import infojobs
 from scrapper.infojobs import run
 from scrapper.selenium.infojobs_selenium import InfojobsNavigator
 from scrapper.services.job_services.infojobs_job_service import InfojobsJobService
-from scrapper.seleniumUtil import SeleniumUtil
+from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mock_selenium():
-    mock = MagicMock(spec=SeleniumUtil)
+    mock = MagicMock(spec=SeleniumService)
     mock.driverUtil = MagicMock()
     mock.driverUtil.useUndetected = False
     return mock

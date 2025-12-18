@@ -2,7 +2,7 @@ from selenium.common.exceptions import NoSuchElementException
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, yellow, printHR
 from commonlib.util import join
-from ..seleniumUtil import SeleniumUtil, sleep
+from ..services.selenium.seleniumService import SeleniumService, sleep
 from ..selectors.tecnoempleoSelectors import (
     CSS_SEL_JOB_DATA, CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_LI_IDX, CSS_SEL_NO_RESULTS,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_LI_IDX_LINK, CSS_SEL_COMPANY,
@@ -10,7 +10,7 @@ from ..selectors.tecnoempleoSelectors import (
 )
 
 class TecnoempleoNavigator:
-    def __init__(self, selenium: SeleniumUtil):
+    def __init__(self, selenium: SeleniumService):
         self.selenium = selenium
 
     @retry(retries=3, delay=10)

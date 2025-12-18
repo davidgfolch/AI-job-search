@@ -5,7 +5,7 @@ from commonlib.util import join
 from selenium.common.exceptions import NoSuchElementException
 
 from ..baseScrapper import printPage
-from ..seleniumUtil import SeleniumUtil, sleep
+from ..services.selenium.seleniumService import SeleniumService, sleep
 from ..selectors.linkedinSelectors import (
     CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_HEADER, CSS_SEL_NO_RESULTS,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_LI_IDX, CSS_SEL_COMPANY, CSS_SEL_LOCATION,
@@ -13,7 +13,7 @@ from ..selectors.linkedinSelectors import (
 )
 
 class LinkedinNavigator:
-    def __init__(self, selenium: SeleniumUtil):
+    def __init__(self, selenium: SeleniumService):
         self.selenium = selenium
 
     def load_page(self, url: str):
