@@ -3,6 +3,7 @@ test_export_output/**
 .env
 .venv*
 .history
+.letta
 __pycache__/
 __pycache__/*
 __pycache__/**
