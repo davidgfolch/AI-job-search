@@ -33,7 +33,7 @@ export default function Viewer() {
                             <div className="tab-buttons">
                                 <ViewTabs activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
                                 {state.activeTab === 'list' && (
-                                    <div className="list-summary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>
+                                    <div className="list-summary">
                                         <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span>&nbsp;loaded |&nbsp;<span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span>&nbsp;Selected
                                     </div>
                                 )}

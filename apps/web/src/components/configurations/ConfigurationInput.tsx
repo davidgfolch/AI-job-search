@@ -47,9 +47,8 @@ export function ConfigurationInput({
             <button
                 type="button"
                 onClick={onExport}
-                className="config-btn"
+                className="config-btn config-export-btn"
                 title="Copy configurations to clipboard for defaults.ts"
-                style={{ marginLeft: '0.5rem', backgroundColor: '#4a5568' }}
             >
                 Export
             </button>

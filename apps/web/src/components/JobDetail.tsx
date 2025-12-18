@@ -3,6 +3,9 @@ import ReactMarkdownCustom from './ReactMarkdownCustom';
 import type { Job, AppliedCompanyJob } from '../api/jobs';
 import { jobsApi } from '../api/jobs';
 import './JobDetail.css';
+import './Filters.css';
+import './FilterConfigurations.css';
+import SalaryCalculator from './SalaryCalculator';
 
 interface JobDetailProps {
     job: Job;
@@ -11,6 +14,7 @@ interface JobDetailProps {
 export default function JobDetail({ job }: JobDetailProps) {
     const [appliedCompanyJobs, setAppliedCompanyJobs] = useState<AppliedCompanyJob[]>([]);
     const [loadingApplied, setLoadingApplied] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(false);
 
     useEffect(() => {
         const fetchAppliedJobs = async () => {
@@ -56,7 +60,6 @@ export default function JobDetail({ job }: JobDetailProps) {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="already-applied-link"
-                                        style={{ cursor: 'pointer', textDecoration: 'underline', color: 'inherit' }}
                                         title="Open in new tab showing these specific jobs"
                                     >
                                         already applied to {appliedCompanyJobs.length}
@@ -75,7 +78,17 @@ export default function JobDetail({ job }: JobDetailProps) {
                         </li>
                     )}
                     {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
-                    {job.salary && <li className="info-row">Salary: <span>{job.salary}</span></li>}
+                    {job.salary && (
+                        <li className="info-row job-salary-row">
+                            Salary: <span className="salary-value-text">{job.salary}</span>
+                            <button 
+                                className="config-btn salary-toggle-btn"
+                                onClick={() => setShowCalculator(!showCalculator)} 
+                            >
+                                Freelance salary 🧮
+                            </button>
+                        </li>
+                    )}
 
                     {(job.required_technologies || job.optional_technologies) && (
                         <li className="info-row">Skills:
@@ -98,6 +111,9 @@ export default function JobDetail({ job }: JobDetailProps) {
                     {job.client && <li className="info-row">Client: <span>{job.client}</span></li>}
                     {job.cv_match_percentage && <li className="info-row">CV Match: <span>{job.cv_match_percentage}%</span></li>}
                 </ul>
+                
+                {showCalculator && <SalaryCalculator />}
+
                 {job.comments && (
                     <div className="job-comments">
                         <h3>Comments</h3>

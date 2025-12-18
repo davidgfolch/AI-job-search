@@ -1,0 +1,37 @@
+/* .salary-calculator styles are handled by .boolean-filters class */
+.salary-calculator {
+    margin-bottom: 20px;
+}
+
+.salary-calculator-results {
+  font-family: monospace;
+  background-color: var(--bg-primary);
+  padding: 10px;
+  margin: 10px;
+  border-radius: 5px;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.salary-calculator-results div {
+  margin-bottom: 5px;
+}
+
+.salary-value {
+  color: #4caf50; /* Green similar to :green[] in streamlit/markdown but accessible */
+  font-weight: bold;
+}
+
+
+.salary-calculator-title {
+    margin: 10px;
+}
+
+.salary-calculator-controls-override {
+    border-bottom: none !important;
+    padding: 10px !important;
+}
+
+.salary-rate-input {
+    width: 80px;
+}

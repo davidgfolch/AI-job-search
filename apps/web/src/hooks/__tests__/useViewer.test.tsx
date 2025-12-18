@@ -1,150 +1,144 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useViewer } from '../useViewer';
-import { jobsApi, type Job } from '../../api/jobs';
-import { QueryClient } from '@tanstack/react-query';
-import { mockJobs, createWrapper } from './useViewer.fixtures';
+import { useJobsData } from '../viewer/useJobsData';
+import { useJobSelection } from '../viewer/useJobSelection';
+import { useJobMutations } from '../viewer/useJobMutations';
 
-// Mock the jobs API
-vi.mock('../../api/jobs', () => ({
-    jobsApi: {
-        getJobs: vi.fn(),
-        getJob: vi.fn(),
-        updateJob: vi.fn(),
-    },
+// Mock dependencies
+vi.mock('../viewer/useJobsData', () => ({
+    useJobsData: vi.fn(),
+}));
+vi.mock('../viewer/useJobSelection', () => ({
+    useJobSelection: vi.fn(),
+}));
+vi.mock('../viewer/useJobMutations', () => ({
+    useJobMutations: vi.fn(),
 }));
 
-const setupJobApiMocks = (currentJobs: Job[]) => {
-    (jobsApi.getJobs as any).mockImplementation((params: any) => {
-        let filtered = [...currentJobs];
-        if (params?.seen === false) filtered = filtered.filter(j => !j.seen);
-        return Promise.resolve({ items: filtered, total: filtered.length, page: 1, size: 20, pages: 1 });
-    });
-
-    (jobsApi.updateJob as any).mockImplementation((id: number, data: Partial<Job>) => {
-        const index = currentJobs.findIndex(j => j.id === id);
-        if (index !== -1) {
-            currentJobs[index] = { ...currentJobs[index], ...data };
-            return Promise.resolve(currentJobs[index]);
-        }
-        return Promise.reject('Not found');
-    });
-
-    (jobsApi.getJob as any).mockImplementation((id: number) => {
-        const job = currentJobs.find(j => j.id === id);
-        return job ? Promise.resolve(job) : Promise.reject('Not found');
-    });
-};
-
 describe('useViewer', () => {
-    let queryClient: QueryClient;
-    let currentJobs: Job[];
+    // Default mock returns
+    const mockJobsData = {
+        filters: { page: 1 },
+        setFilters: vi.fn(),
+        allJobs: [{ id: 1 }, { id: 2 }],
+        isLoadingMore: false,
+        data: { total: 2, items: [] },
+        isLoading: false,
+        error: null,
+        handleLoadMore: vi.fn(),
+    };
+
+    const mockJobSelection = {
+        selectedJob: { id: 1 },
+        setSelectedJob: vi.fn(),
+        selectedIds: new Set([1]),
+        setSelectedIds: vi.fn(),
+        selectionMode: 'manual',
+        setSelectionMode: vi.fn(),
+        handleJobSelect: vi.fn(),
+        navigateJob: vi.fn(),
+        autoSelectNext: { current: {} },
+    };
+
+    const mockJobMutations = {
+        message: null,
+        setMessage: vi.fn(),
+        confirmModal: { isOpen: false, setConfirmModal: vi.fn() },
+        setConfirmModal: vi.fn(),
+        handleJobUpdate: vi.fn(),
+        ignoreSelected: vi.fn(),
+    };
 
     beforeEach(() => {
         vi.clearAllMocks();
-        currentJobs = JSON.parse(JSON.stringify(mockJobs));
-        queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-        setupJobApiMocks(currentJobs);
+        (useJobsData as any).mockReturnValue(mockJobsData);
+        (useJobSelection as any).mockReturnValue(mockJobSelection);
+        (useJobMutations as any).mockReturnValue(mockJobMutations);
     });
 
-    const renderViewer = () => renderHook(() => useViewer(), { wrapper: createWrapper(queryClient) });
+    it('should aggregate state correctly', () => {
+        const { result } = renderHook(() => useViewer());
 
-    it('initializes with default state', async () => {
-        const { result } = renderViewer();
-        expect(result.current.state.filters).toMatchObject({ page: 1, size: 20, search: '', order: 'created desc' });
-        expect(result.current.state.selectedJob).toBeNull();
-        expect(result.current.state.allJobs).toEqual([]);
-        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
+        expect(result.current.state.filters).toEqual(mockJobsData.filters);
+        expect(result.current.state.allJobs).toEqual(mockJobsData.allJobs);
+        expect(result.current.state.selectedJob).toEqual(mockJobSelection.selectedJob);
+        // Default activeTab is 'list'
+        expect(result.current.state.activeTab).toBe('list');
     });
 
-    it('selects a job', async () => {
-        const { result } = renderViewer();
-        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
-        act(() => result.current.actions.selectJob(mockJobs[1]));
-        expect(result.current.state.selectedJob?.id).toBe(2);
-    });
+    it('should derive hasNext and hasPrevious correctly', () => {
+        // With selectedJob id: 1 and allJobs: [{id: 1}, {id: 2}]
+        // Index is 0. hasNext=true, hasPrevious=false.
+        const { result } = renderHook(() => useViewer());
+        expect(result.current.status.hasNext).toBe(true);
+        expect(result.current.status.hasPrevious).toBe(false);
 
-    it.each([
-        { handler: 'seenJob', update: { seen: true } },
-        { handler: 'ignoreJob', update: { ignored: true } },
-        { handler: 'appliedJob', update: { applied: true } },
-        { handler: 'discardedJob', update: { discarded: true } },
-        { handler: 'closedJob', update: { closed: true } },
-    ])('calls $handler which triggers updateJob with $update', async ({ handler, update }) => {
-        const { result } = renderViewer();
-        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
-        act(() => result.current.actions.selectJob(mockJobs[0]));
-        await act(async () => (result.current.actions as any)[handler]()); // generic call
-        expect(jobsApi.updateJob).toHaveBeenCalledWith(1, update);
-    });
-
-    it('handles auto-selection logic properly', async () => {
-        const { result } = renderViewer();
-        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
-        // Filter out seen jobs
-        act(() => result.current.actions.setFilters((prev) => ({ ...prev, seen: false })));
-        await waitFor(() => expect(result.current.state.filters.seen).toBe(false));
-        // LIST mode: should auto-select next
-        act(() => result.current.actions.selectJob(mockJobs[0])); // Job 1
-        await act(async () => result.current.actions.seenJob());
-        expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { seen: true });
-        await waitFor(() => expect(result.current.state.selectedJob?.id).toBe(2)); // Auto-selected Job 2
-        // EDIT mode: should NOT auto-select
-        act(() => result.current.actions.setActiveTab('edit'));
-        await act(async () => result.current.actions.seenJob()); // This will mark Job 2 as seen
-        expect(jobsApi.updateJob).toHaveBeenCalledWith(2, { seen: true });
-        // Wait to ensure NO auto-select happens
-        await new Promise(r => setTimeout(r, 100));
-        expect(result.current.state.selectedJob?.id).toBe(2); // Should remain Job 2
-    });
-
-    it.each([
-        { action: 'nextJob', startId: 2, expectedId: 3 },
-        { action: 'previousJob', startId: 2, expectedId: 1 },
-    ])('navigation $action moves from $startId to $expectedId', async ({ action, startId, expectedId }) => {
-        const { result } = renderViewer();
-        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
-        act(() => result.current.actions.selectJob(mockJobs.find(j => j.id === startId)!));
-        act(() => (result.current.actions as any)[action]());
-        expect(result.current.state.selectedJob?.id).toBe(expectedId);
-    });
-
-    it('generic handleJobUpdate calls API', async () => {
-        const { result } = renderViewer();
-        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
-        act(() => result.current.actions.selectJob(mockJobs[0]));
-        await act(async () => result.current.actions.updateJob({ comments: 'New Comment' }));
-        expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { comments: 'New Comment' });
-    });
-    it('does not set global isLoading when loading more pages', async () => {
-        // Override mock for this test to support pagination simulation
-        let resolvePage2: (val: any) => void;
-        (jobsApi.getJobs as any).mockImplementation((params: any) => {
-            if (params.page === 2) {
-                return new Promise(resolve => {
-                    resolvePage2 = resolve;
-                });
-            }
-            // Page 1 return
-            return Promise.resolve({ items: mockJobs, total: 20, page: 1, size: 20 });
+        // Update mock to select second job
+        (useJobSelection as any).mockReturnValue({
+            ...mockJobSelection,
+            selectedJob: { id: 2 },
         });
+        const { result: result2 } = renderHook(() => useViewer());
+        // Index is 1. hasNext=false, hasPrevious=true.
+        expect(result2.current.status.hasNext).toBe(false);
+        expect(result2.current.status.hasPrevious).toBe(true);
+    });
 
-        const { result } = renderViewer();
-        await waitFor(() => expect(result.current.state.allJobs).toHaveLength(3));
+    it('should expose actions that delegate to sub-hooks', () => {
+        const { result } = renderHook(() => useViewer());
 
-        // Trigger load more
-        act(() => result.current.actions.loadMore());
-        
-        // Wait for page update
-        await waitFor(() => expect(result.current.state.filters.page).toBe(2));
-        
-        // Assert: isLoading should be false (masked), isLoadingMore should be true
-        expect(result.current.status.isLoading).toBe(false);
-        expect(result.current.status.isLoadingMore).toBe(true);
+        result.current.actions.setFilters({ page: 2 } as any);
+        expect(mockJobsData.setFilters).toHaveBeenCalledWith({ page: 2 });
 
-        // Resolve page 2 to complete test cleanly
-        await act(async () => {
-            if (resolvePage2) resolvePage2({ items: [], total: 20, page: 2, size: 20 });
+        result.current.actions.nextJob();
+        expect(mockJobSelection.navigateJob).toHaveBeenCalledWith('next');
+
+        result.current.actions.ignoreJob();
+        expect(mockJobMutations.handleJobUpdate).toHaveBeenCalledWith({ ignored: true });
+    });
+
+    it('should handle toggleSelectJob correctly', () => {
+        const { result } = renderHook(() => useViewer());
+        const setSelectedIds = mockJobSelection.setSelectedIds;
+
+        // Toggle id 2 (not currently selected)
+        act(() => {
+            result.current.actions.toggleSelectJob(2);
         });
+        
+        // Should verify setSelectionMode to 'manual' and adding id
+        expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('manual');
+        expect(setSelectedIds).toHaveBeenCalled();
+        // Check argument to setSelectedIds
+        const callArg = setSelectedIds.mock.calls[0][0];
+        // It's likely a Set.
+        expect(callArg.has(2)).toBe(true);
+    });
+
+    it('should handle toggleSelectAll correctly', () => {
+        // Case 1: selectionMode is 'all' -> toggle off
+        (useJobSelection as any).mockReturnValue({
+            ...mockJobSelection,
+            selectionMode: 'all',
+        });
+        const { result } = renderHook(() => useViewer());
+        
+        act(() => {
+            result.current.actions.toggleSelectAll();
+        });
+        expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('none');
+        expect(mockJobSelection.setSelectedIds).toHaveBeenCalledWith(new Set());
+
+         // Case 2: selectionMode is 'none' -> toggle on
+        (useJobSelection as any).mockReturnValue({
+            ...mockJobSelection,
+            selectionMode: 'none',
+        });
+        const { result: result2 } = renderHook(() => useViewer());
+         act(() => {
+            result2.current.actions.toggleSelectAll();
+        });
+        expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('all');
     });
 });

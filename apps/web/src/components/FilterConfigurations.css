@@ -56,6 +56,11 @@
     cursor: not-allowed;
 }
 
+.config-export-btn {
+    margin-left: 0.5rem;
+    background-color: #4a5568;
+}
+
 .config-suggestions {
     position: absolute;
     top: calc(100% + 0.25rem);

@@ -21,7 +21,8 @@ SELECT_FOR_MERGE = """select {cols}
     order by created asc"""
 COLS = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
 COLS_ARR = stripFields(COLS)
-COLS_ARR.remove('closed')
+if 'closed' in COLS_ARR:
+    COLS_ARR.remove('closed')
 COL_COMPANY_IDX = COLS_ARR.index('title')
 
 

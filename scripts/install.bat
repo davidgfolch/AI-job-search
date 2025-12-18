@@ -12,6 +12,10 @@ for /d %%a in (packages\* apps\*) do (
         call uv sync
         call uv tool install --force crewai
         popd
+    ) else if "%%~nxa" == "backend" (
+        pushd "%%~fa"
+        call uv sync
+        popd
     ) else (
         pushd "%%~fa"
         call poetry lock

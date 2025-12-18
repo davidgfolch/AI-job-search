@@ -42,8 +42,9 @@ def setup_mocks():
     sys.modules['streamlit_js_eval'] = MagicMock()
     
     # Mock commonlib modules (if needed)
-    if 'commonlib' not in sys.modules:
-        sys.modules['commonlib'] = MagicMock()
+    # commonlib is a real package we want to use, particularly logical parts like salary
+    # We only mock specific submodules below if needed
+
     if 'commonlib.sqlUtil' not in sys.modules:
         sys.modules['commonlib.sqlUtil'] = MagicMock()
     if 'commonlib.util' not in sys.modules:

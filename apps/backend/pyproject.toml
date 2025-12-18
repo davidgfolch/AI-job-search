@@ -5,7 +5,7 @@ description = "AI Job Search API"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "commonlib",
+    "commonlib==0.1.0", 
     "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
     "mysql-connector-python>=9.0.0",

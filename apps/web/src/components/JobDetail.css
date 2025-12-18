@@ -280,3 +280,7 @@
     color: inherit;
     font-size: inherit;
 }
+
+.salary-toggle-btn {
+    margin-left: 0.5rem;
+}
