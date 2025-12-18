@@ -88,12 +88,22 @@ jobs:
               badge_path="coverage.svg"
             fi
             cd ../..
-            if git diff --quiet "${MODULE}/${badge_path}"; then  # No changes in this file
+
+            if git diff --quiet "${MODULE}/${badge_path}"; then
               continue
-            else
-              changes=true
-              git add ${MODULE}/${badge_path}
             fi
+
+            if git cat-file -e "HEAD:${MODULE}/${badge_path}" 2>/dev/null; then
+              grep -oE '[0-9.]+%|no percentage' "${MODULE}/${badge_path}" > /tmp/current_pct || true
+              git show "HEAD:${MODULE}/${badge_path}" | grep -oE '[0-9.]+%|no percentage' > /tmp/old_pct || true
+              if diff -q /tmp/current_pct /tmp/old_pct > /dev/null; then
+                git checkout "${MODULE}/${badge_path}"
+                continue
+              fi
+            fi
+
+            changes=true
+            git add "${MODULE}/${badge_path}"
           done
           if $changes; then
             git pull
