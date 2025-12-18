@@ -21,7 +21,24 @@ export const useViewer = () => {
         message, setMessage, confirmModal, setConfirmModal, handleJobUpdate, ignoreSelected
     } = useJobMutations({
         filters, selectedJob, setSelectedJob, activeTab, autoSelectNext,
-        selectedIds, setSelectedIds, selectionMode, setSelectionMode
+        selectedIds, setSelectedIds, selectionMode, setSelectionMode,
+        onJobUpdated: (updatedJob) => {
+            setAllJobs(prev => {
+                // If the job no longer matches boolean filters (e.g. marked as seen when filtering by unseen), remove it
+                let shouldRemove = false;
+                if (filters.seen === false && updatedJob.seen) shouldRemove = true;
+                if (filters.ignored === false && updatedJob.ignored) shouldRemove = true;
+                if (filters.discarded === false && updatedJob.discarded) shouldRemove = true;
+
+                if (shouldRemove) {
+                    return prev.filter(j => j.id !== updatedJob.id);
+                }
+                return prev.map(j => j.id === updatedJob.id ? updatedJob : j);
+            });
+        },
+        onJobsDeleted: (ids) => {
+            setAllJobs(prev => prev.filter(j => !ids.includes(j.id)));
+        }
     });
 
     // Calculate navigation state
