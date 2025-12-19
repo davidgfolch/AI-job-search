@@ -22,13 +22,14 @@ COPY apps/backend/pyproject.toml apps/backend/uv.lock* apps/backend/README.md /a
 # Install dependencies
 WORKDIR /app/apps/backend
 # Use --frozen to ensure we use the lockfile versions
-RUN uv sync --frozen --no-install-project
+# linux install failed here because already had uv.lock
+# RUN uv sync --frozen --no-install-project
 
 # Copy application code
 COPY apps/backend /app/apps/backend
 
 # Install the project itself
-RUN uv sync --frozen
+RUN uv sync
 
 # Expose port
 EXPOSE 8000

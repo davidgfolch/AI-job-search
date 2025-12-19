@@ -12,6 +12,9 @@ dependencies = [
     "pydantic>=2.0.0",
 ]
 
+[tool.poetry.dependencies]
+commonlib = { path = "../../packages/commonlib/", develop = true }
+
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",

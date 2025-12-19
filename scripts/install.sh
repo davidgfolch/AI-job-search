@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e
+# debug: show commands
+# set -x
 
 for dir in packages/* apps/*; do
     if [ -d "$dir" ]; then

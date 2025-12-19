@@ -101,5 +101,5 @@ docker exec -i ai-job-search-mysql mysql -uroot -prootPass jobs < scripts/mysql/
 docker exec ai-job-search-mysql /usr/bin/mysqldump -u root --password=rootPass jobs > scripts/mysql/20251219_backup.sql
 
 # restore
-cat scripts/mysql/20251219_backup.sql | docker exec -i ai_job_search-mysql_db-1 /usr/bin/mysql -uroot -prootPass jobs
+cat scripts/mysql/20251219_backup.sql | docker exec -i ai_job_search-mysql /usr/bin/mysql -uroot -prootPass jobs
 ```

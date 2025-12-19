@@ -13,6 +13,7 @@ scratch.*
 uv.lock
 **/poetry.lock
 .coverage
+**/package-lock.json
 **/node_modules/**
 **/.next/**
 scripts/mysql/*backup.*
