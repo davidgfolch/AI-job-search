@@ -1,0 +1,297 @@
+diff --git a/.env.example b/.env.example
+index d6c5f02..5710d9a 100644
+--- a/.env.example
++++ b/.env.example
+@@ -23,6 +23,10 @@ TECNOEMPLEO_EMAIL=xxxxx@xxxxx.com
+ TECNOEMPLEO_PWD=yyyyy
+ TECNOEMPLEO_RUN_CADENCY=3h
+ 
++SHAKERS_EMAIL=xxxxx@xxxxx.com
++SHAKERS_PWD=yyyyy
++SHAKERS_RUN_CADENCY=3h
++
+ # Scrapper options
+ SCRAPPER_DEBUG=False  # Enable debug: wait for key input when an error arrises
+ RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
+diff --git a/apps/scrapper/scrapper/scrapper_config.py b/apps/scrapper/scrapper/scrapper_config.py
+index 4eb1b24..8cf35d9 100644
+--- a/apps/scrapper/scrapper/scrapper_config.py
++++ b/apps/scrapper/scrapper/scrapper_config.py
+@@ -26,6 +26,10 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
+         TIMER: getSeconds(getEnv('INDEED_RUN_CADENCY')),
+         IGNORE_AUTORUN: True
+     },
++    'Shakers': {
++        TIMER: getSeconds(getEnv('SHAKERS_RUN_CADENCY', '1h')),
++        IGNORE_AUTORUN: True
++    },
+ }
+ 
+ RUN_IN_TABS = getEnvBool('RUN_IN_TABS', False)
+diff --git a/apps/scrapper/scrapper/scrapper_execution.py b/apps/scrapper/scrapper/scrapper_execution.py
+index 8d9de49..cb3cb7f 100644
+--- a/apps/scrapper/scrapper/scrapper_execution.py
++++ b/apps/scrapper/scrapper/scrapper_execution.py
+@@ -4,7 +4,7 @@ from typing import Any, Optional
+ from commonlib.util import getEnv, getDatetimeNow
+ from commonlib.terminalColor import cyan, red, yellow, green
+ from commonlib.keep_system_awake import KeepSystemAwake
+-from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, indeed
++from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, indeed, shakers
+ from scrapper.persistence_manager import PersistenceManager
+ from scrapper.seleniumUtil import SeleniumUtil
+ from scrapper.container.scrapper_container import ScrapperContainer
+@@ -48,6 +48,8 @@ def runScrapper(name: str, preloadOnly: bool, persistenceManager: PersistenceMan
+             glassdoor.run(seleniumUtil, preloadOnly, persistenceManager)
+         case 'indeed':
+             indeed.run(seleniumUtil, preloadOnly, persistenceManager)
++        case 'shakers':
++            shakers.run(seleniumUtil, preloadOnly, persistenceManager)
+ 
+ def runPreloadNewArchitecture(name: str, scrapperContainer: ScrapperContainer, seleniumUtil: SeleniumUtil):
+     try:
+diff --git a/apps/scrapper/scrapper/selectors/shakersSelectors.py b/apps/scrapper/scrapper/selectors/shakersSelectors.py
+new file mode 100644
+index 0000000..8d61249
+--- /dev/null
++++ b/apps/scrapper/scrapper/selectors/shakersSelectors.py
+@@ -0,0 +1,18 @@
++
++# Login
++CSS_SEL_LOGIN_EMAIL = 'input[data-e2e="login-email-input"]'
++CSS_SEL_LOGIN_PWD = 'input[data-e2e="login-password-input"]'
++CSS_SEL_LOGIN_BTN = 'button[data-e2e="email-login-button"]'
++
++
++# Navigation
++
++# Job List
++CSS_SEL_JOB_CARD = 'div[class*="PhantomCard-module_component"]'
++CSS_SEL_JOB_TITLE = 'p[class*="text-global-module_text"][data-size="lg"]'
++CSS_SEL_JOB_COMPANY = 'p[class*="text-global-module_text"][data-size="sm"]' # Returns multiple lines
++CSS_SEL_JOB_LINK = 'div[class*="ProjectMatchCard-module_rightCta"]'
++CSS_SEL_JOB_TITLE = 'p[data-size="lg"]' # Click the CTA container
++
++# Job Details
++CSS_SEL_JOB_DESCRIPTION = 'main div[class*=ProjectHeader] + div > div > div:nth-child(2) > div:nth-child(1)'
+diff --git a/apps/scrapper/scrapper/selenium/shakers_selenium.py b/apps/scrapper/scrapper/selenium/shakers_selenium.py
+new file mode 100644
+index 0000000..e5dbe12
+--- /dev/null
++++ b/apps/scrapper/scrapper/selenium/shakers_selenium.py
+@@ -0,0 +1,68 @@
++from selenium.common.exceptions import NoSuchElementException
++from commonlib.decorator.retry import retry
++from commonlib.terminalColor import green, yellow, printHR
++from commonlib.util import join
++from ..seleniumUtil import SeleniumUtil, sleep
++from selenium.webdriver.common.by import By
++from ..selectors.shakersSelectors import (
++    CSS_SEL_LOGIN_EMAIL, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BTN,
++    CSS_SEL_JOB_TITLE, CSS_SEL_JOB_COMPANY, CSS_SEL_JOB_DESCRIPTION,
++    CSS_SEL_JOB_LINK, CSS_SEL_JOB_CARD
++)
++
++class ShakersNavigator:
++    def __init__(self, selenium: SeleniumUtil):
++        self.selenium = selenium
++
++    def login(self, user_email, user_pwd):
++        print(yellow('Logging in to Shakers...'))
++        sleep(2, 3)
++        self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, user_email)
++        self.selenium.sendKeys(CSS_SEL_LOGIN_PWD, user_pwd)
++        self.selenium.waitAndClick(CSS_SEL_LOGIN_BTN)
++        self.selenium.waitUntilPageIsLoaded()
++        sleep(5, 5) # Wait for redirect
++
++    def go_to_projects(self):
++        self.selenium.loadPage('https://app.shakersworks.com/find-projects')
++        self.selenium.waitUntilPageIsLoaded()
++        sleep(5, 5) # Wait for projects to load            
++
++    def load_page(self, url):
++        self.selenium.loadPage(url)
++        self.selenium.waitUntilPageIsLoaded()
++        sleep(3, 3)
++
++    def get_jobs_list(self):
++        return self.selenium.getElms(CSS_SEL_JOB_CARD)
++    
++    def click_list_job(self, job):
++        cta = self.selenium.getElmOf(job, CSS_SEL_JOB_LINK)
++        self.selenium.waitAndClick(cta)
++        self.selenium.tabLast()
++        self.selenium.waitUntilPageIsLoaded()
++        sleep(5, 5)
++
++    def get_job_data(self):
++        url = self.selenium.getUrl()
++        title = self.selenium.getText(CSS_SEL_JOB_TITLE)
++        company = self.selenium.getText(CSS_SEL_JOB_COMPANY)
++        location = "Remote" # Shakers is mostly remote/freelance
++        sleep(5, 5)
++        # self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_JOB_DESCRIPTION)
++        self.selenium.scrollProgressive(500)
++        # self.selenium.moveToElement(CSS_SEL_JOB_DESCRIPTION)
++        self.selenium.scrollIntoView(CSS_SEL_JOB_DESCRIPTION)
++        html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
++        return title, company, location, url, html
++
++    def back_to_list(self):
++        self.selenium.tabClose()
++        self.selenium.tabLast()
++
++    def check_rate_limit(self):
++        # Implement if needed
++        return False
++
++    def go_back(self):
++        self.selenium.back()
+diff --git a/apps/scrapper/scrapper/seleniumUtil.py b/apps/scrapper/scrapper/seleniumUtil.py
+index 208d7ee..bc5e0a8 100644
+--- a/apps/scrapper/scrapper/seleniumUtil.py
++++ b/apps/scrapper/scrapper/seleniumUtil.py
+@@ -51,6 +51,8 @@ class SeleniumUtil:
+             self.driver.close()
+             if name:
+                 self.tabs.pop(name)
++            elif len(self.tabs)>0:
++                self.tabs.popitem()
+         except Exception as ex:
+             print(f'Error closing tab: {ex}')
+ 
+@@ -69,6 +71,10 @@ class SeleniumUtil:
+             self.driver.switch_to.new_window('tab')
+             self.tabs[name] = self.driver.current_window_handle
+             self.waitUntilPageIsLoaded(30)
++    
++    def tabLast(self):
++        """Move to last tab"""
++        self.driver.switch_to.window(self.driver.window_handles[-1])
+ 
+     @seleniumSocketConnRetry()
+     def loadPage(self, url: str):
+diff --git a/apps/scrapper/scrapper/services/job_services/shakers_job_service.py b/apps/scrapper/scrapper/services/job_services/shakers_job_service.py
+new file mode 100644
+index 0000000..645a6c3
+--- /dev/null
++++ b/apps/scrapper/scrapper/services/job_services/shakers_job_service.py
+@@ -0,0 +1,59 @@
++from typing import Tuple
++from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
++from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
++from commonlib.terminalColor import green, yellow
++from ...baseScrapper import htmlToMarkdown, validate, debug as baseDebug
++from ...persistence_manager import PersistenceManager
++
++class ShakersJobService:
++    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
++        self.mysql = mysql
++        self.persistence_manager = persistence_manager
++        self.web_page = 'Shakers'
++        self.debug = False
++
++    def set_debug(self, debug: bool):
++        self.debug = debug
++
++    def get_job_id(self, url: str) -> str:
++        # Assumption: URL is like https://app.shakersworks.com/projects/xyz123
++        parts = url.strip('/').split('/')
++        return parts[-1]
++
++    def job_exists_in_db(self, url: str) -> Tuple[str, bool]:
++        job_id = self.get_job_id(url)
++        return (job_id, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None)
++
++    def process_job(self, title, company, location, url, html):
++        try:
++            job_id = self.get_job_id(url)
++            md = htmlToMarkdown(html)
++            easyApply = False # Shakers usually requires platform apply
++            
++            print(f'{job_id}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='')
++            
++            if validate(title, url, company, md, self.debug):
++                if id := self.mysql.insert((job_id, title, company, location, url, md, easyApply, self.web_page)):
++                    print(green(f'INSERTED {id}!'), end='')
++                    mergeDuplicatedJobs(self.mysql, getSelect())
++                    return True
++            else:
++                # Often description is hidden or requires extra click
++                print(yellow('Validation failed (maybe empty description?)'))
++                return False
++            return False
++        except Exception:
++            baseDebug(self.debug, exception=True)
++            return False
++
++    def prepare_resume(self):
++        self.persistence_manager.prepare_resume(self.web_page)
++
++    def should_skip_keyword(self, keyword: str):
++        return self.persistence_manager.should_skip_keyword(keyword)
++
++    def update_state(self, keyword: str, page: int):
++        self.persistence_manager.update_state(self.web_page, keyword, page)
++
++    def clear_state(self):
++        self.persistence_manager.clear_state(self.web_page)
+diff --git a/apps/scrapper/scrapper/shakers.py b/apps/scrapper/scrapper/shakers.py
+new file mode 100644
+index 0000000..5d42af1
+--- /dev/null
++++ b/apps/scrapper/scrapper/shakers.py
+@@ -0,0 +1,52 @@
++import math
++from urllib.parse import quote
++from commonlib.terminalColor import green, yellow
++from commonlib.mysqlUtil import MysqlUtil
++from commonlib.util import getDatetimeNowStr
++from . import baseScrapper
++from .baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
++from .seleniumUtil import SeleniumUtil
++from .persistence_manager import PersistenceManager
++from .selenium.shakers_selenium import ShakersNavigator
++from .services.job_services.shakers_job_service import ShakersJobService
++
++# Note: These need to be added to your .env or .venv file
++USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("SHAKERS")
++
++DEBUG = True
++WEB_PAGE = 'Shakers'
++JOBS_X_PAGE = 10 # Unknown yet
++
++print('Shakers scrapper init')
++navigator: ShakersNavigator = None
++service: ShakersJobService = None
++
++def run(seleniumUtil: SeleniumUtil, preloadPage: bool, persistenceManager: PersistenceManager):
++    """Login, process jobs in search paginated list results"""
++    global navigator, service
++    navigator = ShakersNavigator(seleniumUtil)
++    
++    printScrapperTitle('Shakers', preloadPage)
++    
++    if preloadPage:
++        navigator.load_page('https://app.shakersworks.com/login')
++        navigator.login(USER_EMAIL, USER_PWD)
++        print(green('Login complete. Preload finished.'))
++        return
++
++    navigator.go_to_projects()
++    
++    with MysqlUtil() as mysql:
++        service = ShakersJobService(mysql, persistenceManager)
++        service.set_debug(DEBUG)
++        service.prepare_resume()
++        
++        for job in navigator.get_jobs_list():
++            try:
++                navigator.click_list_job(job)
++                title, company, location, url, html = navigator.get_job_data()
++                service.process_job(title, company, location, url, html)
++                navigator.back_to_list()
++            except Exception:
++                baseScrapper.debug(DEBUG)
++    service.clear_state()
