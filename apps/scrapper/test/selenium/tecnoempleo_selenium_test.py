@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 from scrapper.selenium.tecnoempleo_selenium import TecnoempleoNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS
 from selenium.common.exceptions import NoSuchElementException
 
@@ -26,7 +26,7 @@ class TestTecnoempleoNavigator:
             mock_selenium.getElm.assert_called_with('#e_mail')
 
     def test_login_undetected(self, navigator, mock_selenium):
-        mock_selenium.usesUndetectedDriver() = True
+        mock_selenium.usesUndetectedDriver = Mock(return_value=True)
         with patch('scrapper.selenium.tecnoempleo_selenium.sleep'):
              with patch.object(navigator, 'wait_for_undetected_security_filter') as mock_wait:
                 navigator.login('user', 'pass')
@@ -35,7 +35,7 @@ class TestTecnoempleoNavigator:
                 mock_selenium.sendKeys.assert_any_call('#password', 'pass')
 
     def test_login_normal(self, navigator, mock_selenium):
-        mock_selenium.usesUndetectedDriver() = False
+        mock_selenium.usesUndetectedDriver = Mock(return_value=True)
         with patch('scrapper.selenium.tecnoempleo_selenium.sleep'):
              with patch.object(navigator, 'cloud_flare_security_filter') as mock_cloud:
                 navigator.login('user', 'pass')

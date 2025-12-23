@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 from scrapper.selenium.infojobs_selenium import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND
 from selenium.common.exceptions import NoSuchElementException
 
@@ -17,13 +17,13 @@ class TestInfojobsNavigator:
         assert navigator.selenium == mock_selenium
 
     def test_accept_cookies_undetected(self, navigator, mock_selenium):
-        mock_selenium.usesUndetectedDriver() = True
+        mock_selenium.usesUndetectedDriver = Mock(return_value=True)
         navigator.accept_cookies()
         mock_selenium.scrollIntoView.assert_called_with('#didomi-notice-agree-button > span')
         mock_selenium.waitAndClick.assert_called_with('#didomi-notice-agree-button > span')
 
     def test_accept_cookies_normal(self, navigator, mock_selenium):
-        mock_selenium.usesUndetectedDriver() = False
+        mock_selenium.usesUndetectedDriver = Mock(return_value=True)
         with patch('scrapper.selenium.infojobs_selenium.sleep') as mock_sleep:
             navigator.accept_cookies()
             assert mock_sleep.call_count > 0
@@ -31,14 +31,14 @@ class TestInfojobsNavigator:
         mock_selenium.waitAndClick.assert_called_with('#didomi-notice-agree-button > span')
 
     def test_security_filter_undetected(self, navigator, mock_selenium):
-        mock_selenium.usesUndetectedDriver() = True
+        mock_selenium.usesUndetectedDriver = Mock(return_value=True)
         with patch.object(navigator, 'accept_cookies') as mock_accept:
             navigator.security_filter()
             mock_accept.assert_called_once()
         mock_selenium.waitUntilPageIsLoaded.assert_not_called()
 
     def test_security_filter_normal(self, navigator, mock_selenium):
-        mock_selenium.usesUndetectedDriver() = False
+        mock_selenium.usesUndetectedDriver = Mock(return_value=False)
         with patch('scrapper.selenium.infojobs_selenium.sleep'):
             with patch.object(navigator, 'accept_cookies') as mock_accept:
                 navigator.security_filter()
