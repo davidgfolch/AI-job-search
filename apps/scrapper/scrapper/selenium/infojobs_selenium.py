@@ -18,7 +18,7 @@ class InfojobsNavigator:
 
     @retry(retries=10, delay=5, exception=NoSuchElementException)
     def accept_cookies(self):
-        if not self.selenium.driverUtil.useUndetected:
+        if not self.selenium.usesUndetectedDriver():
             print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
             sleep(4, 4)
         self.selenium.scrollIntoView('#didomi-notice-agree-button > span')
@@ -28,7 +28,7 @@ class InfojobsNavigator:
         print()
 
     def security_filter(self):
-        if self.selenium.driverUtil.useUndetected:
+        if self.selenium.usesUndetectedDriver():
             self.accept_cookies()
             return
         self.selenium.waitUntilPageIsLoaded()

@@ -35,6 +35,9 @@ class SeleniumService:
     def __exit__(self, exc_type, exc_value, traceback):
         self.exit()
 
+    def usesUndetectedDriver(self) -> bool:
+        return self.driverUtil.useUndetected
+        
     @seleniumSocketConnRetry()
     def exit(self):
         print('Exiting SeleniumUtil, close driver...')

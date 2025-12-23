@@ -24,50 +24,64 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
     """Process jobs in search paginated list results"""
     global navigator, service
     navigator = InfojobsNavigator(seleniumUtil)
-    
     printScrapperTitle('Infojobs', preloadPage)
-    
     if preloadPage:
         # For preloading, we can just use the navigator logic
         navigator.load_search_page()
         if not seleniumUtil.driverUtil.useUndetected:
             navigator.security_filter()
         return
-
-    # Normal run
     with MysqlUtil() as mysql:
         service = InfojobsJobService(mysql, persistenceManager)
         service.set_debug(DEBUG)
         service.prepare_resume()
-
         for keywords in JOBS_SEARCH.split(','):
             current_keyword = keywords.strip()
-            
             should_skip, start_page = service.should_skip_keyword(current_keyword)
             if should_skip:
                 print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
                 continue
-
             try:
                 process_keyword(current_keyword, start_page)
             except Exception:
                 baseScrapper.debug(DEBUG)
-            
         service.clear_state()
 
 def process_keyword(keywords: str, start_page: int):
     print(yellow(f'Search keyword={keywords}'))
     navigator.load_search_page()
-    
     if not navigator.load_filtered_search_results(keywords):
         return
-
     totalResults = navigator.get_total_results_from_header(keywords)
     totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-    page = 1
     currentItem = 0
-    
-    # Fast forward to startPage
+    page = _fast_forward_page(start_page, currentItem, totalResults)
+    while currentItem < totalResults:
+        foundNewJobInPage = False
+        baseScrapper.printPage(WEB_PAGE, page, totalPages, keywords)
+        idx = 0
+        while idx < JOBS_X_PAGE and currentItem < totalResults:
+            print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
+            jobExistsInDb = load_and_process_row(idx)
+            if not jobExistsInDb:
+                foundNewJobInPage = True
+            currentItem += 1
+            idx += 1
+        if not foundNewJobInPage and page==1:
+            print(yellow('No new jobs found in this page, stopping keyword processing.'))
+            break
+        if currentItem < totalResults:
+            if navigator.click_next_page():
+                page += 1
+                navigator.wait_until_page_is_loaded()
+                service.update_state(keywords, page)
+            else:
+                break
+    summarize(keywords, totalResults, currentItem)
+
+#TODO: ABSTRACTION VIA INTERFACES (see linkedin.py and others)
+def _fast_forward_page(start_page: int, currentItem: int, totalResults: int):
+    page = 1
     if start_page > 1:
         print(yellow(f"Fast forwarding to page {start_page}..."))
         while page < start_page and currentItem < totalResults:
@@ -77,26 +91,8 @@ def process_keyword(keywords: str, start_page: int):
                 navigator.wait_until_page_is_loaded()
             else:
                 break
-        currentItem = (page - 1) * JOBS_X_PAGE
-
-    while currentItem < totalResults:
-        baseScrapper.printPage(WEB_PAGE, page, totalPages, keywords)
-        idx = 0
-        while idx < JOBS_X_PAGE and currentItem < totalResults:
-            print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
-            load_and_process_row(idx)
-            currentItem += 1
-            idx += 1
-        
-        if currentItem < totalResults:
-            if navigator.click_next_page():
-                page += 1
-                navigator.wait_until_page_is_loaded()
-                service.update_state(keywords, page)
-            else:
-                break
-
-    summarize(keywords, totalResults, currentItem)
+        currentItem = (page - 1) * JOBS_X_PAGE    
+    return page
 
 def load_and_process_row(idx) -> bool:
     try:
@@ -106,23 +102,16 @@ def load_and_process_row(idx) -> bool:
             except Exception:
                 print(yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
                 return False
-        
         job_link_elm = navigator.get_job_link_element(idx)
         url = navigator.get_job_url(job_link_elm)
-        
         job_id, job_exists = service.job_exists_in_db(url)
-        
         if job_exists:
-            print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='')
-            print(flush=True)
+            print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='', flush=True)
             return True
-            
         print(yellow('loading...'), end='')
         navigator.click_job_link(job_link_elm)
-        
         if not process_row(url):
              raise ValueError('Validation failed')
-             
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
         return False
@@ -130,7 +119,7 @@ def load_and_process_row(idx) -> bool:
         print(flush=True)
         if LIST_URL not in navigator.get_url():
             navigator.go_back()
-    return True
+    return False
 
 def process_row(url):
     try:

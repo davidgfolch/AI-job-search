@@ -45,7 +45,7 @@ class TestInfojobsScrapper:
             
             mock_navigator.load_search_page.assert_called_once()
             # Depending on useUndetected, security_filter might be called
-            if not mock_selenium.driverUtil.useUndetected:
+            if not mock_selenium.usesUndetectedDriver():
                 mock_navigator.security_filter.assert_called_once()
 
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_navigator, mock_service):

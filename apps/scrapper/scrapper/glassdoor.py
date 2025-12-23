@@ -61,7 +61,7 @@ def loadMainPage():
         try:
             selenium.waitUntil_presenceLocatedElement('#inlineUserEmail')
         except Exception:
-            if not selenium.driverUtil.useUndetected:
+            if not selenium.usesUndetectedDriver():
                 cloudFlareSecurityFilter()
 
 

@@ -13,7 +13,7 @@ class TecnoempleoNavigator:
     def __init__(self, selenium: SeleniumService):
         self.selenium = selenium
 
-    @retry(retries=3, delay=10)
+    @retry(retries=10, delay=10)
     def wait_for_undetected_security_filter(self):
         self.selenium.waitUntil_presenceLocatedElement('#e_mail', 20)
 
@@ -27,7 +27,7 @@ class TecnoempleoNavigator:
         sleep(2, 2)
         self.selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
         self.selenium.waitUntilPageIsLoaded()
-        if self.selenium.driverUtil.useUndetected:
+        if self.selenium.usesUndetectedDriver():
             self.wait_for_undetected_security_filter()
         else:
             self.cloud_flare_security_filter()

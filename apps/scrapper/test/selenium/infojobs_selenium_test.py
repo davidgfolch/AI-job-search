@@ -17,13 +17,13 @@ class TestInfojobsNavigator:
         assert navigator.selenium == mock_selenium
 
     def test_accept_cookies_undetected(self, navigator, mock_selenium):
-        mock_selenium.driverUtil.useUndetected = True
+        mock_selenium.usesUndetectedDriver() = True
         navigator.accept_cookies()
         mock_selenium.scrollIntoView.assert_called_with('#didomi-notice-agree-button > span')
         mock_selenium.waitAndClick.assert_called_with('#didomi-notice-agree-button > span')
 
     def test_accept_cookies_normal(self, navigator, mock_selenium):
-        mock_selenium.driverUtil.useUndetected = False
+        mock_selenium.usesUndetectedDriver() = False
         with patch('scrapper.selenium.infojobs_selenium.sleep') as mock_sleep:
             navigator.accept_cookies()
             assert mock_sleep.call_count > 0
@@ -31,14 +31,14 @@ class TestInfojobsNavigator:
         mock_selenium.waitAndClick.assert_called_with('#didomi-notice-agree-button > span')
 
     def test_security_filter_undetected(self, navigator, mock_selenium):
-        mock_selenium.driverUtil.useUndetected = True
+        mock_selenium.usesUndetectedDriver() = True
         with patch.object(navigator, 'accept_cookies') as mock_accept:
             navigator.security_filter()
             mock_accept.assert_called_once()
         mock_selenium.waitUntilPageIsLoaded.assert_not_called()
 
     def test_security_filter_normal(self, navigator, mock_selenium):
-        mock_selenium.driverUtil.useUndetected = False
+        mock_selenium.usesUndetectedDriver() = False
         with patch('scrapper.selenium.infojobs_selenium.sleep'):
             with patch.object(navigator, 'accept_cookies') as mock_accept:
                 navigator.security_filter()
