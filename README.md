@@ -29,13 +29,18 @@ This is a monorepo containing several applications and packages:
 
 ### Quick Start
 
+- Copy .env.example to .env:
+  - set your creadentials.
+  - set your options (e.g., JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications, by default should run only:
   - MySQL
   - Backend API
   - Web UI
-- Install Ollama & llama3.2 model
-- Run scrappers and aiEnrich in separated terminals manually.
+- Run apps/scrappers/run.(bat/sh) in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
+- Run (optional) AiEnrich:
+  - Install Ollama & llama3.2 model
+  - Run aiEnrich in separated terminals manually.
 
 NOTE: Ollama, scrapper & aiEnrich are not tested in docker yet, so you need to run them manually.
 
