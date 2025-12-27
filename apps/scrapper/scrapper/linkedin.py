@@ -72,7 +72,7 @@ def search_jobs(keywords: str, startPage: int):
         totalResults = navigator.get_total_results(keywords, remote, location, f_TPR)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         currentItem = 0
-        page = _fast_forward_page(startPage, totalResults)
+        page = _fast_forward_page(startPage, currentItem, totalResults)
         while True:
             foundNewJobInPage = False
             baseScrapper.printPage(WEB_PAGE, page, totalPages, keywords)
@@ -101,7 +101,7 @@ def search_jobs(keywords: str, startPage: int):
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
 
-def _fast_forward_page(startPage: int, currentItem, int, totalResults: int):
+def _fast_forward_page(startPage: int, currentItem: int, totalResults: int):
     page = 1
     if startPage > 1:
         print(yellow(f"Fast forwarding to page {startPage}..."))

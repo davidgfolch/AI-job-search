@@ -1,37 +1,54 @@
 #!/bin/bash
 
-echo ""
-echo "Testing commonlib library..."
-cd packages/commonlib && poetry run pytest && cd ../..
-
 # Parse arguments
 coverage=0
 for arg in "$@"; do
     if [ "$arg" == "--coverage" ]; then
         coverage=1
+        echo "Coverage enabled"
     fi
 done
 
-for app in apps/*; do
+# Execute tests
+for dir in packages/* apps/*; do
+    if [ ! -d "$dir" ]; then
+        continue
+    fi
+    
     echo ""
-    echo "Testing $(basename $app)..."
-    if [ -f "$app/package.json" ]; then
+    echo "Testing $(basename "$dir")..."
+    pushd "$dir" > /dev/null
+    
+    if [ -f "package.json" ]; then
         if [ $coverage -eq 1 ]; then
-            cd "$app" && npm test -- run --coverage && npx coverage-badges & cd ../..
+            npm test -- run --coverage
+            npx coverage-badges
         else
-            cd "$app" && npm test -- run & cd ../..
+            npm test -- run
         fi
-    elif [ -f "$app/pyproject.toml" ]; then
-        if [ "$app" == "apps/aiEnrich" ]; then
-            cd "$app" && UV_PROJECT_ENVIRONMENT=custom-venv uv sync && uv run pytest & cd ../..
+    elif [ -f "pyproject.toml" ]; then
+        if [ -f "uv.lock" ]; then
+            if [ $coverage -eq 1 ]; then
+                uv run -m coverage run -m pytest
+                uv run -m coverage report -m
+                uv run -m coverage xml
+                uv run python -m coverage_badge -o coverage.svg -f
+            else
+                uv run -m pytest
+            fi
         else
             if [ $coverage -eq 1 ]; then
-                cd "$app" && poetry run pytest --cov=. --cov-report=xml && poetry run coverage-badge -o coverage.svg -f & cd ../..
+                poetry run coverage run -m pytest
+                poetry run coverage report -m
+                poetry run coverage xml
+                poetry run coverage-badge -o coverage.svg -f
             else
-                cd "$app" && poetry run pytest & cd ../..
+                poetry run pytest
             fi
         fi
     else
-        echo "No known project type found in $app"
+        echo "No known project type found in $(basename "$dir")"
     fi
+    
+    popd > /dev/null
 done

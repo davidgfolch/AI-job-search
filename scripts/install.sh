@@ -11,6 +11,8 @@ for dir in packages/* apps/*; do
             (cd "$dir" && npm install)
         elif [ "$(basename "$dir")" == "aiEnrich" ]; then
             (cd "$dir" && uv sync && uv tool install --force crewai)
+        elif [ "$(basename "$dir")" == "backend" ]; then
+            (cd "$dir" && uv sync)
         else
             (cd "$dir" && poetry lock && poetry install)
         fi
