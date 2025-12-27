@@ -35,7 +35,7 @@ class TestTecnoempleoNavigator:
                 mock_selenium.sendKeys.assert_any_call('#password', 'pass')
 
     def test_login_normal(self, navigator, mock_selenium):
-        mock_selenium.usesUndetectedDriver = Mock(return_value=True)
+        mock_selenium.usesUndetectedDriver = Mock(return_value=False)
         with patch('scrapper.selenium.tecnoempleo_selenium.sleep'):
              with patch.object(navigator, 'cloud_flare_security_filter') as mock_cloud:
                 navigator.login('user', 'pass')

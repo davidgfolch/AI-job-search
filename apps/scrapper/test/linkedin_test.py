@@ -88,7 +88,7 @@ class TestLinkedinScrapper:
         mocks['svc'].job_exists_in_db.return_value = exists
         
         with patch('scrapper.linkedin.process_row') as pr:
-            assert load_and_process_row(1) is True
+            assert load_and_process_row(1, 0) is not new
             if expected_process: pr.assert_called()
             else: pr.assert_not_called()
 
