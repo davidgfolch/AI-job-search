@@ -12,6 +12,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [selectedIdxs, setSelectedIdxs] = useState<Set<number>>(new Set());
     const [selectionMode, setSelectionMode] = useState<'none' | 'manual' | 'all'>('none');
 
     // Track when we need to auto-select next job after state change
@@ -27,17 +28,20 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
         setSelectedJob(job);
         // Sync selection state with the clicked job
         setSelectedIds(new Set([job.id]));
+        const selectedItems = allJobs.map((j,idx) => j.id === job.id ? idx:-1).filter(idx => idx!==-1)
+        setSelectedIdxs(new Set(selectedItems));
         setSelectionMode('manual');
         // Update URL with jobId parameter
         const newParams = new URLSearchParams(searchParams);
         newParams.set('jobId', job.id.toString());
         setSearchParams(newParams);
-    }, [searchParams, setSearchParams]);
+    }, [searchParams, setSearchParams, setSelectedIdxs, allJobs]);
 
     // Reset selection when filters change (except page)
     useEffect(() => {
         setSelectionMode('none');
         setSelectedIds(new Set());
+        setSelectedIdxs(new Set());
     }, [filters.search, filters.status, filters.not_status, filters.days_old, filters.salary, filters.order, filters.sql_filter]);
 
     // Auto-select next job after data refetch when a state change occurred
@@ -46,12 +50,13 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
             return;
         }
         // Find the previous job in the new data
-        const previousIndex = allJobs.findIndex(j => j.id === autoSelectNext.current.previousJobId);
-        if (previousIndex === -1) {
+        const prevJobIdx = allJobs.findIndex(j => j.id === autoSelectNext.current.previousJobId);
+        if (prevJobIdx === -1) {
             // Job was filtered out, select next available job
             if (allJobs.length > 0) {
                 // Try to select the job at the same index, or the last job if we're past the end
-                const indexToSelect = Math.min(previousIndex >= 0 ? previousIndex : 0, allJobs.length - 1);
+                const prevIdx: number = selectedIdxs?.values().next().value || 0;
+                const indexToSelect = Math.min(prevIdx, allJobs.length - 1);
                 isAutoSelecting.current = true;
                 handleJobSelect(allJobs[indexToSelect]);
             } else {
@@ -61,7 +66,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
         }
         // Reset the flag
         autoSelectNext.current = { shouldSelect: false, previousJobId: null };
-    }, [allJobs, handleJobSelect]);
+    }, [allJobs, handleJobSelect, selectedIdxs]);
 
     // Handle URL parameters on mount
     useEffect(() => {

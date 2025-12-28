@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useJobsData } from './viewer/useJobsData';
 import { useJobSelection } from './viewer/useJobSelection';
 import { useJobMutations, type TabType } from './viewer/useJobMutations';
@@ -9,7 +9,7 @@ export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
 
     const {
-        filters, setFilters, allJobs, isLoadingMore, data, isLoading, error, handleLoadMore
+        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore
     } = useJobsData();
 
     const {
@@ -23,23 +23,40 @@ export const useViewer = () => {
         filters, selectedJob, setSelectedJob, activeTab, autoSelectNext,
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
         onJobUpdated: (updatedJob) => {
-            setAllJobs(prev => {
+            setAllJobs(jobs => {
                 // If the job no longer matches boolean filters (e.g. marked as seen when filtering by unseen), remove it
-                let shouldRemove = false;
-                if (filters.seen === false && updatedJob.seen) shouldRemove = true;
-                if (filters.ignored === false && updatedJob.ignored) shouldRemove = true;
-                if (filters.discarded === false && updatedJob.discarded) shouldRemove = true;
+                let remove = false;
+                if (filters.seen === false && updatedJob.seen) remove = true;
+                if (filters.ignored === false && updatedJob.ignored) remove = true;
+                if (filters.discarded === false && updatedJob.discarded) remove = true;
 
-                if (shouldRemove) {
-                    return prev.filter(j => j.id !== updatedJob.id);
+                if (remove) {
+                    return jobs.filter(j => j.id !== updatedJob.id);
                 }
-                return prev.map(j => j.id === updatedJob.id ? updatedJob : j);
+                return jobs.map(j => j.id === updatedJob.id ? updatedJob : j);
             });
         },
         onJobsDeleted: (ids) => {
-            setAllJobs(prev => prev.filter(j => !ids.includes(j.id)));
+            setAllJobs(jobs => jobs.filter(j => !ids.includes(j.id)));
         }
     });
+
+    // Update allJobs when data changes
+    useEffect(() => {
+        if (data?.items) {
+            setAllJobs(jobs => {
+                if (filters.page === 1) { // Reset on first page (new search/filter)
+                    return data.items;
+                } else { // Append on subsequent pages
+                    const newItems = data.items.filter(item => !jobs.some(p => p.id === item.id));
+                    return [...jobs, ...newItems];
+                }
+            });
+            setIsLoadingMore(false);
+        }
+    }, [data, filters.page, setAllJobs, setIsLoadingMore]);
+    
+    
 
     // Calculate navigation state
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;

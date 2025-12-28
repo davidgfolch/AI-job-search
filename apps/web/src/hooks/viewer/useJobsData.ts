@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../../api/jobs';
 
@@ -17,21 +17,6 @@ export const useJobsData = () => {
         queryFn: () => jobsApi.getJobs(filters),
     });
 
-    // Update allJobs when data changes
-    useEffect(() => {
-        if (data?.items) {
-            if (filters.page === 1) { // Reset on first page (new search/filter)
-                setAllJobs(data.items);
-            } else { // Append on subsequent pages
-                setAllJobs(prev => { // Avoid duplicates
-                    const newItems = data.items.filter(item => !prev.some(p => p.id === item.id));
-                    return [...prev, ...newItems];
-                });
-            }
-            setIsLoadingMore(false);
-        }
-    }, [data, filters.page]);
-
     const handleLoadMore = useCallback(() => {
         if (!isLoadingMore && !isLoading && allJobs.length < (data?.total || 0)) {
             setIsLoadingMore(true);
@@ -48,6 +33,7 @@ export const useJobsData = () => {
         data,
         isLoading,
         error,
-        handleLoadMore
+        handleLoadMore,
+        setIsLoadingMore
     };
 };

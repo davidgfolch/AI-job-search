@@ -34,7 +34,8 @@ export default function Viewer() {
                                 <ViewTabs activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
                                 {state.activeTab === 'list' && (
                                     <div className="list-summary">
-                                        <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span>&nbsp;loaded |&nbsp;<span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span>&nbsp;Selected
+                                        <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span>&nbsp;loaded |&nbsp;
+                                        <span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span>&nbsp;Selected
                                     </div>
                                 )}
                                 {(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0) && (

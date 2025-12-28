@@ -1,4 +1,5 @@
 #!/bin/bash
+#set -x
 
 # Parse arguments
 coverage=0

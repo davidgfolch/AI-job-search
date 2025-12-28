@@ -22,11 +22,13 @@ describe('useViewer', () => {
         filters: { page: 1 },
         setFilters: vi.fn(),
         allJobs: [{ id: 1 }, { id: 2 }],
+        setAllJobs: vi.fn(),
         isLoadingMore: false,
         data: { total: 2, items: [] },
         isLoading: false,
         error: null,
         handleLoadMore: vi.fn(),
+        setIsLoadingMore: vi.fn(),
     };
 
     const mockJobSelection = {
