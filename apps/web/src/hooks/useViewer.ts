@@ -24,13 +24,12 @@ export const useViewer = () => {
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
         onJobUpdated: (updatedJob) => {
             setAllJobs(jobs => {
-                // If the job no longer matches boolean filters (e.g. marked as seen when filtering by unseen), remove it
-                let remove = false;
-                if (filters.seen === false && updatedJob.seen) remove = true;
-                if (filters.ignored === false && updatedJob.ignored) remove = true;
-                if (filters.discarded === false && updatedJob.discarded) remove = true;
-
-                if (remove) {
+                // Remove job if no longer matches state filters
+                if ((filters.ignored !== updatedJob.ignored) || 
+                    (filters.seen !== updatedJob.seen) || 
+                    (filters.applied !== updatedJob.applied) || 
+                    (filters.discarded !== updatedJob.discarded) ||
+                    (filters.closed !== updatedJob.closed)) {
                     return jobs.filter(j => j.id !== updatedJob.id);
                 }
                 return jobs.map(j => j.id === updatedJob.id ? updatedJob : j);

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobsApi, type Job, type JobListParams } from "../../api/jobs";
+import { STATE_FIELDS } from "../contants";
 
 export type TabType = "list" | "edit";
 
@@ -89,17 +90,7 @@ export const useJobMutations = ({
     (data: Partial<Job>) => {
       if (selectedJob) {
         // Check if any state field is being updated
-        const stateFields = [
-          "ignored",
-          "seen",
-          "applied",
-          "discarded",
-          "closed",
-          "flagged",
-          "like",
-          "ai_enriched",
-        ];
-        const hasStateChange = stateFields.some((field) => field in data);
+        const hasStateChange = STATE_FIELDS.some((field) => field in data);
         if (hasStateChange && activeTab === "list") {
           autoSelectNext.current = {
             shouldSelect: true,

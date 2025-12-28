@@ -1,14 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../../api/jobs';
+import { DEFAULT_FILTERS } from '../contants';
 
 export const useJobsData = () => {
-    const [filters, setFilters] = useState<JobListParams>({
-        page: 1,
-        size: 20,
-        search: '',
-        order: 'created desc',
-    });
+    const [filters, setFilters] = useState<JobListParams>(DEFAULT_FILTERS);
     const [allJobs, setAllJobs] = useState<Job[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 

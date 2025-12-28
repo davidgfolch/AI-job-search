@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { jobsApi, type Job, type JobListParams } from '../../api/jobs';
+import { type Job, type JobListParams } from '../../api/jobs';
 
 interface UseJobSelectionProps {
     allJobs: Job[];
@@ -99,9 +99,6 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
                 const job = allJobs.find(j => j.id === jobId);
                 if (job) {
                     setSelectedJob(job);
-                } else {
-                    // If not in current list, fetch it directly
-                    jobsApi.getJob(jobId).then(setSelectedJob).catch(console.error);
                 }
             }
         }
