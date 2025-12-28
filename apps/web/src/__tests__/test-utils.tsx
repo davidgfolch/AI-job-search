@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import type { Job, JobListParams } from '../api/jobs';
+import { BOOLEAN_FILTERS } from '../config/filterConfig';
 
 // ============================================================================
 // Mock Data Factories
@@ -58,12 +59,18 @@ export function createMockJobs(count: number, baseOverrides?: Partial<Job>): Job
 }
 
 export function createMockFilters(overrides?: Partial<JobListParams>): JobListParams {
+    const params = overrides;
+    if (overrides) {
+        BOOLEAN_FILTERS
+                    .filter(entry => !(entry.key in overrides))
+                    .forEach(entry => (params as any)[entry.key] = null);
+    }
     return {
         page: 1,
         size: 20,
         search: '',
         order: 'created desc',
-        ...overrides,
+        ...params,
     };
 }
 

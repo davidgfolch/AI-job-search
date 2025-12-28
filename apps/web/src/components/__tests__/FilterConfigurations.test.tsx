@@ -49,16 +49,16 @@ describe('FilterConfigurations', () => {
 
     describe('Saving Configuration', () => {
         it.each([
-            ['Button', (_input: HTMLElement, btn: HTMLElement) => fireEvent.click(btn)],
-            ['Enter Key', (input: HTMLElement, _btn: HTMLElement) => fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })],
-        ])('saves configuration using %s', async (_, action) => {
+            ['Button', (element: HTMLElement) => fireEvent.click(element)],
+            ['Enter Key', (element: HTMLElement) => fireEvent.keyDown(element, { key: 'Enter', code: 'Enter' })],
+        ])('saves configuration using %s', async (name, action) => {
             const onMessageMock = vi.fn();
             await renderComponent({ onMessage: onMessageMock });
             const input = screen.getByPlaceholderText(/Type to load or enter name to save/i);
             const saveButton = screen.getByText('Save');
             fireEvent.change(input, { target: { value: 'My Config' } });
-            action(input, saveButton);
-            await waitFor(() => {
+            action(name==='Button' ? saveButton : input);
+            await act(async () => {
                 const configs = getStoredConfigs();
                 expect(configs).toHaveLength(1);
                 expect(configs[0].name).toBe('My Config');
@@ -67,6 +67,7 @@ describe('FilterConfigurations', () => {
             if (onMessageMock.mock.calls.length > 0) { 
                  expect(onMessageMock).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success');
             }
+
             expect((input as HTMLInputElement).value).toBe(''); // Clears input
         });
 

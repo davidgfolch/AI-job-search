@@ -13,7 +13,7 @@ export const DEFAULT_FILTERS: JobListParams = {
   closed: false,
 };
 
-export const STATE_FIELDS = [
+export const STATE_FIELDS = [  //see BOOLEAN_FILTERS
   "ignored",
   "seen",
   "applied",

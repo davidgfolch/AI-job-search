@@ -10,7 +10,7 @@ interface UseJobMutationsProps {
   selectedJob: Job | null;
   setSelectedJob: React.Dispatch<React.SetStateAction<Job | null>>;
   activeTab: TabType;
-  autoSelectNext: React.MutableRefObject<{
+  autoSelectNext: React.RefObject<{
     shouldSelect: boolean;
     previousJobId: number | null;
   }>;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { JobListParams } from '../api/jobs';
 import { persistenceApi } from '../api/persistence';
+import { BOOLEAN_FILTERS } from '../config/filterConfig';
 
 export interface FilterConfig {
     name: string;
@@ -42,7 +43,6 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
                 setIsOpen(false);
             }
         };
-
         if (isOpen) {
             document.addEventListener('mousedown', handleClickOutside);
             return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -62,17 +62,13 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
             }
             return;
         }
-
         const newConfig: FilterConfig = {
             name: configName.trim(),
             filters: currentFilters,
         };
-
         const filtered = savedConfigs.filter(c => c.name !== newConfig.name);
         const updated = [newConfig, ...filtered].slice(0, MAX_CONFIGS);
-        
         setSavedConfigs(updated);
-
         try {
             await persistenceApi.setValue(STORAGE_KEY, updated);
             setConfigName('');
@@ -86,7 +82,15 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
         }
     };
 
+    const resetBooleanFilters = (config: FilterConfig) => {
+        BOOLEAN_FILTERS
+            .filter(entry => !(entry.key in config.filters))
+            .forEach(entry => (config.filters as any)[entry.key] = null);
+    }
+
+
     const loadConfiguration = (config: FilterConfig) => {
+        resetBooleanFilters(config);
         onLoadConfig(config.filters);
         setConfigName(config.name);
         setSavedConfigName(config.name);
@@ -99,7 +103,6 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
         if (confirm(`Delete configuration "${name}"?`)) {
             const updated = savedConfigs.filter(c => c.name !== name);
             setSavedConfigs(updated);
-            
             try {
                 await persistenceApi.setValue(STORAGE_KEY, updated);
             } catch (e) {
@@ -173,9 +176,7 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
             if (onMessage) onMessage('No configurations to export.', 'error');
             return;
         }
-
         const exportString = `// Paste this into apps/web/src/data/defaults.ts\nexport const defaultFilterConfigurations = ${JSON.stringify(stored, null, 4)};`;
-        
         try {
             await navigator.clipboard.writeText(exportString);
             if (onMessage) {
@@ -204,4 +205,5 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
         exportToDefaults,
         setHighlightIndex
     };
+
 }
