@@ -58,7 +58,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
                 const prevIdx: number = selectedIdxs?.values().next().value || 0;
                 const indexToSelect = Math.min(prevIdx, allJobs.length - 1);
                 isAutoSelecting.current = true;
-                handleJobSelect(allJobs[indexToSelect]);
+                setSelectedJob(allJobs[indexToSelect]);
             } else {
                 // No jobs left in list
                 setSelectedJob(null);
@@ -74,7 +74,6 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
             isAutoSelecting.current = false;
             return;
         }
-        const jobIdParam = searchParams.get('jobId');
         const idsParam = searchParams.get('ids');
         if (idsParam) {
             const ids = idsParam.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
@@ -82,7 +81,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
                 const sqlFilter = `id IN (${ids.join(',')})`;
                 setFilters(prev => {
                     if (prev.sql_filter === sqlFilter) return prev;
-                    return { ...prev, sql_filter: sqlFilter, page: 1 };
+                    return { ...prev, sql_filter: sqlFilter, page: 1, ignored: 0, seen: 0, applied: true, discarded: 0, closed: 0 };
                 });
                 // Remove ids from URL so form works properly
                 setSearchParams(prev => {
@@ -92,6 +91,14 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
                 });
             }
         }
+    }, [searchParams, setFilters, setSearchParams]);
+
+    // Handle jobId parameter separately to avoid cascading renders
+    useEffect(() => {
+        if (isAutoSelecting.current) {
+            return;
+        }
+        const jobIdParam = searchParams.get('jobId');
         if (jobIdParam) {
             const jobId = parseInt(jobIdParam, 10);
             if (!isNaN(jobId)) {
@@ -102,7 +109,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
                 }
             }
         }
-    }, [searchParams, allJobs, setFilters, setSearchParams]);
+    }, [searchParams, allJobs]);
 
     const navigateJob = useCallback((direction: 'next' | 'previous') => {
         if (!allJobs.length || !selectedJob) return;

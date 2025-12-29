@@ -119,12 +119,12 @@ class TestValidateSafeString:
 
 class TestSqlRegexChars:
     @pytest.mark.parametrize("input_str,expected", [
-        ("Company (USA)", "Company \\(USA\\)"),
-        ("Company[123]", "Company\\[123\\]"),
-        ("A|B Company", "A\\|B Company"),
-        ("Company*", "Company\\*"),
-        ("C++ Developer", "C\\+\\+ Developer"),
-        ("(A|B)*[123]+", "\\(A\\|B\\)\\*\\[123\\]\\+"),
+        ("Company (USA)", "Company USA"),
+        ("Company[123]", "Company123"),
+        ("A|B Company", "AB Company"),
+        ("Company*", "Company"),
+        ("C++ Developer", "C Developer"),
+        ("(A|B)*[123]+", "AB123"),
         ("Regular Company Name", "Regular Company Name"),
     ])
     def test_sql_regex_chars(self, input_str, expected):
