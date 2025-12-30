@@ -2,7 +2,7 @@ import re
 from typing import Tuple
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
-from commonlib.terminalColor import green, magenta, red, yellow
+from commonlib.terminalColor import green, magenta, yellow
 from ...baseScrapper import htmlToMarkdown, validate, debug as baseDebug
 from ...persistence_manager import PersistenceManager
 

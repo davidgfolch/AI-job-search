@@ -1,6 +1,6 @@
 import random
 import time
-from typing import List, Optional
+from typing import List
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement

@@ -3,9 +3,9 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, yellow, printHR
-from ..baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from commonlib.util import join
-from ..services.selenium.seleniumService import SeleniumService, sleep
+from ..services.selenium.seleniumService import SeleniumService
+from ..services.selenium.browser_service import sleep
 from ..selectors.infojobsSelectors import (
     CSS_SEL_JOB_DETAIL, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_COMPANY, CSS_SEL_LOCATION,
     CSS_SEL_JOB_TITLE, CSS_SEL_JOB_LI, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, 

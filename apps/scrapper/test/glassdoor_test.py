@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch, call
-from scrapper import glassdoor
 from scrapper.glassdoor import run, loadMainPage, login, searchJobs, loadAndProcessRow, processRow, getJobId
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager

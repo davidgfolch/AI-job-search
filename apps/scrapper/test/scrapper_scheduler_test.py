@@ -12,9 +12,8 @@ from scrapper.scrapper_scheduler import (
 def mocks():
     sel = MagicMock()
     pm = MagicMock()
-    cont = MagicMock()
     pm.get_last_execution.return_value = None
-    return {'sel': sel, 'pm': pm, 'cont': cont}
+    return {'sel': sel, 'pm': pm}
 
 @pytest.fixture
 def run_mocks():
@@ -58,7 +57,7 @@ class TestRunScrappers:
     @patch('scrapper.scrapper_scheduler.getTimeUnits', return_value='0s')
     def test_run_all(self, _t, _d, _c, mocks, run_mocks):
         with patch('scrapper.scrapper_scheduler.RUN_IN_TABS', False):
-            runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, persistenceManager=mocks['pm'], seleniumUtil=mocks['sel'], scrapperContainer=mocks['cont'], loops=1)
+            runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, persistenceManager=mocks['pm'], seleniumUtil=mocks['sel'], loops=1)
             for k in ['infojobs', 'linkedin', 'glassdoor', 'tecnoempleo']: run_mocks[k].assert_called()
             assert not run_mocks['indeed'].called
 
@@ -69,7 +68,7 @@ class TestRunScrappers:
     ])
     def test_specified(self, scrapers, calls, mocks, run_mocks):
         with patch('scrapper.scrapper_scheduler.RUN_IN_TABS', False):
-            runSpecifiedScrappers(scrapers, mocks['pm'], mocks['sel'], mocks['cont'])
+            runSpecifiedScrappers(scrapers, mocks['pm'], mocks['sel'])
             for name, count in calls.items(): assert run_mocks[name].call_count == count
 
 class TestSchedulerHelpers:

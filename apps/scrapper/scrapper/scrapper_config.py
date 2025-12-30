@@ -3,7 +3,6 @@ from commonlib.util import getEnv, getEnvBool, getSeconds
 
 DEBUG = getEnvBool('SCRAPPER_DEBUG', False)
 TIMER = 'timer'
-NEW_ARCH = 'newArchitecture'
 CLOSE_TAB = 'closeTab'
 IGNORE_AUTORUN = 'ignoreAutoRun'
 
@@ -16,7 +15,6 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
     },
     'Linkedin': {
         TIMER: getSeconds(getEnv('LINKEDIN_RUN_CADENCY')),
-        NEW_ARCH: getEnvBool('LINKEDIN_NEW_ARCHITECTURE', False),
         CLOSE_TAB: True,
     },
     'Glassdoor': {

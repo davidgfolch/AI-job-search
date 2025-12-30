@@ -5,7 +5,7 @@ from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketCon
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 
-from scrapper.services.selenium.browser_service import BrowserService, sleep
+from scrapper.services.selenium.browser_service import BrowserService
 from scrapper.services.selenium.element_service import ElementService
 
 class SeleniumService:

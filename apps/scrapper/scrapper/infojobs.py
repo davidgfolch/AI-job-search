@@ -1,5 +1,4 @@
 import math
-from selenium.common.exceptions import NoSuchElementException
 from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
 from . import baseScrapper

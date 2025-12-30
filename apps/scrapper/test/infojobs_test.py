@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from scrapper import infojobs
 from scrapper.infojobs import run
 from scrapper.selenium.infojobs_selenium import InfojobsNavigator
 from scrapper.services.job_services.infojobs_job_service import InfojobsJobService

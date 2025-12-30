@@ -5,7 +5,8 @@ from commonlib.util import join
 from selenium.common.exceptions import NoSuchElementException
 
 from ..baseScrapper import printPage
-from ..services.selenium.seleniumService import SeleniumService, sleep
+from ..services.selenium.seleniumService import SeleniumService
+from ..services.selenium.browser_service import sleep
 from ..selectors.linkedinSelectors import (
     CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_HEADER, CSS_SEL_NO_RESULTS,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_LI_IDX, CSS_SEL_COMPANY, CSS_SEL_LOCATION,

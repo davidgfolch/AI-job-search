@@ -8,7 +8,6 @@ from scrapper.scrapper_config import (
 )
 from scrapper.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.container.scrapper_container import ScrapperContainer
 from scrapper.scrapper_execution import executeScrapper, executeScrapperPreload, runPreload
 
 def getProperties(name: str) -> Optional[dict[str, Any]]:
@@ -37,7 +36,7 @@ def timeExpired(name: str, properties: dict, lastExecution: int):
             return False
     return True
 
-def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService, scrapperContainer: ScrapperContainer, loops=99999999999):
+def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService, loops=99999999999):
     # No arguments specified in command line: run all
     # Specified params: starting glassdoor -> starts with glassdoor
     print(f'Executing all scrappers: {SCRAPPERS.keys()}')
@@ -63,20 +62,20 @@ def runAllScrappers(waitBeforeFirstRuns, starting, startingAt, persistenceManage
             if RUN_IN_TABS:
                 seleniumUtil.tab(runThis['name'])
             if runPreload(runThis['properties']):
-                if not executeScrapperPreload(runThis['name'], runThis['properties'], seleniumUtil, scrapperContainer, persistenceManager):
+                if not executeScrapperPreload(runThis['name'], runThis['properties'], seleniumUtil, persistenceManager):
                     return
-            if not executeScrapper(runThis['name'], runThis['properties'], persistenceManager, seleniumUtil, scrapperContainer):
+            if not executeScrapper(runThis['name'], runThis['properties'], persistenceManager, seleniumUtil):
                 return
         waitBeforeFirstRuns = False
         consoleTimer("Waiting for next scrapping execution trigger, ", NEXT_SCRAP_TIMER)
 
-def runSpecifiedScrappers(scrappersList: list, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService, scrapperContainer: ScrapperContainer):
+def runSpecifiedScrappers(scrappersList: list, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService):
     print(f'Executing specified scrappers: {scrappersList}')
     for arg in scrappersList:
         if validScrapperName(arg):
             properties = SCRAPPERS[arg.capitalize()]
             if runPreload(properties):
-                if not executeScrapperPreload(arg.capitalize(), properties, seleniumUtil, scrapperContainer, persistenceManager):
+                if not executeScrapperPreload(arg.capitalize(), properties, seleniumUtil, persistenceManager):
                     return
-            if not executeScrapper(arg.capitalize(), properties, persistenceManager, seleniumUtil, scrapperContainer):
+            if not executeScrapper(arg.capitalize(), properties, persistenceManager, seleniumUtil):
                 return

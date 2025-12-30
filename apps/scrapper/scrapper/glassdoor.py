@@ -2,9 +2,10 @@ import math
 import re
 from selenium.common.exceptions import NoSuchElementException
 
-from . import baseScrapper
+
 from .baseScrapper import (getAndCheckEnvVars, htmlToMarkdown, printPage, printScrapperTitle, validate)
-from .services.selenium.seleniumService import SeleniumService, sleep
+from .services.selenium.browser_service import sleep
+from .services.selenium.seleniumService import SeleniumService
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, printHR, yellow
 from commonlib.util import getDatetimeNowStr, getEnv

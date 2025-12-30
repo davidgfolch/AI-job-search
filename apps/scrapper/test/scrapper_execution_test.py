@@ -1,19 +1,18 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from scrapper.scrapper_config import (
-    CLOSE_TAB, NEW_ARCH, SCRAPPERS, TIMER
+    CLOSE_TAB, SCRAPPERS, TIMER
 )
 from scrapper.scrapper_execution import (
     executeScrapperPreload, executeScrapper,
-    runScrapper, runScrapperPageUrl, hasNewArchitecture
+    runScrapper, runScrapperPageUrl
 )
 
 @pytest.fixture
 def mocks():
     sel = MagicMock()
     pm = MagicMock()
-    cont = MagicMock()
-    return {'sel': sel, 'pm': pm, 'cont': cont}
+    return {'sel': sel, 'pm': pm}
 
 @pytest.fixture
 def run_mocks():
@@ -30,7 +29,7 @@ class TestExecuteScrapper:
         with patch('scrapper.scrapper_execution.RUN_IN_TABS', in_tabs):
             props = {CLOSE_TAB: close_tab} if close_tab else {}
             if error: run_mocks['infojobs'].side_effect = error
-            executeScrapperPreload('infojobs', props, mocks['sel'], mocks['cont'], mocks['pm'])
+            executeScrapperPreload('infojobs', props, mocks['sel'], mocks['pm'])
             assert props.get('preloaded') is (False if error else preload)
             run_mocks['infojobs'].assert_called_with(mocks['sel'], True, mocks['pm'])
 
@@ -41,40 +40,16 @@ class TestExecuteScrapper:
         with patch('scrapper.scrapper_execution.RUN_IN_TABS', in_tabs):
             props = {CLOSE_TAB: close} if close else {}
             if error: run_mocks['infojobs'].side_effect = error
-            executeScrapper('infojobs', props, mocks['pm'], mocks['sel'], mocks['cont'])
+            executeScrapper('infojobs', props, mocks['pm'], mocks['sel'])
             if in_tabs: mocks['sel'].tab.assert_called()
             if close: mocks['sel'].tabClose.assert_called()
             run_mocks['infojobs'].assert_called_with(mocks['sel'], False, mocks['pm'])
-
-class TestNewArchitecture:
-    def test_preload(self, mocks):
-        srv = MagicMock()
-        srv.executeScrapping.return_value = {'login_success': True}
-        mocks['cont'].get_scrapping_service.return_value = srv
-        props = {NEW_ARCH: True}
-        executeScrapperPreload('Linkedin', props, mocks['sel'], mocks['cont'], mocks['pm'])
-        srv.executeScrapping.assert_called_with(mocks['sel'], [], preloadOnly=True)
-        assert props['preloaded'] is True
-
-    def test_execution(self, mocks):
-        srv = MagicMock()
-        mocks['cont'].get_scrapping_service.return_value = srv
-        props = {NEW_ARCH: True}
-        with patch('scrapper.scrapper_execution.getEnv', return_value='kw'):
-            executeScrapper('Linkedin', props, mocks['pm'], mocks['sel'], mocks['cont'])
-        srv.executeScrapping.assert_called_with(mocks['sel'], ['kw'], preloadOnly=False, persistenceManager=mocks['pm'])
 
 class TestExecutionHelpers:
     @pytest.mark.parametrize("name", ['linkedin', 'infojobs', 'tecnoempleo', 'glassdoor', 'indeed'])
     def test_run_scrapper(self, name, run_mocks, mocks):
         runScrapper(name, False, mocks['pm'], mocks['sel'])
         run_mocks[name].assert_called_once_with(mocks['sel'], False, mocks['pm'])
-
-    def test_has_new_architecture(self, mocks):
-        mocks['cont'].get_scrapping_service.return_value = MagicMock()
-        assert hasNewArchitecture('L', {NEW_ARCH: True}, mocks['cont']) is True
-        mocks['cont'].get_scrapping_service.side_effect = Exception
-        assert hasNewArchitecture('L', {NEW_ARCH: True}, mocks['cont']) is False
 
 class TestRunScrapperPageUrl:
     def test_linkedin_url(self, mocks):

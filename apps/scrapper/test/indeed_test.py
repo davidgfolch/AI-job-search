@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch, call
-from scrapper import indeed
+from unittest.mock import MagicMock, patch
 from scrapper.indeed import run, searchJobs, loadAndProcessRow, processRow, getJobId, postProcessMarkdown
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager

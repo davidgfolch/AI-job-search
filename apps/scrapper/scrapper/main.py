@@ -5,8 +5,6 @@ from commonlib.util import getSrcPath
 from commonlib.terminalColor import cyan
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.persistence_manager import PersistenceManager
-from scrapper.container.scrapper_container import ScrapperContainer
-
 from scrapper.scrapper_execution import runScrapperPageUrl
 from scrapper.scrapper_scheduler import runAllScrappers, runSpecifiedScrappers
 
@@ -36,13 +34,12 @@ def main(args):
 
     with SeleniumService() as seleniumUtil:
         persistenceManager = PersistenceManager()
-        scrapperContainer = ScrapperContainer()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
         if len(args) == 1 or starting or wait:
             startingAt = args[1].capitalize() if starting else None
-            runAllScrappers(wait, starting, startingAt, persistenceManager, seleniumUtil, scrapperContainer)
+            runAllScrappers(wait, starting, startingAt, persistenceManager, seleniumUtil)
         else:
-            runSpecifiedScrappers(args[1:], persistenceManager, seleniumUtil, scrapperContainer)
+            runSpecifiedScrappers(args[1:], persistenceManager, seleniumUtil)
 
 
 if __name__ == '__main__':
