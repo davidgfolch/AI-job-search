@@ -3,10 +3,10 @@ from typing import Tuple
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green
-from ...baseScrapper import htmlToMarkdown, validate, debug as baseDebug
-from ...persistence_manager import PersistenceManager
+from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
+from ..util.persistence_manager import PersistenceManager
 
-class GlassdoorJobService:
+class GlassdoorService:
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
         self.mysql = mysql
         self.persistence_manager = persistence_manager

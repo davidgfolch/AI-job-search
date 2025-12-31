@@ -2,10 +2,10 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper import tecnoempleo
 from scrapper.tecnoempleo import run
-from scrapper.selenium.tecnoempleo_selenium import TecnoempleoNavigator
-from scrapper.services.job_services.tecnoempleo_job_service import TecnoempleoJobService
+from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator
+from scrapper.services.TecnoempleoService import TecnoempleoService
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.util.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
@@ -43,10 +43,10 @@ class TestTecnoempleoScrapper:
 
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars):
         mock_navigator = MagicMock(spec=TecnoempleoNavigator)
-        mock_service = MagicMock(spec=TecnoempleoJobService)
+        mock_service = MagicMock(spec=TecnoempleoService)
         
         with patch('scrapper.tecnoempleo.TecnoempleoNavigator', return_value=mock_navigator), \
-             patch('scrapper.tecnoempleo.TecnoempleoJobService', return_value=mock_service), \
+             patch('scrapper.tecnoempleo.TecnoempleoService', return_value=mock_service), \
              patch('scrapper.tecnoempleo.MysqlUtil'), \
              patch('scrapper.tecnoempleo.JOBS_SEARCH', 'python developer'):
              
@@ -69,15 +69,15 @@ class TestTecnoempleoScrapper:
              mock_service.process_job.assert_called()
 
 
-class TestTecnoempleoJobService:
+class TestTecnoempleoService:
     @pytest.fixture
     def service(self, mock_mysql, mock_persistence_manager):
-        return TecnoempleoJobService(mock_mysql, mock_persistence_manager)
+        return TecnoempleoService(mock_mysql, mock_persistence_manager)
         
     def test_process_job_valid(self, service, mock_mysql):
-        with patch('scrapper.services.job_services.tecnoempleo_job_service.htmlToMarkdown', return_value="Markdown"), \
-             patch('scrapper.services.job_services.tecnoempleo_job_service.validate', return_value=True), \
-             patch('scrapper.services.job_services.tecnoempleo_job_service.mergeDuplicatedJobs'):
+        with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="Markdown"), \
+             patch('scrapper.services.TecnoempleoService.validate', return_value=True), \
+             patch('scrapper.services.TecnoempleoService.mergeDuplicatedJobs'):
              
              mock_mysql.insert.return_value = 1
              result = service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")

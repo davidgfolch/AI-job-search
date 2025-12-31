@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, call, patch
-from scrapper.selenium.linkedin_selenium import LinkedinNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON
+from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON
 from selenium.common.exceptions import NoSuchElementException
 
 class TestLinkedinNavigator:
@@ -24,7 +24,7 @@ class TestLinkedinNavigator:
     def test_check_login_popup_present(self, navigator, mock_selenium):
         mock_selenium.waitAndClick_noError.return_value = True
         callback = MagicMock()
-        with patch('scrapper.selenium.linkedin_selenium.sleep'):
+        with patch('scrapper.navigator.linkedinNavigator.sleep'):
             result = navigator.check_login_popup(callback)
             assert result is True
             callback.assert_called_once()
@@ -32,7 +32,7 @@ class TestLinkedinNavigator:
     def test_check_login_popup_not_present(self, navigator, mock_selenium):
         mock_selenium.waitAndClick_noError.return_value = False
         callback = MagicMock()
-        with patch('scrapper.selenium.linkedin_selenium.sleep'):
+        with patch('scrapper.navigator.linkedinNavigator.sleep'):
             result = navigator.check_login_popup(callback)
             assert result is False
             callback.assert_not_called()
@@ -44,7 +44,7 @@ class TestLinkedinNavigator:
 
     def test_login_success(self, navigator, mock_selenium):
         mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
-        with patch('scrapper.selenium.linkedin_selenium.sleep'):
+        with patch('scrapper.navigator.linkedinNavigator.sleep'):
             navigator.login("user", "pass")
             mock_selenium.sendKeys.assert_any_call('#username', 'user')
             mock_selenium.sendKeys.assert_any_call('#password', 'pass')
@@ -54,7 +54,7 @@ class TestLinkedinNavigator:
     def test_login_checkbox_fail_handled(self, navigator, mock_selenium):
         mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
         mock_selenium.checkboxUnselect.side_effect = Exception("error")
-        with patch('scrapper.selenium.linkedin_selenium.sleep'):
+        with patch('scrapper.navigator.linkedinNavigator.sleep'):
             navigator.login("user", "pass") # Should not crash
             mock_selenium.waitAndClick.assert_called_with('form button[type=submit]')
 

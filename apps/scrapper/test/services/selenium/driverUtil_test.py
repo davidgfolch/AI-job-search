@@ -1,32 +1,32 @@
 import pytest
 from unittest.mock import MagicMock, patch, PropertyMock
-from scrapper.driverUtil import DriverUtil, DESKTOP_USER_AGENTS
-import scrapper.driverUtil as driverUtilModule
+from scrapper.services.selenium.driverUtil import DriverUtil, DESKTOP_USER_AGENTS
+import scrapper.services.selenium.driverUtil as driverUtilModule
 
 class TestDriverUtil:
     
     @pytest.fixture
     def mock_env_bool(self):
-        with patch('scrapper.driverUtil.getEnvBool') as mock:
+        with patch('scrapper.services.selenium.driverUtil.getEnvBool') as mock:
             yield mock
 
     @pytest.fixture
     def mock_chrome(self):
-        with patch('scrapper.driverUtil.webdriver.Chrome') as mock:
+        with patch('scrapper.services.selenium.driverUtil.webdriver.Chrome') as mock:
             driver = MagicMock()
             mock.return_value = driver
             yield mock
 
     @pytest.fixture
     def mock_uc_chrome(self):
-        with patch('scrapper.driverUtil.uc.Chrome') as mock:
+        with patch('scrapper.services.selenium.driverUtil.uc.Chrome') as mock:
             driver = MagicMock()
             mock.return_value = driver
             yield mock
 
     @pytest.fixture
     def mock_is_windows(self):
-        with patch('scrapper.driverUtil.isWindowsOS') as mock:
+        with patch('scrapper.services.selenium.driverUtil.isWindowsOS') as mock:
             yield mock
 
     def test_initialization_standard_chrome(self, mock_env_bool, mock_chrome):
@@ -83,7 +83,7 @@ class TestDriverUtil:
         mock_env_bool.return_value = False
         
         with patch('platform.system', return_value=system_os), \
-             patch('scrapper.driverUtil.os.path.exists', side_effect=paths_exist):
+             patch('scrapper.services.selenium.driverUtil.os.path.exists', side_effect=paths_exist):
             
             driver_util = DriverUtil()
             chrome_path = driver_util._findChrome()
@@ -178,7 +178,7 @@ class TestDriverUtil:
         assert has_chrome
         assert has_firefox
 
-    @patch('scrapper.driverUtil.random.choice')
+    @patch('scrapper.services.selenium.driverUtil.random.choice')
     def test_random_user_agent_selection(self, mock_choice, mock_env_bool, mock_chrome):
         """Test that a random user agent is selected"""
         mock_env_bool.return_value = False
@@ -209,7 +209,7 @@ class TestDriverUtil:
         driver.set_page_load_timeout.assert_called_with(180)
         driver.set_script_timeout.assert_called_with(180)
 
-    @patch('scrapper.driverUtil.tempfile.mkdtemp')
+    @patch('scrapper.services.selenium.driverUtil.tempfile.mkdtemp')
     def test_undetected_chrome_temp_dir_windows(self, mock_mkdtemp, mock_env_bool, mock_is_windows, mock_uc_chrome):
         """Test temporary directory is created for undetected Chrome on Windows"""
         mock_env_bool.return_value = True

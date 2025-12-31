@@ -4,7 +4,7 @@ from commonlib.terminalColor import green, yellow, printHR
 from commonlib.util import join
 from selenium.common.exceptions import NoSuchElementException
 
-from ..baseScrapper import printPage
+from ..core.baseScrapper import printPage
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 from ..selectors.linkedinSelectors import (

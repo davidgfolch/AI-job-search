@@ -1,12 +1,12 @@
 import pytest
 from unittest.mock import patch
-from scrapper.baseScrapper import (
+from scrapper.core.baseScrapper import (
     getAndCheckEnvVars, htmlToMarkdown, removeInvalidScapes,
     removeLinks, validate, debug, join, printScrapperTitle, printPage
 )
 
 class TestGetAndCheckEnvVars:
-    @patch('scrapper.baseScrapper.getEnv')
+    @patch('scrapper.core.baseScrapper.getEnv')
     def test_all_vars_present(self, mockGetEnv):
         mockGetEnv.side_effect = ['test@email.com', 'password', 'python developer']
         email, pwd, search = getAndCheckEnvVars('LINKEDIN')
@@ -14,25 +14,25 @@ class TestGetAndCheckEnvVars:
         assert pwd == 'password'
         assert search == 'python developer'
     
-    @patch('scrapper.baseScrapper.getEnv')
+    @patch('scrapper.core.baseScrapper.getEnv')
     def test_fallback_to_generic_search(self, mockGetEnv):
         mockGetEnv.side_effect = ['test@email.com', 'password', None, 'generic search']
         email, pwd, search = getAndCheckEnvVars('LINKEDIN')
         assert search == 'generic search'
     
-    @patch('scrapper.baseScrapper.getEnv')
+    @patch('scrapper.core.baseScrapper.getEnv')
     def test_missing_email_exits(self, mockGetEnv):
         mockGetEnv.side_effect = [None, 'password', 'search']
         with pytest.raises(SystemExit):
             getAndCheckEnvVars('LINKEDIN')
     
-    @patch('scrapper.baseScrapper.getEnv')
+    @patch('scrapper.core.baseScrapper.getEnv')
     def test_missing_password_exits(self, mockGetEnv):
         mockGetEnv.side_effect = ['test@email.com', None, 'search']
         with pytest.raises(SystemExit):
             getAndCheckEnvVars('LINKEDIN')
     
-    @patch('scrapper.baseScrapper.getEnv')
+    @patch('scrapper.core.baseScrapper.getEnv')
     def test_missing_search_exits(self, mockGetEnv):
         mockGetEnv.side_effect = ['test@email.com', 'password', None, None]
         with pytest.raises(SystemExit):
@@ -161,8 +161,8 @@ class TestJoin:
         assert result == 'Single'
 
 class TestPrintScrapperTitle:
-    @patch('scrapper.baseScrapper.printHR')
-    @patch('scrapper.baseScrapper.getDatetimeNowStr')
+    @patch('scrapper.core.baseScrapper.printHR')
+    @patch('scrapper.core.baseScrapper.getDatetimeNowStr')
     def test_preload_mode(self, mockGetDatetime, mockPrintHR):
         mockGetDatetime.return_value = '2025-01-01 12:00:00'
         with patch('builtins.print') as mockPrint:
@@ -170,8 +170,8 @@ class TestPrintScrapperTitle:
             mockPrint.assert_called()
             mockPrintHR.assert_called()
     
-    @patch('scrapper.baseScrapper.printHR')
-    @patch('scrapper.baseScrapper.getDatetimeNowStr')
+    @patch('scrapper.core.baseScrapper.printHR')
+    @patch('scrapper.core.baseScrapper.getDatetimeNowStr')
     def test_normal_mode(self, mockGetDatetime, mockPrintHR):
         mockGetDatetime.return_value = '2025-01-01 12:00:00'
         with patch('builtins.print') as mockPrint:
@@ -180,8 +180,8 @@ class TestPrintScrapperTitle:
             mockPrintHR.assert_called()
 
 class TestPrintPage:
-    @patch('scrapper.baseScrapper.printHR')
-    @patch('scrapper.baseScrapper.getDatetimeNowStr')
+    @patch('scrapper.core.baseScrapper.printHR')
+    @patch('scrapper.core.baseScrapper.getDatetimeNowStr')
     def test_print_page(self, mockGetDatetime, mockPrintHR):
         mockGetDatetime.return_value = '2025-01-01 12:00:00'
         with patch('builtins.print') as mockPrint:

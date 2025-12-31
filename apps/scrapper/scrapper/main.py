@@ -4,9 +4,9 @@ from typing import Callable
 from commonlib.util import getSrcPath
 from commonlib.terminalColor import cyan
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.persistence_manager import PersistenceManager
-from scrapper.scrapper_execution import runScrapperPageUrl
-from scrapper.scrapper_scheduler import runAllScrappers, runSpecifiedScrappers
+from scrapper.util.persistence_manager import PersistenceManager
+from scrapper.core.scrapper_execution import runScrapperPageUrl
+from scrapper.core.scrapper_scheduler import runAllScrappers, runSpecifiedScrappers
 
 
 def hasArgument(args: list, name: str, info: Callable = (lambda: str)) -> bool:

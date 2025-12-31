@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock, call, patch
-from scrapper.selenium.infojobs_selenium import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND
+from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND
 from selenium.common.exceptions import NoSuchElementException
 
 class TestInfojobsNavigator:
@@ -24,7 +24,7 @@ class TestInfojobsNavigator:
 
     def test_accept_cookies_normal(self, navigator, mock_selenium):
         mock_selenium.usesUndetectedDriver = Mock(return_value=True)
-        with patch('scrapper.selenium.infojobs_selenium.sleep') as mock_sleep:
+        with patch('scrapper.navigator.infojobsNavigator.sleep') as mock_sleep:
             navigator.accept_cookies()
             assert mock_sleep.call_count > 0
         mock_selenium.scrollIntoView.assert_called_with('#didomi-notice-agree-button > span')
@@ -39,7 +39,7 @@ class TestInfojobsNavigator:
 
     def test_security_filter_normal(self, navigator, mock_selenium):
         mock_selenium.usesUndetectedDriver = Mock(return_value=False)
-        with patch('scrapper.selenium.infojobs_selenium.sleep'):
+        with patch('scrapper.navigator.infojobsNavigator.sleep'):
             with patch.object(navigator, 'accept_cookies') as mock_accept:
                 navigator.security_filter()
                 mock_selenium.waitUntilPageIsLoaded.assert_called()
@@ -54,7 +54,7 @@ class TestInfojobsNavigator:
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 
     def test_scroll_to_bottom(self, navigator, mock_selenium):
-        with patch('scrapper.selenium.infojobs_selenium.sleep'):
+        with patch('scrapper.navigator.infojobsNavigator.sleep'):
             navigator.scroll_to_bottom()
             mock_selenium.scrollProgressive.assert_any_call(600)
             mock_selenium.scrollProgressive.assert_any_call(-1200)
@@ -93,7 +93,7 @@ class TestInfojobsNavigator:
         mock_selenium.sendKeys.return_value = True
         mock_selenium.getElms.return_value = [] # No "No results" found
         with patch.object(navigator, 'click_on_search_jobs') as mock_click_search:
-             with patch('scrapper.selenium.infojobs_selenium.sleep'):
+             with patch('scrapper.navigator.infojobsNavigator.sleep'):
                 result = navigator.load_filtered_search_results("python")
                 assert result is True
                 mock_click_search.assert_called()
@@ -104,13 +104,13 @@ class TestInfojobsNavigator:
         mock_selenium.sendKeys.return_value = True
         mock_selenium.getElms.return_value = ['some element'] # "No results" found
         with patch.object(navigator, 'click_on_search_jobs') as mock_click_search:
-             with patch('scrapper.selenium.infojobs_selenium.sleep'):
+             with patch('scrapper.navigator.infojobsNavigator.sleep'):
                 result = navigator.load_filtered_search_results("python")
                 assert result is False
 
     def test_scroll_jobs_list(self, navigator, mock_selenium):
         mock_selenium.getElms.return_value = [MagicMock(), MagicMock()]
-        with patch('scrapper.selenium.infojobs_selenium.sleep'):
+        with patch('scrapper.navigator.infojobsNavigator.sleep'):
             navigator.scroll_jobs_list(0)
             mock_selenium.scrollIntoView.assert_called()
 

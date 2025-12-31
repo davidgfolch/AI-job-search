@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.infojobs import run
-from scrapper.selenium.infojobs_selenium import InfojobsNavigator
-from scrapper.services.job_services.infojobs_job_service import InfojobsJobService
+from scrapper.navigator.infojobsNavigator import InfojobsNavigator
+from scrapper.services.InfojobsService import InfojobsService
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.util.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def mock_navigator():
 
 @pytest.fixture
 def mock_service():
-    return MagicMock(spec=InfojobsJobService)
+    return MagicMock(spec=InfojobsService)
 
 @pytest.fixture
 def mock_env_vars():
@@ -49,7 +49,7 @@ class TestInfojobsScrapper:
 
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_navigator, mock_service):
         with patch('scrapper.infojobs.InfojobsNavigator', return_value=mock_navigator), \
-             patch('scrapper.infojobs.InfojobsJobService', return_value=mock_service), \
+             patch('scrapper.infojobs.InfojobsService', return_value=mock_service), \
              patch('scrapper.infojobs.MysqlUtil'), \
              patch('scrapper.infojobs.JOBS_SEARCH', 'python developer'):
             
@@ -73,10 +73,10 @@ class TestInfojobsScrapper:
             mock_navigator.load_search_page.assert_called()
             mock_navigator.load_filtered_search_results.assert_called_with('python developer')
 
-class TestInfojobsJobService:
+class TestInfojobsService:
     @pytest.fixture
     def service(self, mock_mysql, mock_persistence_manager):
-        return InfojobsJobService(mock_mysql, mock_persistence_manager)
+        return InfojobsService(mock_mysql, mock_persistence_manager)
 
     @pytest.mark.parametrize("url, expected_id", [
         ("https://www.infojobs.net/of-1234567890?other=param", "1234567890"),
@@ -92,12 +92,13 @@ class TestInfojobsJobService:
         assert exists is True
 
     def test_process_job_valid(self, service, mock_mysql):
-        with patch('scrapper.services.job_services.infojobs_job_service.htmlToMarkdown', return_value="Markdown"), \
-             patch('scrapper.services.job_services.infojobs_job_service.validate', return_value=True), \
-             patch('scrapper.services.job_services.infojobs_job_service.mergeDuplicatedJobs'):
+        with patch('scrapper.services.InfojobsService.htmlToMarkdown', return_value="Markdown"), \
+             patch('scrapper.services.InfojobsService.validate', return_value=True), \
+             patch('scrapper.services.InfojobsService.mergeDuplicatedJobs'):
              
              mock_mysql.insert.return_value = 1
              result = service.process_job("Title", "Company", "Location", "https://www.infojobs.net/of-123", "<html>")
              
              assert result is True
              mock_mysql.insert.assert_called_once()
+

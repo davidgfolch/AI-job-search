@@ -2,13 +2,13 @@ from typing import Any, Optional
 
 from commonlib.util import getDatetimeNow, getTimeUnits, consoleTimer
 from commonlib.terminalColor import cyan, red, yellow
-from scrapper.scrapper_config import (
+from scrapper.core.scrapper_config import (
     SCRAPPERS, TIMER, IGNORE_AUTORUN, NEXT_SCRAP_TIMER,
     MAX_NAME, RUN_IN_TABS
 )
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.scrapper_execution import executeScrapper, executeScrapperPreload, runPreload
+from scrapper.core.scrapper_execution import executeScrapper, executeScrapperPreload, runPreload
 
 def getProperties(name: str) -> Optional[dict[str, Any]]:
     return SCRAPPERS.get(name.capitalize())

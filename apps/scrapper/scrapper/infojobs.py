@@ -1,12 +1,12 @@
 import math
 from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
-from . import baseScrapper
-from .baseScrapper import getAndCheckEnvVars, printScrapperTitle
+from .core import baseScrapper
+from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from .services.selenium.seleniumService import SeleniumService
-from .persistence_manager import PersistenceManager
-from .selenium.infojobs_selenium import InfojobsNavigator
-from .services.job_services.infojobs_job_service import InfojobsJobService
+from .util.persistence_manager import PersistenceManager
+from .navigator.infojobsNavigator import InfojobsNavigator
+from .services.InfojobsService import InfojobsService
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 
@@ -17,7 +17,7 @@ JOBS_X_PAGE = 22
 
 print('Infojobs scrapper init')
 navigator: InfojobsNavigator = None
-service: InfojobsJobService = None
+service: InfojobsService = None
 
 def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Process jobs in search paginated list results"""
@@ -31,7 +31,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
             navigator.security_filter()
         return
     with MysqlUtil() as mysql:
-        service = InfojobsJobService(mysql, persistenceManager)
+        service = InfojobsService(mysql, persistenceManager)
         service.set_debug(DEBUG)
         service.prepare_resume()
         for keywords in JOBS_SEARCH.split(','):

@@ -2,8 +2,8 @@ import time
 import re
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
-from . import baseScrapper
-from .baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
+from .core import baseScrapper
+from .core.baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
 from commonlib.terminalColor import green, printHR, red, yellow
 from commonlib.decorator.retry import retry
 from commonlib.util import getDatetimeNowStr
@@ -11,7 +11,7 @@ from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from .services.selenium.seleniumService import SeleniumService
 from .services.selenium.browser_service import sleep
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
-from .persistence_manager import PersistenceManager
+from .util.persistence_manager import PersistenceManager
 from .selectors.indeedSelectors import (
     CSS_SEL_JOB_DESCRIPTION,
     CSS_SEL_JOB_EASY_APPLY,

@@ -17,8 +17,8 @@ def mock_driver():
 @pytest.fixture(scope='class')
 def selenium_util(mock_driver):
     """Shared SeleniumService instance with mocked driver"""
-    with patch('scrapper.driverUtil.getEnvBool', return_value=False), \
-         patch('scrapper.driverUtil.webdriver.Chrome', return_value=mock_driver):
+    with patch('scrapper.services.selenium.driverUtil.getEnvBool', return_value=False), \
+         patch('scrapper.services.selenium.driverUtil.webdriver.Chrome', return_value=mock_driver):
         util = SeleniumService()
         yield util
 

@@ -6,8 +6,8 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 
 Refactored to a modular architecture:
 
-- **Navigators (`scrapper/selenium/`)**: Specialized classes that handle Selenium browser interactions for each site (e.g., `LinkedinSelenium.py`, `InfojobsSelenium.py`). All inherit from `SeleniumUtil`.
-- **Services (`scrapper/services/`)**: Business logic and orchestration for job fetching and processing (`job_services/`).
+- **Navigators (`scrapper/navigator/`)**: Specialized classes that handle Selenium browser interactions for each site (e.g., `linkedinNavigator.py`, `infojobsNavigator.py`).
+- **Services (`scrapper/services/`)**: Business logic and orchestration for job fetching and processing (e.g., `LinkedinService.py`, `InfojobsService.py`).
 - **Coordinators**: Top-level scripts (`linkedin.py`, `infojobs.py`, etc.) that coordinate the scraping process.
 
 ## Features

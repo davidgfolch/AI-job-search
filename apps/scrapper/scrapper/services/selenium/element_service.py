@@ -7,7 +7,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from scrapper import baseScrapper
+from scrapper.core import baseScrapper
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 from commonlib.terminalColor import yellow
 from commonlib.util import isMacOS

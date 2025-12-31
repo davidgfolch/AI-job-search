@@ -2,16 +2,16 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper import linkedin
 from scrapper.linkedin import run, load_page, search_jobs, process_row, processUrl, load_and_process_row
-from scrapper.services.job_services.linkedin_job_service import LinkedinJobService
-from scrapper.selenium.linkedin_selenium import LinkedinNavigator
+from scrapper.services.LinkedinService import LinkedinService
+from scrapper.navigator.linkedinNavigator import LinkedinNavigator
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.util.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mocks():
     with patch('scrapper.linkedin.LinkedinNavigator') as nav_cls, \
-         patch('scrapper.linkedin.LinkedinJobService') as svc_cls, \
+         patch('scrapper.linkedin.LinkedinService') as svc_cls, \
          patch('scrapper.linkedin.MysqlUtil'), \
          patch('scrapper.linkedin.PersistenceManager'), \
          patch('scrapper.linkedin.SeleniumService'), \
@@ -109,10 +109,10 @@ class TestLinkedinScrapper:
             mocks['nav'].load_page.assert_called_with("http://url")
             pr.assert_called_with(None)
 
-class TestLinkedinJobService:
+class TestLinkedinService:
     @pytest.fixture
     def service(self):
-        return LinkedinJobService(MagicMock(), MagicMock())
+        return LinkedinService(MagicMock(), MagicMock())
     
     def test_url_parsing(self, service):
         url = "https://www.linkedin.com/jobs/view/123456/?x=y"
@@ -120,9 +120,9 @@ class TestLinkedinJobService:
         assert service.get_job_url_short(url) == "https://www.linkedin.com/jobs/view/123456/"
 
     def test_process_job(self, service):
-        with patch('scrapper.services.job_services.linkedin_job_service.validate', side_effect=[True, False]), \
-             patch('scrapper.services.job_services.linkedin_job_service.htmlToMarkdown', return_value="M"), \
-             patch('scrapper.services.job_services.linkedin_job_service.mergeDuplicatedJobs'):
+        with patch('scrapper.services.LinkedinService.validate', side_effect=[True, False]), \
+             patch('scrapper.services.LinkedinService.htmlToMarkdown', return_value="M"), \
+             patch('scrapper.services.LinkedinService.mergeDuplicatedJobs'):
              
              # Valid
              service.mysql.jobExists.return_value = False
@@ -163,8 +163,8 @@ class TestLinkedinJobService:
 
     def test_print_job(self, service):
         # Trigger print_job via process_job when job exists + direct url
-        with patch('scrapper.services.job_services.linkedin_job_service.validate', return_value=True), \
-             patch('scrapper.services.job_services.linkedin_job_service.htmlToMarkdown', return_value="M"):
+        with patch('scrapper.services.LinkedinService.validate', return_value=True), \
+             patch('scrapper.services.LinkedinService.htmlToMarkdown', return_value="M"):
             service.mysql.jobExists.return_value = True
             
             # Should call print_job (we can't easily mock print_job here since it's a method on the object under test, 

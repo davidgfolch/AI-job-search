@@ -1,9 +1,9 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from scrapper.scrapper_config import (
+from scrapper.core.scrapper_config import (
     CLOSE_TAB, SCRAPPERS, TIMER
 )
-from scrapper.scrapper_execution import (
+from scrapper.core.scrapper_execution import (
     executeScrapperPreload, executeScrapper,
     runScrapper, runScrapperPageUrl
 )
@@ -26,7 +26,7 @@ class TestExecuteScrapper:
         (False, True, False, None), (True, True, False, None), (False, False, False, Exception)
     ])
     def test_preload(self, mocks, run_mocks, in_tabs, preload, close_tab, error):
-        with patch('scrapper.scrapper_execution.RUN_IN_TABS', in_tabs):
+        with patch('scrapper.core.scrapper_execution.RUN_IN_TABS', in_tabs):
             props = {CLOSE_TAB: close_tab} if close_tab else {}
             if error: run_mocks['infojobs'].side_effect = error
             executeScrapperPreload('infojobs', props, mocks['sel'], mocks['pm'])
@@ -37,7 +37,7 @@ class TestExecuteScrapper:
         (False, False, None), (True, False, None), (True, True, None), (False, False, Exception)
     ])
     def test_execute(self, mocks, run_mocks, in_tabs, close, error):
-        with patch('scrapper.scrapper_execution.RUN_IN_TABS', in_tabs):
+        with patch('scrapper.core.scrapper_execution.RUN_IN_TABS', in_tabs):
             props = {CLOSE_TAB: close} if close else {}
             if error: run_mocks['infojobs'].side_effect = error
             executeScrapper('infojobs', props, mocks['pm'], mocks['sel'])
@@ -54,7 +54,7 @@ class TestExecutionHelpers:
 class TestRunScrapperPageUrl:
     def test_linkedin_url(self, mocks):
         url = "https://www.linkedin.com/jobs/view/123"
-        with patch('scrapper.scrapper_execution.linkedin.processUrl') as mock_process:
+        with patch('scrapper.core.scrapper_execution.linkedin.processUrl') as mock_process:
             runScrapperPageUrl(url)
             mock_process.assert_called_once_with(url)
 
@@ -66,6 +66,6 @@ class TestRunScrapperPageUrl:
 
     def test_unknown_url(self):
         url = "https://www.google.com"
-        with patch('scrapper.scrapper_execution.linkedin.processUrl') as mock_process:
+        with patch('scrapper.core.scrapper_execution.linkedin.processUrl') as mock_process:
             runScrapperPageUrl(url)
             mock_process.assert_not_called()

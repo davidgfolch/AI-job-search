@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.indeed import run, searchJobs, loadAndProcessRow, processRow, getJobId, postProcessMarkdown
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.util.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture

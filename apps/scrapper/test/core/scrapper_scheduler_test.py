@@ -1,9 +1,9 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from scrapper.scrapper_config import (
+from scrapper.core.scrapper_config import (
     CLOSE_TAB, IGNORE_AUTORUN, SCRAPPERS, TIMER
 )
-from scrapper.scrapper_scheduler import (
+from scrapper.core.scrapper_scheduler import (
     runAllScrappers, runSpecifiedScrappers, timeExpired, validScrapperName,
     getProperties
 )
@@ -40,7 +40,7 @@ class TestTimeExpired:
         (6000, {TIMER: 3600, 'waitBeforeFirstRun': False}, 100, True),  # 6000-100=5900 > 3600
     ])
     def test_time_expired(self, now, props, last, expected):
-        with patch('scrapper.scrapper_scheduler.getDatetimeNow', return_value=now):
+        with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=now):
             assert timeExpired('', props, last) is expected
             assert props.get('lastExecution') == props.get('lastExecution')
 
@@ -52,11 +52,11 @@ def test_valid_scrapper_name(name, expected):
     assert validScrapperName(name) is expected
 
 class TestRunScrappers:
-    @patch('scrapper.scrapper_scheduler.consoleTimer')
-    @patch('scrapper.scrapper_scheduler.getDatetimeNow', return_value=1000)
-    @patch('scrapper.scrapper_scheduler.getTimeUnits', return_value='0s')
+    @patch('scrapper.core.scrapper_scheduler.consoleTimer')
+    @patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=1000)
+    @patch('scrapper.core.scrapper_scheduler.getTimeUnits', return_value='0s')
     def test_run_all(self, _t, _d, _c, mocks, run_mocks):
-        with patch('scrapper.scrapper_scheduler.RUN_IN_TABS', False):
+        with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
             runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, persistenceManager=mocks['pm'], seleniumUtil=mocks['sel'], loops=1)
             for k in ['infojobs', 'linkedin', 'glassdoor', 'tecnoempleo']: run_mocks[k].assert_called()
             assert not run_mocks['indeed'].called
@@ -67,7 +67,7 @@ class TestRunScrappers:
         (['infojobs', 'LINKEDIN'], {'infojobs': 2, 'linkedin': 2}),
     ])
     def test_specified(self, scrapers, calls, mocks, run_mocks):
-        with patch('scrapper.scrapper_scheduler.RUN_IN_TABS', False):
+        with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
             runSpecifiedScrappers(scrapers, mocks['pm'], mocks['sel'])
             for name, count in calls.items(): assert run_mocks[name].call_count == count
 

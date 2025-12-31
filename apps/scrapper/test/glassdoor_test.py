@@ -2,10 +2,10 @@ import math
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.glassdoor import run, process_keyword, load_and_process_row
-from scrapper.selenium.glassdoor_selenium import GlassdoorNavigator
-from scrapper.services.job_services.glassdoor_job_service import GlassdoorJobService
+from scrapper.navigator.glassdoorNavigator import GlassdoorNavigator
+from scrapper.services.GlassdoorService import GlassdoorService
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.util.persistence_manager import PersistenceManager
 from commonlib.mysqlUtil import MysqlUtil
 
 @pytest.fixture
@@ -42,7 +42,7 @@ class TestGlassdoorScrapper:
     
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
         with patch('scrapper.glassdoor.MysqlUtil') as mock_mysql_class, \
-             patch('scrapper.glassdoor.GlassdoorJobService') as mock_service_class, \
+             patch('scrapper.glassdoor.GlassdoorService') as mock_service_class, \
              patch('scrapper.glassdoor.process_keyword') as mock_process_keyword:
             
             mock_mysql_instance = mock_mysql_class.return_value.__enter__.return_value
@@ -111,21 +111,21 @@ class TestGlassdoorNavigator:
             mock_selenium.sendKeys.assert_any_call('#inlineUserEmail', 'user')
             mock_selenium.sendKeys.assert_any_call('form input#inlineUserPassword', 'pass')
 
-class TestGlassdoorJobService:
+class TestGlassdoorService:
     @pytest.mark.parametrize("url, expected_id", [
         ("https://www.glassdoor.es/job-listing/test?jl=1234567890&other=param", "1234567890"),
         ("https://www.glassdoor.es/job-listing/test?jobListingId=0987654321&other=param", "0987654321"),
     ])
     def test_get_job_id(self, url, expected_id, mock_mysql, mock_persistence_manager):
-        service = GlassdoorJobService(mock_mysql, mock_persistence_manager)
+        service = GlassdoorService(mock_mysql, mock_persistence_manager)
         assert service.get_job_id(url) == expected_id
 
     def test_process_job(self, mock_mysql, mock_persistence_manager):
-        service = GlassdoorJobService(mock_mysql, mock_persistence_manager)
+        service = GlassdoorService(mock_mysql, mock_persistence_manager)
         
-        with patch('scrapper.services.job_services.glassdoor_job_service.htmlToMarkdown', return_value="MD"), \
-             patch('scrapper.services.job_services.glassdoor_job_service.validate', return_value=True), \
-             patch('scrapper.services.job_services.glassdoor_job_service.mergeDuplicatedJobs'):
+        with patch('scrapper.services.GlassdoorService.htmlToMarkdown', return_value="MD"), \
+             patch('scrapper.services.GlassdoorService.validate', return_value=True), \
+             patch('scrapper.services.GlassdoorService.mergeDuplicatedJobs'):
             
             mock_mysql.insert.return_value = 1
             

@@ -3,12 +3,12 @@ from urllib.parse import quote
 from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.util import getDatetimeNowStr
-from . import baseScrapper
-from .baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
+from .core import baseScrapper
+from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
 from .services.selenium.seleniumService import SeleniumService
-from .persistence_manager import PersistenceManager
-from .selenium.tecnoempleo_selenium import TecnoempleoNavigator
-from .services.job_services.tecnoempleo_job_service import TecnoempleoJobService
+from .util.persistence_manager import PersistenceManager
+from .navigator.tecnoempleoNavigator import TecnoempleoNavigator
+from .services.TecnoempleoService import TecnoempleoService
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("TECNOEMPLEO")
 
@@ -20,7 +20,7 @@ JOBS_X_PAGE = 30
 
 print('Tecnoempleo scrapper init')
 navigator: TecnoempleoNavigator = None
-service: TecnoempleoJobService = None
+service: TecnoempleoService = None
 
 def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
@@ -34,7 +34,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
         navigator.wait_until_page_url_contains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
         return
     with MysqlUtil() as mysql:
-        service = TecnoempleoJobService(mysql, persistenceManager)
+        service = TecnoempleoService(mysql, persistenceManager)
         service.set_debug(DEBUG)
         service.prepare_resume()        
         for keywords in JOBS_SEARCH.split(','):

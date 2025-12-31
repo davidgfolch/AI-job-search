@@ -4,10 +4,11 @@ from typing import Any, Optional
 from commonlib.util import getEnv, getDatetimeNow
 from commonlib.terminalColor import cyan, red, yellow, green
 from commonlib.keep_system_awake import KeepSystemAwake
-from scrapper import baseScrapper, tecnoempleo, infojobs, linkedin, glassdoor, indeed
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.core import baseScrapper
+from scrapper import tecnoempleo, infojobs, linkedin, glassdoor, indeed
+from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.scrapper_config import (
+from scrapper.core.scrapper_config import (
     CLOSE_TAB, RUN_IN_TABS, DEBUG, SCRAPPERS
 )
 

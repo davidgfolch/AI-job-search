@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock, call, patch
-from scrapper.selenium.tecnoempleo_selenium import TecnoempleoNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS
+from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS
 from selenium.common.exceptions import NoSuchElementException
 
 class TestTecnoempleoNavigator:
@@ -21,13 +21,13 @@ class TestTecnoempleoNavigator:
         mock_selenium.waitUntil_presenceLocatedElement.assert_called_with('#e_mail', 20)
 
     def test_cloud_flare_security_filter(self, navigator, mock_selenium):
-        with patch('scrapper.selenium.tecnoempleo_selenium.sleep'):
+        with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
             navigator.cloud_flare_security_filter()
             mock_selenium.getElm.assert_called_with('#e_mail')
 
     def test_login_undetected(self, navigator, mock_selenium):
         mock_selenium.usesUndetectedDriver = Mock(return_value=True)
-        with patch('scrapper.selenium.tecnoempleo_selenium.sleep'):
+        with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
              with patch.object(navigator, 'wait_for_undetected_security_filter') as mock_wait:
                 navigator.login('user', 'pass')
                 mock_wait.assert_called_once()
@@ -36,7 +36,7 @@ class TestTecnoempleoNavigator:
 
     def test_login_normal(self, navigator, mock_selenium):
         mock_selenium.usesUndetectedDriver = Mock(return_value=False)
-        with patch('scrapper.selenium.tecnoempleo_selenium.sleep'):
+        with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
              with patch.object(navigator, 'cloud_flare_security_filter') as mock_cloud:
                 navigator.login('user', 'pass')
                 mock_cloud.assert_called_once()
@@ -91,7 +91,7 @@ class TestTecnoempleoNavigator:
 
     def test_accept_cookies(self, navigator, mock_selenium):
         mock_selenium.getElms.return_value = ["cookie_button"]
-        with patch('scrapper.selenium.tecnoempleo_selenium.sleep'):
+        with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
              with patch.object(navigator, 'close_create_alert'):
                 navigator.accept_cookies()
                 mock_selenium.waitAndClick.assert_called()

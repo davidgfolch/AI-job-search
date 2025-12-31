@@ -1,6 +1,6 @@
 from typing import List, Optional
-from scrapper import baseScrapper
-from scrapper.driverUtil import DriverUtil
+from scrapper.core import baseScrapper
+from scrapper.services.selenium.driverUtil import DriverUtil
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement

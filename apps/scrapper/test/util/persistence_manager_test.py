@@ -2,7 +2,7 @@ import pytest
 import json
 import os
 import tempfile
-from scrapper.persistence_manager import PersistenceManager
+from scrapper.util.persistence_manager import PersistenceManager
 
 class TestPersistenceManager:
     @pytest.fixture

@@ -1,14 +1,14 @@
 import math
 from selenium.common.exceptions import NoSuchElementException
 
-from . import baseScrapper
-from .baseScrapper import getAndCheckEnvVars, printScrapperTitle
+from .core import baseScrapper
+from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from commonlib.terminalColor import yellow, green
 from commonlib.mysqlUtil import MysqlUtil
 from .services.selenium.seleniumService import SeleniumService
-from .persistence_manager import PersistenceManager
-from .selenium.linkedin_selenium import LinkedinNavigator
-from .services.job_services.linkedin_job_service import LinkedinJobService
+from .util.persistence_manager import PersistenceManager
+from .navigator.linkedinNavigator import LinkedinNavigator
+from .services.LinkedinService import LinkedinService
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("LINKEDIN")
 
@@ -24,7 +24,7 @@ JOBS_X_PAGE = 25
 
 print('Linkedin scrapper init')
 navigator: LinkedinNavigator = None
-service: LinkedinJobService = None
+service: LinkedinService = None
 
 def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
@@ -37,7 +37,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
         navigator.wait_until_page_url_contains('https://www.linkedin.com/feed/', 60)
         return
     with MysqlUtil() as mysql:
-        service = LinkedinJobService(mysql, persistenceManager)
+        service = LinkedinService(mysql, persistenceManager)
         service.set_debug(DEBUG)
         service.prepare_resume()
         for keywords in JOBS_SEARCH.split(','):
@@ -152,7 +152,7 @@ def processUrl(url: str):
     global navigator, service
     with MysqlUtil() as mysql, SeleniumService() as seleniumUtil:
         navigator = LinkedinNavigator(seleniumUtil)
-        service = LinkedinJobService(mysql, PersistenceManager())
+        service = LinkedinService(mysql, PersistenceManager())
         service.set_debug(DEBUG)
         navigator.load_page(url)
         if navigator.check_login_popup(lambda: navigator.login(USER_EMAIL, USER_PWD)):

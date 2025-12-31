@@ -2,12 +2,12 @@ import math
 from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.util import getEnv
-from . import baseScrapper
-from .baseScrapper import getAndCheckEnvVars, printScrapperTitle
+from .core import baseScrapper
+from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from .services.selenium.seleniumService import SeleniumService
-from .persistence_manager import PersistenceManager
-from .selenium.glassdoor_selenium import GlassdoorNavigator
-from .services.job_services.glassdoor_job_service import GlassdoorJobService
+from .util.persistence_manager import PersistenceManager
+from .navigator.glassdoorNavigator import GlassdoorNavigator
+from .services.GlassdoorService import GlassdoorService
 
 SITE = "GLASSDOOR"
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars(SITE)
@@ -19,7 +19,7 @@ JOBS_X_PAGE = 30
 
 print('Glassdoor scrapper init')
 navigator: GlassdoorNavigator = None
-service: GlassdoorJobService = None
+service: GlassdoorService = None
 
 def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager):
     """Login, process jobs in search paginated list results"""
@@ -31,7 +31,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
         return
     
     with MysqlUtil() as mysql:
-        service = GlassdoorJobService(mysql, persistenceManager)
+        service = GlassdoorService(mysql, persistenceManager)
         service.set_debug(DEBUG)
         service.prepare_resume()
         for search in JOBS_SEARCH.split('|~|'):
