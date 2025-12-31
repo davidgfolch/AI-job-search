@@ -104,11 +104,8 @@ class TecnoempleoNavigator:
         company = self.selenium.getText(CSS_SEL_COMPANY)
         location = ''
         url = self.selenium.getUrl()
-        
-        # HTML construction from original code
-        html = '\\n'.join(['- '+self.selenium.getText(elm) for elm in self.selenium.getElms(CSS_SEL_JOB_DATA)]) + '\\n' * 2
+        html = '\n'.join(['- '+self.selenium.getText(elm) for elm in self.selenium.getElms(CSS_SEL_JOB_DATA)]) + '\n' * 2
         html += self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        
         return title, company, location, url, html
     
     def get_attribute(self, css_sel, attr):
