@@ -61,7 +61,7 @@ export default function JobTable({
                                 title="Select All"
                             />
                         </th>
-                        <th>Salary</th>
+                        <th className="salary-column">Salary</th>
                         <th>Title</th>
                         <th>Company</th>
                     </tr>
@@ -81,7 +81,7 @@ export default function JobTable({
                                     onChange={() => onToggleSelectJob(job.id)}
                                 />
                             </td>
-                            <td>{job.salary || '-'}</td>
+                            <td className="salary-column">{job.salary || '-'}</td>
                             <td>{job.title || '-'}</td>
                             <td>{job.company || '-'}</td>
                         </tr>
