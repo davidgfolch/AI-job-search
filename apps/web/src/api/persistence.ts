@@ -1,4 +1,8 @@
-import { persistenceDefaults } from '../data/defaults';
+import { defaultFilterConfigurations } from '../data/defaults';
+
+const persistenceDefaults: Record<string, any> = {
+    'filter_configurations': defaultFilterConfigurations,
+};
 
 export const persistenceApi = {
   getValue: async <T>(key: string): Promise<T | null> => {

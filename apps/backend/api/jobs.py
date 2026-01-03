@@ -14,6 +14,11 @@ class BulkJobUpdate(BaseModel):
     update: JobUpdate
     select_all: bool = False
 
+class BulkJobDelete(BaseModel):
+    ids: Optional[List[int]] = None
+    filters: Optional[dict] = None
+    select_all: bool = False
+
 
 def get_service():
     return JobsService()
@@ -118,3 +123,14 @@ def bulk_update_jobs(bulk_update: BulkJobUpdate, service: JobsService = Depends(
         select_all=bulk_update.select_all
     )
     return {"updated": count}
+
+@router.post("/bulk/delete", response_model=dict)
+@router.post("/bulk/delete", response_model=dict)
+def bulk_delete_jobs(bulk_delete: BulkJobDelete, service: JobsService = Depends(get_service)):
+    # Using BulkJobDelete which doesn't require 'update' field
+    count = service.delete_jobs(
+        ids=bulk_delete.ids,
+        filters=bulk_delete.filters,
+        select_all=bulk_delete.select_all
+    )
+    return {"deleted": count}

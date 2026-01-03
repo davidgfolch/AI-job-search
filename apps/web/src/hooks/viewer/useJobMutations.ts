@@ -2,8 +2,13 @@ import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobsApi, type Job, type JobListParams } from "../../api/jobs";
 import { STATE_FIELDS } from "../contants";
+import { useConfirmationModal } from "../useConfirmationModal";
+import { useBulkJobMutations } from "./useBulkJobMutations";
 
 export type TabType = "list" | "edit";
+
+export const getDeleteOldJobsMsg = (count: number) => `Going to delete ${count} older jobs (see sql filter)`;
+
 
 interface UseJobMutationsProps {
   filters: JobListParams;
@@ -43,12 +48,14 @@ export const useJobMutations = ({
     type: "success" | "error";
   } | null>(null);
 
-  // Modal State
-  const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    message: string;
-    onConfirm: () => void;
-  }>({ isOpen: false, message: "", onConfirm: () => {} });
+  const confirmModal = useConfirmationModal();
+
+  const { bulkUpdateMutation, bulkDeleteMutation } = useBulkJobMutations({
+      onJobsDeleted,
+      setMessage,
+      setSelectionMode,
+      setSelectedIds
+  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Job> }) =>
@@ -59,30 +66,6 @@ export const useJobMutations = ({
         setSelectedJob(updatedJob);
       }
       onJobUpdated?.(updatedJob);
-    },
-  });
-
-  const bulkUpdateMutation = useMutation({
-    mutationFn: (payload: {
-      ids?: number[];
-      filters?: JobListParams;
-      update: Partial<Job>;
-      select_all?: boolean;
-    }) => jobsApi.bulkUpdateJobs(payload),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      setMessage({ text: `Updated ${data.updated} jobs`, type: "success" });
-      setSelectionMode("none");
-      setSelectedIds(new Set());
-      if (variables.ids && onJobsDeleted) {
-        onJobsDeleted(variables.ids);
-      }
-    },
-    onError: (err) => {
-      setMessage({
-        text: err instanceof Error ? err.message : "Error updating jobs",
-        type: "error",
-      });
     },
   });
 
@@ -110,10 +93,7 @@ export const useJobMutations = ({
         ? "Are you sure you want to ignore ALL jobs matching the current filters?"
         : `Are you sure you want to ignore ${count} selected jobs?`;
 
-    setConfirmModal({
-      isOpen: true,
-      message: msg,
-      onConfirm: () => {
+    confirmModal.confirm(msg, () => {
         if (selectionMode === "all") {
           bulkUpdateMutation.mutate({
             select_all: true,
@@ -126,19 +106,48 @@ export const useJobMutations = ({
             update: { ignored: true },
           });
         }
-        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-      },
     });
-  }, [selectionMode, selectedIds, filters, bulkUpdateMutation]);
+  }, [selectionMode, selectedIds, filters, bulkUpdateMutation, confirmModal]);
+
+  const deleteSelected = useCallback((count: number) => {
+    const msg = getDeleteOldJobsMsg(count);
+    confirmModal.confirm(msg, () => {
+        if (selectionMode === "all") {
+          bulkDeleteMutation.mutate({
+            select_all: true,
+            filters,
+          });
+        } else if (selectedIds.size > 0) {
+          bulkDeleteMutation.mutate({
+            ids: Array.from(selectedIds),
+          });
+        }
+    });
+  }, [selectionMode, selectedIds, filters, bulkDeleteMutation, confirmModal]);
 
   return {
     message,
     setMessage,
-    confirmModal,
-    setConfirmModal,
+    confirmModal: {
+        isOpen: confirmModal.isOpen,
+        message: confirmModal.message,
+        onConfirm: confirmModal.handleConfirm,
+        close: confirmModal.close,
+    },
+    setConfirmModal: (val: any) => { 
+        // Backward compatibility shim if needed, or better, expose close.
+        if (typeof val === 'function') {
+            const newState = val({ isOpen: confirmModal.isOpen });
+            if (!newState.isOpen) confirmModal.close();
+        } else if (!val.isOpen) {
+            confirmModal.close();
+        }
+    },
     handleJobUpdate,
     ignoreSelected,
+    deleteSelected,
     updateMutation,
     bulkUpdateMutation,
+    bulkDeleteMutation,
   };
 };

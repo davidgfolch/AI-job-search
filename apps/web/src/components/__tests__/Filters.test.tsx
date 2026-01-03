@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Filters from '../Filters';
 import type { JobListParams } from '../../api/jobs';
@@ -34,18 +34,11 @@ describe('Filters', () => {
 
     it('expands and collapses when toggle button is clicked', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const toggleButton = screen.getByText(/Filters/);
-
-        // Should be expanded by default
-        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
-
-        // Click to collapse
-        fireEvent.click(toggleButton);
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument(); // Should be expanded by default
+        fireEvent.click(toggleButton); // Click to collapse
         expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
-
-        // Click to expand again
-        fireEvent.click(toggleButton);
+        fireEvent.click(toggleButton); // Click to expand again
         expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
     });
 
@@ -54,9 +47,7 @@ describe('Filters', () => {
             ...mockFilters,
             flagged: true,
         };
-
         await renderAndWait(<Filters filters={filtersWithActive} onFiltersChange={onFiltersChangeMock} />);
-
         const toggleButton = screen.getByText(/Filters/);
         expect(toggleButton).toHaveClass('has-active');
         expect(screen.getByText('●')).toBeInTheDocument();
@@ -64,10 +55,8 @@ describe('Filters', () => {
 
     it('handles search input changes', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const searchInput = screen.getByPlaceholderText('Search jobs...');
         fireEvent.change(searchInput, { target: { value: 'React Developer' } });
-
         expect(onFiltersChangeMock).toHaveBeenCalledWith({
             ...mockFilters,
             search: 'React Developer',
@@ -77,46 +66,36 @@ describe('Filters', () => {
 
     it('handles days old filter', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const daysOldInput = screen.getByLabelText(/Days old/);
         fireEvent.change(daysOldInput, { target: { value: '7' } });
-
         expect(onFiltersChangeMock).toHaveBeenCalledWith({ days_old: 7 });
     });
 
     it('handles salary regex filter', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const salaryInput = screen.getByLabelText(/Salary/);
         fireEvent.change(salaryInput, { target: { value: '\\d{6}' } });
-
         expect(onFiltersChangeMock).toHaveBeenCalledWith({ salary: '\\d{6}' });
     });
 
     it('handles SQL where filter', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const sqlInput = screen.getByPlaceholderText(/e.g. salary/);
         fireEvent.change(sqlInput, { target: { value: 'salary > 50000' } });
-
         expect(onFiltersChangeMock).toHaveBeenCalledWith({ sql_filter: 'salary > 50000' });
     });
 
     it('handles sort order changes', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const sortSelect = screen.getByLabelText(/Sort/);
         fireEvent.change(sortSelect, { target: { value: 'salary desc' } });
-
         expect(onFiltersChangeMock).toHaveBeenCalledWith({ order: 'salary desc' });
     });
 
     it('renders all boolean filter pills in Include section', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const includeSection = screen.getAllByText(/Include:/)[0].closest('.pills-section');
         expect(includeSection).toBeInTheDocument();
-
         // Check for some filter pills
         expect(screen.getAllByText('Flagged').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Like').length).toBeGreaterThan(0);
@@ -125,32 +104,25 @@ describe('Filters', () => {
 
     it('renders all boolean filter pills in Exclude section', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const excludeSection = screen.getAllByText(/Exclude:/)[0].closest('.pills-section');
         expect(excludeSection).toBeInTheDocument();
     });
 
     it('toggles include filter pill correctly', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         // Find the first "Flagged" pill (in Include section)
         const flaggedPills = screen.getAllByText('Flagged');
         const includeFlaggedPill = flaggedPills[0];
-
         fireEvent.click(includeFlaggedPill);
-
         expect(onFiltersChangeMock).toHaveBeenCalledWith({ flagged: true });
     });
 
     it('toggles exclude filter pill correctly', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         // Find the second "Flagged" pill (in Exclude section)
         const flaggedPills = screen.getAllByText('Flagged');
         const excludeFlaggedPill = flaggedPills[1];
-
         fireEvent.click(excludeFlaggedPill);
-
         expect(onFiltersChangeMock).toHaveBeenCalledWith({ flagged: false });
     });
 
@@ -159,9 +131,7 @@ describe('Filters', () => {
             ...mockFilters,
             flagged: true,
         };
-
         await renderAndWait(<Filters filters={filtersWithInclude} onFiltersChange={onFiltersChangeMock} />);
-
         const includeFlaggedPill = screen.getAllByText('Flagged')[0];
         expect(includeFlaggedPill).toHaveClass('active-true');
     });
@@ -171,9 +141,7 @@ describe('Filters', () => {
             ...mockFilters,
             discarded: false,
         };
-
         await renderAndWait(<Filters filters={filtersWithExclude} onFiltersChange={onFiltersChangeMock} />);
-
         const excludeDiscardedPill = screen.getAllByText('Discarded')[1];
         expect(excludeDiscardedPill).toHaveClass('active-false');
     });
@@ -183,21 +151,16 @@ describe('Filters', () => {
             ...mockFilters,
             flagged: true,
         };
-
         await renderAndWait(<Filters filters={filtersWithFlagged} onFiltersChange={onFiltersChangeMock} />);
-
         const includeFlaggedPill = screen.getAllByText('Flagged')[0];
         fireEvent.click(includeFlaggedPill);
-
         // Should toggle off (set to undefined)
         expect(onFiltersChangeMock).toHaveBeenCalledWith({ flagged: undefined });
     });
 
     it('displays all sort options', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-
         const sortSelect = screen.getByLabelText(/Sort/);
-
         expect(sortSelect).toHaveTextContent('Created (Newest)');
         expect(sortSelect).toHaveTextContent('Created (Oldest)');
         expect(sortSelect).toHaveTextContent('Salary (High-Low)');

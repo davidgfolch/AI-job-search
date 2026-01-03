@@ -160,3 +160,24 @@ def test_update_job_empty_data(mock_get_job, mock_get_db, client):
     assert response.status_code == 200
     # Should not call executeAndCommit
     mock_db.executeAndCommit.assert_not_called()
+
+
+@patch('repositories.jobs_repository.JobsRepository.get_db')
+@patch('services.jobs_service.JobsService.delete_jobs')
+def test_bulk_delete_jobs(mock_delete_jobs, mock_get_db, client):
+    """Test bulk deleting jobs"""
+    mock_db = create_mock_db(fetchOne=(1,))
+    mock_get_db.return_value = mock_db
+    mock_delete_jobs.return_value = 5
+
+    payload = {
+        'ids': [1, 2, 3],
+        'select_all': False
+    }
+    
+    response = client.post("/api/jobs/bulk/delete", json=payload)
+    
+    assert response.status_code == 200
+    assert response.json() == {"deleted": 5}
+    mock_delete_jobs.assert_called_once()
+

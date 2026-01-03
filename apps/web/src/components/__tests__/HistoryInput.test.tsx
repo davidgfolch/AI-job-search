@@ -10,6 +10,8 @@ describe('HistoryInput', () => {
         placeholder: 'Search...',
     };
 
+    const testHistory = ["React", "Python", "Remote"];
+
     beforeEach(() => {
         localStorage.clear();
         vi.clearAllMocks();
@@ -52,7 +54,8 @@ describe('HistoryInput', () => {
     });
 
     it('adds value to history on submit (Enter)', async () => {
-        // Render with empty value first to allow default history to show up
+        // Initialize with data to simulate previous default behavior
+        localStorage.setItem('test-history', JSON.stringify(testHistory));
         const { rerender } = render(<HistoryInput {...defaultProps} value="" />);
         
         const input = screen.getByPlaceholderText('Search...');
@@ -78,6 +81,7 @@ describe('HistoryInput', () => {
     });
 
     it('adds value to history on blur if not empty', async () => {
+        localStorage.setItem('test-history', JSON.stringify(testHistory));
         const { rerender } = render(<HistoryInput {...defaultProps} value="" />);
         
         const input = screen.getByPlaceholderText('Search...');

@@ -140,4 +140,13 @@ export const jobsApi = {
     return handleRequest(apiClient.post<{ updated: number }>('/jobs/bulk', payload),
       'Error updating jobs');
   },
+
+  deleteJobs: async (payload: {
+    ids?: number[];
+    filters?: JobListParams;
+    select_all?: boolean;
+  }): Promise<{ deleted: number }> => {
+    return handleRequest(apiClient.post<{ deleted: number }>('/jobs/bulk/delete', payload),
+      'Error deleting jobs');
+  },
 };

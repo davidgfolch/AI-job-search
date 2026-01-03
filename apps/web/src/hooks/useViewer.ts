@@ -17,8 +17,10 @@ export const useViewer = () => {
         selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext
     } = useJobSelection({ allJobs, filters, setFilters });
 
+    const [activeConfigName, setActiveConfigName] = useState<string>('');
+
     const {
-        message, setMessage, confirmModal, setConfirmModal, handleJobUpdate, ignoreSelected
+        message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected
     } = useJobMutations({
         filters, selectedJob, setSelectedJob, activeTab, autoSelectNext,
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
@@ -73,6 +75,7 @@ export const useViewer = () => {
             selectedIds,
             selectionMode,
             confirmModal,
+            activeConfigName,
         },
         status: {
             isLoading: isLoading && (filters.page || 1) === 1,
@@ -115,7 +118,9 @@ export const useViewer = () => {
                 }
             },
             ignoreSelected,
-            closeConfirmModal: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+            deleteSelected,
+            setActiveConfigName,
+            closeConfirmModal: () => confirmModal.close(),
         },
     };
 };

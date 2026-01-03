@@ -9,11 +9,12 @@ interface BooleanFiltersProps {
     filters: JobListParams;
     onFiltersChange: (filters: Partial<JobListParams>) => void;
     onMessage?: (text: string, type: 'success' | 'error') => void;
+    onConfigNameChange?: (name: string) => void;
 }
 
 
 
-export default function BooleanFilters({ filters, onFiltersChange, onMessage }: BooleanFiltersProps) {
+export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange }: BooleanFiltersProps) {
     const [isExpanded, setIsExpanded] = useState(true);
 
     const handleSearchChange = (search: string) => {
@@ -33,10 +34,15 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage }: 
     return (
         <>
             <div className="boolean-filters">
-                <div className="boolean-filters-header">
+            <div className="boolean-filters-header">
                     <FilterConfigurations
                         currentFilters={filters}
-                        onLoadConfig={(loadedFilters) => onFiltersChange({ ...loadedFilters, page: 1 })}
+                        onLoadConfig={(loadedFilters, name) => {
+                            onFiltersChange({ ...loadedFilters, page: 1 });
+                            if (onConfigNameChange && name) {
+                                onConfigNameChange(name);
+                            }
+                        }}
                         onMessage={onMessage}
                     />
                     <button className={`toggle-button ${hasActiveFilters ? 'has-active' : ''}`}

@@ -26,7 +26,8 @@ export default function Viewer() {
                     onDismissMessage={() => actions.setMessage(null)} />
                 <Filters filters={state.filters}
                     onFiltersChange={(newFilters) => actions.setFilters({ ...state.filters, ...newFilters, page: 1 })}
-                    onMessage={(text, type) => actions.setMessage({ text, type })} />
+                    onMessage={(text, type) => actions.setMessage({ text, type })} 
+                    onConfigNameChange={actions.setActiveConfigName} />
                 <div className="viewer-content">
                     <div className="viewer-left">
                         <div className="tab-group">
@@ -47,11 +48,14 @@ export default function Viewer() {
                                         onDiscarded={actions.discardedJob}
                                         onClosed={actions.closedJob}
                                         onIgnore={isBulk ? actions.ignoreSelected : actions.ignoreJob}
+                                        onDelete={actions.deleteSelected}
                                         onNext={actions.nextJob}
                                         onPrevious={actions.previousJob}
                                         hasNext={status.hasNext}
                                         hasPrevious={status.hasPrevious}
                                         isBulk={isBulk}
+                                        activeConfigName={state.activeConfigName}
+                                        selectedCount={state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}
                                     />
                                 )}
                             </div>

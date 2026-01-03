@@ -3,8 +3,26 @@
  * Update this file and commit to Git to share default configurations.
  */
 
-// Paste this into apps/web/src/data/defaults.ts
+
 export const defaultFilterConfigurations = [
+    {
+        "name": "By company",
+        "filters": {
+            "page": 1,
+            "size": 20,
+            "search": "",
+            "order": "created desc",
+            "ai_enriched": true,
+            "salary": "",
+            "sql_filter": "lower(company) rlike 'INNOCV|Horizon Neulogy|initi8|primeit|Acid tango|Kairos|Romeu'",
+            "days_old": 120,
+            "ignored": false,
+            "seen": false,
+            "applied": true,
+            "discarded": false,
+            "closed": false
+        }
+    },
     {
         "name": "Clean - Ignore jobs by title",
         "filters": {
@@ -16,24 +34,6 @@ export const defaultFilterConfigurations = [
             "sql_filter": "LOWER(title) rlike '(^|[^a-z])(sap|abap|hana|cobol|devops|devsecops|junior|internship|prácticas|becario|front-?end|android|ios|scrum master|qa|\\.net|salesforce|site reliability engineer|ingeniero de redes)([^a-z]|$)'",
             "ignored": false,
             "applied": false
-        }
-    },
-    {
-        "name": "By company",
-        "filters": {
-            "page": 1,
-            "size": 20,
-            "search": "",
-            "order": "created desc",
-            "ai_enriched": true,
-            "salary": "",
-            "sql_filter": "lower(company) rlike 'INNOCV|Horizon Neulogy|initi8|primeit|Acid tango'",
-            "days_old": 120,
-            "ignored": false,
-            "seen": false,
-            "applied": true,
-            "discarded": false,
-            "closed": false
         }
     },
     {
@@ -73,13 +73,3 @@ export const defaultFilterConfigurations = [
         }
     }
 ];
-
-// Initial data for history (example)
-const defaultHistory = ["React", "Python", "Remote"];
-
-export const persistenceDefaults: Record<string, any> = {
-    'filter_configurations': defaultFilterConfigurations,
-    'test-history': defaultHistory, 
-    // Add real keys used in the app here
-    // 'field_history_key': ...
-};

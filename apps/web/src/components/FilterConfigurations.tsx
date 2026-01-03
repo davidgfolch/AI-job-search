@@ -4,9 +4,22 @@ import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import './FilterConfigurations.css';
 
+const CLEAN_OLD_JOBS_CONFIG = {
+    "name": "Clean - Delete old jobs",
+    "filters": {
+        "page": 1,
+        "size": 20,
+        "days_old": undefined,
+        "search": "",
+        "order": "created desc",
+        "salary": "",
+        "sql_filter": "(DATE(created) < DATE_SUB(CURDATE(), INTERVAL 15 DAY) and applied = 0 and flagged = 0 and seen = 0) OR (DATE(created) < DATE_SUB(CURDATE(), INTERVAL 25 DAY) and applied = 0 and flagged = 0)",
+    }
+};
+
 interface FilterConfigurationsProps {
     currentFilters: JobListParams;
-    onLoadConfig: (filters: JobListParams) => void;
+    onLoadConfig: (filters: JobListParams, name: string) => void;
     onMessage?: (message: string, type: 'success' | 'error') => void;
 }
 
@@ -26,7 +39,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         handleBlur,
         exportToDefaults,
         setHighlightIndex
-    } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage });
+    } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: [CLEAN_OLD_JOBS_CONFIG] });
 
     return (
         <div className="filter-configurations">
@@ -40,16 +53,14 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                     onClick={handleFocus}
                     onBlur={handleBlur}
                     onSave={saveConfiguration}
-                    onExport={exportToDefaults}
-                />
+                    onExport={exportToDefaults}/>
                 <ConfigurationDropdown
                     isOpen={isOpen}
                     filteredConfigs={filteredConfigs}
                     highlightIndex={highlightIndex}
                     onLoad={loadConfiguration}
                     onDelete={deleteConfiguration}
-                    setHighlightIndex={setHighlightIndex}
-                />
+                    setHighlightIndex={setHighlightIndex}/>
             </div>
         </div>
     );

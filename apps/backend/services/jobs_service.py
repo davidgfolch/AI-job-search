@@ -1,5 +1,6 @@
 from typing import Optional, Dict, Any, List
 from repositories.jobs_repository import JobsRepository
+from constants import JOB_BOOLEAN_KEYS
 
 
 class JobsService:
@@ -85,4 +86,31 @@ class JobsService:
             return self.repo.update_jobs_by_filter(where, params, update_data)
         elif ids:
             return self.repo.update_jobs_by_ids(ids, update_data)
+        return 0
+
+    def delete_jobs(self, ids: Optional[List[int]] = None, filters: Optional[Dict[str, Any]] = None, select_all: bool = False) -> int:
+        """
+        Deletes multiple jobs.
+        If select_all is True and filters are provided, deletes all jobs matching the filters.
+        Otherwise, deletes the jobs specified in ids.
+        """
+        if select_all and filters:
+            # Extract filter parameters matching list_jobs signature
+            page = 1 # Not used 
+            size = 20 # Not used 
+            search = filters.get('search')
+            status = filters.get('status')
+            not_status = filters.get('not_status')
+            days_old = filters.get('days_old')
+            salary = filters.get('salary')
+            order = filters.get('order') # Not used 
+            sql_filter = filters.get('sql_filter')
+            # Extract boolean filters
+            boolean_filters = {k: filters.get(k) for k in JOB_BOOLEAN_KEYS}
+            where, params = self.repo.build_where(
+                search, status, not_status, days_old, salary, sql_filter, boolean_filters
+            )
+            return self.repo.delete_jobs_by_filter(where, params)
+        elif ids:
+            return self.repo.delete_jobs_by_ids(ids)
         return 0

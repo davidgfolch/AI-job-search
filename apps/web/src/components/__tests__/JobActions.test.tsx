@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import JobActions from '../JobActions';
-import { JobListParams } from '../../api/jobs';
+import type { JobListParams } from '../../api/jobs';
 
 describe('JobActions', () => {
     const mockProps = {
@@ -72,6 +72,24 @@ describe('JobActions', () => {
         render(<JobActions {...mockProps} hasNext={false} hasPrevious={false} />);
         expect(screen.getByTitle('Next job')).toBeDisabled();
         expect(screen.getByTitle('Previous job')).toBeDisabled();
+    });
+
+    it('should show delete buttons when in delete mode', () => {
+        render(<JobActions {...mockProps} activeConfigName="Clean - Delete old jobs" selectedCount={5} />);
+        expect(screen.getByText('DELETE')).toBeInTheDocument();
+        expect(screen.queryByTitle('Mark as seen')).not.toBeInTheDocument();
+    });
+
+    it('should show delete all button when in delete mode and bulk is true', () => {
+        render(<JobActions {...mockProps} activeConfigName="Clean - Delete old jobs" isBulk={true} selectedCount={5} />);
+        expect(screen.getByText('DELETE 5')).toBeInTheDocument();
+    });
+
+    it('should call onDelete when delete button is clicked', () => {
+        const onDeleteMock = vi.fn();
+        render(<JobActions {...mockProps} activeConfigName="Clean - Delete old jobs" onDelete={onDeleteMock} selectedCount={1} />);
+        fireEvent.click(screen.getByText('DELETE'));
+        expect(onDeleteMock).toHaveBeenCalled();
     });
 
     it('should handle copy permalink with filters', () => {
