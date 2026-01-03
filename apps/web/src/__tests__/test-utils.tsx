@@ -150,11 +150,6 @@ export function setupJobsApiMock() {
 // Common Mock Setup
 // ============================================================================
 
-export function setupWindowMocks() {
-    vi.spyOn(window, 'alert').mockImplementation(() => { });
-    vi.spyOn(window, 'confirm').mockImplementation(() => true);
-}
-
 export function setupIntersectionObserver() {
     globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
         observe: vi.fn(),

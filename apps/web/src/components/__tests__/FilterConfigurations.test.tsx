@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import FilterConfigurations from '../FilterConfigurations';
-import { createMockFilters, setupLocalStorage, setupWindowMocks, getStoredConfigs } from '../../__tests__/test-utils';
+import { createMockFilters, setupLocalStorage, getStoredConfigs } from '../../__tests__/test-utils';
 import { type JobListParams } from '../../api/jobs';
 
 vi.mock('../../data/defaults', () => ({ defaultFilterConfigurations: [] }));
@@ -13,7 +13,6 @@ describe('FilterConfigurations', () => {
     beforeEach(() => {
         onLoadConfigMock = vi.fn();
         setupLocalStorage();
-        setupWindowMocks();
     });
 
     afterEach(() => vi.restoreAllMocks());
@@ -56,10 +55,11 @@ describe('FilterConfigurations', () => {
         });
 
         it('validates name before saving', async () => {
-            await renderWithConfig();
+            const onMessageMock = vi.fn();
+            await renderWithConfig([], { onMessage: onMessageMock });
             fireEvent.click(screen.getByText('Save'));
             expect(getStoredConfigs()).toHaveLength(0);
-            expect(window.alert).toHaveBeenCalledWith('Please enter a name for the configuration');
+            expect(onMessageMock).toHaveBeenCalledWith('Please enter a name for the configuration', 'error');
         });
 
         it('replaces existing configuration with same name', async () => {
@@ -148,28 +148,35 @@ describe('FilterConfigurations', () => {
 
     describe('Deleting', () => {
         it.each([['Confirms', true], ['Cancels', false]])('handles delete when user %s', async (_, confirm) => {
-            vi.spyOn(window, 'confirm').mockImplementation(() => confirm);
             const { input } = await renderWithConfig([{ name: 'Delete Me', filters: mockFilters }]);
             fireEvent.focus(input);
             const deleteBtn = (await screen.findByText('Delete Me')).closest('li')?.querySelector('.config-delete-btn');
             fireEvent.click(deleteBtn!);
-            await waitFor(() => {
-                // If confirmed: 
-                //   Initial Storage: ['Delete Me']
-                //   Saved Configs state: ['Delete Me', 'Clean...']
-                //   After delete 'Delete Me': Saved Configs state: ['Clean...']
-                //   Persisted: ['Clean...']
-                //   Storage Length: 1
-                // If canceled:
-                //   Initial Storage: ['Delete Me']
-                //   Saved Configs state: ['Delete Me', 'Clean...']
-                //   After cancel: No change
-                //   Storage Length: 1 (Still just 'Delete Me')
-                // So in ALL cases, storage length is 1.
-                // But the CONTENT differs.
-                expect(getStoredConfigs()).toHaveLength(1);
-            });
+            const modalMessage = await screen.findByText(/Delete configuration "Delete Me"\?/i);
+            expect(modalMessage).toBeInTheDocument();
+            if (confirm) {
+                const confirmBtn = screen.getByText('Confirm', { selector: 'button.modal-button' });
+                fireEvent.click(confirmBtn);
+                await waitFor(() => {
+                     expect(getStoredConfigs()).toHaveLength(1); // Only Clean... remains
+                     // Verify stored content is not 'Delete Me'
+                     const stored = getStoredConfigs();
+                     expect(stored.some((c: any) => c.name === 'Delete Me')).toBe(false);
+                });
+            } else {
+                // Click Cancel
+                const cancelBtn = screen.getByText('Cancel', { selector: 'button.modal-button' });
+                fireEvent.click(cancelBtn);
+
+                // Assert NO deletion
+                await waitFor(() => {
+                    // Storage should still contain 'Delete Me'
+                    // 'Clean...' is in state but not in storage because we didn't save it.
+                    const stored = getStoredConfigs();
+                    expect(stored).toHaveLength(1); 
+                    expect(stored[0].name).toBe('Delete Me');
+                    expect(screen.queryByText(/Delete configuration "Delete Me"\?/i)).not.toBeInTheDocument();      });
+            }
         });
     });
 });
-

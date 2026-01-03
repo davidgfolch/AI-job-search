@@ -3,6 +3,7 @@ import type { JobListParams } from '../api/jobs';
 import { persistenceApi } from '../api/persistence';
 import { BOOLEAN_FILTERS } from '../config/filterConfig';
 import { useFilterDropdown } from './useFilterDropdown';
+import { useConfirmationModal } from './useConfirmationModal';
 
 import { defaultFilterConfigurations } from '../data/defaults';
 
@@ -26,7 +27,8 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
     const [savedConfigs, setSavedConfigs] = useState<FilterConfig[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [savedConfigName, setSavedConfigName] = useState(''); 
-    
+    const confirmModal = useConfirmationModal();
+
     // Load saved configurations
     useEffect(() => { 
         const loadConfigs = async () => {
@@ -54,7 +56,6 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
         };
         const filtered = savedConfigs.filter(c => c.name !== newConfig.name);
         const updated = [newConfig, ...filtered].slice(0, MAX_CONFIGS);
-        
         if (await persistConfigs(updated)) {
             setSavedConfigs(updated);
             setConfigName('');
@@ -76,12 +77,12 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
 
     const deleteConfiguration = async (name: string, event: React.MouseEvent) => {
         event.stopPropagation();
-        if (confirm(`Delete configuration "${name}"?`)) {
+        confirmModal.confirm(`Delete configuration "${name}"?`, async () => {
             const updated = savedConfigs.filter(c => c.name !== name);
             if (await persistConfigs(updated)) {
                 setSavedConfigs(updated);
             }
-        }
+        });
     };
 
     const persistConfigs = async (configs: FilterConfig[]) => {
@@ -97,7 +98,7 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
 
     const notify = (msg: string, type: 'success' | 'error') => {
         if (onMessage) onMessage(msg, type);
-        else if (type === 'error') alert(msg);
+        else console.warn(`Message (${type}): ${msg}`);
     };
 
     const { 
@@ -179,6 +180,12 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
         handleFocus,
         handleBlur,
         exportToDefaults,
-        setHighlightIndex
+        setHighlightIndex,
+        confirmModal: {
+            isOpen: confirmModal.isOpen,
+            message: confirmModal.message,
+            onConfirm: confirmModal.handleConfirm,
+            close: confirmModal.close,
+        }
     };
 }

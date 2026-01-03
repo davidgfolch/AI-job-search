@@ -2,6 +2,7 @@ import type { JobListParams } from '../api/jobs';
 import { useFilterConfigurations } from '../hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
+import ConfirmModal from './ConfirmModal';
 import './FilterConfigurations.css';
 
 const CLEAN_OLD_JOBS_CONFIG = {
@@ -38,11 +39,18 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         handleFocus,
         handleBlur,
         exportToDefaults,
-        setHighlightIndex
+        setHighlightIndex,
+        confirmModal
     } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: [CLEAN_OLD_JOBS_CONFIG] });
 
     return (
         <div className="filter-configurations">
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={confirmModal.close}
+            />
             <label htmlFor="filter-config-input">Filter Configurations:</label>
             <div className="config-controls" ref={wrapperRef}>
                 <ConfigurationInput
