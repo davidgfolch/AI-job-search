@@ -4,6 +4,7 @@ import { BOOLEAN_FILTERS } from '../config/filterConfig';
 import './Filters.css';
 import HistoryInput from './HistoryInput';
 import FilterConfigurations from './FilterConfigurations';
+import SqlEditor from './SqlEditor';
 
 interface BooleanFiltersProps {
     filters: JobListParams;
@@ -16,6 +17,7 @@ interface BooleanFiltersProps {
 
 export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange }: BooleanFiltersProps) {
     const [isExpanded, setIsExpanded] = useState(true);
+    const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
 
     const handleSearchChange = (search: string) => {
         onFiltersChange({ ...filters, search, page: 1 });
@@ -85,7 +87,23 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                 />
                             </div>
                             <div className="compact-filter sql-filter">
-                                <label htmlFor="filter-sql">SQL Where Filter:</label>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <label htmlFor="filter-sql">SQL Where Filter:</label>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsSqlEditorOpen(true)}
+                                        style={{ 
+                                            background: 'none', 
+                                            border: 'none', 
+                                            color: '#007acc', 
+                                            cursor: 'pointer', 
+                                            fontSize: '0.8rem',
+                                            textDecoration: 'underline'
+                                        }}
+                                    >
+                                        Open Editor
+                                    </button>
+                                </div>
                                 <HistoryInput
                                     id="filter-sql"
                                     storageKey="history_sql"
@@ -142,6 +160,16 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                         </div>
                     </div>
                 )}
+                
+                <SqlEditor
+                    isOpen={isSqlEditorOpen}
+                    initialValue={filters.sql_filter || ''}
+                    onSave={(value) => {
+                        onFiltersChange({ sql_filter: value });
+                        setIsSqlEditorOpen(false);
+                    }}
+                    onClose={() => setIsSqlEditorOpen(false)}
+                />
             </div>
         </>
     );
