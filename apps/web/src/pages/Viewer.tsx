@@ -81,7 +81,7 @@ export default function Viewer() {
                         </div>
                     </div>
                     <div className="viewer-right">
-                        {state.selectedJob ? <JobDetail job={state.selectedJob} /> : <div className="no-selection">Select a job to view details</div>}
+                        {state.selectedJob ? <JobDetail job={state.selectedJob} onUpdate={actions.updateJob} /> : <div className="no-selection">Select a job to view details</div>}
                     </div>
                 </div>
             </div>

@@ -9,9 +9,10 @@ import SalaryCalculator from './SalaryCalculator';
 
 interface JobDetailProps {
     job: Job;
+    onUpdate?: (data: Partial<Job>) => void;
 }
 
-export default function JobDetail({ job }: JobDetailProps) {
+export default function JobDetail({ job, onUpdate }: JobDetailProps) {
     const [appliedCompanyJobs, setAppliedCompanyJobs] = useState<AppliedCompanyJob[]>([]);
     const [loadingApplied, setLoadingApplied] = useState(false);
     const [showCalculator, setShowCalculator] = useState(false);
@@ -84,6 +85,16 @@ export default function JobDetail({ job }: JobDetailProps) {
                                 onClick={() => setShowCalculator(!showCalculator)}>
                                 Freelance salary 🧮
                             </button>
+                            {onUpdate && (
+                                <button
+                                    className="delete-btn-icon"
+                                    onClick={() => onUpdate({ salary: null })}
+                                    title="Delete salary information"
+                                    style={{ marginLeft: '10px', cursor: 'pointer', background: 'none', border: 'none', fontSize: '1.2em' }}
+                                >
+                                    🗑️
+                                </button>
+                            )}
                         </li>
                     )}
                     {(job.required_technologies || job.optional_technologies) && (
