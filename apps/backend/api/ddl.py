@@ -1,12 +1,12 @@
 from fastapi import APIRouter
-from repositories.ddl_repository import DdlRepository
+from services.ddl_service import DdlService
 
 router = APIRouter()
-repo = DdlRepository()
+service = DdlService()
 
 @router.get("/schema")
 def get_schema():
     return {
-        "tables": repo.get_schema(),
-        "keywords": repo.get_keywords()
+        "tables": service.get_schema(),
+        "keywords": service.get_keywords()
     }

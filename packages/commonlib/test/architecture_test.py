@@ -23,17 +23,17 @@ def test_files_exceed_200_lines():
 
 @pytest.mark.parametrize("layer_name, required_deps, forbidden_deps, ignore_files", [
     ('api',
-        [('services', "Layer check: API file {rel_path} does not import any Service.")],
-        [('repositories', "Layer violation: API file {rel_path} imports Repository layer directly.")],
+        [('services', "Missing Service layer import.")],
+        [('repositories', "Direct Repository layer import (skip Service layer).")],
         {'__init__.py', 'main.py'}),
     ('services',
-        [('repositories', "Layer check: Service file {rel_path} does not import any Repository.")],
-        [('api', "Layer violation: Service file {rel_path} imports API layer (circular dependency risk).")],
+        [('repositories', "Missing Repository layer import.")],
+        [('api', "Imports API layer (circular dependency risk).")],
         None),
     ('repositories',
         [],
-        [('services', "Layer violation: Repository file {rel_path} imports Service layer."),
-        ('api', "Layer violation: Repository file {rel_path} imports API layer.")],
+        [('services', "Imports Service layer (circular dependency risk)."),
+        ('api', "Imports API layer (circular dependency risk).")],
         None),
 ])
 def test_backend_layered_architecture(layer_name, required_deps, forbidden_deps, ignore_files):

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from decimal import Decimal
 from typing import Dict, Optional
-from commonlib.salary import SalaryCalculator
+from services.salary_service import SalaryService
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ async def calculate_salary(request: SalaryCalculationRequest):
         hours_x_day = Decimal(str(request.hours_x_day))
         freelance_rate = Decimal(str(request.freelance_rate))
         
-        result = SalaryCalculator.calculate_salary(
+        result = SalaryService.calculate_salary(
             rate=rate,
             rate_type=request.rate_type,
             hours_x_day=hours_x_day,
