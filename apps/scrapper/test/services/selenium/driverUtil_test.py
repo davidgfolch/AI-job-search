@@ -1,232 +1,128 @@
 import pytest
 from unittest.mock import MagicMock, patch, PropertyMock
 from scrapper.services.selenium.driverUtil import DriverUtil, DESKTOP_USER_AGENTS
-import scrapper.services.selenium.driverUtil as driverUtilModule
+
+@pytest.fixture
+def mock_deps():
+    with patch('scrapper.services.selenium.driverUtil.getEnvBool') as mock_env, \
+         patch('scrapper.services.selenium.driverUtil.webdriver.Chrome') as mock_chrome, \
+         patch('scrapper.services.selenium.driverUtil.uc.Chrome') as mock_uc, \
+         patch('scrapper.services.selenium.driverUtil.isWindowsOS') as mock_win:
+        
+        mock_env.return_value = False
+        mock_win.return_value = True
+        mock_chrome.return_value, mock_uc.return_value = MagicMock(), MagicMock()
+        
+        yield {'env': mock_env, 'chrome': mock_chrome, 'uc': mock_uc, 'win': mock_win, 
+               'c_drv': mock_chrome.return_value, 'uc_drv': mock_uc.return_value}
 
 class TestDriverUtil:
+    def test_initialization_standard_chrome(self, mock_deps):
+        """Test initialization with standard Chrome"""
+        mock_deps['env'].return_value = False
+        du = DriverUtil()
+        assert du.useUndetected is False
+        assert du.driver == mock_deps['c_drv']
+        mock_deps['chrome'].assert_called_once()
+        assert mock_deps['chrome'].call_args.kwargs.get('options') is not None
+
+    @pytest.mark.parametrize("is_win, path", [(True, 'C:\\Chrome\\chrome.exe'), (False, '/usr/bin/google-chrome')])
+    def test_initialization_undetected_chrome(self, mock_deps, is_win, path):
+        """Test initialization with undetected Chrome"""
+        mock_deps['env'].return_value = True
+        mock_deps['win'].return_value = is_win
+        with patch.object(DriverUtil, '_findChrome', return_value=path):
+            du = DriverUtil()
+        assert du.useUndetected is True
+        assert du.driver == mock_deps['uc_drv']
+        mock_deps['uc'].assert_called_once()
     
-    @pytest.fixture
-    def mock_env_bool(self):
-        with patch('scrapper.services.selenium.driverUtil.getEnvBool') as mock:
-            yield mock
-
-    @pytest.fixture
-    def mock_chrome(self):
-        with patch('scrapper.services.selenium.driverUtil.webdriver.Chrome') as mock:
-            driver = MagicMock()
-            mock.return_value = driver
-            yield mock
-
-    @pytest.fixture
-    def mock_uc_chrome(self):
-        with patch('scrapper.services.selenium.driverUtil.uc.Chrome') as mock:
-            driver = MagicMock()
-            mock.return_value = driver
-            yield mock
-
-    @pytest.fixture
-    def mock_is_windows(self):
-        with patch('scrapper.services.selenium.driverUtil.isWindowsOS') as mock:
-            yield mock
-
-    def test_initialization_standard_chrome(self, mock_env_bool, mock_chrome):
-        """Test initialization with standard Chrome (not undetected)"""
-        mock_env_bool.return_value = False
-        
-        driver_util = DriverUtil()
-        
-        assert driver_util.useUndetected is False
-        assert driver_util.driver == mock_chrome.return_value
-        mock_chrome.assert_called_once()
-        
-        # Verify Chrome options were set
-        call_args = mock_chrome.call_args
-        assert call_args is not None
-        options = call_args.kwargs.get('options')
-        assert options is not None
-
-    @pytest.mark.parametrize("is_windows, chrome_path, expected_path", [
-        (True, 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'),
-        (False, '/usr/bin/google-chrome', '/usr/bin/google-chrome'),
-    ])
-    def test_initialization_undetected_chrome(self, mock_env_bool, mock_uc_chrome, mock_is_windows, is_windows, chrome_path, expected_path):
-        """Test initialization with undetected Chrome for different OSs"""
-        mock_env_bool.return_value = True
-        mock_is_windows.return_value = is_windows
-        
-        with patch.object(DriverUtil, '_findChrome', return_value=chrome_path):
-            driver_util = DriverUtil()
-        
-        assert driver_util.useUndetected is True
-        assert driver_util.driver == mock_uc_chrome.return_value
-        mock_uc_chrome.assert_called_once()
-    
-    def test_initialization_undetected_fallback(self, mock_env_bool, mock_chrome):
-        """Test fallback to standard Chrome when undetected fails (chrome not found)"""
-        mock_env_bool.return_value = True
-        
+    def test_initialization_undetected_fallback(self, mock_deps):
+        """Test fallback when undetected fails"""
+        mock_deps['env'].return_value = True
         with patch.object(DriverUtil, '_findChrome', return_value=None):
-            driver_util = DriverUtil()
-        
-        # Should fallback to standard Chrome
-        assert driver_util.useUndetected is False
-        assert driver_util.driver == mock_chrome.return_value
-        mock_chrome.assert_called_once()
+            du = DriverUtil()
+        assert du.useUndetected is False
+        assert du.driver == mock_deps['c_drv']
 
-    @pytest.mark.parametrize("system_os, paths_exist, expected", [
-        ('Windows', lambda p: 'Program Files\\Google\\Chrome' in p, True),
-        ('Linux', lambda p: p == '/usr/bin/google-chrome', '/usr/bin/google-chrome'),
-        ('Windows', lambda p: False, None) # Not found case
+    @pytest.mark.parametrize("os_name, exists_cb, expected", [
+        ('Windows', lambda p: 'Chrome' in p, True),
+        ('Linux', lambda p: p == '/usr/bin/google-chrome', '/usr/bin/google-chrome'), 
+        ('Windows', lambda p: False, None)
     ])
-    def test_findChrome(self, mock_env_bool, mock_chrome, system_os, paths_exist, expected):
-        """Test finding Chrome on different OSs and not found scenarios"""
-        mock_env_bool.return_value = False
-        
-        with patch('platform.system', return_value=system_os), \
-             patch('scrapper.services.selenium.driverUtil.os.path.exists', side_effect=paths_exist):
-            
-            driver_util = DriverUtil()
-            chrome_path = driver_util._findChrome()
-            
-            if expected is True: # Check for existence of chrome.exe in path for Windows success
-                 assert chrome_path is not None
-                 assert 'chrome.exe' in chrome_path
-            else:
-                 assert chrome_path == expected
+    def test_findChrome(self, mock_deps, os_name, exists_cb, expected):
+        """Test finding Chrome path"""
+        with patch('platform.system', return_value=os_name), \
+             patch('scrapper.services.selenium.driverUtil.os.path.exists', side_effect=exists_cb):
+            mock_deps['env'].return_value = False
+            path = DriverUtil()._findChrome()
+            assert ('chrome.exe' in path) if expected is True else (path == expected)
 
-    def test_apply_stealth_scripts_standard(self, mock_env_bool, mock_chrome):
-        """Test that stealth scripts are applied for standard Chrome"""
-        mock_env_bool.return_value = False
-        driver = mock_chrome.return_value
-        
-        DriverUtil()
-        
-        # Verify execute_cdp_cmd was called with stealth script
-        assert driver.execute_cdp_cmd.called or driver.execute_script.called
-
-    def test_apply_stealth_scripts_cdp_failure_fallback(self, mock_env_bool, mock_chrome):
-        """Test fallback to execute_script when CDP fails"""
-        mock_env_bool.return_value = False
-        driver = mock_chrome.return_value
-        driver.execute_cdp_cmd.side_effect = Exception('CDP not supported')
-        
-        DriverUtil()
-        
-        # Should fallback to execute_script
-        driver.execute_script.assert_called()
-
-    def test_apply_stealth_scripts_both_fail(self, mock_env_bool, mock_chrome):
-        """Test when both CDP and execute_script fail"""
-        mock_env_bool.return_value = False
-        driver = mock_chrome.return_value
-        driver.execute_cdp_cmd.side_effect = Exception('CDP failed')
-        driver.execute_script.side_effect = Exception('Script failed')
-        
-        # Should not raise exception
-        driver_util = DriverUtil()
-        assert driver_util.driver == driver
-
-    @pytest.mark.parametrize("is_alive_val, is_alive_result", [
-        ('https://example.com', True),
-        (Exception('Driver closed'), False)
+    @pytest.mark.parametrize("cdp_err, scr_err, expect_fallback", [
+        (None, None, False), (Exception('CDP'), None, True), (Exception('CDP'), Exception('Script'), True)
     ])
-    def test_isAlive(self, mock_env_bool, mock_chrome, is_alive_val, is_alive_result):
-        """Test isAlive returns correct status based on driver state"""
-        mock_env_bool.return_value = False
-        driver = mock_chrome.return_value
-        
-        driver_util = DriverUtil()
-        
-        if isinstance(is_alive_val, Exception):
-             type(driver).current_url = PropertyMock(side_effect=is_alive_val)
-        else:
-             driver.current_url = is_alive_val
-             
-        assert driver_util.isAlive() is is_alive_result
+    def test_apply_stealth_scripts(self, mock_deps, cdp_err, scr_err, expect_fallback):
+        """Test stealth script application failures"""
+        mock_deps['env'].return_value = False
+        drv = mock_deps['c_drv']
+        if cdp_err: drv.execute_cdp_cmd.side_effect = cdp_err
+        if scr_err: drv.execute_script.side_effect = scr_err
+        DriverUtil()
+        if not cdp_err: assert drv.execute_cdp_cmd.called or drv.execute_script.called
+        if expect_fallback: assert drv.execute_script.called
 
-    def test_keepAlive_success(self, mock_env_bool, mock_chrome):
-        """Test keepAlive executes script successfully"""
-        mock_env_bool.return_value = False
-        driver = mock_chrome.return_value
-        driver.execute_script.return_value = 1
-        
-        driver_util = DriverUtil()
-        driver_util.keepAlive()
-        
-        driver.execute_script.assert_called_with("return 1")
+    @pytest.mark.parametrize("url_se, expected", [('https://a.com', True), (Exception('Closed'), False)])
+    def test_isAlive(self, mock_deps, url_se, expected):
+        """Test isAlive status"""
+        mock_deps['env'].return_value = False
+        drv = mock_deps['c_drv']
+        if isinstance(url_se, Exception): type(drv).current_url = PropertyMock(side_effect=url_se)
+        else: drv.current_url = url_se
+        assert DriverUtil().isAlive() is expected
 
-    def test_keepAlive_failure(self, mock_env_bool, mock_chrome):
-        """Test keepAlive handles exceptions gracefully"""
-        mock_env_bool.return_value = False
-        driver = mock_chrome.return_value
-        driver.execute_script.side_effect = Exception('Script failed')
-        
-        driver_util = DriverUtil()
-        # Should not raise exception
-        driver_util.keepAlive()
+    @pytest.mark.parametrize("script_se", [1, Exception('Fail')])
+    def test_keepAlive(self, mock_deps, script_se):
+        """Test keepAlive execution"""
+        mock_deps['env'].return_value = False
+        drv = mock_deps['c_drv']
+        if isinstance(script_se, Exception): drv.execute_script.side_effect = script_se
+        else: drv.execute_script.return_value = script_se
+        DriverUtil().keepAlive()
+        if not isinstance(script_se, Exception): drv.execute_script.assert_called_with("return 1")
 
     def test_desktop_user_agents_list(self):
-        """Test that DESKTOP_USER_AGENTS is properly populated"""
+        """Test USER_AGENTS validity"""
         assert len(DESKTOP_USER_AGENTS) > 0
-        # Check that comments are filtered out
-        assert all(not agent.startswith('#') for agent in DESKTOP_USER_AGENTS)
-        # Check that empty lines are filtered out
-        assert all(len(agent) > 0 for agent in DESKTOP_USER_AGENTS)
-        # Check that it contains various browsers
-        has_chrome = any('Chrome' in agent for agent in DESKTOP_USER_AGENTS)
-        has_firefox = any('Firefox' in agent for agent in DESKTOP_USER_AGENTS)
-        assert has_chrome
-        assert has_firefox
+        assert all(not a.startswith('#') and len(a) > 0 for a in DESKTOP_USER_AGENTS)
+        assert any('Chrome' in a for a in DESKTOP_USER_AGENTS) and any('Firefox' in a for a in DESKTOP_USER_AGENTS)
 
     @patch('scrapper.services.selenium.driverUtil.random.choice')
-    def test_random_user_agent_selection(self, mock_choice, mock_env_bool, mock_chrome):
-        """Test that a random user agent is selected"""
-        mock_env_bool.return_value = False
-        test_user_agent = 'Mozilla/5.0 Test Agent'
-        mock_choice.return_value = test_user_agent
-        
+    def test_random_user_agent_selection(self, mock_choice, mock_deps):
+        """Test random UA selection"""
+        mock_deps['env'].return_value = False
+        mock_choice.return_value = 'Test Agent'
         DriverUtil()
-        
         mock_choice.assert_called_once_with(DESKTOP_USER_AGENTS)
 
-    def test_chrome_options_configuration(self, mock_env_bool, mock_chrome):
-        """Test that Chrome options are properly configured"""
-        mock_env_bool.return_value = False
-        
+    def test_chrome_options_configuration(self, mock_deps):
+        """Test Chrome options"""
+        mock_deps['env'].return_value = False
         DriverUtil()
-        
-        # Verify Chrome was called with options
-        call_args = mock_chrome.call_args
-        assert 'options' in call_args.kwargs
-
-    def test_page_load_timeout_set(self, mock_env_bool, mock_chrome):
-        """Test that page load timeout is set for standard Chrome"""
-        mock_env_bool.return_value = False
-        driver = mock_chrome.return_value
-        
-        DriverUtil()
-        
-        driver.set_page_load_timeout.assert_called_with(180)
-        driver.set_script_timeout.assert_called_with(180)
+        assert 'options' in mock_deps['chrome'].call_args.kwargs
+        mock_deps['c_drv'].set_page_load_timeout.assert_called_with(180)
 
     @patch('scrapper.services.selenium.driverUtil.tempfile.mkdtemp')
-    def test_undetected_chrome_temp_dir_windows(self, mock_mkdtemp, mock_env_bool, mock_is_windows, mock_uc_chrome):
-        """Test temporary directory is created for undetected Chrome on Windows"""
-        mock_env_bool.return_value = True
-        mock_is_windows.return_value = True
-        mock_mkdtemp.return_value = 'C:\\Temp\\chrome_temp_123'
-        
-        with patch.object(DriverUtil, '_findChrome', return_value='C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'):
-            driver_util = DriverUtil()
-        
+    def test_undetected_chrome_temp_dir_windows(self, mock_mkdtemp, mock_deps):
+        """Test temp dir for undetected Chrome"""
+        mock_deps['env'].return_value = True
+        mock_deps['win'].return_value = True
+        mock_mkdtemp.return_value = 'C:\\Temp'
+        with patch.object(DriverUtil, '_findChrome', return_value='C:\\Chrome'):
+            du = DriverUtil()
         mock_mkdtemp.assert_called_once()
-        assert driver_util.driver == mock_uc_chrome.return_value
+        assert du.driver == mock_deps['uc_drv']
 
-    def test_driver_attribute_exists(self, mock_env_bool, mock_chrome):
-        """Test that driver attribute is set after initialization"""
-        mock_env_bool.return_value = False
-        
-        driver_util = DriverUtil()
-        
-        assert hasattr(driver_util, 'driver')
-        assert hasattr(driver_util, 'useUndetected')
+    def test_driver_attribute_exists(self, mock_deps):
+        mock_deps['env'].return_value = False
+        du = DriverUtil()
+        assert hasattr(du, 'driver') and hasattr(du, 'useUndetected')

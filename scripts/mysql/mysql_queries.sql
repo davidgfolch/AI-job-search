@@ -34,12 +34,12 @@ update jobs set web_page='Linkedin' where url like '%linkedin%';
 
 select id, ai_enriched, title, ai_enrich_error, modified from jobs where ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY) and not (discarded or ignored);
 update jobs set ai_enriched=False, ai_enrich_error = NULL where ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 2 DAY) and not (discarded or ignored);
-update jobs set ai_enriched=False, cv_match_percentage=null where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 8 HOUR);
+update jobs set ai_enriched=False, cv_match_percentage=null where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 4 HOUR);
 
 select id, cv_match_percentage, title, ai_enriched, ai_enrich_error, modified from jobs where cv_match_percentage = -1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
 
 SELECT url FROM jobs WHERE web_page='Indeed';
-update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null;
+update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY);
 
 select id, company from jobs where applied order by created desc
 

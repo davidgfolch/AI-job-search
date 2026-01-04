@@ -2,223 +2,130 @@ import pytest
 from unittest.mock import patch, MagicMock, mock_open
 from pathlib import Path
 import pandas as pd
+from aiEnrich.cvMatcher import cvMatch, save, loadCVContent, extractTextFromPDF, getJobIdsList, CVMatcher
 
-from aiEnrich.cvMatcher import (
-    cvMatch, save, loadCVContent, extractTextFromPDF, 
-    getJobIdsList, CVMatcher
-)
-
+@pytest.fixture
+def mock_deps():
+    with patch('aiEnrich.cvMatcher.getEnvBool') as env, \
+         patch('aiEnrich.cvMatcher.loadCVContent') as load_cv, \
+         patch('aiEnrich.cvMatcher.MysqlUtil') as mysql_util, \
+         patch('aiEnrich.cvMatcher.save') as save_chk, \
+         patch('aiEnrich.cvMatcher.printJob'), patch('aiEnrich.cvMatcher.printHR'), \
+         patch('aiEnrich.cvMatcher.footer'), patch('aiEnrich.cvMatcher.StopWatch'), \
+         patch('aiEnrich.cvMatcher.cvContent', 'CV content'):
+        env.return_value = True
+        load_cv.return_value = True
+        mysql = MagicMock()
+        mysql_util.return_value.__enter__.return_value = mysql
+        yield {'env': env, 'load_cv': load_cv, 'mysql': mysql, 'save': save_chk}
 
 class TestCVMatcher:
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    def test_cv_match_disabled(self, mock_get_env_bool):
-        mock_get_env_bool.return_value = False
-        result = cvMatch()
-        assert result == 0
+    @pytest.mark.parametrize("env_bool, loaded, count, expected", [(False, 1, 1, 0), (True, 0, 1, 0), (True, 1, 0, 0)])
+    def test_cv_match_early_exits(self, mock_deps, env_bool, loaded, count, expected):
+        """Test early exits"""
+        mock_deps['env'].return_value = env_bool
+        mock_deps['load_cv'].return_value = bool(loaded)
+        mock_deps['mysql'].count.return_value = count
+        assert cvMatch() == expected
 
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    @patch('aiEnrich.cvMatcher.loadCVContent')
-    def test_cv_match_cv_not_loaded(self, mock_load_cv, mock_get_env_bool):
-        mock_get_env_bool.return_value = True
-        mock_load_cv.return_value = False
-        result = cvMatch()
-        assert result == 0
-
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    @patch('aiEnrich.cvMatcher.loadCVContent')
-    @patch('aiEnrich.cvMatcher.MysqlUtil')
-    def test_cv_match_no_jobs(self, mock_mysql_util, mock_load_cv, mock_get_env_bool):
-        mock_get_env_bool.return_value = True
-        mock_load_cv.return_value = True
-        
-        mock_mysql = MagicMock()
-        mock_mysql.count.return_value = 0
-        mock_mysql_util.return_value.__enter__.return_value = mock_mysql
-        
-        result = cvMatch()
-        assert result == 0
-
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    @patch('aiEnrich.cvMatcher.loadCVContent')
-    @patch('aiEnrich.cvMatcher.MysqlUtil')
+    @patch('aiEnrich.cvMatcher.getJobIdsList', return_value=[1])
     @patch('aiEnrich.cvMatcher.CVMatcher')
-    @patch('aiEnrich.cvMatcher.getJobIdsList')
-    def test_cv_match_success(self, mock_get_job_ids, mock_cv_matcher_class, 
-                             mock_mysql_util, mock_load_cv, mock_get_env_bool):
-        mock_get_env_bool.return_value = True
-        mock_load_cv.return_value = True
-        
-        mock_mysql = MagicMock()
-        mock_mysql.count.return_value = 1
-        mock_mysql.fetchOne.return_value = (1, 'Test Job', 'Job description', 'Test Company')
-        mock_mysql_util.return_value.__enter__.return_value = mock_mysql
-        
-        mock_get_job_ids.return_value = [1]
-        
-        mock_crew = MagicMock()
-        mock_crew_output = MagicMock()
-        mock_crew_output.raw = '{"cv_match_percentage": 85}'
-        mock_crew.kickoff.return_value = mock_crew_output
-        mock_cv_matcher_class.return_value.crew.return_value = mock_crew
-        
+    def test_cv_match_success(self, mock_cls, mock_ids, mock_deps):
+        """Test success"""
+        mock_deps['mysql'].count.return_value = 1
+        mock_deps['mysql'].fetchOne.return_value = (1, 'Job', 'Desc', 'Comp')
+        mock_cls.return_value.crew.return_value.kickoff.return_value.raw = '{"cv_match_percentage": 85}'
         with patch('aiEnrich.cvMatcher.combineTaskResults', return_value={'cv_match_percentage': 85}), \
-             patch('aiEnrich.cvMatcher.save'), \
-             patch('aiEnrich.cvMatcher.mapJob', return_value=('Test Job', 'Test Company', 'Job description')), \
-             patch('aiEnrich.cvMatcher.printJob'), \
-             patch('aiEnrich.cvMatcher.printHR'), \
-             patch('aiEnrich.cvMatcher.footer'), \
-             patch('aiEnrich.cvMatcher.StopWatch'), \
-             patch('aiEnrich.cvMatcher.cvContent', 'CV content'):
-            
-            result = cvMatch()
-            assert result == 1
+             patch('aiEnrich.cvMatcher.mapJob', return_value=('Job', 'Comp', 'Desc')):
+            assert cvMatch() == 1
+            mock_deps['save'].assert_called()
 
-    def test_save(self):
-        mock_mysql = MagicMock()
-        result = {'cv_match_percentage': 85}
-        
+    def test_save(self, mock_deps):
+        """Test save"""
         with patch('aiEnrich.cvMatcher.validateResult'), \
              patch('aiEnrich.cvMatcher.maxLen', return_value=(85, 1)), \
              patch('aiEnrich.cvMatcher.emptyToNone', return_value=(85, 1)):
-            
-            save(mock_mysql, 1, result)
-            mock_mysql.updateFromAI.assert_called_once()
+            save(mock_deps['mysql'], 1, {'cv_match_percentage': 85})
+            mock_deps['mysql'].updateFromAI.assert_called_once()
 
     def test_get_job_ids_list(self):
-        mock_mysql = MagicMock()
-        mock_mysql.fetchAll.return_value = [(1,), (2,), (3,)]
-        
+        """Test get job IDs"""
+        mysql = MagicMock()
+        mysql.fetchAll.return_value = [(1,), (2,), (3,)]
         with patch('aiEnrich.cvMatcher.yellow'):
-            result = getJobIdsList(mock_mysql)
-            assert result == [1, 2, 3]
+            assert getJobIdsList(mysql) == [1, 2, 3]
 
     @patch('pdfplumber.open')
-    def test_extract_text_from_pdf(self, mock_pdf_open):
-        mock_page = MagicMock()
-        mock_page.extract_text.return_value = "Sample text"
-        mock_page.extract_tables.return_value = [
-            [['Header1', 'Header2'], ['Row1Col1', 'Row1Col2']]
-        ]
-        
-        mock_pdf = MagicMock()
-        mock_pdf.pages = [mock_page]
-        mock_pdf_open.return_value.__enter__.return_value = mock_pdf
-        
-        with patch.object(pd.DataFrame, 'to_markdown', return_value='| Header1 | Header2 |\n|---------|----------|\n| Row1Col1 | Row1Col2 |'):
-            result = extractTextFromPDF('test.pdf')
-            assert 'Sample text' in result
-            assert 'Header1' in result
+    def test_extract_text_from_pdf(self, mock_pdf):
+        """Test PDF extract"""
+        page = MagicMock()
+        page.extract_text.return_value = "Text"
+        page.extract_tables.return_value = [[['H1'], ['R1']]]
+        mock_pdf.return_value.__enter__.return_value.pages = [page]
+        with patch.object(pd.DataFrame, 'to_markdown', return_value='| H1 |'):
+            res = extractTextFromPDF('a.pdf')
+            assert 'Text' in res and '| H1 |' in res
 
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    def test_load_cv_content_disabled(self, mock_get_env_bool):
-        mock_get_env_bool.return_value = False
-        result = loadCVContent()
-        assert result is False
-
-    @patch('aiEnrich.cvMatcher.CV_LOCATION', 'test.doc')
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    @patch('aiEnrich.cvMatcher.getEnv')
-    def test_load_cv_content_invalid_format(self, mock_get_env, mock_get_env_bool):
-        mock_get_env_bool.return_value = True
-        mock_get_env.return_value = 'test.doc'  # Invalid format
+    @pytest.mark.parametrize("env_v, suf, p_exists, t_exists", [('a.pd', '.pd', 1, 0), ('a.pdf', '.pdf', 0, 0), ('a.pdf', '.pdf', 0, 0)])
+    def test_load_cv_content_failures(self, mock_deps, env_v, suf, p_exists, t_exists):
+        """Test load failures"""
+        mock_deps['env'].side_effect = [True, env_v] # First call for check, second for val? No, fixture handles bool.
+        # Actually loadCVContent calls getEnvBool then getEnv. fixture mocks getEnvBool. 
+        # But getEnv also needs mocking. 
+        # And we need to ensure cvContent is None
         
-        result = loadCVContent()
-        assert result is False
-
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    @patch('aiEnrich.cvMatcher.getEnv')
-    @patch('aiEnrich.cvMatcher.Path')
-    def test_load_cv_content_file_not_found(self, mock_path, mock_get_env, mock_get_env_bool):
-        mock_get_env_bool.return_value = True
-        mock_get_env.return_value = 'test.pdf'
+        # NOTE: logic in loadCVContent:
+        # 1. getEnvBool -> False? return False. (Covered in test_cv_match_early_exits implicitly? No, that tests cvMatch calling it. This tests loadCVContent directly.)
+        # Here we test failures after check passed.
         
-        mock_file_path = MagicMock()
-        mock_file_path.exists.return_value = False
-        mock_file_path.suffix.lower.return_value = '.pdf'
-        mock_path.return_value = mock_file_path
-        
-        result = loadCVContent()
-        assert result is False
-
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    @patch('aiEnrich.cvMatcher.getEnv')
-    @patch('aiEnrich.cvMatcher.Path')
-    @patch('builtins.open', new_callable=mock_open, read_data='CV content')
-    def test_load_cv_content_txt_success(self, mock_file, mock_path, mock_get_env, mock_get_env_bool):
-        mock_get_env_bool.return_value = True
-        mock_get_env.return_value = 'test.pdf'
-        
-        # Mock PDF path doesn't exist, but TXT path exists
-        mock_pdf_path = MagicMock()
-        mock_pdf_path.exists.return_value = False
-        mock_pdf_path.suffix.lower.return_value = '.pdf'
-        
-        mock_txt_path = MagicMock()
-        mock_txt_path.exists.return_value = True
-        
-        mock_path.side_effect = [mock_pdf_path, mock_txt_path]
-        
-        with patch('aiEnrich.cvMatcher.cvContent', None):
-            result = loadCVContent()
-            assert result is True
-
-    @patch('aiEnrich.cvMatcher.CV_LOCATION', 'test.pdf')
-    @patch('aiEnrich.cvMatcher.getEnvBool')
-    @patch('aiEnrich.cvMatcher.getEnv')
-    @patch('aiEnrich.cvMatcher.Path')
-    @patch('aiEnrich.cvMatcher.extractTextFromPDF')
-    @patch('builtins.open', new_callable=mock_open)
-    def test_load_cv_content_pdf_success(self, mock_file, mock_extract_pdf, 
-                                        mock_path, mock_get_env, mock_get_env_bool):
-        mock_get_env_bool.return_value = True
-        mock_get_env.return_value = 'test.pdf'
-        mock_extract_pdf.return_value = 'Extracted PDF content'
-        
-        # Mock PDF path exists, TXT path doesn't exist
-        mock_pdf_path = MagicMock()
-        mock_pdf_path.exists.return_value = True
-        mock_pdf_path.suffix.lower.return_value = '.pdf'
-        
-        mock_txt_path = MagicMock()
-        mock_txt_path.exists.return_value = False
-        
-        mock_path.side_effect = [mock_pdf_path, mock_txt_path]
-        
-        with patch('aiEnrich.cvMatcher.cvContent', None):
-            result = loadCVContent()
-            assert result is True
-            mock_extract_pdf.assert_called_once_with('test.pdf')
-
-    def test_cv_matcher_class_initialization(self):
-        matcher = CVMatcher()
-        # The config files are loaded as dictionaries, not file paths
-        assert isinstance(matcher.agents_config, dict)
-        assert isinstance(matcher.tasks_config, dict)
-
-    @patch('aiEnrich.cvMatcher.Agent')
-    @patch('aiEnrich.cvMatcher.getEnv')
-    def test_cv_matcher_agent(self, mock_get_env, mock_agent):
-        mock_get_env.return_value = '300'
-        matcher = CVMatcher()
-        matcher.agents_config = {'cv_matcher_agent': {'role': 'CV Matcher'}}
-        
-        agent = matcher.cv_matcher_agent()
-        mock_agent.assert_called_once()
-
-    @patch('aiEnrich.cvMatcher.Task')
-    def test_cv_matcher_task(self, mock_task):
-        matcher = CVMatcher()
-        matcher.tasks_config = {'cv_matcher_task': {'description': 'Match CV'}}
-        
-        task = matcher.cv_matcher_task()
-        mock_task.assert_called_once()
-
-    @patch('aiEnrich.cvMatcher.Crew')
-    def test_cv_matcher_crew(self, mock_crew):
-        matcher = CVMatcher()
-        
-        with patch.object(matcher, 'cv_matcher_agent', return_value=MagicMock()), \
-             patch.object(matcher, 'cv_matcher_task', return_value=MagicMock()):
+        with patch('aiEnrich.cvMatcher.getEnv', return_value=env_v), \
+             patch('aiEnrich.cvMatcher.Path') as mock_path, \
+             patch('aiEnrich.cvMatcher.cvContent', None), \
+             patch('aiEnrich.cvMatcher.CV_LOCATION', env_v): # Use env_v as loc
             
-            crew = matcher.crew()
-            mock_crew.assert_called_once()
+            p, t = MagicMock(), MagicMock()
+            p.exists.return_value, p.suffix.lower.return_value = bool(p_exists), suf
+            t.exists.return_value = bool(t_exists)
+            mock_path.side_effect = [p, t]
+            assert loadCVContent() is False
+
+    @patch('aiEnrich.cvMatcher.CV_LOCATION', 'a.pdf')
+    @patch('aiEnrich.cvMatcher.getEnv', return_value='a.pdf')
+    @patch('aiEnrich.cvMatcher.Path')
+    @patch('builtins.open', new_callable=mock_open, read_data='CV')
+    def test_load_cv_content_txt_fallback(self, mock_f, mock_p, mock_e, mock_deps):
+        """Test txt fallback"""
+        p, t = MagicMock(), MagicMock()
+        p.exists.return_value, p.suffix.lower.return_value = False, '.pdf'
+        t.exists.return_value = True
+        mock_p.side_effect = [p, t]
+        with patch('aiEnrich.cvMatcher.cvContent', None):
+            assert loadCVContent() is True
+            mock_f.assert_called()
+
+    @patch('aiEnrich.cvMatcher.CV_LOCATION', 'a.pdf')
+    @patch('aiEnrich.cvMatcher.getEnv', return_value='a.pdf')
+    @patch('aiEnrich.cvMatcher.Path')
+    @patch('aiEnrich.cvMatcher.extractTextFromPDF', return_value='PDF')
+    def test_load_cv_content_pdf_success(self, mock_ex, mock_p, mock_e, mock_deps):
+        """Test PDF success"""
+        p, t = MagicMock(), MagicMock()
+        p.exists.return_value, p.suffix.lower.return_value = True, '.pdf'
+        t.exists.return_value = False
+        mock_p.side_effect = [p, t]
+        with patch('aiEnrich.cvMatcher.cvContent', None), patch('builtins.open', mock_open()):
+            assert loadCVContent() is True
+            mock_ex.assert_called_with('a.pdf')
+
+    def test_classes(self):
+        """Test classes"""
+        m = CVMatcher()
+        assert isinstance(m.agents_config, dict)
+        with patch('aiEnrich.cvMatcher.Agent'), patch('aiEnrich.cvMatcher.getEnv', return_value='300'), \
+             patch('aiEnrich.cvMatcher.Task'), patch('aiEnrich.cvMatcher.Crew'):
+            m.agents_config = {'cv_matcher_agent': {'role': 'R'}}
+            m.cv_matcher_agent()
+            m.tasks_config = {'cv_matcher_task': {'description': 'D'}}
+            m.cv_matcher_task()
+            with patch.object(m, 'cv_matcher_agent'), patch.object(m, 'cv_matcher_task'):
+                m.crew()

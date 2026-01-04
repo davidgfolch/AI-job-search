@@ -6,7 +6,7 @@
 | ------------------ | --------------------------------------------- | --------------------- | ------------------------------------- |
 | packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/viewer (old UI)  | ![viewer](apps/viewer/coverage.svg)   |
 | apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/web (new UI)     | ![web](apps/web/coverage/badges.svg)  |
-| apps/aiEnrichNew   | ![aiEnrich](apps/aiEnrichNew/coverage.svg)    | apps/backend (new UI) | ![backend](apps/backend/coverage.svg) |
+| apps/aiEnrichNew   | ![aiEnrichNew](apps/aiEnrichNew/coverage.svg) | apps/backend (new UI) | ![backend](apps/backend/coverage.svg) |
 | apps/scrapper      | ![scrapper](apps/scrapper/coverage.svg)       |                       |                                       |
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
