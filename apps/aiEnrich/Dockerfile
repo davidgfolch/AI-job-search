@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir uv
 
 # Copy commonlib first and install it
-COPY packages/commonlib /app/packages/commonlib
-WORKDIR /app/packages/commonlib
+COPY apps/commonlib /app/apps/commonlib
+WORKDIR /app/apps/commonlib
 RUN pip install -e .
 
 # Copy application files

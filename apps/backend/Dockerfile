@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir uv
 
 # Copy commonlib first (needed for dependency resolution)
-COPY packages/commonlib /app/packages/commonlib
+COPY apps/commonlib /app/apps/commonlib
 
 # Copy dependency files
 COPY apps/backend/pyproject.toml apps/backend/uv.lock* apps/backend/README.md /app/apps/backend/

@@ -15,7 +15,7 @@ for %%i in (%*) do (
 )
 
 rem ──────────────────────  Execute tests  ─────────────────────
-for /d %%a in (packages\* apps\*) do (
+for /d %%a in (apps\*) do (
     echo.
     echo Testing %%~nxa...
     pushd "%%~fa"

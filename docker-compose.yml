@@ -33,7 +33,7 @@ services:
     container_name: ai-job-search-backend
     volumes:
       - ./apps/backend:/app/apps/backend
-      - ./packages/commonlib:/app/packages/commonlib
+      - ./apps/commonlib:/app/packages/commonlib
       - ./.env:/app/.env
     ports:
       - "8000:8000"
@@ -98,7 +98,7 @@ services:
     container_name: ai-job-search-aienrich
     volumes:
       - ./apps/aiEnrich:/app/apps/aiEnrich
-      - ./packages/commonlib:/app/packages/commonlib
+      - ./apps/commonlib:/app/packages/commonlib
       - ./.env:/app/.env
     environment:
       - PYTHONUNBUFFERED=1
@@ -121,7 +121,7 @@ services:
     container_name: ai-job-search-scrapper
     volumes:
       - ./apps/scrapper:/app/apps/scrapper
-      - ./packages/commonlib:/app/packages/commonlib
+      - ./apps/commonlib:/app/packages/commonlib
       - ./.env:/app/.env
     environment:
       - PYTHONUNBUFFERED=1

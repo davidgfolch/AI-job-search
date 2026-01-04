@@ -11,7 +11,7 @@ for arg in "$@"; do
 done
 
 # Execute tests
-for dir in packages/* apps/*; do
+for dir in apps/*; do
     if [ ! -d "$dir" ]; then
         continue
     fi

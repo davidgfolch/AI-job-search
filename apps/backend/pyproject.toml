@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.poetry.dependencies]
-commonlib = { path = "../../packages/commonlib/", develop = true }
+commonlib = { path = "../../apps/commonlib/", develop = true }
 
 [dependency-groups]
 dev = [
@@ -25,13 +25,13 @@ dev = [
 ]
 
 [tool.uv.sources]
-commonlib = { path = "../../packages/commonlib", editable = true }
+commonlib = { path = "../commonlib", editable = true }
 
 [tool.pytest.ini_options]
 addopts = "--cov=api --cov-report=term-missing"
 
 [tool.coverage.run]
-omit = ["../../packages/*"]
+omit = ["../../apps/commonlib/*"]
 source = ["."]
 
 [build-system]

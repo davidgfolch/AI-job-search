@@ -17,7 +17,7 @@ replay = "aiEnrich.main:replay"
 test = "aiEnrich.main:test_crew"
 
 [tool.uv.sources]
-commonlib = { path = "../../packages/commonlib", editable = true }
+commonlib = { path = "../commonlib", editable = true }
 
 [dependency-groups]
 dev = [

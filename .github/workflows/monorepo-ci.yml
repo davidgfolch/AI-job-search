@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 env:
-  MODULES: "packages/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/backend apps/web"
+  MODULES: "apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/backend apps/web"
 
 jobs:
   build:

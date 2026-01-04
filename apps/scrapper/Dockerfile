@@ -44,8 +44,8 @@ RUN wget -q -O /tmp/google-chrome-key.pub https://dl-ssl.google.com/linux/linux_
 RUN pip install --no-cache-dir poetry==1.8.0
 
 # Copy commonlib first and install it
-COPY packages/commonlib /app/packages/commonlib
-WORKDIR /app/packages/commonlib
+COPY apps/commonlib /app/apps/commonlib
+WORKDIR /app/apps/commonlib
 RUN pip install -e .
 
 # Copy dependency files
