@@ -35,6 +35,10 @@ DB_FIELDS_BOOL = """flagged,`like`,ignored,seen,applied,discarded,closed,
 interview_rh,interview,interview_tech,interview_technical_test,interview_technical_test_done,
 ai_enriched,easy_apply"""
 
+QRY_UPDATE_JOB_DIRECT_URL = """UPDATE jobs 
+                   SET title=%s, company=%s, location=%s, url=%s, markdown=%s, easy_apply=%s 
+                   WHERE jobId=%s and web_page=%s"""
+
 conn: mysqlConnector.MySQLConnection = None
 
 

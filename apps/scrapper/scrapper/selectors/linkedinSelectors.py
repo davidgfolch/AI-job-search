@@ -21,3 +21,8 @@ CSS_SEL_JOB_HEADER = f'{CSS_SEL_JOB_DETAIL} h1 a'
 CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content article div.mt4'
 CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content button.jobs-apply-button svg[data-test-icon="linkedin-bug-xxsmall"]'
 CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'  # No longer accepting applications
+
+# JOB DETAIL IN SEARCH VIEW (DIRECT URL)
+CSS_SEL_DETAIL_COMPANY = f'{CSS_SEL_JOB_DETAIL} .job-details-jobs-unified-top-card__company-name'
+CSS_SEL_DETAIL_LOCATION = f'{CSS_SEL_JOB_DETAIL} .job-details-jobs-unified-top-card__primary-description-container'
+CSS_SEL_JOB_FIT_PREFERENCES = f'{CSS_SEL_JOB_DETAIL} .job-details-fit-level-preferences button strong'

@@ -20,8 +20,9 @@ def mocks():
         nav = nav_cls.return_value
         svc = svc_cls.return_value
         # Setup common mock behaviors
-        nav.get_job_data_in_detail_page.return_value = ("T", "C", "L", "U", "H")
-        nav.get_job_data_in_list.return_value = ("T", "C", "L", "U", "H")
+
+        nav.getJobInList.return_value = ("T", "C", "L", "U", "H")
+        nav.getJobInList_directUrl.return_value = ("T", "C", "L", "U", "H")
         svc.job_exists_in_db.return_value = (None, False)
         yield {'nav': nav, 'svc': svc, 'nav_cls': nav_cls, 'svc_cls': svc_cls}
 
@@ -108,6 +109,22 @@ class TestLinkedinScrapper:
             processUrl("http://url")
             mocks['nav'].load_page.assert_called_with("http://url")
             pr.assert_called_with(None)
+
+    def test_transform_to_search_url(self):
+        from scrapper.linkedin import _transform_to_search_url
+        
+        # Scenario 1: Standard job view URL
+        url = "https://www.linkedin.com/jobs/view/4350893693/"
+        expected = "https://www.linkedin.com/jobs/search/?currentJobId=4350893693"
+        assert _transform_to_search_url(url) == expected
+
+        # Scenario 2: Already a search URL (should return as is)
+        url2 = "https://www.linkedin.com/jobs/search/?currentJobId=123"
+        assert _transform_to_search_url(url2) == url2
+
+        # Scenario 3: Other URL
+        url3 = "https://google.com"
+        assert _transform_to_search_url(url3) == url3
 
 class TestLinkedinService:
     @pytest.fixture

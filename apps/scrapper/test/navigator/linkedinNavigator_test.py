@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, call, patch
-from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON
+from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
 from selenium.common.exceptions import NoSuchElementException
 
 class TestLinkedinNavigator:
@@ -88,7 +88,12 @@ class TestLinkedinNavigator:
              assert mock_selenium.scrollIntoView.call_count == 2
 
 
-    def test_click_next_page(self, navigator, mock_selenium):
+    def test_scroll_jobs_list_retry_execution(self, navigator, mock_selenium):
+        navigator.scroll_jobs_list_retry(1)
+        mock_selenium.scrollIntoView.assert_called()
+        mock_selenium.moveToElement.assert_called()
+        mock_selenium.waitUntilClickable.assert_called()
+
         result = navigator.click_next_page()
         assert result is True
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
@@ -105,26 +110,28 @@ class TestLinkedinNavigator:
         navigator.load_job_detail(False, 2, "css")
         mock_selenium.waitAndClick.assert_called_with("css")
 
-    def test_get_job_data_in_detail_page(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
-        mock_selenium.getUrl.return_value = "http://url"
-        mock_selenium.getHtml.return_value = "html"
-        
-        t, c, l, u, h = navigator.get_job_data_in_detail_page()
-        
-        assert t == "Title"
-        assert c == "Company"
-        assert l == "Location"
-        assert u == "http://url"
-        assert h == "html"
-        mock_selenium.waitUntilClickable.assert_called()
 
-    def test_get_job_data_in_list(self, navigator, mock_selenium):
+
+    def test_job_fit_preference_found(self, navigator, mock_selenium):
+        # Test fit preference
+        mock_selenium.getElms.return_value = ["fit_pref_element"]
+        # getText is called for the button, then for title, company, location. 
+        # We need to provide enough side effects or valid return values.
+        # calls: getText(title_sel) -> "Title", getText(company_sel) -> "Company", getText(location_sel) -> "Location", getText(button) -> "Preference"
+        mock_selenium.getText.side_effect = ["Title", "Company", "Location", "Preference"]
+        mock_selenium.getAttr.return_value = "http://url"
+        mock_selenium.getHtml.return_value = "job_html"
+        
+        t, c, l, u, h = navigator.getJobInList(0)
+        # fit html will be "Preference", job html is "job_html"
+        assert h == "Preferencejob_html"
+
+    def test_getJobInList(self, navigator, mock_selenium):
         mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
         mock_selenium.getAttr.return_value = "http://url"
         mock_selenium.getHtml.return_value = "html"
         
-        t, c, l, u, h = navigator.get_job_data_in_list(0)
+        t, c, l, u, h = navigator.getJobInList(0)
         
         assert t == "Title"
         assert c == "Company"
@@ -144,3 +151,29 @@ class TestLinkedinNavigator:
     def test_collapse_messages(self, navigator, mock_selenium):
         navigator.collapse_messages()
         mock_selenium.waitAndClick_noError.assert_called()
+
+    def test_getJobInList_directUrl(self, navigator, mock_selenium):
+        mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
+        mock_selenium.getAttr.return_value = "http://url"
+        mock_selenium.getHtml.return_value = "html"
+        
+        t, c, l, u, h = navigator.getJobInList_directUrl()
+        
+        assert t == "Title"
+        assert c == "Company"
+        assert l == "Location"
+        assert u == "http://url"
+        assert h == "html"
+        mock_selenium.getAttr.assert_called()
+
+    def test_get_job_url_from_element(self, navigator, mock_selenium):
+        navigator.get_job_url_from_element("css")
+        mock_selenium.getAttr.assert_called_with("css", 'href')
+
+    def test_wait_until_page_url_contains(self, navigator, mock_selenium):
+        navigator.wait_until_page_url_contains("url", 10)
+        mock_selenium.waitUntilPageUrlContains.assert_called_with("url", 10)
+
+    def test_wait_until_page_is_loaded(self, navigator, mock_selenium):
+        navigator.wait_until_page_is_loaded()
+        mock_selenium.waitUntilPageIsLoaded.assert_called()

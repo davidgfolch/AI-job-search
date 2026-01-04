@@ -1,6 +1,6 @@
 import re
 from typing import Tuple
-from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green, magenta, yellow
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
@@ -28,16 +28,13 @@ class LinkedinService:
 
     def process_job(self, title, company, location, url, html, is_direct_url_scrapping: bool, easy_apply: bool):
         try:
-            # Helper logic moved here
             url_short = self.get_job_url_short(url)
             jobId = self.get_job_id(url_short)
             md = htmlToMarkdown(html)
-            
             print(f'{jobId}, {title}, {company}, {location}, easy_apply={easy_apply} - ', end='', flush=True)
-            
             if validate(title, url_short, company, md, self.debug):
                 if is_direct_url_scrapping and self.mysql.jobExists(str(jobId)):
-                    self.print_job(title, company, location, url_short, jobId, html, md)
+                    self.update_job(jobId, title, company, location, url_short, html, md, easy_apply)
                 elif id := self.mysql.insert((jobId, title, company, location, url_short, md, easy_apply, self.web_page)):
                     print(green(f'INSERTED {id}!'), end='', flush=True)
                     mergeDuplicatedJobs(self.mysql, getSelect())
@@ -56,6 +53,12 @@ class LinkedinService:
         print(yellow(f'URL={url}'))
         print(yellow(f'HTML:\n', magenta(html)))
         print(yellow(f'MARKDOWN:\n', magenta(md)))
+
+    def update_job(self, jobId, title, company, location, url, html, md, easy_apply):
+        self.print_job(title, company, location, url, jobId, html, md)
+        params = (title, company, location, url, md, easy_apply, jobId, self.web_page)
+        self.mysql.executeAndCommit(QRY_UPDATE_JOB_DIRECT_URL, params)
+        print(green(f'Job updated {jobId}'), flush=True)
 
     def prepare_resume(self):
         self.persistence_manager.prepare_resume(self.web_page)

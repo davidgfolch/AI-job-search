@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, yellow, printHR
 from commonlib.util import join
@@ -9,8 +9,9 @@ from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 from ..selectors.linkedinSelectors import (
     CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_HEADER, CSS_SEL_NO_RESULTS,
-    CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_LI_IDX, CSS_SEL_COMPANY, CSS_SEL_LOCATION,
-    LI_JOB_TITLE_CSS_SUFFIX, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_MESSAGES_HIDE
+    LI_JOB_TITLE_CSS_SUFFIX, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_MESSAGES_HIDE,
+    CSS_SEL_DETAIL_COMPANY, CSS_SEL_DETAIL_LOCATION, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
+    CSS_SEL_COMPANY, CSS_SEL_LOCATION, CSS_SEL_JOB_LI_IDX, CSS_SEL_JOB_FIT_PREFERENCES
 )
 
 class LinkedinNavigator:
@@ -94,28 +95,29 @@ class LinkedinNavigator:
         print(yellow('loading...'), end='', flush=True)
         self.selenium.waitAndClick(cssSel)
 
-    def get_job_data_in_detail_page(self) -> Tuple[str, str, str, str, str]:
-        self.selenium.waitUntilClickable('div.jobs-description > footer > button')
-        title = self.selenium.getText('.job-view-layout.jobs-details h1')
-        company = self.selenium.getText('.job-view-layout.jobs-details .job-details-jobs-unified-top-card__company-name')
-        location = self.selenium.getText('.job-view-layout.jobs-details .job-details-jobs-unified-top-card__primary-description-container > div > span > span:nth-child(1)')
-        self.selenium.waitAndClick('div.jobs-description > footer > button') 
-        url = self.selenium.getUrl()
-        html = self.selenium.getHtml('article div.jobs-box__html-content div.mt4')
+    def _get_job_fit_preferences_html(self) -> str:
+        buttons = self.selenium.getElms(CSS_SEL_JOB_FIT_PREFERENCES)
+        return ', '.join(map(lambda b: self.selenium.getText(b), buttons))
+
+    @retry()  # wait for page to load
+    def getJobInList_directUrl(self) -> Tuple[str, str, str, str, str]:
+        title = self.selenium.getText(CSS_SEL_JOB_HEADER)
+        company = self.selenium.getText(CSS_SEL_DETAIL_COMPANY)
+        location = self.selenium.getText(CSS_SEL_DETAIL_LOCATION)
+        url = self.selenium.getAttr(CSS_SEL_JOB_HEADER, 'href')
+        fit_prefs_html = self._get_job_fit_preferences_html() # salary, location, remote,...
+        html = fit_prefs_html + self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
         return title, company, location, url, html
 
-    def get_job_data_in_list(self, idx: int) -> Tuple[str, str, str, str, str]:
+    def getJobInList(self, idx: int) -> Tuple[str, str, str, str, str]:
         liPrefix = self.replace_index(CSS_SEL_JOB_LI_IDX, idx)
         title = self.selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
         company = self.selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
         location = self.selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
         self.selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
-        # Note: URL processing (getJobUrlShort) might be better in Service or Utility, but raw URL comes from here. 
-        # I'll return the raw URL here and let Service handle the shortening if it's purely logic. 
-        # But wait, the original code called `getJobUrlShort` inside `getJobDataInList`.
-        # I will return the raw href and let the caller handle shortening to keep this class focused on DOM.
         url = self.selenium.getAttr(CSS_SEL_JOB_HEADER, 'href')
-        html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+        fit_prefs_html = self._get_job_fit_preferences_html()
+        html = fit_prefs_html + self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
         return title, company, location, url, html
 
     def get_job_url_from_element(self, cssSel):

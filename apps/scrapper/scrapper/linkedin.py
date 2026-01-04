@@ -17,7 +17,7 @@ remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
 location = '105646813'
 f_TPR = 'r86400'  # last 24 hours
 # Set to True to stop selenium driver navigating if any error occurs
-DEBUG = False
+DEBUG = True
 
 WEB_PAGE = 'Linkedin'
 JOBS_X_PAGE = 25
@@ -137,9 +137,9 @@ def process_row(idx):
     isDirectUrlScrapping = idx is None
     try:
         if isDirectUrlScrapping:
-            title, company, location, url, html = navigator.get_job_data_in_detail_page()
+            title, company, location, url, html = navigator.getJobInList_directUrl()
         else:
-            title, company, location, url, html = navigator.get_job_data_in_list(idx)
+            title, company, location, url, html = navigator.getJobInList(idx)
         easyApply = navigator.check_easy_apply()
         service.process_job(title, company, location, url, html, isDirectUrlScrapping, easyApply)
     except (ValueError, KeyboardInterrupt) as e:
@@ -148,8 +148,19 @@ def process_row(idx):
         baseScrapper.debug(DEBUG, exception=True)
         raise
 
+def _transform_to_search_url(url: str) -> str:
+    import re
+    # helper logic to transform standard job url to search url (which has same structure as the one used in the list)
+    # https://www.linkedin.com/jobs/view/4350893693/ -> https://www.linkedin.com/jobs/search/?currentJobId=4350893693
+    match = re.search(r'linkedin.com/jobs/view/(\d+)', url)
+    if match:
+        jobId = match.group(1)
+        url = f'https://www.linkedin.com/jobs/search/?currentJobId={jobId}'
+    return url
+
 def processUrl(url: str):
     global navigator, service
+    url = _transform_to_search_url(url)
     with MysqlUtil() as mysql, SeleniumService() as seleniumUtil:
         navigator = LinkedinNavigator(seleniumUtil)
         service = LinkedinService(mysql, PersistenceManager())
@@ -157,7 +168,6 @@ def processUrl(url: str):
         navigator.load_page(url)
         if navigator.check_login_popup(lambda: navigator.login(USER_EMAIL, USER_PWD)):
             navigator.load_page(url)
-            
         process_row(None)
 
 def summarize(keywords, totalResults, currentItem):

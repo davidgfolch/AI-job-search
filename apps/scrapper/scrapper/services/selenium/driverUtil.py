@@ -7,9 +7,7 @@ from selenium import webdriver
 from commonlib.terminalColor import yellow
 from commonlib.util import getEnvBool, isWindowsOS
 
-
 # Rotating User-Agents to avoid Cloudflare security filter
-# TODO: Keep list updated, last update 30/ene/2025
 DESKTOP_USER_AGENTS = list(filter(lambda line: len(line) > 0 and not line.startswith('#'), """
 # Chrome
 Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
@@ -44,7 +42,6 @@ class DriverUtil:
                 print(f'Detected Chrome version: {version_main}')
                 if isWindowsOS():
                     # Avoid NoSuchElement when windows lock  https://www.perplexity.ai/search/python-selenium-undetected-chr-46Hdkb5EQCuDEmBpHh5A8Q
-                    # TODO: try in linux & mac os
                     opts = uc.ChromeOptions()
                     opts.add_argument('--disable-gpu')
                     opts.add_argument('--no-sandbox')
@@ -76,7 +73,6 @@ class DriverUtil:
             self._apply_stealth_scripts()
         print(f'seleniumUtil init driver={self.driver}')
 
-
     def _findChrome(self):
         import platform
         system = platform.system()
@@ -86,15 +82,13 @@ class DriverUtil:
                 r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
                 os.path.expandvars(r'%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe'),
                 os.path.expandvars(r'%PROGRAMFILES%\Google\Chrome\Application\chrome.exe'),
-                os.path.expandvars(r'%PROGRAMFILES(X86)%\Google\Chrome\Application\chrome.exe'),
-            ]
+                os.path.expandvars(r'%PROGRAMFILES(X86)%\Google\Chrome\Application\chrome.exe')]
         else:
             paths = [
                 '/usr/bin/google-chrome',
                 '/usr/local/bin/google-chrome',
                 '/usr/bin/chromium-browser',
-                '/usr/bin/chromium',
-            ]
+                '/usr/bin/chromium']
         for path in paths:
             if os.path.exists(path):
                 return path
@@ -118,7 +112,6 @@ class DriverUtil:
                 # Use --version flag on Linux/Mac
                 result = subprocess.run([chromePath, '--version'], capture_output=True, text=True)
                 version_str = result.stdout.strip()
-                
             # Extract the major version number
             # Typical output: "Google Chrome 120.0.6099.109" or just "120.0.6099.109"
             match = re.search(r'(\d+)\.', version_str)
@@ -126,7 +119,6 @@ class DriverUtil:
                 return int(match.group(1))
         except Exception as e:
             print(yellow(f'WARNING: Failed to detect Chrome version: {e}'))
-            
         return 0
 
     def _apply_stealth_scripts(self):
@@ -136,22 +128,18 @@ class DriverUtil:
         Object.defineProperty(navigator, 'languages', {
             get: function() { return ['en-US', 'en']; }
         });
-
         // Overwrite the `plugins` property to use a custom getter
         Object.defineProperty(navigator, 'plugins', {
             get: function() { return [1, 2, 3, 4, 5]; }
         });
-
         // Remove webdriver property
         Object.defineProperty(navigator, 'webdriver', {
             get: () => undefined
         });
-
         // Mock chrome runtime
         window.chrome = {
             runtime: {}
         };
-
         // Mock permissions
         const originalQuery = window.navigator.permissions.query;
         window.navigator.permissions.query = (parameters) => (
@@ -159,7 +147,6 @@ class DriverUtil:
                 Promise.resolve({ state: Notification.permission }) :
                 originalQuery(parameters)
         );
-
         // Add vendor and renderer info
         const getParameter = WebGLRenderingContext.prototype.getParameter;
         WebGLRenderingContext.prototype.getParameter = function(parameter) {
@@ -171,16 +158,13 @@ class DriverUtil:
             }
             return getParameter.call(this, parameter);
         };
-
         // Mock automation flags
         Object.defineProperty(navigator, 'maxTouchPoints', {
             get: () => 1
         });
-
         Object.defineProperty(navigator, 'hardwareConcurrency', {
             get: () => 8
         });
-
         // Add connection info
         Object.defineProperty(navigator, 'connection', {
             get: () => ({
