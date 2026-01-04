@@ -8,6 +8,9 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 0.5rem 1rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .app-header h1 {
@@ -21,4 +24,17 @@
   flex: 1;
   padding: 2rem;
   background: #1a1a1a;
+}
+
+.header-link {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 8px 16px;
+  border: 1px solid white;
+  border-radius: 4px;
+}
+
+.header-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
