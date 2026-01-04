@@ -7,7 +7,7 @@ CSS_SEL_GLOBAL_ALERT_HIDE = 'div.artdeco-global-alert section.artdeco-global-ale
 
 # LIST
 CSS_SEL_NO_RESULTS = 'div.jobs-search-no-results-banner'
-CSS_SEL_JOB_LI = 'div.scaffold-layout__list ul > li'
+CSS_SEL_JOB_LI = 'div.scaffold-layout__list > div > ul > li'
 CSS_SEL_JOB_LI_IDX = f'{CSS_SEL_JOB_LI}:nth-child(##idx##)'
 CSS_SEL_COMPANY = 'div.artdeco-entity-lockup__subtitle'
 CSS_SEL_LOCATION = 'div.artdeco-entity-lockup__caption'

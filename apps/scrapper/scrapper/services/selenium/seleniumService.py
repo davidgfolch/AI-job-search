@@ -43,6 +43,8 @@ class SeleniumService:
         print('Exiting SeleniumUtil, close driver...')
         try:
             self.driver.quit()
+            # Monkey patch quit to avoid double closing in __del__ (undetected_chromedriver issue on Windows)
+            self.driver.quit = lambda: None
         except Exception:
             print(f'Error closing driver')
             baseScrapper.debug(debugFlag=False, exception=True)

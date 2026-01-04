@@ -109,6 +109,7 @@ class LinkedinNavigator:
         html = fit_prefs_html + self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
         return title, company, location, url, html
 
+    @retry()  # wait for page to load
     def getJobInList(self, idx: int) -> Tuple[str, str, str, str, str]:
         liPrefix = self.replace_index(CSS_SEL_JOB_LI_IDX, idx)
         title = self.selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')

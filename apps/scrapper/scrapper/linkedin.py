@@ -17,7 +17,7 @@ remote = '2'   # ["2"],  # onsite "1", remote "2", hybrid "3"
 location = '105646813'
 f_TPR = 'r86400'  # last 24 hours
 # Set to True to stop selenium driver navigating if any error occurs
-DEBUG = True
+DEBUG = False
 
 WEB_PAGE = 'Linkedin'
 JOBS_X_PAGE = 25
