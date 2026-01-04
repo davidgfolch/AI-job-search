@@ -20,7 +20,7 @@ FROM jobs
 WHERE cv_match_percentage is null and not (ignored or discarded or closed)
 ORDER BY created desc"""
 QRY_COUNT = f"""SELECT count(id) {QRY_FROM}"""
-QRY_FIND_IDS = f"""SELECT id {QRY_FROM} LIMIT {getEnv('AI_CV_MATCH_LIMIT', '10')}"""
+QRY_FIND_IDS = f"""SELECT id {QRY_FROM} LIMIT {getEnv('AI_CV_MATCH_NEW_LIMIT', '100')}"""
 QRY_FIND = f"""
 SELECT id, title, markdown, company
 FROM jobs
@@ -78,15 +78,16 @@ class FastCVMatcher:
                     title = job[1]
                     company = job[3]
                     markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
-                    self._print_job_status(total, idx, id, title, company, len(markdown))
+                    print(green(f'AI CV match job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={len(markdown)}'), end='')
                     result = self.match(f'# {title} \n {markdown}')
+                    print(f' -> Result: {cyan(json.dumps(result))}', end='')
                     self._save_result(mysql, id, result)
                 except (Exception, KeyboardInterrupt) as ex:
                     self._save_error(mysql, id, title, company, ex)
                 self.totalCount += 1
-                self.stopWatch.end()
                 self._print_footer(total, idx)
-            return total
+                self.stopWatch.end()
+            return total-idx
 
     def _load_cv_content(self) -> bool:
         if self._cv_content:
@@ -150,7 +151,6 @@ class FastCVMatcher:
 
     def _save_result(self, mysql: MysqlUtil, id, result: dict):
         cv_match = result.get('cv_match_percentage')
-        print(f'Result: {cyan(json.dumps(result))}')
         params = maxLen(emptyToNone((cv_match, id)), (None, None))
         mysql.updateFromAI(QRY_UPDATE, params)
 
@@ -164,11 +164,7 @@ class FastCVMatcher:
         mysql.executeAndCommit(query, params)
         print(yellow(f"cv_match_percentage set to -1 (error), id={id}"))
 
-    def _print_job_status(self, total, idx, id, title, company, inputLen):
-        print(green(f'AI CV match job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={inputLen}'))
-
     def _print_footer(self, total, idx):
-        print(yellow(f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {self.totalCount}'),
-              end='\n' if len(self.jobErrors)==0 else ' ')
+        print(yellow(f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {self.totalCount}'), end=' ')
         if self.jobErrors:
-            print(red(f'Total job errors: {len(self.jobErrors)}'))
+            print(red(f'Total job errors: {len(self.jobErrors)}'), end=' ')

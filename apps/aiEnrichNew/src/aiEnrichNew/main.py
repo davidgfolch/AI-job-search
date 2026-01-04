@@ -22,8 +22,7 @@ def run():
     while True:
         if dataExtractor()==0:
             if cvMatcher is not None:
-                cvMatcher.process_db_jobs()
-                consoleTimer('All jobs enriched & CV matched. ', '10s', end='\n')
-                continue
+                if cvMatcher.process_db_jobs()>0:
+                    continue
         printHR(yellow)
         consoleTimer('All jobs enriched. ', '10s', end='\n')
