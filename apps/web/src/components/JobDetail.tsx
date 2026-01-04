@@ -83,15 +83,18 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
                             <button 
                                 className="config-btn salary-toggle-btn"
                                 onClick={() => setShowCalculator(!showCalculator)}>
-                                Freelance salary 🧮
+                                🧮 Freelance
+                            </button>
+                            <button 
+                                className="config-btn salary-toggle-btn"
+                                onClick={() => window.open('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank')}>
+                                🧮 Gross year
                             </button>
                             {onUpdate && (
                                 <button
-                                    className="delete-btn-icon"
+                                    className="config-btn salary-toggle-btn salary-delete-btn"
                                     onClick={() => onUpdate({ salary: null })}
-                                    title="Delete salary information"
-                                    style={{ marginLeft: '10px', cursor: 'pointer', background: 'none', border: 'none', fontSize: '1.2em' }}
-                                >
+                                    title="Delete salary information">
                                     🗑️
                                 </button>
                             )}

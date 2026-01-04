@@ -284,3 +284,15 @@
 .salary-toggle-btn {
     margin-left: 0.5rem;
 }
+
+.salary-delete-btn.config-btn {
+    margin-left: 2rem;
+    background-color: rgb(161, 66, 66);
+    color: rgb(75, 49, 49);
+    border-color: rgb(110, 74, 74);
+}
+
+.salary-delete-btn.config-btn:hover {
+    background-color: darkred;
+    border-color: darkred;
+}
