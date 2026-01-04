@@ -18,8 +18,9 @@ uv.lock
 **/.next/**
 scripts/mysql/*backup.*
 apps/aiEnrich/cv/*
-**/coverage.xml
+**/**/coverage.xml
+**/**/coverage.txt
 apps/scrapper/scrapper_state.json
-
 apps/aiEnrichNew/cv/*
 apps/aiEnrich/src/aiEnrich/cv/*
+

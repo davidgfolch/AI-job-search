@@ -13,6 +13,19 @@ from .jsonHelper import footer, mapJob, printJob, saveError, validateResult, raw
 VERBOSE = True 
 DEBUG = False
 MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
+SYSTEM_PROMPT = """You are an expert at analyzing job offers.
+Extract the following information from the job offer below and return it as a valid JSON object:
+- required_technologies: A string with comma-separated list of required technologies.
+- optional_technologies: A string with comma-separated list of optional/nice-to-have technologies.
+- salary: The salary information if available, otherwise null.
+
+Format your response as a single valid JSON object strictly complying with this structure:
+{
+  "required_technologies": "tech1, tech2",
+  "optional_technologies": "tech3",
+  "salary": "50k-60k"
+}
+Do not include any conversational text, only the JSON."""
 
 # Global pipeline instance
 _PIPELINE = None
@@ -71,7 +84,6 @@ def dataExtractor() -> int:
         if total == 0:
             return total
         print(f'{total} jobs to be ai_enriched...')
-        
         # Ensure model is loaded
         pipe = get_pipeline()
 
@@ -85,10 +97,7 @@ def dataExtractor() -> int:
                     continue
                 title, company, markdown = mapJob(job)
                 printJob('enrich', total, idx, id, title, company, len(markdown))
-                
-                # Extract using local LLM
                 result = extract_job_data(pipe, title, markdown)
-                
                 print('Result:\n', magenta(json.dumps(result, indent=2)))
                 if result is not None:
                     save(mysql, id, company, result)
@@ -100,39 +109,17 @@ def dataExtractor() -> int:
         return total
 
 def extract_job_data(pipe, title, markdown) -> dict:
-    """
-    Constructs the prompt and extracts JSON from local LLM.
-    """
-    system_prompt = """You are an expert at analyzing job offers.
-Extract the following information from the job offer below and return it as a valid JSON object:
-- required_technologies: A string with comma-separated list of required technologies.
-- optional_technologies: A string with comma-separated list of optional/nice-to-have technologies.
-- salary: The salary information if available, otherwise null.
-
-Format your response as a single valid JSON object strictly complying with this structure:
-{
-  "required_technologies": "tech1, tech2",
-  "optional_technologies": "tech3",
-  "salary": "50k-60k"
-}
-Do not include any conversational text, only the JSON."""
-
     user_message = f"Job Title: {title}\n\nDescription:\n{markdown}"
-    
     messages = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_message}
     ]
-    
     # Apply chat template
     prompt = pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    
     output = pipe(prompt)
     generated_text = output[0]['generated_text']
-    
     if DEBUG:
          print(yellow(f"Raw LLM Output: {generated_text}"))
-         
     return rawToJson(generated_text)
 
 

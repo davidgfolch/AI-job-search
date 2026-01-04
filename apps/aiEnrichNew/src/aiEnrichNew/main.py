@@ -11,7 +11,7 @@ from commonlib.terminalColor import yellow, printHR
 from commonlib.util import consoleTimer
 import time
 from .dataExtractor import dataExtractor
-from .fastCvMatcher import FastCVMatcher
+from .cvMatcher import FastCVMatcher
 
 def run():
     if getEnvBool('AI_CV_MATCH'):

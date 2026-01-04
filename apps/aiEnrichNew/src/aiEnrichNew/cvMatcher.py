@@ -62,15 +62,12 @@ class FastCVMatcher:
             return 0
         if not self._load_cv_content():
             return 0
-            
         with MysqlUtil() as mysql:
             total = mysql.count(QRY_COUNT)
             if total == 0:
                 return total
-                
             job_ids = [row[0] for row in mysql.fetchAll(QRY_FIND_IDS)]
             print(yellow(f'{job_ids}'))
-            
             for idx, id in enumerate(job_ids):
                 printHR(yellow)
                 self.stopWatch.start()
@@ -78,19 +75,14 @@ class FastCVMatcher:
                     job = mysql.fetchOne(QRY_FIND, id)
                     if job is None:
                         continue
-                        
                     title = job[1]
                     company = job[3]
                     markdown = removeExtraEmptyLines(job[2].decode("utf-8"))
-                    
                     self._print_job_status(total, idx, id, title, company, len(markdown))
-                    
                     result = self.match(f'# {title} \n {markdown}')
                     self._save_result(mysql, id, result)
-                    
                 except (Exception, KeyboardInterrupt) as ex:
                     self._save_error(mysql, id, title, company, ex)
-                    
                 self.totalCount += 1
                 self.stopWatch.end()
                 self._print_footer(total, idx)
@@ -102,17 +94,14 @@ class FastCVMatcher:
         if not getEnvBool('AI_CV_MATCH'):
             print(yellow('AI_CV_MATCH disabled'))
             return False
-            
         print(yellow(f'Loading CV from: {CV_LOCATION}'))
         try:
             filePath = Path(CV_LOCATION)
             cvLocationTxt = CV_LOCATION.replace('.pdf', '.txt')
             filePathTxt = Path(cvLocationTxt)
-            
             if not filePath.exists() and not filePathTxt.exists():
                 print(red(f'CV file not found: {CV_LOCATION}'))
                 return False
-                
             if filePath.suffix.lower() == '.pdf' and not filePathTxt.exists():
                 self._cv_content = self._extract_text_from_pdf(CV_LOCATION)
                 print(yellow(f'CV (PDF) loaded from: {CV_LOCATION} ({len(self._cv_content)} chars)'))
@@ -125,14 +114,11 @@ class FastCVMatcher:
             else:
                 print(red(f'Unsupported CV file format'))
                 return False
-
             if not self._cv_content or not self._cv_content.strip():
                 print(red('CV file is empty'))
                 return False
-                
             self._cv_embedding = self._model.encode([self._cv_content])
             return True
-            
         except Exception:
             print(red(f'Error loading CV:'))
             print(red(traceback.format_exc()))
