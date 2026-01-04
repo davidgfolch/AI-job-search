@@ -19,8 +19,11 @@ COPY packages/commonlib /app/packages/commonlib
 # Copy dependency files
 COPY apps/backend/pyproject.toml apps/backend/uv.lock* apps/backend/README.md /app/apps/backend/
 
-# Install dependencies
+# Validate the lockfile
 WORKDIR /app/apps/backend
+ENV UV_PROJECT_ENVIRONMENT="/app/venv"
+ENV PATH="/app/venv/bin:$PATH"
+
 # Use --frozen to ensure we use the lockfile versions
 # linux install failed here because already had uv.lock
 # RUN uv sync --frozen --no-install-project
