@@ -14,6 +14,7 @@ class TestMain(unittest.TestCase):
         # Setup
         mock_getEnvBool.return_value = True
         mock_cvMatcher = mock_cvMatcherClass.instance.return_value
+        mock_cvMatcher.process_db_jobs.return_value = 0
         
         # Mock dataExtractor to return 0 (success) once, then side effect to stop loop
         # We need to break the infinite loop. run() has `while True`.
@@ -31,7 +32,7 @@ class TestMain(unittest.TestCase):
         mock_cvMatcherClass.instance.assert_called_once()
         mock_cvMatcher.process_db_jobs.assert_called_once()
         # Check that consoleTimer was called for enriched & matched
-        mock_consoleTimer.assert_any_call('All jobs enriched & CV matched. ', '10s', end='\n')
+        mock_consoleTimer.assert_any_call('All jobs enriched. ', '10s', end='\r')
 
     @patch('aiEnrichNew.main.getEnvBool')
     @patch('aiEnrichNew.main.FastCVMatcher')
@@ -63,7 +64,7 @@ class TestMain(unittest.TestCase):
         # Check that consoleTimer was called for just enriched (since loop continues or not)
         # Actually logic is: if dataExtractor()==0: if cvMatcher... else...
         # If cvMatcher is None, it falls through to printHR and consoleTimer('All jobs enriched. ')
-        mock_consoleTimer.assert_any_call('All jobs enriched. ', '10s', end='\n')
+        mock_consoleTimer.assert_any_call('All jobs enriched. ', '10s', end='\r')
 
     @patch('aiEnrichNew.main.getEnvBool')
     @patch('aiEnrichNew.main.FastCVMatcher')
@@ -85,8 +86,8 @@ class TestMain(unittest.TestCase):
 
         # Verify
         # If dataExtractor != 0, it skips the if block and goes to printHR
-        mock_printHR.assert_called()
-        mock_consoleTimer.assert_any_call('All jobs enriched. ', '10s', end='\n')
+        # mock_printHR.assert_called()
+        mock_consoleTimer.assert_any_call('All jobs enriched. ', '10s', end='\r')
 
 if __name__ == '__main__':
     unittest.main()

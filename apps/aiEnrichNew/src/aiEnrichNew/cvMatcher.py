@@ -66,6 +66,7 @@ class FastCVMatcher:
             total = mysql.count(QRY_COUNT)
             if total == 0:
                 return total
+            print()
             job_ids = [row[0] for row in mysql.fetchAll(QRY_FIND_IDS)]
             print(yellow(f'{job_ids}'))
             for idx, id in enumerate(job_ids):

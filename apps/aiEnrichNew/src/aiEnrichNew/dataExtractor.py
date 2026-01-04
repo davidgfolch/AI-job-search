@@ -83,6 +83,7 @@ def dataExtractor() -> int:
         total = mysql.count(QRY_COUNT)
         if total == 0:
             return total
+        print()
         print(f'{total} jobs to be ai_enriched...')
         # Ensure model is loaded
         pipe = get_pipeline()

@@ -24,5 +24,4 @@ def run():
             if cvMatcher is not None:
                 if cvMatcher.process_db_jobs()>0:
                     continue
-        printHR(yellow)
-        consoleTimer('All jobs enriched. ', '10s', end='\n')
+        consoleTimer('All jobs enriched. ', '10s', end='\r')
