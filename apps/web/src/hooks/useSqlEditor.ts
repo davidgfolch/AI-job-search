@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchDdlSchema } from '../api/ddl';
-import { Suggestion, getCaretCoordinates } from '../utils/sqlEditorUtils';
+import { getCaretCoordinates } from '../utils/sqlEditorUtils';
+import type { Suggestion } from '../utils/sqlEditorUtils';
 
 interface UseSqlEditorProps {
     isOpen: boolean;
