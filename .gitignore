@@ -21,3 +21,5 @@ apps/aiEnrich/cv/*
 **/coverage.xml
 apps/scrapper/scrapper_state.json
 
+apps/aiEnrichNew/cv/*
+apps/aiEnrich/src/aiEnrich/cv/*

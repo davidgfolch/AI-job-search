@@ -6,7 +6,8 @@
 | ------------------ | --------------------------------------------- | --------------------- | ------------------------------------- |
 | packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/viewer (old UI)  | ![viewer](apps/viewer/coverage.svg)   |
 | apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/web (new UI)     | ![web](apps/web/coverage/badges.svg)  |
-| apps/scrapper      | ![scrapper](apps/scrapper/coverage.svg)       | apps/backend (new UI) | ![backend](apps/backend/coverage.svg) |
+| apps/aiEnrichNew   | ![aiEnrich](apps/aiEnrichNew/coverage.svg)    | apps/backend (new UI) | ![backend](apps/backend/coverage.svg) |
+| apps/scrapper      | ![scrapper](apps/scrapper/coverage.svg)       |                       |                                       |
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 
@@ -21,6 +22,7 @@ This is a monorepo containing several applications and packages:
 | **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
 | **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
 | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI agent to analyze job details (salary, skills). | Python, CrewAI, uv           |
+| **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using Transformers.           | Python, Transformers, uv     |
 | **Viewer**      | [`apps/viewer`](apps/viewer/README.md)               | Legacy Streamlit UI.                              | Python, Streamlit, Poetry    |
 
 > **Note**: The **Viewer** application is the legacy interface. The **Web UI** + the **Backend** is the new, recommended implementation.
@@ -38,7 +40,9 @@ This is a monorepo containing several applications and packages:
   - Web UI
 - Run apps/scrappers/run.(bat/sh) in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
-- Run (optional) AiEnrich:
+- Run (optional) AiEnrichNew (using huddingface transformer no need to install ollama):
+  - Run aiEnrichNew in separated terminals manually.
+- ~~LEGACY: Run (optional) AiEnrich~~:
   - Install Ollama & llama3.2 model
   - Run aiEnrich in separated terminals manually.
 
@@ -71,6 +75,9 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 ./apps/scrapper/run.sh
 
 # 3. AI Enrichment
+# (NEW and quicker)
+./apps/aiEnrichNew/run.sh
+# (OLD legacy and slower)
 ./apps/aiEnrich/run.sh
 
 # 4. New UI (Backend + Web)
@@ -91,6 +98,9 @@ docker compose up -d
 .\apps\scrapper\run.bat
 
 :: 3. AI Enrichment
+:: (NEW and quicker)
+.\apps\aiEnrichNew\run.bat
+:: (OLD legacy and slower)
 .\apps\aiEnrich\run.bat
 
 :: 4. New UI (Backend + Web)

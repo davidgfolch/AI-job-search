@@ -173,8 +173,10 @@ class TestSeleniumService:
         mock_driver.back.assert_called_once()
 
     def test_exit_driver_alive(self, selenium_util, mock_driver):
+        # Capture the quit method before it gets overwritten by exit()
+        original_quit = mock_driver.quit
         selenium_util.exit()
-        mock_driver.quit.assert_called()
+        original_quit.assert_called()
 
     def test_tab_close_error_handling(self, selenium_util, mock_driver):
         selenium_util.tabs['test_tab'] = 'handle'
