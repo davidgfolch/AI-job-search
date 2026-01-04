@@ -1,13 +1,13 @@
 # AI Job Search Monorepo
 
-[![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/python-app.yml)
+[![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/monorepo-ci.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/monorepo-ci.yml)
 
-| Module's coverage  |                                               | UI Module's coverage  |                                       |
-| ------------------ | --------------------------------------------- | --------------------- | ------------------------------------- |
-| packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/web              | ![web](apps/web/coverage/badges.svg)  |
-| apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/backend          | ![backend](apps/backend/coverage.svg) |
-| apps/aiEnrichNew   | ![aiEnrichNew](apps/aiEnrichNew/coverage.svg) |                       |                                       |
-| apps/scrapper      | ![scrapper](apps/scrapper/coverage.svg)       |                       |                                       |
+| Module's coverage  |                                               | UI Module's coverage  |                                         |
+| ------------------ | --------------------------------------------- | --------------------- | --------------------------------------- |
+| packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/web              | ![web](apps/web/coverage/badges.svg)    |
+| apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/backend          | ![backend](apps/backend/coverage.svg)   |
+| apps/aiEnrichNew   | ![aiEnrichNew](apps/aiEnrichNew/coverage.svg) | apps/scrapper         | ![scrapper](apps/scrapper/coverage.svg) |
+
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 
