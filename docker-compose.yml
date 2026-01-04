@@ -71,28 +71,6 @@ services:
     networks:
       - ai-job-search
 
-  # Viewer - Streamlit UI (Legacy)
-  viewer:
-    build:
-      context: .
-      dockerfile: apps/viewer/Dockerfile
-    container_name: ai-job-search-viewer
-    volumes:
-      - ./apps/viewer:/app/apps/viewer
-      - ./packages/commonlib:/app/packages/commonlib
-      - ./.env:/app/.env
-    ports:
-      - "8501:8501"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql_db # MySQL service name for Docker networking
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - ai-job-search
-
   # Ollama - LLM Service for AI Enrichment
   ollama:
     image: ollama/ollama:latest

@@ -4,9 +4,9 @@
 
 | Module's coverage  |                                               | UI Module's coverage  |                                       |
 | ------------------ | --------------------------------------------- | --------------------- | ------------------------------------- |
-| packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/viewer (old UI)  | ![viewer](apps/viewer/coverage.svg)   |
-| apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/web (new UI)     | ![web](apps/web/coverage/badges.svg)  |
-| apps/aiEnrichNew   | ![aiEnrichNew](apps/aiEnrichNew/coverage.svg) | apps/backend (new UI) | ![backend](apps/backend/coverage.svg) |
+| packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/web              | ![web](apps/web/coverage/badges.svg)  |
+| apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/backend          | ![backend](apps/backend/coverage.svg) |
+| apps/aiEnrichNew   | ![aiEnrichNew](apps/aiEnrichNew/coverage.svg) |                       |                                       |
 | apps/scrapper      | ![scrapper](apps/scrapper/coverage.svg)       |                       |                                       |
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
@@ -23,9 +23,8 @@ This is a monorepo containing several applications and packages:
 | **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
 | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI agent to analyze job details (salary, skills). | Python, CrewAI, uv           |
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using Transformers.           | Python, Transformers, uv     |
-| **Viewer**      | [`apps/viewer`](apps/viewer/README.md)               | Legacy Streamlit UI.                              | Python, Streamlit, Poetry    |
 
-> **Note**: The **Viewer** application is the legacy interface. The **Web UI** + the **Backend** is the new, recommended implementation.
+> **Note**: The **Web UI** + the **Backend** is the new, recommended implementation.
 
 ## Getting Started
 
@@ -83,9 +82,6 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 # 4. New UI (Backend + Web)
 ./apps/backend/run.sh
 ./apps/web/run.sh
-
-# 5. Legacy Viewer
-./apps/viewer/run.sh
 ```
 
 #### Windows (`.bat`)
@@ -106,9 +102,6 @@ docker compose up -d
 :: 4. New UI (Backend + Web)
 .\apps\backend\run.bat
 .\apps\web\run.bat
-
-:: 5. Legacy Viewer
-.\apps\viewer\run.bat
 ```
 
 ## Testing

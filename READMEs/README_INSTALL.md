@@ -11,8 +11,8 @@
 
 This project uses different package managers for different components:
 
-- **Poetry**: Used by `apps/scrapper`, `packages/commonlib`, and `apps/viewer`.
-- **uv**: Used by `apps/backend` and `apps/aiEnrich`.
+- **Poetry**: Used by `apps/scrapper`, `packages/commonlib`.
+- **uv**: Used by `apps/backend`, `apps/aiEnrich` and `apps/aiEnrichNew`.
 - **npm**: Used by `apps/web`.
 
 ## Installation Steps
