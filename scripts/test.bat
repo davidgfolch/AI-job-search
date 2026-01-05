@@ -15,42 +15,57 @@ for %%i in (%*) do (
 )
 
 rem ──────────────────────  Execute tests  ─────────────────────
+rem ──────────────────────  Execute tests  ─────────────────────
+if exist "apps\commonlib" (
+    call :run_test "%CD%\apps\commonlib"
+)
+
 for /d %%a in (apps\*) do (
-    echo.
-    echo Testing %%~nxa...
-    pushd "%%~fa"
-    if exist "%%~fa\package.json" (
+    if /i not "%%~nxa"=="commonlib" (
+        call :run_test "%%~fa"
+    )
+)
+
+endlocal
+exit /b
+
+:run_test
+set "target_dir=%~1"
+echo.
+echo Testing %~nx1...
+pushd "!target_dir!"
+if exist "package.json" (
+    if !coverage!==0 (
+        call npm test -- run
+    ) else (
+        call npm test -- run --coverage
+        call npx coverage-badges
+    )
+) else if exist "pyproject.toml" (
+    if exist "uv.lock" (
+        @REM set "UV_PROJECT_ENVIRONMENT=custom-venv"
         if !coverage!==0 (
-            call npm test -- run
+            uv run -m pytest
         ) else (
-            call npm test -- run --coverage
-            call npx coverage-badges
-        )
-    ) else if exist "%%~fa\pyproject.toml" (
-        if exist "%%~fa\uv.lock" (
-            @REM set "UV_PROJECT_ENVIRONMENT=custom-venv"
-            if !coverage!==0 (
-                uv run -m pytest
-            ) else (
-                uv run -m coverage run -m pytest
-                uv run -m coverage report -m
-                uv run -m coverage xml
-                uv run python -m coverage_badge -o coverage.svg -f
-            )
-        ) else (
-            if !coverage!==0 (
-                poetry run pytest
-            ) else (
-                poetry run coverage run -m pytest
-                poetry run coverage report -m
-                poetry run coverage xml
-                poetry run coverage-badge -o coverage.svg -f
-            )
+            uv run -m coverage run -m pytest
+            uv run -m coverage report -m
+            uv run -m coverage xml
+            uv run python -m coverage_badge -o coverage.svg -f
         )
     ) else (
-        echo No known project type found in %%~nxa
+        if !coverage!==0 (
+            poetry run pytest
+        ) else (
+            poetry run coverage run -m pytest
+            poetry run coverage report -m
+            poetry run coverage xml
+            poetry run coverage-badge -o coverage.svg -f
+        )
     )
-    popd
+) else (
+    echo No known project type found in %~nx1
 )
+popd
+exit /b
 
 endlocal

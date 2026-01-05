@@ -11,11 +11,10 @@ for arg in "$@"; do
 done
 
 # Execute tests
-for dir in apps/*; do
-    if [ ! -d "$dir" ]; then
-        continue
-    fi
-    
+# Execute tests
+
+run_test() {
+    local dir=$1
     echo ""
     echo "Testing $(basename "$dir")..."
     pushd "$dir" > /dev/null
@@ -52,4 +51,19 @@ for dir in apps/*; do
     fi
     
     popd > /dev/null
+}
+
+if [ -d "apps/commonlib" ]; then
+    run_test "apps/commonlib"
+fi
+
+for dir in apps/*; do
+    if [ ! -d "$dir" ]; then
+        continue
+    fi
+    if [ "$(basename "$dir")" == "commonlib" ]; then
+        continue
+    fi
+    
+    run_test "$dir"
 done
