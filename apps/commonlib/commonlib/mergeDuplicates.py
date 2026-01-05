@@ -4,7 +4,8 @@ import traceback
 from commonlib.sqlUtil import deleteJobsQuery, updateFieldsQuery
 from .mysqlUtil import DB_FIELDS_BOOL, MysqlUtil
 from .terminalColor import blue, cyan, red
-from .util import getEnvBool, removeNewLines
+from .environmentUtil import getEnvBool
+from .util import removeNewLines
 
 
 # Fields processing

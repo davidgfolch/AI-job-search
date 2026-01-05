@@ -12,7 +12,7 @@ from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import cyan, printHR, red, yellow
-from commonlib.util import getEnv, getEnvBool
+from commonlib.environmentUtil import getEnv, getEnvBool
 
 VERBOSE = False
 DEBUG = False

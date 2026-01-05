@@ -6,7 +6,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
-from commonlib.util import getEnvBool
+from commonlib.environmentUtil import getEnvBool
 from commonlib.terminalColor import yellow, printHR
 from commonlib.util import consoleTimer
 import time

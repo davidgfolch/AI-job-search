@@ -7,7 +7,7 @@ from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import magenta, printHR, yellow
-from commonlib.util import getEnv
+from commonlib.environmentUtil import getEnv
 from .crewHelper import combineTaskResults, footer, mapJob, printJob, saveError, validateResult
 
 VERBOSE = False

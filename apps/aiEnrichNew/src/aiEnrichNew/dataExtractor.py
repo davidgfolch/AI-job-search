@@ -6,7 +6,7 @@ from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import magenta, printHR, yellow, cyan
-from commonlib.util import getEnv
+from commonlib.environmentUtil import getEnv
 from .jsonHelper import footer, mapJob, printJob, saveError, validateResult, rawToJson
 
 # Configuration

@@ -10,7 +10,8 @@ import numpy as np
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import yellow, red, cyan, green, printHR
-from commonlib.util import getEnv, getEnvBool, getDatetimeNowStr, removeExtraEmptyLines
+from commonlib.environmentUtil import getEnv, getEnvBool
+from commonlib.util import getDatetimeNowStr, removeExtraEmptyLines
 from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
 
 CV_LOCATION = './cv/cv.txt'

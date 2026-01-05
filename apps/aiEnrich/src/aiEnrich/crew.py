@@ -3,7 +3,8 @@ from crewai.flow.flow import Flow, start
 from .cvMatcher import cvMatch, loadCVContent
 from .dataExtractor import dataExtractor
 from commonlib.terminalColor import printHR, yellow
-from commonlib.util import consoleTimer, getEnvBool
+from commonlib.util import consoleTimer
+from commonlib.environmentUtil import getEnvBool
 
 class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
     """AiJobSearch crew"""

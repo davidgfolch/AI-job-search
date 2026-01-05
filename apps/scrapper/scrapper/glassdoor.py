@@ -1,7 +1,7 @@
 import math
 from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
-from commonlib.util import getEnv
+from commonlib.environmentUtil import getEnv
 from .core import baseScrapper
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from .services.selenium.seleniumService import SeleniumService
