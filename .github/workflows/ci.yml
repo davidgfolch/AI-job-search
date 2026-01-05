@@ -148,8 +148,8 @@ jobs:
           done
           
           if $changes; then
-            git pull --rebase
             git commit -m "Update coverage badges"
+            git pull --rebase
             git push
           else
             echo "No coverage badge files changed"
