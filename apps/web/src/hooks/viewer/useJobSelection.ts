@@ -81,7 +81,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
                 const sqlFilter = `id IN (${ids.join(',')})`;
                 setFilters(prev => {
                     if (prev.sql_filter === sqlFilter) return prev;
-                    return { ...prev, sql_filter: sqlFilter, page: 1, ignored: 0, seen: 0, applied: true, discarded: 0, closed: 0 };
+                    return { ...prev, sql_filter: sqlFilter, page: 1, ignored: undefined, seen: undefined, applied: undefined, discarded: undefined, closed: undefined };
                 });
                 // Remove ids from URL so form works properly
                 setSearchParams(prev => {
