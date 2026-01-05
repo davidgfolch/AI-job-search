@@ -1,7 +1,7 @@
-diff --git a/.env.example b/.env.example
+diff --git a/scripts/.env.example b/scripts/.env.example
 index d6c5f02..5710d9a 100644
---- a/.env.example
-+++ b/.env.example
+--- a/scripts/.env.example
++++ b/scripts/.env.example
 @@ -23,6 +23,10 @@ TECNOEMPLEO_EMAIL=xxxxx@xxxxx.com
  TECNOEMPLEO_PWD=yyyyy
  TECNOEMPLEO_RUN_CADENCY=3h

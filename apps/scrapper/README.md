@@ -40,7 +40,7 @@ poetry install
 ### Configuration
 
 Scraper behavior is configured via environment variables and configuration files (`scrapper_config.py`).
-See `.env.example` in `scripts/`.
+See `scripts/.env.example`.
 
 **Key Environment Variables:**
 

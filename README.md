@@ -30,7 +30,7 @@ This is a monorepo containing several applications and packages:
 
 ### Quick Start
 
-- Copy .env.example to .env:
+- Copy `scripts/.env.example` to `.env`:
   - set your creadentials.
   - set your options (e.g., JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications, by default should run only:

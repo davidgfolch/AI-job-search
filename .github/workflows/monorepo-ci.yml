@@ -30,7 +30,7 @@ jobs:
           node-version: "20"
       - name: Install package manager
         run: |
-          cp '.env.example' .env
+          cp 'scripts/.env.example' .env
           curl -LsSf https://astral.sh/uv/install.sh | sh
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
