@@ -1,4 +1,3 @@
-from .systemUtil import isDocker, isMacOS, isWindowsOS, isLinuxOS
 from .environmentUtil import getEnvModified, checkEnvReload, getEnv, getEnvMultiline, getEnvBool
 from .fileSystemUtil import createFolder, listFiles, getSrcPath
 from .dateUtil import getDatetimeNow, parseDatetime, getDatetimeNowStr, getSeconds, getTimeUnits

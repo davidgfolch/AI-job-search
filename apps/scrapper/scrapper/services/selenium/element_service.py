@@ -10,7 +10,7 @@ from selenium.webdriver.common.keys import Keys
 from scrapper.core import baseScrapper
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 from commonlib.terminalColor import yellow
-from commonlib.util import isMacOS
+from commonlib.systemUtil import isMacOS
 
 SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end',  behavior: 'smooth' });"
 

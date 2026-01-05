@@ -5,7 +5,8 @@ import undetected_chromedriver as uc
 from selenium import webdriver
 
 from commonlib.terminalColor import yellow
-from commonlib.util import getEnvBool, isWindowsOS
+from commonlib.environmentUtil import getEnvBool
+from commonlib.systemUtil import isWindowsOS
 
 # Rotating User-Agents to avoid Cloudflare security filter
 DESKTOP_USER_AGENTS = list(filter(lambda line: len(line) > 0 and not line.startswith('#'), """
