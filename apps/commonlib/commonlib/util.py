@@ -117,12 +117,11 @@ def getTimeUnits(seconds: int) -> str:
     seconds %= 60
     time_units = []
     if hours > 0:
-        time_units.append(f"{hours}h")
+        time_units.append(f"{int(hours)}h")
     if minutes > 0:
-        time_units.append(f"{minutes}m")
+        time_units.append(f"{int(minutes)}m")
     if seconds > 0 or not time_units:
-        time_units.append(f"{seconds}s")
-
+        time_units.append(f"{int(seconds)}s")
     return ' '.join(time_units)
 
 
