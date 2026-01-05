@@ -42,6 +42,9 @@ jobs:
       - name: Install and Test ${{ matrix.module }}
         run: |
           MODULE="${{ matrix.module }}"
+          SAFE_MODULE="${MODULE//\//-}"
+          echo "ARTIFACT_NAME=badge-${SAFE_MODULE}" >> $GITHUB_ENV
+          
           cd "${MODULE}"
           
           if [ -f "package.json" ]; then
@@ -78,7 +81,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: badge-${{ strategy.job.index }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: |
             ${{ matrix.module }}/coverage.svg
             ${{ matrix.module }}/coverage_artifacts/coverage.svg
@@ -104,36 +107,25 @@ jobs:
           MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/backend apps/web"
           read -ra MODULE_ARR <<< "${MODULES}"
           
-          # We need to map the downloaded artifacts back to their modules.
-          # Since artifact names in matrix are distinct but we didn't include module name in artifact name easily (slashes issue),
-          # we relied on preserving path in upload or unique naming. 
-          # Let's adjust upload/download strategy to be more robust.
-          
-          # Actually, let's look at how I implemented upload.
-          # name: badge-${{ strategy.job.index }}
-          # path: ${{ matrix.module }}/coverage.svg OR ${{ matrix.module }}/coverage_artifacts/coverage.svg
-          
-          # When downloading to /tmp/badges, it will create directories:
-          # /tmp/badges/badge-0/apps/commonlib/coverage.svg
-          # /tmp/badges/badge-5/apps/web/coverage_artifacts/coverage.svg
-          
-          # Let's verify paths.
-          
           for MODULE in "${MODULE_ARR[@]}"; do
             echo "Processing $MODULE"
-            TARGET_PATH=""
-            SOURCE_PATH=""
             
+            # Construct artifact name using same logic as test job
+            SAFE_MODULE="${MODULE//\//-}"
+            ARTIFACT_NAME="badge-${SAFE_MODULE}"
+            
+            # Define where the badge should go in the repo
             if [ "$MODULE" == "apps/web" ]; then
                 TARGET_PATH="${MODULE}/coverage/badges.svg"
-                # Find where it is in /tmp/badges
-                SOURCE_PATH=$(find /tmp/badges -name coverage.svg | grep "${MODULE}/coverage_artifacts" | head -n 1)
             else
                 TARGET_PATH="${MODULE}/coverage.svg"
-                SOURCE_PATH=$(find /tmp/badges -name coverage.svg | grep "${MODULE}/coverage.svg" | head -n 1)
             fi
             
-            if [ -n "$SOURCE_PATH" ] && [ -f "$SOURCE_PATH" ]; then
+            # Find the downloaded badge
+            # Search recursively within the artifact directory because upload-artifact v4 might preserve directory structure
+            SOURCE_PATH=$(find "/tmp/badges/${ARTIFACT_NAME}" -name "coverage.svg" -type f | head -n 1)
+            
+            if [ -n "$SOURCE_PATH" ]; then
               echo "Found new badge at $SOURCE_PATH"
               
               # Ensure directory exists
@@ -150,7 +142,8 @@ jobs:
                  changes=true
               fi
             else
-               echo "No badge found for $MODULE"
+               echo "No badge found for $MODULE in /tmp/badges/${ARTIFACT_NAME}"
+               ls -R "/tmp/badges/${ARTIFACT_NAME}" || true
             fi
           done
           
