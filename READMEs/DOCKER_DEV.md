@@ -14,11 +14,15 @@ docker-compose down
 
 ## With AI Services (AI Enrichment + Ollama)
 
-NOT TESTED YET!!! (Ollama version is the legacy version, use aiEnrichNew HuggingFace version)
+**Legacy:** `aienrich` service uses Ollama (profile: `ai-services`).
+**New:** `aienrichnew` service uses local Hugging Face models and **starts by default**.
 
 ```bash
-# Start with AI services
-docker-compose --profile ai-services up -d
+# Start core services (now includes aiEnrichNew)
+docker-compose up -d
+
+# If you want to use the legacy Ollama enrichment:
+docker-compose --profile ai-services up -d aienrich
 
 # Ollama uses models from your host (defaults to ~/.ollama)
 # For Windows, set in .env: OLLAMA_MODELS_PATH=C:/Users/YOUR_USERNAME/.ollama
