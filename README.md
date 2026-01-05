@@ -1,9 +1,11 @@
 # AI Job Search Monorepo  [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml)
 
-| Module's coverage |                                           |                  |                                               |               |                                         |
-| ----------------- | ----------------------------------------- | ---------------- | --------------------------------------------- | ------------- | --------------------------------------- |
-| apps/commonlib    | ![commonlib](apps/commonlib/coverage.svg) | apps/backend     | ![backend](apps/backend/coverage.svg)         | apps/web      | ![web](apps/web/coverage/badges.svg)    |
-| apps/aiEnrich     | ![aiEnrich](apps/aiEnrich/coverage.svg)   | apps/aiEnrichNew | ![aiEnrichNew](apps/aiEnrichNew/coverage.svg) | apps/scrapper | ![scrapper](apps/scrapper/coverage.svg) |
+![commonlib](apps/commonlib/coverage.svg)
+![backend](apps/backend/coverage.svg)
+![web](apps/web/coverage/badges.svg)
+![aiEnrich](apps/aiEnrich/coverage.svg)
+![aiEnrichNew](apps/aiEnrichNew/coverage.svg)
+![scrapper](apps/scrapper/coverage.svg)
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 

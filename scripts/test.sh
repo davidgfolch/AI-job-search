@@ -3,14 +3,16 @@
 
 # Parse arguments
 coverage=0
+target=""
 for arg in "$@"; do
     if [ "$arg" == "--coverage" ]; then
         coverage=1
         echo "Coverage enabled"
+    elif [ -d "$arg" ]; then
+        target="$arg"
     fi
 done
 
-# Execute tests
 # Execute tests
 
 run_test() {
@@ -22,7 +24,7 @@ run_test() {
     if [ -f "package.json" ]; then
         if [ $coverage -eq 1 ]; then
             npm test -- run --coverage
-            npx coverage-badges
+            npx coverage-badges --label "$(basename "$dir")"
         else
             npm test -- run
         fi
@@ -32,7 +34,7 @@ run_test() {
                 uv run -m coverage run -m pytest
                 uv run -m coverage report -m
                 uv run -m coverage xml
-                uv run python -m coverage_badge -o coverage.svg -f
+                uv run genbadge coverage -i coverage.xml -o coverage.svg -n "$(basename "$dir")"
             else
                 uv run -m pytest
             fi
@@ -41,7 +43,7 @@ run_test() {
                 poetry run coverage run -m pytest
                 poetry run coverage report -m
                 poetry run coverage xml
-                poetry run coverage-badge -o coverage.svg -f
+                poetry run genbadge coverage -i coverage.xml -o coverage.svg -n "$(basename "$dir")"
             else
                 poetry run pytest
             fi
@@ -53,17 +55,21 @@ run_test() {
     popd > /dev/null
 }
 
-if [ -d "apps/commonlib" ]; then
-    run_test "apps/commonlib"
-fi
+if [ -n "$target" ]; then
+    run_test "$target"
+else
+    if [ -d "apps/commonlib" ]; then
+        run_test "apps/commonlib"
+    fi
 
-for dir in apps/*; do
-    if [ ! -d "$dir" ]; then
-        continue
-    fi
-    if [ "$(basename "$dir")" == "commonlib" ]; then
-        continue
-    fi
-    
-    run_test "$dir"
-done
+    for dir in apps/*; do
+        if [ ! -d "$dir" ]; then
+            continue
+        fi
+        if [ "$(basename "$dir")" == "commonlib" ]; then
+            continue
+        fi
+        
+        run_test "$dir"
+    done
+fi

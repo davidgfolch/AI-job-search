@@ -59,17 +59,17 @@ jobs:
             cd "${MODULE}"
             if [ -f "package.json" ]; then
               npm test -- run --coverage
-              npx coverage-badges
+              npx coverage-badges --label "${MODULE}"
             elif [ "${MODULE}" == "apps/aiEnrich" ] || [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ]; then
               uv run coverage run -m pytest
               uv run coverage report -m
               uv run coverage xml
-              uv run coverage-badge -o coverage.svg -f
+              uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
             else
               poetry run coverage run -m pytest
               poetry run coverage report -m
               poetry run coverage xml
-              poetry run coverage-badge -o coverage.svg -f
+              poetry run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
             fi
             cd ../..
           done

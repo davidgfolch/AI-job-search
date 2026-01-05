@@ -5,24 +5,32 @@ set VIRTUAL_ENV=
 rem ──────────────────────  Parse command‑line  ─────────────────────
 set coverage=0
 set idx=0
+set "target="
+
 for %%i in (%*) do (
     set /a idx+=1
     echo Arguments !idx!: %%i
     if "%%i"=="--coverage" (
         set coverage=1
         echo Coverage enabled
-    ) 
+    ) else if exist "%%i" (
+        set "target=%%i"
+    )
 )
 
 rem ──────────────────────  Execute tests  ─────────────────────
 rem ──────────────────────  Execute tests  ─────────────────────
-if exist "apps\commonlib" (
-    call :run_test "%CD%\apps\commonlib"
-)
+if defined target (
+     call :run_test "%CD%\!target!"
+) else (
+    if exist "apps\commonlib" (
+        call :run_test "%CD%\apps\commonlib"
+    )
 
-for /d %%a in (apps\*) do (
-    if /i not "%%~nxa"=="commonlib" (
-        call :run_test "%%~fa"
+    for /d %%a in (apps\*) do (
+        if /i not "%%~nxa"=="commonlib" (
+            call :run_test "%%~fa"
+        )
     )
 )
 
@@ -39,7 +47,7 @@ if exist "package.json" (
         call npm test -- run
     ) else (
         call npm test -- run --coverage
-        call npx coverage-badges
+        call npx coverage-badges --label "%~nx1"
     )
 ) else if exist "pyproject.toml" (
     if exist "uv.lock" (
@@ -50,7 +58,7 @@ if exist "package.json" (
             uv run -m coverage run -m pytest
             uv run -m coverage report -m
             uv run -m coverage xml
-            uv run python -m coverage_badge -o coverage.svg -f
+            uv run genbadge coverage -i coverage.xml -o coverage.svg -n "%~nx1"
         )
     ) else (
         if !coverage!==0 (
@@ -59,7 +67,7 @@ if exist "package.json" (
             poetry run coverage run -m pytest
             poetry run coverage report -m
             poetry run coverage xml
-            poetry run coverage-badge -o coverage.svg -f
+            poetry run genbadge coverage -i coverage.xml -o coverage.svg -n "%~nx1"
         )
     )
 ) else (
