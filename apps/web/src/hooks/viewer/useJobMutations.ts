@@ -26,7 +26,7 @@ interface UseJobMutationsProps {
     React.SetStateAction<"none" | "manual" | "all">
   >;
   onJobUpdated?: (job: Job) => void;
-  onJobsDeleted?: (ids: number[]) => void;
+  onJobsDeleted?: (ids: number[] | 'all') => void;
 }
 
 export const useJobMutations = ({

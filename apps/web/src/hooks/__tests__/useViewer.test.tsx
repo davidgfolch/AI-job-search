@@ -118,6 +118,36 @@ describe('useViewer', () => {
         expect(callArg.has(2)).toBe(true);
     });
 
+    it('should handle onJobsDeleted("all") correctly', () => {
+        renderHook(() => useViewer());
+        
+        // Capture the onJobsDeleted callback passed to useJobMutations
+        const useJobMutationsMock = useJobMutations as any;
+        const passedProps = useJobMutationsMock.mock.calls[0][0];
+        const onJobsDeleted = passedProps.onJobsDeleted;
+
+        // Verify it exists
+        expect(onJobsDeleted).toBeDefined();
+
+        // Call it with 'all'
+        act(() => {
+            onJobsDeleted('all');
+        });
+
+        // Verify state updates
+        // Should clear allJobs
+        expect(mockJobsData.setAllJobs).toHaveBeenCalledWith([]); 
+        
+        // Should reset filters (page: 1)
+        expect(mockJobsData.setFilters).toHaveBeenCalled();
+        const setFiltersUpdate = mockJobsData.setFilters.mock.calls[0][0];
+        // It's a function updater: f => ({ ...f, page: 1 })
+        const newFilters = setFiltersUpdate({ some: 'filter' });
+        expect(newFilters.page).toBe(1);
+    });
+
+
+
     it('should handle toggleSelectAll correctly', () => {
         // Case 1: selectionMode is 'all' -> toggle off
         (useJobSelection as any).mockReturnValue({

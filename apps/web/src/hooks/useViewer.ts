@@ -38,7 +38,12 @@ export const useViewer = () => {
             });
         },
         onJobsDeleted: (ids) => {
-            setAllJobs(jobs => jobs.filter(j => !ids.includes(j.id)));
+            if (ids === 'all') {
+                setAllJobs([]);
+                setFilters(f => ({ ...f, page: 1 }));
+            } else {
+                setAllJobs(jobs => jobs.filter(j => !ids.includes(j.id)));
+            }
         }
     });
 

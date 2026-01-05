@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobsApi, type Job, type JobListParams } from "../../api/jobs";
 
 interface UseBulkJobMutationsProps {
-  onJobsDeleted?: (ids: number[]) => void;
+  onJobsDeleted?: (ids: number[] | 'all') => void;
   setMessage: (msg: { text: string; type: "success" | "error" } | null) => void;
   setSelectionMode: (mode: "none" | "manual" | "all") => void;
   setSelectedIds: (ids: Set<number>) => void;
@@ -51,7 +51,9 @@ export function useBulkJobMutations({
       setMessage({ text: `Deleted ${data.deleted} jobs`, type: "success" });
       setSelectionMode("none");
       setSelectedIds(new Set());
-      if (variables.ids && onJobsDeleted) {
+      if (variables.select_all && onJobsDeleted) {
+        onJobsDeleted('all');
+      } else if (variables.ids && onJobsDeleted) {
         onJobsDeleted(variables.ids);
       }
     },
