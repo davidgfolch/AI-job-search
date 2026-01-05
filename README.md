@@ -1,6 +1,4 @@
-# AI Job Search Monorepo
-
-[![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/monorepo-ci.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/monorepo-ci.yml)
+# AI Job Search Monorepo  [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml)
 
 | Module's coverage  |                                               | UI Module's coverage  |                                         |
 | ------------------ | --------------------------------------------- | --------------------- | --------------------------------------- |
