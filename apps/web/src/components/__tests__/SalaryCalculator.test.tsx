@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SalaryCalculator from '../SalaryCalculator';
 import { salaryApi } from '../../api/salary';
@@ -59,7 +59,9 @@ describe('SalaryCalculator', () => {
         render(<SalaryCalculator />);
         
         // Wait for initial call (on mount)
-        await waitDebounce();
+        await act(async () => {
+            await waitDebounce();
+        });
         
         (salaryApi.calculate as any).mockClear();
         
@@ -75,11 +77,33 @@ describe('SalaryCalculator', () => {
     });
 
     it('should update other inputs correctly', async () => {
+        (salaryApi.calculate as any).mockResolvedValue({
+            gross_year: '1000',
+            parsed_equation: 'eq',
+            year_tax: '200',
+            year_tax_equation: 'tax_eq',
+            net_year: '800',
+            net_month: '66',
+            freelance_tax: '50',
+        });
+
         render(<SalaryCalculator />);
         
         // Wait for initial
-        await waitDebounce();
+        await act(async () => {
+             await waitDebounce();
+        });
         (salaryApi.calculate as any).mockClear();
+
+        (salaryApi.calculate as any).mockResolvedValue({
+            gross_year: '9999',
+            parsed_equation: 'eq',
+            year_tax: '200',
+            year_tax_equation: 'tax_eq',
+            net_year: '800',
+            net_month: '66',
+            freelance_tax: '50',
+        });
 
         const selects = screen.getAllByRole('combobox');
         const typeSelect = selects[0];
@@ -88,11 +112,11 @@ describe('SalaryCalculator', () => {
         fireEvent.change(typeSelect, { target: { value: 'Daily' } });
         fireEvent.change(freelanceSelect, { target: { value: '300' } });
 
-        await waitFor(() => {
-            expect(salaryApi.calculate).toHaveBeenCalledWith(expect.objectContaining({
-                rate_type: 'Daily',
-                freelance_rate: 300,
-            }));
-        }, { timeout: 2000 });
+        expect(await screen.findByText('9999')).toBeInTheDocument();
+
+        expect(salaryApi.calculate).toHaveBeenCalledWith(expect.objectContaining({
+            rate_type: 'Daily',
+            freelance_rate: 300,
+        }));
     });
 });

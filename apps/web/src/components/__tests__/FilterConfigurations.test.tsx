@@ -23,7 +23,7 @@ describe('FilterConfigurations', () => {
             <FilterConfigurations 
                 currentFilters={props.currentFilters || mockFilters} 
                 onLoadConfig={onLoadConfigMock as any} 
-                onMessage={props.onMessage} />
+                onMessage={props.onMessage || vi.fn()} />
         );
         await act(async () => await new Promise(resolve => setTimeout(resolve, 0)));
         return { ...result, input: screen.getByPlaceholderText(/Type to load or enter name to save/i) };
