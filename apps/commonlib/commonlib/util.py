@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from .terminalColor import yellow
 from .wake_timer import WakeableTimer
 
-
 def getEnvModified() -> float | None:
     x = os.stat('../../.env').st_ctime if os.stat('../../.env') else None
     return x
@@ -18,7 +17,6 @@ def getEnvModified() -> float | None:
 
 load_dotenv()
 envLastModified = getEnvModified()
-
 
 def checkEnvReload():
     global envLastModified
@@ -29,12 +27,10 @@ def checkEnvReload():
     load_dotenv(override=True)
     envLastModified = getEnvModified()
 
-
 def getEnv(key: str, default: str = None) -> str:
     checkEnvReload()
     v = os.environ.get(key, default)
     return v
-
 
 def getEnvMultiline(key: str, default: str = None) -> str:
     idx = 1
@@ -47,17 +43,14 @@ def getEnvMultiline(key: str, default: str = None) -> str:
         idx += 1
     return value
 
-
 def getEnvBool(key: str, default: bool = False) -> bool:
     v = getEnv(key, str(default) if default else None)
     if v is None:
         return default
     return v.lower() == "true"
 
-
 def hasLen(iter: Iterator):
     return any(True for _ in iter)
-
 
 def hasLenAnyText(*texts: str) -> list[bool]:
     return [t is not None and len(removeBlanks(t)) > 0 for t in texts]
@@ -66,16 +59,13 @@ def hasLenAnyText(*texts: str) -> list[bool]:
 def removeBlanks(text):
     return re.sub(r'[\n\b]+', '', text, re.M).strip()
 
-
 def toBool(str: str) -> bool:
     if str is None:
         return False
     return str.lower() in ['true', '1', 'yes']
 
-
 def removeExtraEmptyLines(txt: str) -> str:
     return re.sub(r'\n{3,}', '\n\n', re.sub(r'\s+\n', '\n', txt))
-
 
 def removeNewLines(txt: str) -> str:
     try:
@@ -85,6 +75,13 @@ def removeNewLines(txt: str) -> str:
 
 
 def consoleTimer(message: str, timeUnit: str, end='\r'):
+    if isDocker():
+        consoleTimerDocker(message, timeUnit)
+    else:
+        _consoleTimerLocal(message, timeUnit, end)
+
+
+def _consoleTimerLocal(message: str, timeUnit: str, end='\r'):
     """timeUnit: 30s|8m|2h"""
     seconds = getSeconds(timeUnit)
     spinner = Spinner()
@@ -98,6 +95,17 @@ def consoleTimer(message: str, timeUnit: str, end='\r'):
         WakeableTimer().wait(1/spinner.tickXSec)
     if blankLine:
         print()
+
+
+def consoleTimerDocker(message: str, timeUnit: str):
+    """timeUnit: 30s|8m|2h"""
+    seconds = getSeconds(timeUnit)
+    timeLeft = str(timedelta(seconds=seconds))
+    print(yellow(message, f" I'll retry in {timeLeft} "), end='', flush=True)
+    for _ in range(seconds):
+        print('.', end='', flush=True)
+        WakeableTimer().wait(1)
+    print()
 
 
 def getSeconds(timeUnit: str):
@@ -123,7 +131,6 @@ def getTimeUnits(seconds: int) -> str:
     if seconds > 0 or not time_units:
         time_units.append(f"{int(seconds)}s")
     return ' '.join(time_units)
-
 
 def getDatetimeNow() -> float:
     return datetime.now().timestamp()
@@ -159,7 +166,6 @@ class Spinner():
     def generate(self):
         return self.spinner[self.spinItem]*5
 
-
 def createFolder(filename: str) -> Path:
     path = Path(filename)
     path.parent.mkdir(exist_ok=True, parents=True)
@@ -172,6 +178,13 @@ def listFiles(folder: Path) -> list[str]:
 
 def getSrcPath() -> str:
     return str(Path(os.getcwd()))
+
+
+def isDocker() -> bool:
+    if os.path.exists('/.dockerenv'): return True
+    try:
+        with open('/proc/1/cgroup', 'rt') as f: return 'docker' in f.read()
+    except Exception: return False
 
 
 def isMacOS() -> bool:
