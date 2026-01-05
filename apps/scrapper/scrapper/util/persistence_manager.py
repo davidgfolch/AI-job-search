@@ -32,10 +32,10 @@ class PersistenceManager:
             del self.state[site]
             self.save()
 
-    def get_last_execution(self, site: str) -> int | None:
+    def get_last_execution(self, site: str) -> str | None:
         return self.state.get(site, {}).get('last_execution')
 
-    def update_last_execution(self, site: str, timestamp: int) -> int:
+    def update_last_execution(self, site: str, timestamp: str | None) -> str | None:
         if site not in self.state:
             self.state[site] = {}
         self.state[site]['last_execution'] = timestamp

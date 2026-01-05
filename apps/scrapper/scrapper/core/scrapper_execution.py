@@ -1,7 +1,7 @@
 import time
 from typing import Any, Optional
 
-from commonlib.util import getEnv, getDatetimeNow
+from commonlib.util import getEnv, getDatetimeNow, getDatetimeNowStr
 from commonlib.terminalColor import cyan, red, yellow, green
 from commonlib.keep_system_awake import KeepSystemAwake
 from scrapper.core import baseScrapper
@@ -59,7 +59,7 @@ def executeScrapper(name: str, properties: dict, persistenceManager: Persistence
     try:
         with KeepSystemAwake():
             runScrapper(name, False, persistenceManager, seleniumUtil)
-        persistenceManager.update_last_execution(name, getDatetimeNow())
+        persistenceManager.update_last_execution(name, getDatetimeNowStr())
     except Exception:
         baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
         persistenceManager.update_last_execution(name, None)

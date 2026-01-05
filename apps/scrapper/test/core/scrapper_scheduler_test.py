@@ -32,17 +32,22 @@ def setup_scrappers():
         yield
 
 class TestTimeExpired:
-    @pytest.mark.parametrize("now, props, last, expected", [
-        (1000, {TIMER: 3600, 'waitBeforeFirstRun': False}, None, True),
-        (1000, {TIMER: 3600, 'waitBeforeFirstRun': True}, None, True),
-        (100, {TIMER: 3600, 'lastExecution': None, 'waitBeforeFirstRun': False}, None, True),
-        (1000, {TIMER: 3600, 'waitBeforeFirstRun': True}, 500, False), # 1000-500=500 < 3600
-        (6000, {TIMER: 3600, 'waitBeforeFirstRun': False}, 100, True),  # 6000-100=5900 > 3600
+    @pytest.mark.parametrize("now, props, last_offset, expected", [
+        (1000000000, {TIMER: 3600, 'waitBeforeFirstRun': False}, None, True),
+        (1000000000, {TIMER: 3600, 'waitBeforeFirstRun': True}, None, True),
+        (1000000000, {TIMER: 3600, 'lastExecution': None, 'waitBeforeFirstRun': False}, None, True),
+        # 500 seconds ago, should NOT be expected (expired=False) because 500 < 3600
+        (1000000000, {TIMER: 3600, 'waitBeforeFirstRun': True}, 500, False), 
+        # 4000 seconds ago, should be expected (expired=True) because 4000 > 3600
+        (1000000000, {TIMER: 3600, 'waitBeforeFirstRun': False}, 4000, True),
     ])
-    def test_time_expired(self, now, props, last, expected):
+    def test_time_expired(self, now, props, last_offset, expected):
+        from datetime import datetime
+        last = None
+        if last_offset is not None:
+             last = datetime.fromtimestamp(now - last_offset).strftime("%Y-%m-%d %H:%M:%S")
         with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=now):
             assert timeExpired('', props, last) is expected
-            assert props.get('lastExecution') == props.get('lastExecution')
 
 @pytest.mark.parametrize("name, expected", [
     ('Infojobs', True), ('infojobs', True), ('INFOJOBS', True),

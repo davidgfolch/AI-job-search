@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from commonlib.util import getDatetimeNow, getTimeUnits, consoleTimer
+from commonlib.util import getDatetimeNow, getTimeUnits, consoleTimer, getDatetimeNowStr, parseDatetime
 from commonlib.terminalColor import cyan, red, yellow
 from scrapper.core.scrapper_config import (
     SCRAPPERS, TIMER, IGNORE_AUTORUN, NEXT_SCRAP_TIMER,
@@ -23,12 +23,12 @@ def validScrapperName(name: str):
 def lastExecution(name: str, properties: dict, persistenceManager: PersistenceManager):
     lastExec = persistenceManager.get_last_execution(name)
     if lastExec is None and properties.get('waitBeforeFirstRun'):
-        lastExec = persistenceManager.update_last_execution(name, getDatetimeNow())
+        lastExec = persistenceManager.update_last_execution(name, getDatetimeNowStr())
     return lastExec
 
-def timeExpired(name: str, properties: dict, lastExecution: int):
+def timeExpired(name: str, properties: dict, lastExecution: str):
     if lastExecution:
-        lapsed = getDatetimeNow() - lastExecution
+        lapsed = getDatetimeNow() - parseDatetime(lastExecution)
         timeoutSeconds = properties[TIMER]
         timeLeft = getTimeUnits(timeoutSeconds - lapsed)
         print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')

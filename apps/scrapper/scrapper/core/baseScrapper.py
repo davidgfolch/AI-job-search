@@ -3,9 +3,7 @@ import re
 import traceback
 from typing import Optional
 
-# from bs4 import BeautifulSoup
 from markdownify import MarkdownConverter
-
 from commonlib.util import getEnv,getDatetimeNowStr, hasLenAnyText
 from commonlib.terminalColor import green, printHR, red, yellow
 
@@ -40,25 +38,12 @@ def printPage(webPage, page, totalPages, keywords):
                 f'search={keywords}'))
     printHR(green)
 
-
-from markdownify import MarkdownConverter
-
 class CustomConverter(MarkdownConverter):
     def convert_br(self, el, text, parent_tags):
         # Usa dos espacios + salto de línea para Markdown compatible
         return "  \n"
     
 def htmlToMarkdown(html: str) -> str:
-    # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#options
-    # https://github.com/matthewwithanm/python-markdownify?tab=readme-ov-file#converting-beautifulsoup-objects
-    # def convertSoup(soup, **options):
-    #     return MarkdownConverter(**options).convert_soup(soup)
-
-    # html = BeautifulSoup(html)  # exclude_encodings
-    # md = convertSoup(html)
-    # print(yellow('>>> Markdown with previous beautifulSoup clean <<<'))
-    # print(green(md))
-    # md = markdownify.markdownify(html)
     md = CustomConverter().convert(html)
     return removeInvalidScapes(md)
 

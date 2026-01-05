@@ -126,9 +126,12 @@ def getTimeUnits(seconds: int) -> str:
     return ' '.join(time_units)
 
 
-def getDatetimeNow() -> int:
-    return int(datetime.now().timestamp())
+def getDatetimeNow() -> float:
+    return datetime.now().timestamp()
 
+
+def parseDatetime(timestamp: str) -> float:
+    return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").timestamp()
 
 def getDatetimeNowStr() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
