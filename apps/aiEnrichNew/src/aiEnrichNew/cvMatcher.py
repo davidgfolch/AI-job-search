@@ -70,7 +70,6 @@ class FastCVMatcher:
             job_ids = [row[0] for row in mysql.fetchAll(QRY_FIND_IDS)]
             print(yellow(f'{job_ids}'))
             for idx, id in enumerate(job_ids):
-                printHR(yellow)
                 self.stopWatch.start()
                 try:
                     job = mysql.fetchOne(QRY_FIND, id)
@@ -86,8 +85,9 @@ class FastCVMatcher:
                 except (Exception, KeyboardInterrupt) as ex:
                     self._save_error(mysql, id, title, company, ex)
                 self.totalCount += 1
-                self._print_footer(total, idx)
                 self.stopWatch.end()
+            self._print_footer(total, idx)
+            printHR(yellow)
             return total-idx
 
     def _load_cv_content(self) -> bool:
