@@ -9,7 +9,7 @@ class TestPowerManagement(unittest.TestCase):
         try:
             with KeepSystemAwake() as k:
                 print("Inside context manager")
-                time.sleep(1)
+                time.sleep(0.01)
             print("KeepSystemAwake test passed (no exceptions)")
         except Exception as e:
             self.fail(f"KeepSystemAwake failed with exception: {e}")
@@ -17,7 +17,7 @@ class TestPowerManagement(unittest.TestCase):
     def test_wake_timer(self):
         print("\nTesting WakeableTimer...")
         timer = WakeableTimer()
-        seconds = 2
+        seconds = 0.5
         print(f"Waiting for {seconds} seconds...")
         start_time = time.time()
         timer.wait(seconds)
