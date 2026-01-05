@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import SalaryCalculator from '../SalaryCalculator';
 import { salaryApi } from '../../api/salary';
 
@@ -11,10 +11,15 @@ vi.mock('../../api/salary', () => ({
 
 describe('SalaryCalculator', () => {
     beforeEach(() => {
+        vi.useFakeTimers();
         vi.clearAllMocks();
     });
 
-    const waitDebounce = () => new Promise(resolve => setTimeout(resolve, 600));
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+
 
     it('should render initial inputs', () => {
         render(<SalaryCalculator />);
@@ -43,11 +48,14 @@ describe('SalaryCalculator', () => {
         // Should not have called yet
         expect(salaryApi.calculate).not.toHaveBeenCalled();
 
-        await waitFor(async () => {
-            expect(salaryApi.calculate).toHaveBeenCalledWith(expect.objectContaining({
-                rate: 50,
-            }));
-        }, { timeout: 2000 });
+        act(() => {
+            vi.advanceTimersByTime(600);
+        });
+        await act(async () => { await Promise.resolve(); });
+
+        expect(salaryApi.calculate).toHaveBeenCalledWith(expect.objectContaining({
+            rate: 50,
+        }));
 
         expect(screen.getByText('1000')).toBeInTheDocument();
     });
@@ -59,8 +67,9 @@ describe('SalaryCalculator', () => {
         render(<SalaryCalculator />);
         
         // Wait for initial call (on mount)
-        await act(async () => {
-            await waitDebounce();
+        // Wait for initial call (on mount)
+        act(() => {
+            vi.advanceTimersByTime(600);
         });
         
         (salaryApi.calculate as any).mockClear();
@@ -68,9 +77,12 @@ describe('SalaryCalculator', () => {
         const rateInput = screen.getByRole('spinbutton');
         fireEvent.change(rateInput, { target: { value: '60' } });
         
-        await waitFor(() => {
-            expect(salaryApi.calculate).toHaveBeenCalled();
-        }, { timeout: 2000 });
+        act(() => {
+            vi.advanceTimersByTime(600);
+        });
+        await act(async () => { await Promise.resolve(); });
+        
+        expect(salaryApi.calculate).toHaveBeenCalled();
         
         expect(consoleSpy).toHaveBeenCalledWith('Error calculating salary:', expect.any(Error));
         consoleSpy.mockRestore();
@@ -90,8 +102,9 @@ describe('SalaryCalculator', () => {
         render(<SalaryCalculator />);
         
         // Wait for initial
-        await act(async () => {
-             await waitDebounce();
+        // Wait for initial
+        act(() => {
+            vi.advanceTimersByTime(600);
         });
         (salaryApi.calculate as any).mockClear();
 
@@ -112,7 +125,12 @@ describe('SalaryCalculator', () => {
         fireEvent.change(typeSelect, { target: { value: 'Daily' } });
         fireEvent.change(freelanceSelect, { target: { value: '300' } });
 
-        expect(await screen.findByText('9999')).toBeInTheDocument();
+        act(() => {
+            vi.advanceTimersByTime(600);
+        });
+        await act(async () => { await Promise.resolve(); });
+
+        expect(screen.getByText('9999')).toBeInTheDocument();
 
         expect(salaryApi.calculate).toHaveBeenCalledWith(expect.objectContaining({
             rate_type: 'Daily',
