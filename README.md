@@ -24,7 +24,12 @@ This is a monorepo containing several applications and packages:
 | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI agent to analyze job details (salary, skills). | Python, CrewAI, uv           |
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using Transformers.           | Python, Transformers, uv     |
 
-> **Note**: The **Web UI** + the **Backend** is the new, recommended implementation.
+### Development with VS Code
+
+To ensure VS Code automatically selects the correct interpreter for each project:
+
+1. **Open the Workspace**: Open the `AI-job-search.code-workspace` file in VS Code (`File > Open Workspace from File...`).
+2. **Interpreter Selection**: The workspace is configured to automatically pick up the `.venv` in each application folder (`apps/backend`, `apps/scrapper`, etc.).
 
 ## Getting Started
 

@@ -1,0 +1,44 @@
+{
+    "folders": [
+        {
+            "name": "root",
+            "path": "."
+        },
+        {
+            "name": "backend",
+            "path": "apps/backend"
+        },
+        {
+            "name": "scrapper",
+            "path": "apps/scrapper"
+        },
+        {
+            "name": "aiEnrichNew",
+            "path": "apps/aiEnrichNew"
+        },
+        {
+            "name": "web",
+            "path": "apps/web"
+        },
+        {
+            "name": "commonlib",
+            "path": "apps/commonlib"
+        },
+        {
+            "name": "aiEnrich (Legacy)",
+            "path": "apps/aiEnrich"
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+        "python.terminal.activateEnvironment": true,
+        "files.exclude": {
+            "**/.git": true,
+            "**/.svn": true,
+            "**/.hg": true,
+            "**/CVS": true,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true
+        }
+    }
+}

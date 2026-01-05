@@ -24,3 +24,5 @@ apps/scrapper/scrapper_state.json
 apps/aiEnrichNew/cv/*
 apps/aiEnrich/src/aiEnrich/cv/*
 
+
+!AI-job-search.code-workspace
