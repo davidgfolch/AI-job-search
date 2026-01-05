@@ -44,12 +44,8 @@ def test_wakeable_timer_other_os(mock_platform, mock_sleep):
     
     mock_sleep.assert_called_with(1.5)
 
-@patch('commonlib.util.WakeableTimer')
-@patch('commonlib.util.sleep') # Wait, util.py imports sleep from time, but we replaced usage? 
-# util.py has: from time import sleep
-# But we replaced sleep(...) with WakeableTimer().wait(...)
-# So we mock WakeableTimer
-def test_console_timer_calls_wakeable_timer(mock_sleep, mock_wakeable_timer_cls):
+@patch('commonlib.terminalUtil.WakeableTimer')
+def test_console_timer_calls_wakeable_timer(mock_wakeable_timer_cls):
     mock_timer_instance = MagicMock()
     mock_wakeable_timer_cls.return_value = mock_timer_instance
     

@@ -23,3 +23,6 @@ def removeNewLines(txt: str) -> str:
         return txt.replace('\n', ' ').replace('\r', '')
     except Exception:
         return str(txt)
+
+def join(*args) -> str:
+    return ' '.join([str(arg) for arg in args if arg])
