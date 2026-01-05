@@ -50,7 +50,7 @@ jobs:
           if [ -f "package.json" ]; then
             npm install
             npm test -- run --coverage
-            npx coverage-badges --label "${MODULE##*/}"
+            npx coverage-badges --label "${MODULE}"
             mkdir -p coverage_artifacts
             cp coverage/badges.svg coverage_artifacts/coverage.svg
           elif [ "${MODULE}" == "apps/aiEnrich" ]; then
