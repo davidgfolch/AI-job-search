@@ -6,6 +6,7 @@ import './JobDetail.css';
 import './Filters.css';
 import './FilterConfigurations.css';
 import SalaryCalculator from './SalaryCalculator';
+import { STATE_FIELDS } from '../hooks/contants';
 
 interface JobDetailProps {
     job: Job;
@@ -55,6 +56,13 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
                 <h2><a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">{job.title}</a></h2>
             </div>
             <div className="job-detail-content" ref={contentRef}>
+                <div className="job-status-floating">
+                    {STATE_FIELDS.filter(field => job[field as keyof Job] === true).map(status => (
+                        <span key={status} className={`status-tag status-${status}`}>
+                            {status.replace(/_/g, ' ')}
+                        </span>
+                    ))}
+                </div>
                 <ul className="job-info">
                     {job.company && (
                         <li className="info-row">
@@ -71,12 +79,12 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
                                     </a>
                                     {appliedCompanyJobs.map(aj => (
                                         <span key={aj.id} className="applied-date">
-                                            {' '}{aj.created?.startsWith('...')? aj.created :
-                                                '📅 '+new Date(aj.created).toLocaleDateString('en-GB', {
+                                            {' '}{aj.created?.startsWith('...') ? aj.created :
+                                                (aj.created ? '📅 ' + new Date(aj.created).toLocaleDateString('en-GB', {
                                                     day: '2-digit',
                                                     month: '2-digit',
                                                     year: '2-digit'
-                                            }).replace(/\//g, '-')}
+                                                }).replace(/\//g, '-') : '')}
                                         </span>
                                     ))}
                                 </span>

@@ -111,5 +111,19 @@ describe('JobDetail', () => {
         deleteButton.click();
         expect(onUpdateMock).toHaveBeenCalledWith({ salary: null });
     });
+
+    it('displays active boolean statuses', async () => {
+        const jobWithStatuses: Job = {
+            ...mockJob,
+            easy_apply: true,
+            ai_enriched: true,
+            interview: true,
+        };
+        render(<JobDetail job={jobWithStatuses} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        expect(screen.getByText('easy apply')).toBeInTheDocument();
+        expect(screen.getByText('ai enriched')).toBeInTheDocument();
+        expect(screen.getByText('interview')).toBeInTheDocument();
+    });
 });
 

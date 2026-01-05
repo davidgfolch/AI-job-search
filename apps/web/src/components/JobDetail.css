@@ -20,6 +20,7 @@
     flex: 1;
     min-height: 0;
     scrollbar-gutter: stable;
+    position: relative;
 }
 
 .job-detail-header h2 {
@@ -138,6 +139,51 @@
     padding-left: 1.7rem;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
+    position: relative;
+}
+
+.job-status-floating {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.status-tag {
+    background: rgba(102, 126, 234, 0.15);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    color: #c3d0ff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    backdrop-filter: blur(4px);
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-tag.status-rejected,
+.status-tag.status-discarded, 
+.status-tag.status-ignored {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.status-tag.status-applied,
+.status-tag.status-interview,
+.status-tag.status-interview_rh,
+.status-tag.status-interview_tech {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #6ee7b7;
 }
 
 .job-info ul {

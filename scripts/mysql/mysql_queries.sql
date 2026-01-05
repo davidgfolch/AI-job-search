@@ -140,7 +140,7 @@ update jobs set merged=null where created=merged;
 select id, title from jobs where date(modified)=CURDATE()  order by modified desc
 update jobs set ignored=null where id=261283;
 
-select `id`, title from  jobs where jobId=4313375111
+select * from  jobs where id IN (437619)
 
 
 SELECT id, salary, title, company
