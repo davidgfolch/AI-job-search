@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdownCustom from './ReactMarkdownCustom';
 import type { Job, AppliedCompanyJob } from '../api/jobs';
 import { jobsApi } from '../api/jobs';
@@ -14,6 +14,7 @@ interface JobDetailProps {
 
 export default function JobDetail({ job, onUpdate }: JobDetailProps) {
     const [appliedCompanyJobs, setAppliedCompanyJobs] = useState<AppliedCompanyJob[]>([]);
+    const contentRef = useRef<HTMLDivElement>(null);
     const [loadingApplied, setLoadingApplied] = useState(false);
     const [showCalculator, setShowCalculator] = useState(false);
     const formatDate = (d: string | null) => !d ? '-' : new Date(d).toLocaleDateString();
@@ -42,12 +43,18 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
         fetchAppliedJobs();
     }, [job.company, job.client]);
 
+    useEffect(() => {  // Scroll to top when job changes
+        if (contentRef.current) {
+            contentRef.current.scrollTop = 0;
+        }
+    }, [job]);
+
     return (
         <div className="job-detail">
             <div className="job-detail-header">
                 <h2><a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">{job.title}</a></h2>
             </div>
-            <div className="job-detail-content">
+            <div className="job-detail-content" ref={contentRef}>
                 <ul className="job-info">
                     {job.company && (
                         <li className="info-row">
