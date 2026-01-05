@@ -11,7 +11,7 @@
 
 This project uses different package managers for different components:
 
-- **Poetry**: Used by `apps/scrapper`, `packages/commonlib`.
+- **Poetry**: Used by `apps/scrapper`, `apps/commonlib`.
 - **uv**: Used by `apps/backend`, `apps/aiEnrich` and `apps/aiEnrichNew`.
 - **npm**: Used by `apps/web`.
 
@@ -62,7 +62,7 @@ Or install manually:
 **Commonlib, Backend & Scrapper:**
 
 ```bash
-cd packages/commonlib && poetry install && cd ../..
+cd apps/commonlib && poetry install && cd ../..
 cd apps/scrapper && poetry install && cd ../..
 cd apps/backend && uv sync && cd ../..
 ```

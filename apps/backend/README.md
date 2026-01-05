@@ -6,7 +6,7 @@ FastAPI-based backend for the AI Job Search application. It serves the data to t
 
 - **Job API**: Endpoints to list, filter, update, and manage job offers.
 - **RESTful Design**: Standard HTTP methods and status codes.
-- **Integration**: Works with `packages/commonlib` for database access.
+- **Integration**: Works with `apps/commonlib` for database access.
 
 ## Tech Stack
 

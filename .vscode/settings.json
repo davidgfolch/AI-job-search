@@ -51,7 +51,7 @@
           "--max-line-length=120"
     ],
     "python.analysis.extraPaths": [
-        "./packages/commonlib"
+        "./apps/commonlib"
     ],
     "python-envs.defaultEnvManager": "ms-python.python:poetry",
     "python-envs.defaultPackageManager": "ms-python.python:poetry",

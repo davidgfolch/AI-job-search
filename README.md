@@ -4,7 +4,7 @@
 
 | Module's coverage  |                                               | UI Module's coverage  |                                         |
 | ------------------ | --------------------------------------------- | --------------------- | --------------------------------------- |
-| packages/commonlib | ![commonlib](packages/commonlib/coverage.svg) | apps/web              | ![web](apps/web/coverage/badges.svg)    |
+| apps/commonlib     | ![commonlib](apps/commonlib/coverage.svg)     | apps/web              | ![web](apps/web/coverage/badges.svg)    |
 | apps/aiEnrich      | ![aiEnrich](apps/aiEnrich/coverage.svg)       | apps/backend          | ![backend](apps/backend/coverage.svg)   |
 | apps/aiEnrichNew   | ![aiEnrichNew](apps/aiEnrichNew/coverage.svg) | apps/scrapper         | ![scrapper](apps/scrapper/coverage.svg) |
 
@@ -17,7 +17,7 @@ This is a monorepo containing several applications and packages:
 
 | Component       | Path                                                 | Description                                       | Tech Stack                   |
 | --------------- | ---------------------------------------------------- | ------------------------------------------------- | ---------------------------- |
-| **Common Lib**  | [`packages/commonlib`](packages/commonlib/README.md) | Shared Python utilities and database logic.       | Python, Poetry               |
+| **Common Lib**  | [`apps/commonlib`](apps/commonlib/README.md)         | Shared Python utilities and database logic.       | Python, Poetry               |
 | **Web UI**      | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.         | React, TypeScript, Vite, npm |
 | **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
 | **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |

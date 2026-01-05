@@ -87,7 +87,7 @@ Successfully refactored the AI job search application to follow SOLID principles
 ### New Directory Structure
 
 ```shell
-packages/commonlib/commonlib/
+apps/commonlib/commonlib/
 ├── interfaces/
 │   └── database_interface.py
 ├── repository/
