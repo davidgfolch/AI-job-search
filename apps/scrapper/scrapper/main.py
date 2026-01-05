@@ -1,7 +1,7 @@
 import sys
 from typing import Callable
 
-from commonlib.util import getSrcPath
+from commonlib.fileSystemUtil import getSrcPath
 from commonlib.terminalColor import cyan
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
