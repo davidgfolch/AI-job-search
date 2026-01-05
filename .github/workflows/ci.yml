@@ -12,101 +12,150 @@ on:
 permissions:
   contents: write
 
-env:
-  MODULES: "apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/backend apps/web"
-
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [apps/commonlib, apps/scrapper, apps/aiEnrich, apps/aiEnrichNew, apps/backend, apps/web]
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install package manager
+          
+      - name: Install global tools
         run: |
           cp 'scripts/.env.example' .env
           curl -LsSf https://astral.sh/uv/install.sh | sh
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install MODULES
-        run: |
-          read -ra MODULE_ARR <<< "${MODULES}"
-          for MODULE in "${MODULE_ARR[@]}"; do
-            cd "${MODULE}"
-            if [ -f "package.json" ]; then
-              npm install
-            elif [ "${MODULE}" == "apps/aiEnrich" ]; then
-              uv tool update-shell
-              uv tool install crewai
-              crewai install
-            elif [ "${MODULE}" == "apps/backend" ]; then
-              uv sync
-            else
-              poetry lock && poetry install --no-interaction
-            fi
-            cd ../..
-          done
-      - name: Tests and Coverage
-        run: |
-          read -ra MODULE_ARR <<< "${MODULES}"
-          for MODULE in "${MODULE_ARR[@]}"; do
-            cd "${MODULE}"
-            if [ -f "package.json" ]; then
-              npm test -- run --coverage
-              npx coverage-badges --label "${MODULE##*/}"
-            elif [ "${MODULE}" == "apps/aiEnrich" ] || [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ]; then
-              uv run coverage run -m pytest
-              uv run coverage report -m
-              uv run coverage xml
-              uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-            else
-              poetry run coverage run -m pytest
-              poetry run coverage report -m
-              poetry run coverage xml
-              poetry run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-            fi
-            cd ../..
-          done
 
-      - name: Commit coverage badge
+      - name: Install and Test ${{ matrix.module }}
+        run: |
+          MODULE="${{ matrix.module }}"
+          cd "${MODULE}"
+          
+          if [ -f "package.json" ]; then
+            npm install
+            npm test -- run --coverage
+            npx coverage-badges --label "${MODULE##*/}"
+            mkdir -p coverage_artifacts
+            cp coverage/badges.svg coverage_artifacts/coverage.svg
+          elif [ "${MODULE}" == "apps/aiEnrich" ]; then
+            uv tool update-shell
+            uv tool install crewai
+            crewai install
+            uv run coverage run -m pytest
+            uv run coverage report -m
+            uv run coverage xml
+            uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
+          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ]; then
+            uv sync
+            uv run coverage run -m pytest
+            uv run coverage report -m
+            uv run coverage xml
+            uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
+          else
+            # apps/commonlib, apps/scrapper
+            poetry lock
+            poetry install --no-interaction
+            poetry run coverage run -m pytest
+            poetry run coverage report -m
+            poetry run coverage xml
+            poetry run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
+          fi
+          
+      - name: Upload coverage badge
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: badge-${{ strategy.job.index }}
+          path: |
+            ${{ matrix.module }}/coverage.svg
+            ${{ matrix.module }}/coverage_artifacts/coverage.svg
+
+  update-badges:
+    needs: test
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all badges
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/badges
+
+      - name: Commit coverage badges
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          read -ra MODULE_ARR <<< "${MODULES}"
+          
           changes=false
+          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/backend apps/web"
+          read -ra MODULE_ARR <<< "${MODULES}"
+          
+          # We need to map the downloaded artifacts back to their modules.
+          # Since artifact names in matrix are distinct but we didn't include module name in artifact name easily (slashes issue),
+          # we relied on preserving path in upload or unique naming. 
+          # Let's adjust upload/download strategy to be more robust.
+          
+          # Actually, let's look at how I implemented upload.
+          # name: badge-${{ strategy.job.index }}
+          # path: ${{ matrix.module }}/coverage.svg OR ${{ matrix.module }}/coverage_artifacts/coverage.svg
+          
+          # When downloading to /tmp/badges, it will create directories:
+          # /tmp/badges/badge-0/apps/commonlib/coverage.svg
+          # /tmp/badges/badge-5/apps/web/coverage_artifacts/coverage.svg
+          
+          # Let's verify paths.
+          
           for MODULE in "${MODULE_ARR[@]}"; do
-            cd "${MODULE}"
-            if [ -f "package.json" ]; then
-              badge_path="coverage/badges.svg"
+            echo "Processing $MODULE"
+            TARGET_PATH=""
+            SOURCE_PATH=""
+            
+            if [ "$MODULE" == "apps/web" ]; then
+                TARGET_PATH="${MODULE}/coverage/badges.svg"
+                # Find where it is in /tmp/badges
+                SOURCE_PATH=$(find /tmp/badges -name coverage.svg | grep "${MODULE}/coverage_artifacts" | head -n 1)
             else
-              badge_path="coverage.svg"
+                TARGET_PATH="${MODULE}/coverage.svg"
+                SOURCE_PATH=$(find /tmp/badges -name coverage.svg | grep "${MODULE}/coverage.svg" | head -n 1)
             fi
-            cd ../..
-
-            if git diff --quiet "${MODULE}/${badge_path}"; then
-              continue
-            fi
-
-            if git cat-file -e "HEAD:${MODULE}/${badge_path}" 2>/dev/null; then
-              grep -oE '[0-9.]+%|no percentage' "${MODULE}/${badge_path}" > /tmp/current_pct || true
-              git show "HEAD:${MODULE}/${badge_path}" | grep -oE '[0-9.]+%|no percentage' > /tmp/old_pct || true
-              if diff -q /tmp/current_pct /tmp/old_pct > /dev/null; then
-                git checkout "${MODULE}/${badge_path}"
-                continue
+            
+            if [ -n "$SOURCE_PATH" ] && [ -f "$SOURCE_PATH" ]; then
+              echo "Found new badge at $SOURCE_PATH"
+              
+              # Ensure directory exists
+              mkdir -p "$(dirname "$TARGET_PATH")"
+              
+              # Copy new badge
+              cp "$SOURCE_PATH" "$TARGET_PATH"
+              
+              if git diff --quiet "$TARGET_PATH"; then
+                echo "No changes for $MODULE"
+              else
+                 echo "Changes detected for $MODULE"
+                 git add "$TARGET_PATH"
+                 changes=true
               fi
+            else
+               echo "No badge found for $MODULE"
             fi
-
-            changes=true
-            git add "${MODULE}/${badge_path}"
           done
+          
           if $changes; then
-            git pull
+            git pull --rebase
             git commit -m "Update coverage badges"
             git push
           else
@@ -114,16 +163,3 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # - name: Set PYTHONPATH
-    #   run: echo "PYTHONPATH=src" >> $GITHUB_ENV
-    # - name: Clean up __pycache__ and .pyc files
-    #   run: |
-    #     find . -type d -name "__pycache__" -exec rm -r {} +
-    #     find . -type f -name "*.pyc" -exec rm -f {} +
-    # - name: Lint with flake8
-    #   run: |
-    #     # stop the build if there are Python syntax errors or undefined names
-    #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-    #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-    #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
