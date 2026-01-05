@@ -6,7 +6,7 @@ from commonlib.terminalColor import cyan
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.core.scrapper_execution import runScrapperPageUrl
-from scrapper.core.scrapper_scheduler import runAllScrappers, runSpecifiedScrappers
+from scrapper.core.scrapper_scheduler import ScrapperScheduler
 
 
 def hasArgument(args: list, name: str, info: Callable = (lambda: str)) -> bool:
@@ -35,11 +35,12 @@ def main(args):
     with SeleniumService() as seleniumUtil:
         persistenceManager = PersistenceManager()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
+        scheduler = ScrapperScheduler(persistenceManager, seleniumUtil)
         if len(args) == 1 or starting or wait:
             startingAt = args[1].capitalize() if starting else None
-            runAllScrappers(wait, starting, startingAt, persistenceManager, seleniumUtil)
+            scheduler.runAllScrappers(wait, starting, startingAt)
         else:
-            runSpecifiedScrappers(args[1:], persistenceManager, seleniumUtil)
+            scheduler.runSpecifiedScrappers(args[1:])
 
 
 if __name__ == '__main__':

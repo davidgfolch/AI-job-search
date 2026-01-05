@@ -24,56 +24,6 @@ def abortExecution() -> bool:
 def runPreload(properties: dict) -> bool:
     return not properties.get('preloaded', False) or properties.get(CLOSE_TAB, False) or not RUN_IN_TABS
 
-def runScrapper(name: str, preloadOnly: bool, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService):
-    match name.lower():
-        case 'infojobs':
-            infojobs.run(seleniumUtil, preloadOnly, persistenceManager)
-        case 'tecnoempleo':
-            tecnoempleo.run(seleniumUtil, preloadOnly, persistenceManager)
-        case 'linkedin':
-            linkedin.run(seleniumUtil, preloadOnly, persistenceManager)
-        case 'glassdoor':
-            glassdoor.run(seleniumUtil, preloadOnly, persistenceManager)
-        case 'indeed':
-            indeed.run(seleniumUtil, preloadOnly, persistenceManager)
-
-def executeScrapperPreload(name: str, properties: dict, seleniumUtil: SeleniumService, persistenceManager: PersistenceManager) -> bool:
-    """ returns True if KeyboardInterrupt """
-    try:
-        with KeepSystemAwake():
-            if RUN_IN_TABS:
-                seleniumUtil.tab(name)
-            runScrapper(name, True, persistenceManager, seleniumUtil)
-        properties['preloaded'] = True
-    except Exception:
-        baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:", True)
-        properties['preloaded'] = False
-    except KeyboardInterrupt:
-        persistenceManager.update_last_execution(name, None)
-        if abortExecution():
-            return False
-    return True
-
-def executeScrapper(name: str, properties: dict, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService) -> bool:
-    """ returns False if double KeyboardInterrupt """
-    try:
-        with KeepSystemAwake():
-            runScrapper(name, False, persistenceManager, seleniumUtil)
-        persistenceManager.update_last_execution(name, getDatetimeNowStr())
-    except Exception:
-        baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
-        persistenceManager.update_last_execution(name, None)
-    except KeyboardInterrupt:
-        persistenceManager.update_last_execution(name, None)
-        if abortExecution():
-            return False
-    finally:
-        if RUN_IN_TABS:
-            if properties.get(CLOSE_TAB, False):
-                seleniumUtil.tabClose(name)
-            seleniumUtil.tab()  # switches to default tab
-    return True
-
 def runScrapperPageUrl(url: str):
     for name, properties in SCRAPPERS.items():
         if url.find(name.lower()) != -1:
@@ -83,3 +33,58 @@ def runScrapperPageUrl(url: str):
                     linkedin.processUrl(url)
                 case _:
                     raise Exception(f"Invalid scrapper web page name {name}, only linkedin is implemented")
+
+class ScrapperExecution:
+    def __init__(self, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService):
+        self.persistenceManager = persistenceManager
+        self.seleniumUtil = seleniumUtil
+
+    def runScrapper(self, name: str, preloadOnly: bool):
+        match name.lower():
+            case 'infojobs':
+                infojobs.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+            case 'tecnoempleo':
+                tecnoempleo.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+            case 'linkedin':
+                linkedin.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+            case 'glassdoor':
+                glassdoor.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+            case 'indeed':
+                indeed.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+
+    def executeScrapperPreload(self, name: str, properties: dict) -> bool:
+        """ returns True if KeyboardInterrupt """
+        try:
+            with KeepSystemAwake():
+                if RUN_IN_TABS:
+                    self.seleniumUtil.tab(name)
+                self.runScrapper(name, True)
+            properties['preloaded'] = True
+        except Exception:
+            baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:", True)
+            properties['preloaded'] = False
+        except KeyboardInterrupt:
+            self.persistenceManager.update_last_execution(name, None)
+            if abortExecution():
+                return False
+        return True
+
+    def executeScrapper(self, name: str, properties: dict) -> bool:
+        """ returns False if double KeyboardInterrupt """
+        try:
+            with KeepSystemAwake():
+                self.runScrapper(name, False)
+            self.persistenceManager.update_last_execution(name, getDatetimeNowStr())
+        except Exception:
+            baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
+            self.persistenceManager.update_last_execution(name, None)
+        except KeyboardInterrupt:
+            self.persistenceManager.update_last_execution(name, None)
+            if abortExecution():
+                return False
+        finally:
+            if RUN_IN_TABS:
+                if properties.get(CLOSE_TAB, False):
+                    self.seleniumUtil.tabClose(name)
+                self.seleniumUtil.tab()  # switches to default tab
+        return True

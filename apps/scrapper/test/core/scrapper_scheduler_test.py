@@ -3,10 +3,7 @@ from unittest.mock import patch, MagicMock
 from scrapper.core.scrapper_config import (
     CLOSE_TAB, IGNORE_AUTORUN, SCRAPPERS, TIMER
 )
-from scrapper.core.scrapper_scheduler import (
-    runAllScrappers, runSpecifiedScrappers, timeExpired, validScrapperName,
-    getProperties
-)
+from scrapper.core.scrapper_scheduler import ScrapperScheduler
 
 @pytest.fixture
 def mocks():
@@ -14,6 +11,10 @@ def mocks():
     pm = MagicMock()
     pm.get_last_execution.return_value = None
     return {'sel': sel, 'pm': pm}
+
+@pytest.fixture
+def scheduler(mocks):
+    return ScrapperScheduler(mocks['pm'], mocks['sel'])
 
 @pytest.fixture
 def run_mocks():
@@ -41,28 +42,28 @@ class TestTimeExpired:
         # 4000 seconds ago, should be expected (expired=True) because 4000 > 3600
         (1000000000, {TIMER: 3600, 'waitBeforeFirstRun': False}, 4000, True),
     ])
-    def test_time_expired(self, now, props, last_offset, expected):
+    def test_time_expired(self, scheduler, now, props, last_offset, expected):
         from datetime import datetime
         last = None
         if last_offset is not None:
              last = datetime.fromtimestamp(now - last_offset).strftime("%Y-%m-%d %H:%M:%S")
         with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=now):
-            assert timeExpired('', props, last) is expected
+            assert scheduler.timeExpired('', props, last) is expected
 
 @pytest.mark.parametrize("name, expected", [
     ('Infojobs', True), ('infojobs', True), ('INFOJOBS', True),
     ('INFO JOBS', False), ('non existent', False), ('', False)
 ])
-def test_valid_scrapper_name(name, expected):
-    assert validScrapperName(name) is expected
+def test_valid_scrapper_name(scheduler, name, expected):
+    assert scheduler.validScrapperName(name) is expected
 
 class TestRunScrappers:
     @patch('scrapper.core.scrapper_scheduler.consoleTimer')
     @patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=1000)
     @patch('scrapper.core.scrapper_scheduler.getTimeUnits', return_value='0s')
-    def test_run_all(self, _t, _d, _c, mocks, run_mocks):
+    def test_run_all(self, _t, _d, _c, scheduler, mocks, run_mocks):
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
-            runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, persistenceManager=mocks['pm'], seleniumUtil=mocks['sel'], loops=1)
+            scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, loops=1)
             for k in ['infojobs', 'linkedin', 'glassdoor', 'tecnoempleo']: run_mocks[k].assert_called()
             assert not run_mocks['indeed'].called
 
@@ -71,13 +72,13 @@ class TestRunScrappers:
         (['Infojobs', 'Linkedin'], {'infojobs': 2, 'linkedin': 2}),
         (['infojobs', 'LINKEDIN'], {'infojobs': 2, 'linkedin': 2}),
     ])
-    def test_specified(self, scrapers, calls, mocks, run_mocks):
+    def test_specified(self, scheduler, scrapers, calls, mocks, run_mocks):
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
-            runSpecifiedScrappers(scrapers, mocks['pm'], mocks['sel'])
+            scheduler.runSpecifiedScrappers(scrapers)
             for name, count in calls.items(): assert run_mocks[name].call_count == count
 
 class TestSchedulerHelpers:
     @pytest.mark.parametrize("arg, props_ok", [('Infojobs', True), ('infojobs', True), ('X', False)])
-    def test_get_properties(self, arg, props_ok):
-        res = getProperties(arg)
+    def test_get_properties(self, scheduler, arg, props_ok):
+        res = scheduler.getProperties(arg)
         assert (res is not None and TIMER in res) if props_ok else res is None

@@ -4,8 +4,7 @@ from scrapper.core.scrapper_config import (
     CLOSE_TAB, SCRAPPERS, TIMER
 )
 from scrapper.core.scrapper_execution import (
-    executeScrapperPreload, executeScrapper,
-    runScrapper, runScrapperPageUrl
+    ScrapperExecution, runScrapperPageUrl
 )
 
 @pytest.fixture
@@ -13,6 +12,10 @@ def mocks():
     sel = MagicMock()
     pm = MagicMock()
     return {'sel': sel, 'pm': pm}
+
+@pytest.fixture
+def execution(mocks):
+    return ScrapperExecution(mocks['pm'], mocks['sel'])
 
 @pytest.fixture
 def run_mocks():
@@ -25,30 +28,30 @@ class TestExecuteScrapper:
     @pytest.mark.parametrize("in_tabs, preload, close_tab, error", [
         (False, True, False, None), (True, True, False, None), (False, False, False, Exception)
     ])
-    def test_preload(self, mocks, run_mocks, in_tabs, preload, close_tab, error):
+    def test_preload(self, execution, mocks, run_mocks, in_tabs, preload, close_tab, error):
         with patch('scrapper.core.scrapper_execution.RUN_IN_TABS', in_tabs):
             props = {CLOSE_TAB: close_tab} if close_tab else {}
             if error: run_mocks['infojobs'].side_effect = error
-            executeScrapperPreload('infojobs', props, mocks['sel'], mocks['pm'])
+            execution.executeScrapperPreload('infojobs', props)
             assert props.get('preloaded') is (False if error else preload)
             run_mocks['infojobs'].assert_called_with(mocks['sel'], True, mocks['pm'])
 
     @pytest.mark.parametrize("in_tabs, close, error", [
         (False, False, None), (True, False, None), (True, True, None), (False, False, Exception)
     ])
-    def test_execute(self, mocks, run_mocks, in_tabs, close, error):
+    def test_execute(self, execution, mocks, run_mocks, in_tabs, close, error):
         with patch('scrapper.core.scrapper_execution.RUN_IN_TABS', in_tabs):
             props = {CLOSE_TAB: close} if close else {}
             if error: run_mocks['infojobs'].side_effect = error
-            executeScrapper('infojobs', props, mocks['pm'], mocks['sel'])
+            execution.executeScrapper('infojobs', props)
             if in_tabs: mocks['sel'].tab.assert_called()
             if close: mocks['sel'].tabClose.assert_called()
             run_mocks['infojobs'].assert_called_with(mocks['sel'], False, mocks['pm'])
 
 class TestExecutionHelpers:
     @pytest.mark.parametrize("name", ['linkedin', 'infojobs', 'tecnoempleo', 'glassdoor', 'indeed'])
-    def test_run_scrapper(self, name, run_mocks, mocks):
-        runScrapper(name, False, mocks['pm'], mocks['sel'])
+    def test_run_scrapper(self, name, execution, run_mocks, mocks):
+        execution.runScrapper(name, False)
         run_mocks[name].assert_called_once_with(mocks['sel'], False, mocks['pm'])
 
 class TestRunScrapperPageUrl:
