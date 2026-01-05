@@ -2,7 +2,7 @@ import time
 from typing import Any, Optional
 
 from commonlib.environmentUtil import getEnv
-from commonlib.util import getDatetimeNow, getDatetimeNowStr
+from commonlib.dateUtil import getDatetimeNow, getDatetimeNowStr
 from commonlib.terminalColor import cyan, red, yellow, green
 from commonlib.keep_system_awake import KeepSystemAwake
 from scrapper.core import baseScrapper

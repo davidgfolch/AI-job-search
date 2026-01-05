@@ -6,7 +6,7 @@ from .core import baseScrapper
 from .core.baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
 from commonlib.terminalColor import green, printHR, red, yellow
 from commonlib.decorator.retry import retry
-from commonlib.util import getDatetimeNowStr
+from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from .services.selenium.seleniumService import SeleniumService
 from .services.selenium.browser_service import sleep

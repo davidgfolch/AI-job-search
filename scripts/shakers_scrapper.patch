@@ -247,7 +247,7 @@ index 0000000..5d42af1
 +from urllib.parse import quote
 +from commonlib.terminalColor import green, yellow
 +from commonlib.mysqlUtil import MysqlUtil
-+from commonlib.util import getDatetimeNowStr
++from commonlib.dateUtil import getDatetimeNowStr
 +from . import baseScrapper
 +from .baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
 +from .seleniumUtil import SeleniumUtil

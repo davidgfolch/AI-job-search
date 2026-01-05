@@ -118,7 +118,7 @@ def load_and_process_row(idx):
 
 def summarize(keywords, totalResults, currentItem):
     from commonlib.terminalColor import printHR
-    from commonlib.util import getDatetimeNowStr
+    from commonlib.dateUtil import getDatetimeNowStr
     printHR()
     print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
     printHR()

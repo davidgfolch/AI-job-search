@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from commonlib.environmentUtil import getEnv, getEnvBool
-from commonlib.util import getSeconds
+from commonlib.dateUtil import getSeconds
 
 DEBUG = getEnvBool('SCRAPPER_DEBUG', False)
 TIMER = 'timer'

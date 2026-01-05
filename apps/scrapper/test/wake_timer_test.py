@@ -52,7 +52,7 @@ def test_console_timer_calls_wakeable_timer(mock_wakeable_timer_cls):
     # Run for 2 ticks (e.g. 1/3 second if tickXSec is 6)
     # consoleTimer(message, timeUnit)
     # let's mock getSeconds to allow short test
-    with patch('commonlib.util.getSeconds', return_value=1):
+    with patch('commonlib.terminalUtil.getSeconds', return_value=1):
         consoleTimer("Test message", "1s")
     
     # Expect calls to wait. 

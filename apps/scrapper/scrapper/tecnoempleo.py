@@ -2,7 +2,7 @@ import math
 from urllib.parse import quote
 from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
-from commonlib.util import getDatetimeNowStr
+from commonlib.dateUtil import getDatetimeNowStr
 from .core import baseScrapper
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
 from .services.selenium.seleniumService import SeleniumService

@@ -172,7 +172,7 @@ def processUrl(url: str):
 
 def summarize(keywords, totalResults, currentItem):
     from commonlib.terminalColor import printHR
-    from commonlib.util import getDatetimeNowStr
+    from commonlib.dateUtil import getDatetimeNowStr
     printHR()
     print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}',
           f'(remote={remote} location={location} last={f_TPR})')

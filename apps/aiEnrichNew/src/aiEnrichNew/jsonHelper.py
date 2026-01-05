@@ -4,7 +4,8 @@ import traceback
 
 
 
-from commonlib.util import getDatetimeNowStr, hasLen, removeExtraEmptyLines
+from commonlib.util import hasLen, removeExtraEmptyLines
+from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.terminalColor import green, red, yellow

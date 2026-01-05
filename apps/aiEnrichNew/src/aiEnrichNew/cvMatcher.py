@@ -11,7 +11,8 @@ from commonlib.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import yellow, red, cyan, green, printHR
 from commonlib.environmentUtil import getEnv, getEnvBool
-from commonlib.util import getDatetimeNowStr, removeExtraEmptyLines
+from commonlib.util import removeExtraEmptyLines
+from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
 
 CV_LOCATION = './cv/cv.txt'
