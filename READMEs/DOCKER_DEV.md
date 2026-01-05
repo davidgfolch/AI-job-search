@@ -13,6 +13,9 @@ docker-compose down
 ```
 
 ## With AI Services (AI Enrichment + Ollama)
+
+NOT TESTED YET!!! (Ollama version is the legacy version, use aiEnrichNew HuggingFace version)
+
 ```bash
 # Start with AI services
 docker-compose --profile ai-services up -d
@@ -26,6 +29,9 @@ curl http://localhost:11434/api/tags
 ```
 
 ## With Scrapper
+
+NOT TESTED YET!!!
+
 ```bash
 # Start scrapper service
 docker-compose --profile scrapper up -d scrapper
@@ -72,3 +78,9 @@ docker-compose down -v
 docker-compose build --no-cache
 docker-compose up -d
 ```
+
+## Related Documentation
+
+- **Development Guide**: [README_DEVELOPMENT.md](README_DEVELOPMENT.md)
+- **Installation Guide**: [README_INSTALL.md](README_INSTALL.md)
+- **Contribution Guide**: [README_CONTRIBUTE.md](README_CONTRIBUTE.md)
