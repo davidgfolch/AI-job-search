@@ -143,15 +143,16 @@
 }
 
 .job-status-floating {
-    position: absolute;
-    top: 1rem;
-    right: 1.5rem;
+    float: right;
+    margin-top: 1rem;
+    margin-right: 1.5rem;
+    margin-left: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     align-items: flex-end;
-    pointer-events: none;
-    z-index: 10;
+    position: relative;
+    z-index: 20;
 }
 
 .status-tag {
