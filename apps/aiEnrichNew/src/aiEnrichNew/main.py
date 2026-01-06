@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.environmentUtil import getEnvBool
 from commonlib.terminalColor import yellow, printHR
-from commonlib.util import consoleTimer
+from commonlib.terminalUtil import consoleTimer
 import time
 from .dataExtractor import dataExtractor
 from .cvMatcher import FastCVMatcher

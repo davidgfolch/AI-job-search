@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from commonlib.util import consoleTimer
+from commonlib.terminalUtil import consoleTimer
 from commonlib.dateUtil import getDatetimeNow, getTimeUnits, getDatetimeNowStr, parseDatetime
 from commonlib.terminalColor import cyan, red, yellow
 from scrapper.core.scrapper_config import (

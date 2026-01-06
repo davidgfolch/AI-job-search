@@ -1,7 +1,7 @@
 
 import pytest
 from unittest.mock import MagicMock, patch, call
-from commonlib.util import consoleTimer, Spinner
+from commonlib.terminalUtil import consoleTimer, Spinner
 from commonlib.wake_timer import WakeableTimer
 
 import sys
