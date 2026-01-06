@@ -4,7 +4,7 @@ from . import mysqlUtil
 from . import sqlUtil
 from . import stopWatch
 from . import terminalColor
-from . import util
+
 from . import mergeDuplicates
 from .decorator import retry
 
@@ -15,7 +15,7 @@ __all__ = [
     "sqlUtil",
     "stopWatch",
     "terminalColor",
-    "util",
+
     "retry",
     "mergeDuplicates",
 ]
