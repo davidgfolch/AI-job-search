@@ -136,7 +136,7 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
                     {job.cv_match_percentage && <li className="info-row">CV Match: <span>{job.cv_match_percentage}%</span></li>}
                 </ul>
                 
-                {showCalculator && <SalaryCalculator />}
+                {showCalculator && <SalaryCalculator onClose={() => setShowCalculator(false)} />}
 
                 {job.comments && (
                     <div className="job-comments">

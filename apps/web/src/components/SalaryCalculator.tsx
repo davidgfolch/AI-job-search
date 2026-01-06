@@ -4,7 +4,11 @@ import type { SalaryCalculationResponse } from '../api/salary';
 import './Filters.css';
 import './SalaryCalculator.css';
 
-export default function SalaryCalculator() {
+interface SalaryCalculatorProps {
+    onClose?: () => void;
+}
+
+export default function SalaryCalculator({ onClose }: SalaryCalculatorProps) {
     const [calcRate, setCalcRate] = useState(40);
     const [calcRateType, setCalcRateType] = useState<'Hourly' | 'Daily'>('Hourly');
     const [calcFreelanceRate, setCalcFreelanceRate] = useState(80);
@@ -30,7 +34,19 @@ export default function SalaryCalculator() {
 
     return (
         <div className="salary-calculator boolean-filters">
-            <h3 className="section-label salary-calculator-title">Salary Calculator</h3>
+            <div className="salary-calculator-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 className="section-label salary-calculator-title">Salary Calculator</h3>
+                {onClose && (
+                    <button 
+                        onClick={onClose}
+                        className="close-btn"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 5px' }}
+                        aria-label="Close calculator"
+                    >
+                        ✖
+                    </button>
+                )}
+            </div>
             <div className="salary-calculator-controls general-filters salary-calculator-controls-override">
                 <div className="compact-filter">
                     Rate:
