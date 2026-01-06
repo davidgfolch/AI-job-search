@@ -8,7 +8,7 @@ export const useJobsData = () => {
     const [allJobs, setAllJobs] = useState<Job[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    const { data, isLoading, error } = useQuery({
+    const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['jobs', filters],
         queryFn: () => jobsApi.getJobs(filters),
     });
@@ -30,6 +30,7 @@ export const useJobsData = () => {
         isLoading,
         error,
         handleLoadMore,
-        setIsLoadingMore
+        setIsLoadingMore,
+        refetch
     };
 };

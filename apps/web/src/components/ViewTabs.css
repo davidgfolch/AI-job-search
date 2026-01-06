@@ -1,0 +1,38 @@
+
+/* Update: Add styles for new job notification */
+.tab-button.has-new-jobs {
+  background-color: #dcfce7; /* Light green background */
+  color: #166534;
+  border-color: #22c55e;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: pulse-bg 2s infinite;
+}
+
+.tab-button.has-new-jobs:hover {
+    background-color: #bbf7d0;
+}
+
+.new-badge {
+    width: 8px;
+    height: 8px;
+    background-color: #16a34a;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+
+@keyframes pulse-bg {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+}

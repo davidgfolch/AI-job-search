@@ -32,7 +32,17 @@ export default function Viewer() {
                     <div className="viewer-left">
                         <div className="tab-group">
                             <div className="tab-buttons">
-                                <ViewTabs activeTab={state.activeTab} onTabChange={actions.setActiveTab} />
+                                <ViewTabs 
+                                    activeTab={state.activeTab} 
+                                    onTabChange={(tab) => {
+                                        if (tab === 'list' && state.hasNewJobs) {
+                                            actions.refreshJobs();
+                                        }
+                                        actions.setActiveTab(tab);
+                                    }} 
+                                    hasNewJobs={state.hasNewJobs}
+                                    newJobsCount={state.newJobsCount}
+                                />
                                 {state.activeTab === 'list' && (
                                     <div className="list-summary">
                                         <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span>&nbsp;loaded |&nbsp;

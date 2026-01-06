@@ -1,10 +1,7 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Viewer from '../Viewer';
 import { jobsApi } from '../../api/jobs';
-import type { Job } from '../../api/jobs';
+import { mockJobs, renderViewer, waitForAsync } from './ViewerTestUtils';
 
 // --- Mocks ---
 globalThis.IntersectionObserver = vi.fn(function (this: any) {
@@ -13,52 +10,23 @@ globalThis.IntersectionObserver = vi.fn(function (this: any) {
     this.disconnect = vi.fn();
 }) as any;
 
-vi.mock('../../api/jobs', async () => {
-    const actual = await vi.importActual('../../api/jobs');
-    return {
-        ...actual,
-        jobsApi: {
-            getJobs: vi.fn(),
-            getJob: vi.fn(),
-            updateJob: vi.fn(),
-            getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
-        },
-    };
-});
-
-// --- Constants & Helpers ---
-const mockJobs: Job[] = [
-    {
-        id: 1, title: 'Job 1', company: 'Company 1', salary: '100k', location: 'Remote', url: 'http://example.com/1', markdown: 'Description 1',
-        web_page: 'LinkedIn', created: '2023-01-01', modified: null, flagged: false, like: false, ignored: false, seen: false, applied: false,
-        discarded: false, closed: false, interview_rh: false, interview: false, interview_tech: false, interview_technical_test: false,
-        interview_technical_test_done: false, ai_enriched: true, easy_apply: false, required_technologies: 'React', optional_technologies: null,
-        client: null, comments: null, cv_match_percentage: 90,
+// Correctly mock the module and its export 'jobsApi'
+vi.mock('../../api/jobs', () => ({
+    jobsApi: {
+        getJobs: vi.fn(),
+        getJob: vi.fn(),
+        updateJob: vi.fn(),
+        getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
     },
-    {
-        id: 2, title: 'Job 2', company: 'Company 2', salary: '120k', location: 'Remote', url: 'http://example.com/2', markdown: 'Description 2',
-        web_page: 'Indeed', created: '2023-01-02', modified: null, flagged: true, like: false, ignored: false, seen: true, applied: false,
-        discarded: false, closed: false, interview_rh: false, interview: false, interview_tech: false, interview_technical_test: false,
-        interview_technical_test_done: false, ai_enriched: false, easy_apply: true, required_technologies: 'Python', optional_technologies: null,
-        client: null, comments: null, cv_match_percentage: 80,
-    },
-];
+}));
 
-const renderViewer = (initialEntries = ['/']) => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return render(
-        <MemoryRouter initialEntries={initialEntries}>
-            <QueryClientProvider client={client}><Viewer /></QueryClientProvider>
-        </MemoryRouter>
-    );
-};
-
-const waitForAsync = async () => await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+vi.mock('../../hooks/viewer/useJobUpdates', () => ({
+    useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0 }),
+}));
 
 // --- Tests ---
 describe('Viewer', () => {
     beforeEach(() => { vi.clearAllMocks(); });
-
     const stateTestCases = [
         {
             name: 'renders loading state initially',
@@ -86,7 +54,6 @@ describe('Viewer', () => {
             assertion: async () => await waitFor(() => expect(screen.getByText('Failed to fetch')).toBeInTheDocument())
         }
     ];
-
     it.each(stateTestCases)('$name', async ({ mockSetup, assertion }) => {
         mockSetup();
         renderViewer();
@@ -117,16 +84,13 @@ describe('Viewer', () => {
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
         renderViewer();
         await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
-
         // Select and Switch to Edit
         fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
         fireEvent.click(screen.getByText('Edit'));
         expect(screen.getByLabelText('Comments')).toBeInTheDocument();
-
         // Switch back to List
         fireEvent.click(screen.getByText('List'));
         expect(screen.getByRole('cell', { name: 'Job 1' })).toBeInTheDocument();
-        
         await waitForAsync();
     });
 
@@ -146,11 +110,9 @@ describe('Viewer', () => {
         (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
         (jobsApi.updateJob as any).mockResolvedValue({ ...mockJobs[0], flagged: true });
         renderViewer();
-        
         await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
         fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
         fireEvent.click(screen.getByText('Edit'));
-
         const flaggedPills = screen.getAllByText('Flagged');
         fireEvent.click(flaggedPills[flaggedPills.length - 1]);
         await waitFor(() => expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { flagged: true }));
@@ -164,15 +126,41 @@ describe('Viewer', () => {
         await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ sql_filter: 'id IN (1,2)', page: 1 })));
     });
 
+    it('refreshes list when clicking List tab if new jobs exist', async () => {
+        const { useJobUpdates } = await import('../../hooks/viewer/useJobUpdates');
+        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5 });
+        // Mock refetch behavior via getJobs or however useViewer calls it.
+        // useViewer calls actions.refreshJobs which calls refetch() from useJobsData.
+        // We mocked jobsApi, but useJobsData uses useQuery which calls jobsApi.
+        // We need to ensure that when refresh happens, something observable occurs.
+        // When refreshJobs is called:
+        // 1. If page != 1, it sets page=1.
+        // 2. If page == 1, it calls refetch() then selects first job.
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
+        renderViewer();
+        await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
+        // Select a job first
+        fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
+        // Switch to Edit tab so we can switch back to List
+        fireEvent.click(screen.getByText('Edit'));
+        expect(screen.getByLabelText('Comments')).toBeInTheDocument();
+        // Now click List tab. Since hasNewJobs=true, it should trigger refresh.
+        // We can check if jobsApi.getJobs was called extra times or with specific params?
+        // useQuery refetch usually calls the queryFn.
+        (jobsApi.getJobs as any).mockClear(); // Clear previous calls
+        const listBtn = screen.getByText((content, element) => element?.tagName.toLowerCase() === 'button' && content.includes('List'));
+        fireEvent.click(listBtn);
+        // Expect getJobs to be called for refresh
+        await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalled());
+    });
+
     it('validates configuration name on save', async () => {
         (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
         renderViewer();
         await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
-
         fireEvent.click(screen.getByText(/Filters/));
         fireEvent.click(screen.getByText('Save'));
         await waitFor(() => expect(screen.getByText('Please enter a name for the configuration')).toBeInTheDocument());
-        
         fireEvent.click(screen.getByText('Please enter a name for the configuration'));
         await waitFor(() => expect(screen.queryByText('Please enter a name for the configuration')).not.toBeInTheDocument());
     });

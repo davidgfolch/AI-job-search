@@ -104,12 +104,12 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
             if (!isNaN(jobId)) {
                 // Try to find the job in the current list first
                 const job = allJobs.find(j => j.id === jobId);
-                if (job) {
+                if (job && selectedJob?.id !== job.id) {
                     setSelectedJob(job);
                 }
             }
         }
-    }, [searchParams, allJobs]);
+    }, [searchParams, allJobs, selectedJob]);
 
     const navigateJob = useCallback((direction: 'next' | 'previous') => {
         if (!allJobs.length || !selectedJob) return;

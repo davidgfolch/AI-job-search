@@ -4,6 +4,7 @@ import { useViewer } from '../useViewer';
 import { useJobsData } from '../viewer/useJobsData';
 import { useJobSelection } from '../viewer/useJobSelection';
 import { useJobMutations } from '../viewer/useJobMutations';
+import { useJobUpdates } from '../viewer/useJobUpdates';
 
 // Mock dependencies
 vi.mock('../viewer/useJobsData', () => ({
@@ -14,6 +15,9 @@ vi.mock('../viewer/useJobSelection', () => ({
 }));
 vi.mock('../viewer/useJobMutations', () => ({
     useJobMutations: vi.fn(),
+}));
+vi.mock('../viewer/useJobUpdates', () => ({
+    useJobUpdates: vi.fn(),
 }));
 
 describe('useViewer', () => {
@@ -57,11 +61,11 @@ describe('useViewer', () => {
         (useJobsData as any).mockReturnValue(mockJobsData);
         (useJobSelection as any).mockReturnValue(mockJobSelection);
         (useJobMutations as any).mockReturnValue(mockJobMutations);
+        (useJobUpdates as any).mockReturnValue({ hasNewJobs: false, newJobsCount: 0 });
     });
 
     it('should aggregate state correctly', () => {
         const { result } = renderHook(() => useViewer());
-
         expect(result.current.state.filters).toEqual(mockJobsData.filters);
         expect(result.current.state.allJobs).toEqual(mockJobsData.allJobs);
         expect(result.current.state.selectedJob).toEqual(mockJobSelection.selectedJob);
@@ -75,7 +79,6 @@ describe('useViewer', () => {
         const { result } = renderHook(() => useViewer());
         expect(result.current.status.hasNext).toBe(true);
         expect(result.current.status.hasPrevious).toBe(false);
-
         // Update mock to select second job
         (useJobSelection as any).mockReturnValue({
             ...mockJobSelection,
@@ -89,13 +92,10 @@ describe('useViewer', () => {
 
     it('should expose actions that delegate to sub-hooks', () => {
         const { result } = renderHook(() => useViewer());
-
         result.current.actions.setFilters({ page: 2 } as any);
         expect(mockJobsData.setFilters).toHaveBeenCalledWith({ page: 2 });
-
         result.current.actions.nextJob();
         expect(mockJobSelection.navigateJob).toHaveBeenCalledWith('next');
-
         result.current.actions.ignoreJob();
         expect(mockJobMutations.handleJobUpdate).toHaveBeenCalledWith({ ignored: true });
     });
@@ -103,12 +103,10 @@ describe('useViewer', () => {
     it('should handle toggleSelectJob correctly', () => {
         const { result } = renderHook(() => useViewer());
         const setSelectedIds = mockJobSelection.setSelectedIds;
-
         // Toggle id 2 (not currently selected)
         act(() => {
             result.current.actions.toggleSelectJob(2);
         });
-        
         // Should verify setSelectionMode to 'manual' and adding id
         expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('manual');
         expect(setSelectedIds).toHaveBeenCalled();
@@ -120,24 +118,19 @@ describe('useViewer', () => {
 
     it('should handle onJobsDeleted("all") correctly', () => {
         renderHook(() => useViewer());
-        
         // Capture the onJobsDeleted callback passed to useJobMutations
         const useJobMutationsMock = useJobMutations as any;
         const passedProps = useJobMutationsMock.mock.calls[0][0];
         const onJobsDeleted = passedProps.onJobsDeleted;
-
         // Verify it exists
         expect(onJobsDeleted).toBeDefined();
-
         // Call it with 'all'
         act(() => {
             onJobsDeleted('all');
         });
-
         // Verify state updates
         // Should clear allJobs
         expect(mockJobsData.setAllJobs).toHaveBeenCalledWith([]); 
-        
         // Should reset filters (page: 1)
         expect(mockJobsData.setFilters).toHaveBeenCalled();
         const setFiltersUpdate = mockJobsData.setFilters.mock.calls[0][0];
@@ -146,8 +139,6 @@ describe('useViewer', () => {
         expect(newFilters.page).toBe(1);
     });
 
-
-
     it('should handle toggleSelectAll correctly', () => {
         // Case 1: selectionMode is 'all' -> toggle off
         (useJobSelection as any).mockReturnValue({
@@ -155,13 +146,11 @@ describe('useViewer', () => {
             selectionMode: 'all',
         });
         const { result } = renderHook(() => useViewer());
-        
         act(() => {
             result.current.actions.toggleSelectAll();
         });
         expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('none');
         expect(mockJobSelection.setSelectedIds).toHaveBeenCalledWith(new Set());
-
          // Case 2: selectionMode is 'none' -> toggle on
         (useJobSelection as any).mockReturnValue({
             ...mockJobSelection,
@@ -172,5 +161,36 @@ describe('useViewer', () => {
             result2.current.actions.toggleSelectAll();
         });
         expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('all');
+    });
+
+    it('should return newJobsCount from useJobUpdates', () => {
+        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5 });
+        const { result } = renderHook(() => useViewer());
+        expect(result.current.state.hasNewJobs).toBe(true);
+        expect(result.current.state.newJobsCount).toBe(5);
+    });
+
+    it('should refresh jobs when calling refreshJobs action', async () => {
+        renderHook(() => useViewer());
+        // Mock refetch return
+        mockJobsData.setFilters.mockClear();
+        const refetch = vi.fn().mockResolvedValue({ data: { items: [{ id: 99 }] } });
+        (useJobsData as any).mockReturnValue({ ...mockJobsData, refetch });
+        // render hook again to pick up new mock
+        const { result: result2 } = renderHook(() => useViewer());
+        // Case 1: Page is not 1 -> reset page
+        result2.current.state.filters.page = 2;
+        await act(async () => {
+             await result2.current.actions.refreshJobs();
+        });
+        expect(mockJobsData.setFilters).toHaveBeenCalled(); // Should reset page to 1
+        // Case 2: Page is 1 -> refetch
+        result2.current.state.filters.page = 1;
+        mockJobsData.setFilters.mockClear();
+        await act(async () => {
+            await result2.current.actions.refreshJobs();
+        });
+        expect(refetch).toHaveBeenCalled();
+        expect(mockJobSelection.handleJobSelect).toHaveBeenCalledWith({ id: 99 });
     });
 });

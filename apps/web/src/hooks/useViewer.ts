@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useJobsData } from './viewer/useJobsData';
 import { useJobSelection } from './viewer/useJobSelection';
 import { useJobMutations, type TabType } from './viewer/useJobMutations';
+import { useJobUpdates } from './viewer/useJobUpdates';
 
 export type { TabType };
 
@@ -9,13 +10,16 @@ export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
 
     const {
-        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore
+        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, refetch
     } = useJobsData();
 
     const {
         selectedJob, setSelectedJob, selectedIds, setSelectedIds,
         selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext
     } = useJobSelection({ allJobs, filters, setFilters });
+
+    const allJobIds = new Set(allJobs.map(j => j.id));
+    const { hasNewJobs, newJobsCount } = useJobUpdates(filters, allJobIds);
 
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
@@ -47,6 +51,8 @@ export const useViewer = () => {
         }
     });
 
+    const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
+
     // Update allJobs when data changes
     useEffect(() => {
         if (data?.items) {
@@ -59,11 +65,14 @@ export const useViewer = () => {
                 }
             });
             setIsLoadingMore(false);
-        }
-    }, [data, filters.page, setAllJobs, setIsLoadingMore]);
-    
-    
 
+            if (shouldSelectFirst && data.items.length > 0) {
+                handleJobSelect(data.items[0]);
+                setShouldSelectFirst(false);
+            }
+        }
+    }, [data, filters.page, setAllJobs, setIsLoadingMore, shouldSelectFirst, handleJobSelect]);
+    
     // Calculate navigation state
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;
     const hasNext = selectedIndex >= 0 && selectedIndex < allJobs.length - 1;
@@ -81,6 +90,8 @@ export const useViewer = () => {
             selectionMode,
             confirmModal,
             activeConfigName,
+            hasNewJobs,
+            newJobsCount,
         },
         status: {
             isLoading: isLoading && (filters.page || 1) === 1,
@@ -126,6 +137,17 @@ export const useViewer = () => {
             deleteSelected,
             setActiveConfigName,
             closeConfirmModal: () => confirmModal.close(),
+            refreshJobs: async () => {
+                if (filters.page !== 1) {
+                    setShouldSelectFirst(true);
+                    setFilters(f => ({ ...f, page: 1 }));
+                } else {
+                    const res = await refetch();
+                    if (res.data?.items?.[0]) {
+                         handleJobSelect(res.data.items[0]);
+                    }
+                }
+            },
         },
     };
 };
