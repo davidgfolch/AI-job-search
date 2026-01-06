@@ -5,7 +5,7 @@ from typing import Optional
 
 from markdownify import MarkdownConverter
 from commonlib.environmentUtil import getEnv
-from commonlib.util import hasLenAnyText
+from commonlib.stringUtil import hasLenAnyText
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.terminalColor import green, printHR, red, yellow
 

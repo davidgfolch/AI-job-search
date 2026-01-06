@@ -2,9 +2,7 @@ import json
 import re
 import traceback
 
-
-
-from commonlib.util import hasLen, removeExtraEmptyLines
+from commonlib.stringUtil import hasLen, removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery

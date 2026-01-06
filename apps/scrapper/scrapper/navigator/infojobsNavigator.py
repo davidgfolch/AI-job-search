@@ -1,9 +1,8 @@
-
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, yellow, printHR
-from commonlib.util import join
+from commonlib.stringUtil import join
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 from ..selectors.infojobsSelectors import (

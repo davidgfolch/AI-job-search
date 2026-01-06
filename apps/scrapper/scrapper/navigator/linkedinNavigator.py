@@ -1,7 +1,7 @@
 from typing import Tuple, Optional
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, yellow, printHR
-from commonlib.util import join
+from commonlib.stringUtil import join
 from selenium.common.exceptions import NoSuchElementException
 
 from ..core.baseScrapper import printPage

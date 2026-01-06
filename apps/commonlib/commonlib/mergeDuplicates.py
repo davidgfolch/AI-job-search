@@ -5,7 +5,7 @@ from commonlib.sqlUtil import deleteJobsQuery, updateFieldsQuery
 from .mysqlUtil import DB_FIELDS_BOOL, MysqlUtil
 from .terminalColor import blue, cyan, red
 from .environmentUtil import getEnvBool
-from .util import removeNewLines
+from .stringUtil import removeNewLines
 
 
 # Fields processing

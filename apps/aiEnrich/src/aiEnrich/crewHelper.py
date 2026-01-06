@@ -4,7 +4,7 @@ import traceback
 
 from crewai.crews.crew_output import CrewOutput
 
-from commonlib.util import hasLen, removeExtraEmptyLines
+from commonlib.stringUtil import hasLen, removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
