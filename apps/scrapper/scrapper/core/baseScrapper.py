@@ -44,6 +44,12 @@ class CustomConverter(MarkdownConverter):
     def convert_br(self, el, text, parent_tags):
         # Usa dos espacios + salto de línea para Markdown compatible
         return "  \n"
+
+    def convert_strong(self, el, text, parent_tags):
+        # markdownify strips newlines, but we want and space after last bold mark **, to show the bold text properly
+        if text:
+            text = text.replace('\n', ' ')
+        return super().convert_strong(el, text, parent_tags)+' '
     
 def htmlToMarkdown(html: str) -> str:
     md = CustomConverter().convert(html)
@@ -52,8 +58,8 @@ def htmlToMarkdown(html: str) -> str:
 
 def removeInvalidScapes(md: str) -> str:
     md = md.replace('\$', '$')  # dont remove \$ ignore the warning
-    # remove all backslash NOT unicode \uxxxx
-    md = re.sub(r'\\(?!u[0-9a-fA-F]{4})', '', md, flags=re.M)
+    # remove all backslash NOT unicode \uxxxx and NOT markdown standard escapes
+    md = re.sub(r'\\(?!(u[0-9a-fA-F]{4}|[\\`*_{}\[\]()#+\-.!]))', '', md, flags=re.M)
     return md
 
 
