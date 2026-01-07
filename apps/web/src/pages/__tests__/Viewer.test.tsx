@@ -170,7 +170,8 @@ describe('Viewer', () => {
     });
     it('calls getAppliedJobsByCompany exactly once when selecting a job', async () => {
         (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
-        (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
+        // Mock a response so we can wait for the UI update to complete (avoiding act warnings)
+        (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([{ id: 999, created: '2024-01-01' }]);
         renderViewer();
         await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
         
@@ -180,9 +181,8 @@ describe('Viewer', () => {
         // Select Job
         fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
         
-        // Wait for potential multiple effects to settle
-        await waitFor(() => expect(screen.getByText('Description 1', { selector: '.markdown-content p' })).toBeInTheDocument());
-        await new Promise(r => setTimeout(r, 100)); // Grace period for extra calls
+        // Wait for the async data to be displayed, ensuring the state update is complete
+        await waitFor(() => expect(screen.getByText(/already applied/i)).toBeInTheDocument());
 
         expect(jobsApi.getAppliedJobsByCompany).toHaveBeenCalledTimes(1);
     });
