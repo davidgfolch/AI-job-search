@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
-from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob
+from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate
 from services.jobs_service import JobsService
 from pydantic import BaseModel
 
@@ -22,6 +22,14 @@ class BulkJobDelete(BaseModel):
 
 def get_service():
     return JobsService()
+
+@router.post("", response_model=Job)
+def create_job(job_create: JobCreate, service: JobsService = Depends(get_service)):
+    job_data = job_create.model_dump(exclude_unset=True)
+    job = service.create_job(job_data)
+    if not job:
+        raise HTTPException(status_code=500, detail="Failed to create job")
+    return job
 
 @router.get("", response_model=JobListResponse)
 def list_jobs(

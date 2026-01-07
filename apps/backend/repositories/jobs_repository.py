@@ -11,17 +11,13 @@ class JobsRepository:
         not_status: Optional[str] = None, days_old: Optional[int] = None, salary: Optional[str] = None,
         order: Optional[str] = "created desc", boolean_filters: Dict[str, Optional[bool]] = None,
         sql_filter: Optional[str] = None, ids: Optional[List[int]] = None) -> Dict[str, Any]:
-        
         offset = (page - 1) * size
         where_clauses, params = build_jobs_where_clause(
-            search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids
-        )
+            search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids)
         where_str = " AND ".join(where_clauses)
-        
         with self.get_db() as db:
             total = self._count_jobs(db, where_str, params)
             items = self._fetch_jobs(db, where_str, params, order, size, offset)
-            
         return { "items": items, "total": total, "page": page, "size": size }
 
     def build_where(self, search: Optional[str] = None, status: Optional[str] = None,
@@ -40,7 +36,6 @@ class JobsRepository:
         params_with_limit = params + [size, offset]
         rows = db.fetchAll(query, params_with_limit)
         columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
-        
         items = []
         for row in rows:
             item_dict = {col: val for col, val in zip(columns, row)}
@@ -62,13 +57,11 @@ class JobsRepository:
                 return None
             if not update_data:
                 return job_id
-            
             set_clauses = []
             params = []
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
                 params.append(value)
-            
             params.append(job_id)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id = %s"
             db.executeAndCommit(query, params)
@@ -77,17 +70,14 @@ class JobsRepository:
     def update_jobs_by_ids(self, job_ids: List[int], update_data: Dict[str, Any]) -> int:
         if not job_ids or not update_data:
             return 0
-        
         with self.get_db() as db:
             set_clauses = []
             params = []
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
                 params.append(value)
-            
             placeholders = ', '.join(['%s'] * len(job_ids))
             params.extend(job_ids)
-            
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id IN ({placeholders})"
             db.executeAndCommit(query, params)
             return len(job_ids)
@@ -95,18 +85,15 @@ class JobsRepository:
     def update_jobs_by_filter(self, where_clauses: List[str], params: List[Any], update_data: Dict[str, Any]) -> int:
         if not update_data:
             return 0
-            
         with self.get_db() as db:
             set_clauses = []
             update_params = []
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
                 update_params.append(value)
-            
             # Combine update params with where clause params
             full_params = update_params + params
             where_str = " AND ".join(where_clauses)
-            
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE {where_str}"
             return db.executeAndCommit(query, full_params)
 
@@ -142,3 +129,7 @@ class JobsRepository:
                 qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY + SELECT_APPLIED_JOB_ORDER_BY
                 params = {'company': regex_lookup, 'id': '0'}
             return db.fetchAll(qry.format(**params))
+
+    def create_job(self, job_data: Dict[str, Any]) -> int:
+        with self.get_db() as db:
+            return db.insertJob(job_data)

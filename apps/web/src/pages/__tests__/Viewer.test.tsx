@@ -68,7 +68,7 @@ describe('Viewer', () => {
         // Interaction: Select Job
         expect(screen.getByText('Select a job to view details')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
-        expect(screen.getByText('Description 1')).toBeInTheDocument();
+        expect(screen.getByText('Description 1', { selector: '.markdown-content p' })).toBeInTheDocument();
         expect(screen.getAllByText('Company 1')).toHaveLength(2);
 
         // Interaction: Filter (Flagged)

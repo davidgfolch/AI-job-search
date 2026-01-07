@@ -34,3 +34,30 @@ export const renderViewer = (initialEntries = ['/']) => {
 };
 
 export const waitForAsync = async () => await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+
+import { vi } from 'vitest';
+
+export const createWrapper = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+    return ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+};
+
+export const createDefaultJobMutationsProps = () => ({
+    filters: {},
+    selectedJob: { id: 1, title: 'Job 1', ignored: false } as any,
+    setSelectedJob: vi.fn(),
+    activeTab: 'list' as const,
+    autoSelectNext: { current: { shouldSelect: false, previousJobId: null } },
+    selectedIds: new Set<number>(),
+    setSelectedIds: vi.fn(),
+    selectionMode: 'none' as const,
+    setSelectionMode: vi.fn(),
+});

@@ -25,9 +25,25 @@
 
 .job-detail-header h2 {
     margin: 0;
-    color: #fff;
+    color: var(--text-color);
     font-size: 1.5rem;
     flex: 1;
+}
+
+.create-job-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.create-job-btn:hover {
+    background-color: var(--secondary-color-hover);
 }
 
 .job-link {

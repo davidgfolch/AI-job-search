@@ -29,6 +29,16 @@ class JobsService:
             return None
         return self.get_job(job_id)
 
+    def create_job(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        import time
+        # Generate a unique job_id for manual entries
+        if 'job_id' not in job_data:
+            job_data['job_id'] = f'manual-{int(time.time() * 1000)}'
+        job_id = self.repo.create_job(job_data)
+        if job_id:
+            return self.get_job(job_id)
+        return None
+
     def get_applied_jobs_by_company_name(self, company: str, client: str = None) -> List[Dict[str, Any]]:
         company_raw = company.lower().replace("'", "''") if company else ""
         if company_raw == 'joppy' and client:
@@ -77,12 +87,10 @@ class JobsService:
             boolean_keys = [
                 'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
                 'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
-                'interview_technical_test_done', 'ai_enriched', 'easy_apply'
-            ]
+                'interview_technical_test_done', 'ai_enriched', 'easy_apply']
             boolean_filters = {k: filters.get(k) for k in boolean_keys}
             where, params = self.repo.build_where(
-                search, status, not_status, days_old, salary, sql_filter, boolean_filters
-            )
+                search, status, not_status, days_old, salary, sql_filter, boolean_filters)
             return self.repo.update_jobs_by_filter(where, params, update_data)
         elif ids:
             return self.repo.update_jobs_by_ids(ids, update_data)

@@ -39,6 +39,14 @@ class Job(JobBase):
     modified: Optional[datetime] = None
     merged: Optional[datetime] = None
 
+class JobCreate(JobBase):
+    title: str
+    company: str
+    location: Optional[str] = None
+    url: Optional[str] = None
+    markdown: Optional[str] = None
+    web_page: Optional[str] = None
+
 class JobUpdate(JobBase):
     pass
 

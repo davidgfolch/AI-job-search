@@ -11,14 +11,16 @@ import { STATE_FIELDS } from '../hooks/contants';
 interface JobDetailProps {
     job: Job;
     onUpdate?: (data: Partial<Job>) => void;
+    onCreateNew?: () => void;
 }
 
-export default function JobDetail({ job, onUpdate }: JobDetailProps) {
+export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps) {
     const [appliedCompanyJobs, setAppliedCompanyJobs] = useState<AppliedCompanyJob[]>([]);
     const contentRef = useRef<HTMLDivElement>(null);
     const [loadingApplied, setLoadingApplied] = useState(false);
     const [showCalculator, setShowCalculator] = useState(false);
     const formatDate = (d: string | null) => !d ? '-' : new Date(d).toLocaleDateString();
+    const lastApiSignature = useRef<string>('');
 
     useEffect(() => {
         const fetchAppliedJobs = async () => {
@@ -26,6 +28,11 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
                 setAppliedCompanyJobs([]);
                 return;
             }
+            const apiSignature = `${job.company}-${job.client || ''}`;
+            if (apiSignature === lastApiSignature.current) {
+                return;
+            }
+            lastApiSignature.current = apiSignature;
             setLoadingApplied(true);
             try {
                 const jobs = await jobsApi.getAppliedJobsByCompany(job.company, job.client || undefined);
@@ -54,6 +61,11 @@ export default function JobDetail({ job, onUpdate }: JobDetailProps) {
         <div className="job-detail">
             <div className="job-detail-header">
                 <h2><a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">{job.title}</a></h2>
+                {onCreateNew && (
+                    <button className="create-job-btn" onClick={onCreateNew} title="Create New Job">
+                        ➕ Create New
+                    </button>
+                )}
             </div>
             <div className="job-detail-content" ref={contentRef}>
                 <div className="job-status-floating">

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import JobDetail from '../JobDetail';
 import type { Job } from '../../api/jobs';
@@ -124,6 +124,67 @@ describe('JobDetail', () => {
         expect(screen.getByText('easy apply')).toBeInTheDocument();
         expect(screen.getByText('ai enriched')).toBeInTheDocument();
         expect(screen.getByText('interview')).toBeInTheDocument();
+    });
+    it('truncates applied jobs list if more than 60', async () => {
+        const { jobsApi } = await import('../../api/jobs');
+        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        // Generate 65 mock jobs
+        const manyJobs = Array.from({ length: 65 }, (_, i) => ({ 
+            id: i + 1, 
+            created: '2024-01-01' 
+        }));
+        mockGetAppliedJobsByCompany.mockResolvedValueOnce(manyJobs);
+        render(<JobDetail job={mockJob} />);
+        await screen.findByText(/already applied to 60/); // Should show truncated count or logic? 
+        // Logic says: jobs.length > 60 -> jobs.splice(60).
+        // So displayed length should be 60? 
+        // Wait, the link text says `already applied to ${appliedCompanyJobs.length}`.
+        // If splice(60) is called, length becomes 60.
+        expect(screen.getByText(/already applied to 60/)).toBeInTheDocument();
+        // Verify the 60th item (index 59) has '...' as created date
+        // Wait, original code: jobs[60 - 1].created = '...'; -> index 59.
+        // The list renders appliedCompanyJobs.map...
+        // We look for '...' in the rendered output.
+        // The component renders: aj.created?.startsWith('...') ? aj.created : ...
+        // So we should see '...'
+        expect(screen.getByText('...')).toBeInTheDocument();
+    });
+
+    it('toggles salary calculator visibility', async () => {
+        render(<JobDetail job={mockJob} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        const calcButton = screen.getByText('🧮 Freelance');
+        fireEvent.click(calcButton);
+        expect(screen.getByText('Salary Calculator')).toBeInTheDocument();
+        const closeButton = screen.getByLabelText('Close calculator');
+        fireEvent.click(closeButton);
+        expect(screen.queryByText('Salary Calculator')).not.toBeInTheDocument();
+    });
+
+    it('opens gross salary calculator in new tab', async () => {
+        const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+        render(<JobDetail job={mockJob} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        const grossButton = screen.getByText('🧮 Gross year');
+        fireEvent.click(grossButton);
+        expect(windowOpenSpy).toHaveBeenCalledWith('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank');
+        windowOpenSpy.mockRestore();
+    });
+
+    it('makes only one API call when re-rendered with the same job', async () => {
+        const { jobsApi } = await import('../../api/jobs');
+        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        mockGetAppliedJobsByCompany.mockClear();
+        mockGetAppliedJobsByCompany.mockResolvedValue([]);
+        const { rerender } = render(<JobDetail job={mockJob} />);
+        // Wait for initial fetch
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        // Rerender with SAME job
+        rerender(<JobDetail job={mockJob} />);
+        // Wait for potential effects
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        // Should be called exactly once
+        expect(mockGetAppliedJobsByCompany).toHaveBeenCalledTimes(1);
     });
 });
 

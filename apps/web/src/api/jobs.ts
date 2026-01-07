@@ -111,6 +111,11 @@ export const jobsApi = {
       'Error loading jobs');
   },
 
+  createJob: async (data: Partial<Job>): Promise<Job> => {
+    return handleRequest(apiClient.post<Job>('/jobs', data),
+      'Error creating job');
+  },
+
   getJob: async (id: number): Promise<Job> => {
     return handleRequest(apiClient.get<Job>(`/jobs/${id}`),
       'Error loading job details');

@@ -3,6 +3,7 @@ import { useJobsData } from './viewer/useJobsData';
 import { useJobSelection } from './viewer/useJobSelection';
 import { useJobMutations, type TabType } from './viewer/useJobMutations';
 import { useJobUpdates } from './viewer/useJobUpdates';
+import type { Job } from '../api/jobs';
 
 export type { TabType };
 
@@ -24,7 +25,7 @@ export const useViewer = () => {
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
     const {
-        message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected
+        message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, createMutation
     } = useJobMutations({
         filters, selectedJob, setSelectedJob, activeTab, autoSelectNext,
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
@@ -52,6 +53,7 @@ export const useViewer = () => {
     });
 
     const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
+    const [creationSessionId, setCreationSessionId] = useState(0);
 
     // Update allJobs when data changes
     useEffect(() => {
@@ -92,6 +94,7 @@ export const useViewer = () => {
             activeConfigName,
             hasNewJobs,
             newJobsCount,
+            creationSessionId,
         },
         status: {
             isLoading: isLoading && (filters.page || 1) === 1,
@@ -137,6 +140,13 @@ export const useViewer = () => {
             deleteSelected,
             setActiveConfigName,
             closeConfirmModal: () => confirmModal.close(),
+            createJob: async (data: Partial<Job>) => {
+                await createMutation.mutateAsync(data);
+                // Switch to list and refresh to show the new job
+                setActiveTab('list');
+                setFilters(f => ({ ...f, page: 1 })); // Refresh list
+                setCreationSessionId(prev => prev + 1);
+            },
             refreshJobs: async () => {
                 if (filters.page !== 1) {
                     setShouldSelectFirst(true);

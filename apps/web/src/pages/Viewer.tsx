@@ -70,7 +70,7 @@ export default function Viewer() {
                                 )}
                             </div>
                             <div className="tab-content">
-                                {state.activeTab === 'list' ? (
+                                <div style={{ display: state.activeTab === 'list' ? 'block' : 'none', height: '100%' }}>
                                     <JobList
                                         isLoading={status.isLoading}
                                         error={status.error}
@@ -85,13 +85,38 @@ export default function Viewer() {
                                         onToggleSelectJob={actions.toggleSelectJob}
                                         onToggleSelectAll={actions.toggleSelectAll}
                                     />
-                                ) : (<JobEditForm job={state.selectedJob} onUpdate={actions.updateJob} />
-                                )}
+                                </div>
+                                <div style={{ display: state.activeTab === 'create' ? 'block' : 'none', height: '100%' }}>
+                                    <JobEditForm 
+                                        job={null} 
+                                        onUpdate={() => {}} 
+                                        onCreate={actions.createJob} 
+                                        mode="create" 
+                                        key={state.creationSessionId}
+                                    />
+                                </div>
+                                <div style={{ display: state.activeTab === 'edit' ? 'block' : 'none', height: '100%' }}>
+                                    <JobEditForm job={state.selectedJob} onUpdate={actions.updateJob} />
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div className="viewer-right">
-                        {state.selectedJob ? <JobDetail job={state.selectedJob} onUpdate={actions.updateJob} /> : <div className="no-selection">Select a job to view details</div>}
+                        {state.selectedJob ? (
+                            <JobDetail 
+                                job={state.selectedJob} 
+                                onUpdate={actions.updateJob} 
+                                onCreateNew={() => actions.setActiveTab('create')}
+                            />
+                        ) : (
+                            <div className="no-selection">
+                                Select a job to view details
+                                <br/>
+                                <button className="create-job-btn" style={{ marginTop: '20px' }} onClick={() => actions.setActiveTab('create')}>
+                                    Create New Job
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

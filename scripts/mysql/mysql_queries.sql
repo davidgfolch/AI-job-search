@@ -239,7 +239,7 @@ insert into jobs (jobId,title,markdown,`location`,url) values (
 select * from jobs where jobId like '%handMade%' and not applied;
 delete from jobs where jobId  = 'handMade0000001';
 
-select * from jobs where jobId = 'handMade912876394872983';
+select * from jobs where jobId like '%handMade%';
 
 
 

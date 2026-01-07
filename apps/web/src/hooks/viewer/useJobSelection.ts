@@ -25,7 +25,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
     const isAutoSelecting = useRef(false);
 
     const handleJobSelect = useCallback((job: Job) => {
-        setSelectedJob(job);
+        // setSelectedJob(job); // Removed to fix race condition: URL effect is the single source of truth
         // Sync selection state with the clicked job
         setSelectedIds(new Set([job.id]));
         const selectedItems = allJobs.map((j,idx) => j.id === job.id ? idx:-1).filter(idx => idx!==-1)

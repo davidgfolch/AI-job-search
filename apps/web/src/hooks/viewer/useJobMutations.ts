@@ -5,7 +5,7 @@ import { STATE_FIELDS } from "../contants";
 import { useConfirmationModal } from "../useConfirmationModal";
 import { useBulkJobMutations } from "./useBulkJobMutations";
 
-export type TabType = "list" | "edit";
+export type TabType = "list" | "edit" | "create";
 
 export const getDeleteOldJobsMsg = (count: number) => `Going to delete ${count} older jobs (see sql filter)`;
 
@@ -66,6 +66,15 @@ export const useJobMutations = ({
         setSelectedJob(updatedJob);
       }
       onJobUpdated?.(updatedJob);
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Partial<Job>) => jobsApi.createJob(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      // Determine what to do after creation: maybe select it?
+      // For now we just refresh list and maybe selection logic handles it
     },
   });
 
@@ -147,6 +156,7 @@ export const useJobMutations = ({
     ignoreSelected,
     deleteSelected,
     updateMutation,
+    createMutation,
     bulkUpdateMutation,
     bulkDeleteMutation,
   };

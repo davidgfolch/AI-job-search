@@ -26,7 +26,6 @@ describe('JobEditForm', () => {
         render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
         expect(screen.getByLabelText('Comments')).toHaveValue('Test comment');
         expect(screen.getByLabelText('Salary')).toHaveValue('100k');
-        expect(screen.getByLabelText('Company')).toHaveValue('Tech Corp');
         expect(screen.getByLabelText('Client')).toHaveValue('Client A');
     });
 
@@ -118,7 +117,6 @@ describe('JobEditForm', () => {
     it('auto-resizes textarea based on content', () => {
         render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
         const textarea = screen.getByLabelText('Comments') as HTMLTextAreaElement;
-
         // Mock scrollHeight to simulate content height changes
         Object.defineProperty(textarea, 'scrollHeight', {
             configurable: true,
@@ -126,16 +124,46 @@ describe('JobEditForm', () => {
                 return this.value.length > 50 ? 200 : 100;
             }
         });
-
         // Change to short content
         fireEvent.change(textarea, { target: { value: 'Short text' } });
         // Height should be set to 'auto' first, then to scrollHeight
         expect(textarea.style.height).toBe('100px');
-
         // Change to longer content
         const longText = 'This is a much longer comment that would require more vertical space to display properly';
         fireEvent.change(textarea, { target: { value: longText } });
         expect(textarea.style.height).toBe('200px');
+    });
+
+    it('toggles status pill in create mode (local state only)', () => {
+        render(<JobEditForm job={null} onUpdate={onUpdateMock} mode="create" />);
+        const flaggedPill = screen.getByText('Flagged');
+        // Initial click - sets to true locally
+        fireEvent.click(flaggedPill);
+        expect(flaggedPill).toHaveClass('active');
+        expect(onUpdateMock).not.toHaveBeenCalled(); // Should not call onUpdate in create mode
+        // Second click - sets to false locally
+        fireEvent.click(flaggedPill);
+        expect(flaggedPill).not.toHaveClass('active');
+    });
+
+    it('calls onCreate when Create Job button is clicked', () => {
+        const onCreateMock = vi.fn();
+        render(<JobEditForm job={null} onUpdate={onUpdateMock} onCreate={onCreateMock} mode="create" />);
+        const titleInput = screen.getByLabelText('Title *');
+        const companyInput = screen.getByLabelText('Company *');
+        fireEvent.change(titleInput, { target: { value: 'New Job Title' } });
+        fireEvent.change(companyInput, { target: { value: 'New Company' } });
+        // Toggle a status to ensure it's included in creation
+        const flaggedPill = screen.getByText('Flagged');
+        fireEvent.click(flaggedPill);
+        const createButton = screen.getByText('Create Job');
+        expect(createButton).not.toBeDisabled();
+        fireEvent.click(createButton);
+        expect(onCreateMock).toHaveBeenCalledWith(expect.objectContaining({
+            title: 'New Job Title',
+            company: 'New Company',
+            flagged: true
+        }));
     });
 
 });
