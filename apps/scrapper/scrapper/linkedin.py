@@ -5,6 +5,8 @@ from .core import baseScrapper
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from commonlib.terminalColor import yellow, green
 from commonlib.mysqlUtil import MysqlUtil
+from commonlib.decorator.retry import retry
+from .services.selenium.browser_service import sleep
 from .services.selenium.seleniumService import SeleniumService
 from .util.persistence_manager import PersistenceManager
 from .navigator.linkedinNavigator import LinkedinNavigator
@@ -133,7 +135,9 @@ def load_and_process_row(idx, rowErrors):
         rowErrors += 1
         return False
 
+@retry()
 def process_row(idx):
+    sleep(2,2)
     isDirectUrlScrapping = idx is None
     try:
         if isDirectUrlScrapping:
