@@ -47,11 +47,8 @@ def consoleTimerDocker(message: str, timeUnit: str):
     """timeUnit: 30s|8m|2h"""
     seconds = getSeconds(timeUnit)
     timeLeft = str(timedelta(seconds=seconds))
-    print(yellow(message, f" I'll retry in {timeLeft} "), end='', flush=True)
-    for _ in range(seconds):
-        print('.', end='', flush=True)
-        WakeableTimer().wait(1)
-    print()
+    print(yellow(message, f" I'll retry in {timeLeft} ... "), flush=True)
+    WakeableTimer().wait(seconds)
 
 def consoleTimer(message: str, timeUnit: str, end='\r'):
     if isDocker():
