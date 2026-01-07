@@ -67,13 +67,17 @@ export const useViewer = () => {
                 }
             });
             setIsLoadingMore(false);
-
-            if (shouldSelectFirst && data.items.length > 0) {
-                handleJobSelect(data.items[0]);
-                setShouldSelectFirst(false);
-            }
         }
-    }, [data, filters.page, setAllJobs, setIsLoadingMore, shouldSelectFirst, handleJobSelect]);
+    }, [data, filters.page, setAllJobs, setIsLoadingMore]);
+
+    // Handle initial selection purely based on flag
+    useEffect(() => {
+        if (shouldSelectFirst && data?.items && data.items.length > 0) {
+            // We use a timeout to avoid immediate state clash or loop, though splitting effects should be enough
+            handleJobSelect(data.items[0]);
+            setShouldSelectFirst(false);
+        }
+    }, [shouldSelectFirst, data, handleJobSelect]);
     
     // Calculate navigation state
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;

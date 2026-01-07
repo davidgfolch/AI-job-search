@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import ReactMarkdownCustom from './ReactMarkdownCustom';
-import type { Job, AppliedCompanyJob } from '../api/jobs';
+import type { Job } from '../api/jobs';
 import { jobsApi } from '../api/jobs';
 import './JobDetail.css';
 import './Filters.css';
@@ -15,41 +16,24 @@ interface JobDetailProps {
 }
 
 export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps) {
-    const [appliedCompanyJobs, setAppliedCompanyJobs] = useState<AppliedCompanyJob[]>([]);
+    const { data: appliedCompanyJobs = [], isLoading: loadingApplied } = useQuery({
+        queryKey: ['appliedCompanyJobs', job.company, job.client],
+        queryFn: async () => {
+            if (!job.company) return [];
+            const jobs = await jobsApi.getAppliedJobsByCompany(job.company, job.client || undefined);
+            if (jobs.length > 60) {
+                jobs.splice(60); // Limit to first X entries
+                jobs[60 - 1].created = '...';
+            }
+            return jobs;
+        },
+        enabled: !!job.company,
+        staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    });
+
     const contentRef = useRef<HTMLDivElement>(null);
-    const [loadingApplied, setLoadingApplied] = useState(false);
     const [showCalculator, setShowCalculator] = useState(false);
     const formatDate = (d: string | null) => !d ? '-' : new Date(d).toLocaleDateString();
-    const lastApiSignature = useRef<string>('');
-
-    useEffect(() => {
-        const fetchAppliedJobs = async () => {
-            if (!job.company) {
-                setAppliedCompanyJobs([]);
-                return;
-            }
-            const apiSignature = `${job.company}-${job.client || ''}`;
-            if (apiSignature === lastApiSignature.current) {
-                return;
-            }
-            lastApiSignature.current = apiSignature;
-            setLoadingApplied(true);
-            try {
-                const jobs = await jobsApi.getAppliedJobsByCompany(job.company, job.client || undefined);
-                if (jobs.length > 60) {
-                    jobs.splice(60); // Limit to first X entries
-                    jobs[60 - 1].created = '...';
-                }
-                setAppliedCompanyJobs(jobs);
-            } catch (error) {
-                console.error('Error fetching applied company jobs:', error);
-                setAppliedCompanyJobs([]);
-            } finally {
-                setLoadingApplied(false);
-            }
-        };
-        fetchAppliedJobs();
-    }, [job.company, job.client]);
 
     useEffect(() => {  // Scroll to top when job changes
         if (contentRef.current) {

@@ -1,13 +1,17 @@
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { jobsApi } from '../../api/jobs';
 import { mockJobs, renderViewer, waitForAsync } from './ViewerTestUtils';
 
 // --- Mocks ---
-globalThis.IntersectionObserver = vi.fn(function (this: any) {
-    this.observe = vi.fn();
-    this.unobserve = vi.fn();
-    this.disconnect = vi.fn();
+let observerCallback: any;
+globalThis.IntersectionObserver = vi.fn(function(this: any, cb) {
+    observerCallback = cb;
+    return {
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
+    };
 }) as any;
 
 // Correctly mock the module and its export 'jobsApi'
@@ -163,5 +167,57 @@ describe('Viewer', () => {
         await waitFor(() => expect(screen.getByText('Please enter a name for the configuration')).toBeInTheDocument());
         fireEvent.click(screen.getByText('Please enter a name for the configuration'));
         await waitFor(() => expect(screen.queryByText('Please enter a name for the configuration')).not.toBeInTheDocument());
+    });
+    it('calls getAppliedJobsByCompany exactly once when selecting a job', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
+        (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
+        renderViewer();
+        await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
+        
+        // Clear initial calls if any
+        (jobsApi.getAppliedJobsByCompany as any).mockClear();
+
+        // Select Job
+        fireEvent.click(screen.getByRole('cell', { name: 'Job 1' }));
+        
+        // Wait for potential multiple effects to settle
+        await waitFor(() => expect(screen.getByText('Description 1', { selector: '.markdown-content p' })).toBeInTheDocument());
+        await new Promise(r => setTimeout(r, 100)); // Grace period for extra calls
+
+        expect(jobsApi.getAppliedJobsByCompany).toHaveBeenCalledTimes(1);
+    });
+
+    it('loads job details when clicking a job loaded via infinite scroll', async () => {
+        // Page 1
+        (jobsApi.getJobs as any).mockResolvedValueOnce({ items: mockJobs, total: 4, page: 1, size: 2 });
+        // Page 2
+        const page2Jobs = [
+            { id: 3, title: 'Job 3', company: 'Company 3', description: 'Desc 3', date: '2024-01-02', markdown: 'Desc 3', created: '2024-01-02' },
+            { id: 4, title: 'Job 4', company: 'Company 4', description: 'Desc 4', date: '2024-01-02', markdown: 'Desc 4', created: '2024-01-02' }
+        ];
+        (jobsApi.getJobs as any).mockResolvedValueOnce({ items: page2Jobs, total: 4, page: 2, size: 2 });
+        (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
+
+        renderViewer();
+        await waitFor(() => expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0));
+
+        // Trigger Infinite Scroll
+        expect(observerCallback).toBeDefined();
+        await act(async () => {
+             observerCallback([{ isIntersecting: true }]);
+        });
+
+        // Wait for Page 2
+        await waitFor(() => expect(screen.getByText('Job 3')).toBeInTheDocument());
+
+        // Select Job 3 (from the new page)
+        fireEvent.click(screen.getByRole('cell', { name: 'Job 3' }));
+
+        // Verify Details
+        await waitFor(() => expect(screen.getByText('Desc 3', { selector: '.markdown-content p' })).toBeInTheDocument());
+        
+        // Note: We cannot verify window.location.search here because renderViewer uses MemoryRouter
+        // and does not update the global window location. The fact that the details are shown
+        // confirms that the selection state was updated correctly.
     });
 });

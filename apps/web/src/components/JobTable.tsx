@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Job } from '../api/jobs';
 import './JobTable.css';
+import { STATE_BASE_FIELDS } from '../hooks/contants';
 
 interface JobTableProps {
     jobs: Job[];
@@ -64,6 +65,7 @@ export default function JobTable({
                         <th className="salary-column">Salary</th>
                         <th>Title</th>
                         <th>Company</th>
+                        <th className="status-column">Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,18 +74,33 @@ export default function JobTable({
                             key={job.id}
                             ref={index === jobs.length - 1 ? observerTarget : undefined}
                             className={selectedJob?.id === job.id ? 'selected' : ''}
-                            onClick={() => onJobSelect(job)}
-                        >
+                            onClick={() => onJobSelect(job)}>
                             <td className="checkbox-column" onClick={(e) => e.stopPropagation()}>
                                 <input 
                                     type="checkbox" 
                                     checked={selectionMode === 'all' || selectedIds.has(job.id)}
                                     onChange={() => onToggleSelectJob(job.id)}
+                                    onClick={(e) => e.stopPropagation()}
                                 />
                             </td>
                             <td className="salary-column">{job.salary || '-'}</td>
                             <td>{job.title || '-'}</td>
                             <td>{job.company || '-'}</td>
+                            <td className="status-column">
+                                <div className="status-badges">
+                                    {job.comments && (
+                                        <span className="status-badge status-comments"title="Has comments">📝</span>
+                                    )}
+                                    {STATE_BASE_FIELDS.filter(field => job[field as keyof Job] === true).map(status => (
+                                        <span 
+                                            key={status} 
+                                            className={`status-badge status-${status}`}
+                                            title={status.replace(/_/g, ' ')}>
+                                            {status.charAt(0).toUpperCase()}
+                                        </span>
+                                    ))}
+                                </div>
+                            </td>
                         </tr>
                     ))}
                 </tbody>

@@ -23,9 +23,12 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
 
     // Track if we are in the middle of an auto-selection
     const isAutoSelecting = useRef(false);
+    // Track manual selection time to prevent stale URL from reverting state
+    const lastManualSelectionTime = useRef<number>(0);
 
     const handleJobSelect = useCallback((job: Job) => {
-        // setSelectedJob(job); // Removed to fix race condition: URL effect is the single source of truth
+        lastManualSelectionTime.current = Date.now();
+        setSelectedJob(job); 
         // Sync selection state with the clicked job
         setSelectedIds(new Set([job.id]));
         const selectedItems = allJobs.map((j,idx) => j.id === job.id ? idx:-1).filter(idx => idx!==-1)
@@ -58,6 +61,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
                 const prevIdx: number = selectedIdxs?.values().next().value || 0;
                 const indexToSelect = Math.min(prevIdx, allJobs.length - 1);
                 isAutoSelecting.current = true;
+                lastManualSelectionTime.current = Date.now();
                 setSelectedJob(allJobs[indexToSelect]);
             } else {
                 // No jobs left in list
@@ -67,6 +71,35 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
         // Reset the flag
         autoSelectNext.current = { shouldSelect: false, previousJobId: null };
     }, [allJobs, handleJobSelect, selectedIdxs]);
+
+    // Handle jobId parameter separately to avoid cascading renders
+    useEffect(() => {
+        if (isAutoSelecting.current) {
+            return;
+        }
+        
+        const jobIdParam = searchParams.get('jobId');
+        if (jobIdParam) {
+            const jobId = parseInt(jobIdParam, 10);
+            if (!isNaN(jobId)) {
+                // Check if we manually selected recently (within 500ms)
+                // This prevents stale URL params from reverting the selection
+                const isRecentManualSelection = Date.now() - lastManualSelectionTime.current < 500;
+                
+                if (isRecentManualSelection && selectedJob?.id !== jobId) {
+                     // We have a recent manual selection that differs from URL (which is likely stale)
+                     // Ignore this URL update
+                     return;
+                }
+
+                // Try to find the job in the current list first
+                const job = allJobs.find(j => j.id === jobId);
+                if (job && selectedJob?.id !== job.id) {
+                    setSelectedJob(job);
+                }
+            }
+        }
+    }, [searchParams, allJobs, selectedJob]);
 
     // Handle URL parameters on mount
     useEffect(() => {
@@ -92,24 +125,6 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
             }
         }
     }, [searchParams, setFilters, setSearchParams]);
-
-    // Handle jobId parameter separately to avoid cascading renders
-    useEffect(() => {
-        if (isAutoSelecting.current) {
-            return;
-        }
-        const jobIdParam = searchParams.get('jobId');
-        if (jobIdParam) {
-            const jobId = parseInt(jobIdParam, 10);
-            if (!isNaN(jobId)) {
-                // Try to find the job in the current list first
-                const job = allJobs.find(j => j.id === jobId);
-                if (job && selectedJob?.id !== job.id) {
-                    setSelectedJob(job);
-                }
-            }
-        }
-    }, [searchParams, allJobs, selectedJob]);
 
     const navigateJob = useCallback((direction: 'next' | 'previous') => {
         if (!allJobs.length || !selectedJob) return;

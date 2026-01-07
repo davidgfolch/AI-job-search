@@ -13,8 +13,12 @@ export const DEFAULT_FILTERS: JobListParams = {
   closed: false,
 };
 
+export const STATE_BASE_FIELDS = [
+  'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed'
+]
+
 export const STATE_FIELDS = [
-  'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
+  ...STATE_BASE_FIELDS,
   'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
   'interview_technical_test_done', 'ai_enriched', 'easy_apply'
 ]

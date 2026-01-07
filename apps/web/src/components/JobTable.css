@@ -57,3 +57,61 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.status-column {
+  padding: 0.75rem 0.5rem !important;
+}
+
+.status-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.status-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+  cursor: help;
+}
+
+/* Status colors matching JobDetail.css but solid for visibility */
+.status-badge.status-like {
+  background-color: #ec4899; /* Pink */
+}
+
+.status-badge.status-ignored,
+.status-badge.status-rejected,
+.status-badge.status-discarded {
+  background-color: #ef4444; /* Red */
+}
+
+.status-badge.status-seen {
+  background-color: #3b82f6; /* Blue */
+}
+
+.status-badge.status-applied,
+.status-badge.status-interview,
+.status-badge.status-interview_rh,
+.status-badge.status-interview_tech {
+  background-color: #10b981; /* Green */
+}
+
+.status-badge.status-closed {
+  background-color: #6366f1; /* Indigo */
+}
+
+.status-badge.status-flagged {
+  background-color: #f59e0b; /* Amber */
+}
+
+.status-badge.status-comments {
+  background-color: #8b5cf6; /* Violet */
+}
