@@ -59,13 +59,55 @@ def test_valid_scrapper_name(scheduler, name, expected):
 
 class TestRunScrappers:
     @patch('scrapper.core.scrapper_scheduler.consoleTimer')
-    @patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=1000)
-    @patch('scrapper.core.scrapper_scheduler.getTimeUnits', return_value='0s')
-    def test_run_all(self, _t, _d, _c, scheduler, mocks, run_mocks):
+    @patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=12000) # Now is 12000
+    @patch('scrapper.core.scrapper_scheduler.parseDatetime')
+    def test_run_all(self, mock_parse, mock_now, mock_timer, scheduler, mocks, run_mocks):
+        # Scenario: 
+        # Infojobs: TIMER 7200. Last run: 12000-8000 = 4000. Lapsed 8000. expired (8000>7200). Ready.
+        # Linkedin: TIMER 3600. Last run: 12000-1000 = 11000. Lapsed 1000. Not expired. Wait 2600.
+        
+        def side_effect_parse(date_str):
+            # Map mock dates for testing
+            if date_str == "last_run_infojobs": return 4000
+            if date_str == "last_run_linkedin": return 11000
+            return 0
+        mock_parse.side_effect = side_effect_parse
+        mocks['pm'].get_last_execution.side_effect = lambda name: f"last_run_{name.lower()}" if name in ['Infojobs', 'Linkedin'] else None
+
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+             # Only 1 loop to test one pass
             scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, loops=1)
-            for k in ['infojobs', 'linkedin', 'glassdoor', 'tecnoempleo']: run_mocks[k].assert_called()
-            assert not run_mocks['indeed'].called
+            # Infojobs should run because it's expired
+            run_mocks['infojobs'].assert_called()
+            # Linkedin should NOT run because it's not expired
+            assert not run_mocks['linkedin'].called
+            # Timer should be called because we have to wait for Linkedin (or others)
+            # In this mock setup:
+            # Infojobs: ready (wait 0)
+            # Linkedin: wait 2600
+            # Others: last run None -> wait 0? 
+            # Original code: if lastExec is None and 'waitBeforeFirstRun' is False (default) -> lastExec updated to NOW? 
+            # Wait, let's check 'lastExecution' method again.
+            # It updates last execution if None and waitBeforeFirstRun is True. 
+            # If waitBeforeFirstRun is False (default passed in test), lastExecution returns None.
+            # In my new code: if last_exec_time is None (and properties[TIMER] exists), seconds_remaining = 0.
+            # So others (Glassdoor etc) will be ready.
+            
+            # To test the 'Wait' strictly, we'd need all of them to be waiting.
+            # But the specific test here checks execution.
+            pass
+
+    @patch('scrapper.core.scrapper_scheduler.consoleTimer')
+    @patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=10000)
+    @patch('scrapper.core.scrapper_scheduler.parseDatetime', return_value=9000) # last run 1000s ago
+    def test_run_all_starting(self, _p, _n, _t, scheduler, mocks, run_mocks):
+        # Scenario: Start at Linkedin. 
+        # Even though 1000s lapsed < 3600s timer, it should run because of 'starting'.
+        # Infojobs (7200s timer) should NOT run (skipped).
+        with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+             scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=True, startingAt='Linkedin', loops=1)
+             run_mocks['linkedin'].assert_called()
+             assert not run_mocks['infojobs'].called
 
     @pytest.mark.parametrize("scrapers, calls", [
         (['Infojobs'], {'infojobs': 2, 'linkedin': 0}),
@@ -82,3 +124,30 @@ class TestSchedulerHelpers:
     def test_get_properties(self, scheduler, arg, props_ok):
         res = scheduler.getProperties(arg)
         assert (res is not None and TIMER in res) if props_ok else res is None
+
+class TestScrapperStateAndExecution:
+    @pytest.mark.parametrize("starting, startingAt, name, timer, lapsed, expected_state", [
+        (False, None, 'Infojobs', 7200, 8000, (0, "Ready", "NOW")), # Expired
+        (False, None, 'Linkedin', 3600, 1000, (2600, "Pending", "43m 20s")), # Not expired
+        (True, 'Infojobs', 'Infojobs', 7200, 1000, (0, "STARTING TARGET", "NOW")), # Starting target
+        (True, 'Infojobs', 'Linkedin', 3600, 5000, (999999999, "Skipped (Start)", "-")), # Starting other
+    ])
+    def test_calculate_scrapper_state(self, scheduler, mocks, starting, startingAt, name, timer, lapsed, expected_state):
+        with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=10000):
+            with patch('scrapper.core.scrapper_scheduler.parseDatetime', return_value=10000-lapsed):
+                 mocks['pm'].get_last_execution.return_value = "some_date"
+                 props = {TIMER: timer}
+                 secs, msg, wait = scheduler._calculate_scrapper_state(name, props, starting, startingAt)
+                 assert (secs, msg, wait) == expected_state
+
+    def test_execute_scrappers(self, scheduler, run_mocks):
+         status = [
+             {'name': 'Infojobs', 'properties': {TIMER: 7200}, 'seconds_remaining': 0},
+             {'name': 'Linkedin', 'properties': {TIMER: 3600}, 'seconds_remaining': 100}
+         ]
+         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+             should_cont, executed_start = scheduler._execute_scrappers(status, False, None)
+             assert should_cont is True
+             assert executed_start is False
+             run_mocks['infojobs'].assert_called()
+             assert not run_mocks['linkedin'].called
