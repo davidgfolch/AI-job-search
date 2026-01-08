@@ -95,8 +95,8 @@ class TestPersistenceManager:
         assert self._read_from_file(temp_file)[site] == expected_entry
 
     @pytest.mark.parametrize("initial, site_to_clear, expected", [
-        ({'A': {'k':'v','p':1}, 'B': {'k':'v','p':2}}, 'A', {'B': {'k':'v','p':2}}),
-        ({'B': {'k':'v','p':2}}, 'NonExistent', {'B': {'k':'v','p':2}}),
+        ({'A': {'keyword':'v','page':1}, 'B': {'keyword':'v','page':2}}, 'A', {'A': {}, 'B': {'keyword':'v','page':2}}),
+        ({'B': {'keyword':'v','page':2}}, 'NonExistent', {'B': {'keyword':'v','page':2}}),
         ({}, 'Any', {})
     ])
     def test_clear_state(self, manager, temp_file, initial, site_to_clear, expected):
@@ -115,7 +115,7 @@ class TestPersistenceManager:
         manager.update_state('LinkedIn', 'dev', 2)
         assert manager.get_state('LinkedIn')['page'] == 2
         manager.clear_state('LinkedIn')
-        assert 'LinkedIn' not in manager.state
+        assert manager.state['LinkedIn'] == {}
         
         # Concurrency/Multiple Sites
         manager.state = {}
@@ -127,3 +127,21 @@ class TestPersistenceManager:
         manager.save()
         manager2 = PersistenceManager(temp_file)
         assert manager2.state == manager.state
+
+    def test_finalize_scrapper(self, manager):
+        # Case 1: No failed keywords, should clear state
+        site1 = 'Site1'
+        manager.update_state(site1, 'kw1', 1)
+        # Ensure no failed keywords
+        if 'failed_keywords' in manager.state.get(site1, {}):
+            del manager.state[site1]['failed_keywords']
+        manager.finalize_scrapper(site1)
+        assert manager.get_state(site1).get('keyword') is None
+        assert manager.get_state(site1).get('page') is None
+        # Case 2: With failed keywords, should NOT clear state
+        site2 = 'Site2'
+        manager.update_state(site2, 'kw2', 2)
+        manager.add_failed_keyword(site2, 'failed_kw')
+        manager.finalize_scrapper(site2)
+        assert manager.get_state(site2).get('keyword') == 'kw2'
+        assert manager.get_state(site2).get('page') == 2

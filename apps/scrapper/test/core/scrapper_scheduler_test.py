@@ -10,6 +10,7 @@ def mocks():
     sel = MagicMock()
     pm = MagicMock()
     pm.get_last_execution.return_value = None
+    pm.get_failed_keywords.return_value = []
     return {'sel': sel, 'pm': pm}
 
 @pytest.fixture

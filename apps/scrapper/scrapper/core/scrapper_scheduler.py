@@ -69,9 +69,14 @@ class ScrapperScheduler:
         seconds_remaining = 0
         timer_details = "Unknown"
         timeoutSeconds = 0
+        failed_keywords = self.persistenceManager.get_failed_keywords(name)
         if last_exec_time:
             lapsed = getDatetimeNow() - parseDatetime(last_exec_time)
-            timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])
+            if failed_keywords:
+                timeoutSeconds = 900 # 15 minutes retry
+                timer_details = f"Retry({len(failed_keywords)})"
+            else:
+                timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])
             seconds_remaining = max(0, timeoutSeconds - lapsed)
         else:
              timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])

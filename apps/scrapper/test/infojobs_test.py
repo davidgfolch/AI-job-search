@@ -69,7 +69,8 @@ class TestInfojobsScrapper:
             run(mock_selenium, preloadPage=False, persistenceManager=mock_persistence_manager)
             
             mock_service.prepare_resume.assert_called_once()
-            mock_service.clear_state.assert_called_once()
+            mock_service.prepare_resume.assert_called_once()
+            mock_persistence_manager.finalize_scrapper.assert_called_once_with('Infojobs')
             mock_navigator.load_search_page.assert_called()
             mock_navigator.load_filtered_search_results.assert_called_with('python developer')
 

@@ -61,7 +61,6 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
         for keywords in JOBS_SEARCH.split(','):
             current_keyword = keywords.strip()
             start_page = 1
-            
             if saved_keyword:
                 if saved_keyword == current_keyword:
                     skip = False
@@ -69,11 +68,16 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                 elif skip:
                     print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
                     continue
-
-            searchJobs(current_keyword, False, start_page, persistenceManager)
-            
+            try:
+                searchJobs(current_keyword, False, start_page, persistenceManager)
+                if persistenceManager:
+                    persistenceManager.remove_failed_keyword('Indeed', current_keyword)
+            except Exception:
+                baseScrapper.debug(DEBUG)
+                if persistenceManager:
+                    persistenceManager.add_failed_keyword('Indeed', current_keyword)
     if persistenceManager:
-        persistenceManager.clear_state('Indeed')
+        persistenceManager.finalize_scrapper('Indeed')
 
 
 def getUrl(keywords):

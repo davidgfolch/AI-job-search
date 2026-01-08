@@ -40,12 +40,13 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
             if skip:
                 print(yellow(f"Skipping keyword '{keyword}' (already processed)"))
                 continue
-            
             try:
                 process_keyword(keyword, start_page)
+                persistenceManager.remove_failed_keyword(SITE, keyword)
             except Exception:
                 baseScrapper.debug(DEBUG)
-        service.clear_state()
+                persistenceManager.add_failed_keyword(SITE, keyword)
+    persistenceManager.finalize_scrapper(SITE)
 
 def process_keyword(keyword: str, start_page: int):
     url = JOBS_SEARCH_BASE_URL.format(**{'search': keyword})

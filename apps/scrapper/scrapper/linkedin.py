@@ -50,9 +50,11 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                 continue
             try:
                 process_keyword(keyword, start_page)
+                persistenceManager.remove_failed_keyword(WEB_PAGE, keyword)
             except Exception:
                 baseScrapper.debug(DEBUG)
-    service.clear_state()
+                persistenceManager.add_failed_keyword(WEB_PAGE, keyword)
+    persistenceManager.finalize_scrapper(WEB_PAGE)
 
 def process_keyword(keyword: str, start_page: int):
     url = load_page(keyword)
@@ -112,6 +114,7 @@ def _fast_forward_page(startPage: int, currentItem: int, totalResults: int):
             if navigator.click_next_page():
                 page += 1
                 navigator.wait_until_page_is_loaded()
+                sleep(2,3)
             else:
                 break
         currentItem = (page - 1) * JOBS_X_PAGE

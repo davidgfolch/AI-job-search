@@ -51,7 +51,7 @@ class TestIndeedScrapper:
                 
                 assert mock_search_jobs.called
                 mock_persistence_manager.get_state.assert_called_with('Indeed')
-                mock_persistence_manager.clear_state.assert_called_with('Indeed')
+                mock_persistence_manager.finalize_scrapper.assert_called_with('Indeed')
 
     def test_get_job_id(self):
         url = "https://es.indeed.com/viewjob?jk=1234567890&other=param"

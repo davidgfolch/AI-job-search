@@ -53,7 +53,8 @@ class TestGlassdoorScrapper:
             
             assert mock_process_keyword.called
             mock_service.prepare_resume.assert_called_once()
-            mock_service.clear_state.assert_called_once()
+            mock_service.prepare_resume.assert_called_once()
+            mock_persistence_manager.finalize_scrapper.assert_called_once_with('GLASSDOOR')
 
     def test_process_keyword(self, mock_selenium, mock_persistence_manager):
         with patch('scrapper.glassdoor.navigator') as mock_nav, \

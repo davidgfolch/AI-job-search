@@ -39,12 +39,17 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
         service.prepare_resume()        
         for keywords in JOBS_SEARCH.split(','):
             keyword = keywords.strip()
-            should_skip, page = service.should_skip_keyword(keyword)
-            if should_skip:
+            skip, page = service.should_skip_keyword(keyword)
+            if skip:
                 print(yellow(f"Skipping keyword '{keyword}' (already processed)"))
                 continue
-            search_jobs(keyword, page)
-    service.clear_state()
+            try:
+                search_jobs(keyword, page)
+                persistenceManager.remove_failed_keyword(WEB_PAGE, keyword)
+            except Exception:
+                baseScrapper.debug(DEBUG)
+                persistenceManager.add_failed_keyword(WEB_PAGE, keyword)
+    persistenceManager.finalize_scrapper(WEB_PAGE)
 
 def get_url(keywords):
     return join('https://www.tecnoempleo.com/ofertas-trabajo/?',
