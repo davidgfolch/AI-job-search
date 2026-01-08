@@ -15,8 +15,8 @@ DEBUG = False
 MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
 SYSTEM_PROMPT = """You are an expert at analyzing job offers.
 Extract the following information from the job offer below and return it as a valid JSON object:
-- required_technologies: A string with comma-separated list of required technologies.
-- optional_technologies: A string with comma-separated list of optional/nice-to-have technologies.
+- required_technologies: A string with comma-separated list of required technologies. Keep it concise.
+- optional_technologies: A string with comma-separated list of optional/nice-to-have technologies. Keep it concise.
 - salary: The salary information as a single string (e.g. "50k-60k") if available, otherwise null.
 
 Format your response as a single valid JSON object strictly complying with this structure:
@@ -25,7 +25,7 @@ Format your response as a single valid JSON object strictly complying with this 
   "optional_technologies": "tech3",
   "salary": null
 }
-Do not include any conversational text, only the JSON."""
+Strictly JSON. No conversational text. No markdown blocks."""
 
 # Global pipeline instance
 _PIPELINE = None
@@ -44,7 +44,7 @@ def get_pipeline():
             "text-generation", 
             model=model, 
             tokenizer=tokenizer, 
-            max_new_tokens=1024, # Enough for JSON output
+            max_new_tokens=2048, # Enough for JSON output, increased to avoid truncation
             temperature=0.1, # Low temp for deterministic extraction
             top_p=0.9,
             repetition_penalty=1.1,

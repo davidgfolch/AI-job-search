@@ -53,7 +53,8 @@ class LazyDecoder(json.JSONDecoder):
 
 def printJsonException(ex: Exception, res: str, raw: str) -> None:
     print(red(f'Could not parse json after clean it: '))
-    print(red(traceback.format_exc()))
+    # Traceback is already printed by caller (saveError)
+    # print(red(traceback.format_exc()))
     print(red(f'Json after clean:\n{res}'))
     print(yellow(f'Original json:\n{raw}'))
     raise ex
