@@ -21,3 +21,12 @@ class TestTimeFunctions:
     def test_get_time_units_zero(self):
         result = getTimeUnits(0)
         assert result == '0s'
+
+    def test_get_seconds(self):
+        from commonlib.dateUtil import getSeconds
+        assert getSeconds("30s") == 30
+        assert getSeconds("2m") == 120
+        assert getSeconds("1h") == 3600
+        assert getSeconds("1h 30m") == 5400
+        assert getSeconds("1h 1m 1s") == 3661
+        assert getSeconds("   1h   30m   ") == 5400

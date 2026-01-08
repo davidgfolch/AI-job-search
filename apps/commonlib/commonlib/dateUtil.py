@@ -1,12 +1,20 @@
 from datetime import datetime
 
 def getSeconds(timeUnit: str):
-    """timeUnit: 30s|8m|2h"""
+    """timeUnit: 30s|8m|2h|1h 30m"""
     timeUnit = timeUnit.strip()
     seconds_per_unit = {"s": 1, "m": 60, "h": 3600}
-    unit = timeUnit[-1].lower()
-    seconds = int(timeUnit.strip()[:-1]) * seconds_per_unit[unit]
-    return seconds
+    total_seconds = 0
+    parts = timeUnit.split()
+    for part in parts:
+        part = part.strip()
+        if not part: continue
+        unit = part[-1].lower()
+        if unit in seconds_per_unit:
+             total_seconds += int(part[:-1]) * seconds_per_unit[unit]
+        else:
+             raise ValueError(f"Invalid time string: {part}")
+    return total_seconds
 
 def getTimeUnits(seconds: int) -> str:
     """Convert seconds to a detailed time unit string (e.g., 1h 35m 10s)."""

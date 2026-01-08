@@ -127,18 +127,18 @@ class TestSchedulerHelpers:
 
 class TestScrapperStateAndExecution:
     @pytest.mark.parametrize("starting, startingAt, name, timer, lapsed, expected_state", [
-        (False, None, 'Infojobs', 7200, 8000, (0, "Ready", "NOW")), # Expired
-        (False, None, 'Linkedin', 3600, 1000, (2600, "Pending", "43m 20s")), # Not expired
-        (True, 'Infojobs', 'Infojobs', 7200, 1000, (0, "STARTING TARGET", "NOW")), # Starting target
-        (True, 'Infojobs', 'Linkedin', 3600, 5000, (999999999, "Skipped (Start)", "-")), # Starting other
+        (False, None, 'Infojobs', 7200, 8000, (0, "Ready", "NOW", "Default", "2h")), # Expired
+        (False, None, 'Linkedin', 3600, 1000, (2600, "Pending", "43m 20s", "Default", "1h")), # Not expired
+        (True, 'Infojobs', 'Infojobs', 7200, 1000, (0, "STARTING TARGET", "NOW", "Default", "2h")), # Starting target
+        (True, 'Infojobs', 'Linkedin', 3600, 5000, (999999999, "Skipped (Start)", "-", "Default", "1h")), # Starting other
     ])
     def test_calculate_scrapper_state(self, scheduler, mocks, starting, startingAt, name, timer, lapsed, expected_state):
         with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=10000):
             with patch('scrapper.core.scrapper_scheduler.parseDatetime', return_value=10000-lapsed):
                  mocks['pm'].get_last_execution.return_value = "some_date"
                  props = {TIMER: timer}
-                 secs, msg, wait = scheduler._calculate_scrapper_state(name, props, starting, startingAt)
-                 assert (secs, msg, wait) == expected_state
+                 result = scheduler._calculate_scrapper_state(name, props, starting, startingAt)
+                 assert result == expected_state
 
     def test_execute_scrappers(self, scheduler, run_mocks):
          status = [

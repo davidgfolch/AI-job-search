@@ -58,6 +58,24 @@ DEBUG = False # Set to True to stop selenium driver on error
 
 > **Note**: Changing these could cause violation of LinkedIn rate limits.
 
+### Scheduling & Cadency
+
+You can configure the run frequency for each scrapper using environment variables. 
+The format is `XX_RUN_CADENCY=duration` (e.g., `1h`, `30m`).
+
+**Dynamic Cadency (Time-based):**
+You can override the cadency for specific hours of the day.
+
+Format: `XX_RUN_CADENCY_START-END=duration`
+
+See `scripts/.env.example` for examples.
+
+Order of precedence:
+1. Specific hour range match
+2. Default environment variable (`XX_RUN_CADENCY`)
+3. Hardcoded default
+
+
 ### Running Scrapers
 
 **Automatic Loop Scraper:**

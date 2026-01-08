@@ -1,7 +1,9 @@
 from typing import Any, Optional
+from datetime import datetime
 
 from commonlib.terminalUtil import consoleTimer
-from commonlib.dateUtil import getDatetimeNow, getTimeUnits, getDatetimeNowStr, parseDatetime
+from commonlib.dateUtil import getDatetimeNow, getTimeUnits, getDatetimeNowStr, parseDatetime, getSeconds
+from commonlib.environmentUtil import getEnvByPrefix
 from commonlib.terminalColor import cyan, red, yellow
 from scrapper.core.scrapper_config import (
     SCRAPPERS, TIMER, IGNORE_AUTORUN, NEXT_SCRAP_TIMER,
@@ -33,10 +35,29 @@ class ScrapperScheduler:
             lastExec = self.persistenceManager.update_last_execution(name, getDatetimeNowStr())
         return lastExec
 
+    def resolve_timer(self, name: str, default_timer: int) -> tuple[int, str]:
+        prefix = f"{name.upper()}_RUN_CADENCY_"
+        current_ts = getDatetimeNow()
+        current_hour = datetime.fromtimestamp(current_ts).hour
+        env_vars = getEnvByPrefix(prefix)
+        for suffix, value in env_vars.items():
+            parts = suffix.split('-')
+            if len(parts) == 2:
+                start = int(parts[0])
+                end = int(parts[1])
+                if start <= end:
+                    if start <= current_hour <= end:
+                        return getSeconds(value), suffix
+                else:
+                    raise ValueError(f"Invalid hour range: {suffix}")
+            else:
+                raise ValueError(f"Invalid hour range: {suffix}")
+        return default_timer, "Default"
+
     def timeExpired(self, name: str, properties: dict, lastExecution: str):
         if lastExecution:
             lapsed = getDatetimeNow() - parseDatetime(lastExecution)
-            timeoutSeconds = properties[TIMER]
+            timeoutSeconds, _ = self.resolve_timer(name, properties[TIMER])
             timeLeft = getTimeUnits(timeoutSeconds - lapsed)
             print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
             if lapsed + 1 <= timeoutSeconds:
@@ -46,10 +67,15 @@ class ScrapperScheduler:
     def _calculate_scrapper_state(self, name: str, properties: dict, starting: bool, startingAt: str):
         last_exec_time = self.lastExecution(name, properties)
         seconds_remaining = 0
+        timer_details = "Unknown"
+        timeoutSeconds = 0
         if last_exec_time:
             lapsed = getDatetimeNow() - parseDatetime(last_exec_time)
-            timeoutSeconds = properties[TIMER]
+            timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])
             seconds_remaining = max(0, timeoutSeconds - lapsed)
+        else:
+             timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])
+        cadency_str = getTimeUnits(timeoutSeconds)
         is_starting_target = starting and startingAt == name.capitalize()
         is_starting_mode = starting
         status_msg = "Pending"
@@ -66,29 +92,31 @@ class ScrapperScheduler:
         elif seconds_remaining == 0:
              status_msg = "Ready"
              display_wait = "NOW"
-        return seconds_remaining, status_msg, display_wait
+        return seconds_remaining, status_msg, display_wait, timer_details, cadency_str
 
     def _calculate_and_print_status(self, starting: bool, startingAt: str):
         scrappers_status = []
-        print("\n" + "="*60)
-        print(f"{'Scrapper':<20} | {'Status':<15} | {'Wait Time':<15}")
-        print("-" * 60)
+        # Widths: Scrapper(20) | Status(15) | Next execution(16) | Time range(12) | Cadency(10)
+        # Total: 20+3+15+3+16+3+12+3+10 = 85 roughly. 
+        print("\n" + "="*95)
+        print(f"{'Scrapper':<20} | {'Status':<15} | {'Next execution':<16} | {'Time range':<12} | {'Cadency':<10}")
+        print("-" * 95)
         runnable_wait_times = []
         for name, properties in SCRAPPERS.items():
             if properties.get(IGNORE_AUTORUN, False):
                 continue
-            seconds_remaining, status_msg, display_wait = self._calculate_scrapper_state(name, properties, starting, startingAt)
-            print(f"{name:<20} | {status_msg:<15} | {display_wait:<15}")
+            seconds, status, next_exec, time_range, cadency = self._calculate_scrapper_state(name, properties, starting, startingAt)
+            print(f"{name:<20} | {status:<15} | {next_exec:<16} | {time_range:<12} | {cadency:<10}")
             is_starting_mode = starting
             is_starting_target = starting and startingAt == name.capitalize()
             if not (is_starting_mode and not is_starting_target):
-                runnable_wait_times.append(seconds_remaining)
+                runnable_wait_times.append(seconds)
             scrappers_status.append({
                 "name": name,
                 "properties": properties,
-                "seconds_remaining": seconds_remaining
+                "seconds_remaining": seconds
             })
-        print("="*60 + "\n")
+        print("="*95 + "\n")
         seconds_to_wait = 0
         if runnable_wait_times:
             seconds_to_wait = min(runnable_wait_times)

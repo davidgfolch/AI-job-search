@@ -40,3 +40,11 @@ def getEnvBool(key: str, default: bool = False) -> bool:
     if v is None:
         return default
     return v.lower() == "true"
+
+def getEnvByPrefix(prefix: str) -> dict[str, str]:
+    checkEnvReload()
+    result = {}
+    for key, value in os.environ.items():
+        if key.startswith(prefix):
+            result[key[len(prefix):]] = value
+    return result
