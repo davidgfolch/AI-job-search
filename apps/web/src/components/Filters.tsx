@@ -114,18 +114,40 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                     className="sql-input"
                                 />
                             </div>
-                            <label className="compact-filter">
-                                Sort:
-                                <select value={filters.order || 'created desc'}
-                                    onChange={(e) => onFiltersChange({ order: e.target.value })}
-                                    className="compact-select">
-                                    <option value="created desc">Created (Newest)</option>
-                                    <option value="created asc">Created (Oldest)</option>
-                                    <option value="salary desc">Salary (High-Low)</option>
-                                    <option value="salary asc">Salary (Low-High)</option>
-                                    <option value="cv_match_percentage desc">Match % (High-Low)</option>
-                                </select>
-                            </label>
+                            <div className="compact-filter sort-filter">
+                                <label>Sort:</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <select 
+                                        value={filters.order?.split(' ')[0] || 'created'}
+                                        onChange={(e) => {
+                                            const newField = e.target.value;
+                                            const currentDir = filters.order?.split(' ')[1] || 'desc';
+                                            onFiltersChange({ order: `${newField} ${currentDir}` });
+                                        }}
+                                        className="compact-select"
+                                        aria-label="Sort Field"
+                                    >
+                                        <option value="created">Created</option>
+                                        <option value="modified">Modified</option>
+                                        <option value="salary">Salary</option>
+                                        <option value="cv_match_percentage">Match %</option>
+                                    </select>
+                                    <select
+                                        value={filters.order?.split(' ')[1] || 'desc'}
+                                        onChange={(e) => {
+                                            const newDir = e.target.value;
+                                            const currentField = filters.order?.split(' ')[0] || 'created';
+                                            onFiltersChange({ order: `${currentField} ${newDir}` });
+                                        }}
+                                        className="compact-select"
+                                        aria-label="Sort Direction"
+                                        style={{ width: '80px' }}
+                                    >
+                                        <option value="desc">Desc</option>
+                                        <option value="asc">Asc</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="boolean-filter-groups">
