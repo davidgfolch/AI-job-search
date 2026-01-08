@@ -34,7 +34,24 @@ export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps
 
     const contentRef = useRef<HTMLDivElement>(null);
     const [showCalculator, setShowCalculator] = useState(false);
-    const formatDate = (d: string | null) => !d ? '-' : new Date(d).toLocaleDateString();
+    const formatDateTime = (d: string | null) => {
+        if (!d) return '-';
+        return new Date(d).toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
+    const isModified = (created: string | undefined | null, modified: string | undefined | null) => {
+        if (!created || !modified) return false;
+        const d1 = new Date(created);
+        const d2 = new Date(modified);
+        // Ignore difference under 5 minutes
+        return Math.abs(d1.getTime() - d2.getTime()) >= 5 * 60 * 1000;
+    };
 
     useEffect(() => {  // Scroll to top when job changes
         if (contentRef.current) {
@@ -124,8 +141,9 @@ export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps
                         <li className="info-row">
                             Source: <span>{job.web_page}</span>
                             <ul>
-                                {job.created && <li className="info-row"><span>{formatDate(job.created)}</span> created</li>}
-                                {job.modified && formatDate(job.modified) !== formatDate(job.created) && <li className="info-row"><span>{formatDate(job.modified)}</span> modified</li>}
+                            {job.created && <li className="info-row"><span>{formatDateTime(job.created)}</span> created</li>}
+
+                                {job.modified && isModified(job.created, job.modified) && <li className="info-row"><span>{formatDateTime(job.modified)}</span> modified</li>}
                             </ul>
                         </li>
                     )}

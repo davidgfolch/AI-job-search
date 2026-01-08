@@ -96,14 +96,15 @@ export function renderWithProviders(
     ui: React.ReactElement,
     { queryClient = createTestQueryClient(), ...renderOptions }: RenderWithProvidersOptions = {}
 ) {
-    return render(
+    const Wrapper = ({ children }: { children: React.ReactNode }) => (
         <BrowserRouter>
             <QueryClientProvider client={queryClient}>
-                {ui}
+                {children}
             </QueryClientProvider>
-        </BrowserRouter>,
-        renderOptions
+        </BrowserRouter>
     );
+
+    return render(ui, { wrapper: Wrapper, ...renderOptions });
 }
 
 // ============================================================================
