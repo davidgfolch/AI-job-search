@@ -39,6 +39,16 @@ class TestJsonHelper(unittest.TestCase):
         validateResult(res3)
         self.assertEqual(res3["salary"].strip(), "30000")
 
+        # Dictionary salary -> "min-max"
+        res4 = {"salary": {"min": 144000, "max": 164000}}
+        validateResult(res4)
+        self.assertEqual(res4["salary"], "144000-164000")
+
+        # Dictionary salary with amount -> "amount"
+        res5 = {"salary": {"amount": "$600,000 - $800,000", "currency": "USD"}}
+        validateResult(res5)
+        self.assertEqual(res5["salary"], "$600,000 - $800,000")
+
     def test_validateResult_cv_match(self):
         # Valid
         res = {"cv_match_percentage": "80"}

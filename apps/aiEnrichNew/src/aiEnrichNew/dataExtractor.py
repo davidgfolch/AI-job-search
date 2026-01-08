@@ -17,13 +17,13 @@ SYSTEM_PROMPT = """You are an expert at analyzing job offers.
 Extract the following information from the job offer below and return it as a valid JSON object:
 - required_technologies: A string with comma-separated list of required technologies.
 - optional_technologies: A string with comma-separated list of optional/nice-to-have technologies.
-- salary: The salary information if available, otherwise null.
+- salary: The salary information as a single string (e.g. "50k-60k") if available, otherwise null.
 
 Format your response as a single valid JSON object strictly complying with this structure:
 {
   "required_technologies": "tech1, tech2",
   "optional_technologies": "tech3",
-  "salary": "50k-60k"
+  "salary": null
 }
 Do not include any conversational text, only the JSON."""
 
@@ -86,6 +86,7 @@ def dataExtractor() -> int:
         print()
         print(f'{total} jobs to be ai_enriched...')
         # Ensure model is loaded
+        print(cyan(f"System Prompt:\n{SYSTEM_PROMPT}"))
         pipe = get_pipeline()
 
         for idx, id in enumerate(getJobIdsList(mysql)):

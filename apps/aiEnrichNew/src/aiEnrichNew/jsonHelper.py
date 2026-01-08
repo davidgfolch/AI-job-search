@@ -62,10 +62,21 @@ def printJsonException(ex: Exception, res: str, raw: str) -> None:
 def validateResult(result: dict[str, str]):
     salary = result.get('salary')
     if salary:  # infojobs
-        if re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
+        if isinstance(salary, dict):
+            if 'min' in salary and 'max' in salary:
+                salary = f"{salary.get('min')}-{salary.get('max')}"
+            elif 'amount' in salary:
+                val = salary.get('amount')
+                salary = str(val) if val is not None else None
+            else:
+                salary = str(salary)
+            result['salary'] = salary
+        elif salary is not None and not isinstance(salary, str):
+            salary = str(salary)
+        if salary and re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
             print(yellow(f'Removing no numbers salary: {salary}'))
             result.update({'salary': None})
-        else:
+        elif salary:
             regex = r'^(sueldo|salarios?|\(?según experiencia\)?)[: ]+(.+)'
             if hasLen(re.finditer(regex, salary, flags=re.I)):
                 result.update({'salary': re.sub(regex, r'\2', salary, flags=re.I)})
