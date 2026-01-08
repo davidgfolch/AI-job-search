@@ -6,7 +6,7 @@ import { jobsApi } from '../api/jobs';
 import './JobDetail.css';
 import './Filters.css';
 import './FilterConfigurations.css';
-import SalaryCalculator from './SalaryCalculator';
+import SalaryCalculator from './salaryCalculator/SalaryCalculator';
 import CvMatchBar from './CvMatchBar';
 import { STATE_FIELDS } from '../hooks/contants';
 
@@ -156,7 +156,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps
                     )}
                 </ul>
                 
-                {showCalculator && <SalaryCalculator onClose={() => setShowCalculator(false)} />}
+                {showCalculator && <SalaryCalculator onClose={() => setShowCalculator(false)} job={job} onUpdate={onUpdate} />}
 
                 {job.comments && (
                     <div className="job-comments">
