@@ -17,7 +17,7 @@ SYSTEM_PROMPT = """You are an expert at analyzing job offers.
 Extract the following information from the job offer below and return it as a valid JSON object:
 - required_technologies: A string with comma-separated list of required technologies. Keep it concise.
 - optional_technologies: A string with comma-separated list of optional/nice-to-have technologies. Keep it concise.
-- salary: The salary information as a single string (e.g. "50k-60k") if available, otherwise null.
+- salary: The salary information as a single string (e.g. "80k-90k" or "120000 USD") ONLY if explicitly stated in the text. If not found, return null. DO NOT guess or invent a salary.
 
 Format your response as a single valid JSON object strictly complying with this structure:
 {
