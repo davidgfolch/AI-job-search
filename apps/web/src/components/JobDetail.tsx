@@ -14,9 +14,10 @@ interface JobDetailProps {
     job: Job;
     onUpdate?: (data: Partial<Job>) => void;
     onCreateNew?: () => void;
+    onDelete?: () => void;
 }
 
-export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps) {
+export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobDetailProps) {
     const { data: appliedCompanyJobs = [], isLoading: loadingApplied } = useQuery({
         queryKey: ['appliedCompanyJobs', job.company, job.client],
         queryFn: async () => {
@@ -66,6 +67,11 @@ export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps
                 {onCreateNew && (
                     <button className="create-job-btn" onClick={onCreateNew} title="Create New Job">
                         ➕ Create New
+                    </button>
+                )}
+                {onDelete && (
+                    <button className="create-job-btn" onClick={onDelete} title="Delete this job">
+                        🗑️ Delete
                     </button>
                 )}
             </div>

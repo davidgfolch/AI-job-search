@@ -25,7 +25,7 @@ export const useViewer = () => {
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
     const {
-        message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, createMutation
+        message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation
     } = useJobMutations({
         filters, selectedJob, setSelectedJob, activeTab, autoSelectNext,
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
@@ -118,6 +118,7 @@ export const useViewer = () => {
             appliedJob: () => handleJobUpdate({ applied: true }),
             discardedJob: () => handleJobUpdate({ discarded: true }),
             closedJob: () => handleJobUpdate({ closed: true }),
+            deleteJob: deleteSingleJob,
             nextJob: () => navigateJob('next'),
             previousJob: () => navigateJob('previous'),
             loadMore: handleLoadMore,

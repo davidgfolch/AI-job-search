@@ -134,6 +134,23 @@ export const useJobMutations = ({
     });
   }, [selectionMode, selectedIds, filters, bulkDeleteMutation, confirmModal]);
 
+  const deleteSingleJob = useCallback(() => {
+    if (!selectedJob) return;
+    
+    const msg = `Are you sure you want to delete "${selectedJob.title || 'this job'}"?`;
+    confirmModal.confirm(msg, () => {
+      if (activeTab === "list") {
+        autoSelectNext.current = {
+          shouldSelect: true,
+          previousJobId: selectedJob.id,
+        };
+      }
+      bulkDeleteMutation.mutate({
+        ids: [selectedJob.id],
+      });
+    });
+  }, [selectedJob, activeTab, autoSelectNext, bulkDeleteMutation, confirmModal]);
+
   return {
     message,
     setMessage,
@@ -155,6 +172,7 @@ export const useJobMutations = ({
     handleJobUpdate,
     ignoreSelected,
     deleteSelected,
+    deleteSingleJob,
     updateMutation,
     createMutation,
     bulkUpdateMutation,

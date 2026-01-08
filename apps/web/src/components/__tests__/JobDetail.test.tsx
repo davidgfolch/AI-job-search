@@ -158,5 +158,33 @@ describe('JobDetail', () => {
         // Should show time 10:05
         expect(screen.getByText(/10:05/)).toBeInTheDocument();
     });
+
+    it('displays delete button when onDelete prop is provided', async () => {
+        const onDeleteMock = vi.fn();
+        renderWithProviders(<JobDetail job={mockJob} onDelete={onDeleteMock} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        
+        const deleteButton = screen.getByTitle('Delete this job');
+        expect(deleteButton).toBeInTheDocument();
+        expect(deleteButton).toHaveTextContent('🗑️ Delete');
+    });
+
+    it('calls onDelete when delete button is clicked', async () => {
+        const onDeleteMock = vi.fn();
+        renderWithProviders(<JobDetail job={mockJob} onDelete={onDeleteMock} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        
+        const deleteButton = screen.getByTitle('Delete this job');
+        deleteButton.click();
+        
+        expect(onDeleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not display delete button when onDelete prop is not provided', async () => {
+        renderWithProviders(<JobDetail job={mockJob} />);
+        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
+        
+        expect(screen.queryByTitle('Delete this job')).not.toBeInTheDocument();
+    });
 });
 

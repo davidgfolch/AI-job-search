@@ -107,6 +107,7 @@ export default function Viewer() {
                                 job={state.selectedJob} 
                                 onUpdate={actions.updateJob} 
                                 onCreateNew={() => actions.setActiveTab('create')}
+                                onDelete={actions.deleteJob}
                             />
                         ) : (
                             <div className="no-selection">
