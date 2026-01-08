@@ -359,3 +359,10 @@
     background-color: darkred;
     border-color: darkred;
 }
+
+.cv-match-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+

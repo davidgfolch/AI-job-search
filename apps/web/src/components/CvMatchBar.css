@@ -1,0 +1,34 @@
+.cv-match-bar-container {
+    flex: 1;
+    max-width: 250px;
+    height: 1.4rem;
+    background-color: #333;
+    border-radius: 6px; /* Slightly rounded */
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #444;
+}
+
+.cv-match-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00c151 0%, #00e676 100%); /* Green gradient */
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(0, 193, 81, 0.3);
+}
+
+.cv-match-bar-container .cv-match-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    z-index: 2;
+    letter-spacing: 0.02em;
+}

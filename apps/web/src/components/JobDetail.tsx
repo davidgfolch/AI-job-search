@@ -7,6 +7,7 @@ import './JobDetail.css';
 import './Filters.css';
 import './FilterConfigurations.css';
 import SalaryCalculator from './SalaryCalculator';
+import CvMatchBar from './CvMatchBar';
 import { STATE_FIELDS } from '../hooks/contants';
 
 interface JobDetailProps {
@@ -129,7 +130,12 @@ export default function JobDetail({ job, onUpdate, onCreateNew }: JobDetailProps
                         </li>
                     )}
                     {job.client && <li className="info-row">Client: <span>{job.client}</span></li>}
-                    {job.cv_match_percentage && <li className="info-row">CV Match: <span>{job.cv_match_percentage}%</span></li>}
+                    {job.cv_match_percentage && (
+                        <li className="info-row cv-match-row">
+                            CV Match:
+                            <CvMatchBar percentage={job.cv_match_percentage} />
+                        </li>
+                    )}
                 </ul>
                 
                 {showCalculator && <SalaryCalculator onClose={() => setShowCalculator(false)} />}
