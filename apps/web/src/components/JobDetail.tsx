@@ -9,8 +9,10 @@ import './FilterConfigurations.css';
 import SalaryCalculator from './salaryCalculator/SalaryCalculator';
 import CvMatchBar from './core/CvMatchBar';
 import { STATE_FIELDS } from '../hooks/contants';
-import SkillTag from './skills/SkillTag';
-import { useLearnList } from './skills/useLearnList';
+import JobDetailHeader from './job-detail/JobDetailHeader';
+import AppliedJobsWarning from './job-detail/AppliedJobsWarning';
+import SalaryActions from './job-detail/SalaryActions';
+import SkillsList from './job-detail/SkillsList';
 
 interface JobDetailProps {
     job: Job;
@@ -35,9 +37,9 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     });
 
-    const { toggleSkill, isInLearnList } = useLearnList();
     const contentRef = useRef<HTMLDivElement>(null);
     const [showCalculator, setShowCalculator] = useState(false);
+    
     const formatDateTime = (d: string | null) => {
         if (!d) return '-';
         return new Date(d).toLocaleString(undefined, {
@@ -65,17 +67,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
 
     return (
         <div className="job-detail">
-            <div className="job-detail-header">
-                <h2><a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">{job.title}</a></h2>
-                {onCreateNew && (
-                    <button className="create-job-btn" onClick={onCreateNew} title="Create New Job">
-                        ➕ Create</button>
-                )}
-                {onDelete && (
-                    <button className="create-job-btn" onClick={onDelete} title="Delete this job">
-                        🗑️ Delete</button>
-                )}
-            </div>
+            <JobDetailHeader job={job} onCreateNew={onCreateNew} onDelete={onDelete} />
             <div className="job-detail-content" ref={contentRef}>
                 <div className="job-status-floating">
                     {STATE_FIELDS.filter(field => job[field as keyof Job] === true).map(status => (
@@ -88,49 +80,18 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                     {job.company && (
                         <li className="info-row">
                             Company: <span>{job.company}</span>
-                            {!loadingApplied && appliedCompanyJobs.length > 0 && (
-                                <span className="applied-company-indicator">
-                                    {' '}👉 ⚠️{' '}
-                                    <a href={`/?ids=${appliedCompanyJobs.map(j => j.id).join(',')}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="already-applied-link"
-                                        title="Open in new tab showing these specific jobs">
-                                        already applied to {appliedCompanyJobs.length}
-                                    </a>
-                                    {appliedCompanyJobs.map(aj => (
-                                        <span key={aj.id} className="applied-date">
-                                            {' '}{aj.created?.startsWith('...') ? aj.created :
-                                                (aj.created ? '📅 ' + new Date(aj.created).toLocaleDateString('en-GB', {
-                                                    day: '2-digit',
-                                                    month: '2-digit',
-                                                    year: '2-digit'
-                                                }).replace(/\//g, '-') : '')}
-                                        </span>
-                                    ))}
-                                </span>
-                            )}
+                            <AppliedJobsWarning 
+                                appliedJobs={appliedCompanyJobs} 
+                                loadingApplied={loadingApplied}/>
                         </li>
                     )}
                     {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
                     {job.salary && (
                         <li className="info-row job-salary-row">
                             Salary: <span className="salary-value-text">{job.salary}</span>
-                            <button 
-                                className="config-btn salary-toggle-btn"
-                                onClick={() => setShowCalculator(!showCalculator)}>
-                                🧮 Freelance</button>
-                            <button 
-                                className="config-btn salary-toggle-btn"
-                                onClick={() => window.open('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank')}>
-                                🧮 Gross year</button>
-                            {onUpdate && (
-                                <button
-                                    className="config-btn salary-toggle-btn salary-delete-btn"
-                                    onClick={() => onUpdate({ salary: null })}
-                                    title="Delete salary information">
-                                    🗑️</button>
-                            )}
+                            <SalaryActions 
+                                onToggleCalculator={() => setShowCalculator(!showCalculator)} 
+                                onUpdate={onUpdate}/>
                         </li>
                     )}
                     {(job.required_technologies || job.optional_technologies) && (
@@ -139,25 +100,13 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                                 {job.required_technologies && (
                                     <li>
                                         Required:{' '}
-                                        {job.required_technologies.split(',').map((skill) => (
-                                            <SkillTag
-                                                key={skill.trim()}
-                                                skill={skill.trim()}
-                                                isInLearnList={isInLearnList(skill.trim())}
-                                                onToggle={toggleSkill}/>
-                                        ))}
+                                        <SkillsList skills={job.required_technologies} />
                                     </li>
                                 )}
                                 {job.optional_technologies && (
                                     <li>
                                         Optional:{' '}
-                                        {job.optional_technologies.split(',').map((skill) => (
-                                            <SkillTag
-                                                key={skill.trim()}
-                                                skill={skill.trim()}
-                                                isInLearnList={isInLearnList(skill.trim())}
-                                                onToggle={toggleSkill}/>
-                                        ))}
+                                        <SkillsList skills={job.optional_technologies} />
                                     </li>
                                 )}
                             </ul>
