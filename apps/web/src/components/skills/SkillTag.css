@@ -1,0 +1,29 @@
+.skill-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  margin: 2px 4px;
+  border-radius: 12px;
+  background-color: #047857;
+  color: rgb(229, 229, 229) !important;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  font-weight: 500 !important;
+}
+
+.skill-tag:hover {
+  background-color: #065f46;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.skill-tag-learn {
+  background-color: #83b910;
+  color: rgb(32, 32, 32) !important;
+  font-weight: 500 !important;
+}
+
+.skill-tag-learn:hover {
+  background-color: #698310;
+}

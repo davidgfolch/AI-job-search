@@ -35,7 +35,9 @@ describe('JobDetail', () => {
         expect(screen.getByText('Software Engineer')).toBeInTheDocument();
         expect(screen.getByText('Tech Corp')).toBeInTheDocument();
         expect(screen.getByText('Job Description Content')).toBeInTheDocument();
-        expect(screen.getByText('React, TypeScript')).toBeInTheDocument();
+        // Skills are now rendered as individual tags
+        expect(screen.getByText('React')).toBeInTheDocument();
+        expect(screen.getByText('TypeScript')).toBeInTheDocument();
         expect(screen.getByText('Python')).toBeInTheDocument();
         expect(screen.getByText('100k')).toBeInTheDocument();
         expect(screen.getByText('Initial comment')).toBeInTheDocument();

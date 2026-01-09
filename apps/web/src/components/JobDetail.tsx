@@ -9,6 +9,8 @@ import './FilterConfigurations.css';
 import SalaryCalculator from './salaryCalculator/SalaryCalculator';
 import CvMatchBar from './core/CvMatchBar';
 import { STATE_FIELDS } from '../hooks/contants';
+import SkillTag from './skills/SkillTag';
+import { useLearnList } from './skills/useLearnList';
 
 interface JobDetailProps {
     job: Job;
@@ -33,6 +35,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     });
 
+    const { toggleSkill, isInLearnList } = useLearnList();
     const contentRef = useRef<HTMLDivElement>(null);
     const [showCalculator, setShowCalculator] = useState(false);
     const formatDateTime = (d: string | null) => {
@@ -138,8 +141,32 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                     {(job.required_technologies || job.optional_technologies) && (
                         <li className="info-row">Skills:
                             <ul>
-                                {job.required_technologies && <li>Required: <span>{job.required_technologies}</span></li>}
-                                {job.optional_technologies && <li>Optional: <span>{job.optional_technologies}</span></li>}
+                                {job.required_technologies && (
+                                    <li>
+                                        Required:{' '}
+                                        {job.required_technologies.split(',').map((skill) => (
+                                            <SkillTag
+                                                key={skill.trim()}
+                                                skill={skill.trim()}
+                                                isInLearnList={isInLearnList(skill.trim())}
+                                                onToggle={toggleSkill}
+                                            />
+                                        ))}
+                                    </li>
+                                )}
+                                {job.optional_technologies && (
+                                    <li>
+                                        Optional:{' '}
+                                        {job.optional_technologies.split(',').map((skill) => (
+                                            <SkillTag
+                                                key={skill.trim()}
+                                                skill={skill.trim()}
+                                                isInLearnList={isInLearnList(skill.trim())}
+                                                onToggle={toggleSkill}
+                                            />
+                                        ))}
+                                    </li>
+                                )}
                             </ul>
                         </li>
                     )}
