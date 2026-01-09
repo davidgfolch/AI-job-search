@@ -77,6 +77,16 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                     ))}
                 </div>
                 <ul className="job-info">
+                    {job.ai_enrich_error && (
+                        <li className="info-row" style={{ color: 'red' }}>
+                            Enrich Error: <span 
+                                title="Click to copy" 
+                                onClick={() => navigator.clipboard.writeText(job.ai_enrich_error!)}
+                                style={{ cursor: 'pointer' }}>
+                                {job.ai_enrich_error}
+                            </span>
+                        </li>
+                    )}
                     {job.company && (
                         <li className="info-row">
                             Company: <span>{job.company}</span>

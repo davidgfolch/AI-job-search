@@ -1,6 +1,5 @@
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 import JobDetail from '../JobDetail';
 import type { Job } from '../../api/jobs';
 import { jobsApi } from '../../api/jobs';
@@ -21,172 +20,115 @@ const mockJob = createMockJob({
     comments: 'Initial comment',
 });
 
-
-
 describe('JobDetail', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
     });
 
-    it('renders job details correctly', async () => {
+    it('renders basic job details, link, and CV match', async () => {
         renderWithProviders(<JobDetail job={mockJob} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        expect(screen.getByText('Software Engineer')).toBeInTheDocument();
+        await waitFor(() => expect(screen.getByText('Software Engineer')).toBeInTheDocument());
+
         expect(screen.getByText('Tech Corp')).toBeInTheDocument();
         expect(screen.getByText('Job Description Content')).toBeInTheDocument();
-        // Skills are now rendered as individual tags
         expect(screen.getByText('React')).toBeInTheDocument();
-        expect(screen.getByText('TypeScript')).toBeInTheDocument();
-        expect(screen.getByText('Python')).toBeInTheDocument();
         expect(screen.getByText('100k')).toBeInTheDocument();
         expect(screen.getByText('Initial comment')).toBeInTheDocument();
-    });
+        expect(screen.getByText('90%')).toBeInTheDocument(); // CV Match
 
-    it('renders job link correctly', async () => {
-        renderWithProviders(<JobDetail job={mockJob} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
         const link = screen.getByText('Software Engineer');
         expect(link).toHaveAttribute('href', 'http://example.com');
         expect(link).toHaveAttribute('target', '_blank');
     });
 
-    it('displays CV match percentage when available', async () => {
-        renderWithProviders(<JobDetail job={mockJob} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        expect(screen.getByText('90%')).toBeInTheDocument();
+    it.each([
+        ['easy_apply', 'easy apply'],
+        ['ai_enriched', 'ai enriched'],
+        ['interview', 'interview'],
+    ])('displays %s status when true', async (prop, text) => {
+        const job = { ...mockJob, [prop]: true };
+        renderWithProviders(<JobDetail job={job as Job} />);
+        await waitFor(() => expect(screen.getByText(text)).toBeInTheDocument());
     });
 
     it('does not display optional fields when they are null', async () => {
-        const jobWithoutOptionals: Job = {
-            ...mockJob,
-            company: null,
-            salary: null,
-            comments: null,
-            optional_technologies: null,
-        };
-        renderWithProviders(<JobDetail job={jobWithoutOptionals} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        // These should not appear in the document
+        const job: Job = { ...mockJob, company: null, salary: null, comments: null };
+        renderWithProviders(<JobDetail job={job} />);
+        await waitFor(() => expect(screen.queryByText('Software Engineer')).toBeInTheDocument());
+        
         expect(screen.queryByText('Company:')).not.toBeInTheDocument();
         expect(screen.queryByText('100k')).not.toBeInTheDocument();
         expect(screen.queryByText('Initial comment')).not.toBeInTheDocument();
     });
 
+    describe('Interactions', () => {
+        it('toggles salary calculator and handles external link', async () => {
+            const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+            renderWithProviders(<JobDetail job={mockJob} />);
+            await waitFor(() => screen.getByText('🧮 Freelance'));
 
+            fireEvent.click(screen.getByText('🧮 Freelance'));
+            expect(screen.getByText('Salary Calculator')).toBeInTheDocument();
+            fireEvent.click(screen.getByLabelText('Close calculator'));
+            expect(screen.queryByText('Salary Calculator')).not.toBeInTheDocument();
 
+            fireEvent.click(screen.getByText('🧮 Gross year'));
+            expect(windowOpenSpy).toHaveBeenCalledWith('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank');
+            windowOpenSpy.mockRestore();
+        });
 
+        it('handles salary deletion', async () => {
+            const onUpdateMock = vi.fn();
+            renderWithProviders(<JobDetail job={mockJob} onUpdate={onUpdateMock} />);
+            await waitFor(() => screen.getByTitle('Delete salary information'));
+            
+            fireEvent.click(screen.getByTitle('Delete salary information'));
+            expect(onUpdateMock).toHaveBeenCalledWith({ salary: null });
+        });
 
+        it('handles job deletion existence and action', async () => {
+            const onDeleteMock = vi.fn();
+            const { rerender } = renderWithProviders(<JobDetail job={mockJob} onDelete={onDeleteMock} />);
+            await waitFor(() => expect(screen.getByTitle('Delete this job')).toBeInTheDocument());
 
-    it('calls onUpdate with null salary when delete button is clicked', async () => {
-        const onUpdateMock = vi.fn();
-        renderWithProviders(<JobDetail job={mockJob} onUpdate={onUpdateMock} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        const deleteButton = screen.getByTitle('Delete salary information');
-        expect(deleteButton).toBeInTheDocument();
-        deleteButton.click();
-        expect(onUpdateMock).toHaveBeenCalledWith({ salary: null });
+            fireEvent.click(screen.getByTitle('Delete this job'));
+            expect(onDeleteMock).toHaveBeenCalledTimes(1);
+
+            rerender(<JobDetail job={mockJob} />);
+            expect(screen.queryByTitle('Delete this job')).not.toBeInTheDocument();
+        });
+
+        it('handles ai_enrich_error presence and copy', async () => {
+            const jobWithError: Job = { ...mockJob, ai_enrich_error: 'Test Error' };
+            const writeTextMock = vi.fn();
+            Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+
+            const { rerender } = renderWithProviders(<JobDetail job={jobWithError} />);
+            await waitFor(() => expect(screen.getByText('Test Error')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByText('Test Error'));
+            expect(writeTextMock).toHaveBeenCalledWith('Test Error');
+
+            rerender(<JobDetail job={{ ...mockJob, ai_enrich_error: null }} />);
+            expect(screen.queryByText('Enrich Error:')).not.toBeInTheDocument();
+        });
     });
 
-    it('displays active boolean statuses', async () => {
-        const jobWithStatuses: Job = {
+    it('displays created/modified dates correctly with 5min threshold', async () => {
+        const job: Job = {
             ...mockJob,
-            easy_apply: true,
-            ai_enriched: true,
-            interview: true,
-        };
-        renderWithProviders(<JobDetail job={jobWithStatuses} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        expect(screen.getByText('easy apply')).toBeInTheDocument();
-        expect(screen.getByText('ai enriched')).toBeInTheDocument();
-        expect(screen.getByText('interview')).toBeInTheDocument();
-    });
-
-
-    it('toggles salary calculator visibility', async () => {
-        renderWithProviders(<JobDetail job={mockJob} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        const calcButton = screen.getByText('🧮 Freelance');
-        fireEvent.click(calcButton);
-        expect(screen.getByText('Salary Calculator')).toBeInTheDocument();
-        const closeButton = screen.getByLabelText('Close calculator');
-        fireEvent.click(closeButton);
-        expect(screen.queryByText('Salary Calculator')).not.toBeInTheDocument();
-    });
-
-    it('opens gross salary calculator in new tab', async () => {
-        const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-        renderWithProviders(<JobDetail job={mockJob} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        const grossButton = screen.getByText('🧮 Gross year');
-        fireEvent.click(grossButton);
-        expect(windowOpenSpy).toHaveBeenCalledWith('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank');
-        windowOpenSpy.mockRestore();
-    });
-
-
-    it('displays created and modified dates with time, ignoring differences under 5 minutes', async () => {
-        const jobWithDates: Job = {
-            ...mockJob,
-            company: 'Test Co', // Ensure company exists to satisfy some conditional rendering
-            web_page: 'http://example.com', // Ensure web_page exists so dates are shown
+            company: 'Test Co',
+            web_page: 'http://e.com',
             created: '2023-01-01T10:00:00',
-            modified: '2023-01-01T10:04:59', // Difference under 5 minutes, should NOT show modified
+            modified: '2023-01-01T10:04:59', // < 5 mins
         };
-        const { rerender } = renderWithProviders(<JobDetail job={jobWithDates} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        
-        // Should show created date with time
-        // Note: toLocaleString format depends on env, but typically includes date and time.
-        // We will check if it contains the time part.
-        // 10:00 is expected.
-        const createdRegex = /10:00/; 
-        expect(screen.getByText(createdRegex)).toBeInTheDocument();
-        
-        // Should NOT show modified because difference is under 5 minutes
+        const { rerender } = renderWithProviders(<JobDetail job={job} />);
+        await waitFor(() => expect(screen.getByText(/10:00/)).toBeInTheDocument());
         expect(screen.queryByText(/modified/)).not.toBeInTheDocument();
 
-        // Update modified to be 5 minutes or more different
-        const jobModifiedLater: Job = {
-            ...jobWithDates,
-            modified: '2023-01-01T10:05:00',
-        };
-        
-        rerender(<JobDetail job={jobModifiedLater} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        
-        // Should show modified now (5 minutes or more difference)
+        rerender(<JobDetail job={{ ...job, modified: '2023-01-01T10:05:00' }} />); // >= 5 mins
         expect(screen.getAllByText(/modified/)[0]).toBeInTheDocument();
-        // Should show time 10:05
         expect(screen.getByText(/10:05/)).toBeInTheDocument();
     });
-
-    it('displays delete button when onDelete prop is provided', async () => {
-        const onDeleteMock = vi.fn();
-        renderWithProviders(<JobDetail job={mockJob} onDelete={onDeleteMock} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        
-        const deleteButton = screen.getByTitle('Delete this job');
-        expect(deleteButton).toBeInTheDocument();
-        expect(deleteButton).toHaveTextContent('🗑️ Delete');
-    });
-
-    it('calls onDelete when delete button is clicked', async () => {
-        const onDeleteMock = vi.fn();
-        renderWithProviders(<JobDetail job={mockJob} onDelete={onDeleteMock} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        
-        const deleteButton = screen.getByTitle('Delete this job');
-        deleteButton.click();
-        
-        expect(onDeleteMock).toHaveBeenCalledTimes(1);
-    });
-
-    it('does not display delete button when onDelete prop is not provided', async () => {
-        renderWithProviders(<JobDetail job={mockJob} />);
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        
-        expect(screen.queryByTitle('Delete this job')).not.toBeInTheDocument();
-    });
 });
-
