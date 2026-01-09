@@ -15,9 +15,14 @@ describe('SkillsManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useLearnListHook.useLearnList as any).mockReturnValue({
-      learnList: ['React', 'TypeScript', 'Node.js'],
+      learnList: [
+        { name: 'React', description: 'Frontend Lib', learningPath: [] },
+        { name: 'TypeScript', description: 'Typed JS', learningPath: ['https://ts.dev'] },
+        { name: 'Node.js', description: 'Backend', learningPath: [] }
+      ],
       reorderSkills: mockReorderSkills,
       removeSkill: mockRemoveSkill,
+      updateSkill: vi.fn(),
     });
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockImplementation(() => true);
@@ -72,16 +77,48 @@ describe('SkillsManager', () => {
     expect(mockReorderSkills).toHaveBeenCalled();
     const calledArg = mockReorderSkills.mock.calls[0][0];
     expect(calledArg).toHaveLength(3);
+    expect(calledArg[0]).toHaveProperty('name');
     // We expect reorder to be called, exact order depends on drag logic specificity
   });
 
   it('calls removeSkill when delete button is clicked and confirmed', () => {
     render(<SkillsManager />);
-    const deleteButtons = screen.getAllByTitle('Remove');
+    const deleteButtons = screen.getAllByTitle('Remove Skill');
     
     fireEvent.click(deleteButtons[0]);
     
     expect(window.confirm).toHaveBeenCalled();
     expect(mockRemoveSkill).toHaveBeenCalledWith('React');
+  });
+
+  it('opens modal on edit click and saves changes', () => {
+    const mockUpdateSkill = vi.fn();
+    (useLearnListHook.useLearnList as any).mockReturnValue({
+      learnList: [{ name: 'React', description: 'Old Desc', learningPath: [] }],
+      reorderSkills: mockReorderSkills,
+      removeSkill: mockRemoveSkill,
+      updateSkill: mockUpdateSkill,
+    });
+
+    render(<SkillsManager />);
+    
+    // Click edit button
+    const editButton = screen.getByTitle('Edit Skill');
+    fireEvent.click(editButton);
+    
+    // Verify modal content
+    const textarea = screen.getByDisplayValue('Old Desc');
+    expect(textarea).toBeInTheDocument();
+    
+    // Change description
+    fireEvent.change(textarea, { target: { value: 'New Desc' } });
+    
+    // Click Save
+    const saveButton = screen.getByText('Save Changes');
+    fireEvent.click(saveButton);
+    
+    expect(mockUpdateSkill).toHaveBeenCalledWith('React', expect.objectContaining({
+      description: 'New Desc'
+    }));
   });
 });

@@ -69,13 +69,11 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                 <h2><a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">{job.title}</a></h2>
                 {onCreateNew && (
                     <button className="create-job-btn" onClick={onCreateNew} title="Create New Job">
-                        ➕ Create
-                    </button>
+                        ➕ Create</button>
                 )}
                 {onDelete && (
                     <button className="create-job-btn" onClick={onDelete} title="Delete this job">
-                        🗑️ Delete
-                    </button>
+                        🗑️ Delete</button>
                 )}
             </div>
             <div className="job-detail-content" ref={contentRef}>
@@ -121,20 +119,17 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                             <button 
                                 className="config-btn salary-toggle-btn"
                                 onClick={() => setShowCalculator(!showCalculator)}>
-                                🧮 Freelance
-                            </button>
+                                🧮 Freelance</button>
                             <button 
                                 className="config-btn salary-toggle-btn"
                                 onClick={() => window.open('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank')}>
-                                🧮 Gross year
-                            </button>
+                                🧮 Gross year</button>
                             {onUpdate && (
                                 <button
                                     className="config-btn salary-toggle-btn salary-delete-btn"
                                     onClick={() => onUpdate({ salary: null })}
                                     title="Delete salary information">
-                                    🗑️
-                                </button>
+                                    🗑️</button>
                             )}
                         </li>
                     )}
@@ -149,8 +144,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                                                 key={skill.trim()}
                                                 skill={skill.trim()}
                                                 isInLearnList={isInLearnList(skill.trim())}
-                                                onToggle={toggleSkill}
-                                            />
+                                                onToggle={toggleSkill}/>
                                         ))}
                                     </li>
                                 )}
@@ -162,8 +156,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                                                 key={skill.trim()}
                                                 skill={skill.trim()}
                                                 isInLearnList={isInLearnList(skill.trim())}
-                                                onToggle={toggleSkill}
-                                            />
+                                                onToggle={toggleSkill}/>
                                         ))}
                                     </li>
                                 )}
@@ -175,7 +168,6 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                             Source: <span>{job.web_page}</span>
                             <ul>
                             {job.created && <li className="info-row"><span>{formatDateTime(job.created)}</span> created</li>}
-
                                 {job.modified && isModified(job.created, job.modified) && <li className="info-row"><span>{formatDateTime(job.modified)}</span> modified</li>}
                             </ul>
                         </li>
@@ -183,8 +175,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                     {job.client && <li className="info-row">Client: <span>{job.client}</span></li>}
                     {job.cv_match_percentage && (
                         <li className="info-row cv-match-row">
-                            CV Match:
-                            <CvMatchBar percentage={job.cv_match_percentage} />
+                            CV Match: <CvMatchBar percentage={job.cv_match_percentage} />
                         </li>
                     )}
                 </ul>

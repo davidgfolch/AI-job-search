@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getLearnList, toggleLearnList as toggleLearnListUtil, updateLearnList } from './learnList';
+import { getLearnList, toggleLearnList as toggleLearnListUtil, updateLearnList, type Skill } from './learnList';
+export type { Skill };
 
 /**
  * Custom hook to manage the skills learn list
  */
 export const useLearnList = () => {
-  const [learnList, setLearnList] = useState<string[]>([]);
+  const [learnList, setLearnList] = useState<Skill[]>([]);
 
   useEffect(() => {
     setLearnList(getLearnList());
@@ -17,10 +18,19 @@ export const useLearnList = () => {
   };
 
   const isInLearnList = (skill: string): boolean => {
-    return learnList.includes(skill.trim());
+    const s = learnList.find(s => s.name === skill.trim());
+    return !!s && !s.disabled;
   };
 
-  const reorderSkills = (newList: string[]) => {
+  const reorderSkills = (newList: Skill[]) => {
+    updateLearnList(newList);
+    setLearnList(newList);
+  };
+
+  const updateSkill = (name: string, updates: Partial<Skill>) => {
+    const newList = learnList.map(skill => 
+      skill.name === name ? { ...skill, ...updates } : skill
+    );
     updateLearnList(newList);
     setLearnList(newList);
   };
@@ -29,5 +39,5 @@ export const useLearnList = () => {
     toggleSkill(skill);
   };
 
-  return { learnList, toggleSkill, reorderSkills, removeSkill, isInLearnList };
+  return { learnList, toggleSkill, reorderSkills, removeSkill, isInLearnList, updateSkill };
 };

@@ -1,29 +1,87 @@
+/* SkillsManager.css */
+
+.skill-row.disabled {
+  opacity: 0.6;
+  background-color: #4b1515;
+  color: #888;
+}
+
+.skill-row.disabled .skill-name {
+  text-decoration: line-through;
+}
+
+.skill-row.disabled button {
+  opacity: 0.5;
+}
+
+.skill-row.disabled:hover {
+  background-color: #643232;
+}
 .skills-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
   padding: 1rem;
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
 }
 
 .skills-manager h2 {
   color: var(--text-primary);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.skills-table-container {
+  flex: 1;
+  overflow: auto; /* Handle both vertical and horizontal if needed */
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+  width: fit-content;
+  max-width: 100%;
 }
 
 .skills-table {
-  width: 100%;
+  width: auto;
+  min-width: 100%; /* Ensure it takes full width of container if container is wider */
   border-collapse: collapse;
   background-color: var(--bg-secondary);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* border-radius: 8px; Removed as container handles it */
+  /* overflow: hidden; Removed as container handles it */
+  /* box-shadow: ... Removed as container handles it */
+  /* table-layout: fixed; Removed to allow shrink to content */
+  margin-bottom: 0; /* consistent spacing */
+}
+
+/* Column widths */
+.col-handle { 
+  width: 1px; 
+  white-space: nowrap;
+}
+.col-skill { 
+  width: 1px; 
+  white-space: nowrap;
+}
+/* .col-desc { \n  // Auto width \n} */
+.col-links { 
+  width: 1px; 
+  white-space: nowrap;
+}
+.col-actions { 
+  width: 1px; 
+  white-space: nowrap;
+  padding-left: 1rem; /* Add some breathing room */
 }
 
 .skills-table th,
 .skills-table td {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
 }
 
 .skills-table th {
@@ -31,14 +89,22 @@
   color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.skills-table tr:last-child td {
+.skills-table tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.skills-table tr:last-child {
   border-bottom: none;
 }
 
 .skill-row {
-  cursor: grab;
+  cursor: default;
   transition: background-color 0.2s ease;
 }
 
@@ -49,44 +115,258 @@
 .skill-row.dragging {
   opacity: 0.5;
   background-color: var(--bg-hover);
-  cursor: grabbing;
 }
 
 .skill-row.drag-over {
   border-top: 2px solid var(--primary-color);
 }
 
+.drag-handle {
+  cursor: grab;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding-top: 0.5rem;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
 .skill-name {
   font-weight: 500;
   color: var(--text-primary);
+  display: block;
+  white-space: nowrap;
 }
 
-.actions-cell {
-  width: 50px;
-  text-align: center;
+/* Inputs */
+.skill-input,
+.skill-textarea {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
 
-.delete-btn {
+.skill-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.skill-input:hover,
+.skill-textarea:hover {
+  border-color: var(--border-color);
+  background-color: var(--bg-primary);
+}
+
+.skill-input:focus,
+.skill-textarea:focus {
+  border-color: var(--primary-color);
+  background-color: var(--bg-primary);
+  outline: none;
+}
+
+/* Learning Path Links */
+.links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.link-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.link-url {
+  white-space: nowrap;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.link-url:hover {
+  text-decoration: underline;
+}
+
+.link-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn-icon {
   background: none;
   border: none;
-  color: #ef4444;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px;
   border-radius: 4px;
-  font-size: 1.2rem;
   line-height: 1;
-  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
 }
 
-.delete-btn:hover {
+.btn-icon:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.btn-icon.delete {
+  color: #ef4444;
+}
+
+.btn-icon.delete:hover {
   background-color: rgba(239, 68, 68, 0.1);
 }
 
-.empty-state {
-  text-align: center;
+.btn-icon.add {
+  color: var(--primary-color);
+}
+
+.btn-icon.add:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+/* Read Only Text */
+.read-only-text {
+  white-space: pre-wrap;
   color: var(--text-secondary);
-  padding: 2rem;
+  font-size: 0.9rem;
+}
+
+.links-list.read-only {
+  gap: 0.25rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
   background-color: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px dashed var(--border-color);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
 }
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Actions Cell buttons */
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-dark, #2563eb); /* Fallback if var not set */
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-hover);
+}
+
