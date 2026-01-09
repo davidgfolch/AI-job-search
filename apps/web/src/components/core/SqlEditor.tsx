@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import './SqlEditor.css';
-import { useSqlEditor } from '../../hooks/useSqlEditor';
-import { tokenizeSql } from '../../utils/sqlEditorUtils';
+import { useSqlEditor } from './hooks/useSqlEditor';
+import { tokenizeSql } from './utils/sqlEditorUtils';
 
 interface SqlEditorProps {
     isOpen: boolean;

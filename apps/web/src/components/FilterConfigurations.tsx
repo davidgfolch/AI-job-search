@@ -1,5 +1,5 @@
 import type { JobListParams } from '../api/jobs';
-import { useFilterConfigurations } from '../hooks/useFilterConfigurations';
+import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import ConfirmModal from './core/ConfirmModal';

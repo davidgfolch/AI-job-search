@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { FilterConfig } from '../components/configurations/hooks/useFilterConfigurations';
+import type { FilterConfig } from './useFilterConfigurations';
 
 interface UseFilterDropdownProps {
     configs: FilterConfig[];
