@@ -1,0 +1,35 @@
+.menu-button {
+  background: transparent;
+  border: 1px solid white;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.menu-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+
+.menu-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #e0e0e0;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}

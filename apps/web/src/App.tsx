@@ -1,7 +1,8 @@
 import './App.css';
 import Viewer from './pages/Viewer';
+import HeaderMenu from './components/HeaderMenu';
 
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Statistics from './pages/Statistics';
 
 function App() {
@@ -12,7 +13,7 @@ function App() {
           <>
             <header className="app-header">
               <h1>AI Job Search</h1>
-              <Link to="/statistics" target="_blank" className="header-link">Statistics</Link>
+              <HeaderMenu />
             </header>
             <main className="app-main">
               <Viewer />
