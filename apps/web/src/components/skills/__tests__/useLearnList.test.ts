@@ -76,4 +76,27 @@ describe('useLearnList', () => {
     expect(result.current.isInLearnList('Python')).toBe(true);
     expect(result.current.isInLearnList('Flask')).toBe(false);
   });
+
+  it('reorders skills correctly', () => {
+    localStorageMock.setItem('job-skills-learn-list', JSON.stringify(['A', 'B', 'C']));
+    const { result } = renderHook(() => useLearnList());
+    
+    act(() => {
+      result.current.reorderSkills(['C', 'A', 'B']);
+    });
+    
+    expect(result.current.learnList).toEqual(['C', 'A', 'B']);
+    expect(JSON.parse(localStorageMock.getItem('job-skills-learn-list')!)).toEqual(['C', 'A', 'B']);
+  });
+
+  it('removes skill via removeSkill function', () => {
+    localStorageMock.setItem('job-skills-learn-list', JSON.stringify(['A', 'B']));
+    const { result } = renderHook(() => useLearnList());
+    
+    act(() => {
+      result.current.removeSkill('A');
+    });
+    
+    expect(result.current.learnList).toEqual(['B']);
+  });
 });

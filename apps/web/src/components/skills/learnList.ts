@@ -16,13 +16,15 @@ export const getLearnList = (): string[] => {
 /**
  * Save the learn list to localStorage
  */
-const saveLearnList = (list: string[]): void => {
+export const updateLearnList = (list: string[]): void => {
   try {
     localStorage.setItem(LEARN_LIST_KEY, JSON.stringify(list));
   } catch (error) {
     console.error('Error saving learn list:', error);
   }
 };
+
+const saveLearnList = updateLearnList;
 
 /**
  * Add a skill to the learn list

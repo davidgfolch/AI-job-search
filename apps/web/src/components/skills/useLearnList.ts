@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getLearnList, toggleLearnList as toggleLearnListUtil } from './learnList';
+import { getLearnList, toggleLearnList as toggleLearnListUtil, updateLearnList } from './learnList';
 
 /**
  * Custom hook to manage the skills learn list
@@ -20,5 +20,14 @@ export const useLearnList = () => {
     return learnList.includes(skill.trim());
   };
 
-  return { learnList, toggleSkill, isInLearnList };
+  const reorderSkills = (newList: string[]) => {
+    updateLearnList(newList);
+    setLearnList(newList);
+  };
+
+  const removeSkill = (skill: string) => {
+    toggleSkill(skill);
+  };
+
+  return { learnList, toggleSkill, reorderSkills, removeSkill, isInLearnList };
 };

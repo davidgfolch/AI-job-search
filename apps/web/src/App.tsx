@@ -4,6 +4,7 @@ import HeaderMenu from './components/HeaderMenu';
 
 import { Routes, Route } from 'react-router-dom';
 import Statistics from './pages/Statistics';
+import SkillsManager from './pages/SkillsManager';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             </main>
           </>
         } />
+        <Route path="/skills-manager" element={<SkillsManager />} />
         <Route path="/statistics" element={<Statistics />} />
       </Routes>
     </div>

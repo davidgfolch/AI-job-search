@@ -1,0 +1,92 @@
+.skills-manager {
+  padding: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.skills-manager h2 {
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.skills-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.skills-table th,
+.skills-table td {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.skills-table th {
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.skills-table tr:last-child td {
+  border-bottom: none;
+}
+
+.skill-row {
+  cursor: grab;
+  transition: background-color 0.2s ease;
+}
+
+.skill-row:hover {
+  background-color: var(--bg-hover);
+}
+
+.skill-row.dragging {
+  opacity: 0.5;
+  background-color: var(--bg-hover);
+  cursor: grabbing;
+}
+
+.skill-row.drag-over {
+  border-top: 2px solid var(--primary-color);
+}
+
+.skill-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.actions-cell {
+  width: 50px;
+  text-align: center;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  line-height: 1;
+  transition: background-color 0.2s ease;
+}
+
+.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
+}

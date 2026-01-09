@@ -15,6 +15,9 @@ const HeaderMenu = () => {
         <Link to="/statistics" target="_blank" className="menu-item">
           Statistics
         </Link>
+        <Link to="/skills-manager" className="menu-item" target="_blank">
+          Skills Manager
+        </Link>
       </div>
     </Dropdown>
   );
