@@ -4,9 +4,9 @@ import JobDetail from '../components/JobDetail';
 import JobEditForm from '../components/JobEditForm';
 import JobActions from '../components/JobActions';
 import Filters from '../components/Filters';
-import MessageContainer from '../components/MessageContainer';
+import MessageContainer from '../components/core/MessageContainer';
 import ViewTabs from '../components/ViewTabs';
-import ConfirmModal from '../components/ConfirmModal';
+import ConfirmModal from '../components/core/ConfirmModal';
 import './Viewer.css';
 
 export default function Viewer() {
@@ -113,8 +113,9 @@ export default function Viewer() {
                             <div className="no-selection">
                                 Select a job to view details
                                 <br/>
-                                <button className="create-job-btn" style={{ marginTop: '20px' }} onClick={() => actions.setActiveTab('create')}>
-                                    Create New Job
+                                <button className="create-job-btn" style={{ marginTop: '20px' }}
+                                    onClick={() => actions.setActiveTab('create')}>
+                                    Create Job
                                 </button>
                             </div>
                         )}

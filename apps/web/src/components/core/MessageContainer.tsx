@@ -1,5 +1,5 @@
 
-import Messages from './Messages';
+import Messages from '../Messages';
 
 interface MessageContainerProps {
     message: { text: string; type: 'success' | 'error' } | null;

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import ReactMarkdownCustom from '../ReactMarkdownCustom';
+import ReactMarkdownCustom from '../../core/ReactMarkdownCustom';
 
 describe('ReactMarkdownCustom', () => {
     it('renders plain text correctly', () => {

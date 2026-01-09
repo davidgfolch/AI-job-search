@@ -1,10 +1,10 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import SqlEditor from '../SqlEditor';
-import * as useSqlEditorHook from '../../hooks/useSqlEditor';
+import SqlEditor from '../../core/SqlEditor';
+import * as useSqlEditorHook from '../../../hooks/useSqlEditor';
 
 // Mock the hook
-vi.mock('../../hooks/useSqlEditor', () => ({
+vi.mock('../../../hooks/useSqlEditor', () => ({
     useSqlEditor: vi.fn()
 }));
 

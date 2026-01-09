@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import HistoryInput from '../HistoryInput';
+import HistoryInput from '../../core/HistoryInput';
 
 describe('HistoryInput', () => {
     const defaultProps = {

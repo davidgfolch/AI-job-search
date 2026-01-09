@@ -2,7 +2,7 @@ import type { JobListParams } from '../api/jobs';
 import { useFilterConfigurations } from '../hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
-import ConfirmModal from './ConfirmModal';
+import ConfirmModal from './core/ConfirmModal';
 import './FilterConfigurations.css';
 
 const CLEAN_OLD_JOBS_CONFIG = {

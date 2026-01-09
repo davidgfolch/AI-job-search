@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { persistenceApi } from '../api/persistence';
+import { persistenceApi } from '../../api/persistence';
 import './HistoryInput.css';
 
 interface HistoryInputProps extends React.InputHTMLAttributes<HTMLInputElement> {

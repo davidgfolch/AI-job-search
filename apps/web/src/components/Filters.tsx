@@ -2,9 +2,9 @@ import { useState } from 'react';
 import type { JobListParams } from '../api/jobs';
 import { BOOLEAN_FILTERS } from '../config/filterConfig';
 import './Filters.css';
-import HistoryInput from './HistoryInput';
+import HistoryInput from './core/HistoryInput';
 import FilterConfigurations from './FilterConfigurations';
-import SqlEditor from './SqlEditor';
+import SqlEditor from './core/SqlEditor';
 
 interface BooleanFiltersProps {
     filters: JobListParams;

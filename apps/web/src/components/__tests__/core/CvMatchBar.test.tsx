@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import CvMatchBar from '../CvMatchBar';
+import CvMatchBar from '../../core/CvMatchBar';
 
 describe('CvMatchBar', () => {
     it('renders correctly with a valid percentage', () => {

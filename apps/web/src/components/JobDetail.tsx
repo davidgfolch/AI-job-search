@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import ReactMarkdownCustom from './ReactMarkdownCustom';
+import ReactMarkdownCustom from './core/ReactMarkdownCustom';
 import type { Job } from '../api/jobs';
 import { jobsApi } from '../api/jobs';
 import './JobDetail.css';
 import './Filters.css';
 import './FilterConfigurations.css';
 import SalaryCalculator from './salaryCalculator/SalaryCalculator';
-import CvMatchBar from './CvMatchBar';
+import CvMatchBar from './core/CvMatchBar';
 import { STATE_FIELDS } from '../hooks/contants';
 
 interface JobDetailProps {
@@ -66,7 +66,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                 <h2><a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">{job.title}</a></h2>
                 {onCreateNew && (
                     <button className="create-job-btn" onClick={onCreateNew} title="Create New Job">
-                        ➕ Create New
+                        ➕ Create
                     </button>
                 )}
                 {onDelete && (
