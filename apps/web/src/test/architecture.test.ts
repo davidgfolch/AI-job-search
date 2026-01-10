@@ -170,7 +170,7 @@ describe('Component Architecture', () => {
   });
 
   describe('Test File Location', () => {
-    it('should have all test files located in __tests__ directories', () => {
+    it('should have all test files located in ./__tests__ directories', () => {
       const allTestFiles = getTestFiles(componentsDir);
       const violations = allTestFiles.filter(file => {
         const parentDir = basename(dirname(file));

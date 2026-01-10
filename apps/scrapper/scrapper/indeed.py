@@ -1,29 +1,16 @@
 import time
-import re
-from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.remote.webelement import WebElement
-from .core import baseScrapper
-from .core.baseScrapper import getAndCheckEnvVars, htmlToMarkdown, join, printPage, printScrapperTitle, validate
-from commonlib.terminalColor import green, printHR, red, yellow
 from commonlib.decorator.retry import retry
-from commonlib.dateUtil import getDatetimeNowStr
-from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
+from commonlib.mysqlUtil import MysqlUtil
+from .core import baseScrapper
+from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from .services.selenium.seleniumService import SeleniumService
 from .services.selenium.browser_service import sleep
-from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from .util.persistence_manager import PersistenceManager
-from .selectors.indeedSelectors import (
-    CSS_SEL_JOB_DESCRIPTION,
-    CSS_SEL_JOB_EASY_APPLY,
-    CSS_SEL_JOB_LI,
-    CSS_SEL_JOB_REQUIREMENTS,
-    CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
-    CSS_SEL_COMPANY,
-    CSS_SEL_LOCATION,
-    CSS_SEL_JOB_TITLE,
-    CSS_SEL_JOB_LINK,
-    CSS_SEL_NEXT_PAGE_BUTTON)
-
+from .navigator.indeedNavigator import IndeedNavigator
+from .services.IndeedService import IndeedService
+from commonlib.terminalColor import green, yellow, printHR, red
+from commonlib.dateUtil import getDatetimeNowStr
+from commonlib.stringUtil import join
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INDEED")
 
@@ -33,20 +20,20 @@ DEBUG = True
 WEB_PAGE = 'Indeed'
 JOBS_X_PAGE = 15
 
-LOGIN_WAIT_DISABLE = True
-
 print('Indeed scrapper init')
-selenium: SeleniumService = None
-mysql: MysqlUtil = None
+navigator: IndeedNavigator = None
+service: IndeedService = None
 
 
 def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: PersistenceManager = None):
     """Login, process jobs in search paginated list results"""
-    global selenium, mysql
-    selenium = seleniumUtil
+    global navigator, service
+    navigator = IndeedNavigator(seleniumUtil)
     printScrapperTitle('Indeed', preloadPage)
     if preloadPage:
-        searchJobs(JOBS_SEARCH.split(',')[0], True)
+        # For preload, we just load the search page for the first keyword
+        url = getUrl(JOBS_SEARCH.split(',')[0])
+        navigator.load_page(url)
         return
     
     saved_state = {}
@@ -58,6 +45,9 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
     skip = True if saved_keyword else False
 
     with MysqlUtil() as mysql:
+        service = IndeedService(mysql, persistenceManager)
+        service.set_debug(DEBUG)
+        
         for keywords in JOBS_SEARCH.split(','):
             current_keyword = keywords.strip()
             start_page = 1
@@ -69,7 +59,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                     print(yellow(f"Skipping keyword '{current_keyword}' (already processed)"))
                     continue
             try:
-                searchJobs(current_keyword, False, start_page, persistenceManager)
+                search_jobs(current_keyword, start_page)
                 if persistenceManager:
                     persistenceManager.remove_failed_keyword('Indeed', current_keyword)
             except Exception:
@@ -86,16 +76,49 @@ def getUrl(keywords):
                 '&sc=0kf%253Aattr(DSQF7)%253B&sort=date')
 
 
-def replaceIndex(cssSelector: str, idx: int):
-    return cssSelector.replace('##idx##', str(idx))
+def search_jobs(keywords: str, startPage: int = 1):
+    print(yellow(f'Search keyword={keywords}'))
+    url = getUrl(keywords)
+    navigator.load_page(url)
+    time.sleep(10)
+    navigator.wait_until_page_is_loaded()
+    navigator.accept_cookies()
 
+    page = 0
+    currentItem = 0
+    totalResults = 0
+    
+    # Fast forward
+    if startPage > 1:
+        print(yellow(f"Fast forwarding to page {startPage}..."))
+        while page < startPage - 1:
+            if navigator.click_next_page():
+                page += 1
+                navigator.wait_until_page_is_loaded()
+                sleep(1, 2)
+            else:
+                break
+    
+    while True:
+        page += 1
+        baseScrapper.printPage(WEB_PAGE, page, '?', keywords)
+        idx = 0
+        while idx < JOBS_X_PAGE:
+            print(green(f'pg {page} job {idx+1} - '), end='')
+            totalResults += 1
+            if load_and_process_row(idx):
+                currentItem += 1
+            print()
+            idx += 1
+        
+        if navigator.click_next_page():
+            navigator.wait_until_page_is_loaded()
+            sleep(5, 6)
+            service.update_state(keywords, page + 1)
+        else:
+            break
 
-def getTotalResultsFromHeader(keywords: str) -> int:
-    total = selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-    printHR()
-    print(green(join(f'{total} total results for search: {keywords}')))
-    printHR()
-    return int(total)
+    summarize(keywords, totalResults, currentItem)
 
 
 def summarize(keywords, totalResults, currentItem):
@@ -105,129 +128,25 @@ def summarize(keywords, totalResults, currentItem):
     print()
 
 
-def scrollJobsList(idx):
-    # if idx < JOBS_X_PAGE-3:  # scroll to job link
-    #     i = idx
-    #     while i <= idx:
-    # in last page could not exist
-    baseScrapper.debug(DEBUG, "before scrollJobsList")
-    li = selenium.getElms(CSS_SEL_JOB_LI)[idx]
-    selenium.scrollIntoView_noError(li)
-    sleep(0.5, 1)
-    # i += 1
-    baseScrapper.debug(DEBUG, "after scrollJobsList")
-
-
-@retry(exception=NoSuchElementException, raiseException=False)
-def clickNextPage():
-    """Click on next to load next page.
-    If there isn't next button in pagination we are in the last page,
-    so return false to exit loop (stop processing)"""
-    sleep(1, 2)
-    selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
-    return True
-
-
-def loadJobDetail(jobLinkElm: WebElement):
-    # first job in page loads automatically
-    # if job exists in DB no need to load details (rate limit)
-    print(yellow('loading...'), end='')
-    sleep(2, 4)
-    selenium.waitAndClick(jobLinkElm)
-    sleep(9, 11)
-
-
-def jobExistsInDB(url):
-    jobId = getJobId(url)
-    return (jobId, mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
-
-
-def getJobId(url: str):
-    # https://es.indeed.com/pagead/clk?mo=r&ad=-6NYlbfkN0DbIyHopYNdPLgRYRG2FgnuJLz47mHLRnOVu2tY5XDnoTjm_t8c6thoU-53yYOVZJvZ76je_lq6KA-XAY92iGBEMkipCfXteoPVubXE4FHTfqx4Mf-6MhfZkK7YUu3yrI-z9JQE9pLO-djt1tFqNEtTK3NWMfyT0Ezmoj_8NOLQUumiyZsw8Hx3ykr2qLxPszYw1XYJLwKKdex1K0FkeMDl4M6poEhp9eoiIfvPBH-AGSl0J7kFrvnVDF5Cb6Dvrlcnad3Mvu-SvAvFBTP1OaSrIZMPkRPObPTtGFXsV0HO6KsqJx5bZwuzWhmu1B5dPhpGeEgMXWo0Cn3Bgc8D5VSbTCXIQDkq9i_5JDzpYeBo1uKtvyrS2lWXnCL9UNcz5eh8zDD8MU8-Pqk0vZPYzeaSWFWNqCidqZ9zcmNjFzMZdXdxTtOmr4lEs4GN__YlU0NBlGiq59uMCMRzFV93FcxbAC4oGzgFodV4uXx4dRB7zVAjTPLFlvNgsPUm6kHt7nDOe40xbCXB6STQc6axaa1tP1bRbfXH6sb6X8B_CK_kHRiPQ0omUdYa8RGGEtycz41lWTLwP1CT2zUOn64fuP3bIOeW9lPQFUW_Hi0n7r-KmA==&xkcb=SoCR6_M32Jfx9pTm350LbzkdCdPP&camk=nUmJqO2E8rjUsDRVvlAvpw==&p=0&fvj=0&vjs=3
-    # https://es.indeed.com/pagead/clk?mo=r&ad=-6NYlbfkN0DbIyHopYNdPLgRYRG2FgnuJLz47mHLRnOVu2tY5XDnoTjm_t8c6thoU-53yYOVZJvZ76je_lq6KA-XAY92iGBEMkipCfXteoPVubXE4FHTfqx4Mf-6MhfZkK7YUu3yrI-z9JQE9pLO-djt1tFqNEtTK3NWMfyT0Ezmoj_8NOLQUumiyZsw8Hx3ykr2qLxPszYw1XYJLwKKdex1K0FkeMDl4M6poEhp9eoiIfvPBH-AGSl0J7kFrvnVDF5Cb6Dvrlcnad3Mvu-SvAvFBTP1OaSrIZMPkRPObPTtGFXsV0HO6KsqJx5bZwuzWhmu1B5dPhpGeEgMXWo0Cn3Bgc8D5VSbTCXIQDkq9i_5JDzpYeBo1uKtvyrS2lWXnCL9UNcz5eh8zDD8MU8-Pqk0vZPYzeaSWFWNqCidqZ9zcmNjFzMZdXdxTtOmr4lEs4GN__YlU0NBlGiq59uMCMRzFV93FcxbAC4oGzgFodV4uXx4dRB7zVAjTPLFlvNgsPUm6kHt7nDOe40xbCXB6STQc6axaa1tP1bRbfXH6sb6X8B_CK_kHRiPQ0omUdYa8RGGEtycz41lWTLwP1CT2zUOn64fuP3bIOeW9lPQFUW_Hi0n7r-KmA==&xkcb=SoCR6_M32Jfx9pTm350LbzkdCdPP&camk=nUmJqO2E8rjUsDRVvlAvpw==&p=0&fvj=0&vjs=3&tk=1ii9bvhamkhjt8e0&jsa=9049&oc=1&sal=0
-    return re.sub(r'.+\?.*jk=([^&]+).*', r'\1', url)
-
-
-def acceptCookies():
-    selenium.waitAndClick_noError(
-        '#onetrust-accept-btn-handler', 'Could not accept cookies')
-
-
-def searchJobs(keywords: str, securityFilter: bool, startPage: int = 1, persistenceManager: PersistenceManager = None):
-    try:
-        print(yellow(f'Search keyword={keywords}'))
-        url = getUrl(keywords)
-        print(yellow(f'Loading page {url}'))
-        selenium.loadPage(url)
-        time.sleep(10)
-        selenium.waitUntilPageIsLoaded()
-        # NOTE: totalResults could be like +400, +50
-        # totalResults = getTotalResultsFromHeader(keywords)
-        # totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        acceptCookies()
-        if securityFilter:
-            return
-        page = 0
-        currentItem = 0
-        totalResults = 0
-        
-        if startPage > 1:
-            print(yellow(f"Fast forwarding to page {startPage}..."))
-            while page < startPage - 1:
-                # Indeed pagination via clickNextPage
-                if clickNextPage():
-                    page += 1
-                    selenium.waitUntilPageIsLoaded()
-                    sleep(1, 2)
-                else:
-                    break
-        
-        while True:
-            page += 1
-            printPage(WEB_PAGE, page, '?', keywords)
-            idx = 0
-            while idx < JOBS_X_PAGE:
-                print(green(f'pg {page} job {idx+1} - '), end='')
-                totalResults += 1
-                if loadAndProcessRow(idx):
-                    currentItem += 1
-                print()
-                idx += 1
-            if clickNextPage():
-                selenium.waitUntilPageIsLoaded()
-                sleep(5, 6)
-                if persistenceManager:
-                    persistenceManager.update_state('Indeed', keywords, page + 1)
-            else:
-                break  # exit while
-        summarize(keywords, totalResults, currentItem)
-    except Exception:
-        baseScrapper.debug(DEBUG, exception=True)
-
-
-def getJobLinkElement(idx):
-    liElm = selenium.getElms(CSS_SEL_JOB_LI)[idx]
-    return selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
-
-
 @retry(raiseException=False)
-def loadAndProcessRow(idx):
+def load_and_process_row(idx):
     ignore = True
     jobExists = False
     url = ''
     try:
-        scrollJobsList(idx)
-        jobLinkElm: WebElement = getJobLinkElement(idx)
-        url = jobLinkElm.get_attribute('href')
-        jobId, jobExists = jobExistsInDB(url)
+        navigator.scroll_jobs_list(idx)
+        jobLinkElm = navigator.get_job_link_element(idx)
+        url = navigator.get_job_url(jobLinkElm)
+        jobId, jobExists = service.job_exists_in_db(url)
         baseScrapper.debug(DEBUG, "after jobExistsInDB")
+        
         # clean url just with jobId param
         url = f'https://es.indeed.com/viewjob?jk={jobId}'
         if jobExists:
-            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'),
-                  end='')
+            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
             return True
-        loadJobDetail(jobLinkElm)
+        
+        navigator.load_job_detail(jobLinkElm)
         ignore = False
     except IndexError as ex:
         print(yellow("WARNING: could not get all items per page, that's ",
@@ -235,50 +154,19 @@ def loadAndProcessRow(idx):
                      f"pages: {ex}"))
     except Exception:
         baseScrapper.debug(DEBUG)
+    
     if not ignore:
-        if not processRow(url):
+        if not process_row(url):
             print(red('Validation failed'))
-            return loadAndProcessRow(idx)
-        selenium.back()
+            return load_and_process_row(idx)
+        navigator.back()
         sleep(1, 2)
         return True
     return False
 
 
 @retry(raiseException=False)
-def processRow(url):
-    title = selenium.getText(CSS_SEL_JOB_TITLE).removesuffix('\n- job post')
-    company = selenium.getText(CSS_SEL_COMPANY)
-    # company = selenium.getText(CSS_SEL_COMPANY2)
-    location = selenium.getText(CSS_SEL_LOCATION)
-    jobId = getJobId(url)
-    selenium.scrollIntoView(CSS_SEL_JOB_REQUIREMENTS)
-    sleep(1, 2)
-    selenium.waitUntil_presenceLocatedElement(CSS_SEL_JOB_REQUIREMENTS)
-    html = selenium.getHtml(CSS_SEL_JOB_REQUIREMENTS)
-    html += selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-    md = htmlToMarkdown(html)
-    md = postProcessMarkdown(md)
-    # easyApply: there are 2 buttons
-    easyApply = len(selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-    print(f'{jobId}, {title}, {company}, {location}, {url}',
-          f'easy_apply={easyApply} - ', end='')
-    if validate(title, url, company, md, DEBUG):
-        if id := mysql.insert((jobId, title, company, location, url, md,
-                               easyApply, WEB_PAGE)):
-            print(green(f'INSERTED {id}!'), end='')
-            mergeDuplicatedJobs(mysql, getSelect())
-            return True
-        else:
-            baseScrapper.debug(DEBUG, exception=True)
-    return False
-
-
-def postProcessMarkdown(md):
-    txt = re.sub(r'\[([^\]]+)\]\(/ofertas-trabajo[^\)]+\)', r'\1', md)
-    txt = re.sub(r'[\\]+-', '-', txt)
-    txt = re.sub(r'[\\]+\.', '.', txt)
-    txt = re.sub(r'-\n', '\n', txt)
-    txt = re.sub(r'(\n[  ]*){3,}', '\n\n', txt)
-    txt = re.sub(r'[-*] #', '#', txt)
-    return txt
+def process_row(url):
+    title, company, location, html = navigator.get_job_data()
+    easyApply = navigator.check_easy_apply()
+    return service.process_job(title, company, location, url, html, easyApply)
