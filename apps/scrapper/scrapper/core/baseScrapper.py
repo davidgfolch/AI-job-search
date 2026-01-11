@@ -51,6 +51,9 @@ class CustomConverter(MarkdownConverter):
             text = text.replace('\n', ' ')
         return super().convert_strong(el, text, parent_tags)+' '
     
+    def convert_ul(self, el, text, parent_tags):
+        return super().convert_ul(el, text, parent_tags)+'\n'
+    
 def htmlToMarkdown(html: str) -> str:
     md = CustomConverter().convert(html)
     return removeInvalidScapes(md)
