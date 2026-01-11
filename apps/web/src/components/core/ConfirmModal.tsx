@@ -16,6 +16,18 @@ export default function ConfirmModal({
     onConfirm, 
     onCancel 
 }: ConfirmModalProps) {
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isOpen && (e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                onConfirm();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onConfirm]);
+
     if (!isOpen) return null;
 
     return (

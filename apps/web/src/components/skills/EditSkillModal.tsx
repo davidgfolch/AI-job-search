@@ -19,6 +19,19 @@ export const EditSkillModal = ({ skill, onSave, onClose }: EditSkillModalProps) 
     setNewLinkInput('');
   }, [skill]);
 
+  // Handle Ctrl+Enter to save
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [description, learningPath]); // Add dependencies needed for handleSave closure
+
   const handleAddLink = () => {
     if (newLinkInput.trim()) {
       setLearningPath([...learningPath, newLinkInput.trim()]);

@@ -57,10 +57,23 @@ describe('ConfirmModal', () => {
         }
     });
 
+
     it('should not call onCancel when clicking inside the modal content', () => {
         render(<ConfirmModal {...defaultProps} />);
         const modalContent = screen.getByText('Are you sure?'); // Part of content
         fireEvent.click(modalContent);
         expect(defaultProps.onCancel).not.toHaveBeenCalled();
+    });
+
+    it('should call onConfirm when Ctrl+Enter is pressed', () => {
+        render(<ConfirmModal {...defaultProps} />);
+        fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
+        expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onConfirm when Meta+Enter is pressed', () => {
+        render(<ConfirmModal {...defaultProps} />);
+        fireEvent.keyDown(window, { key: 'Enter', metaKey: true });
+        expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
     });
 });
