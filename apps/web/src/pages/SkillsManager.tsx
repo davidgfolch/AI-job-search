@@ -5,7 +5,7 @@ import { EditSkillModal } from '../components/skills/EditSkillModal';
 import './SkillsManager.css';
 
 const SkillsManager = () => {
-  const { learnList, reorderSkills, removeSkill, updateSkill } = useLearnList();
+  const { learnList, reorderSkills, removeSkill, updateSkill, isLoading, error } = useLearnList();
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
 
   const handleRemove = (skill: string) => {
@@ -23,9 +23,14 @@ const SkillsManager = () => {
 
   return (
     <div className="skills-manager">
-      <h2>Skills Manager</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>Skills Manager</h2>
+      </div>
       
-      {learnList.length === 0 ? (
+      {error && <div className="error-message" style={{ color: 'red', margin: '10px 0' }}>{error}</div>}
+      {isLoading && <div className="loading-indicator">Loading skills...</div>}
+
+      {!isLoading && learnList.length === 0 ? (
         <div className="empty-state">
           <p>No skills in your learn list yet.</p>
         </div>

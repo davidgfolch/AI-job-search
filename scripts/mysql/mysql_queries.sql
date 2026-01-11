@@ -99,9 +99,9 @@ from (select count(*) as counter, GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',
 where r.counter>1
 order by r.counter desc
 
-delete from jobs where id in (2426 , 2308)
+delete from jobs where id in (445342)
 
-select title, company from jobs where id in (8505, 8518)
+select title, company from jobs where id in (445342)
 
 select * from jobs where id = 69103
 
@@ -242,6 +242,12 @@ select * from jobs where jobId like '%handMade%' and not applied;
 delete from jobs where jobId  = 'handMade0000001';
 
 select * from jobs where jobId like '%handMade%';
+
+
+
+--- SKILL MANAGER
+
+select * from job_skills;
 
 
 

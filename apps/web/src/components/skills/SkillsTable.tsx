@@ -70,7 +70,7 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
               </td>
               <td>
                 <div className="links-list read-only">
-                  {skill.learningPath.map((link, i) => (
+                  {skill.learningPath &&skill.learningPath.map((link, i) => (
                     <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="link-url">
                       {link}
                     </a>
