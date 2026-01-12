@@ -4,6 +4,7 @@ import traceback
 from typing import Callable, Any
 from time import sleep
 
+from ..exceptionUtil import getProjectTraceItems
 from ..terminalColor import red, yellow
 
 
@@ -48,7 +49,8 @@ def retry(retries: int = 5,
                         else:
                             print(red(str(e)), flush=True)
                         return False
-                    print(yellow(f'Error calling function {fnc.__name__}() -> Retry {i}/{retries}... '), end='', flush=True)
+                    trace = getProjectTraceItems(e)
+                    print(yellow(f'Error calling function {fnc.__name__}() -- {trace} -> Retry {i}/{retries}... '), end='', flush=True)
                     if stackStrace == StackTrace.ALWAYS:
                         print(red(traceback.format_exc()), flush=True)
                     if exceptionFnc is not None:
