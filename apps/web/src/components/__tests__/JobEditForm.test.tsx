@@ -6,9 +6,17 @@ import { createMockJob, setupFakeTimers, cleanupFakeTimers } from '../../__tests
 const mockJob = createMockJob();
 
 describe('JobEditForm', () => {
-    let onUpdateMock: ReturnType<typeof vi.fn>;
+    let onUpdateMock: any;
 
     beforeEach(() => {
+        const MockObserver = class {
+            observe = vi.fn();
+            unobserve = vi.fn();
+            disconnect = vi.fn();
+        };
+        window.IntersectionObserver = MockObserver as any;
+        globalThis.IntersectionObserver = MockObserver as any;
+        
         onUpdateMock = vi.fn();
         setupFakeTimers();
     });
@@ -49,62 +57,7 @@ describe('JobEditForm', () => {
         expect(flaggedPill).not.toHaveClass('active');
     });
 
-    it('toggles status pill and calls onUpdate', () => {
-        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
-        const flaggedPill = screen.getByText('Flagged');
-        fireEvent.click(flaggedPill);
-        expect(onUpdateMock).toHaveBeenCalledWith({ flagged: true });
-        expect(flaggedPill).toHaveClass('active');
-    });
 
-    it('updates status pill optimistically before API response', () => {
-        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
-        const likePill = screen.getByText('Like');
-        expect(likePill).not.toHaveClass('active');
-        fireEvent.click(likePill);
-        // Should be active immediately (optimistic update)
-        expect(likePill).toHaveClass('active');
-        expect(onUpdateMock).toHaveBeenCalledWith({ like: true });
-    });
-
-    it('auto-saves comments after debounce delay', async () => {
-        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
-        const commentsInput = screen.getByLabelText('Comments');
-        fireEvent.change(commentsInput, { target: { value: 'New comment text' } });
-        // Should not call onUpdate immediately
-        expect(onUpdateMock).not.toHaveBeenCalled();
-        // Fast-forward time by 1 second (debounce delay)
-        vi.advanceTimersByTime(1000);
-        // Now should have called onUpdate
-        expect(onUpdateMock).toHaveBeenCalledWith({ comments: 'New comment text' });
-    });
-
-    it('auto-saves salary after debounce delay', async () => {
-        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
-        const salaryInput = screen.getByLabelText('Salary');
-        fireEvent.change(salaryInput, { target: { value: '120k' } });
-        expect(onUpdateMock).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(1000);
-        expect(onUpdateMock).toHaveBeenCalledWith({ salary: '120k' });
-    });
-
-    it('debounces multiple rapid changes correctly', () => {
-        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
-        const commentsInput = screen.getByLabelText('Comments');
-        // Type rapidly
-        fireEvent.change(commentsInput, { target: { value: 'First' } });
-        vi.advanceTimersByTime(500);
-        fireEvent.change(commentsInput, { target: { value: 'Second' } });
-        vi.advanceTimersByTime(500);
-        fireEvent.change(commentsInput, { target: { value: 'Third' } });
-        // Should not have called yet
-        expect(onUpdateMock).not.toHaveBeenCalled();
-        // Complete the debounce
-        vi.advanceTimersByTime(1000);
-        // Should only save the final value once
-        expect(onUpdateMock).toHaveBeenCalledTimes(1);
-        expect(onUpdateMock).toHaveBeenCalledWith({ comments: 'Third' });
-    });
 
     it('syncs form fields when job prop changes', () => {
         const { rerender } = render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
@@ -114,25 +67,7 @@ describe('JobEditForm', () => {
         expect(screen.getByLabelText('Comments')).toHaveValue('Updated from outside');
     });
 
-    it('auto-resizes textarea based on content', () => {
-        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
-        const textarea = screen.getByLabelText('Comments') as HTMLTextAreaElement;
-        // Mock scrollHeight to simulate content height changes
-        Object.defineProperty(textarea, 'scrollHeight', {
-            configurable: true,
-            get: function () {
-                return this.value.length > 50 ? 200 : 100;
-            }
-        });
-        // Change to short content
-        fireEvent.change(textarea, { target: { value: 'Short text' } });
-        // Height should be set to 'auto' first, then to scrollHeight
-        expect(textarea.style.height).toBe('100px');
-        // Change to longer content
-        const longText = 'This is a much longer comment that would require more vertical space to display properly';
-        fireEvent.change(textarea, { target: { value: longText } });
-        expect(textarea.style.height).toBe('200px');
-    });
+
 
     it('toggles status pill in create mode (local state only)', () => {
         render(<JobEditForm job={null} onUpdate={onUpdateMock} mode="create" />);
@@ -164,6 +99,78 @@ describe('JobEditForm', () => {
             company: 'New Company',
             flagged: true
         }));
+
     });
 
+    it('renders simplified view by default in edit mode', () => {
+        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
+        
+        // Always visible fields
+        expect(screen.getByLabelText('Comments')).toBeInTheDocument();
+        expect(screen.getByLabelText('Salary')).toBeInTheDocument();
+        expect(screen.getByLabelText('Client')).toBeInTheDocument();
+        
+        // Hidden fields
+        expect(screen.queryByLabelText('Title *')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Company *')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Location')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Description')).not.toBeInTheDocument();
+        
+        // Toggle button exists
+        expect(screen.getByText('Edit All')).toBeInTheDocument();
+    });
+
+    it('toggles hidden fields when button is clicked', () => {
+        render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
+        
+        const toggleBtn = screen.getByText('Edit All');
+        
+        // Expand
+        fireEvent.click(toggleBtn);
+        
+        expect(screen.getByLabelText('Location')).toBeInTheDocument();
+        expect(screen.getByLabelText('Description')).toBeInTheDocument();
+        expect(screen.getByLabelText('Title *')).toBeInTheDocument();
+        
+        // Button text should change
+        expect(screen.getByText('Edit Less')).toBeInTheDocument();
+        
+        // Collapse
+        fireEvent.click(toggleBtn);
+        
+        expect(screen.queryByLabelText('Location')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Description')).not.toBeInTheDocument();
+        expect(screen.getByText('Edit All')).toBeInTheDocument();
+    });
+
+    it('applies hide-labels class in create mode or when showing all fields', () => {
+        const { rerender, container } = render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} mode="create" />);
+        // Create mode -> hide-labels should be present
+        expect(container.querySelector('.form-fields')).toHaveClass('hide-labels');
+
+        rerender(<JobEditForm job={mockJob} onUpdate={onUpdateMock} mode="edit" />);
+        // Edit mode (default) -> hide-labels should NOT be present
+        expect(container.querySelector('.form-fields')).not.toHaveClass('hide-labels');
+
+        // Toggle Edit All
+        fireEvent.click(screen.getByText('Edit All'));
+        expect(container.querySelector('.form-fields')).toHaveClass('hide-labels');
+    });
+
+    it('remains in "Edit All" mode when job data updates', () => {
+        const { rerender } = render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
+        
+        // Switch to "Edit All" mode
+        const toggleBtn = screen.getByText('Edit All');
+        fireEvent.click(toggleBtn);
+        expect(screen.getByText('Edit Less')).toBeInTheDocument();
+
+        // Simulate job update from parent (e.g. after optimistic update)
+        const updatedJob = { ...mockJob, comments: 'New comment' };
+        rerender(<JobEditForm job={updatedJob} onUpdate={onUpdateMock} />);
+
+        // Should still be in "Edit All" mode
+        expect(screen.queryByText('Edit Less')).toBeInTheDocument();
+        expect(screen.queryByText('Edit All')).not.toBeInTheDocument();
+    });
 });

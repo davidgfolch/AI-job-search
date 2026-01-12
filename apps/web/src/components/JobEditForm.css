@@ -64,15 +64,40 @@
     margin-bottom: 1.5rem;
 }
 
+.form-row {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+}
+
+.form-row .form-field {
+    flex: 1;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+    }
+}
+
 .form-field {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
+.form-field-small {
+    max-width: 20rem;
+}
+
 .form-field label {
     color: #667eea;
     font-weight: 500;
+}
+
+.form-fields.hide-labels .form-field label {
+    display: none;
 }
 
 .form-field input,
@@ -83,7 +108,7 @@
     background: #1a1a1a;
     color: white;
     font-family: inherit;
-    transition: all 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-field input:focus,
@@ -150,4 +175,10 @@
     background: var(--bg-primary);
     border-color: var(--border-color);
     color: var(--text-secondary);
+}
+
+
+.toggle-edit-btn {
+    position: relative;
+    float: right;
 }
