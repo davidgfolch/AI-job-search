@@ -6,8 +6,8 @@ trigger: always_on
 2. Use the following test to check modified files follow those rules:
    - apps\commonlib> clear && poetry run pytest .\test\architecture_test.py
 3. Monorepo module's:
-   2.1 This project contains several modules in apps folder.
-   2.2 Each modules use a package manager:
-   - uv for apps/backend, apps/AiEnrich & apps/AiEnrichNew.
-   - poetry for apps/commonlib, apps/viewer and apps/scrapper .
-   - npm for apps/web, for tests run `npm test -- run`.
+   3.1 This project contains several modules in apps folder.
+   3.2 Each modules use a package manager:
+      - uv for apps/backend, apps/AiEnrich & apps/AiEnrichNew.
+      - poetry for apps/commonlib, apps/viewer and apps/scrapper .
+      - npm for apps/web, for tests run `npm test -- run`.
