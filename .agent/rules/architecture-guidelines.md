@@ -10,4 +10,4 @@ trigger: always_on
    - Each modules use a package manager:
       - uv for apps/backend, apps/AiEnrich & apps/AiEnrichNew.
       - poetry for apps/commonlib, apps/viewer and apps/scrapper .
-      - npm for apps/web, for tests run `npm test -- run`.
+      - npm for apps/web, for tests run `npm run -- test`.
