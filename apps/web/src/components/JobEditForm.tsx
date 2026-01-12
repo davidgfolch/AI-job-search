@@ -180,12 +180,12 @@ export default function JobEditForm({ job, onUpdate, onCreate, mode = 'edit' }: 
                 )}
                 <div className="form-field">
                     <label htmlFor="comments">Comments</label>
-                    <textarea ref={commentsRef} id="comments" value={comments} style={{ maxHeight: '10rem;' }} onChange={handleChange(setComments, 'comments')} placeholder="Add your comments here..." />
+                    <textarea ref={commentsRef} id="comments" value={comments} style={{ maxHeight: '10rem' }} onChange={handleChange(setComments, 'comments')} placeholder="Add your comments here..." />
                 </div>
                 {(mode === 'create' || showAllFields) && (
                     <div className="form-field">
                         <label htmlFor="markdown">Description</label>
-                        <textarea ref={markdownRef} id="markdown" value={markdown} style={{ maxHeight: '10rem;' }} onChange={handleChange(setMarkdown, 'markdown')} placeholder="Job Description (Markdown supported)"/>
+                        <textarea ref={markdownRef} id="markdown" value={markdown} style={{ maxHeight: '10rem' }} onChange={handleChange(setMarkdown, 'markdown')} placeholder="Job Description (Markdown supported)"/>
                     </div>
                 )}
                 {mode === 'create' && (
