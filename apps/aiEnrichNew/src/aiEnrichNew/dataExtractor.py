@@ -53,18 +53,18 @@ def get_pipeline():
         print(cyan("Local model loaded."))
     return _PIPELINE
 
-QRY_FROM = """
-FROM jobs
-WHERE (ai_enriched IS NULL OR not ai_enriched) and
-not (ignored or discarded or closed)
-ORDER BY created desc"""
-QRY_COUNT = f"""SELECT count(id) {QRY_FROM}"""
-QRY_FIND_IDS = f"""SELECT id {QRY_FROM}"""
 QRY_FIND = """
 SELECT id, title, markdown, company
 FROM jobs
 WHERE id=%s and not ai_enriched and not (ignored or discarded or closed)
 ORDER BY created desc"""
+QRY_FROM = """
+FROM jobs
+WHERE (ai_enriched IS NULL OR not ai_enriched) and
+not (ignored or discarded or closed)
+ORDER BY created desc"""
+QRY_FIND_IDS = f"""SELECT id {QRY_FROM}"""
+QRY_COUNT = f"""SELECT count(id) {QRY_FROM}"""
 QRY_UPDATE = """
 UPDATE jobs SET
     salary=%s,
