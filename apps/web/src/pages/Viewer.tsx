@@ -104,6 +104,7 @@ export default function Viewer() {
                     <div className="viewer-right">
                         {state.selectedJob ? (
                             <JobDetail 
+                                key={state.selectedJob.id}
                                 job={state.selectedJob} 
                                 onUpdate={actions.updateJob} 
                                 onCreateNew={() => actions.setActiveTab('create')}
