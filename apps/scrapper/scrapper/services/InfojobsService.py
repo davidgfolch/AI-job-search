@@ -47,6 +47,8 @@ class InfojobsService:
 
     def post_process_markdown(self, md):
         txt = removeLinks(md)
+        pattern = r"¿Te gusta esta oferta\?\s+Prueba el Asistente de IA y mejora tus posibilidades\.\s+Asistente IA"
+        txt = re.sub(pattern, "", txt)
         return txt
 
     def prepare_resume(self):

@@ -37,9 +37,24 @@ def test_main_wait_arg(mocks):
     main(['scrapper.py', 'wait'])
     mocks['scheduler'].runAllScrappers.assert_called_with(True, False, None)
 
-def test_main_starting_arg(mocks):
-    main(['scrapper.py', 'starting', 'linkedin'])
-    mocks['scheduler'].runAllScrappers.assert_called_with(False, True, 'Linkedin')
+@pytest.mark.parametrize("args, should_run, expected_arg", [
+    (['scrapper.py', 'starting', 'Infojobs'], True, 'Infojobs'),
+    (['scrapper.py', 'starting', 'infojobs'], True, 'Infojobs'),
+    (['scrapper.py', 'starting', 'infojojbs'], False, None),
+    (['scrapper.py', 'starting'], False, None),
+])
+def test_starting(mocks, args, should_run, expected_arg):
+    input_args = list(args)
+    if 'starting' in input_args and len(input_args) == 2:
+        with pytest.raises(SystemExit):
+            main(input_args)
+        return
+
+    main(input_args)
+    if should_run:
+        mocks['scheduler'].runAllScrappers.assert_called_with(False, True, expected_arg)
+    else:
+        mocks['scheduler'].runAllScrappers.assert_not_called()
 
 def test_main_specified_scrappers(mocks):
     main(['scrapper.py', 'linkedin', 'infojobs'])
@@ -49,5 +64,11 @@ def test_main_specified_scrappers(mocks):
     (['a', 't', 'b'], 't', True), (['a', 'b'], 't', False)
 ])
 def test_has_argument(args, target, expected):
-    assert hasArgument(args, target, lambda: None) is expected
-    if expected: assert target not in args
+    args_copy = list(args)
+    result = hasArgument(args_copy, target, lambda: None)
+    if expected:
+        assert result == []
+        assert target not in args_copy
+    else:
+        assert result is None
+        assert args_copy == args
