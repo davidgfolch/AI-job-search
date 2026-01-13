@@ -46,3 +46,17 @@ def test_backend_layered_architecture(layer_name, required_deps, forbidden_deps,
         required_deps=required_deps,
         forbidden_deps=forbidden_deps,
         ignore_files=ignore_files)
+
+def test_sibling_test_folder_exists():
+    violations = get_files_without_sibling_test()
+    if violations:
+        message = ""
+        # Group by type of violation for cleaner output or just list them
+        # Sorting by path
+        violations.sort(key=lambda x: x[0])
+        
+        message += f"\n{YELLOW}Found files missing sibling tests (or using legacy naming):{RESET}\n"
+        for path, reason in violations:
+             message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
+             
+        warnings.warn(UserWarning(message))

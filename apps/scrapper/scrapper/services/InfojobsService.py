@@ -6,6 +6,12 @@ from commonlib.terminalColor import green
 from ..core.baseScrapper import htmlToMarkdown, validate, removeLinks, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
 
+REMOVE_IN_MARKDOWN = [
+    "¿Te gusta esta oferta?",
+    "Prueba el Asistente de IA y mejora tus posibilidades.",
+    "Asistente IA"
+]
+
 class InfojobsService:
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
         self.mysql = mysql
@@ -47,8 +53,8 @@ class InfojobsService:
 
     def post_process_markdown(self, md):
         txt = removeLinks(md)
-        pattern = r"¿Te gusta esta oferta\?\s+Prueba el Asistente de IA y mejora tus posibilidades\.\s+Asistente IA"
-        txt = re.sub(pattern, "", txt)
+        patterns = r'\s+'.join(map(re.escape, REMOVE_IN_MARKDOWN))
+        txt = re.sub(patterns, "", txt)
         return txt
 
     def prepare_resume(self):
