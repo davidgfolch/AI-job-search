@@ -14,6 +14,7 @@ class SkillCreate(SkillBase):
     pass
 
 class SkillUpdate(SkillBase):
+    name: Optional[str] = None
     description: Optional[str] = None
     learning_path: Optional[List[str]] = None
     disabled: Optional[bool] = None

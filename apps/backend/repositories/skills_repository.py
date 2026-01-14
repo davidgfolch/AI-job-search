@@ -43,7 +43,8 @@ class SkillsRepository:
     def update_skill(self, name: str, update_data: Dict[str, Any]) -> Optional[str]:
         with self.get_db() as db:
             # check exists
-            check = db.fetchOne("SELECT name FROM job_skills WHERE name = %s", [name])
+            # fetchOne expects a single ID, it will wrap it in a list
+            check = db.fetchOne("SELECT name FROM job_skills WHERE name = %s", name)
             if not check:
                 return None
             set_clauses = []
@@ -53,7 +54,9 @@ class SkillsRepository:
                 params.append(update_data['description'])
             if 'learning_path' in update_data:
                 set_clauses.append("learning_path = %s")
-                params.append(json.dumps(update_data['learning_path']) if update_data['learning_path'] else None)
+                lp = update_data['learning_path']
+                params.append(json.dumps(lp) if lp is not None else None)
+            
             if 'disabled' in update_data:
                 set_clauses.append("disabled = %s")
                 params.append(update_data['disabled'])
