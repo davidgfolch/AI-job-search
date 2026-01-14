@@ -1,7 +1,7 @@
 
 import pytest
 import warnings
-from architecture_util import *
+from .architecture_util import *
 from commonlib.terminalColor import YELLOW, RED, ORANGE, RESET
 
 def test_files_exceed_200_lines():

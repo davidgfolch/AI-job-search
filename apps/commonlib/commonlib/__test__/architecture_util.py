@@ -13,7 +13,7 @@ EXCLUDES = {
 def get_project_root():
     # Assuming this test is in apps/commonlib/test
     current_dir = Path(__file__).resolve().parent
-    return current_dir.parent.parent.parent
+    return current_dir.parent.parent.parent.parent
 
 def count_lines(filepath):
     try:
