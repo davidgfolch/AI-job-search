@@ -23,13 +23,14 @@ rem ──────────────────────  Execute 
 if defined target (
      call :run_test "%CD%\!target!"
 ) else (
+    rem Execute commonlib tests first
     if exist "apps\commonlib" (
         call :run_test "%CD%\apps\commonlib"
     )
-
+    rem Execute other apps tests
     for /d %%a in (apps\*) do (
         if /i not "%%~nxa"=="commonlib" (
-            call :run_test "%%~fa"
+            call :run_test "!target_dir!"
         )
     )
 )

@@ -13,8 +13,6 @@ for arg in "$@"; do
     fi
 done
 
-# Execute tests
-
 run_test() {
     local dir=$1
     echo ""
@@ -51,17 +49,17 @@ run_test() {
     else
         echo "No known project type found in $(basename "$dir")"
     fi
-    
     popd > /dev/null
 }
 
 if [ -n "$target" ]; then
     run_test "$target"
 else
+    # Execute commonlib tests first
     if [ -d "apps/commonlib" ]; then
         run_test "apps/commonlib"
     fi
-
+    # Execute other apps tests
     for dir in apps/*; do
         if [ ! -d "$dir" ]; then
             continue
@@ -69,7 +67,6 @@ else
         if [ "$(basename "$dir")" == "commonlib" ]; then
             continue
         fi
-        
         run_test "$dir"
     done
 fi
