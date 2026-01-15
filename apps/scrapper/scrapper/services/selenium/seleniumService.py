@@ -73,6 +73,9 @@ class SeleniumService:
     def getElms(self, cssSel: str, driverOverride=None) -> List[WebElement]:
         return self.element_service.getElms(cssSel, driverOverride)
 
+    def setFocus(self, cssSel: str):
+        self.driver.execute_script("arguments[0].focus();", self.getElm(cssSel))
+
     def sendEscapeKey(self):
         self.browser_service.sendEscapeKey()
 

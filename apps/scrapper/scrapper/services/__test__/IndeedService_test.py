@@ -99,3 +99,25 @@ class TestIndeedService:
         result = service.process_job("Title", "Company", "Loc", "http://url?jk=1", "html", False)
         
         assert result is False
+
+    @patch("scrapper.services.IndeedService.htmlToMarkdown")
+    @patch("scrapper.services.IndeedService.validate")
+    @patch("scrapper.services.IndeedService.mergeDuplicatedJobs")
+    @patch("scrapper.services.IndeedService.getSelect")
+    def test_process_job_removes_turnstile(self, mock_getSelect, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
+        mock_html2md.return_value = "markdown"
+        mock_validate.return_value = True
+        mock_mysql.fetchOne.return_value = None # Job not in DB
+        mock_mysql.insert.return_value = 101 # Inserted ID
+        
+        url = "https://es.indeed.com/viewjob?jk=123&cf-turnstile-response=remove_me&other=keep"
+        
+        result = service.process_job("Title", "Company", "Loc", url, "html", False)
+        
+        assert result is True
+        args = mock_mysql.insert.call_args[0][0]
+        cleaned_url_arg = args[4]
+        assert "cf-turnstile-response" not in cleaned_url_arg
+        # Check presence of other params (order may vary)
+        assert "jk=123" in cleaned_url_arg
+        assert "other=keep" in cleaned_url_arg

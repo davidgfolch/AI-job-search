@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch
 from scrapper.core.baseScrapper import (
     getAndCheckEnvVars, htmlToMarkdown, removeInvalidScapes,
-    removeLinks, validate, debug, join, printScrapperTitle, printPage
+    removeLinks, validate, debug, join, printScrapperTitle, printPage, removeUrlParameter
 )
 
 class TestGetAndCheckEnvVars:
@@ -188,3 +188,36 @@ class TestPrintPage:
             printPage('LinkedIn', 1, 10, 'python developer')
             mockPrint.assert_called()
             mockPrintHR.assert_called()
+
+
+class TestRemoveUrlParameter:
+    def test_remove_existing_parameter(self):
+        url = "https://example.com/page?param1=value1&param2=value2"
+        result = removeUrlParameter(url, "param1")
+        assert "param1" not in result
+        assert "param2=value2" in result
+        assert "example.com" in result
+
+    def test_remove_last_parameter(self):
+        url = "https://example.com/page?param1=value1"
+        result = removeUrlParameter(url, "param1")
+        assert "param1" not in result
+        assert "example.com" in result
+
+    def test_remove_non_existing_parameter(self):
+        url = "https://example.com/page?param1=value1"
+        result = removeUrlParameter(url, "param2")
+        assert result == url
+
+    def test_remove_from_multiple_values(self):
+        url = "https://example.com/page?p=1&p=2&target=remove"
+        result = removeUrlParameter(url, "target")
+        assert "target" not in result
+        assert "p=1" in result
+        assert "p=2" in result
+
+    def test_remove_turnstile(self):
+         url = "https://es.indeed.com/viewjob?jk=789&cf-turnstile-response=123"
+         result = removeUrlParameter(url, "cf-turnstile-response")
+         assert "cf-turnstile-response" not in result
+         assert "jk=789" in result

@@ -165,8 +165,8 @@ class TestIndeedScrapper:
             assert result is True
             mock_mysql.insert.assert_called_once()
             args = mock_mysql.insert.call_args[0]
-            assert "123" == args[0]
-            assert "Title" == args[1]
+            assert "123" == args[0][0]
+            assert "Title" == args[0][1]
 
     def test_service_process_job_validation_fail(self, mock_mysql):
         service = IndeedService(mock_mysql, MagicMock())

@@ -46,14 +46,16 @@ class IndeedNavigator:
         self.ignore_access_key_form()
         sleep(2, 3)
 
-    def search(self, what: str, where: str = "España"):
-        print(yellow(f'Searching for "{what}" in "{where}"'))
+    def search(self, keyword: str, location: str = "España"):
+        print(yellow(f'Searching for "{keyword}" in "{location}"'))
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_SEARCH_WHAT)
-        self.selenium.clearInputbox(CSS_SEL_SEARCH_WHAT)
-        self.selenium.clearInputbox(CSS_SEL_SEARCH_WHERE)
+        self.selenium.setFocus(CSS_SEL_SEARCH_WHAT)
+        self.selenium.waitAndClick_noError('button[aria-label="Clear what input"]', "Could not clear keyword input", showException=False)
+        self.selenium.setFocus(CSS_SEL_SEARCH_WHERE)
+        self.selenium.waitAndClick_noError('button[aria-label="Clear what input"]', "Could not clear location input", showException=False)
         sleep(1,1)
-        self.selenium.sendKeys(CSS_SEL_SEARCH_WHAT, what, clear=True)
-        self.selenium.sendKeys(CSS_SEL_SEARCH_WHERE, where, clear=True)
+        self.selenium.sendKeys(CSS_SEL_SEARCH_WHAT, keyword, clear=True)
+        self.selenium.sendKeys(CSS_SEL_SEARCH_WHERE, location, clear=True)
         self.selenium.waitAndClick(CSS_SEL_SEARCH_BTN)
         self.selenium.waitUntilPageIsLoaded()
 
@@ -107,7 +109,8 @@ class IndeedNavigator:
         return self.selenium.getElmOf(liElm, CSS_SEL_JOB_LINK)
 
     def get_job_url(self, element: WebElement) -> str:
-        return element.get_attribute("href")
+        url = element.get_attribute("href")
+        return baseScrapper.removeUrlParameter(url, 'cf-turnstile-response')
 
     def load_page(self, url: str):
         print(yellow(f"Loading page {url}"))

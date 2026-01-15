@@ -1,9 +1,11 @@
 import re
+import urllib.parse
+import hashlib
 from typing import Tuple
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green, yellow
-from ..core.baseScrapper import htmlToMarkdown, validate, debug
+from ..core.baseScrapper import htmlToMarkdown, validate, debug, removeUrlParameter
 from ..util.persistence_manager import PersistenceManager
 
 
@@ -19,8 +21,6 @@ class IndeedService:
 
     def get_job_id(self, url: str):
         # Extract job ID from Indeed URL
-        import urllib.parse
-        import hashlib
 
         # If URL is already clean, extract the job ID
         if url.startswith("https://es.indeed.com/viewjob?jk="):
@@ -71,6 +71,7 @@ class IndeedService:
 
     def process_job(self, title, company, location, url, html, easy_apply):
         try:
+            url = removeUrlParameter(url, 'cf-turnstile-response')
             job_id = self.get_job_id(url)
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)

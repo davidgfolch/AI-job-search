@@ -4,6 +4,7 @@ import traceback
 from typing import Optional
 
 from markdownify import MarkdownConverter
+import urllib.parse
 from commonlib.environmentUtil import getEnv
 from commonlib.stringUtil import hasLenAnyText
 from commonlib.dateUtil import getDatetimeNowStr
@@ -102,3 +103,12 @@ def debug(debugFlag: bool, msg: str = '', exception: Optional[bool]=None):
 
 def join(*str: str) -> str:
     return ''.join(str)
+
+
+def removeUrlParameter(url: str, parameter: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    qs = urllib.parse.parse_qs(parsed.query)
+    if parameter in qs:
+        del qs[parameter]
+    new_query = urllib.parse.urlencode(qs, doseq=True)
+    return urllib.parse.urlunparse(parsed._replace(query=new_query))
