@@ -76,7 +76,7 @@ class TestIndeedService:
         result = service.process_job("Title", "Company", "Loc", "http://url?jk=1", "html", False)
         
         assert result is True
-        mock_mysql.insert.assert_called()
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "http://url?jk=1", "markdown", False, "Indeed"))
         mock_merge.assert_called()
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")

@@ -81,7 +81,7 @@ class IndeedService:
                 print(yellow(f"Job id={job_id} already exists in DB (late check), IGNORED."), end="", flush=True)
                 return True
             if validate(title, url, company, md, self.debug):
-                if id := self.mysql.insert(job_id, title, company, location, url, md, easy_apply, self.web_page):
+                if id := self.mysql.insert((job_id, title, company, location, url, md, easy_apply, self.web_page)):
                     print(green(f"INSERTED {id}!"), end="", flush=True)
                     mergeDuplicatedJobs(self.mysql, getSelect())
                     return True
