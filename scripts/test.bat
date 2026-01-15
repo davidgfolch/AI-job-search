@@ -44,7 +44,7 @@ echo Testing %~nx1...
 pushd "!target_dir!"
 if exist "package.json" (
     if !coverage!==0 (
-        call npm test -- run
+        call npx vitest run
     ) else (
         call npm test -- run --coverage
         call npx coverage-badges --label "%~nx1"

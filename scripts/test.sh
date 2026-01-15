@@ -24,7 +24,7 @@ run_test() {
             npm test -- run --coverage
             npx coverage-badges --label "$(basename "$dir")"
         else
-            npm test -- run
+            npx vitest run
         fi
     elif [ -f "pyproject.toml" ]; then
         if [ -f "uv.lock" ]; then
