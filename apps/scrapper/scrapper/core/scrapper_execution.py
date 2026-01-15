@@ -54,15 +54,15 @@ class ScrapperExecution:
                 indeed.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
 
     def executeScrapperPreload(self, name: str, properties: dict) -> bool:
-        """ returns True if KeyboardInterrupt """
         try:
             with KeepSystemAwake():
                 if RUN_IN_TABS:
                     self.seleniumUtil.tab(name)
                 self.runScrapper(name, True)
             properties['preloaded'] = True
-        except Exception:
+        except Exception as e:
             baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:", True)
+            self.persistenceManager.set_error(name, f"Preload failed: {str(e)}")
             properties['preloaded'] = False
         except KeyboardInterrupt:
             self.persistenceManager.update_last_execution(name, None)

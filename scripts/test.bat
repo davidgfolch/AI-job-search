@@ -19,7 +19,6 @@ for %%i in (%*) do (
 )
 
 rem ──────────────────────  Execute tests  ─────────────────────
-rem ──────────────────────  Execute tests  ─────────────────────
 if defined target (
      call :run_test "%CD%\!target!"
 ) else (
@@ -30,7 +29,7 @@ if defined target (
     rem Execute other apps tests
     for /d %%a in (apps\*) do (
         if /i not "%%~nxa"=="commonlib" (
-            call :run_test "!target_dir!"
+            call :run_test "%%~fa"
         )
     )
 )

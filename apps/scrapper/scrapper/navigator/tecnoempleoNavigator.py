@@ -60,7 +60,7 @@ class TecnoempleoNavigator:
     def scroll_to_bottom(self):
         self.selenium.scrollIntoView('nav[aria-label=pagination]')
 
-    @retry(exceptionFnc=lambda self: self.scroll_to_bottom())
+    @retry(exceptionFnc=lambda self, *args, **kwargs: self.scroll_to_bottom())
     def scroll_jobs_list_retry(self, cssSel):
         self.selenium.scrollIntoView(cssSel)
 

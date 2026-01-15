@@ -138,6 +138,9 @@ class ScrapperScheduler:
                 if runPreload(properties):
                     if not self.scrapperExecution.executeScrapperPreload(name, properties):
                         return False, executed_starting_target
+                    if not properties.get('preloaded', True): 
+                        print(red(f"Skipping execution for {name} due to preload failure."))
+                        continue
                 if not self.scrapperExecution.executeScrapper(name, properties):
                     return False, executed_starting_target
                 if starting and startingAt == name.capitalize():

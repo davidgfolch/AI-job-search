@@ -68,7 +68,7 @@ class InfojobsNavigator:
         print(yellow(f'Click on search-jobs button'))
         self.click_on_search_jobs()
 
-    @retry(retries=10, delay=5, exceptionFnc=lambda self, *a, **k: self.security_filter())
+    @retry(retries=10, delay=5, exceptionFnc=lambda self, *args, **kwargs: self.security_filter())
     def click_on_search_jobs(self, forcePageLoad=False):
         if (not forcePageLoad) and self.selenium.getUrl().find('/ofertas-trabajo') > 0:
             return
@@ -103,7 +103,7 @@ class InfojobsNavigator:
         sleep(1, 2)
         return True
 
-    @retry(retries=3, delay=1, exceptionFnc=lambda self, *a, **k: self.scroll_to_bottom())
+    @retry(retries=3, delay=1, exceptionFnc=lambda self, *args, **kwargs: self.scroll_to_bottom())
     def scroll_jobs_list(self, idx):
         links = self.selenium.getElms(CSS_SEL_JOB_LINK)
         if idx >= len(links):

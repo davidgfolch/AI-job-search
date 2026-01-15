@@ -13,14 +13,11 @@ from scrapper.core.scrapper_config import SCRAPPERS
 def hasArgument(args: list, name: str, info: Callable[[], str] = lambda: "", expectedParamCount: Optional[int] = None) -> Optional[list]:
     if name not in args:
         return None
-    
     index = args.index(name)
     count = expectedParamCount if expectedParamCount is not None else 0
-    
     if index + 1 + count > len(args):
         print(red(f"Error: Missing arguments for '{name}'. Expected {count}."))
         sys.exit(1)
-        
     extracted = args[index + 1 : index + 1 + count]
     del args[index : index + 1 + count]
     print(info())

@@ -86,8 +86,22 @@ class PersistenceManager:
                 return True, 1
         return False, start_page
 
+    def set_error(self, site: str, error: str):
+        if site not in self.state:
+            self.state[site] = {}
+        self.state[site]['last_error'] = error
+        self.state[site]['last_error_time'] = getDatetimeNowStr()
+        self.save()
+
     def finalize_scrapper(self, site: str):
         from commonlib.terminalColor import yellow
+        # Clear previous errors if any
+        if 'last_error' in self.state.get(site, {}):
+            del self.state[site]['last_error']
+            if 'last_error_time' in self.state[site]:
+                del self.state[site]['last_error_time']
+            self.save()
+
         if not self.get_failed_keywords(site):
             self.clear_state(site)
         else:

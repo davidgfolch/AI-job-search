@@ -17,10 +17,10 @@ USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INDEED")
 # Set to True to stop selenium driver navigating if any error occurs
 DEBUG = True
 
-WEB_PAGE = 'Indeed'
-JOBS_X_PAGE = 15
+WEB_PAGE = "Indeed"
+JOBS_X_PAGE = 16 # usually 1 row is hidden
 
-print('Indeed scrapper init')
+print("Indeed scrapper init")
 navigator: IndeedNavigator = None
 service: IndeedService = None
 
@@ -29,26 +29,18 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
     """Login, process jobs in search paginated list results"""
     global navigator, service
     navigator = IndeedNavigator(seleniumUtil)
-    printScrapperTitle('Indeed', preloadPage)
+    printScrapperTitle("Indeed", preloadPage)
     if preloadPage:
-        # For preload, we just load the search page for the first keyword
-        url = getUrl(JOBS_SEARCH.split(',')[0])
-        navigator.load_page(url)
+        navigator.login()
         return
-    
-    saved_state = {}
-    if persistenceManager:
-        saved_state = persistenceManager.get_state('Indeed')
-    
-    saved_keyword = saved_state.get('keyword')
-    saved_page = saved_state.get('page', 1)
+    saved_state = persistenceManager.get_state("Indeed")
+    saved_keyword = saved_state.get("keyword")
+    saved_page = saved_state.get("page", 1)
     skip = True if saved_keyword else False
-
     with MysqlUtil() as mysql:
         service = IndeedService(mysql, persistenceManager)
         service.set_debug(DEBUG)
-        
-        for keywords in JOBS_SEARCH.split(','):
+        for keywords in JOBS_SEARCH.split(","):
             current_keyword = keywords.strip()
             start_page = 1
             if saved_keyword:
@@ -60,34 +52,33 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                     continue
             try:
                 search_jobs(current_keyword, start_page)
-                if persistenceManager:
-                    persistenceManager.remove_failed_keyword('Indeed', current_keyword)
+                persistenceManager.remove_failed_keyword("Indeed", current_keyword)
             except Exception:
                 baseScrapper.debug(DEBUG)
-                if persistenceManager:
-                    persistenceManager.add_failed_keyword('Indeed', current_keyword)
-    if persistenceManager:
-        persistenceManager.finalize_scrapper('Indeed')
+                persistenceManager.add_failed_keyword("Indeed", current_keyword)
+    persistenceManager.finalize_scrapper("Indeed")
 
 
 def getUrl(keywords):
-    return join('https://es.indeed.com/jobs',
-                f'?q={keywords}&l=Espa%C3%B1a&fromage=1',
-                '&sc=0kf%253Aattr(DSQF7)%253B&sort=date')
+    return f"https://es.indeed.com/jobs?q={keywords}&l=Espa%C3%B1a&fromage=1&sc=0kf%253Aattr(DSQF7)%253B&sort=date"
 
 
 def search_jobs(keywords: str, startPage: int = 1):
-    print(yellow(f'Search keyword={keywords}'))
-    url = getUrl(keywords)
-    navigator.load_page(url)
-    time.sleep(10)
+    sleep(3,4)
+    print(yellow(f"Search keyword={keywords}"))
+    navigator.search(keywords)
+    sleep(3,4)
     navigator.wait_until_page_is_loaded()
-    navigator.accept_cookies()
+    navigator.clickSortByDate()
+    sleep(3,4)
+    navigator.wait_until_page_is_loaded()
 
     page = 0
     currentItem = 0
-    totalResults = 0
-    
+    totalResults = navigator.get_total_results_from_header(keywords)
+    if totalResults==0:
+        print(yellow(f"There are no results for search={keywords}"))
+        return
     # Fast forward
     if startPage > 1:
         print(yellow(f"Fast forwarding to page {startPage}..."))
@@ -98,68 +89,61 @@ def search_jobs(keywords: str, startPage: int = 1):
                 sleep(1, 2)
             else:
                 break
-    
+    totalPages = totalResults/JOBS_X_PAGE if totalResults % JOBS_X_PAGE == 0 else totalResults/JOBS_X_PAGE + 1
     while True:
         page += 1
-        baseScrapper.printPage(WEB_PAGE, page, '?', keywords)
+        baseScrapper.printPage(WEB_PAGE, page, totalPages, keywords)
         idx = 0
         while idx < JOBS_X_PAGE:
-            print(green(f'pg {page} job {idx+1} - '), end='')
-            totalResults += 1
+            print(green(f"pg {page} job {idx + 1} - "), end="")
             if load_and_process_row(idx):
                 currentItem += 1
             print()
             idx += 1
-        
         if navigator.click_next_page():
             navigator.wait_until_page_is_loaded()
             sleep(5, 6)
             service.update_state(keywords, page + 1)
         else:
             break
-
     summarize(keywords, totalResults, currentItem)
 
 
 def summarize(keywords, totalResults, currentItem):
     printHR()
-    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
+    print(f"{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}")
     printHR()
     print()
 
 
-@retry(raiseException=False)
 def load_and_process_row(idx):
     ignore = True
     jobExists = False
-    url = ''
+    url = ""
     try:
-        navigator.scroll_jobs_list(idx)
+        navigator.close_modal()
+        if not navigator.scroll_jobs_list(idx):
+            return False
         jobLinkElm = navigator.get_job_link_element(idx)
-        url = navigator.get_job_url(jobLinkElm)
-        jobId, jobExists = service.job_exists_in_db(url)
-        baseScrapper.debug(DEBUG, "after jobExistsInDB")
-        
-        # clean url just with jobId param
-        url = f'https://es.indeed.com/viewjob?jk={jobId}'
+        # Get initial URL from link for job ID extraction
+        initial_url = navigator.get_job_url(jobLinkElm)
+        jobId, jobExists = service.job_exists_in_db(initial_url)
         if jobExists:
-            print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'), end='')
+            print(yellow(f"Job id={jobId} already exists in DB, IGNORED."), end="", flush=True)
             return True
-        
+        # Load the job detail page
         navigator.load_job_detail(jobLinkElm)
+        # Get the actual URL from the main page after navigation
+        url = navigator.selenium.getUrl()
         ignore = False
     except IndexError as ex:
-        print(yellow("WARNING: could not get all items per page, that's ",
-                     f"expected because not always has {JOBS_X_PAGE} ",
-                     f"pages: {ex}"))
+        print(yellow(f"WARNING: could not get all items per page, that's expected because not always has {JOBS_X_PAGE} pages: {ex}"))
     except Exception:
         baseScrapper.debug(DEBUG)
-    
     if not ignore:
         if not process_row(url):
-            print(red('Validation failed'))
+            print(red("Validation failed"))
             return load_and_process_row(idx)
-        navigator.back()
         sleep(1, 2)
         return True
     return False

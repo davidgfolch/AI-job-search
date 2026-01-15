@@ -4,8 +4,6 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 
 ## Architecture
 
-Refactored to a modular architecture:
-
 - **Navigators (`scrapper/navigator/`)**: Specialized classes that handle Selenium browser interactions for each site (e.g., `linkedinNavigator.py`, `infojobsNavigator.py`).
 - **Services (`scrapper/services/`)**: Business logic and orchestration for job fetching and processing (e.g., `LinkedinService.py`, `InfojobsService.py`).
 - **Coordinators**: Top-level scripts (`linkedin.py`, `infojobs.py`, etc.) that coordinate the scraping process.
@@ -23,13 +21,17 @@ Refactored to a modular architecture:
 - **Infojobs**: Works fine.
 - **Tecnoempleo**: Works fine.
 - **Glassdoor**: Prone to strict bot detection.
+- **Indeed**: Fully automated login with email+2FA support. Requires Gmail setup.
 
 ## Setup & Running
 
 ### Prerequisites
 
+See [README INSTALL](../../READMEs/README_INSTALL.md)
+
 - Python 3.10+
 - Google Chrome installed.
+- Optional: [Gmail account](#gmail-configuration) with 2FA enabled for Indeed scraper.
 
 ### Installation
 
@@ -42,11 +44,14 @@ poetry install
 Scraper behavior is configured via environment variables and configuration files (`scrapper_config.py`).
 See `scripts/.env.example`.
 
-**Key Environment Variables:**
+## Key Environment Variables
 
 - `USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
+- `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed).
+- `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed).
 
-**Specific Scraper Parameters:**
+## Specific Scraper Parameters
+
 You can modify parameters in `scrapper/*.py` (e.g., `linkedin.py`):
 
 ```python
@@ -56,6 +61,22 @@ f_TPR = 'r86400'  # last 24 hours
 DEBUG = False # Set to True to stop selenium driver on error
 ```
 
+## Gmail Configuration
+
+1. **Enable 2FA on Gmail**: Make sure 2FA is enabled on your Gmail account
+2. **Generate App Password**:
+   - Go to [Google Account settings](https://myaccount.google.com/security) → Security → 2-Step Verification → App passwords
+    - or [Google Account settings](https://myaccount.google.com/apppasswords) 
+   - Generate a 16-digit app password for this application
+   - Use this password instead of your regular Gmail password
+
+3. **Set Environment Variables**:
+   ```bash
+   GMAIL_EMAIL=your-gmail@gmail.com
+   GMAIL_APP_PASSWORD=your-16-digit-app-password
+   INDEED_EMAIL=your-indeed-email@example.com  
+   ```
+
 > **Note**: Changing these could cause violation of LinkedIn rate limits.
 
 ### Scheduling & Cadency
@@ -63,7 +84,7 @@ DEBUG = False # Set to True to stop selenium driver on error
 You can configure the run frequency for each scrapper using environment variables. 
 The format is `XX_RUN_CADENCY=duration` (e.g., `1h`, `30m`).
 
-**Dynamic Cadency (Time-based):**
+## Dynamic Cadency (Time-based)
 You can override the cadency for specific hours of the day.
 
 Format: `XX_RUN_CADENCY_START-END=duration`
@@ -80,10 +101,11 @@ Order of precedence:
 
 **Automatic Loop Scraper:**
 
+In AI-job-search root folder:
 ```bash
-./run_2_Scrapper.sh # Linux/Mac
+./apps/scrapper/run.sh # Linux/Mac
 # or
-.\run.bat # Windows
+.\apps\scrapper\run.bat # Windows
 ```
 
 This runs an infinite loop checking for new jobs based on configured intervals.
@@ -93,14 +115,16 @@ This runs an infinite loop checking for new jobs based on configured intervals.
 You can run individual scrapers manually:
 
 ```bash
-poetry run python scrapper/linkedin.py
-poetry run python scrapper/infojobs.py
+.\apps\scrapper\run.bat linkedin
+.\apps\scrapper\run.bat infojobs
 ```
 
-**Run Single Job URL (LinkedIn):**
+**Run Single Job URL:**
+
+Implemented for LinkedIn only:
 
 ```bash
-poetry run python scrapper/linkedin.py url <job_url>
+.\apps\scrapper\run.bat url <job_url>
 ```
 
 ## Testing
@@ -115,3 +139,5 @@ poetry run pytest
 
 - **Rate Limits**: If you get 429 errors or captchas, increase delays or stop scraping for a while.
 - **ARSF (Anti Robot Security Filters)**: If Chrome opens but gets blocked, try `USE_UNDETECTED_CHROMEDRIVER=true` or use a VPN.
+- **Gmail Issues**: Ensure app password is correctly generated and 2FA is enabled.
+- **2FA Timeout**: Increase timeout in GmailService if verification emails are slow to arrive.
