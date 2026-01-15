@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock, mock_open
 from pathlib import Path
 import pandas as pd
-from aiEnrich.cvMatcher import cvMatch, save, loadCVContent, extractTextFromPDF, getJobIdsList, CVMatcher
+from ..cvMatcher import cvMatch, save, loadCVContent, extractTextFromPDF, getJobIdsList, CVMatcher
 
 @pytest.fixture
 def mock_deps():

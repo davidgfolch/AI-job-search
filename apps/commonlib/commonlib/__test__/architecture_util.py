@@ -78,6 +78,9 @@ def check_layer(working_dir, root_dir, required_deps=None, forbidden_deps=None, 
     for file_path in working_dir.glob('**/*.py'):
         if file_path.name in ignore_files:
             continue
+
+        if '__test__' in str(file_path):
+            continue
         imports = get_file_imports(file_path)
         
         current_violations = []

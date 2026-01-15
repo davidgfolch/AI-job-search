@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from aiEnrich.dataExtractor import (
+from ..dataExtractor import (
     dataExtractor, save, getJobIdsList, DataExtractor
 )
 

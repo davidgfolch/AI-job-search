@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch, mock_open
 import numpy as np
 import pandas as pd
-from aiEnrichNew.cvMatcher import FastCVMatcher
+from ..cvMatcher import FastCVMatcher
 
 class TestFastCVMatcher(unittest.TestCase):
 

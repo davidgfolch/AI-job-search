@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
 import json
-import aiEnrichNew.dataExtractor
-from aiEnrichNew.dataExtractor import dataExtractor, extract_job_data, get_pipeline, _PIPELINE, save
+from .. import dataExtractor
+from ..dataExtractor import dataExtractor, extract_job_data, get_pipeline, _PIPELINE, save
 
 class TestDataExtractor(unittest.TestCase):
 
@@ -14,7 +14,7 @@ class TestDataExtractor(unittest.TestCase):
 
     def tearDown(self):
         # Reset pipeline global if we modified it
-        aiEnrichNew.dataExtractor._PIPELINE = None
+        dataExtractor._PIPELINE = None
 
     @patch('aiEnrichNew.dataExtractor.AutoTokenizer')
     @patch('aiEnrichNew.dataExtractor.AutoModelForCausalLM')

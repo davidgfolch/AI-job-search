@@ -19,6 +19,7 @@ DEBUG = True
 
 WEB_PAGE = "Indeed"
 JOBS_X_PAGE = 16 # usually 1 row is hidden
+MAX_PAGES = 10
 
 print("Indeed scrapper init")
 navigator: IndeedNavigator = None
@@ -100,7 +101,7 @@ def search_jobs(keywords: str, startPage: int = 1):
                 currentItem += 1
             print()
             idx += 1
-        if navigator.click_next_page():
+        if page <= MAX_PAGES and navigator.click_next_page():
             navigator.wait_until_page_is_loaded()
             sleep(5, 6)
             service.update_state(keywords, page + 1)

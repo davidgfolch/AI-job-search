@@ -6,7 +6,7 @@ import sys
 class TestMain:
     @patch('aiEnrich.main.AiJobSearchFlow')
     def test_run(self, mock_flow):
-        from aiEnrich.main import run
+        from ..main import run
         
         mock_instance = MagicMock()
         mock_flow.return_value = mock_instance
@@ -18,7 +18,7 @@ class TestMain:
 
     @patch('aiEnrich.main.DataExtractor')
     def test_train_success(self, mock_extractor):
-        from aiEnrich.main import train
+        from ..main import train
         
         mock_crew = MagicMock()
         mock_extractor.return_value.crew.return_value = mock_crew
@@ -34,7 +34,7 @@ class TestMain:
 
     @patch('aiEnrich.main.DataExtractor')
     def test_train_exception(self, mock_extractor):
-        from aiEnrich.main import train
+        from ..main import train
         
         mock_crew = MagicMock()
         mock_crew.train.side_effect = Exception("Training error")
@@ -46,7 +46,7 @@ class TestMain:
 
     @patch('aiEnrich.main.DataExtractor')
     def test_replay_success(self, mock_extractor):
-        from aiEnrich.main import replay
+        from ..main import replay
         
         mock_crew = MagicMock()
         mock_extractor.return_value.crew.return_value = mock_crew
@@ -58,7 +58,7 @@ class TestMain:
 
     @patch('aiEnrich.main.DataExtractor')
     def test_replay_exception(self, mock_extractor):
-        from aiEnrich.main import replay
+        from ..main import replay
         
         mock_crew = MagicMock()
         mock_crew.replay.side_effect = Exception("Replay error")
@@ -70,7 +70,7 @@ class TestMain:
 
     @patch('aiEnrich.main.DataExtractor')
     def test_test_crew_success(self, mock_extractor_class):
-        from aiEnrich.main import test_crew
+        from ..main import test_crew
         
         mock_crew = MagicMock()
         mock_extractor_class.return_value.crew.return_value = mock_crew
@@ -86,7 +86,7 @@ class TestMain:
 
     @patch('aiEnrich.main.DataExtractor')
     def test_test_crew_exception(self, mock_extractor_class):
-        from aiEnrich.main import test_crew
+        from ..main import test_crew
         
         mock_crew = MagicMock()
         mock_crew.test.side_effect = Exception("Test error")

@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from aiEnrichNew.main import run
+from ..main import run
 
 class TestMain(unittest.TestCase):
 

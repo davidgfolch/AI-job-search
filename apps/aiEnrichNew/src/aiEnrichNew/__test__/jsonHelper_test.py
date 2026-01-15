@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from aiEnrichNew.jsonHelper import rawToJson, validateResult, saveError, listsToString
+from ..jsonHelper import rawToJson, validateResult, saveError, listsToString
 
 class TestJsonHelper(unittest.TestCase):
 

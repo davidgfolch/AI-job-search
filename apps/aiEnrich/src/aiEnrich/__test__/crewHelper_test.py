@@ -1,6 +1,6 @@
 import pytest
 
-from aiEnrich.crewHelper import rawToJson, validateResult
+from ..crewHelper import rawToJson, validateResult
 
 
 @pytest.mark.parametrize("raw, expected", [

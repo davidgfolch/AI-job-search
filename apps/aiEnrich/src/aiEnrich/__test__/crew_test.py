@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from aiEnrich.crew import AiJobSearchFlow
+from ..crew import AiJobSearchFlow
 
 
 class TestAiJobSearchFlow:
