@@ -1,15 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useLearnList, Skill } from '../useLearnList';
-import { skillsApi } from '../../../api/skills';
+import axios from 'axios';
 
-// Mock the skills API
-vi.mock('../../../api/skills', () => ({
-    skillsApi: {
-        getSkills: vi.fn(),
-        createSkill: vi.fn(),
-        updateSkill: vi.fn(),
-        deleteSkill: vi.fn(),
+// Define the mock client methods using vi.hoisted so they are available in vi.mock
+const mockClient = vi.hoisted(() => ({
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+}));
+
+// Mock axios to return our mock client
+vi.mock('axios', () => ({
+    default: {
+        create: vi.fn(() => mockClient),
     }
 }));
 
@@ -25,7 +30,8 @@ describe('useLearnList', () => {
     });
 
     it('should fetch skills on mount', async () => {
-        vi.mocked(skillsApi.getSkills).mockResolvedValue(mockSkills);
+        // skillsApi.getSkills maps response.data. So we must provide { data: ... }
+        mockClient.get.mockResolvedValue({ data: mockSkills });
 
         const { result } = renderHook(() => useLearnList());
 
@@ -38,10 +44,12 @@ describe('useLearnList', () => {
 
         expect(result.current.learnList).toEqual(mockSkills);
         expect(result.current.error).toBeNull();
+        expect(mockClient.get).toHaveBeenCalledWith('/skills');
     });
 
     it('should handle fetch error', async () => {
-        vi.mocked(skillsApi.getSkills).mockRejectedValue(new Error('Fetch failed'));
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        mockClient.get.mockRejectedValue(new Error('Fetch failed'));
 
         const { result } = renderHook(() => useLearnList());
 
@@ -51,30 +59,35 @@ describe('useLearnList', () => {
 
         expect(result.current.error).toBe('Failed to load skills from database');
         expect(result.current.learnList).toEqual([]);
+        consoleSpy.mockRestore();
     });
 
     it('toggleSkill should create skill if it does not exist', async () => {
-        vi.mocked(skillsApi.getSkills).mockResolvedValue([]);
-        vi.mocked(skillsApi.createSkill).mockResolvedValue('success');
+        mockClient.get.mockResolvedValue({ data: [] });
+        mockClient.post.mockResolvedValue({ data: 'success' });
 
         const { result } = renderHook(() => useLearnList());
         await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        // Setup get for re-fetch
+        mockClient.get.mockResolvedValue({ data: [{ name: 'Vue', disabled: false } as Skill] });
 
         await act(async () => {
             await result.current.toggleSkill('Vue');
         });
 
-        expect(skillsApi.createSkill).toHaveBeenCalledWith(expect.objectContaining({
+        // skillsApi.createSkill POSTs to /skills/Vue with payload
+        expect(mockClient.post).toHaveBeenCalledWith('/skills/Vue', expect.objectContaining({
             name: 'Vue',
             disabled: false
         }));
         // Expect fetch to be called again
-        expect(skillsApi.getSkills).toHaveBeenCalledTimes(2); 
+        expect(mockClient.get).toHaveBeenCalledTimes(2); 
     });
 
     it('toggleSkill should re-enable skill if it is disabled', async () => {
-        vi.mocked(skillsApi.getSkills).mockResolvedValue(mockSkills);
-        vi.mocked(skillsApi.updateSkill).mockResolvedValue('success');
+        mockClient.get.mockResolvedValue({ data: mockSkills });
+        mockClient.put.mockResolvedValue({ data: 'success' });
 
         const { result } = renderHook(() => useLearnList());
         await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -83,15 +96,15 @@ describe('useLearnList', () => {
             await result.current.toggleSkill('Node'); // Node is disabled in mockSkills
         });
 
-        expect(skillsApi.updateSkill).toHaveBeenCalledWith('Node', { disabled: false });
-        expect(skillsApi.getSkills).toHaveBeenCalledTimes(2);
+        // skillsApi.updateSkill PUTs to /skills/Node
+        // Payload has disabled: false
+        expect(mockClient.put).toHaveBeenCalledWith('/skills/Node', expect.objectContaining({ disabled: false }));
+        expect(mockClient.get).toHaveBeenCalledTimes(2);
     });
 
     it('toggleSkill should disable (soft delete) skill if it is enabled and exists', async () => {
-        // Checking internal logic of toggle -> removeSkill -> logic
-        // removeSkill logic: if content exists, soft delete. 'React' has description.
-        vi.mocked(skillsApi.getSkills).mockResolvedValue(mockSkills);
-        vi.mocked(skillsApi.updateSkill).mockResolvedValue('success');
+        mockClient.get.mockResolvedValue({ data: mockSkills });
+        mockClient.put.mockResolvedValue({ data: 'success' });
 
         const { result } = renderHook(() => useLearnList());
         await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -101,13 +114,13 @@ describe('useLearnList', () => {
         });
 
         // React has content, so it should be soft deleted (disabled)
-        expect(skillsApi.updateSkill).toHaveBeenCalledWith('React', { disabled: true });
-        expect(skillsApi.getSkills).toHaveBeenCalledTimes(2);
+        expect(mockClient.put).toHaveBeenCalledWith('/skills/React', expect.objectContaining({ disabled: true }));
+        expect(mockClient.get).toHaveBeenCalledTimes(2);
     });
 
     it('removeSkill should hard delete if skill has no content', async () => {
-        vi.mocked(skillsApi.getSkills).mockResolvedValue(mockSkills);
-        vi.mocked(skillsApi.deleteSkill).mockResolvedValue();
+        mockClient.get.mockResolvedValue({ data: mockSkills });
+        mockClient.delete.mockResolvedValue({ data: 'success' });
 
         const { result } = renderHook(() => useLearnList());
         await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -116,12 +129,12 @@ describe('useLearnList', () => {
             await result.current.removeSkill('EmptySkill');
         });
 
-        expect(skillsApi.deleteSkill).toHaveBeenCalledWith('EmptySkill');
-        expect(skillsApi.getSkills).toHaveBeenCalledTimes(2);
+        expect(mockClient.delete).toHaveBeenCalledWith('/skills/EmptySkill');
+        expect(mockClient.get).toHaveBeenCalledTimes(2);
     });
 
     it('isInLearnList should return true only for enabled skills', async () => {
-        vi.mocked(skillsApi.getSkills).mockResolvedValue(mockSkills);
+        mockClient.get.mockResolvedValue({ data: mockSkills });
 
         const { result } = renderHook(() => useLearnList());
         await waitFor(() => expect(result.current.isLoading).toBe(false));

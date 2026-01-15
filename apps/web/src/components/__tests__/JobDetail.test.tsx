@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import JobDetail from '../JobDetail';
 import type { Job } from '../../api/jobs';
 import { jobsApi } from '../../api/jobs';
+import { skillsApi } from '../../api/skills';
 import { renderWithProviders, createMockJob } from '../../__tests__/test-utils';
 
 vi.mock('../../api/jobs', () => ({
@@ -12,6 +13,12 @@ vi.mock('../../api/jobs', () => ({
         updateJob: vi.fn(),
         getAppliedJobsByCompany: vi.fn(),
     },
+}));
+
+vi.mock('../../api/skills', () => ({
+    skillsApi: {
+        getSkills: vi.fn(),
+    }
 }));
 
 const mockJob = createMockJob({
@@ -24,6 +31,7 @@ describe('JobDetail', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
+        (skillsApi.getSkills as any).mockResolvedValue([]);
     });
 
     it('renders basic job details, link, and CV match', async () => {

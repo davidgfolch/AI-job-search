@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import JobDetail from '../JobDetail';
 import { jobsApi } from '../../api/jobs';
+import { skillsApi } from '../../api/skills';
 import { renderWithProviders, createMockJob } from '../../__tests__/test-utils';
 
 vi.mock('../../api/jobs', () => ({
@@ -14,6 +15,12 @@ vi.mock('../../api/jobs', () => ({
     },
 }));
 
+vi.mock('../../api/skills', () => ({
+    skillsApi: {
+        getSkills: vi.fn(),
+    }
+}));
+
 const mockJob = createMockJob({
     company: 'Tech Corp',
     client: 'Client A',
@@ -23,6 +30,7 @@ describe('JobDetail - Applied Jobs', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
+        (skillsApi.getSkills as any).mockResolvedValue([]);
     });
 
     it('displays applied company jobs indicator when jobs exist', async () => {
