@@ -117,9 +117,6 @@ def update_job(job_id: int, job_update: JobUpdate, service: JobsService = Depend
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
 
 @router.post("/bulk", response_model=dict)
 def bulk_update_jobs(bulk_update: BulkJobUpdate, service: JobsService = Depends(get_service)):
@@ -132,7 +129,6 @@ def bulk_update_jobs(bulk_update: BulkJobUpdate, service: JobsService = Depends(
     )
     return {"updated": count}
 
-@router.post("/bulk/delete", response_model=dict)
 @router.post("/bulk/delete", response_model=dict)
 def bulk_delete_jobs(bulk_delete: BulkJobDelete, service: JobsService = Depends(get_service)):
     # Using BulkJobDelete which doesn't require 'update' field

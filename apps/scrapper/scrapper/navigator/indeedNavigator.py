@@ -49,6 +49,9 @@ class IndeedNavigator:
     def search(self, what: str, where: str = "España"):
         print(yellow(f'Searching for "{what}" in "{where}"'))
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_SEARCH_WHAT)
+        self.selenium.clearInputbox(CSS_SEL_SEARCH_WHAT)
+        self.selenium.clearInputbox(CSS_SEL_SEARCH_WHERE)
+        sleep(1,1)
         self.selenium.sendKeys(CSS_SEL_SEARCH_WHAT, what, clear=True)
         self.selenium.sendKeys(CSS_SEL_SEARCH_WHERE, where, clear=True)
         self.selenium.waitAndClick(CSS_SEL_SEARCH_BTN)
