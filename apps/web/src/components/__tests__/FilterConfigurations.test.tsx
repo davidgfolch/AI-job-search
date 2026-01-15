@@ -144,6 +144,27 @@ describe('FilterConfigurations', () => {
             // Expected sorted order: Alpha, Beta, Clean..., Zebra
             expect(names).toEqual(['Alpha', 'Beta', 'Clean - Delete old jobs', 'Zebra']);
         });
+
+        it('resets missing filters when loading configuration', async () => {
+            // Config has NO days_old
+            const savedFilters = { search: 'Just Search' }; 
+            const configs = [{ name: 'Reset Test', filters: savedFilters as JobListParams }];
+            
+            // Current filters HAVE days_old
+            const { input } = await renderWithConfig(configs, { currentFilters: { ...mockFilters, days_old: 7 } });
+            
+            fireEvent.focus(input);
+            fireEvent.click(await screen.findByText('Reset Test'));
+            
+            // Expect days_old to be explicitly undefined
+            expect(onLoadConfigMock).toHaveBeenCalledWith(
+                expect.objectContaining({ 
+                    search: 'Just Search',
+                    days_old: undefined
+                }), 
+                'Reset Test'
+            );
+        });
     });
 
     describe('Deleting', () => {

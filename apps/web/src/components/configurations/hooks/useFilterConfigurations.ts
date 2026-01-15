@@ -65,8 +65,8 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
     };
 
     const loadConfiguration = (config: FilterConfig) => {
-        resetBooleanFilters(config);
-        onLoadConfig(config.filters, config.name);
+        const filtersToLoad = normalizeConfiguration(config);
+        onLoadConfig(filtersToLoad, config.name);
         setConfigName(config.name);
         setSavedConfigName(config.name);
         setIsOpen(false);
@@ -162,9 +162,27 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
         }
     };
 
-    const resetBooleanFilters = (config: FilterConfig) => BOOLEAN_FILTERS
-            .filter(entry => !(entry.key in config.filters))
-            .forEach(entry => (config.filters as any)[entry.key] = null);
+    const normalizeConfiguration = (config: FilterConfig) => {
+        // Create a shallow copy of filters to avoid mutating the saved config in state
+        const filters = { ...config.filters };
+
+        // Reset boolean filters if missing
+        BOOLEAN_FILTERS.forEach(entry => {
+            if (!(entry.key in filters)) {
+                (filters as any)[entry.key] = undefined;
+            }
+        });
+        
+        // Reset specific non-boolean filters if missing
+        const otherFilters: (keyof JobListParams)[] = ['days_old', 'search', 'salary', 'sql_filter'];
+        otherFilters.forEach(key => {
+             if (!(key in filters)) {
+                (filters as any)[key] = undefined;
+            }
+        });
+        
+        return filters;
+    };
 
     return {
         configName,

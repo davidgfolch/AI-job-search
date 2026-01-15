@@ -98,4 +98,29 @@ describe('useFilterConfigurations', () => {
         expect(persistenceApi.setValue).toHaveBeenCalledWith('filter_configurations', []);
         expect(result.current.filteredConfigs).toHaveLength(0);
     });
+
+    it('should reset missing filters when loading configuration', async () => {
+        const savedFilters = { search: 'saved' }; // days_old missing
+        const savedConfigs = [{ name: 'Saved 1', filters: savedFilters }];
+        (persistenceApi.getValue as any).mockResolvedValue(savedConfigs);
+
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps));
+
+        await waitFor(() => {
+            expect(result.current.filteredConfigs).toHaveLength(1);
+        });
+
+        act(() => {
+            result.current.loadConfiguration(savedConfigs[0] as any);
+        });
+
+        // onLoadConfig should be called with normalized filters
+        expect(defaultProps.onLoadConfig).toHaveBeenCalledWith(
+            expect.objectContaining({
+                search: 'saved',
+                days_old: undefined
+            }),
+            'Saved 1'
+        );
+    });
 });
