@@ -145,3 +145,79 @@ class TestPersistenceManager:
         manager.finalize_scrapper(site2)
         assert manager.get_state(site2).get('keyword') == 'kw2'
         assert manager.get_state(site2).get('page') == 2
+        # Case 3: Verify last_error cleanup
+        site3 = 'Site3'
+        manager.update_state(site3, 'kw3', 3)
+        manager.set_error(site3, "Some error")
+        assert manager.get_state(site3).get('last_error') == "Some error"
+        manager.finalize_scrapper(site3)
+        assert manager.get_state(site3).get('last_error') is None
+
+    def test_last_execution(self, manager):
+        site = "SiteExec"
+        assert manager.get_last_execution(site) is None
+        
+        ts = "2023-01-01 12:00:00"
+        manager.update_last_execution(site, ts)
+        assert manager.get_last_execution(site) == ts
+        
+        # Test persistence
+        manager.save()
+        manager2 = PersistenceManager(manager.filepath)
+        assert manager2.get_last_execution(site) == ts
+
+    def test_failed_keywords(self, manager):
+        site = "SiteFailed"
+        assert manager.get_failed_keywords(site) == []
+        
+        manager.add_failed_keyword(site, "kw1")
+        assert manager.get_failed_keywords(site) == ["kw1"]
+        
+        manager.add_failed_keyword(site, "kw2")
+        assert set(manager.get_failed_keywords(site)) == {"kw1", "kw2"}
+        
+        # Test duplicate addition
+        manager.add_failed_keyword(site, "kw1")
+        assert len(manager.get_failed_keywords(site)) == 2
+        
+        manager.remove_failed_keyword(site, "kw1")
+        assert manager.get_failed_keywords(site) == ["kw2"]
+        
+        # Remove non-existent
+        manager.remove_failed_keyword(site, "kw3") # should not error
+        assert manager.get_failed_keywords(site) == ["kw2"]
+
+    def test_resume_logic(self, manager):
+        site = "SiteResume"
+        manager.update_state(site, "resume_kw", 5)
+        
+        manager.prepare_resume(site)
+        assert manager._resume_keyword == "resume_kw"
+        assert manager._resume_page == 5
+        assert manager._is_skipping is True
+        
+        # Test should_skip_keyword
+        # Keyword comes before resume_kw -> skip
+        skip, page = manager.should_skip_keyword("other_kw")
+        assert skip is True
+        assert page == 1
+        
+        # Keyword matches resume_kw -> do not skip, start at resume page
+        skip, page = manager.should_skip_keyword("resume_kw")
+        assert skip is False
+        assert page == 5
+        assert manager._is_skipping is False
+        
+        # Keyword comes after resume_kw -> do not skip, default page
+        skip, page = manager.should_skip_keyword("next_kw")
+        assert skip is False
+        assert page == 1
+
+    def test_set_error(self, manager):
+        site = "SiteError"
+        manager.set_error(site, "Error message")
+        
+        state = manager.get_state(site)
+        assert state['last_error'] == "Error message"
+        assert 'last_error_time' in state
+        assert isinstance(state['last_error_time'], str)

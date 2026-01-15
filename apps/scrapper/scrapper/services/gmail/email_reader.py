@@ -35,9 +35,7 @@ class EmailReader:
             print(yellow(f"Failed to select inbox: {e}"))
             return False
 
-    def search_emails_from_sender_since(
-        self, sender: str, since_date: str, limit: int = 10
-    ) -> List[bytes]:
+    def search_emails_from_sender_since(self, sender: str, since_date: str, limit: int = 10) -> List[bytes]:
         """Search for emails from a specific sender since a given date"""
         try:
             search_criteria = f'(FROM "{sender}" SINCE {since_date})'
@@ -84,55 +82,17 @@ class EmailReader:
             print(yellow(f"Failed to extract email body for ID {email_id}: {e}"))
             return ""
 
-    def extract_verification_code(self, email_body: str) -> str:
-        """Extract 6-digit verification code from email body"""
-        try:
-            # Multiple regex patterns for verification codes
-            patterns = [
-                r"\b(\d{6})\b",  # Standard 6-digit code
-                r"verification code[:\s]*\n?(\d{6})",  # "verification code: 123456"
-                r"code[:\s]*\n?(\d{6})",  # "code: 123456"
-                r"(\d{6})",  # Any 6-digit number
-            ]
-            for pattern in patterns:
-                match = re.search(pattern, email_body, re.IGNORECASE | re.MULTILINE)
-                if match:
-                    code = match.group(1) if match.groups() else match.group(0)
-                    if len(code) == 6 and code.isdigit():
-                        return code
-            raise VerificationCodeExtractionError(
-                "No verification code found in email body"
-            )
-        except Exception as e:
-            print(yellow(f"Failed to extract verification code: {e}"))
-            raise VerificationCodeExtractionError(
-                f"Failed to extract verification code: {e}"
-            )
-
     def extract_verification_code_from_subject(self, subject: str) -> str:
         """Extract 6-digit verification code from email subject"""
         try:
-            # Multiple regex patterns for verification codes in subject
-            patterns = [
-                r"\b(\d{6})\b",  # Standard 6-digit code
-                r"verification code[:\s]*\n?(\d{6})",  # "verification code: 123456"
-                r"code[:\s]*\n?(\d{6})",  # "code: 123456"
-                r"(\d{6})",  # Any 6-digit number
-            ]
-            for pattern in patterns:
-                match = re.search(pattern, subject, re.IGNORECASE | re.MULTILINE)
-                if match:
-                    code = match.group(1) if match.groups() else match.group(0)
-                    if len(code) == 6 and code.isdigit():
-                        return code
-            raise VerificationCodeExtractionError(
-                "No verification code found in email subject"
-            )
+            # Standard 6+ digit code
+            match = re.search(r"\b(\d{6,})\b", subject, re.IGNORECASE | re.MULTILINE)
+            if match and match.groups():
+                return match.group(1)
+            raise VerificationCodeExtractionError("No verification code found in email subject")
         except Exception as e:
             print(yellow(f"Failed to extract verification code from subject: {e}"))
-            raise VerificationCodeExtractionError(
-                f"Failed to extract verification code from subject: {e}"
-            )
+            raise VerificationCodeExtractionError(f"Failed to extract verification code from subject: {e}")
 
     def get_email_subject(self, email_id: bytes) -> str:
         """Extract email subject from email"""
@@ -175,17 +135,11 @@ class EmailReader:
                         email_subject = self.get_email_subject(latest_email_id)
                         if email_subject:
                             try:
-                                code = self.extract_verification_code_from_subject(
-                                    email_subject
-                                )
-                                print(
-                                    f"Successfully extracted verification code: {code}"
-                                )
+                                code = self.extract_verification_code_from_subject(email_subject)
+                                print(f"Successfully extracted verification code: {code}")
                                 return code
                             except VerificationCodeExtractionError:
-                                print(
-                                    "Email found but no verification code in subject..."
-                                )
+                                print("Email found but no verification code in subject...")
                                 last_checked_id = latest_email_id
                 time.sleep(5)
             except GmailConnectionError:
@@ -197,9 +151,7 @@ class EmailReader:
             except Exception as e:
                 print(yellow(f"Error while waiting for verification code: {e}"))
                 time.sleep(5)
-        raise GmailConnectionError(
-            f"Timeout: No verification code received within {timeout} seconds"
-        )
+        raise GmailConnectionError(f"Timeout: No verification code received within {timeout} seconds")
 
     def close(self):
         """Close the IMAP connection"""

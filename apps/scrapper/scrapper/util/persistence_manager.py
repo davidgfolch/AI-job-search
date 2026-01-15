@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Dict, Any
+from commonlib.dateUtil import getDatetimeNowStr
 
 class PersistenceManager:
     def __init__(self, filepath: str = 'scrapper_state.json'):
