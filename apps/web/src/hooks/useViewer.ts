@@ -19,8 +19,8 @@ export const useViewer = () => {
         selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext
     } = useJobSelection({ allJobs, filters, setFilters });
 
-    const allJobIds = new Set(allJobs.map(j => j.id));
-    const { hasNewJobs, newJobsCount } = useJobUpdates(filters, allJobIds);
+    const [knownJobIds, setKnownJobIds] = useState<Set<number>>(new Set());
+    const { hasNewJobs, newJobsCount } = useJobUpdates(filters, knownJobIds);
 
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
@@ -66,6 +66,14 @@ export const useViewer = () => {
                     return [...jobs, ...newItems];
                 }
             });
+            
+            // Update knownJobIds to include all jobs we've seen in this session
+            setKnownJobIds(prev => {
+                const next = new Set(prev);
+                data.items.forEach(j => next.add(j.id));
+                return next;
+            });
+            
             setIsLoadingMore(false);
         }
     }, [data, filters.page, setAllJobs, setIsLoadingMore]);
