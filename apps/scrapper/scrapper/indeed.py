@@ -136,7 +136,7 @@ def load_and_process_row(idx):
         url = navigator.selenium.getUrl()
         ignore = False
     except IndexError as ex:
-        print(yellow(f"WARNING: could not get all items per page, that's expected because not always has {JOBS_X_PAGE} pages: {ex}"))
+        print(yellow(f"WARNING: could not get all items per page, that's expected because not always has {JOBS_X_PAGE} pages: {ex}"), end='')
     except Exception:
         baseScrapper.debug(DEBUG)
     if not ignore:

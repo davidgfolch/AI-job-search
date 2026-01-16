@@ -56,7 +56,7 @@ class IndeedNavigator:
         self.selenium.setFocus(CSS_SEL_SEARCH_WHAT)
         self.selenium.waitAndClick_noError('button[aria-label="Clear what input"]', "Could not clear keyword input", showException=False)
         self.selenium.setFocus(CSS_SEL_SEARCH_WHERE)
-        self.selenium.waitAndClick_noError('button[aria-label="Clear what input"]', "Could not clear location input", showException=False)
+        self.selenium.waitAndClick_noError('button[aria-label="Clear location input"]', "Could not clear location input", showException=False)
         sleep(1,1)
         self.selenium.sendKeys(CSS_SEL_SEARCH_WHAT, keyword, clear=True)
         self.selenium.sendKeys(CSS_SEL_SEARCH_WHERE, location, clear=True)
