@@ -105,12 +105,14 @@ class TestGlassdoorNavigator:
         assert mock_selenium.loadPage.call_count >= 1
         mock_selenium.waitUntil_presenceLocatedElement.assert_called()
 
-    def test_login(self, mock_selenium):
+    @patch("scrapper.navigator.glassdoorNavigator.sleep")
+    def test_login(self, mock_sleep, mock_selenium):
         nav = GlassdoorNavigator(mock_selenium)
         with patch.object(nav, 'load_main_page'):
             nav.login("user", "pass")
             mock_selenium.sendKeys.assert_any_call('#inlineUserEmail', 'user')
             mock_selenium.sendKeys.assert_any_call('form input#inlineUserPassword', 'pass')
+            mock_sleep.assert_called()
 
 class TestGlassdoorService:
     @pytest.mark.parametrize("url, expected_id", [

@@ -47,7 +47,8 @@ class TestIndeedNavigator:
         # but we can verify it was called enough times
         assert mock_selenium.sendKeys.call_count >= 2 
 
-    def test_search(self):
+    @patch("scrapper.navigator.indeedNavigator.sleep")
+    def test_search(self, mock_sleep):
         """Test search functionality"""
         mock_selenium = Mock(spec=SeleniumService)
         navigator = IndeedNavigator(mock_selenium)
@@ -59,6 +60,7 @@ class TestIndeedNavigator:
         mock_selenium.sendKeys.assert_called()
         mock_selenium.waitAndClick.assert_called()
         mock_selenium.waitUntilPageIsLoaded.assert_called()
+        mock_sleep.assert_called()
 
     def test_get_total_results_from_header(self):
         """Test parsing total results"""

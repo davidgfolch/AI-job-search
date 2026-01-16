@@ -90,10 +90,9 @@ class TestIndeedScrapper:
             patch("scrapper.indeed.IndeedService") as mock_service_class,
             patch("scrapper.indeed.navigator") as mock_navigator,
             patch("scrapper.indeed.service") as mock_service,
-            patch(
-                "scrapper.indeed.load_and_process_row", return_value=True
-            ) as mock_process_row,
+            patch("scrapper.indeed.load_and_process_row", return_value=True) as mock_process_row,
             patch("scrapper.indeed.summarize"),
+            patch("scrapper.indeed.sleep"),
         ):
             # Configure navigator mock
             mock_navigator.click_next_page.side_effect = [True, False]

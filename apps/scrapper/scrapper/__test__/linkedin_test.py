@@ -15,7 +15,10 @@ def mocks():
          patch('scrapper.linkedin.MysqlUtil'), \
          patch('scrapper.linkedin.PersistenceManager'), \
          patch('scrapper.linkedin.SeleniumService'), \
-         patch('scrapper.linkedin.getAndCheckEnvVars', return_value=('u', 'p', 'k')):
+         patch('scrapper.linkedin.SeleniumService'), \
+         patch('scrapper.linkedin.getAndCheckEnvVars', return_value=('u', 'p', 'k')), \
+         patch('scrapper.linkedin.sleep'), \
+         patch('scrapper.navigator.linkedinNavigator.sleep'):
         
         nav = nav_cls.return_value
         svc = svc_cls.return_value
@@ -190,7 +193,8 @@ class TestLinkedinService:
             service.mysql.insert.assert_not_called()
 
 class TestLinkedinNavigator:
-    def test_get_total_results(self):
+    @patch("scrapper.navigator.linkedinNavigator.sleep")
+    def test_get_total_results(self, mock_sleep):
         nav = LinkedinNavigator(MagicMock())
         nav.selenium.getText.return_value = "100+ items"
         assert nav.get_total_results("k", "r", "l", "t") == 100
