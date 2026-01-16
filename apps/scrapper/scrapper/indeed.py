@@ -101,7 +101,10 @@ def search_jobs(keywords: str, startPage: int = 1):
             currentItem += 1
             print()
             idx += 1
-        if newJobFound and navigator.click_next_page():
+        if not newJobFound:
+            print(yellow("No new jobs found in this page, stopping keyword processing."))
+            break
+        if navigator.click_next_page():
             navigator.wait_until_page_is_loaded()
             sleep(5, 6)
             service.update_state(keywords, page + 1)
@@ -126,6 +129,7 @@ def load_and_process_row(idx) -> bool:
         navigator.close_modal()
         if not navigator.scroll_jobs_list(idx):
             return False
+        sleep(0.5, 1)
         jobLinkElm = navigator.get_job_link_element(idx)
         # Get initial URL from link for job ID extraction
         initial_url = navigator.get_job_url(jobLinkElm)
@@ -136,6 +140,7 @@ def load_and_process_row(idx) -> bool:
         # Load the job detail page
         navigator.load_job_detail(jobLinkElm)
         # Get the actual URL from the main page after navigation
+        sleep(2, 2)
         url = navigator.selenium.getUrl()
         ignore = False
     except IndexError as ex:

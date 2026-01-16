@@ -98,7 +98,6 @@ class IndeedNavigator:
         if not li.is_displayed(): # ignore hidden li's
             return False
         self.selenium.scrollIntoView(li)
-        sleep(0.5, 1)
         return True
 
     @retry(exception=WebDriverException, raiseException=False, exceptionFnc=lambda self, *args, **kwargs: self.close_modal())
@@ -116,9 +115,7 @@ class IndeedNavigator:
     @retry(exception=ElementClickInterceptedException, exceptionFnc=lambda self, *args, **kwargs: self.close_modal())
     def load_job_detail(self, jobLinkElm: WebElement):
         print(yellow("loading..."), end="")
-        sleep(2, 4)
         self.selenium.waitAndClick(jobLinkElm)
-        sleep(9, 11)
 
     def get_job_link_element(self, idx):
         liElm = self.selenium.getElms(CSS_SEL_JOB_LI)[idx]

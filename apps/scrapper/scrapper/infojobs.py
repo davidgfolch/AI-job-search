@@ -10,7 +10,7 @@ from .services.InfojobsService import InfojobsService
 
 USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("INFOJOBS")
 
-DEBUG = False
+DEBUG = True
 WEB_PAGE = 'Infojobs'
 LIST_URL = 'https://www.infojobs.net/ofertas-trabajo'
 JOBS_X_PAGE = 22
