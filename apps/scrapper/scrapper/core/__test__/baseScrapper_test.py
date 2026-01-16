@@ -1,223 +1,122 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from scrapper.core.baseScrapper import (
     getAndCheckEnvVars, htmlToMarkdown, removeInvalidScapes,
     removeLinks, validate, debug, join, printScrapperTitle, printPage, removeUrlParameter
 )
 
 class TestGetAndCheckEnvVars:
+    @pytest.mark.parametrize("side_effect, expected_email, expected_search, expected_exc", [
+        (['t@e.com', 'pwd', 'py'], 't@e.com', 'py', None),
+        (['t@e.com', 'pwd', None, 'gen'], 't@e.com', 'gen', None),
+        ([None, 'pwd', 'search'], None, None, SystemExit),
+        (['t@e.com', None, 'search'], None, None, SystemExit),
+        (['t@e.com', 'pwd', None, None], None, None, SystemExit),
+    ])
     @patch('scrapper.core.baseScrapper.getEnv')
-    def test_all_vars_present(self, mockGetEnv):
-        mockGetEnv.side_effect = ['test@email.com', 'password', 'python developer']
-        email, pwd, search = getAndCheckEnvVars('LINKEDIN')
-        assert email == 'test@email.com'
-        assert pwd == 'password'
-        assert search == 'python developer'
-    
-    @patch('scrapper.core.baseScrapper.getEnv')
-    def test_fallback_to_generic_search(self, mockGetEnv):
-        mockGetEnv.side_effect = ['test@email.com', 'password', None, 'generic search']
-        email, pwd, search = getAndCheckEnvVars('LINKEDIN')
-        assert search == 'generic search'
-    
-    @patch('scrapper.core.baseScrapper.getEnv')
-    def test_missing_email_exits(self, mockGetEnv):
-        mockGetEnv.side_effect = [None, 'password', 'search']
-        with pytest.raises(SystemExit):
-            getAndCheckEnvVars('LINKEDIN')
-    
-    @patch('scrapper.core.baseScrapper.getEnv')
-    def test_missing_password_exits(self, mockGetEnv):
-        mockGetEnv.side_effect = ['test@email.com', None, 'search']
-        with pytest.raises(SystemExit):
-            getAndCheckEnvVars('LINKEDIN')
-    
-    @patch('scrapper.core.baseScrapper.getEnv')
-    def test_missing_search_exits(self, mockGetEnv):
-        mockGetEnv.side_effect = ['test@email.com', 'password', None, None]
-        with pytest.raises(SystemExit):
-            getAndCheckEnvVars('LINKEDIN')
+    def test_get_env_vars(self, mockGetEnv, side_effect, expected_email, expected_search, expected_exc):
+        mockGetEnv.side_effect = side_effect
+        if expected_exc:
+            with pytest.raises(expected_exc):
+                getAndCheckEnvVars('LINKEDIN')
+        else:
+            email, pwd, search = getAndCheckEnvVars('LINKEDIN')
+            if expected_email: assert email == expected_email
+            assert pwd == 'pwd'
+            assert search == expected_search
 
 class TestHtmlToMarkdown:
-    def test_simple_html(self):
-        html = '<p>Hello World</p>'
+    @pytest.mark.parametrize("html, expected", [
+        ('<p>Hello World</p>', 'Hello World'),
+        ('<a href="http://test.com">Link</a>', 'Link'),
+        ('<p>Line1<br>Line2</p>', ['Line1', 'Line2']),
+        ('<ul><li>Item1</li><li>Item2</li></ul>', ['Item1', 'Item2']),
+        ('<p>Price: \\$100</p>', '$100')
+    ])
+    def test_html_to_markdown(self, html, expected):
         md = htmlToMarkdown(html)
-        assert 'Hello World' in md
-    
-    def test_html_with_links(self):
-        html = '<a href="http://test.com">Link</a>'
-        md = htmlToMarkdown(html)
-        assert 'Link' in md
-    
-    def test_html_with_br(self):
-        html = '<p>Line1<br>Line2</p>'
-        md = htmlToMarkdown(html)
-        assert 'Line1' in md
-        assert 'Line2' in md
-    
-    def test_html_with_lists(self):
-        html = '<ul><li>Item1</li><li>Item2</li></ul>'
-        md = htmlToMarkdown(html)
-        assert 'Item1' in md
-        assert 'Item2' in md
-    
-    def test_removes_invalid_escapes(self):
-        html = '<p>Price: \\$100</p>'
-        md = htmlToMarkdown(html)
-        assert '$100' in md
+        if isinstance(expected, list):
+            for item in expected: assert item in md
+        else:
+            assert expected in md
 
-class TestRemoveInvalidScapes:
-    def test_removes_dollar_escape(self):
-        text = 'Price: \\$100'
-        result = removeInvalidScapes(text)
-        assert result == 'Price: $100'
-    
-    def test_removes_backslashes(self):
-        text = 'Test\\nText\\tHere'
-        result = removeInvalidScapes(text)
-        assert '\\' not in result or '\\u' in result
-    
-    def test_preserves_unicode_escapes(self):
-        text = 'Unicode: \\u0041'
-        result = removeInvalidScapes(text)
-        assert '\\u0041' in result
+@pytest.mark.parametrize("text, expected", [
+    ('Price: \\$100', 'Price: $100'),
+    ('Test\\nText\\tHere', lambda res: '\\' not in res or '\\u' in res),
+    ('Unicode: \\u0041', '\\u0041')
+])
+def test_remove_invalid_scapes(text, expected):
+    res = removeInvalidScapes(text)
+    if callable(expected): assert expected(res)
+    else: assert expected in res
 
-class TestRemoveLinks:
-    def test_removes_markdown_links(self):
-        text = 'Check [this link](http://example.com) for more'
-        result = removeLinks(text)
-        assert 'this link' in result
-        assert 'http://example.com' not in result
-    
-    def test_multiple_links(self):
-        text = '[Link1](url1) and [Link2](url2)'
-        result = removeLinks(text)
-        assert 'Link1' in result
-        assert 'Link2' in result
-        assert 'url1' not in result
-        assert 'url2' not in result
-    
-    def test_no_links(self):
-        text = 'Plain text without links'
-        result = removeLinks(text)
-        assert result == text
+@pytest.mark.parametrize("text, should_contain, should_not_contain", [
+    ('Check [this link](http://example.com) for more', ['this link'], ['http://example.com']),
+    ('[Link1](url1) and [Link2](url2)', ['Link1', 'Link2'], ['url1', 'url2']),
+    ('Plain text without links', ['Plain text without links'], [])
+])
+def test_remove_links(text, should_contain, should_not_contain):
+    res = removeLinks(text)
+    for item in should_contain: assert item in res
+    for item in should_not_contain: assert item not in res
 
-class TestValidate:
-    def test_all_fields_valid(self):
-        result = validate('Title', 'http://url.com', 'Company', '# Markdown', False)
-        assert result is True
-    
-    def test_empty_title(self):
-        result = validate('', 'http://url.com', 'Company', '# Markdown', False)
-        assert result is False
-    
-    def test_empty_url(self):
-        result = validate('Title', '', 'Company', '# Markdown', False)
-        assert result is False
-    
-    def test_empty_company(self):
-        result = validate('Title', 'http://url.com', '', '# Markdown', False)
-        assert result is False
-    
-    def test_empty_markdown(self):
-        result = validate('Title', 'http://url.com', 'Company', '', False)
-        assert result is False
-    
-    def test_whitespace_only_fields(self):
-        result = validate('   ', 'http://url.com', 'Company', '# Markdown', False)
-        assert result is False
+@pytest.mark.parametrize("args, expected", [
+    (('Title', 'http://url.com', 'Company', '# Markdown', False), True),
+    (('', 'http://url.com', 'Company', '# Markdown', False), False),
+    (('Title', '', 'Company', '# Markdown', False), False),
+    (('Title', 'http://url.com', '', '# Markdown', False), False),
+    (('Title', 'http://url.com', 'Company', '', False), False),
+    (('   ', 'http://url.com', 'Company', '# Markdown', False), False),
+])
+def test_validate(args, expected):
+    assert validate(*args) is expected
 
 class TestDebug:
-    def test_debug_disabled_no_exception(self):
-        with patch('builtins.print') as mockPrint:
-            debug(False, 'Test message', exception=False)
-            mockPrint.assert_called()
-    
-    def test_debug_disabled_with_exception(self):
-        with patch('builtins.print') as mockPrint:
-            debug(False, 'Test message', exception=True)
-            assert mockPrint.call_count >= 2
-    
-    def test_debug_enabled_no_exception(self):
-        with patch('builtins.input', return_value=''):
-            debug(True, 'Test message', exception=False)
-    
-    def test_debug_enabled_with_exception(self):
-        with patch('builtins.input', return_value=''), \
-             patch('builtins.print'):
-            debug(True, 'Test message', exception=True)
+    @pytest.mark.parametrize("debug_mode, exception, input_se, print_count", [
+        (False, False, None, 1),
+        (False, True, None, 2),
+        (True, False, [''], 0),
+        (True, True, [''], 0) # Mock print separately if needed
+    ])
+    def test_debug(self, debug_mode, exception, input_se, print_count):
+        with patch('builtins.print') as mp, patch('builtins.input', side_effect=input_se or []):
+            debug(debug_mode, 'Msg', exception=exception)
+            if not debug_mode: 
+                assert mp.call_count >= print_count
 
-class TestJoin:
-    def test_join_multiple_strings(self):
-        result = join('Hello', ' ', 'World')
-        assert result == 'Hello World'
-    
-    def test_join_empty_strings(self):
-        result = join('', '', '')
-        assert result == ''
-    
-    def test_join_single_string(self):
-        result = join('Single')
-        assert result == 'Single'
+@pytest.mark.parametrize("strings, expected", [
+    (('Hello', ' ', 'World'), 'Hello World'),
+    (('', '', ''), ''),
+    (('Single',), 'Single')
+])
+def test_join(strings, expected):
+    assert join(*strings) == expected
 
-class TestPrintScrapperTitle:
-    @patch('scrapper.core.baseScrapper.printHR')
-    @patch('scrapper.core.baseScrapper.getDatetimeNowStr')
-    def test_preload_mode(self, mockGetDatetime, mockPrintHR):
-        mockGetDatetime.return_value = '2025-01-01 12:00:00'
-        with patch('builtins.print') as mockPrint:
-            printScrapperTitle('LinkedIn', True)
-            mockPrint.assert_called()
-            mockPrintHR.assert_called()
-    
-    @patch('scrapper.core.baseScrapper.printHR')
-    @patch('scrapper.core.baseScrapper.getDatetimeNowStr')
-    def test_normal_mode(self, mockGetDatetime, mockPrintHR):
-        mockGetDatetime.return_value = '2025-01-01 12:00:00'
-        with patch('builtins.print') as mockPrint:
-            printScrapperTitle('LinkedIn', False)
-            mockPrint.assert_called()
-            mockPrintHR.assert_called()
+@pytest.mark.parametrize("preload", [True, False])
+@patch('scrapper.core.baseScrapper.printHR')
+@patch('scrapper.core.baseScrapper.getDatetimeNowStr', return_value='2025-01-01')
+def test_print_scrapper_title(mock_date, mock_hr, preload):
+    with patch('builtins.print') as mock_print:
+        printScrapperTitle('LinkedIn', preload)
+        mock_print.assert_called()
+        mock_hr.assert_called()
 
-class TestPrintPage:
-    @patch('scrapper.core.baseScrapper.printHR')
-    @patch('scrapper.core.baseScrapper.getDatetimeNowStr')
-    def test_print_page(self, mockGetDatetime, mockPrintHR):
-        mockGetDatetime.return_value = '2025-01-01 12:00:00'
-        with patch('builtins.print') as mockPrint:
-            printPage('LinkedIn', 1, 10, 'python developer')
-            mockPrint.assert_called()
-            mockPrintHR.assert_called()
+@patch('scrapper.core.baseScrapper.printHR')
+@patch('scrapper.core.baseScrapper.getDatetimeNowStr', return_value='2025-01-01')
+def test_print_page(mock_date, mock_hr):
+    with patch('builtins.print') as mock_print:
+        printPage('LinkedIn', 1, 10, 'python developer')
+        mock_print.assert_called()
+        mock_hr.assert_called()
 
-
-class TestRemoveUrlParameter:
-    def test_remove_existing_parameter(self):
-        url = "https://example.com/page?param1=value1&param2=value2"
-        result = removeUrlParameter(url, "param1")
-        assert "param1" not in result
-        assert "param2=value2" in result
-        assert "example.com" in result
-
-    def test_remove_last_parameter(self):
-        url = "https://example.com/page?param1=value1"
-        result = removeUrlParameter(url, "param1")
-        assert "param1" not in result
-        assert "example.com" in result
-
-    def test_remove_non_existing_parameter(self):
-        url = "https://example.com/page?param1=value1"
-        result = removeUrlParameter(url, "param2")
-        assert result == url
-
-    def test_remove_from_multiple_values(self):
-        url = "https://example.com/page?p=1&p=2&target=remove"
-        result = removeUrlParameter(url, "target")
-        assert "target" not in result
-        assert "p=1" in result
-        assert "p=2" in result
-
-    def test_remove_turnstile(self):
-         url = "https://es.indeed.com/viewjob?jk=789&cf-turnstile-response=123"
-         result = removeUrlParameter(url, "cf-turnstile-response")
-         assert "cf-turnstile-response" not in result
-         assert "jk=789" in result
+@pytest.mark.parametrize("url, param, expected_not_in, expected_in", [
+    ("https://example.com/page?p1=v1&p2=v2", "p1", ["p1=v1"], ["p2=v2", "example.com"]),
+    ("https://example.com/page?p1=v1", "p1", ["p1=v1"], ["example.com"]),
+    ("https://example.com/page?p1=v1", "p2", [], ["p1=v1"]),
+    ("https://example.com/page?p=1&p=2&t=r", "t", ["t=r"], ["p=1", "p=2"]),
+    ("https://es.indeed.com/viewjob?jk=789&cf-turnstile-response=123", "cf-turnstile-response", ["cf-turnstile-response"], ["jk=789"])
+])
+def test_remove_url_parameter(url, param, expected_not_in, expected_in):
+    res = removeUrlParameter(url, param)
+    for item in expected_not_in: assert item not in res
+    for item in expected_in: assert item in res

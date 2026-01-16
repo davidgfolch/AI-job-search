@@ -35,10 +35,12 @@ describe('FilterConfigurations', () => {
         fireEvent.change(input, { target: { value: 'My Config' } });
         action(_ === 'Button' ? screen.getByText('Save') : input);
         
-        await waitFor(() => expect(getStoredConfigs()).toHaveLength(2));
+        await waitFor(() => {
+            expect(getStoredConfigs()).toHaveLength(2);
+            expect((input as HTMLInputElement).value).toBe('');
+        });
         expect(getStoredConfigs()[0]).toEqual({ name: 'My Config', filters: mockFilters });
         if (onMessage.mock.calls.length) expect(onMessage).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success');
-        expect((input as HTMLInputElement).value).toBe('');
     });
 
     it('validates name before saving', async () => {
