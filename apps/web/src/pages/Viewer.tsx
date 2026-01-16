@@ -66,7 +66,7 @@ export default function Viewer() {
                                 )}
                             </div>
                             <div className="tab-content">
-                                <div style={{ display: state.activeTab === 'list' ? 'block' : 'none', height: '100%' }}>
+                                <div style={{ display: state.activeTab === 'list' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                                     <JobList
                                         isLoading={status.isLoading}
                                         error={status.error}
