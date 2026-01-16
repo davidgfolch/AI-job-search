@@ -7,20 +7,29 @@ interface ViewTabsProps {
     onTabChange: (tab: 'list' | 'edit' | 'create') => void;
     hasNewJobs?: boolean;
     newJobsCount?: number;
+    onReload?: () => void;
 }
 
-const ViewTabs: React.FC<ViewTabsProps> = ({ activeTab, onTabChange, hasNewJobs, newJobsCount }) => {
+const ViewTabs: React.FC<ViewTabsProps> = ({ activeTab, onTabChange, hasNewJobs, newJobsCount, onReload }) => {
     return (
         <>
             <button 
-                className={`tab-button ${activeTab === 'list' ? 'active' : ''} ${hasNewJobs ? 'has-new-jobs' : ''}`} 
+                className={`tab-button ${activeTab === 'list' ? 'active' : ''}`} 
                 onClick={() => onTabChange('list')}
-                title={hasNewJobs ? "Click to update list" : "List view"}
+                title="List view"
             >
-                {hasNewJobs && <span className="new-badge" />}
                 List
-                {hasNewJobs && newJobsCount && newJobsCount > 0 ? ` (${newJobsCount} new)` : ''}
             </button>
+            {hasNewJobs && (
+                <button 
+                    className="tab-button has-new-jobs"
+                    onClick={onReload}
+                    title="Click to reload list"
+                >
+                     <span className="reload-icon">↻</span>
+                     {newJobsCount && newJobsCount > 0 ? `${newJobsCount} new` : 'New jobs'}
+                </button>
+            )}
             <button className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`} onClick={() => onTabChange('edit')}>
                 Edit
             </button>

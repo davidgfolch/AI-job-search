@@ -34,14 +34,10 @@ export default function Viewer() {
                             <div className="tab-buttons">
                                 <ViewTabs 
                                     activeTab={state.activeTab} 
-                                    onTabChange={(tab) => {
-                                        if (tab === 'list' && state.hasNewJobs) {
-                                            actions.refreshJobs();
-                                        }
-                                        actions.setActiveTab(tab);
-                                    }} 
+                                    onTabChange={actions.setActiveTab} 
                                     hasNewJobs={state.hasNewJobs}
                                     newJobsCount={state.newJobsCount}
+                                    onReload={actions.refreshJobs}
                                 />
                                 {state.activeTab === 'list' && (
                                     <div className="list-summary">

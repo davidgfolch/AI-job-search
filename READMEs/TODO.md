@@ -17,9 +17,7 @@ This is a prototype beta version, not working yet.
 ## apps/commonlib
 
 ## apps/scrapper
-- indeed: improve indeed scrapper speed.
 
 ## apps/web
 - In list, when selected all, it don't un select when click on selected row.  It unselects all, and select the row. The problem is even bigger because is an api bulk operation LLM decided to pass all form filters, so if you change a filter (eg. ignored) the bulk reques doesn't work.
-- DOING: In list: separate "list" button and "x new" functionality, the x new functionality must be a new button beside the list button, showing a reload icon and the number of new items.
 - DONE: Configuration filters should reset "days old" field, set no value if not informed in loaded configuration.

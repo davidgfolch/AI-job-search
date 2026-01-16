@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../../api/jobs';
 import { DEFAULT_FILTERS } from '../contants';
 
@@ -8,10 +8,16 @@ export const useJobsData = () => {
     const [allJobs, setAllJobs] = useState<Job[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+    const queryClient = useQueryClient();
+
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['jobs', filters],
         queryFn: () => jobsApi.getJobs(filters),
     });
+
+    const hardRefresh = useCallback(async () => {
+        await queryClient.resetQueries({ queryKey: ['jobs'] });
+    }, [queryClient]);
 
     const handleLoadMore = useCallback(() => {
         if (!isLoadingMore && !isLoading && allJobs.length < (data?.total || 0)) {
@@ -31,6 +37,7 @@ export const useJobsData = () => {
         error,
         handleLoadMore,
         setIsLoadingMore,
-        refetch
+        refetch,
+        hardRefresh
     };
 };

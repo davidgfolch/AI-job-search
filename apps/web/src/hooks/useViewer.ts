@@ -11,7 +11,7 @@ export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
 
     const {
-        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, refetch
+        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, hardRefresh
     } = useJobsData();
 
     const {
@@ -157,10 +157,8 @@ export const useViewer = () => {
                     setShouldSelectFirst(true);
                     setFilters(f => ({ ...f, page: 1 }));
                 } else {
-                    const res = await refetch();
-                    if (res.data?.items?.[0]) {
-                         handleJobSelect(res.data.items[0]);
-                    }
+                    setShouldSelectFirst(true);
+                    await hardRefresh();
                 }
             },
         },

@@ -8,22 +8,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   animation: pulse-bg 2s infinite;
+  margin-left: 8px; /* Add some space from the List button */
 }
 
 .tab-button.has-new-jobs:hover {
     background-color: #bbf7d0;
 }
 
-.new-badge {
-    width: 8px;
-    height: 8px;
-    background-color: #16a34a;
-    border-radius: 50%;
-    display: inline-block;
+.reload-icon {
+    font-size: 1.2em;
+    line-height: 1;
+    font-weight: bold;
 }
-
 
 @keyframes pulse-bg {
     0% {

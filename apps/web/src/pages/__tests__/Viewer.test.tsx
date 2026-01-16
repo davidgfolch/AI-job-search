@@ -119,8 +119,9 @@ describe('Viewer', () => {
         switchToTab('Edit');
         expect(screen.getByLabelText('Comments')).toBeInTheDocument();
         (jobsApi.getJobs as any).mockClear();
-        const listBtn = screen.getByText((content, element) => element?.tagName.toLowerCase() === 'button' && content.includes('List'));
-        fireEvent.click(listBtn);
+        const reloadBtn = screen.getByText((content, element) => element?.tagName.toLowerCase() === 'button' && content.includes('new'));
+        fireEvent.click(reloadBtn);
+        // hardRefresh calls queryClient.resetQueries which triggers a refetch that ultimately calls jobsApi.getJobs
         await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalled());
     });
 
