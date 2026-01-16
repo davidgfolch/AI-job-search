@@ -92,7 +92,7 @@ def search_jobs(keywords: str, start_page: int):
                     foundNewJobInPage = True
             if currentItem >= totalResults:
                 break  # exit while
-            if not foundNewJobInPage:
+            if not foundNewJobInPage and (page > start_page + 1 or (start_page<2 and page > 2)):
                 print(yellow('No new jobs found in this page, stopping keyword processing.'))
                 break
             if not navigator.click_next_page():

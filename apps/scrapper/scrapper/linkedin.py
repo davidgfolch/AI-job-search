@@ -94,7 +94,8 @@ def search_jobs(keywords: str, startPage: int):
                     foundNewJobInPage = True
             if currentItem >= totalResults or page >= totalPages:
                 break
-            if not foundNewJobInPage:
+            # linkedin not sorted by date, so we need to check more pages
+            if not foundNewJobInPage and (page > startPage + 1 or (startPage<2 and page > 2)):
                 print(yellow('No new jobs found in this page, stopping keyword processing.'))
                 break
             if not navigator.click_next_page():

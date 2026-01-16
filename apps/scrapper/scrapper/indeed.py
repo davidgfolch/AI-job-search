@@ -82,16 +82,7 @@ def search_jobs(keywords: str, startPage: int = 1):
     if totalResults==0:
         print(yellow(f"There are no results for search={keywords}"))
         return
-    # Fast forward
-    if startPage > 1:
-        print(yellow(f"Fast forwarding to page {startPage}..."))
-        while page < startPage - 1:
-            if navigator.click_next_page():
-                page += 1
-                navigator.wait_until_page_is_loaded()
-                sleep(1, 2)
-            else:
-                break
+    page = _fast_forward_page(startPage, page)
     totalPages = totalResults/JOBS_X_PAGE if totalResults % JOBS_X_PAGE == 0 else totalResults/JOBS_X_PAGE + 1
     while True:
         page += 1
@@ -105,7 +96,7 @@ def search_jobs(keywords: str, startPage: int = 1):
             currentItem += 1
             print()
             idx += 1
-        if not foundNewJobInPage:
+        if not foundNewJobInPage and (page > startPage + 1 or (startPage<2 and page > 2)):
             print(yellow("No new jobs found in this page, stopping keyword processing."))
             break
         if navigator.click_next_page():
@@ -115,6 +106,19 @@ def search_jobs(keywords: str, startPage: int = 1):
         else:
             break
     summarize(keywords, totalResults, currentItem)
+
+
+def _fast_forward_page(startPage: int, page: int) -> int:
+    if startPage > 1:
+        print(yellow(f"Fast forwarding to page {startPage}..."))
+        while page < startPage - 1:
+            if navigator.click_next_page():
+                page += 1
+                navigator.wait_until_page_is_loaded()
+                sleep(1, 2)
+            else:
+                break
+    return page
 
 
 def summarize(keywords, totalResults, currentItem):

@@ -107,6 +107,43 @@ class TestIndeedScrapper:
             # 16 jobs per page * 2 pages = 32 calls
             assert mock_process_row.call_count == 32
 
+    def test_search_jobs_fast_forward(self):
+        # Testing fast forward logic
+        
+        with (
+            patch("scrapper.indeed.IndeedNavigator") as mock_nav_class,
+            patch("scrapper.indeed.IndeedService") as mock_service_class,
+            patch("scrapper.indeed.navigator") as mock_navigator,
+            patch("scrapper.indeed.service") as mock_service,
+            patch("scrapper.indeed.load_and_process_row", return_value=True) as mock_process_row,
+            patch("scrapper.indeed.summarize"),
+            patch("scrapper.indeed.sleep"),
+            patch("scrapper.indeed.baseScrapper.printPage"),
+        ):
+            mock_navigator.get_total_results_from_header.return_value = 50
+            mock_navigator.checkNoResults.return_value = False
+            
+            # 2 calls for fast forward (to reach page 3), 1 call for next page after processing page 3
+            # startPage=3. Fast forward needs 2 clicks (page 1->2, 2->3). 
+            # Current page is 0 initially. 
+            # 0->1 (click 1), 1->2 (click 2, page becomes 2). 
+            # loop condition: page < 3-1=2. 
+            # Wait: 0 < 2: click. page=1. 
+            # 1 < 2: click. page=2. 
+            # 2 < 2: False.
+            # So 2 clicks. Page is 2.
+            # Main loop: page += 1 -> 3.
+            # Process page 3.
+            # click_next_page for next loop iteration (click 3).
+            
+            mock_navigator.click_next_page.side_effect = [True, True, False]
+            
+            search_jobs("python", startPage=3)
+            
+            # Should have called click_next_page 3 times
+            assert mock_navigator.click_next_page.call_count == 3
+
+
     def test_process_row_insert(self):
         # Testing process_row which now delegates to Service and uses Navigator
 
