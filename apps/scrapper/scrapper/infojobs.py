@@ -110,6 +110,7 @@ def load_and_process_row(idx) -> bool:
             print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='', flush=True)
             return True
         print(yellow('loading...'), end='')
+
         navigator.click_job_link(job_link_elm)
         if not process_row(url):
              raise ValueError('Validation failed')

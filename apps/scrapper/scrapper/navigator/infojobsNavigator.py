@@ -75,11 +75,10 @@ class InfojobsNavigator:
         self.selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
         self.selenium.waitUntilPageIsLoaded()
 
-    # Redefining logic for handling the exceptionFnc. In original code it was explicitly passed.
-    # Here I'll need to make sure 'security_filter' can be called.
-    # Since existing retry decorator might construct the call, let's look at how it's defined in commonlib just in case.
-    # Assuming standard behavior where it calls the passed callable.
-    
+    def waitForSecurityFilterUserResolved(self):
+        print(yellow(f'Waiting for security filter to be resolved'))
+        
+    @retry(retries=50, delay=2, exceptionFnc=lambda self, *args, **kwargs: self.waitForSecurityFilterUserResolved())
     def load_filtered_search_results(self, keywords: str):
         self.click_on_search_jobs()
         if not self.selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2), clear=True):
@@ -91,7 +90,6 @@ class InfojobsNavigator:
         sleep(0.5, 1)
         self.selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
         sleep(1, 2)
-        self.selenium.waitUntil_presenceLocatedElement('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', timeout=5)
         self.selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
         sleep(1, 2)
         if self.selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
@@ -124,6 +122,7 @@ class InfojobsNavigator:
     def get_job_url(self, element: WebElement) -> str:
         return element.get_attribute('href')
         
+    @retry()
     def click_job_link(self, element: WebElement):
         self.selenium.waitAndClick(element)
 

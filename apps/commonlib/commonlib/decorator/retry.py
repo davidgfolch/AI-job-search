@@ -50,7 +50,9 @@ def retry(retries: int = 5,
                             print(red(str(e)), flush=True)
                         return False
                     trace = getProjectTraceItems(e)
-                    print(yellow(f'{e.__class__.__name__} calling function {fnc.__name__}() -- {trace} -> Retry {i}/{retries}... '), end='', flush=True)
+                    print(yellow(f'{e.__class__.__name__} calling function {fnc.__name__}()'), end='', flush=True)
+                    print(f' -- {trace} -> ', end='', flush=True)
+                    print(yellow(f' Retry {i}/{retries}... '), end='', flush=True)
                     if stackStrace == StackTrace.ALWAYS:
                         print(red(traceback.format_exc()), flush=True)
                     if exceptionFnc is not None:
