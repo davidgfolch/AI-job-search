@@ -105,9 +105,10 @@ class IndeedNavigator:
         self.selenium.scrollIntoView(li)
         return True
 
-    @retry(exception=WebDriverException, raiseException=False, exceptionFnc=lambda self, *args, **kwargs: self.close_modal())
+    @retry(retries=3, delay=1, raiseException=False)
     def click_next_page(self):
         sleep(1, 2)
+        self.close_modal()
         self.selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
         return True
 
