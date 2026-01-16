@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useLearnList, Skill } from '../useLearnList';
-import axios from 'axios';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
 // Define the mock client methods using vi.hoisted so they are available in vi.mock
 const mockClient = vi.hoisted(() => ({
@@ -24,16 +25,28 @@ const mockSkills: Skill[] = [
     { name: 'EmptySkill', description: '', learningPath: [], disabled: false },
 ];
 
+const createWrapper = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+    return ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+};
+
 describe('useLearnList', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     it('should fetch skills on mount', async () => {
-        // skillsApi.getSkills maps response.data. So we must provide { data: ... }
         mockClient.get.mockResolvedValue({ data: mockSkills });
 
-        const { result } = renderHook(() => useLearnList());
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
 
         expect(result.current.isLoading).toBe(true);
         expect(result.current.learnList).toEqual([]);
@@ -51,7 +64,7 @@ describe('useLearnList', () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         mockClient.get.mockRejectedValue(new Error('Fetch failed'));
 
-        const { result } = renderHook(() => useLearnList());
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
 
         await waitFor(() => {
             expect(result.current.isLoading).toBe(false);
@@ -63,84 +76,137 @@ describe('useLearnList', () => {
     });
 
     it('toggleSkill should create skill if it does not exist', async () => {
-        mockClient.get.mockResolvedValue({ data: [] });
+        mockClient.get.mockResolvedValueOnce({ data: [] }); // Initial fetch
         mockClient.post.mockResolvedValue({ data: 'success' });
 
-        const { result } = renderHook(() => useLearnList());
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-        // Setup get for re-fetch
-        mockClient.get.mockResolvedValue({ data: [{ name: 'Vue', disabled: false } as Skill] });
+        // Setup get for re-fetch (invalidation)
+        mockClient.get.mockResolvedValueOnce({ data: [{ name: 'Vue', disabled: false } as Skill] });
 
         await act(async () => {
             await result.current.toggleSkill('Vue');
         });
 
-        // skillsApi.createSkill POSTs to /skills/Vue with payload
         expect(mockClient.post).toHaveBeenCalledWith('/skills/Vue', expect.objectContaining({
             name: 'Vue',
             disabled: false
         }));
-        // Expect fetch to be called again
-        expect(mockClient.get).toHaveBeenCalledTimes(2); 
+        
+        await waitFor(() => {
+             expect(mockClient.get).toHaveBeenCalledTimes(2);
+        });
     });
 
     it('toggleSkill should re-enable skill if it is disabled', async () => {
-        mockClient.get.mockResolvedValue({ data: mockSkills });
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
         mockClient.put.mockResolvedValue({ data: 'success' });
 
-        const { result } = renderHook(() => useLearnList());
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
         await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        // Refetch setup
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills }); 
 
         await act(async () => {
             await result.current.toggleSkill('Node'); // Node is disabled in mockSkills
         });
 
-        // skillsApi.updateSkill PUTs to /skills/Node
-        // Payload has disabled: false
         expect(mockClient.put).toHaveBeenCalledWith('/skills/Node', expect.objectContaining({ disabled: false }));
-        expect(mockClient.get).toHaveBeenCalledTimes(2);
+        
+        await waitFor(() => {
+             expect(mockClient.get).toHaveBeenCalledTimes(2);
+        });
     });
 
     it('toggleSkill should disable (soft delete) skill if it is enabled and exists', async () => {
-        mockClient.get.mockResolvedValue({ data: mockSkills });
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
         mockClient.put.mockResolvedValue({ data: 'success' });
 
-        const { result } = renderHook(() => useLearnList());
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
         await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+         // Refetch setup
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
 
         await act(async () => {
             await result.current.toggleSkill('React');
         });
 
-        // React has content, so it should be soft deleted (disabled)
         expect(mockClient.put).toHaveBeenCalledWith('/skills/React', expect.objectContaining({ disabled: true }));
-        expect(mockClient.get).toHaveBeenCalledTimes(2);
+        
+        await waitFor(() => {
+             expect(mockClient.get).toHaveBeenCalledTimes(2);
+        });
     });
 
     it('removeSkill should hard delete if skill has no content', async () => {
-        mockClient.get.mockResolvedValue({ data: mockSkills });
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
         mockClient.delete.mockResolvedValue({ data: 'success' });
 
-        const { result } = renderHook(() => useLearnList());
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
         await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+         // Refetch setup
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills }); 
 
         await act(async () => {
             await result.current.removeSkill('EmptySkill');
         });
 
         expect(mockClient.delete).toHaveBeenCalledWith('/skills/EmptySkill');
-        expect(mockClient.get).toHaveBeenCalledTimes(2);
+        
+        await waitFor(() => {
+             expect(mockClient.get).toHaveBeenCalledTimes(2);
+        });
     });
 
     it('isInLearnList should return true only for enabled skills', async () => {
         mockClient.get.mockResolvedValue({ data: mockSkills });
 
-        const { result } = renderHook(() => useLearnList());
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         expect(result.current.isInLearnList('React')).toBe(true);
         expect(result.current.isInLearnList('Node')).toBe(false); // disabled
         expect(result.current.isInLearnList('Ghost')).toBe(false);
+    });
+
+    it('reorders skills (client side only)', async () => {
+        mockClient.get.mockResolvedValue({ data: mockSkills });
+        
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        const newOrder = [mockSkills[1], mockSkills[0], mockSkills[2]];
+        
+        await act(async () => {
+            await result.current.reorderSkills(newOrder);
+        });
+
+        await waitFor(() => {
+            expect(result.current.learnList).toEqual(newOrder);
+        });
+    });
+
+    it('updates skill details via API', async () => {
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
+        mockClient.put.mockResolvedValue({ data: 'success' });
+
+        const { result } = renderHook(() => useLearnList(), { wrapper: createWrapper() });
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        // Refetch setup
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
+
+        await act(async () => {
+            await result.current.updateSkill('React', { description: 'Updated Desc' });
+        });
+
+        expect(mockClient.put).toHaveBeenCalledWith('/skills/React', expect.objectContaining({ description: 'Updated Desc' }));
+        await waitFor(() => {
+             expect(mockClient.get).toHaveBeenCalledTimes(2);
+        });
     });
 });

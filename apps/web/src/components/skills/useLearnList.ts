@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { skillsApi, type Skill } from '../../api/skills';
 
 export type { Skill };
@@ -7,27 +7,46 @@ export type { Skill };
  * Custom hook to manage the skills learn list
  */
 export const useLearnList = () => {
-  const [learnList, setLearnList] = useState<Skill[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchSkills = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const skills = await skillsApi.getSkills();
-      setLearnList(skills);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to fetch skills", err);
-      setError("Failed to load skills from database");
-    } finally {
-      setIsLoading(false);
+  const { data: learnList = [], isLoading, error: queryError, refetch } = useQuery({
+    queryKey: ['skills'],
+    queryFn: skillsApi.getSkills,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const error = queryError ? "Failed to load skills from database" : null;
+
+  const createMutation = useMutation({
+    mutationFn: skillsApi.createSkill,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+    },
+    onError: (err) => {
+        console.error("Failed to create skill", err);
     }
-  }, []);
+  });
 
-  useEffect(() => {
-    fetchSkills();
-  }, [fetchSkills]);
+  const updateMutation = useMutation({
+    mutationFn: ({ name, updates }: { name: string; updates: Partial<Skill> }) => 
+      skillsApi.updateSkill(name, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+    },
+    onError: (err) => {
+        console.error("Failed to update skill", err);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: skillsApi.deleteSkill,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+    },
+    onError: (err) => {
+        console.error("Failed to delete skill", err);
+    }
+  });
 
   const toggleSkill = async (skillName: string) => {
     const existing = learnList.find(s => s.name === skillName.trim());
@@ -36,20 +55,15 @@ export const useLearnList = () => {
         await removeSkill(skillName);
     } else if (existing && existing.disabled) {
         // Re-enable
-        await updateSkill(skillName, { disabled: false });
+        updateMutation.mutate({ name: skillName, updates: { disabled: false } });
     } else {
         // Create
-        try {
-            await skillsApi.createSkill({
-                name: skillName.trim(),
-                description: '',
-                learningPath: [],
-                disabled: false
-            });
-            await fetchSkills();
-        } catch (err) {
-            console.error("Failed to create skill", err);
-        }
+        createMutation.mutate({
+            name: skillName.trim(),
+            description: '',
+            learningPath: [],
+            disabled: false
+        });
     }
   };
 
@@ -60,28 +74,16 @@ export const useLearnList = () => {
 
   const reorderSkills = async (newList: Skill[]) => {
     // DB doesn't support reordering easily without an 'order' field. 
-    // For now, we update local state but warn or just ignore persistence of order if DB doesnt have it.
-    // Actually our DB schema has no order field.
-    // So this might just update the view but re-fetch will reset order by name.
-    setLearnList(newList);
-    // Doing nothing for persistence as DB sorts by name usually or we need an index.
+    // For now, we update local state by updating cache, but this will be reset on refetch.
+    queryClient.setQueryData(['skills'], newList);
     console.warn("Reordering not fully supported in Database mode yet.");
   };
 
   const updateSkill = async (name: string, updates: Partial<Skill>) => {
-    try {
-        await skillsApi.updateSkill(name, updates);
-        await fetchSkills();
-    } catch (err) {
-        console.error("Failed to update skill", err);
-    }
+    updateMutation.mutate({ name, updates });
   };
 
   const removeSkill = async (skillName: string) => {
-     // Check content for soft delete logic logic?
-     // The util does soft delete if description/path exists.
-     // We should replicate that logic or move it to API/Backend.
-     // API delete is hard delete. Update is soft.
      const skill = learnList.find(s => s.name === skillName.trim());
       if (!skill) return;
 
@@ -89,16 +91,21 @@ export const useLearnList = () => {
                         (skill.learningPath && skill.learningPath.length > 0);
 
       if (hasContent) {
-         await updateSkill(skillName, { disabled: true });
+         updateMutation.mutate({ name: skillName, updates: { disabled: true } });
       } else {
-         try {
-             await skillsApi.deleteSkill(skillName);
-             await fetchSkills();
-         } catch (err) {
-             console.error("Failed to delete skill", err);
-         }
+         deleteMutation.mutate(skillName);
       }
   };
 
-  return { learnList, toggleSkill, reorderSkills, removeSkill, isInLearnList, updateSkill, isLoading, error, fetchSkills };
+  return { 
+      learnList, 
+      toggleSkill, 
+      reorderSkills, 
+      removeSkill, 
+      isInLearnList, 
+      updateSkill, 
+      isLoading, 
+      error, 
+      fetchSkills: refetch 
+  };
 };
