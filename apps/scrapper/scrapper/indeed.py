@@ -66,7 +66,11 @@ def search_jobs(keywords: str, startPage: int = 1):
     sleep(3,4)
     print(yellow(f"Search keyword={keywords}"))
     navigator.search(keywords, LOCATION, REMOTE, DAYS_OLD, startPage)
-    sleep(3,4)
+    sleep(2,2)
+    if navigator.checkNoResults():
+        return
+    navigator.selectFilters(REMOTE, DAYS_OLD)
+    sleep(2,2)
     navigator.wait_until_page_is_loaded()
     navigator.clickSortByDate()
     sleep(3,4)
@@ -93,15 +97,15 @@ def search_jobs(keywords: str, startPage: int = 1):
         page += 1
         baseScrapper.printPage(WEB_PAGE, page, totalPages, keywords)
         idx = 0
-        newJobFound = False
+        foundNewJobInPage = False
         while idx < JOBS_X_PAGE:
             print(green(f"pg {page} job {idx + 1} - "), end="")
             if load_and_process_row(idx):
-                newJobFound = True
+                foundNewJobInPage = True
             currentItem += 1
             print()
             idx += 1
-        if not newJobFound:
+        if not foundNewJobInPage:
             print(yellow("No new jobs found in this page, stopping keyword processing."))
             break
         if navigator.click_next_page():

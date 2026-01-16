@@ -68,7 +68,7 @@ def process_keyword(keywords: str, start_page: int):
                 foundNewJobInPage = True
             currentItem += 1
             idx += 1
-        if not foundNewJobInPage and page==1:
+        if not foundNewJobInPage:
             print(yellow('No new jobs found in this page, stopping keyword processing.'))
             break
         if currentItem < totalResults:

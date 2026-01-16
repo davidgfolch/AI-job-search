@@ -62,7 +62,12 @@ class IndeedNavigator:
         self.selenium.sendKeys(CSS_SEL_SEARCH_WHERE, location, clear=True)
         self.selenium.waitAndClick(CSS_SEL_SEARCH_BTN)
         self.selenium.waitUntilPageIsLoaded()
-        sleep(1,1)
+
+    def checkNoResults(self):
+        self.close_modal()
+        return len(self.selenium.getElms(".jobsearch-NoResult-messageContainer")) > 0
+
+    def selectFilters(self, remote: bool, daysOld: int):
         if remote:
             self.selectOption("#remote_filter_button", "a[role='menuitem'][aria-label='Teletrabajo']")
         self.selectOption(f"#fromAge_filter_button", f"a[role='menuitem'][aria-label*='{daysOld}'][aria-label*='días']")

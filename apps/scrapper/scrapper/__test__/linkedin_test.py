@@ -75,7 +75,7 @@ class TestLinkedinScrapper:
         mocks['nav'].get_total_results.return_value = total_res
         mocks['nav'].click_next_page.return_value = True
         
-        with patch('scrapper.linkedin.load_and_process_row', return_value=True):
+        with patch('scrapper.linkedin.load_and_process_row', return_value=False):
              search_jobs('k', start_page)
              if start_page > 1:
                 assert mocks['nav'].click_next_page.call_count >= calls

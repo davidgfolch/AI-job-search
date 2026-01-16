@@ -96,6 +96,7 @@ class TestIndeedScrapper:
         ):
             # Configure navigator mock
             mock_navigator.click_next_page.side_effect = [True, False]
+            mock_navigator.checkNoResults.return_value = False
 
             # We need to manually inject these if they are not set by run()
             # or we can just mock what search_jobs uses.

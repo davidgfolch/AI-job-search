@@ -77,6 +77,7 @@ def search_jobs(keywords: str, startPage: int):
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         currentItem = 0
         page = _fast_forward_page(startPage, currentItem, totalResults)
+        currentItem = (page - 1) * JOBS_X_PAGE
         while True:
             foundNewJobInPage = False
             baseScrapper.printPage(WEB_PAGE, page, totalPages, keywords)
@@ -93,7 +94,7 @@ def search_jobs(keywords: str, startPage: int):
                     foundNewJobInPage = True
             if currentItem >= totalResults or page >= totalPages:
                 break
-            if not foundNewJobInPage and page==1:
+            if not foundNewJobInPage:
                 print(yellow('No new jobs found in this page, stopping keyword processing.'))
                 break
             if not navigator.click_next_page():
