@@ -9,7 +9,8 @@ export const useJobUpdates = (filters: JobListParams, knownJobIds: Set<number>) 
     const { data } = useQuery({
         queryKey: ['jobUpdates', filtersWithoutPage],
         queryFn: () => jobsApi.getJobs({ ...filters, page: 1 }),
-        refetchInterval: 5 * 60 * 1000,
+        refetchInterval: 1 * 60 * 1000,
+        refetchIntervalInBackground: true,
     });
 
     const newJobsCount = data?.items.filter(job => !knownJobIds.has(job.id)).length ?? 0;
