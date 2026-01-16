@@ -88,11 +88,11 @@ def search_jobs(keywords: str, start_page: int):
                         return False
                     if errors > 1:  # exit page loop, some pages has less items
                         break
-                if not jobExistsInDb:
+                if ok and not jobExistsInDb:
                     foundNewJobInPage = True
             if currentItem >= totalResults:
                 break  # exit while
-            if not foundNewJobInPage and page==1:
+            if not foundNewJobInPage:
                 print(yellow('No new jobs found in this page, stopping keyword processing.'))
                 break
             if not navigator.click_next_page():
