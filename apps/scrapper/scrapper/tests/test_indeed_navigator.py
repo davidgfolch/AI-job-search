@@ -52,7 +52,7 @@ class TestIndeedNavigator:
         mock_selenium = Mock(spec=SeleniumService)
         navigator = IndeedNavigator(mock_selenium)
 
-        navigator.search("python developer", "Madrid")
+        navigator.search("python developer", "Madrid", True, 1, 1)
 
         # Verify search interactions
         mock_selenium.waitUntil_presenceLocatedElement.assert_called()

@@ -21,11 +21,15 @@ class IndeedNavigator:
     def accept_cookies(self):
         self.selenium.waitAndClick_noError(CSS_SEL_COOKIE_ACCEPT, "Could not accept cookies")
 
+    @retry(retries=40, delay=1)
+    def waitForCloudflareFilterInLogin(self):
+        self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_EMAIL)
+
     def login(self):
         print(yellow("Navigating to Indeed login page..."))
         self.selenium.loadPage(LOGIN_PAGE)
         self.selenium.waitUntilPageIsLoaded()
-        sleep(2, 3)
+        self.waitForCloudflareFilterInLogin()
         print(yellow("Filling login form..."))
         self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, USER_EMAIL)
         self.accept_cookies()
@@ -46,7 +50,7 @@ class IndeedNavigator:
         self.ignore_access_key_form()
         sleep(2, 3)
 
-    def search(self, keyword: str, location: str = "España"):
+    def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):
         print(yellow(f'Searching for "{keyword}" in "{location}"'))
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_SEARCH_WHAT)
         self.selenium.setFocus(CSS_SEL_SEARCH_WHAT)
@@ -58,6 +62,17 @@ class IndeedNavigator:
         self.selenium.sendKeys(CSS_SEL_SEARCH_WHERE, location, clear=True)
         self.selenium.waitAndClick(CSS_SEL_SEARCH_BTN)
         self.selenium.waitUntilPageIsLoaded()
+        sleep(1,1)
+        if remote:
+            self.selectOption("#remote_filter_button", "a[role='menuitem'][aria-label='Teletrabajo']")
+        self.selectOption(f"#fromAge_filter_button", f"a[role='menuitem'][aria-label*='{daysOld}'][aria-label*='días']")
+
+    @retry(exception=ElementClickInterceptedException, exceptionFnc=lambda self, *args, **kwargs: self.close_modal())
+    def selectOption(self, cssSel: str, cssSelOption: str):
+        self.selenium.waitAndClick(cssSel)
+        sleep(1,1)
+        self.selenium.waitAndClick(cssSelOption)
+        sleep(3,3)
 
     def clickSortByDate(self):
         self.selenium.waitAndClick(CSS_SEL_SORT_BY_DATE)
@@ -93,6 +108,7 @@ class IndeedNavigator:
         return True
 
     def close_modal(self):
+        """ Close modal 'email me with new offers'.  It appears randomly in time after search """
         modals = self.selenium.getElms(CSS_SEL_JOB_MODAL_CLOSE_BTN)
         if modals:
             self.selenium.waitAndClick(modals[0])

@@ -76,7 +76,7 @@ class IndeedService:
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
             # Use the actual URL from seleniumService.getUrl() directly
-            print(f"{job_id}, {title}, {company}, {location}, easy_apply={easy_apply} - ", end="", flush=True)
+            print(f"{job_id}, {title}, {company}, easy_apply={easy_apply} - ", end="", flush=True)
             # Double check existence with the final canonical ID
             if self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None:
                 print(yellow(f"Job id={job_id} already exists in DB (late check), IGNORED."), end="", flush=True)
