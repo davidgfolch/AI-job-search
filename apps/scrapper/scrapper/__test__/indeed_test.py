@@ -61,7 +61,7 @@ class TestIndeedScrapper:
              patch("scrapper.indeed.load_and_process_row", return_value=True), \
              patch("scrapper.indeed.sleep"), \
              patch("scrapper.indeed.baseScrapper.printPage"):
-            mock_nav.get_total_results_from_header.return_value = 50
+            mock_nav.get_total_results.return_value = 50
             mock_nav.checkNoResults.return_value = False
             mock_nav.click_next_page.side_effect = [True, True, False]
             search_jobs("python", startPage=3)
@@ -70,7 +70,7 @@ class TestIndeedScrapper:
     def test_process_row_insert(self):
         mock_nav = MagicMock(spec=IndeedNavigator)
         mock_svc = MagicMock(spec=IndeedService)
-        mock_nav.get_job_data.return_value = ("T", "C", "L", "<h/>")
+        mock_nav.get_job_data.return_value = ("T", "C", "L", "http://u", "<h/>")
         mock_nav.check_easy_apply.return_value = False
         mock_svc.process_job.return_value = True
         with patch("scrapper.indeed.navigator", mock_nav), patch("scrapper.indeed.service", mock_svc):

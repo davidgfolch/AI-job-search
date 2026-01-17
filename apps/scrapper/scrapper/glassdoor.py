@@ -3,6 +3,7 @@ from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.environmentUtil import getEnv
 from .core import baseScrapper
+from .core.utils import debug
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from .services.selenium.seleniumService import SeleniumService
 from .util.persistence_manager import PersistenceManager
@@ -43,9 +44,10 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                 process_keyword(keyword, start_page)
                 persistenceManager.remove_failed_keyword(SITE, keyword)
             except Exception:
-                baseScrapper.debug(DEBUG)
+                debug(DEBUG)
                 persistenceManager.add_failed_keyword(SITE, keyword)
     persistenceManager.finalize_scrapper(SITE)
+
 
 def process_keyword(keyword: str, start_page: int):
     url = JOBS_SEARCH_BASE_URL.format(**{'search': keyword})
@@ -83,7 +85,8 @@ def load_and_process_row(idx):
         if idx >= len(all_lis):
              return
         li_elm = all_lis[idx]
-        navigator.scroll_jobs_list(idx, li_elm)
+        navigator.scroll_jobs_list(idx)
+        li_elm = navigator.get_job_li_elements()[idx]
         
         url = navigator.get_job_url(li_elm)
         job_id, job_exists = service.job_exists_in_db(url)
@@ -93,11 +96,12 @@ def load_and_process_row(idx):
         else:
             navigator.load_job_detail(li_elm)
             try:
-                title, company, location, url, html, easy_apply = navigator.get_job_data()
+                title, company, location, url, html = navigator.get_job_data()
+                easy_apply = navigator.check_easy_apply()
                 service.process_job(title, company, location, url, html, easy_apply)
             finally:
                 navigator.go_back()
     except Exception:
-        baseScrapper.debug(DEBUG, exception=True)
+        debug(DEBUG, exception=True)
     finally:
         print(flush=True)

@@ -2,6 +2,7 @@ import math
 from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
 from .core import baseScrapper
+from .core.utils import debug
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from .services.selenium.seleniumService import SeleniumService
 from .util.persistence_manager import PersistenceManager
@@ -44,7 +45,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                 process_keyword(current_keyword, start_page)
                 persistenceManager.remove_failed_keyword(WEB_PAGE, current_keyword)
             except Exception:
-                baseScrapper.debug(DEBUG)
+                debug(DEBUG)
                 persistenceManager.add_failed_keyword(WEB_PAGE, current_keyword)
     persistenceManager.finalize_scrapper(WEB_PAGE)
 
@@ -53,7 +54,7 @@ def process_keyword(keywords: str, start_page: int):
     navigator.load_search_page()
     if not navigator.load_filtered_search_results(keywords):
         return
-    totalResults = navigator.get_total_results_from_header(keywords)
+    totalResults = navigator.get_total_results(keywords)
     totalPages = math.ceil(totalResults / JOBS_X_PAGE)
     page = baseScrapper.fast_forward_page(navigator, start_page, totalResults, JOBS_X_PAGE)
     currentItem = (page - 1) * JOBS_X_PAGE
@@ -101,7 +102,7 @@ def load_and_process_row(idx) -> bool:
         if not process_row(url):
              raise ValueError('Validation failed')
     except Exception:
-        baseScrapper.debug(DEBUG, exception=True)
+        debug(DEBUG, exception=True)
         return False
     finally:
         print(flush=True)
@@ -112,8 +113,8 @@ def load_and_process_row(idx) -> bool:
 
 def process_row(url):
     try:
-        title, company, location, html = navigator.get_job_data()
+        title, company, location, _, html = navigator.get_job_data()
         return service.process_job(title, company, location, url, html)
     except Exception as e:
-        baseScrapper.debug(DEBUG, exception=True)
+        debug(DEBUG, exception=True)
         raise e

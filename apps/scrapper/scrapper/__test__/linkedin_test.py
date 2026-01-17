@@ -24,8 +24,7 @@ def mocks():
         svc = svc_cls.return_value
         # Setup common mock behaviors
 
-        nav.getJobInList.return_value = ("T", "C", "L", "U", "H")
-        nav.getJobInList_directUrl.return_value = ("T", "C", "L", "U", "H")
+        nav.get_job_data.return_value = ("T", "C", "L", "U", "H")
         svc.job_exists_in_db.return_value = (None, False)
         yield {'nav': nav, 'svc': svc, 'nav_cls': nav_cls, 'svc_cls': svc_cls}
 

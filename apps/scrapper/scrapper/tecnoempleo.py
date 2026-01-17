@@ -4,6 +4,7 @@ from commonlib.terminalColor import green, yellow
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.dateUtil import getDatetimeNowStr
 from .core import baseScrapper
+from .core.utils import debug
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage
 from .services.selenium.seleniumService import SeleniumService
 from .util.persistence_manager import PersistenceManager
@@ -31,7 +32,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
         navigator.load_page('https://www.tecnoempleo.com')
         navigator.login(USER_EMAIL, USER_PWD)
         print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
-        navigator.wait_until_page_url_contains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
+        navigator.selenium.waitUntilPageUrlContains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
         return
     with MysqlUtil() as mysql:
         service = TecnoempleoService(mysql, persistenceManager)
@@ -47,7 +48,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                 search_jobs(keyword, page)
                 persistenceManager.remove_failed_keyword(WEB_PAGE, keyword)
             except Exception:
-                baseScrapper.debug(DEBUG)
+                debug(DEBUG)
                 persistenceManager.add_failed_keyword(WEB_PAGE, keyword)
     persistenceManager.finalize_scrapper(WEB_PAGE)
 
@@ -68,7 +69,7 @@ def search_jobs(keywords: str, start_page: int):
         if not navigator.check_results(keywords, url, remote):
             return
         navigator.accept_cookies()
-        totalResults = navigator.get_total_results_from_header(keywords, remote)
+        totalResults = navigator.get_total_results(keywords, remote)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
         page = baseScrapper.fast_forward_page(navigator, start_page, totalResults, JOBS_X_PAGE)
         currentItem = (page - 1) * JOBS_X_PAGE
@@ -102,7 +103,7 @@ def search_jobs(keywords: str, start_page: int):
             service.update_state(keywords, page)
         baseScrapper.summarize(keywords, totalResults, currentItem)
     except Exception:
-        baseScrapper.debug(DEBUG, exception=True)
+        debug(DEBUG, exception=True)
 
 
 
@@ -123,7 +124,7 @@ def load_and_process_row(idx, errors: int):
         process_row()
         return True, False
     except Exception:
-        baseScrapper.debug(DEBUG, exception=True)
+        debug(DEBUG, exception=True)
         errors += 1
         return False, False
     finally:

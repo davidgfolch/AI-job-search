@@ -90,7 +90,8 @@ class TestGlassdoorScrapper:
             mock_nav.get_job_li_elements.return_value = [MagicMock()]
             mock_nav.get_job_url.return_value = "http://job.url?jl=123"
             mock_service.job_exists_in_db.return_value = ("123", False)
-            mock_nav.get_job_data.return_value = ("Title", "Company", "Loc", "URL", "HTML", False)
+            mock_nav.get_job_data.return_value = ("Title", "Company", "Loc", "URL", "HTML")
+            mock_nav.check_easy_apply.return_value = False
             
             load_and_process_row(0)
             

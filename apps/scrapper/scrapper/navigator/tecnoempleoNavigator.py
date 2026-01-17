@@ -10,10 +10,10 @@ from ..selectors.tecnoempleoSelectors import (
     CSS_SEL_JOB_TITLE, CSS_SEL_PAGINATION_LINKS
 )
 
-class TecnoempleoNavigator:
-    def __init__(self, selenium: SeleniumService):
-        self.selenium = selenium
 
+from .baseNavigator import BaseNavigator
+
+class TecnoempleoNavigator(BaseNavigator):
     @retry(retries=10, delay=10)
     def wait_for_undetected_security_filter(self):
         self.selenium.waitUntil_presenceLocatedElement('#e_mail', 20)
@@ -49,7 +49,7 @@ class TecnoempleoNavigator:
     def replace_index(self, cssSelector: str, idx: int):
         return cssSelector.replace('##idx##', str(idx))
 
-    def get_total_results_from_header(self, keywords: str, remote) -> int:
+    def get_total_results(self, keywords: str, remote) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
         printHR(green)
         print(green(join(f'{total} total results for search: {keywords}',
@@ -111,20 +111,10 @@ class TecnoempleoNavigator:
     def get_attribute(self, css_sel, attr):
         return self.selenium.getAttr(css_sel, attr)
     
-    def load_page(self, url):
-        self.selenium.loadPage(url)
-        self.selenium.waitUntilPageIsLoaded()
-        
-    def wait_until_page_url_contains(self, url, timeout):
-        self.selenium.waitUntilPageUrlContains(url, timeout)
-
-    def wait_until_page_is_loaded(self):
-        self.selenium.waitUntilPageIsLoaded()
         
     def check_rate_limit(self):
         if self.selenium.getText('div.cf-wrapper header').find('You are being rate limited')>-1:
             return True
         return False
         
-    def go_back(self):
-        self.selenium.back()
+

@@ -1,6 +1,6 @@
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException, WebDriverException
 from selenium.webdriver.remote.webelement import WebElement
-from commonlib.decorator.retry import retry
+from commonlib.decorator.retry import retry, StackTrace
 from commonlib.terminalColor import green, yellow, printHR
 from commonlib.stringUtil import join
 from ..core import baseScrapper
@@ -14,10 +14,10 @@ USER_EMAIL, USER_PWD, _ = baseScrapper.getAndCheckEnvVars("INDEED")
 from ..selectors.indeedSelectors import *
 
 
-class IndeedNavigator:
-    def __init__(self, selenium: SeleniumService):
-        self.selenium = selenium
 
+from .baseNavigator import BaseNavigator
+
+class IndeedNavigator(BaseNavigator):
     def accept_cookies(self):
         self.selenium.waitAndClick_noError(CSS_SEL_COOKIE_ACCEPT, "Could not accept cookies")
 
@@ -82,7 +82,7 @@ class IndeedNavigator:
     def clickSortByDate(self):
         self.selenium.waitAndClick(CSS_SEL_SORT_BY_DATE)
 
-    def get_total_results_from_header(self, keywords: str) -> int:
+    def get_total_results(self, keywords: str) -> int:
         total = self.selenium.getText(CSS_SEL_JOB_COUNT)
         total = re.findall(r'[0-9.,]+', total)[0]
         printHR()
@@ -131,19 +131,14 @@ class IndeedNavigator:
         url = element.get_attribute("href")
         return baseScrapper.removeUrlParameter(url, 'cf-turnstile-response')
 
-    def load_page(self, url: str):
-        print(yellow(f"Loading page {url}"))
-        self.selenium.loadPage(url)
-
-    def wait_until_page_is_loaded(self):
-        self.selenium.waitUntilPageIsLoaded()
 
     def get_job_data(self):
         title = self.selenium.getText(CSS_SEL_JOB_TITLE).removesuffix("\n- job post")
         company = self.selenium.getText(CSS_SEL_COMPANY)
         location = self.selenium.getText(CSS_SEL_LOCATION)
         html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        return title, company, location, html
+        url = self.selenium.getUrl()
+        return title, company, location, url, html
 
     def check_easy_apply(self):
         return len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
@@ -169,5 +164,4 @@ class IndeedNavigator:
         self.selenium.waitAndClick(CSS_SEL_WEBAUTHN_CONTINUE)
         self.selenium.waitUntilPageIsLoaded()
 
-    def back(self):
-        self.selenium.back()
+

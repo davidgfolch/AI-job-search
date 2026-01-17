@@ -10,10 +10,9 @@ from ..selectors.glassdoorSelectors import (
     CSS_SEL_JOB_TITLE, CSS_SEL_LOCATION, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_PASSWORD_SUBMIT,
     CSS_SEL_SEARCH_RESULT_TOTAL, LI_JOB_TITLE_CSS_SUFFIX
 )
+from .baseNavigator import BaseNavigator
 
-class GlassdoorNavigator:
-    def __init__(self, selenium: SeleniumService):
-        self.selenium = selenium
+class GlassdoorNavigator(BaseNavigator):
 
     def load_main_page(self):
         self.selenium.loadPage('https://www.glassdoor.es/index.htm')
@@ -52,9 +51,6 @@ class GlassdoorNavigator:
         print(yellow('Waiting for Glassdoor to redirect after login...'))
         self.selenium.waitUntilPageUrlContains('https://www.glassdoor.es/Job/index.htm', 60)
 
-    def load_page(self, url):
-        self.selenium.loadPage(url)
-        self.selenium.waitUntilPageIsLoaded()
 
     @retry()
     def get_total_results(self, keywords: str) -> int:
@@ -80,17 +76,17 @@ class GlassdoorNavigator:
         self.selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
         return True
 
-    def wait_until_page_is_loaded(self):
-        self.selenium.waitUntilPageIsLoaded()
-
     def get_job_li_elements(self):
         return self.selenium.getElms(CSS_SEL_JOB_LI)
 
-    def scroll_jobs_list(self, idx, li_elm):
+    def scroll_jobs_list(self, idx):
         if idx < 3:
             return
-        sleep(1, 2)
-        self.selenium.scrollIntoView_noError(li_elm)
+        li_elms = self.get_job_li_elements()
+        if idx < len(li_elms):
+            li_elm = li_elms[idx]
+            sleep(1, 2)
+            self.selenium.scrollIntoView_noError(li_elm)
 
     def get_job_url(self, li_elm):
         return self.selenium.getAttrOf(li_elm, LI_JOB_TITLE_CSS_SUFFIX, 'href')
@@ -110,14 +106,12 @@ class GlassdoorNavigator:
         location = self.selenium.getText(CSS_SEL_LOCATION)
         url = self.selenium.getUrl()
         html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        easy_apply = len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-        return title, company, location, url, html, easy_apply
+        return title, company, location, url, html
 
-    def go_back(self):
-        self.selenium.back()
+    def check_easy_apply(self):
+        return len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
 
-    def get_url(self):
-        return self.selenium.getUrl()
+
 
     def wait_until_page_url_contains(self, pattern, timeout):
         self.selenium.waitUntilPageUrlContains(pattern, timeout)

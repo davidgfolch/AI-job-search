@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock, call, patch
-from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND
+from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DETAIL
 from selenium.common.exceptions import NoSuchElementException
 
 class TestInfojobsNavigator:
@@ -47,9 +47,9 @@ class TestInfojobsNavigator:
                 mock_accept.assert_called_once()
                 mock_selenium.waitUntilPageUrlContains.assert_called_with('https://www.infojobs.net', 60)
 
-    def test_get_total_results_from_header(self, navigator, mock_selenium):
+    def test_get_total_results(self, navigator, mock_selenium):
         mock_selenium.getText.return_value = "1,234 jobs found"
-        result = navigator.get_total_results_from_header("python")
+        result = navigator.get_total_results("python")
         assert result == 1234
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 
@@ -116,11 +116,16 @@ class TestInfojobsNavigator:
 
     def test_get_job_data(self, navigator, mock_selenium):
         mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
-        mock_selenium.getHtml.return_value = "<div>HTML</div>"
+        mock_selenium.getUrl.return_value = "http://job.url"
+        mock_selenium.getHtml.return_value = "<html>"
         
-        title, company, location, html = navigator.get_job_data()
+        title, company, location, url, html = navigator.get_job_data()
         
         assert title == "Title"
         assert company == "Company"
         assert location == "Location"
-        assert html == "<div>HTML</div>"
+        assert url == "http://job.url"
+        assert html == "<html>"
+        
+        assert mock_selenium.getText.call_count == 3
+        mock_selenium.getHtml.assert_called_with(CSS_SEL_JOB_DETAIL)

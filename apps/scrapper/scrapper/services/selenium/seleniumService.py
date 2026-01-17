@@ -1,5 +1,5 @@
 from typing import List, Optional
-from scrapper.core import baseScrapper
+from scrapper.core.utils import debug
 from scrapper.services.selenium.driverUtil import DriverUtil
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 from selenium import webdriver
@@ -47,7 +47,7 @@ class SeleniumService:
             self.driver.quit = lambda: None
         except Exception:
             print(f'Error closing driver')
-            baseScrapper.debug(debugFlag=False, exception=True)
+            debug(debugFlag=False, exception=True)
 
     def tabClose(self, name: Optional[str] = None):
         self.browser_service.tabClose(name)

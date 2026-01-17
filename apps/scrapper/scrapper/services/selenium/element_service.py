@@ -7,7 +7,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from scrapper.core import baseScrapper
+from scrapper.core.utils import debug
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 from commonlib.terminalColor import yellow
 from commonlib.systemUtil import isMacOS
@@ -118,7 +118,7 @@ class ElementService:
         except Exception:
             print(yellow(f'{msg}'))
             if showException:
-                baseScrapper.debug(debugFlag=False, exception=True)
+                debug(debugFlag=False, exception=True)
             return False
 
     @seleniumSocketConnRetry()

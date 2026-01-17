@@ -55,7 +55,7 @@ class TestInfojobsScrapper:
             
             mock_service.should_skip_keyword.return_value = (False, 1)
             mock_navigator.load_filtered_search_results.return_value = True
-            mock_navigator.get_total_results_from_header.return_value = 10
+            mock_navigator.get_total_results.return_value = 10
             mock_navigator.click_next_page.return_value = False
             
             mock_job_link = MagicMock()
@@ -63,7 +63,7 @@ class TestInfojobsScrapper:
             mock_navigator.get_job_url.return_value = "http://job.url"
             
             mock_service.job_exists_in_db.return_value = (123, False)
-            mock_navigator.get_job_data.return_value = ("Title", "Company", "Location", "HTML")
+            mock_navigator.get_job_data.return_value = ("Title", "Company", "Location", "URL", "HTML")
             mock_service.process_job.return_value = True
 
             run(mock_selenium, preloadPage=False, persistenceManager=mock_persistence_manager)

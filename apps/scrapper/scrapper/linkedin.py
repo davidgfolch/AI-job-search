@@ -2,6 +2,7 @@ import math
 from selenium.common.exceptions import NoSuchElementException
 
 from .core import baseScrapper
+from .core.utils import debug
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from commonlib.terminalColor import yellow, green
 from commonlib.mysqlUtil import MysqlUtil
@@ -52,7 +53,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                 process_keyword(keyword, start_page)
                 persistenceManager.remove_failed_keyword(WEB_PAGE, keyword)
             except Exception:
-                baseScrapper.debug(DEBUG)
+                debug(DEBUG)
                 persistenceManager.add_failed_keyword(WEB_PAGE, keyword)
     persistenceManager.finalize_scrapper(WEB_PAGE)
 
@@ -104,7 +105,7 @@ def search_jobs(keywords: str, startPage: int):
             service.update_state(keywords, page)
         baseScrapper.summarize(keywords, totalResults, currentItem)
     except Exception:
-        baseScrapper.debug(DEBUG, exception=True)
+        debug(DEBUG, exception=True)
 
 
 def load_and_process_row(idx, rowErrors):
@@ -120,7 +121,7 @@ def load_and_process_row(idx, rowErrors):
         print()
         return False
     except NoSuchElementException:
-        baseScrapper.debug(DEBUG, "NoSuchElement in loadAndProcessRow ", exception=True)
+        debug(DEBUG, "NoSuchElement in loadAndProcessRow ", exception=True)
         print()
         rowErrors += 1
         return False
@@ -130,16 +131,13 @@ def process_row(idx):
     sleep(2,2)
     isDirectUrlScrapping = idx is None
     try:
-        if isDirectUrlScrapping:
-            title, company, location, url, html = navigator.getJobInList_directUrl()
-        else:
-            title, company, location, url, html = navigator.getJobInList(idx)
+        title, company, location, url, html = navigator.get_job_data()
         easyApply = navigator.check_easy_apply()
         service.process_job(title, company, location, url, html, isDirectUrlScrapping, easyApply)
     except (ValueError, KeyboardInterrupt) as e:
         raise e
     except Exception:
-        baseScrapper.debug(DEBUG, exception=True)
+        debug(DEBUG, exception=True)
         raise
 
 def _transform_to_search_url(url: str) -> str:

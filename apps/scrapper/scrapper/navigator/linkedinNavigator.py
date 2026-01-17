@@ -14,14 +14,14 @@ from ..selectors.linkedinSelectors import (
     CSS_SEL_COMPANY, CSS_SEL_LOCATION, CSS_SEL_JOB_LI_IDX, CSS_SEL_JOB_FIT_PREFERENCES
 )
 
-class LinkedinNavigator:
-    def __init__(self, selenium: SeleniumService):
-        self.selenium = selenium
 
-    def load_page(self, url: str):
-        print(yellow(f'Loading page {url}'))
-        self.selenium.loadPage(url)
-        self.selenium.waitUntilPageIsLoaded()
+from .baseNavigator import BaseNavigator
+
+class LinkedinNavigator(BaseNavigator):
+    def __init__(self, selenium: SeleniumService):
+        super().__init__(selenium)
+        self.current_idx = None
+
 
     def check_login_popup(self, login_callback) -> bool:
         sleep(2, 3)
@@ -66,6 +66,7 @@ class LinkedinNavigator:
         return int(total.replace('+', ''))
 
     def scroll_jobs_list(self, idx):
+        self.current_idx = idx
         cssSel = self.replace_index(CSS_SEL_JOB_LINK, idx)
         try:
             self.selenium.scrollIntoView(cssSel)
@@ -99,6 +100,11 @@ class LinkedinNavigator:
         buttons = self.selenium.getElms(CSS_SEL_JOB_FIT_PREFERENCES)
         return ', '.join(map(lambda b: self.selenium.getText(b), buttons))
 
+    def get_job_data(self) -> Tuple[str, str, str, str, str]:
+        if self.current_idx is None:
+            return self.getJobInList_directUrl()
+        return self.getJobInList(self.current_idx)
+
     def getJobInList_directUrl(self) -> Tuple[str, str, str, str, str]:
         title = self.selenium.getText(CSS_SEL_JOB_HEADER)
         company = self.selenium.getText(CSS_SEL_DETAIL_COMPANY)
@@ -131,5 +137,4 @@ class LinkedinNavigator:
     def wait_until_page_url_contains(self, url, timeout):
         self.selenium.waitUntilPageUrlContains(url, timeout)
 
-    def wait_until_page_is_loaded(self):
-        self.selenium.waitUntilPageIsLoaded()
+

@@ -2,6 +2,7 @@ import time
 from commonlib.decorator.retry import retry
 from commonlib.mysqlUtil import MysqlUtil
 from .core import baseScrapper
+from .core.utils import debug
 from .core.baseScrapper import getAndCheckEnvVars, printScrapperTitle
 from .services.selenium.seleniumService import SeleniumService
 from .services.selenium.browser_service import sleep
@@ -57,7 +58,7 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
                 search_jobs(keyword, start_page)
                 persistenceManager.remove_failed_keyword("Indeed", keyword)
             except Exception:
-                baseScrapper.debug(DEBUG)
+                debug(DEBUG)
                 persistenceManager.add_failed_keyword("Indeed", keyword)
     persistenceManager.finalize_scrapper("Indeed")
 
@@ -77,7 +78,7 @@ def search_jobs(keywords: str, startPage: int = 1):
     navigator.wait_until_page_is_loaded()
 
     page = 0
-    totalResults = navigator.get_total_results_from_header(keywords)
+    totalResults = navigator.get_total_results(keywords)
     if totalResults==0:
         print(yellow(f"There are no results for search={keywords}"))
         return
@@ -134,7 +135,7 @@ def load_and_process_row(idx) -> bool:
     except IndexError as ex:
         print(yellow(f"WARNING: could not get all items per page, that's expected because not always has {JOBS_X_PAGE} pages: {ex}"), end='')
     except Exception:
-        baseScrapper.debug(DEBUG)
+        debug(DEBUG)
     if not ignore:
         if not process_row(url):
             print(red("Validation failed"))
@@ -146,6 +147,6 @@ def load_and_process_row(idx) -> bool:
 
 @retry(raiseException=False)
 def process_row(url):
-    title, company, location, html = navigator.get_job_data()
+    title, company, location, _, html = navigator.get_job_data()
     easyApply = navigator.check_easy_apply()
     return service.process_job(title, company, location, url, html, easyApply)

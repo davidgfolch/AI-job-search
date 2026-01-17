@@ -62,7 +62,7 @@ class TestIndeedNavigator:
         mock_selenium.waitUntilPageIsLoaded.assert_called()
         mock_sleep.assert_called()
 
-    def test_get_total_results_from_header(self):
+    def test_get_total_results(self):
         """Test parsing total results"""
         mock_selenium = Mock(spec=SeleniumService)
         navigator = IndeedNavigator(mock_selenium)
@@ -70,6 +70,6 @@ class TestIndeedNavigator:
         # Mock generic text return
         mock_selenium.getText.return_value = "1.234 results"
         
-        total = navigator.get_total_results_from_header("python")
+        total = navigator.get_total_results("python")
         
         assert total == 1234

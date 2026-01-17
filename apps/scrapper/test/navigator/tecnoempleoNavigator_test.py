@@ -52,9 +52,9 @@ class TestTecnoempleoNavigator:
         result = navigator.check_results("java", "http://url", False)
         assert result is False
 
-    def test_get_total_results_from_header(self, navigator, mock_selenium):
+    def test_get_total_results(self, navigator, mock_selenium):
         mock_selenium.getText.return_value = "50 jobs"
-        result = navigator.get_total_results_from_header("java", False)
+        result = navigator.get_total_results("java", False)
         assert result == 50
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 

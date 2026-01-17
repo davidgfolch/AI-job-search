@@ -5,7 +5,7 @@ from commonlib.environmentUtil import getEnv
 from commonlib.dateUtil import getDatetimeNow, getDatetimeNowStr
 from commonlib.terminalColor import cyan, red, yellow, green
 from commonlib.keep_system_awake import KeepSystemAwake
-from scrapper.core import baseScrapper
+from scrapper.core.utils import debug
 from scrapper import tecnoempleo, infojobs, linkedin, glassdoor, indeed
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
@@ -61,7 +61,7 @@ class ScrapperExecution:
                 self.runScrapper(name, True)
             properties['preloaded'] = True
         except Exception as e:
-            baseScrapper.debug(DEBUG, f"Error occurred while preloading {name}:", True)
+            debug(DEBUG, f"Error occurred while preloading {name}:", True)
             self.persistenceManager.set_error(name, f"Preload failed: {str(e)}")
             properties['preloaded'] = False
         except KeyboardInterrupt:
@@ -77,7 +77,7 @@ class ScrapperExecution:
                 self.runScrapper(name, False)
             self.persistenceManager.update_last_execution(name, getDatetimeNowStr())
         except Exception:
-            baseScrapper.debug(DEBUG, f"Error occurred while executing {name}:", True)
+            debug(DEBUG, f"Error occurred while executing {name}:", True)
             self.persistenceManager.update_last_execution(name, None)
         except KeyboardInterrupt:
             self.persistenceManager.update_last_execution(name, None)

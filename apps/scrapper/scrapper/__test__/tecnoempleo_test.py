@@ -33,13 +33,14 @@ class TestTecnoempleoScrapper:
 
     def test_run_preload_page(self, mock_selenium, mock_env_vars, mock_persistence_manager):
         mock_navigator = MagicMock(spec=TecnoempleoNavigator)
+        mock_navigator.selenium = MagicMock()
         
         with patch('scrapper.tecnoempleo.TecnoempleoNavigator', return_value=mock_navigator):
             run(mock_selenium, preloadPage=True, persistenceManager=mock_persistence_manager)
             
             mock_navigator.load_page.assert_called_once()
             mock_navigator.login.assert_called_once()
-            mock_navigator.wait_until_page_url_contains.assert_called()
+            mock_navigator.selenium.waitUntilPageUrlContains.assert_called()
 
     def test_run_normal_execution(self, mock_selenium, mock_persistence_manager, mock_env_vars):
         mock_navigator = MagicMock(spec=TecnoempleoNavigator)
@@ -52,7 +53,7 @@ class TestTecnoempleoScrapper:
              
              mock_service.should_skip_keyword.return_value = (False, 1)
              mock_navigator.check_results.return_value = True
-             mock_navigator.get_total_results_from_header.return_value = 30
+             mock_navigator.get_total_results.return_value = 30
              mock_navigator.click_next_page.side_effect = [False] # Stop at page 1
              mock_navigator.scroll_jobs_list.return_value = "cssSel"
              mock_navigator.get_attribute.return_value = "http://job.url"
@@ -65,7 +66,7 @@ class TestTecnoempleoScrapper:
              
              mock_service.prepare_resume.assert_called_once()
              mock_navigator.load_page.assert_called()
-             mock_navigator.get_total_results_from_header.assert_called()
+             mock_navigator.get_total_results.assert_called()
              mock_service.process_job.assert_called()
 
 

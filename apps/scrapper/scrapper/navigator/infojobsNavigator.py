@@ -11,10 +11,10 @@ from ..selectors.infojobsSelectors import (
     CSS_SEL_SECURITY_FILTER1, CSS_SEL_SECURITY_FILTER2
 )
 
-class InfojobsNavigator:
-    def __init__(self, selenium: SeleniumService):
-        self.selenium = selenium
 
+from .baseNavigator import BaseNavigator
+
+class InfojobsNavigator(BaseNavigator):
     @retry(retries=10, delay=5, exception=NoSuchElementException)
     def accept_cookies(self):
         if not self.selenium.usesUndetectedDriver():
@@ -40,7 +40,7 @@ class InfojobsNavigator:
             print(yellow('Could not accept cookies'))
         self.selenium.waitUntilPageUrlContains('https://www.infojobs.net', 60)
 
-    def get_total_results_from_header(self, keywords: str) -> int:
+    def get_total_results(self, keywords: str) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
         printHR()
         print(green(join(f'{total} total results for search: {keywords}')))
@@ -131,13 +131,8 @@ class InfojobsNavigator:
         company = self.selenium.getText(CSS_SEL_COMPANY)
         location = self.selenium.getText(CSS_SEL_LOCATION)
         html = self.selenium.getHtml(CSS_SEL_JOB_DETAIL)
-        return title, company, location, html
-
-    def go_back(self):
-        self.selenium.back()
-
-    def wait_until_page_is_loaded(self):
-        self.selenium.waitUntilPageIsLoaded()
+        url = self.selenium.getUrl()
+        return title, company, location, url, html
         
-    def get_url(self):
-        return self.selenium.getUrl()
+
+

@@ -11,6 +11,7 @@ from commonlib.stringUtil import hasLenAnyText
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.terminalColor import green, printHR, red, yellow
 from ..services.selenium.browser_service import sleep
+from ..navigator.baseNavigator import BaseNavigator
 
 
 def getAndCheckEnvVars(site: str):
@@ -86,22 +87,8 @@ def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool)
     return True
 
 
-def debug(debugFlag: bool, msg: str = '', exception: Optional[bool]=None):
-    exception = exception if exception is not None else debugFlag
-    if debugFlag:
-        msg = f" (debug active) {msg}, press a key"
-        if exception:
-            print(yellow(msg))
-            input(red(traceback.format_exc()))
-        else:
-            input(red(msg))
-    else:
-        if exception:
-            print(yellow(msg))
-            print(red(traceback.format_exc()))
-        else:
-            print(red(msg))
 
+from .utils import debug
 
 def join(*str: str) -> str:
     return ''.join(str)
@@ -120,7 +107,7 @@ def pageExists(page: int, totalResults: int, jobsXPage: int) -> bool:
     return page > 1 and totalResults > 0 and page < math.ceil(totalResults / jobsXPage)
 
 
-def fast_forward_page(navigator, start_page: int, total_results: int, jobs_x_page: int) -> int:
+def fast_forward_page(navigator: BaseNavigator, start_page: int, total_results: int, jobs_x_page: int) -> int:
     """
     Fast forwards to the start_page by clicking next page button.
     Returns the page number reached (usually start_page).
