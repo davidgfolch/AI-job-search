@@ -17,3 +17,7 @@ def debug(debugFlag: bool, msg: str = '', exception: Optional[bool]=None):
             print(red(traceback.format_exc()))
         else:
             print(red(msg))
+
+def pageExists(page: int, totalResults: int, jobsXPage: int) -> bool:
+    import math
+    return page > 1 and totalResults > 0 and page < math.ceil(totalResults / jobsXPage)

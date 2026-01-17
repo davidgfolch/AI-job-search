@@ -54,6 +54,7 @@ class TestTecnoempleoScrapper:
              mock_service.should_skip_keyword.return_value = (False, 1)
              mock_navigator.check_results.return_value = True
              mock_navigator.get_total_results.return_value = 30
+             mock_navigator.fast_forward_page.return_value = 1
              mock_navigator.click_next_page.side_effect = [False] # Stop at page 1
              mock_navigator.scroll_jobs_list.return_value = "cssSel"
              mock_navigator.get_attribute.return_value = "http://job.url"

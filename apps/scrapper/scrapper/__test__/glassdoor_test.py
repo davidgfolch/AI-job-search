@@ -62,6 +62,7 @@ class TestGlassdoorScrapper:
              patch('scrapper.glassdoor.load_and_process_row') as mock_load_and_process:
             
             mock_nav.get_total_results.return_value = 5
+            mock_nav.fast_forward_page.return_value = 1
             # JOBS_X_PAGE is 30, so 5 results fit in one page
             
             process_keyword("python", 1)

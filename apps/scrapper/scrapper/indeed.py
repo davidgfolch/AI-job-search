@@ -82,7 +82,7 @@ def search_jobs(keywords: str, startPage: int = 1):
     if totalResults==0:
         print(yellow(f"There are no results for search={keywords}"))
         return
-    page = baseScrapper.fast_forward_page(navigator, startPage, totalResults, JOBS_X_PAGE) - 1
+    page = navigator.fast_forward_page(startPage, totalResults, JOBS_X_PAGE) - 1
     currentItem = (page - 1) * JOBS_X_PAGE
     totalPages = totalResults/JOBS_X_PAGE if totalResults % JOBS_X_PAGE == 0 else totalResults/JOBS_X_PAGE + 1
     while True:

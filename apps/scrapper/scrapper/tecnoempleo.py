@@ -71,7 +71,7 @@ def search_jobs(keywords: str, start_page: int):
         navigator.accept_cookies()
         totalResults = navigator.get_total_results(keywords, remote)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        page = baseScrapper.fast_forward_page(navigator, start_page, totalResults, JOBS_X_PAGE)
+        page = navigator.fast_forward_page(start_page, totalResults, JOBS_X_PAGE)
         currentItem = (page - 1) * JOBS_X_PAGE
         while True: # Pagination
             errors = 0

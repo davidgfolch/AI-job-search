@@ -7,17 +7,13 @@ from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green, yellow
 from ..core.baseScrapper import htmlToMarkdown, validate, debug, removeUrlParameter
 from ..util.persistence_manager import PersistenceManager
+from .BaseService import BaseService
 
 
-class IndeedService:
+class IndeedService(BaseService):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        self.mysql = mysql
-        self.persistence_manager = persistence_manager
-        self.web_page = "Indeed"
+        super().__init__(mysql, persistence_manager, "Indeed")
         self.debug = True
-
-    def set_debug(self, debug: bool):
-        self.debug = debug
 
     def get_job_id(self, url: str):
         # Extract job ID from Indeed URL
@@ -65,10 +61,6 @@ class IndeedService:
         # Last resort - use hash of the entire URL
         return hashlib.md5(url.encode()).hexdigest()[:16]
 
-    def job_exists_in_db(self, url: str) -> Tuple[str, bool]:
-        job_id = self.get_job_id(url)
-        return (job_id, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None)
-
     def process_job(self, title, company, location, url, html, easy_apply):
         try:
             url = removeUrlParameter(url, 'cf-turnstile-response')
@@ -103,28 +95,3 @@ class IndeedService:
         txt = re.sub(r"(\n[  ]*){3,}", "\n\n", txt)
         txt = re.sub(r"[-*] #", "#", txt)
         return txt
-
-    def update_state(self, keyword: str, page: int):
-        if self.persistence_manager:
-            self.persistence_manager.update_state(self.web_page, keyword, page)
-
-    def should_skip_keyword(self, keyword: str) -> Tuple[bool, int]:
-        saved_state = {}
-        if self.persistence_manager:
-            saved_state = self.persistence_manager.get_state(self.web_page)
-        saved_keyword = saved_state.get("keyword")
-        saved_page = saved_state.get("page", 1)
-        if saved_keyword and saved_keyword == keyword:
-            return False, saved_page
-        if saved_keyword:
-            # If we have a saved keyword but it is not this one, we might need to skip
-            # But the logic in indeed.py loop was:
-            # for keywords in JOBS_SEARCH.split(','):
-            #     if saved_keyword:
-            #         if saved_keyword == current_keyword: skip = False
-            #         elif skip: continue
-            # This implies simpler checking at call site or specialized method here.
-            # I will keep it simple here and let the caller handle the loop logic
-            # OR I can replicate the logic:
-            pass
-        return False, 1

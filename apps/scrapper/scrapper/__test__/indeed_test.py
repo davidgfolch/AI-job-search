@@ -63,9 +63,21 @@ class TestIndeedScrapper:
              patch("scrapper.indeed.baseScrapper.printPage"):
             mock_nav.get_total_results.return_value = 50
             mock_nav.checkNoResults.return_value = False
-            mock_nav.click_next_page.side_effect = [True, True, False]
+            # fast_forward_page is mocked (part of mock_nav), so it won't consume side_effects.
+            # We configure it to return 3 (target page).
+            mock_nav.fast_forward_page.return_value = 3
+            # click_next_page will be called by search_jobs loop.
+            # We want it to run once and then stop or similar?
+            # If fast_forward returns 3. page becomes 2.
+            # Loop starts: page becomes 3.
+            # We want to process page 3. Then click next page.
+            # Let's say next page exists (True), then next (False).
+            mock_nav.click_next_page.side_effect = [True, False]
+            
             search_jobs("python", startPage=3)
-            assert mock_nav.click_next_page.call_count == 3
+            
+            mock_nav.fast_forward_page.assert_called_once_with(3, 50, 16) # 16 is JOBS_X_PAGE
+            assert mock_nav.click_next_page.call_count == 2
 
     def test_process_row_insert(self):
         mock_nav = MagicMock(spec=IndeedNavigator)

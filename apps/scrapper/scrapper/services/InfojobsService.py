@@ -5,6 +5,7 @@ from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green
 from ..core.baseScrapper import htmlToMarkdown, validate, removeLinks, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
+from .BaseService import BaseService
 
 REMOVE_IN_MARKDOWN = [
     "¿Te gusta esta oferta?",
@@ -12,22 +13,12 @@ REMOVE_IN_MARKDOWN = [
     "Asistente IA"
 ]
 
-class InfojobsService:
+class InfojobsService(BaseService):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        self.mysql = mysql
-        self.persistence_manager = persistence_manager
-        self.web_page = 'Infojobs'
-        self.debug = False
-
-    def set_debug(self, debug: bool):
-        self.debug = debug
+        super().__init__(mysql, persistence_manager, 'Infojobs')
 
     def get_job_id(self, url: str) -> str:
         return re.sub(r'.+/of-([^?/]+).*', r'\1', url)
-
-    def job_exists_in_db(self, url: str) -> Tuple[str, bool]:
-        job_id = self.get_job_id(url)
-        return (job_id, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None)
 
     def process_job(self, title, company, location, url, html):
         try:
@@ -56,15 +47,3 @@ class InfojobsService:
         patterns = r'\s+'.join(map(re.escape, REMOVE_IN_MARKDOWN))
         txt = re.sub(patterns, "", txt)
         return txt
-
-    def prepare_resume(self):
-        self.persistence_manager.prepare_resume(self.web_page)
-
-    def should_skip_keyword(self, keyword: str):
-        return self.persistence_manager.should_skip_keyword(keyword)
-
-    def update_state(self, keyword: str, page: int):
-        self.persistence_manager.update_state(self.web_page, keyword, page)
-
-    def clear_state(self):
-        self.persistence_manager.clear_state(self.web_page)

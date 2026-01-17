@@ -56,6 +56,7 @@ class TestInfojobsScrapper:
             mock_service.should_skip_keyword.return_value = (False, 1)
             mock_navigator.load_filtered_search_results.return_value = True
             mock_navigator.get_total_results.return_value = 10
+            mock_navigator.fast_forward_page.return_value = 1
             mock_navigator.click_next_page.return_value = False
             
             mock_job_link = MagicMock()

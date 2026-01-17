@@ -4,24 +4,15 @@ from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
+from .BaseService import BaseService
 
-class TecnoempleoService:
+class TecnoempleoService(BaseService):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        self.mysql = mysql
-        self.persistence_manager = persistence_manager
-        self.web_page = 'Tecnoempleo'
-        self.debug = False
-
-    def set_debug(self, debug: bool):
-        self.debug = debug
+        super().__init__(mysql, persistence_manager, 'Tecnoempleo')
 
     def get_job_id(self, url: str) -> str:
         # https://www.tecnoempleo.com/integration-specialist-gstock-web-app/php-mysql-git-symfony-api-etl-sql-ja/rf-b14e1d3282dea3a42b40
         return url.split('/')[-1]
-
-    def job_exists_in_db(self, url: str) -> Tuple[str, bool]:
-        job_id = self.get_job_id(url)
-        return (job_id, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None)
 
     def process_job(self, title, company, location, url, html):
         try:
@@ -44,15 +35,3 @@ class TecnoempleoService:
         except Exception:
             baseDebug(self.debug, exception=True)
             return False
-
-    def prepare_resume(self):
-        self.persistence_manager.prepare_resume(self.web_page)
-
-    def should_skip_keyword(self, keyword: str):
-        return self.persistence_manager.should_skip_keyword(keyword)
-
-    def update_state(self, keyword: str, page: int):
-        self.persistence_manager.update_state(self.web_page, keyword, page)
-
-    def clear_state(self):
-        self.persistence_manager.clear_state(self.web_page)

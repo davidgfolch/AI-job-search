@@ -5,16 +5,11 @@ from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green, magenta, yellow
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
+from .BaseService import BaseService
 
-class LinkedinService:
+class LinkedinService(BaseService):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        self.mysql = mysql
-        self.persistence_manager = persistence_manager
-        self.web_page = 'Linkedin'
-        self.debug = False
-
-    def set_debug(self, debug: bool):
-        self.debug = debug
+        super().__init__(mysql, persistence_manager, 'Linkedin')
 
     def get_job_id(self, url: str) -> int:
         return int(re.sub(r'.*/jobs/view/([^/]+)/.*', r'\1', url))
@@ -23,6 +18,8 @@ class LinkedinService:
         return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
 
     def job_exists_in_db(self, url: str) -> Tuple[int, bool]:
+        # Overriding to return job_id as int if needed, or stick to base?
+        # Base returns str. Here explicit int.
         jobId = self.get_job_id(url)
         return (jobId, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
 
@@ -59,15 +56,3 @@ class LinkedinService:
         params = (title, company, location, url, md, easy_apply, jobId, self.web_page)
         self.mysql.executeAndCommit(QRY_UPDATE_JOB_DIRECT_URL, params)
         print(green(f'Job updated {jobId}'), flush=True)
-
-    def prepare_resume(self):
-        self.persistence_manager.prepare_resume(self.web_page)
-
-    def should_skip_keyword(self, keyword: str):
-        return self.persistence_manager.should_skip_keyword(keyword)
-
-    def update_state(self, keyword: str, page: int):
-        self.persistence_manager.update_state(self.web_page, keyword, page)
-
-    def clear_state(self):
-        self.persistence_manager.clear_state(self.web_page)

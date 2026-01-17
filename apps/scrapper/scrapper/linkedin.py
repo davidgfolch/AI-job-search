@@ -76,7 +76,7 @@ def search_jobs(keywords: str, startPage: int):
         navigator.collapse_messages()
         totalResults = navigator.get_total_results(keywords, remote, location, f_TPR)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        page = baseScrapper.fast_forward_page(navigator, startPage, totalResults, JOBS_X_PAGE)
+        page = navigator.fast_forward_page(startPage, totalResults, JOBS_X_PAGE)
         currentItem = (page - 1) * JOBS_X_PAGE
         while True:
             foundNewJobInPage = False

@@ -1,28 +1,18 @@
 import re
-from typing import Tuple
-from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from commonlib.mysqlUtil import MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
+from .BaseService import BaseService
 
-class GlassdoorService:
+class GlassdoorService(BaseService):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        self.mysql = mysql
-        self.persistence_manager = persistence_manager
-        self.web_page = 'Glassdoor'
-        self.debug = False
-
-    def set_debug(self, debug: bool):
-        self.debug = debug
+        super().__init__(mysql, persistence_manager, 'Glassdoor')
 
     def get_job_id(self, url: str) -> str:
         # https://www.glassdoor.es/job-listing/telecom-support-engineer-...&jobListingId=1009552660667...
         return re.sub(r'.*[?&](jl|jobListingId)=([0-9]+).*', r'\2', url, flags=re.I)
-
-    def job_exists_in_db(self, url: str) -> Tuple[str, bool]:
-        job_id = self.get_job_id(url)
-        return (job_id, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None)
 
     def process_job(self, title, company, location, url, html, easy_apply):
         try:
@@ -45,15 +35,3 @@ class GlassdoorService:
         except Exception:
             baseDebug(self.debug, exception=True)
             return False
-
-    def prepare_resume(self):
-        self.persistence_manager.prepare_resume(self.web_page)
-
-    def should_skip_keyword(self, keyword: str):
-        return self.persistence_manager.should_skip_keyword(keyword)
-
-    def update_state(self, keyword: str, page: int):
-        self.persistence_manager.update_state(self.web_page, keyword, page)
-
-    def clear_state(self):
-        self.persistence_manager.clear_state(self.web_page)

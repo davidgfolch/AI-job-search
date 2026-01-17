@@ -59,7 +59,7 @@ def process_keyword(keyword: str, start_page: int):
     if totalResults > 0:
         navigator.close_dialogs()
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        page = baseScrapper.fast_forward_page(navigator, start_page, totalResults, JOBS_X_PAGE)
+        page = navigator.fast_forward_page(start_page, totalResults, JOBS_X_PAGE)
         currentItem = (page - 1) * JOBS_X_PAGE
         while currentItem < totalResults:
             baseScrapper.printPage(WEB_PAGE, page, totalPages, keyword)

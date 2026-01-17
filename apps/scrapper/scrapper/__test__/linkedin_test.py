@@ -66,12 +66,13 @@ class TestLinkedinScrapper:
         assert 'linkedin.com' in load_page('python')
         mocks['nav'].load_page.assert_called()
 
-    @pytest.mark.parametrize("start_page,total_res,calls", [(1, 4, 1), (3, 100, 2)])
+    @pytest.mark.parametrize("start_page,total_res,calls", [(1, 4, 1), (3, 100, 1)])
     def test_search_jobs_flow(self, mocks, start_page, total_res, calls):
         linkedin.navigator = mocks['nav']
         linkedin.service = mocks['svc']
         linkedin.JOBS_X_PAGE = 25
         mocks['nav'].get_total_results.return_value = total_res
+        mocks['nav'].fast_forward_page.return_value = start_page
         mocks['nav'].click_next_page.return_value = True
         
         with patch('scrapper.linkedin.load_and_process_row', return_value=False):

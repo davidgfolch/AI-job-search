@@ -17,7 +17,7 @@ class StackTrace(Enum):
 def retry(retries: int = 5,
           delay: float = 2,
           exception: type[Exception] = Exception,
-          stackStrace: StackTrace = StackTrace.LAST_RETRY,
+          stackTrace: StackTrace = StackTrace.LAST_RETRY,
           exceptionFnc: Callable = (lambda: None),
           raiseException: bool = True) -> Callable:
     """
@@ -44,17 +44,17 @@ def retry(retries: int = 5,
                     if i == retries + 1:
                         if raiseException:
                             raise e
-                        if stackStrace != StackTrace.NEVER:
+                        if stackTrace != StackTrace.NEVER:
                             print(red(traceback.format_exc()), flush=True)
                         else:
                             print(red(str(e)), flush=True)
                         return False
                     print(yellow(f'{e.__class__.__name__} calling function {fnc.__name__}()'), end='', flush=True)
-                    if i > retries - 1 and stackStrace != StackTrace.NEVER:
+                    if i > retries - 1 and stackTrace != StackTrace.NEVER:
                         trace = getProjectTraceItems(e)
                         print(f' -- {trace} -> ', end='', flush=True)
                     print(yellow(f' Retry {i}/{retries}... '), end='', flush=True)
-                    if stackStrace == StackTrace.ALWAYS:
+                    if stackTrace == StackTrace.ALWAYS:
                         print(red(traceback.format_exc()), flush=True)
                     if exceptionFnc is not None:
                         try:

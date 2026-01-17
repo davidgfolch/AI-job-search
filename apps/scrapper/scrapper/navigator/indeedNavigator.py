@@ -12,9 +12,6 @@ import re
 # Get Indeed credentials from environment
 USER_EMAIL, USER_PWD, _ = baseScrapper.getAndCheckEnvVars("INDEED")
 from ..selectors.indeedSelectors import *
-
-
-
 from .baseNavigator import BaseNavigator
 
 class IndeedNavigator(BaseNavigator):
@@ -105,7 +102,7 @@ class IndeedNavigator(BaseNavigator):
         self.selenium.scrollIntoView(li)
         return True
 
-    @retry(retries=3, delay=1, raiseException=False)
+    @retry(retries=3, delay=1, raiseException=False, stackTrace=StackTrace.NEVER)
     def click_next_page(self):
         sleep(1, 2)
         self.close_modal()

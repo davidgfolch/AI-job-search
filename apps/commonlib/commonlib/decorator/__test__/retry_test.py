@@ -57,7 +57,7 @@ def test_retry_custom_exception_handling():
         assert mock_sleep.call_count == 3
 
 def test_retry_stacktrace_always():
-    @retry(retries=1, delay=1, stackStrace=StackTrace.ALWAYS)
+    @retry(retries=1, delay=1, stackTrace=StackTrace.ALWAYS)
     def always_fails():
         raise ValueError("Fail")
     
@@ -67,7 +67,7 @@ def test_retry_stacktrace_always():
         assert mock_sleep.call_count == 1
 
 def test_retry_stacktrace_never():
-    @retry(retries=1, delay=1, stackStrace=StackTrace.NEVER)
+    @retry(retries=1, delay=1, stackTrace=StackTrace.NEVER)
     def always_fails():
         raise ValueError("Fail")
     
