@@ -6,7 +6,11 @@ from commonlib.dateUtil import getDatetimeNow, getDatetimeNowStr
 from commonlib.terminalColor import cyan, red, yellow, green
 from commonlib.keep_system_awake import KeepSystemAwake
 from scrapper.core.utils import debug
-from scrapper import tecnoempleo, infojobs, linkedin, glassdoor, indeed
+from scrapper.executor.TecnoempleoExecutor import TecnoempleoExecutor
+from scrapper.executor.InfojobsExecutor import InfojobsExecutor
+from scrapper.executor.LinkedinExecutor import LinkedinExecutor
+from scrapper.executor.GlassdoorExecutor import GlassdoorExecutor
+from scrapper.executor.IndeedExecutor import IndeedExecutor
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.scrapper_config import (
@@ -31,7 +35,7 @@ def runScrapperPageUrl(url: str):
             print(cyan(f'Running scrapper for pageUrl: {url}'))
             match name.lower():
                 case 'linkedin':
-                    linkedin.processUrl(url)
+                    LinkedinExecutor.process_specific_url(url)
                 case _:
                     raise Exception(f"Invalid scrapper web page name {name}, only linkedin is implemented")
 
@@ -43,15 +47,15 @@ class ScrapperExecution:
     def runScrapper(self, name: str, preloadOnly: bool):
         match name.lower():
             case 'infojobs':
-                infojobs.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+                InfojobsExecutor(self.seleniumUtil, self.persistenceManager).run(preloadOnly)
             case 'tecnoempleo':
-                tecnoempleo.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+                TecnoempleoExecutor(self.seleniumUtil, self.persistenceManager).run(preloadOnly)
             case 'linkedin':
-                linkedin.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+                LinkedinExecutor(self.seleniumUtil, self.persistenceManager).run(preloadOnly)
             case 'glassdoor':
-                glassdoor.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+                GlassdoorExecutor(self.seleniumUtil, self.persistenceManager).run(preloadOnly)
             case 'indeed':
-                indeed.run(self.seleniumUtil, preloadOnly, self.persistenceManager)
+                IndeedExecutor(self.seleniumUtil, self.persistenceManager).run(preloadOnly)
 
     def executeScrapperPreload(self, name: str, properties: dict) -> bool:
         try:

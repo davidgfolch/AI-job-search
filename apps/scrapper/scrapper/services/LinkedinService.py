@@ -3,7 +3,7 @@ from typing import Tuple
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
 from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
 from commonlib.terminalColor import green, magenta, yellow
-from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
+from ..core import baseScrapper
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
@@ -27,9 +27,9 @@ class LinkedinService(BaseService):
         try:
             url_short = self.get_job_url_short(url)
             jobId = self.get_job_id(url_short)
-            md = htmlToMarkdown(html)
+            md = baseScrapper.htmlToMarkdown(html)
             print(f'{jobId}, {title}, {company}, {location}, easy_apply={easy_apply} - ', end='', flush=True)
-            if validate(title, url_short, company, md, self.debug):
+            if baseScrapper.validate(title, url_short, company, md, self.debug):
                 if is_direct_url_scrapping and self.mysql.jobExists(str(jobId)):
                     self.update_job(jobId, title, company, location, url_short, html, md, easy_apply)
                 elif id := self.mysql.insert((jobId, title, company, location, url_short, md, easy_apply, self.web_page)):
@@ -40,7 +40,7 @@ class LinkedinService(BaseService):
         except (ValueError, KeyboardInterrupt) as e:
             raise e
         except Exception:
-            baseDebug(self.debug, exception=True)
+            baseScrapper.debug(self.debug, exception=True)
 
     def print_job(self, title, company, location, url, jobId, html, md):
         print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))

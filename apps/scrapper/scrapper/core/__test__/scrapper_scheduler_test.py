@@ -19,10 +19,21 @@ def scheduler(mocks):
 
 @pytest.fixture
 def run_mocks():
-    names = ['infojobs', 'linkedin', 'glassdoor', 'tecnoempleo', 'indeed']
-    patchers = {name: patch(f'scrapper.{name}.run', MagicMock()) for name in names}
-    yield {name: p.start() for name, p in patchers.items()}
-    for p in patchers.values(): p.stop()
+    mapping = {
+        'infojobs': 'InfojobsExecutor',
+        'linkedin': 'LinkedinExecutor',
+        'glassdoor': 'GlassdoorExecutor',
+        'tecnoempleo': 'TecnoempleoExecutor',
+        'indeed': 'IndeedExecutor'
+    }
+    patchers = {key: patch(f'scrapper.core.scrapper_execution.{cls}') for key, cls in mapping.items()}
+    started_patchers = {key: p.start() for key, p in patchers.items()}
+    
+    # We want the 'run' method of the instance returned by the class constructor
+    yield {key: mock_cls.return_value.run for key, mock_cls in started_patchers.items()}
+    
+    for p in patchers.values():
+        p.stop()
 
 @pytest.fixture(autouse=True)
 def setup_scrappers():

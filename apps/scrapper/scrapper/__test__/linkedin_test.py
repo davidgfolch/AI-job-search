@@ -140,8 +140,8 @@ class TestLinkedinService:
         assert service.get_job_url_short(url) == "https://www.linkedin.com/jobs/view/123456/"
 
     def test_process_job(self, service):
-        with patch('scrapper.services.LinkedinService.validate', side_effect=[True, False]), \
-             patch('scrapper.services.LinkedinService.htmlToMarkdown', return_value="M"), \
+        with patch('scrapper.core.baseScrapper.validate', side_effect=[True, False]), \
+             patch('scrapper.core.baseScrapper.htmlToMarkdown', return_value="M"), \
              patch('scrapper.services.LinkedinService.mergeDuplicatedJobs'):
              
              # Valid
@@ -183,8 +183,8 @@ class TestLinkedinService:
 
     def test_print_job(self, service):
         # Trigger print_job via process_job when job exists + direct url
-        with patch('scrapper.services.LinkedinService.validate', return_value=True), \
-             patch('scrapper.services.LinkedinService.htmlToMarkdown', return_value="M"):
+        with patch('scrapper.core.baseScrapper.validate', return_value=True), \
+             patch('scrapper.core.baseScrapper.htmlToMarkdown', return_value="M"):
             service.mysql.jobExists.return_value = True
             
             # Should call print_job (we can't easily mock print_job here since it's a method on the object under test, 
