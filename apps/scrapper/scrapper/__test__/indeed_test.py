@@ -49,7 +49,7 @@ class TestIndeedScrapper:
         with patch("scrapper.indeed.navigator") as mock_nav, \
              patch("scrapper.indeed.service"), \
              patch("scrapper.indeed.load_and_process_row", return_value=True) as mock_row, \
-             patch("scrapper.indeed.summarize"), patch("scrapper.indeed.sleep"):
+             patch("scrapper.indeed.sleep"):
             mock_nav.click_next_page.side_effect = [True, False]
             mock_nav.checkNoResults.return_value = False
             search_jobs("python", startPage=1)
@@ -59,7 +59,7 @@ class TestIndeedScrapper:
         with patch("scrapper.indeed.navigator") as mock_nav, \
              patch("scrapper.indeed.service"), \
              patch("scrapper.indeed.load_and_process_row", return_value=True), \
-             patch("scrapper.indeed.summarize"), patch("scrapper.indeed.sleep"), \
+             patch("scrapper.indeed.sleep"), \
              patch("scrapper.indeed.baseScrapper.printPage"):
             mock_nav.get_total_results_from_header.return_value = 50
             mock_nav.checkNoResults.return_value = False

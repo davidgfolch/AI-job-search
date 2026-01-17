@@ -55,8 +55,8 @@ def process_keyword(keywords: str, start_page: int):
         return
     totalResults = navigator.get_total_results_from_header(keywords)
     totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-    currentItem = 0
-    page = _fast_forward_page(start_page, currentItem, totalResults)
+    page = baseScrapper.fast_forward_page(navigator, start_page, totalResults, JOBS_X_PAGE)
+    currentItem = (page - 1) * JOBS_X_PAGE
     while currentItem < totalResults:
         foundNewJobInPage = False
         baseScrapper.printPage(WEB_PAGE, page, totalPages, keywords)
@@ -78,22 +78,8 @@ def process_keyword(keywords: str, start_page: int):
                 service.update_state(keywords, page)
             else:
                 break
-    summarize(keywords, totalResults, currentItem)
+    baseScrapper.summarize(keywords, totalResults, currentItem)
 
-#TODO: ABSTRACTION VIA INTERFACES (see linkedin.py and others)
-def _fast_forward_page(start_page: int, currentItem: int, totalResults: int):
-    page = 1
-    if start_page > 1:
-        print(yellow(f"Fast forwarding to page {start_page}..."))
-        while page < start_page and currentItem < totalResults:
-            currentItem += JOBS_X_PAGE
-            if navigator.click_next_page():
-                page += 1
-                navigator.wait_until_page_is_loaded()
-            else:
-                break
-        currentItem = (page - 1) * JOBS_X_PAGE    
-    return page
 
 def load_and_process_row(idx) -> bool:
     try:
@@ -123,6 +109,7 @@ def load_and_process_row(idx) -> bool:
             navigator.go_back()
     return False
 
+
 def process_row(url):
     try:
         title, company, location, html = navigator.get_job_data()
@@ -130,11 +117,3 @@ def process_row(url):
     except Exception as e:
         baseScrapper.debug(DEBUG, exception=True)
         raise e
-
-def summarize(keywords, totalResults, currentItem):
-    from commonlib.terminalColor import printHR
-    from commonlib.dateUtil import getDatetimeNowStr
-    printHR()
-    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
-    printHR()
-    print()

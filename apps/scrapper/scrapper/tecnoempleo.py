@@ -70,8 +70,8 @@ def search_jobs(keywords: str, start_page: int):
         navigator.accept_cookies()
         totalResults = navigator.get_total_results_from_header(keywords, remote)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        currentItem = 0
-        page = _fast_forward_page(start_page, currentItem, totalResults)
+        page = baseScrapper.fast_forward_page(navigator, start_page, totalResults, JOBS_X_PAGE)
+        currentItem = (page - 1) * JOBS_X_PAGE
         while True: # Pagination
             errors = 0
             printPage(WEB_PAGE, page, totalPages, keywords)
@@ -100,23 +100,11 @@ def search_jobs(keywords: str, start_page: int):
             page += 1
             navigator.wait_until_page_is_loaded()
             service.update_state(keywords, page)
-        summarize(keywords, totalResults, currentItem)
+        baseScrapper.summarize(keywords, totalResults, currentItem)
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
 
-def _fast_forward_page(start_page: int, currentItem: int, totalResults: int):
-    page = 1
-    if start_page > 1:
-        print(yellow(f"Fast forwarding to page {start_page}..."))
-        while page < start_page:
-            currentItem += JOBS_X_PAGE 
-            if navigator.click_next_page():
-                page += 1
-                navigator.wait_until_page_is_loaded()
-            else:
-                break
-        currentItem = (page - 1) * JOBS_X_PAGE
-    return page
+
 
 def load_and_process_row(idx, errors: int):
     """
@@ -146,10 +134,3 @@ def load_and_process_row(idx, errors: int):
 def process_row():
     title, company, location, url, html = navigator.get_job_data()
     return service.process_job(title, company, location, url, html)
-
-def summarize(keywords, totalResults, currentItem):
-    from commonlib.terminalColor import printHR
-    printHR()
-    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords} (remote={remote})')
-    printHR()
-    print()

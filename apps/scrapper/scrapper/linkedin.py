@@ -75,8 +75,7 @@ def search_jobs(keywords: str, startPage: int):
         navigator.collapse_messages()
         totalResults = navigator.get_total_results(keywords, remote, location, f_TPR)
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        currentItem = 0
-        page = _fast_forward_page(startPage, currentItem, totalResults)
+        page = baseScrapper.fast_forward_page(navigator, startPage, totalResults, JOBS_X_PAGE)
         currentItem = (page - 1) * JOBS_X_PAGE
         while True:
             foundNewJobInPage = False
@@ -103,24 +102,10 @@ def search_jobs(keywords: str, startPage: int):
             page += 1
             navigator.wait_until_page_is_loaded()
             service.update_state(keywords, page)
-        summarize(keywords, totalResults, currentItem)
+        baseScrapper.summarize(keywords, totalResults, currentItem)
     except Exception:
         baseScrapper.debug(DEBUG, exception=True)
 
-def _fast_forward_page(startPage: int, currentItem: int, totalResults: int):
-    page = 1
-    if startPage > 1:
-        print(yellow(f"Fast forwarding to page {startPage}..."))
-        while page < startPage:
-            currentItem += JOBS_X_PAGE 
-            if navigator.click_next_page():
-                page += 1
-                navigator.wait_until_page_is_loaded()
-                sleep(2,3)
-            else:
-                break
-        currentItem = (page - 1) * JOBS_X_PAGE
-    return page
 
 def load_and_process_row(idx, rowErrors):
     try:
@@ -178,12 +163,3 @@ def processUrl(url: str):
         if navigator.check_login_popup(lambda: navigator.login(USER_EMAIL, USER_PWD)):
             navigator.load_page(url)
         process_row(None)
-
-def summarize(keywords, totalResults, currentItem):
-    from commonlib.terminalColor import printHR
-    from commonlib.dateUtil import getDatetimeNowStr
-    printHR()
-    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}',
-          f'(remote={remote} location={location} last={f_TPR})')
-    printHR()
-    print()

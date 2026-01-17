@@ -1,4 +1,5 @@
 
+import math
 import re
 import traceback
 from typing import Optional
@@ -9,6 +10,7 @@ from commonlib.environmentUtil import getEnv
 from commonlib.stringUtil import hasLenAnyText
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.terminalColor import green, printHR, red, yellow
+from ..services.selenium.browser_service import sleep
 
 
 def getAndCheckEnvVars(site: str):
@@ -112,3 +114,32 @@ def removeUrlParameter(url: str, parameter: str) -> str:
         del qs[parameter]
     new_query = urllib.parse.urlencode(qs, doseq=True)
     return urllib.parse.urlunparse(parsed._replace(query=new_query))
+
+
+def pageExists(page: int, totalResults: int, jobsXPage: int) -> bool:
+    return page > 1 and totalResults > 0 and page < math.ceil(totalResults / jobsXPage)
+
+
+def fast_forward_page(navigator, start_page: int, total_results: int, jobs_x_page: int) -> int:
+    """
+    Fast forwards to the start_page by clicking next page button.
+    Returns the page number reached (usually start_page).
+    """
+    page = 1
+    if start_page > 1 and pageExists(start_page, total_results, jobs_x_page):
+        print(yellow(f"Fast forwarding to page {start_page}..."))
+        while page < start_page:
+            if navigator.click_next_page():
+                page += 1
+                navigator.wait_until_page_is_loaded()
+                sleep(1, 2)
+            else:
+                break
+    return page
+
+
+def summarize(keywords, totalResults, currentItem):
+    printHR()
+    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
+    printHR()
+    print()

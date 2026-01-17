@@ -29,7 +29,6 @@ def run(seleniumUtil: SeleniumService, preloadPage: bool, persistenceManager: Pe
     if preloadPage:
         navigator.load_main_page()
         return
-    
     with MysqlUtil() as mysql:
         service = GlassdoorService(mysql, persistenceManager)
         service.set_debug(DEBUG)
@@ -54,14 +53,12 @@ def process_keyword(keyword: str, start_page: int):
     print(yellow(f'Loading page {url}'))
     navigator.load_page(url)
     navigator.wait_until_page_is_loaded()
-    
     totalResults = navigator.get_total_results(keyword)
     if totalResults > 0:
         navigator.close_dialogs()
         totalPages = math.ceil(totalResults / JOBS_X_PAGE)
-        currentItem = 0
-        page = _fast_forward_page(start_page, currentItem, totalResults)
-        
+        page = baseScrapper.fast_forward_page(navigator, start_page, totalResults, JOBS_X_PAGE)
+        currentItem = (page - 1) * JOBS_X_PAGE
         while currentItem < totalResults:
             baseScrapper.printPage(WEB_PAGE, page, totalPages, keyword)
             idx = 0
@@ -77,20 +74,8 @@ def process_keyword(keyword: str, start_page: int):
                     service.update_state(keyword, page)
                 else:
                     break
-        summarize(keyword, totalResults, currentItem)
+        baseScrapper.summarize(keyword, totalResults, currentItem)
 
-def _fast_forward_page(start_page: int, current_item: int, total_results: int):
-    page = 1
-    if start_page > 1:
-        print(yellow(f"Fast forwarding to page {start_page}..."))
-        while page < start_page and current_item < total_results:
-            if navigator.click_next_page():
-                page += 1
-                navigator.wait_until_page_is_loaded()
-            else:
-                break
-        current_item = (page - 1) * JOBS_X_PAGE
-    return page
 
 def load_and_process_row(idx):
     try:
@@ -116,11 +101,3 @@ def load_and_process_row(idx):
         baseScrapper.debug(DEBUG, exception=True)
     finally:
         print(flush=True)
-
-def summarize(keywords, totalResults, currentItem):
-    from commonlib.terminalColor import printHR
-    from commonlib.dateUtil import getDatetimeNowStr
-    printHR()
-    print(f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
-    printHR()
-    print()
