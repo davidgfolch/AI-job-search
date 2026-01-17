@@ -61,37 +61,6 @@ class LinkedinExecutor(BaseExecutor):
                         break
                     currentItem += 1
                     print(green(f'pg {page} job {idx} - '), end='', flush=True)
-                    jobExistsInDb = self._load_and_process_row(idx, rowErrors)
-                    if isinstance(jobExistsInDb, int): # If rowErrors incremented and returned? No, logic below.
-                         # Original: jobExistsInDb = load_and_process_row(idx, rowErrors) -> returns bool
-                         # My _load_and_process_row signature usually doesn't take rowErrors ref?
-                         # I need to handle rowErrors.
-                         pass
-                    
-                    # Wait, integer rowErrors is passed by value in python so it won't update in caller.
-                    # I need to return updated rowErrors or handle it inside.
-                    # Original code: `jobExistsInDb = load_and_process_row(idx, rowErrors)` 
-                    # ... `if rowErrors > 1: break` 
-                    # But load_and_process_row inside does `rowErrors += 1` -> this fails in Python if rowErrors is local var passed to func.
-                    # Wait, in `linkedin.py`:
-                    # def load_and_process_row(idx, rowErrors): ... rowErrors += 1 ... return False
-                    # The `rowErrors` variable inside the function is local. It does NOT update the outer variable.
-                    # So original code `if rowErrors > 1` in `search_jobs` NEVER triggered based on inner function logic!!
-                    # Unless I missed something. Python ints are immutable.
-                    # So I will replicate the logic but fix it if I can, OR just copy it (if it was broken, maybe user wants it fixed or doesn't care).
-                    # I will assume `rowErrors` in `search_jobs` was always 0 in original code.
-                    # But wait, `load_and_process_row` returns `True/False`.
-                    # I will return `(jobExists, errorOccurred)`?
-                    # I will change _load_and_process_row to return proper status.
-                    pass
-
-                    # Re-reading original `linkedin.py`:
-                    # def load_and_process_row(idx, rowErrors): ... rowErrors += 1 ...
-                    # This definitely didn't update caller variable. It's a bug in original code.
-                    # I will ignore fixing the bug strictly but implement what is logical here:
-                    # I will catch errors in loop.
-                
-                    # Let's clean up:
                     result = self._load_and_process_row(idx)
                     if result == "ERROR":
                         rowErrors += 1
