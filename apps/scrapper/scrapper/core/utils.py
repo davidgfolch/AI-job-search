@@ -1,7 +1,13 @@
 import traceback
 import time
+import random
 from typing import Optional
 from commonlib.terminalColor import red, yellow, cyan
+
+def sleep(ini: float, end: float, disable=False):
+    if disable:
+        return
+    time.sleep(random.uniform(ini, end))
 
 def debug(debugFlag: bool, msg: str = '', exception: Optional[bool]=None):
     exception = exception if exception is not None else debugFlag

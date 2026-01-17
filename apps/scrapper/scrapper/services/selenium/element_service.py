@@ -1,5 +1,3 @@
-import random
-import time
 from typing import List
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -7,17 +5,12 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from scrapper.core.utils import debug
+from scrapper.core.utils import debug, sleep
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 from commonlib.terminalColor import yellow
 from commonlib.systemUtil import isMacOS
 
 SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end',  behavior: 'smooth' });"
-
-def sleep(ini: float, end: float, disable=False):
-    if disable:
-        return
-    time.sleep(random.uniform(ini, end))
 
 class ElementService:
     def __init__(self, driver: webdriver.Remote):

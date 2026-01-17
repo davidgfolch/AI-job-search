@@ -1,15 +1,9 @@
-import random
-import time
 from typing import Optional
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
+from scrapper.core.utils import sleep
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
-
-def sleep(ini: float, end: float, disable=False):
-    if disable:
-        return
-    time.sleep(random.uniform(ini, end))
 
 class BrowserService:
     def __init__(self, driver: webdriver.Remote):

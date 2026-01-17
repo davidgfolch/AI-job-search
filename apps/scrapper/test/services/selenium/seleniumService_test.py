@@ -99,7 +99,7 @@ class TestSeleniumService:
         selenium_util.waitUntilPageIsLoaded(10)
         mock_wait.assert_called_with(mock_driver, 10)
 
-    @patch('scrapper.services.selenium.browser_service.sleep')
+    @patch('scrapper.core.utils.sleep')
     def test_scroll_progressive_down(self, mock_sleep, selenium_util, mock_driver):
         mock_driver.execute_script.side_effect = [100] + [None] * 20
         selenium_util.scrollProgressive(200)
@@ -107,7 +107,7 @@ class TestSeleniumService:
         final_call = mock_driver.execute_script.call_args_list[-1]
         assert 'window.scrollTo(0, 300)' in str(final_call)
 
-    @patch('scrapper.services.selenium.browser_service.sleep')
+    @patch('scrapper.core.utils.sleep')
     def test_scroll_progressive_up(self, mock_sleep, selenium_util, mock_driver):
         mock_driver.execute_script.side_effect = [500] + [None] * 20
         selenium_util.scrollProgressive(-200)
@@ -115,7 +115,7 @@ class TestSeleniumService:
         final_call = mock_driver.execute_script.call_args_list[-1]
         assert 'window.scrollTo(0, 300)' in str(final_call)
 
-    @patch('scrapper.services.selenium.browser_service.sleep')
+    @patch('scrapper.core.utils.sleep')
     def test_scroll_progressive_zero(self, mock_sleep, selenium_util, mock_driver):
         mock_driver.execute_script.side_effect = [100, None]
         selenium_util.scrollProgressive(0)
