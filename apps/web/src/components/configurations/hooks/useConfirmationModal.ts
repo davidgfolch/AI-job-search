@@ -1,6 +1,14 @@
 import { useState, useCallback } from "react";
 
-export function useConfirmationModal() {
+export interface ConfirmationModal {
+  isOpen: boolean;
+  message: string;
+  confirm: (message: string, onConfirm: () => void) => void;
+  close: () => void;
+  handleConfirm: () => void;
+}
+
+export function useConfirmationModal(): ConfirmationModal {
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     message: string;
