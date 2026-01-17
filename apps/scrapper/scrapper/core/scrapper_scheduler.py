@@ -11,13 +11,13 @@ from scrapper.core.scrapper_config import (
 )
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
-from scrapper.core.scrapper_execution import ScrapperExecution, runPreload
+from scrapper.core.utils import runPreload
+from scrapper.executor.BaseExecutor import BaseExecutor
 
 class ScrapperScheduler:
     def __init__(self, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService):
         self.persistenceManager = persistenceManager
         self.seleniumUtil = seleniumUtil
-        self.scrapperExecution = ScrapperExecution(persistenceManager, seleniumUtil)
 
     def getProperties(self, name: str) -> Optional[dict[str, Any]]:
         return SCRAPPERS.get(name.capitalize())
@@ -136,12 +136,14 @@ class ScrapperScheduler:
                 if RUN_IN_TABS:
                     self.seleniumUtil.tab(name)
                 if runPreload(properties):
-                    if not self.scrapperExecution.executeScrapperPreload(name, properties):
+                    executor = BaseExecutor.create(name, self.seleniumUtil, self.persistenceManager)
+                    if not executor.execute_preload(properties):
                         return False, executed_starting_target
                     if not properties.get('preloaded', True): 
                         print(red(f"Skipping execution for {name} due to preload failure."))
                         continue
-                if not self.scrapperExecution.executeScrapper(name, properties):
+                executor = BaseExecutor.create(name, self.seleniumUtil, self.persistenceManager)
+                if not executor.execute(properties):
                     return False, executed_starting_target
                 if starting and startingAt == name.capitalize():
                     executed_starting_target = True
@@ -169,7 +171,9 @@ class ScrapperScheduler:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
                 if runPreload(properties):
-                    if not self.scrapperExecution.executeScrapperPreload(arg.capitalize(), properties):
+                    executor = BaseExecutor.create(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
+                    if not executor.execute_preload(properties):
                         return
-                if not self.scrapperExecution.executeScrapper(arg.capitalize(), properties):
+                executor = BaseExecutor.create(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
+                if not executor.execute(properties):
                     return

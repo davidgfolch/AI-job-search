@@ -1,9 +1,9 @@
 import pytest
-from unittest.mock import MagicMock, call
-from scrapper.core.scrapper_execution import ScrapperExecution
+from unittest.mock import MagicMock, call, patch
 from scrapper.core.scrapper_scheduler import ScrapperScheduler
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
+from scrapper.executor.BaseExecutor import BaseExecutor
 
 class TestScrapperPreload:
     @pytest.fixture
@@ -16,80 +16,81 @@ class TestScrapperPreload:
         return MagicMock(spec=SeleniumService)
 
     @pytest.fixture
-    def scrapper_execution(self, persistence_manager, selenium_service):
-        return ScrapperExecution(persistence_manager, selenium_service)
-
-    @pytest.fixture
     def scheduler(self, persistence_manager, selenium_service):
-        scheduler = ScrapperScheduler(persistence_manager, selenium_service)
-        # Mocking the internal scrapperExecution to verify calls
-        scheduler.scrapperExecution = MagicMock(spec=ScrapperExecution)
-        return scheduler
+        return ScrapperScheduler(persistence_manager, selenium_service)
 
-    def test_preload_failure_sets_error_in_persistence(self, scrapper_execution, persistence_manager):
+    def test_preload_failure_sets_error_in_persistence(self, persistence_manager, selenium_service):
+        # Setup - patch the executor to test execute_preload directly
+        name = "infojobs"
+        properties = {"preloaded": False}
+        
+        with patch('scrapper.executor.InfojobsExecutor.InfojobsExecutor') as mock_executor_cls:
+            mock_executor = MagicMock()
+            mock_executor.site_name = name
+            mock_executor.selenium_service = selenium_service
+            mock_executor.persistence_manager = persistence_manager
+            mock_executor_cls.return_value = mock_executor
+            # Call run() to trigger exception
+            mock_executor.run.side_effect = Exception("Preload Error")
+            # Import execute_preload method from BaseExecutor and bind it
+            result = BaseExecutor.execute_preload(mock_executor, properties)
+            
+            # Verify
+            assert result is True
+            assert properties["preloaded"] is False
+            persistence_manager.set_error.assert_called_once()
+            args = persistence_manager.set_error.call_args[0]
+            assert args[0] == name.capitalize()
+            assert "Preload Error" in args[1]
+
+    def test_scheduler_skips_execution_on_preload_failure(self, scheduler, persistence_manager):
+        # Setup - mock BaseExecutor.create to return mock instances
+        with patch('scrapper.core.scrapper_scheduler.BaseExecutor.create') as mock_create:
+            mock_executor = MagicMock()
+            mock_create.return_value = mock_executor
+            
+            # Simulate preload failure
+            def side_effect_preload(properties):
+                properties['preloaded'] = False
+                return True
+            
+            mock_executor.execute_preload.side_effect = side_effect_preload
+            
+            scrappers_status = [{
+                "name": "TestScrapper",
+                "properties": {"preloaded": False, "TIMER": 60},
+                "seconds_remaining": 0
+            }]
+            
+            # Execute
+            scheduler._execute_scrappers(scrappers_status, False, None)
+
+            # Verify
+            mock_executor.execute_preload.assert_called_once()
+            mock_executor.execute.assert_not_called()
+
+    def test_scheduler_executes_on_preload_success(self, scheduler, persistence_manager):
         # Setup
-        name = "TestScrapper"
-        properties = {"preloaded": False, "RUN_IN_TABS": False}
-        
-        # Mock runScrapper to raise exception
-        scrapper_execution.runScrapper = MagicMock(side_effect=Exception("Preload Error"))
-        
-        # Execute
-        result = scrapper_execution.executeScrapperPreload(name, properties)
+        with patch('scrapper.core.scrapper_scheduler.BaseExecutor.create') as mock_create:
+            mock_executor = MagicMock()
+            mock_create.return_value = mock_executor
+            
+            def side_effect_preload(properties):
+                properties['preloaded'] = True
+                return True
+            
+            mock_executor.execute_preload.side_effect = side_effect_preload
+            mock_executor.execute.return_value = True
 
-        # Verify
-        assert result is True # Should still return True to continue scheduler loop
-        assert properties["preloaded"] is False
-        persistence_manager.set_error.assert_called_once()
-        args = persistence_manager.set_error.call_args[0]
-        assert args[0] == name
-        assert "Preload Error" in args[1]
+            scrappers_status = [{
+                "name": "TestScrapper",
+                "properties": {"preloaded": False, "TIMER": 60},
+                "seconds_remaining": 0
+            }]
+            
+            # Execute
+            scheduler._execute_scrappers(scrappers_status, False, None)
 
-    def test_scheduler_skips_execution_on_preload_failure(self, scheduler):
-        # Setup
-        scheduler.scrapperExecution.executeScrapperPreload.return_value = True
-        scheduler.scrapperExecution.executeScrapper.return_value = True
-        
-        # We need to simulate the property modification that happens in executeScrapperPreload
-        def side_effect_preload(name, properties):
-            properties['preloaded'] = False # Simulate failure
-            return True
-        
-        scheduler.scrapperExecution.executeScrapperPreload.side_effect = side_effect_preload
-
-        scrappers_status = [{
-            "name": "TestScrapper",
-            "properties": {"preloaded": False, "TIMER": 60}, # Requires preload
-            "seconds_remaining": 0
-        }]
-        
-        # Execute
-        scheduler._execute_scrappers(scrappers_status, False, None)
-
-        # Verify
-        scheduler.scrapperExecution.executeScrapperPreload.assert_called_once()
-        scheduler.scrapperExecution.executeScrapper.assert_not_called()
-
-    def test_scheduler_executes_on_preload_success(self, scheduler):
-        # Setup
-        scheduler.scrapperExecution.executeScrapperPreload.return_value = True
-        scheduler.scrapperExecution.executeScrapper.return_value = True
-        
-        def side_effect_preload(name, properties):
-            properties['preloaded'] = True # Simulate success
-            return True
-        
-        scheduler.scrapperExecution.executeScrapperPreload.side_effect = side_effect_preload
-
-        scrappers_status = [{
-            "name": "TestScrapper",
-            "properties": {"preloaded": False, "TIMER": 60},
-            "seconds_remaining": 0
-        }]
-        
-        # Execute
-        scheduler._execute_scrappers(scrappers_status, False, None)
-
-        # Verify
-        scheduler.scrapperExecution.executeScrapperPreload.assert_called_once()
-        scheduler.scrapperExecution.executeScrapper.assert_called_once()
+            # Verify
+            mock_executor.execute_preload.assert_called_once()
+            mock_executor.execute.assert_called_once()

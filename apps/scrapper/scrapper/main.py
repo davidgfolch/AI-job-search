@@ -5,7 +5,7 @@ from commonlib.fileSystemUtil import getSrcPath
 from commonlib.terminalColor import cyan, red, yellow
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
-from scrapper.core.scrapper_execution import runScrapperPageUrl
+from scrapper.executor.BaseExecutor import BaseExecutor
 from scrapper.core.scrapper_scheduler import ScrapperScheduler
 from scrapper.core.scrapper_config import SCRAPPERS
 
@@ -35,7 +35,7 @@ def main(args):
     starting = hasArgument(args, 'starting', lambda: "'starting' mode enabled", expectedParamCount=1)
     url = hasArgument(args, 'url', lambda: "scrapping only url page", expectedParamCount=1)
     if url:
-        runScrapperPageUrl(url[0])
+        BaseExecutor.process_page_url(url[0])
         return
     if starting:
         startingAt = starting[0].capitalize()

@@ -11,7 +11,6 @@ from commonlib.stringUtil import hasLenAnyText
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.terminalColor import green, printHR, red, yellow
 from ..services.selenium.browser_service import sleep
-# from ..navigator.baseNavigator import BaseNavigator
 
 
 def getAndCheckEnvVars(site: str):

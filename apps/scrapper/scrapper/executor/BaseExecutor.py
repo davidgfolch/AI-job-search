@@ -1,12 +1,17 @@
 import math
 from abc import ABC, abstractmethod
-from commonlib.terminalColor import yellow
+from commonlib.terminalColor import yellow, cyan
 from commonlib.mysqlUtil import MysqlUtil
 from ..core import baseScrapper
 from ..core.utils import debug
 from ..core.baseScrapper import printScrapperTitle
 from ..services.selenium.seleniumService import SeleniumService
 from ..util.persistence_manager import PersistenceManager
+from ..core.scrapper_config import CLOSE_TAB, RUN_IN_TABS, DEBUG
+from ..core.utils import abortExecution
+from commonlib.keep_system_awake import KeepSystemAwake
+from commonlib.dateUtil import getDatetimeNowStr
+
 
 class BaseExecutor(ABC):
     def __init__(self, selenium_service: SeleniumService, persistence_manager: PersistenceManager):
@@ -23,10 +28,87 @@ class BaseExecutor(ABC):
 
         self._init_scrapper()
 
-    @abstractmethod
+    @staticmethod
+    def create(name: str, selenium_service: SeleniumService, persistence_manager: PersistenceManager):
+        """Factory method to create executor instances by name."""
+        from ..executor.InfojobsExecutor import InfojobsExecutor
+        from ..executor.TecnoempleoExecutor import TecnoempleoExecutor
+        from ..executor.LinkedinExecutor import LinkedinExecutor
+        from ..executor.GlassdoorExecutor import GlassdoorExecutor
+        from ..executor.IndeedExecutor import IndeedExecutor
+        
+        match name.lower():
+            case 'infojobs':
+                return InfojobsExecutor(selenium_service, persistence_manager)
+            case 'tecnoempleo':
+                return TecnoempleoExecutor(selenium_service, persistence_manager)
+            case 'linkedin':
+                return LinkedinExecutor(selenium_service, persistence_manager)
+            case 'glassdoor':
+                return GlassdoorExecutor(selenium_service, persistence_manager)
+            case 'indeed':
+                return IndeedExecutor(selenium_service, persistence_manager)
+        raise ValueError(f"Unknown scrapper: {name}")
+
+    @staticmethod
+    def process_page_url(url: str):
+        """Process a specific URL (only LinkedIn is currently supported)."""
+        from ..core.scrapper_config import SCRAPPERS
+        from ..executor.LinkedinExecutor import LinkedinExecutor
+        
+        for name, properties in SCRAPPERS.items():
+            if url.find(name.lower()) != -1:
+                print(cyan(f'Running scrapper for pageUrl: {url}'))
+                match name.lower():
+                    case 'linkedin':
+                        LinkedinExecutor.process_specific_url(url)
+                    case _:
+                        raise Exception(f"Invalid scrapper web page name {name}, only linkedin is implemented")
+                return
+
+
     def _init_scrapper(self):
         """Initialize scrapper specific variables like site_name, credentials, navigator, etc."""
         pass
+
+    def execute_preload(self, properties: dict) -> bool:
+        name = self.site_name.capitalize()
+        try:
+            with KeepSystemAwake():
+                if RUN_IN_TABS:
+                     self.selenium_service.tab(name)
+                self.run(True)
+            properties['preloaded'] = True
+        except Exception as e:
+            debug(DEBUG, f"Error occurred while preloading {name}:", True)
+            self.persistence_manager.set_error(name, f"Preload failed: {str(e)}")
+            properties['preloaded'] = False
+        except KeyboardInterrupt:
+            self.persistence_manager.update_last_execution(name, None)
+            if abortExecution():
+                return False
+        return True
+
+    def execute(self, properties: dict) -> bool:
+        """ returns False if double KeyboardInterrupt """
+        name = self.site_name.capitalize()
+        try:
+            with KeepSystemAwake():
+                self.run(False)
+            self.persistence_manager.update_last_execution(name, getDatetimeNowStr())
+        except Exception:
+            debug(DEBUG, f"Error occurred while executing {name}:", True)
+            self.persistence_manager.update_last_execution(name, None)
+        except KeyboardInterrupt:
+            self.persistence_manager.update_last_execution(name, None)
+            if abortExecution():
+                return False
+        finally:
+            if RUN_IN_TABS:
+                if properties.get(CLOSE_TAB, False):
+                    self.selenium_service.tabClose(name)
+                self.selenium_service.tab()  # switches to default tab
+        return True
     
     def run(self, preload_page: bool):
         """Login, process jobs in search paginated list results"""

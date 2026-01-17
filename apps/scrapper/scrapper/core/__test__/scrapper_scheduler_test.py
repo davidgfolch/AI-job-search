@@ -26,11 +26,19 @@ def run_mocks():
         'tecnoempleo': 'TecnoempleoExecutor',
         'indeed': 'IndeedExecutor'
     }
-    patchers = {key: patch(f'scrapper.core.scrapper_execution.{cls}') for key, cls in mapping.items()}
+    # Patch the actual executor modules
+    patchers = {key: patch(f'scrapper.executor.{cls}.{cls}') for key, cls in mapping.items()}
     started_patchers = {key: p.start() for key, p in patchers.items()}
     
-    # We want the 'run' method of the instance returned by the class constructor
-    yield {key: mock_cls.return_value.run for key, mock_cls in started_patchers.items()}
+    # Mock both execute and execute_preload methods
+    mocked_methods = {}
+    for key, mock_cls in started_patchers.items():
+        mock_instance = mock_cls.return_value
+        mock_instance.execute.return_value = True
+        mock_instance.execute_preload.return_value = True
+        mocked_methods[key] = mock_instance
+    
+    yield mocked_methods
     
     for p in patchers.values():
         p.stop()
@@ -90,9 +98,9 @@ class TestRunScrappers:
              # Only 1 loop to test one pass
             scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, loops=1)
             # Infojobs should run because it's expired
-            run_mocks['infojobs'].assert_called()
+            run_mocks['infojobs'].execute.assert_called()
             # Linkedin should NOT run because it's not expired
-            assert not run_mocks['linkedin'].called
+            assert not run_mocks['linkedin'].execute.called
             # Timer should be called because we have to wait for Linkedin (or others)
             # In this mock setup:
             # Infojobs: ready (wait 0)
@@ -118,8 +126,8 @@ class TestRunScrappers:
         # Infojobs (7200s timer) should NOT run (skipped).
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
              scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=True, startingAt='Linkedin', loops=1)
-             run_mocks['linkedin'].assert_called()
-             assert not run_mocks['infojobs'].called
+             run_mocks['linkedin'].execute.assert_called()
+             assert not run_mocks['infojobs'].execute.called
 
     @pytest.mark.parametrize("scrapers, calls", [
         (['Infojobs'], {'infojobs': 2, 'linkedin': 0}),
@@ -129,7 +137,10 @@ class TestRunScrappers:
     def test_specified(self, scheduler, scrapers, calls, mocks, run_mocks):
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
             scheduler.runSpecifiedScrappers(scrapers)
-            for name, count in calls.items(): assert run_mocks[name].call_count == count
+            # Count both execute_preload and execute as 2 total calls
+            for name, expected_count in calls.items(): 
+                actual_count = run_mocks[name].execute_preload.call_count + run_mocks[name].execute.call_count
+                assert actual_count == expected_count
 
 class TestSchedulerHelpers:
     @pytest.mark.parametrize("arg, props_ok", [('Infojobs', True), ('infojobs', True), ('X', False)])
@@ -161,5 +172,5 @@ class TestScrapperStateAndExecution:
              should_cont, executed_start = scheduler._execute_scrappers(status, False, None)
              assert should_cont is True
              assert executed_start is False
-             run_mocks['infojobs'].assert_called()
-             assert not run_mocks['linkedin'].called
+             run_mocks['infojobs'].execute.assert_called()
+             assert not run_mocks['linkedin'].execute.called
