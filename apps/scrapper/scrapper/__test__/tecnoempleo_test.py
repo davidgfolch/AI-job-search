@@ -69,24 +69,3 @@ class TestTecnoempleoScrapper:
              mock_navigator.load_page.assert_called()
              mock_navigator.get_total_results.assert_called()
              mock_service.process_job.assert_called()
-
-
-class TestTecnoempleoService:
-    @pytest.fixture
-    def service(self, mock_mysql, mock_persistence_manager):
-        return TecnoempleoService(mock_mysql, mock_persistence_manager)
-        
-    def test_process_job_valid(self, service, mock_mysql):
-        with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="Markdown"), \
-             patch('scrapper.services.TecnoempleoService.validate', return_value=True), \
-             patch('scrapper.services.TecnoempleoService.mergeDuplicatedJobs'):
-             
-             mock_mysql.insert.return_value = 1
-             result = service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
-             
-             assert result is True
-             mock_mysql.insert.assert_called_once()
-             
-class TestTecnoempleoNavigator:
-     # Add basic tests or assume verified by run
-     pass

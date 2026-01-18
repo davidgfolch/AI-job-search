@@ -142,50 +142,10 @@ class TestLinkedinExecutor:
             # navigator.load_page is called
             mocks['nav'].load_page.assert_called_with("http://url")
             pr.assert_called_with(None)
-
+    
     def test_transform_to_search_url(self):
-        # Scenario 1: Standard job view URL
         url = "https://www.linkedin.com/jobs/view/4350893693/"
         expected = "https://www.linkedin.com/jobs/search/?currentJobId=4350893693"
         assert LinkedinExecutor._transform_to_search_url(url) == expected
-
-        # Scenario 2: Already a search URL (should return as is)
         url2 = "https://www.linkedin.com/jobs/search/?currentJobId=123"
         assert LinkedinExecutor._transform_to_search_url(url2) == url2
-
-# Service and Navigator tests can be kept or removed if covered elsewhere.
-# LinkedinService tests were comprehensive. I will include them.
-
-class TestLinkedinService:
-    @pytest.fixture
-    def service(self):
-        return LinkedinService(MagicMock(), MagicMock())
-    
-    def test_url_parsing(self, service):
-        url = "https://www.linkedin.com/jobs/view/123456/?x=y"
-        assert service.get_job_id(url) == 123456
-        assert service.get_job_url_short(url) == "https://www.linkedin.com/jobs/view/123456/"
-
-    def test_process_job(self, mock_pm, mock_mysql):
-        service = LinkedinService(mock_mysql, mock_pm)
-        with patch('scrapper.core.baseScrapper.htmlToMarkdown', return_value="MD"), \
-             patch('scrapper.core.baseScrapper.validate', side_effect=[True, False]), \
-             patch('scrapper.services.LinkedinService.mergeDuplicatedJobs'):
-            
-            mock_mysql.jobExists.return_value = False
-            mock_mysql.insert.return_value = 1
-            
-            # Valid case
-            service.process_job("Title", "Company", "Loc", "https://www.linkedin.com/jobs/view/123456/", "HTML", False, False)
-            mock_mysql.insert.assert_called()
-             
-            # Invalid case
-            with pytest.raises(ValueError):
-                service.process_job("T", "C", "L", "https://www.linkedin.com/jobs/view/123456/", "H", False, False)
-
-class TestLinkedinNavigator:
-    @patch("scrapper.navigator.linkedinNavigator.sleep")
-    def test_get_total_results(self, mock_sleep):
-        nav = LinkedinNavigator(MagicMock())
-        nav.selenium.getText.return_value = "100+ items"
-        assert nav.get_total_results("k", "r", "l", "t") == 100

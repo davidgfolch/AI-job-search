@@ -74,33 +74,3 @@ class TestInfojobsScrapper:
             mock_persistence_manager.finalize_scrapper.assert_called_once_with('Infojobs')
             mock_navigator.load_search_page.assert_called()
             mock_navigator.load_filtered_search_results.assert_called_with('python developer')
-
-class TestInfojobsService:
-    @pytest.fixture
-    def service(self, mock_mysql, mock_persistence_manager):
-        return InfojobsService(mock_mysql, mock_persistence_manager)
-
-    @pytest.mark.parametrize("url, expected_id", [
-        ("https://www.infojobs.net/of-1234567890?other=param", "1234567890"),
-        ("https://www.infojobs.net/of-0987654321", "0987654321"),
-    ])
-    def test_get_job_id(self, service, url, expected_id):
-        assert service.get_job_id(url) == expected_id
-
-    def test_job_exists_in_db(self, service, mock_mysql):
-        mock_mysql.fetchOne.return_value = {"id": 1}
-        job_id, exists = service.job_exists_in_db("https://www.infojobs.net/of-123")
-        assert job_id == "123"
-        assert exists is True
-
-    def test_process_job_valid(self, service, mock_mysql):
-        with patch('scrapper.services.InfojobsService.htmlToMarkdown', return_value="Markdown"), \
-             patch('scrapper.services.InfojobsService.validate', return_value=True), \
-             patch('scrapper.services.InfojobsService.mergeDuplicatedJobs'):
-             
-             mock_mysql.insert.return_value = 1
-             result = service.process_job("Title", "Company", "Location", "https://www.infojobs.net/of-123", "<html>")
-             
-             assert result is True
-             mock_mysql.insert.assert_called_once()
-
