@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useConfigDropdownState } from '../useConfigDropdownState';
 
@@ -33,13 +33,17 @@ describe('useConfigDropdownState', () => {
     expect(result.current.isOpen).toBe(true);
   });
 
-  it('should restore savedConfigName on blur if configName is empty', async () => {
+  it('should restore savedConfigName on blur if configName is empty', () => {
+    vi.useFakeTimers();
     const { result } = renderHook(() => useConfigDropdownState('saved'));
     act(() => {
       result.current.handleBlur();
     });
-    await new Promise(resolve => setTimeout(resolve, 250));
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
     expect(result.current.configName).toBe('saved');
     expect(result.current.isOpen).toBe(false);
+    vi.useRealTimers();
   });
 });
