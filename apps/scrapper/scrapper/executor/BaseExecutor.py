@@ -28,6 +28,11 @@ class BaseExecutor(ABC):
 
         self._init_scrapper()
 
+    @property
+    def site_name_key(self) -> str:
+        """Returns the standardized site name for persistence."""
+        return self.site_name.capitalize()
+
     @staticmethod
     def create(name: str, selenium_service: SeleniumService, persistence_manager: PersistenceManager):
         """Factory method to create executor instances by name."""
@@ -72,7 +77,7 @@ class BaseExecutor(ABC):
         pass
 
     def execute_preload(self, properties: dict) -> bool:
-        name = self.site_name.capitalize()
+        name = self.site_name_key
         try:
             with KeepSystemAwake():
                 if RUN_IN_TABS:
@@ -81,26 +86,26 @@ class BaseExecutor(ABC):
             properties['preloaded'] = True
         except Exception as e:
             debug(DEBUG, f"Error occurred while preloading {name}:", True)
-            self.persistence_manager.set_error(name, f"Preload failed: {str(e)}")
+            self.persistence_manager.set_error(self.site_name_key, f"Preload failed: {str(e)}")
             properties['preloaded'] = False
         except KeyboardInterrupt:
-            self.persistence_manager.update_last_execution(name, None)
+            self.persistence_manager.update_last_execution(self.site_name_key, None)
             if abortExecution():
                 return False
         return True
 
     def execute(self, properties: dict) -> bool:
         """ returns False if double KeyboardInterrupt """
-        name = self.site_name.capitalize()
+        name = self.site_name_key
         try:
             with KeepSystemAwake():
                 self.run(False)
-            self.persistence_manager.update_last_execution(name, getDatetimeNowStr())
+            self.persistence_manager.update_last_execution(self.site_name_key, getDatetimeNowStr())
         except Exception:
             debug(DEBUG, f"Error occurred while executing {name}:", True)
-            self.persistence_manager.update_last_execution(name, None)
+            self.persistence_manager.update_last_execution(self.site_name_key, None)
         except KeyboardInterrupt:
-            self.persistence_manager.update_last_execution(name, None)
+            self.persistence_manager.update_last_execution(self.site_name_key, None)
             if abortExecution():
                 return False
         finally:
@@ -123,7 +128,7 @@ class BaseExecutor(ABC):
         pass
 
     def _execute_scrapping(self):
-        saved_state = self.persistence_manager.get_state(self.site_name)
+        saved_state = self.persistence_manager.get_state(self.site_name_key)
         saved_keyword = saved_state.get("keyword")
         saved_page = saved_state.get("page", 1)
         # If persistence manager has no state, saved_keyword is None.
@@ -168,11 +173,11 @@ class BaseExecutor(ABC):
                     continue
                 try:
                     self._process_keyword(keyword, start_page)
-                    self.persistence_manager.remove_failed_keyword(self.site_name, keyword)
+                    self.persistence_manager.remove_failed_keyword(self.site_name_key, keyword)
                 except Exception:
                     debug(self.debug)
-                    self.persistence_manager.add_failed_keyword(self.site_name, keyword)
-        self.persistence_manager.finalize_scrapper(self.site_name)
+                    self.persistence_manager.add_failed_keyword(self.site_name_key, keyword)
+        self.persistence_manager.finalize_scrapper(self.site_name_key)
 
     @abstractmethod
     def _create_service(self, mysql):

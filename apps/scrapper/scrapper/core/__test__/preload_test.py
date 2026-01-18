@@ -26,7 +26,8 @@ class TestScrapperPreload:
         
         with patch('scrapper.executor.InfojobsExecutor.InfojobsExecutor') as mock_executor_cls:
             mock_executor = MagicMock()
-            mock_executor.site_name = name
+            mock_executor.site_name = "INFOJOBS"
+            mock_executor.site_name_key = "Infojobs"
             mock_executor.selenium_service = selenium_service
             mock_executor.persistence_manager = persistence_manager
             mock_executor_cls.return_value = mock_executor
@@ -40,7 +41,7 @@ class TestScrapperPreload:
             assert properties["preloaded"] is False
             persistence_manager.set_error.assert_called_once()
             args = persistence_manager.set_error.call_args[0]
-            assert args[0] == name.capitalize()
+            assert args[0] == "Infojobs"
             assert "Preload Error" in args[1]
 
     def test_scheduler_skips_execution_on_preload_failure(self, scheduler, persistence_manager):

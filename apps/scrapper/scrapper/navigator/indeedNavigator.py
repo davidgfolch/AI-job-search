@@ -18,7 +18,7 @@ class IndeedNavigator(BaseNavigator):
     def accept_cookies(self):
         self.selenium.waitAndClick_noError(CSS_SEL_COOKIE_ACCEPT, "Could not accept cookies")
 
-    @retry(retries=40, delay=1)
+    @retry(retries=40, delay=1, raiseException=False, stackTrace=StackTrace.NEVER)
     def waitForCloudflareFilterInLogin(self):
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_EMAIL)
 
@@ -64,10 +64,13 @@ class IndeedNavigator(BaseNavigator):
         self.close_modal()
         return len(self.selenium.getElms(".jobsearch-NoResult-messageContainer")) > 0
 
+    @retry()
     def selectFilters(self, remote: bool, daysOld: int):
         if remote:
-            self.selectOption("#remote_filter_button", "a[role='menuitem'][aria-label='Teletrabajo']")
-        self.selectOption(f"#fromAge_filter_button", f"a[role='menuitem'][aria-label*='{daysOld}'][aria-label*='días']")
+            if not len(self.selenium.getElms("#remote_option_remote")) > 0: # already selected
+                self.selectOption("#remote_filter_button", "a[role='menuitem'][aria-label='Teletrabajo']")
+        if not len(self.selenium.getElms("#fromAge_option_fromAge")) > 0: # already selected
+            self.selectOption(f"#fromAge_filter_button", f"a[role='menuitem'][aria-label*='{daysOld}'][aria-label*='días']")
 
     @retry(exception=ElementClickInterceptedException, exceptionFnc=lambda self, *args, **kwargs: self.close_modal())
     def selectOption(self, cssSel: str, cssSelOption: str):

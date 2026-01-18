@@ -51,7 +51,7 @@ class TestInfojobsExecutor:
             executor = InfojobsExecutor(mock_selenium, mock_persistence_manager)
             executor.run(preload_page=False)
             assert mock_process_keyword.called
-            mock_persistence_manager.finalize_scrapper.assert_called_with('INFOJOBS')
+            mock_persistence_manager.finalize_scrapper.assert_called_with('Infojobs')
 
     def test_process_keyword_flow(self, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch.object(InfojobsExecutor, '_load_and_process_row', return_value=False) as mock_row, \

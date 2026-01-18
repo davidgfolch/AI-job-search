@@ -46,8 +46,6 @@ def retry(retries: int = 5,
                             raise e
                         if stackTrace != StackTrace.NEVER:
                             print(red(traceback.format_exc()), flush=True)
-                        else:
-                            print(red(str(e)), flush=True)
                         return False
                     print(yellow(f'{e.__class__.__name__} calling function {fnc.__name__}()'), end='', flush=True)
                     if i > retries - 1 and stackTrace != StackTrace.NEVER:

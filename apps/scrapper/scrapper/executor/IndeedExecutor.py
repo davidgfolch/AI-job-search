@@ -31,12 +31,15 @@ class IndeedExecutor(BaseExecutor):
         sleep(3,4)
         print(yellow(f"Search keyword={keyword}"))
         self.navigator.search(keyword, self.location, self.remote, self.days_old, start_page)
+        self.navigator.wait_until_page_is_loaded()
         sleep(2,2)
         if self.navigator.checkNoResults():
             return
         self.navigator.selectFilters(self.remote, self.days_old)
         sleep(2,2)
         self.navigator.wait_until_page_is_loaded()
+        if self.navigator.checkNoResults():
+            return
         self.navigator.clickSortByDate()
         sleep(3,4)
         self.navigator.wait_until_page_is_loaded()

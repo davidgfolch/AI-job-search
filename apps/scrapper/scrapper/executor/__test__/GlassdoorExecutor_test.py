@@ -55,7 +55,7 @@ class TestGlassdoorExecutor:
             
             assert mock_process_keyword.called
             mock_service.prepare_resume.assert_called_once()
-            mock_persistence_manager.finalize_scrapper.assert_called_once_with('GLASSDOOR')
+            mock_persistence_manager.finalize_scrapper.assert_called_once_with('Glassdoor')
 
     def test_process_keyword(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
         with patch.object(GlassdoorExecutor, '_load_and_process_row') as mock_load_and_process, \

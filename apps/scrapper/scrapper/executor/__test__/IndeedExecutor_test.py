@@ -48,8 +48,8 @@ class TestIndeedExecutor:
             executor = IndeedExecutor(mock_selenium, mock_persistence_manager)
             executor.run(preload_page=False)
             assert mock_process_keyword.called
-            mock_persistence_manager.get_state.assert_called_with("INDEED")
-            mock_persistence_manager.finalize_scrapper.assert_called_with("INDEED")
+            mock_persistence_manager.get_state.assert_called_with("Indeed")
+            mock_persistence_manager.finalize_scrapper.assert_called_with("Indeed")
 
     def test_search_jobs_pagination(self, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch('scrapper.executor.IndeedExecutor.sleep'), \
