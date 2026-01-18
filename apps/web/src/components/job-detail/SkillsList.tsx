@@ -12,12 +12,13 @@ export default function SkillsList({ skills }: SkillsListProps) {
 
     return (
         <>
-            {skills.split(',').map((skill) => (
+            {Array.from(new Set(skills.split(',').map(s => s.trim()).filter(Boolean))).map((skill) => (
                 <SkillTag
-                    key={skill.trim()}
-                    skill={skill.trim()}
-                    isInLearnList={isInLearnList(skill.trim())}
-                    onToggle={toggleSkill}/>
+                    key={skill}
+                    skill={skill}
+                    isInLearnList={isInLearnList(skill)}
+                    onToggle={toggleSkill}
+                />
             ))}
         </>
     );

@@ -48,6 +48,12 @@ def test_rawToJson_invalid_json(raw):
      {"salary": "50000", "optional_technologies": "Flask,SQLAlchemy", "required_technologies": None}),
     ({"salary": "50000", "required_technologies": [], "optional_technologies": []},
      {"salary": "50000", "required_technologies": None, "optional_technologies": None}),
+    ({"salary": "50000", "required_technologies": ["Java", "Java", "Python"]},
+     {"salary": "50000", "required_technologies": "Java,Python", "optional_technologies": None}),
+    ({"salary": "50000", "required_technologies": "Java, Java, Python"},
+     {"salary": "50000", "required_technologies": "Java,Python", "optional_technologies": None}),
+    ({"salary": "50000", "required_technologies": "Java, , Python"},
+     {"salary": "50000", "required_technologies": "Java,Python", "optional_technologies": None}),
 ])
 def test_validateResult(result, expected):
     validateResult(result)

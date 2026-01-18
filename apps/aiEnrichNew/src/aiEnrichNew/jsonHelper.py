@@ -101,8 +101,16 @@ def listsToString(result: dict[str, str], fields: list[str]):
         value = result.get(f, None)
         if not value:
             result[f] = None
-        elif isinstance(value, list):
-            result[f] = ','.join(value)
+        else:
+            if isinstance(value, str):
+                items = [x.strip() for x in value.split(',')]
+            elif isinstance(value, list):
+                items = [str(x).strip() for x in value if x is not None]
+            else:
+                items = []
+                
+            unique_items = list(dict.fromkeys([x for x in items if x]))
+            result[f] = ','.join(unique_items) if unique_items else None
 
 
 

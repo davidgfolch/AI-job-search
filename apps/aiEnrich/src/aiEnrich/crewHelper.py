@@ -145,9 +145,17 @@ def listsToString(result: dict[str, str], fields: list[str]):
         value = result.get(f, None)
         if not value:
             result[f] = None
-        elif isinstance(value, list):
-            result[f] = ','.join(value)
-
+        else:
+            if isinstance(value, str):
+                items = [x.strip() for x in value.split(',')]
+            elif isinstance(value, list):
+                items = [str(x).strip() for x in value]
+            else:
+                items = [] # Should not happen based on usage, but good for safety
+            # Deduplicate while preserving order (optional but nice) or just set
+            # Using dict.fromkeys to preserve order
+            unique_items = list(dict.fromkeys([x for x in items if x]))
+            result[f] = ','.join(unique_items) if unique_items else None
 
 
 def combineTaskResults(crewOutput: CrewOutput, debug) -> dict:

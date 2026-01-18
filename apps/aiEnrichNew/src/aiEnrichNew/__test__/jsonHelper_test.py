@@ -73,6 +73,21 @@ class TestJsonHelper(unittest.TestCase):
         self.assertEqual(res["tech"], "python,java")
         self.assertEqual(res["other"], "git")
 
+        # Test deduplication with list
+        res_dup_list = {"tech": ["python", "python", "java"]}
+        listsToString(res_dup_list, ["tech"])
+        self.assertEqual(res_dup_list["tech"], "python,java")
+
+        # Test deduplication with string
+        res_dup_str = {"tech": "python, python, java"}
+        listsToString(res_dup_str, ["tech"])
+        self.assertEqual(res_dup_str["tech"], "python,java")
+        
+        # Test empty/None handling in list
+        res_empty = {"tech": ["", None, "python"]}
+        listsToString(res_empty, ["tech"])
+        self.assertEqual(res_empty["tech"], "python")
+
     @patch('aiEnrichNew.jsonHelper.updateFieldsQuery')
     def test_saveError(self, mock_query_builder):
         mock_mysql = MagicMock()
