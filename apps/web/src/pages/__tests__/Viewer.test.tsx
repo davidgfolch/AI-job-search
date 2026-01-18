@@ -24,6 +24,19 @@ vi.mock('../../hooks/viewer/useJobUpdates', () => ({
     useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0 }),
 }));
 
+vi.mock('../../services/FilterConfigService', () => {
+    return {
+        FilterConfigService: vi.fn().mockImplementation(function() {
+            return {
+                load: vi.fn().mockResolvedValue([]),
+                save: vi.fn().mockResolvedValue(undefined),
+                delete: vi.fn().mockResolvedValue(undefined),
+                export: vi.fn().mockResolvedValue([])
+            };
+        })
+    };
+});
+
 // --- Tests ---
 describe('Viewer', () => {
     beforeEach(() => { vi.clearAllMocks(); });
@@ -64,7 +77,7 @@ describe('Viewer', () => {
         await waitForJobList();
         expect(screen.getByText('Select a job to view details')).toBeInTheDocument();
         selectJob('Job 1');
-        verifyJobDetails('Description 1', 'Company 1');
+        await verifyJobDetails('Description 1', 'Company 1');
         clickFilterButton('Flagged');
         await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ flagged: true, page: 1 })));
         await waitForAsync();

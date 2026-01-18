@@ -1,4 +1,5 @@
 import { screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { expect } from 'vitest';
 import { jobsApi } from '../../api/jobs';
 import { renderViewer, mockJobs, waitForAsync } from './ViewerTestUtils';
 
@@ -24,8 +25,8 @@ export const clickFilterButton = (filterName: string) => {
   fireEvent.click(buttons[0]);
 };
 
-export const verifyJobDetails = (description: string, company: string) => {
-  expect(screen.getByText(description, { selector: '.markdown-content p' })).toBeInTheDocument();
+export const verifyJobDetails = async (description: string, company: string) => {
+  expect(await screen.findByText(description, { selector: '.markdown-content p' })).toBeInTheDocument();
   expect(screen.getAllByText(company)).toHaveLength(2);
 };
 

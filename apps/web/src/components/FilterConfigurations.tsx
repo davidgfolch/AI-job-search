@@ -24,6 +24,8 @@ interface FilterConfigurationsProps {
     onMessage?: (message: string, type: 'success' | 'error') => void;
 }
 
+const ADDITIONAL_DEFAULTS = [CLEAN_OLD_JOBS_CONFIG];
+
 export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage }: FilterConfigurationsProps) {
     const {
         configName,
@@ -41,7 +43,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         exportToDefaults,
         setHighlightIndex,
         confirmModal
-    } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: [CLEAN_OLD_JOBS_CONFIG] });
+    } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: ADDITIONAL_DEFAULTS });
 
     return (
         <div className="filter-configurations">
