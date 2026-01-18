@@ -53,20 +53,3 @@ def test_bulk_update_jobs_select_all(mock_repo_cls):
     assert args[0] == ["search LIKE %s", "ignored = 0"] # where clauses
     assert args[1] == ["%python%"] # params
     assert args[2] == update_data
-
-def test_bulk_update_api(client):
-    """Test bulk update API endpoint"""
-    with patch('services.jobs_service.JobsService.bulk_update_jobs') as mock_bulk_update:
-        mock_bulk_update.return_value = 5
-        
-        payload = {
-            "ids": [1, 2],
-            "update": {"ignored": True},
-            "select_all": False
-        }
-        
-        response = client.post("/api/jobs/bulk", json=payload)
-        
-        assert response.status_code == 200
-        assert response.json() == {"updated": 5}
-        mock_bulk_update.assert_called_once()

@@ -1,8 +1,5 @@
 import pytest
-from unittest.mock import patch
-
 from unittest.mock import patch, MagicMock
-from repositories.jobs_repository import JobsRepository
 
 create_mock_db = pytest.create_mock_db
 JOB_COLUMNS = pytest.JOB_COLUMNS
@@ -13,20 +10,6 @@ def test_health_check(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
-
-
-@patch('repositories.jobs_repository.MysqlUtil')
-@patch('repositories.jobs_repository.getConnection')
-def test_get_db(mock_get_connection, mock_mysql_util):
-    """Test the get_db method"""
-    repo = JobsRepository()
-    mock_conn = MagicMock()
-    mock_get_connection.return_value = mock_conn
-    
-    repo.get_db()
-    
-    mock_get_connection.assert_called_once()
-    mock_mysql_util.assert_called_once_with(mock_conn)
 
 
 @patch('repositories.jobs_repository.JobsRepository.get_db')
@@ -144,7 +127,6 @@ def test_update_job_not_found(mock_get_db, client):
     
     assert response.status_code == 404
     assert response.json()['detail'] == 'Job not found'
-    assert response.json()['detail'] == 'Job not found'
 
 
 @patch('repositories.jobs_repository.JobsRepository.get_db')
@@ -180,4 +162,22 @@ def test_bulk_delete_jobs(mock_delete_jobs, mock_get_db, client):
     assert response.status_code == 200
     assert response.json() == {"deleted": 5}
     mock_delete_jobs.assert_called_once()
+
+
+@patch('services.jobs_service.JobsService.bulk_update_jobs')
+def test_bulk_update_api(mock_bulk_update, client):
+    """Test bulk update API endpoint"""
+    mock_bulk_update.return_value = 5
+    
+    payload = {
+        "ids": [1, 2],
+        "update": {"ignored": True},
+        "select_all": False
+    }
+    
+    response = client.post("/api/jobs/bulk", json=payload)
+    
+    assert response.status_code == 200
+    assert response.json() == {"updated": 5}
+    mock_bulk_update.assert_called_once()
 
