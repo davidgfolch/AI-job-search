@@ -1,7 +1,7 @@
 import { screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { expect } from 'vitest';
 import { jobsApi } from '../../api/jobs';
-import { renderViewer, mockJobs, waitForAsync } from './ViewerTestUtils';
+import { mockJobs } from './ViewerTestUtils';
 
 export const mockJobsApiDefault = () => {
   (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
