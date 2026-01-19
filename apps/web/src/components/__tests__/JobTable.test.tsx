@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import JobTable from '../JobTable';
 import { createMockJobs } from '../../__tests__/test-utils';
 
@@ -9,6 +9,14 @@ const mockJobs = createMockJobs(2, {
 });
 
 describe('JobTable', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
     const defaultProps = {
         jobs: mockJobs,
         selectedJob: null,
@@ -25,10 +33,28 @@ describe('JobTable', () => {
         expect(screen.getByText('Job 1')).toBeInTheDocument();
         expect(screen.getByText('Company 1')).toBeInTheDocument();
         expect(screen.getByText('100k')).toBeInTheDocument();
-
+        expect(screen.getByText('Created')).toBeInTheDocument();
+        // Since mock jobs might not have created date set or it's old, let's just check if the column exists effectively
+        // We'll check for '-' if date is missing or specific value if we set it.
+        // The createMockJobs utility might not set 'created' by default to a fresh date.
+        
         expect(screen.getByText('Job 2')).toBeInTheDocument();
         expect(screen.getByText('Company 2')).toBeInTheDocument();
         expect(screen.getByText('120k')).toBeInTheDocument();
+    });
+
+    it('displays lapsed time correctly with tooltip', () => {
+        const now = new Date('2023-10-15T12:00:00Z');
+        vi.setSystemTime(now);
+        
+        const jobsWithDate = [
+            { ...mockJobs[0], created: '2023-10-10T12:00:00Z' }, // 5 days ago
+        ];
+        render(<JobTable {...defaultProps} jobs={jobsWithDate} />);
+        
+        const cell = screen.getByText('5d ago');
+        expect(cell).toBeInTheDocument();
+        expect(cell).toHaveAttribute('title', '5 days ago');
     });
 
     it('highlights selected job', () => {

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Job } from '../api/jobs';
 import './JobTable.css';
 import { STATE_BASE_FIELDS } from '../hooks/contants';
+import { calculateLapsedTime, calculateLapsedTimeDetail } from '../utils/dateUtils';
 
 interface JobTableProps {
     jobs: Job[];
@@ -66,6 +67,7 @@ export default function JobTable({
                         <th>Title</th>
                         <th>Company</th>
                         <th className="status-column">Status</th>
+                        <th>Created</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,6 +103,7 @@ export default function JobTable({
                                     ))}
                                 </div>
                             </td>
+                            <td title={calculateLapsedTimeDetail(job.created)}>{calculateLapsedTime(job.created)}</td>
                         </tr>
                     ))}
                 </tbody>
