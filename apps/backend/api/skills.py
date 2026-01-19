@@ -22,7 +22,7 @@ def create_skill(name: str, skill: SkillCreate):
 
 @router.put("/{name}", response_model=str)
 def update_skill(name: str, skill_update: SkillUpdate):
-    updated = service.update_skill(name, skill_update.dict(exclude_unset=True))
+    updated = service.update_skill(name, skill_update.model_dump(exclude_unset=True))
     if not updated:
         raise HTTPException(status_code=404, detail="Skill not found")
     return updated
