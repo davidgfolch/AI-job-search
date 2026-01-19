@@ -6,8 +6,9 @@ from ..core.utils import pageExists
 from ..services.selenium.seleniumService import SeleniumService
 
 class BaseNavigator(ABC):
-    def __init__(self, selenium: SeleniumService):
+    def __init__(self, selenium: SeleniumService, debug: bool = False):
         self.selenium = selenium
+        self.debug = debug
 
     def wait_until_page_is_loaded(self):
         self.selenium.waitUntilPageIsLoaded()

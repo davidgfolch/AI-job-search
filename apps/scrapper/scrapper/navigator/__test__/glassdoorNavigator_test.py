@@ -26,7 +26,7 @@ class TestGlassdoorNavigator:
     def test_load_main_page(self, navigator, mock_selenium):
         navigator.load_main_page()
         assert mock_selenium.loadPage.call_count >= 1
-        mock_selenium.waitUntil_presenceLocatedElement.assert_called()
+        mock_selenium.getElm.assert_called()
     
     @patch("scrapper.navigator.glassdoorNavigator.sleep")
     def test_login(self, mock_sleep, navigator, mock_selenium):

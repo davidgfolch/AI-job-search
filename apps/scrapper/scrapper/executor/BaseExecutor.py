@@ -1,20 +1,23 @@
 import math
 from abc import ABC, abstractmethod
+
 from commonlib.terminalColor import yellow, cyan
+from commonlib.environmentUtil import getEnvBool
 from commonlib.mysqlUtil import MysqlUtil
+from commonlib.keep_system_awake import KeepSystemAwake
+from commonlib.dateUtil import getDatetimeNowStr
+from ..core.scrapper_config import SCRAPPERS
 from ..core import baseScrapper
 from ..core.utils import debug
 from ..core.baseScrapper import printScrapperTitle
-from ..services.selenium.seleniumService import SeleniumService
-from ..util.persistence_manager import PersistenceManager
-from ..core.scrapper_config import CLOSE_TAB, RUN_IN_TABS, DEBUG
+from ..core.scrapper_config import CLOSE_TAB, RUN_IN_TABS
 from ..core.utils import abortExecution
-from commonlib.keep_system_awake import KeepSystemAwake
-from commonlib.dateUtil import getDatetimeNowStr
+from ..util.persistence_manager import PersistenceManager
+from ..services.selenium.seleniumService import SeleniumService
 
 
 class BaseExecutor(ABC):
-    def __init__(self, selenium_service: SeleniumService, persistence_manager: PersistenceManager):
+    def __init__(self, selenium_service: SeleniumService, persistence_manager: PersistenceManager, debug: bool = False):
         self.selenium_service = selenium_service
         self.persistence_manager = persistence_manager
         self.navigator = None
@@ -24,8 +27,7 @@ class BaseExecutor(ABC):
         self.user_email = None
         self.user_pwd = None
         self.jobs_search = None
-        self.debug = False
-
+        self.debug = debug
         self._init_scrapper()
 
     @property
@@ -42,35 +44,40 @@ class BaseExecutor(ABC):
         from ..executor.GlassdoorExecutor import GlassdoorExecutor
         from ..executor.IndeedExecutor import IndeedExecutor
         
+        def get_debug(name):
+            config_debug = SCRAPPERS.get(name.capitalize(), {}).get('DEBUG')
+            if config_debug is not None:
+                return config_debug
+            return False
+
+        debug = get_debug(name)
         match name.lower():
             case 'infojobs':
-                return InfojobsExecutor(selenium_service, persistence_manager)
+                return InfojobsExecutor(selenium_service, persistence_manager, debug)
             case 'tecnoempleo':
-                return TecnoempleoExecutor(selenium_service, persistence_manager)
+                return TecnoempleoExecutor(selenium_service, persistence_manager, debug)
             case 'linkedin':
-                return LinkedinExecutor(selenium_service, persistence_manager)
+                return LinkedinExecutor(selenium_service, persistence_manager, debug)
             case 'glassdoor':
-                return GlassdoorExecutor(selenium_service, persistence_manager)
+                return GlassdoorExecutor(selenium_service, persistence_manager, debug)
             case 'indeed':
-                return IndeedExecutor(selenium_service, persistence_manager)
+                return IndeedExecutor(selenium_service, persistence_manager, debug)
+
         raise ValueError(f"Unknown scrapper: {name}")
 
     @staticmethod
     def process_page_url(url: str):
         """Process a specific URL (only LinkedIn is currently supported)."""
-        from ..core.scrapper_config import SCRAPPERS
-        from ..executor.LinkedinExecutor import LinkedinExecutor
-        
         for name, properties in SCRAPPERS.items():
             if url.find(name.lower()) != -1:
                 print(cyan(f'Running scrapper for pageUrl: {url}'))
+                from ..executor.LinkedinExecutor import LinkedinExecutor
                 match name.lower():
                     case 'linkedin':
                         LinkedinExecutor.process_specific_url(url)
                     case _:
                         raise Exception(f"Invalid scrapper web page name {name}, only linkedin is implemented")
                 return
-
 
     def _init_scrapper(self):
         """Initialize scrapper specific variables like site_name, credentials, navigator, etc."""
@@ -82,10 +89,10 @@ class BaseExecutor(ABC):
             with KeepSystemAwake():
                 if RUN_IN_TABS:
                      self.selenium_service.tab(name)
-                self.run(True)
+                self.run(preload_page=True)
             properties['preloaded'] = True
         except Exception as e:
-            debug(DEBUG, f"Error occurred while preloading {name}:", True)
+            debug(self.debug, f"Error occurred while preloading {name}:", True)
             self.persistence_manager.set_error(self.site_name_key, f"Preload failed: {str(e)}")
             properties['preloaded'] = False
         except KeyboardInterrupt:
@@ -99,10 +106,10 @@ class BaseExecutor(ABC):
         name = self.site_name_key
         try:
             with KeepSystemAwake():
-                self.run(False)
+                self.run(preload_page=False)
             self.persistence_manager.update_last_execution(self.site_name_key, getDatetimeNowStr())
         except Exception:
-            debug(DEBUG, f"Error occurred while executing {name}:", True)
+            debug(self.debug, f"Error occurred while executing {name}:", True)
             self.persistence_manager.update_last_execution(self.site_name_key, None)
         except KeyboardInterrupt:
             self.persistence_manager.update_last_execution(self.site_name_key, None)
@@ -146,7 +153,7 @@ class BaseExecutor(ABC):
             # Indeed.py matches explicit strict logic. Others use service.should_skip_keyword.
             # I will try to support the most common pattern here or delegate to _process_keywords_loop if needed.
             # But wait, logic is mostly:
-            for keyword_raw in self.jobs_search.split(',' if ',' in self.jobs_search else '|~|'): # Glassdoor uses |~|
+            for keyword_raw in self.jobs_search.split('|~|' if '|~|' in self.jobs_search else ','): # Glassdoor uses |~|
                 keyword = keyword_raw.strip()
                 if not keyword:
                     continue

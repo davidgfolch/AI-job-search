@@ -19,7 +19,7 @@ class IndeedExecutor(BaseExecutor):
         self.days_old = 3
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
         self.navigator = IndeedNavigator(self.selenium_service)
-        self.debug = True # indeed.py had DEBUG=True hardcoded
+
 
     def _preload_action(self):
         self.navigator.login()

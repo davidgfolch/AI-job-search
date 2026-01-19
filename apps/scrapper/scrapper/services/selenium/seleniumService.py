@@ -15,7 +15,8 @@ class SeleniumService:
     browser_service: BrowserService
     element_service: ElementService
 
-    def __init__(self):
+    def __init__(self, debug: bool = False):
+        self.debug = debug
         self.driverUtil = DriverUtil()
         self.driver = self.driverUtil.driver
         self.browser_service = BrowserService(self.driver)
@@ -108,9 +109,6 @@ class SeleniumService:
 
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         self.element_service.waitAndClick(cssSel, timeout, scrollIntoView)
-
-    def getElmFromOpSelector(self, cssSel: str | WebElement) -> WebElement:
-        return self.element_service.getElmFromOpSelector(cssSel)
 
     def waitAndClick_noError(self, cssSel: str, msg: str, showException=True) -> bool:
         return self.element_service.waitAndClick_noError(cssSel, msg, showException)

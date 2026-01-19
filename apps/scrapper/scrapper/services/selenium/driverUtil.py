@@ -1,6 +1,8 @@
 import os
 import tempfile
 import random
+import subprocess
+import re
 import undetected_chromedriver as uc
 from selenium import webdriver
 
@@ -100,9 +102,6 @@ class DriverUtil:
         Detects the major version of the installed Chrome browser.
         Returns 0 if detection fails.
         """
-        import subprocess
-        import re
-        
         try:
             if isWindowsOS():
                 # Use PowerShell to get the version on Windows

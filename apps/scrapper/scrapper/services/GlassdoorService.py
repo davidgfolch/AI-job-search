@@ -7,8 +7,8 @@ from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
 class GlassdoorService(BaseService):
-    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        super().__init__(mysql, persistence_manager, 'Glassdoor')
+    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, debug: bool = False):
+        super().__init__(mysql, persistence_manager, 'Glassdoor', debug)
 
     def get_job_id(self, url: str) -> str:
         # https://www.glassdoor.es/job-listing/telecom-support-engineer-...&jobListingId=1009552660667...

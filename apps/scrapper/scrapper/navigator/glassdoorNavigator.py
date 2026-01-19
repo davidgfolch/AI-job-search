@@ -12,30 +12,28 @@ from ..selectors.glassdoorSelectors import (
 )
 from .baseNavigator import BaseNavigator
 
+
+CSS_SEL_LOGIN_EMAIL = '#inlineUserEmail'
+
 class GlassdoorNavigator(BaseNavigator):
 
+    @retry(exceptionFnc=lambda self, *args, **kwargs: None if self.selenium.usesUndetectedDriver() else self.security_filter())
     def load_main_page(self):
         self.selenium.loadPage('https://www.glassdoor.es/index.htm')
-        try:
-            self.selenium.waitUntil_presenceLocatedElement('#inlineUserEmail')
-        except Exception:  # reload page, it get hung sometimes
-            self.selenium.loadPage('https://www.glassdoor.es/index.htm')
-            try:
-                self.selenium.waitUntil_presenceLocatedElement('#inlineUserEmail')
-            except Exception:
-                if not self.selenium.usesUndetectedDriver():
-                    self.security_filter()
+        sleep(2, 2)
+        self.selenium.getElm(CSS_SEL_LOGIN_EMAIL)
 
     @retry(retries=60, delay=5, exception=NoSuchElementException)
     def security_filter(self):
         print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
         sleep(4, 4)
-        self.selenium.getElm('#inlineUserEmail')
+        self.selenium.getElm(CSS_SEL_LOGIN_EMAIL)
 
     @retry()
     def login(self, user_email, user_pwd):
+        print(yellow('Loggin in...'))
         self.load_main_page()
-        self.selenium.sendKeys('#inlineUserEmail', user_email)
+        self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, user_email)
         sleep(2, 5)
         self.selenium.waitAndClick('.emailButton button[type=submit]')
         sleep(2, 5)
@@ -96,6 +94,7 @@ class GlassdoorNavigator(BaseNavigator):
         href = self.get_job_url(li_elm)
         self.selenium.loadPage(href)
 
+    @retry()
     def get_job_data(self):
         title = self.selenium.getText(CSS_SEL_JOB_TITLE)
         company_elms = self.selenium.getElms(CSS_SEL_COMPANY)

@@ -55,7 +55,7 @@ class ElementService:
 
     @seleniumSocketConnRetry()
     def clearInputbox(self, cssSel: str | WebElement) -> bool:
-        elm = self.getElmFromOpSelector(cssSel)
+        elm = self._getElmFromOpSelector(cssSel)
         elm.clear() 
         sleep(0.3, 0.5)
         if len(elm.text) > 0:
@@ -73,34 +73,34 @@ class ElementService:
 
     @seleniumSocketConnRetry()
     def scrollIntoView(self, cssSel: str | WebElement):
-        elm = self.getElmFromOpSelector(cssSel)
+        elm = self._getElmFromOpSelector(cssSel)
         self.driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)
         self.waitUntilVisible(elm)
         self.moveToElement(elm)
     
     @seleniumSocketConnRetry()
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(EC.element_to_be_clickable, self.getElmFromOpSelector(cssSel))
+        WebDriverWait(self.driver, timeout).until(EC.element_to_be_clickable, self._getElmFromOpSelector(cssSel))
 
     @seleniumSocketConnRetry()
     def waitUntilVisible(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(EC.visibility_of, self.getElmFromOpSelector(cssSel))
+        WebDriverWait(self.driver, timeout).until(EC.visibility_of, self._getElmFromOpSelector(cssSel))
 
     @seleniumSocketConnRetry()
     def waitUntil_presenceLocatedElement(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located, self.getElmFromOpSelector(cssSel))
+        WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located, self._getElmFromOpSelector(cssSel))
 
     @seleniumSocketConnRetry()
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         if scrollIntoView:
             self.scrollIntoView(cssSel)
         self.waitUntilClickable(cssSel, timeout)
-        elm = self.getElmFromOpSelector(cssSel)
+        elm = self._getElmFromOpSelector(cssSel)
         self.moveToElement(elm)
         elm.click()
 
     @seleniumSocketConnRetry()
-    def getElmFromOpSelector(self, cssSel: str | WebElement) -> WebElement:
+    def _getElmFromOpSelector(self, cssSel: str | WebElement) -> WebElement:
         return self.getElm(cssSel) if isinstance(cssSel, str) else cssSel
 
     @seleniumSocketConnRetry()
@@ -125,7 +125,7 @@ class ElementService:
 
     @seleniumSocketConnRetry()
     def moveToElement(self, elm: str | WebElement):
-        webdriver.ActionChains(self.driver).move_to_element(self.getElmFromOpSelector(elm)).perform()
+        webdriver.ActionChains(self.driver).move_to_element(self._getElmFromOpSelector(elm)).perform()
 
     @seleniumSocketConnRetry()
     def getHtml(self, cssSel: str) -> str:
@@ -149,5 +149,5 @@ class ElementService:
     
     @seleniumSocketConnRetry()
     def setAttr(self, elm: str | WebElement, attr: str, value: str):
-        elmObj = self.getElmFromOpSelector(elm)
+        elmObj = self._getElmFromOpSelector(elm)
         self.driver.execute_script(f"arguments[0].setAttribute('{attr}', '{value}')", elmObj)

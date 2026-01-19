@@ -30,6 +30,7 @@ class TestScrapperPreload:
             mock_executor.site_name_key = "Infojobs"
             mock_executor.selenium_service = selenium_service
             mock_executor.persistence_manager = persistence_manager
+            mock_executor.debug = False
             mock_executor_cls.return_value = mock_executor
             # Call run() to trigger exception
             mock_executor.run.side_effect = Exception("Preload Error")

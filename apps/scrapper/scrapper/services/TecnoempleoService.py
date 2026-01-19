@@ -7,8 +7,8 @@ from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
 class TecnoempleoService(BaseService):
-    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        super().__init__(mysql, persistence_manager, 'Tecnoempleo')
+    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, debug: bool = False):
+        super().__init__(mysql, persistence_manager, 'Tecnoempleo', debug)
 
     def get_job_id(self, url: str) -> str:
         # https://www.tecnoempleo.com/integration-specialist-gstock-web-app/php-mysql-git-symfony-api-etl-sql-ja/rf-b14e1d3282dea3a42b40

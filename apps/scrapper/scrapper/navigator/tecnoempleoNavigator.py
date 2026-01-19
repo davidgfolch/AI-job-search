@@ -2,16 +2,13 @@ from selenium.common.exceptions import NoSuchElementException
 from commonlib.decorator.retry import retry
 from commonlib.terminalColor import green, yellow, printHR
 from commonlib.stringUtil import join
+from .baseNavigator import BaseNavigator
 from ..services.selenium.browser_service import sleep
 from ..services.selenium.seleniumService import SeleniumService
 from ..selectors.tecnoempleoSelectors import (
     CSS_SEL_JOB_DATA, CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_LI_IDX, CSS_SEL_NO_RESULTS,
     CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_LI_IDX_LINK, CSS_SEL_COMPANY,
-    CSS_SEL_JOB_TITLE, CSS_SEL_PAGINATION_LINKS
-)
-
-
-from .baseNavigator import BaseNavigator
+    CSS_SEL_JOB_TITLE, CSS_SEL_PAGINATION_LINKS)
 
 class TecnoempleoNavigator(BaseNavigator):
     @retry(retries=10, delay=10)

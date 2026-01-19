@@ -22,9 +22,11 @@ class TestExecutor:
     def test_create_executor(self, mocks, run_mocks, name):
         mock_executor_cls = run_mocks[name]
         
-        executor = BaseExecutor.create(name.lower(), mocks['sel'], mocks['pm'])
-        
-        mock_executor_cls.assert_called_with(mocks['sel'], mocks['pm'])
+        # Patch getEnvBool to return True to check if debug flag is passed correctly
+        with patch('scrapper.executor.BaseExecutor.getEnvBool', return_value=True):
+            executor = BaseExecutor.create(name.lower(), mocks['sel'], mocks['pm'])
+            
+            mock_executor_cls.assert_called_with(mocks['sel'], mocks['pm'], True)
 
     @pytest.mark.parametrize("name", ['Infojobs'])
     def test_execute_preload(self, mocks, run_mocks, name):

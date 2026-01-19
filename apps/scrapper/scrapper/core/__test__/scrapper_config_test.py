@@ -1,12 +1,12 @@
 import pytest
 from scrapper.core.scrapper_config import (
-    DEBUG, TIMER, CLOSE_TAB, IGNORE_AUTORUN, SCRAPPERS, RUN_IN_TABS, 
+    TIMER, CLOSE_TAB, IGNORE_AUTORUN, SCRAPPERS, RUN_IN_TABS, 
     NEXT_SCRAP_TIMER, MAX_NAME
 )
 
 class TestScrapperConfig:
     def test_constants_defined(self):
-        assert isinstance(DEBUG, bool)
+
         assert TIMER == 'timer'
         assert CLOSE_TAB == 'closeTab'
         assert IGNORE_AUTORUN == 'ignoreAutoRun'

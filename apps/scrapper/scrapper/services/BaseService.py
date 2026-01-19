@@ -4,11 +4,11 @@ from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from ..util.persistence_manager import PersistenceManager
 
 class BaseService(ABC):
-    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, web_page: str):
+    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, web_page: str, debug: bool = False):
         self.mysql = mysql
         self.persistence_manager = persistence_manager
         self.web_page = web_page
-        self.debug = False
+        self.debug = debug
 
     def set_debug(self, debug: bool):
         self.debug = debug

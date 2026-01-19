@@ -11,9 +11,8 @@ from .BaseService import BaseService
 
 
 class IndeedService(BaseService):
-    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        super().__init__(mysql, persistence_manager, "Indeed")
-        self.debug = True
+    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, debug: bool = False):
+        super().__init__(mysql, persistence_manager, "Indeed", debug)
 
     def get_job_id(self, url: str):
         # Extract job ID from Indeed URL

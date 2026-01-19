@@ -102,7 +102,6 @@ class PersistenceManager:
             if 'last_error_time' in self.state[site]:
                 del self.state[site]['last_error_time']
             self.save()
-
         if not self.get_failed_keywords(site):
             self.clear_state(site)
         else:

@@ -8,8 +8,8 @@ from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
 class LinkedinService(BaseService):
-    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        super().__init__(mysql, persistence_manager, 'Linkedin')
+    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, debug: bool = False):
+        super().__init__(mysql, persistence_manager, 'Linkedin', debug)
 
     def get_job_id(self, url: str) -> int:
         return int(re.sub(r'.*/jobs/view/([^/]+)/.*', r'\1', url))

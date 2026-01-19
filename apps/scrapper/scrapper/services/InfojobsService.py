@@ -14,8 +14,8 @@ REMOVE_IN_MARKDOWN = [
 ]
 
 class InfojobsService(BaseService):
-    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager):
-        super().__init__(mysql, persistence_manager, 'Infojobs')
+    def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, debug: bool = False):
+        super().__init__(mysql, persistence_manager, 'Infojobs', debug)
 
     def get_job_id(self, url: str) -> str:
         return re.sub(r'.+/of-([^?/]+).*', r'\1', url)

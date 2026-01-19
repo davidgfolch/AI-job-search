@@ -18,10 +18,10 @@ from ..selectors.linkedinSelectors import (
 from .baseNavigator import BaseNavigator
 
 class LinkedinNavigator(BaseNavigator):
-    def __init__(self, selenium: SeleniumService):
-        super().__init__(selenium)
-        self.current_idx = None
 
+    def __init__(self, selenium: SeleniumService, debug: bool = False):
+        super().__init__(selenium, debug)
+        self.current_idx = None
 
     def check_login_popup(self, login_callback) -> bool:
         sleep(2, 3)
