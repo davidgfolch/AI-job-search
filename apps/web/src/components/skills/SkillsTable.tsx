@@ -57,8 +57,7 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, index)}
-              className={`skill-row ${draggedIndex === index ? 'dragging' : ''} ${skill.disabled ? 'disabled' : ''}`}
-            >
+              className={`skill-row ${draggedIndex === index ? 'dragging' : ''} ${skill.disabled ? 'disabled' : ''}`}>
               <td>
                 <div className="drag-handle" title="Drag to reorder">⋮⋮</div>
               </td>
@@ -81,15 +80,13 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
                 <button 
                   className="btn-icon edit"
                   onClick={() => onEdit(skill)}
-                  title="Edit Skill"
-                >
+                  title="Edit Skill">
                   ✎
                 </button>
                 <button 
                   className="btn-icon delete"
                   onClick={() => onRemove(skill.name)}
-                  title="Remove Skill"
-                >
+                  title="Remove Skill">
                   ×
                 </button>
               </td>
