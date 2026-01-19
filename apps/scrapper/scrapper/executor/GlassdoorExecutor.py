@@ -26,7 +26,7 @@ class GlassdoorExecutor(BaseExecutor):
 
     def _process_keyword(self, keyword: str, start_page: int):
         url = self.jobs_search_base_url.format(**{'search': keyword})
-        print(yellow(f'Search keyword={keyword}'))
+        print(f'Search keyword={keyword}')
         self.navigator.load_page(url)
         sleep(2,2)
         totalResults = self.navigator.get_total_results(keyword)

@@ -62,10 +62,10 @@ class InfojobsNavigator(BaseNavigator):
 
     def load_search_page(self):
         if self.selenium.getUrl().find('infojobs.net') == -1:
-            print(yellow(f'Loading search-jobs page'))
+            print(f'Loading search-jobs page')
             self.selenium.loadPage('https://www.infojobs.net/')
             self.selenium.waitUntilPageIsLoaded()
-        print(yellow(f'Click on search-jobs button'))
+        print(f'Click on search-jobs button')
         self.click_on_search_jobs()
 
     @retry(retries=10, delay=5, exceptionFnc=lambda self, *args, **kwargs: self.security_filter())
@@ -93,7 +93,7 @@ class InfojobsNavigator(BaseNavigator):
         self.selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
         sleep(1, 2)
         if self.selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
-            print(yellow('No results for this search'))
+            print(yellow(f'No results for keyword={keywords}'))
             printHR()
             print()
             return False

@@ -17,7 +17,7 @@ class BaseNavigator(ABC):
         self.selenium.back()
 
     def load_page(self, url: str):
-        print(yellow(f'Loading page {url}'))
+        print(f'Loading page {url}')
         self.selenium.loadPage(url)
         self.selenium.waitUntilPageIsLoaded()
 

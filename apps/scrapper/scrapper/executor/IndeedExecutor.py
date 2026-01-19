@@ -29,16 +29,18 @@ class IndeedExecutor(BaseExecutor):
 
     def _process_keyword(self, keyword: str, start_page: int):
         sleep(3,4)
-        print(yellow(f"Search keyword={keyword}"))
+        print(f"Search keyword={keyword}")
         self.navigator.search(keyword, self.location, self.remote, self.days_old, start_page)
         self.navigator.wait_until_page_is_loaded()
         sleep(2,2)
         if self.navigator.checkNoResults():
+            print(yellow(f"No results for search={keyword}"))
             return
         self.navigator.selectFilters(self.remote, self.days_old)
         sleep(2,2)
         self.navigator.wait_until_page_is_loaded()
         if self.navigator.checkNoResults():
+            print(yellow(f"No results for search={keyword}"))
             return
         self.navigator.clickSortByDate()
         sleep(3,4)
@@ -46,7 +48,7 @@ class IndeedExecutor(BaseExecutor):
 
         totalResults = self.navigator.get_total_results(keyword)
         if totalResults == 0:
-            print(yellow(f"There are no results for search={keyword}"))
+            print(yellow(f"No results for search={keyword}"))
             return
 
         page = self.navigator.fast_forward_page(start_page, totalResults, self.jobs_x_page) - 1

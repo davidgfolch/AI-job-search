@@ -28,9 +28,9 @@ class TecnoempleoExecutor(BaseExecutor):
 
     def _process_keyword(self, keyword: str, start_page: int):
         try:
-            print(yellow(f'Search keyword={keyword}'))
+            print(f'Search keyword={keyword}')
             url = self._get_url(keyword)
-            print(yellow(f'Loading page {url}'))
+            print(f'Loading page {url}')
             self.navigator.load_page(url)
             if not self.navigator.check_results(keyword, url, self.remote):
                 return

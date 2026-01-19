@@ -39,7 +39,7 @@ class LinkedinExecutor(BaseExecutor):
 
     def _load_page(self, keywords: str) -> str:
         from urllib.parse import quote
-        print(yellow(f'Search keyword={keywords}'))
+        print(f'Search keyword={keywords}')
         url = f'https://www.linkedin.com/jobs/search/?keywords={quote(keywords)}&f_WT={self.remote}&geoId={self.location}&f_TPR={self.f_TPR}'
         self.navigator.load_page(url)
         return url

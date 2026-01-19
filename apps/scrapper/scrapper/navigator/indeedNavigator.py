@@ -23,32 +23,32 @@ class IndeedNavigator(BaseNavigator):
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_EMAIL)
 
     def login(self):
-        print(yellow("Navigating to Indeed login page..."))
+        print("Navigating to Indeed login page...")
         self.selenium.loadPage(LOGIN_PAGE)
         self.selenium.waitUntilPageIsLoaded()
         self.waitForCloudflareFilterInLogin()
-        print(yellow("Filling login form..."))
+        print("Filling login form...")
         self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, USER_EMAIL)
         self.accept_cookies()
-        print(yellow("Submitting login form..."))
+        print("Submitting login form...")
         self.selenium.waitAndClick(CSS_SEL_LOGIN_SUBMIT)
-        print(yellow("Waiting for Cloudflare filter..."))
+        print("Waiting for Cloudflare filter...")
         sleep(5, 5)
         if not self.selenium.waitAndClick_noError(CSS_SEL_LOGIN_SUBMIT,
             "Could not resubmit login form after cloudflare filter...",
             showException=False):
             sleep(3, 3)
-        print(yellow("Handling Google OTP fallback..."))
+        print("Handling Google OTP fallback...")
         self.click_google_otp_fallback()
-        print(yellow("Get email 2FA code..."))
+        print("Get email 2FA code...")
         self.getEmail2faCode()
-        print(yellow("Ignore Access key form question"))
+        print("Ignore Access key form question")
         sleep(2, 3)
         self.ignore_access_key_form()
         sleep(2, 3)
 
     def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):
-        print(yellow(f'Searching for "{keyword}" in "{location}"'))
+        print(f'Searching for "{keyword}" in "{location}"')
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_SEARCH_WHAT)
         self.selenium.setFocus(CSS_SEL_SEARCH_WHAT)
         self.selenium.waitAndClick_noError('button[aria-label="Clear what input"]', "Could not clear keyword input", showException=False)

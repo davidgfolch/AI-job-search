@@ -31,7 +31,7 @@ class GlassdoorNavigator(BaseNavigator):
 
     @retry()
     def login(self, user_email, user_pwd):
-        print(yellow('Loggin in...'))
+        print('Loggin in...')
         self.load_main_page()
         self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, user_email)
         sleep(2, 5)

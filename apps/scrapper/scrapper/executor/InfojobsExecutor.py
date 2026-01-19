@@ -26,7 +26,7 @@ class InfojobsExecutor(BaseExecutor):
         return InfojobsService(mysql, self.persistence_manager)
 
     def _process_keyword(self, keyword: str, start_page: int):
-        print(yellow(f'Search keyword={keyword}'))
+        print(f'Search keyword={keyword}')
         self.navigator.load_search_page()
         if not self.navigator.load_filtered_search_results(keyword):
             return
