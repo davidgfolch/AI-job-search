@@ -111,7 +111,6 @@ class InfojobsNavigator(BaseNavigator):
                 sleep(0.5, 1)
                 self.selenium.setAttr(li, 'style', '')
             sleep(1, 2)
-        
         link_elms = self.selenium.getElms(CSS_SEL_JOB_LINK)
         if idx < len(link_elms):
             self.selenium.scrollIntoView(link_elms[idx])
