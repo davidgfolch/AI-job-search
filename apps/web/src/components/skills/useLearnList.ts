@@ -106,6 +106,15 @@ export const useLearnList = () => {
       updateSkill, 
       isLoading, 
       error, 
-      fetchSkills: refetch 
+      fetchSkills: refetch,
+      saveSkill: (skill: Skill) => {
+        const existing = learnList.find(s => s.name === skill.name);
+        if (existing) {
+             const { name, ...updates } = skill;
+             updateMutation.mutate({ name, updates });
+        } else {
+             createMutation.mutate(skill);
+        }
+      }
   };
 };

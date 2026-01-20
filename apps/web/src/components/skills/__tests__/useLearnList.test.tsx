@@ -14,7 +14,16 @@ const mockSkills: Skill[] = [
 ];
 
 const createWrapper = () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const queryClient = new QueryClient({ 
+        defaultOptions: { 
+            queries: { 
+                retry: false,
+                gcTime: 0,
+                staleTime: 0,
+                retryDelay: 0
+            } 
+        } 
+    });
     return ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
@@ -26,7 +35,10 @@ const setupHook = async (mockData: Skill[] | Error = mockSkills) => {
     else mockClient.get.mockResolvedValue({ data: mockData });
 
     const utils = renderHook(() => useLearnList(), { wrapper: createWrapper() });
-    await waitFor(() => expect(utils.result.current.isLoading).toBe(false));
+    
+    // Waiting for the initial fetch to settle is unavoidable for most tests
+    // but ensuring we don't wait longer than needed
+    await waitFor(() => expect(utils.result.current.isLoading).toBe(false), { timeout: 1000, interval: 10 });
     return utils;
 };
 
@@ -94,6 +106,41 @@ describe('useLearnList', () => {
         await act(async () => await result.current.updateSkill('React', { description: 'Updated' }));
 
         expect(mockClient.put).toHaveBeenCalledWith('/skills/React', expect.objectContaining({ description: 'Updated' }));
+        await waitFor(() => expect(mockClient.get).toHaveBeenCalledTimes(2));
+    });
+
+    it('saveSkill creates new skill if not exists', async () => {
+        const { result } = await setupHook();
+        mockClient.post.mockResolvedValue({ data: 'success' });
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
+
+        await act(async () => await result.current.saveSkill({ 
+            name: 'NewSkill', 
+            description: 'New Description', 
+            learningPath: [] 
+        }));
+
+        expect(mockClient.post).toHaveBeenCalledWith('/skills/NewSkill', expect.objectContaining({ 
+            name: 'NewSkill',
+            description: 'New Description'
+        }));
+        await waitFor(() => expect(mockClient.get).toHaveBeenCalledTimes(2));
+    });
+
+    it('saveSkill updates existing skill', async () => {
+        const { result } = await setupHook();
+        mockClient.put.mockResolvedValue({ data: 'success' });
+        mockClient.get.mockResolvedValueOnce({ data: mockSkills });
+
+        await act(async () => await result.current.saveSkill({ 
+            name: 'React', // Existing in mockSkills
+            description: 'Updated Description', 
+            learningPath: [] 
+        }));
+
+        expect(mockClient.put).toHaveBeenCalledWith('/skills/React', expect.objectContaining({ 
+            description: 'Updated Description'
+        }));
         await waitFor(() => expect(mockClient.get).toHaveBeenCalledTimes(2));
     });
 });

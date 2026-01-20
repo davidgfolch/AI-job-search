@@ -52,4 +52,32 @@ describe('SkillTag', () => {
     const tag = screen.getByText('Java');
     expect(tag).toHaveAttribute('title', 'Click to add to learn list');
   });
+
+  it('renders view detail button when onViewDetail is provided and skill is in learn list', () => {
+    const onToggle = vi.fn();
+    const onViewDetail = vi.fn();
+    render(<SkillTag skill="Go" isInLearnList={true} onToggle={onToggle} onViewDetail={onViewDetail} />);
+    
+    expect(screen.getByText('👁')).toBeInTheDocument();
+  });
+
+  it('does not render view detail button when skill is NOT in learn list', () => {
+    const onToggle = vi.fn();
+    const onViewDetail = vi.fn();
+    render(<SkillTag skill="Go" isInLearnList={false} onToggle={onToggle} onViewDetail={onViewDetail} />);
+    
+    expect(screen.queryByText('👁')).not.toBeInTheDocument();
+  });
+
+  it('calls onViewDetail and stops propagation when button is clicked', () => {
+    const onToggle = vi.fn();
+    const onViewDetail = vi.fn();
+    render(<SkillTag skill="Rust" isInLearnList={true} onToggle={onToggle} onViewDetail={onViewDetail} />);
+    
+    const button = screen.getByText('👁');
+    fireEvent.click(button);
+    
+    expect(onViewDetail).toHaveBeenCalledWith('Rust');
+    expect(onToggle).not.toHaveBeenCalled();
+  });
 });

@@ -1,14 +1,41 @@
+import { useState } from 'react';
 import SkillTag from '../skills/SkillTag';
-import { useLearnList } from '../skills/useLearnList';
+import { useLearnList, type Skill } from '../skills/useLearnList';
+import { EditSkillModal } from '../skills/EditSkillModal';
 
 interface SkillsListProps {
     skills: string | null;
 }
 
 export default function SkillsList({ skills }: SkillsListProps) {
-    const { toggleSkill, isInLearnList } = useLearnList();
+    const { toggleSkill, isInLearnList, learnList, saveSkill } = useLearnList();
+    const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
 
     if (!skills) return null;
+
+    const handleViewDetail = (skillName: string) => {
+        const existing = learnList.find(s => s.name === skillName.trim());
+        if (existing) {
+            setEditingSkill(existing);
+        } else {
+            setEditingSkill({
+                name: skillName.trim(),
+                description: '',
+                learningPath: [],
+                disabled: false
+            });
+        }
+    };
+
+    const handleSaveSkill = (updates: { description: string; learningPath: string[] }) => {
+        if (editingSkill) {
+            saveSkill({
+                ...editingSkill,
+                ...updates
+            });
+            setEditingSkill(null);
+        }
+    };
 
     return (
         <>
@@ -18,8 +45,16 @@ export default function SkillsList({ skills }: SkillsListProps) {
                     skill={skill}
                     isInLearnList={isInLearnList(skill)}
                     onToggle={toggleSkill}
+                    onViewDetail={handleViewDetail}
                 />
             ))}
+            {editingSkill && (
+                <EditSkillModal
+                    skill={editingSkill}
+                    onSave={handleSaveSkill}
+                    onClose={() => setEditingSkill(null)}
+                />
+            )}
         </>
     );
 }
