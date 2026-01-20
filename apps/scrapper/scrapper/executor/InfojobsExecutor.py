@@ -1,5 +1,6 @@
 import math
 from commonlib.terminalColor import green, yellow
+from commonlib.decorator.retry import retry
 from ..core import baseScrapper
 from ..core.utils import debug
 from ..core.baseScrapper import getAndCheckEnvVars
