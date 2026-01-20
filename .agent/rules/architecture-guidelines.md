@@ -10,3 +10,4 @@ trigger: always_on
    - This project contains several modules in apps folder.
    - Each modulee use a package manager, check scripts/test.bat or test.sh to know wich to use.
       - for npm tests use `npx vitest run`.
+      - always use parameterized tests when possible.
