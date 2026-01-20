@@ -20,7 +20,7 @@ class TestBaseNavigator:
     
     @pytest.fixture
     def navigator(self, mock_selenium):
-        return ConcreteNavigator(mock_selenium)
+        return ConcreteNavigator(mock_selenium, debug=False)
     
     def test_initialization(self, navigator, mock_selenium):
         assert navigator.selenium == mock_selenium
@@ -44,7 +44,7 @@ class TestBaseNavigator:
         assert navigator.get_url() == "https://example.com"
     
     def test_fast_forward_page_logic(self, mock_selenium):
-        navigator = ConcreteNavigator(mock_selenium)
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
         navigator.click_next_page = MagicMock()
         navigator.wait_until_page_is_loaded = MagicMock()
         navigator.click_next_page.side_effect = [True, True, False]
@@ -55,7 +55,7 @@ class TestBaseNavigator:
         assert navigator.wait_until_page_is_loaded.call_count == 2
     
     def test_fast_forward_page_stops_if_click_fails(self, mock_selenium):
-        navigator = ConcreteNavigator(mock_selenium)
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
         navigator.click_next_page = MagicMock()
         navigator.wait_until_page_is_loaded = MagicMock()
         navigator.click_next_page.side_effect = [True, False]
@@ -65,7 +65,7 @@ class TestBaseNavigator:
         assert navigator.click_next_page.call_count == 2
     
     def test_fast_forward_page_checks_page_exists(self, mock_selenium):
-        navigator = ConcreteNavigator(mock_selenium)
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
         navigator.click_next_page = MagicMock()
         reached_page = navigator.fast_forward_page(start_page=5, total_results=20, jobs_x_page=10)
         assert reached_page == 1

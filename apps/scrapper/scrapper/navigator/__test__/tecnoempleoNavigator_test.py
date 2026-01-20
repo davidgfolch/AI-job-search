@@ -10,7 +10,7 @@ class TestTecnoempleoNavigator:
     
     @pytest.fixture
     def navigator(self, mock_selenium):
-        return TecnoempleoNavigator(mock_selenium)
+        return TecnoempleoNavigator(mock_selenium, debug=False)
     
     def test_initialization(self, navigator, mock_selenium):
         assert navigator.selenium == mock_selenium

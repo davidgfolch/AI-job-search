@@ -14,7 +14,7 @@ def mock_persistence_manager():
 
 @pytest.fixture
 def service(mock_mysql, mock_persistence_manager):
-    return IndeedService(mock_mysql, mock_persistence_manager)
+    return IndeedService(mock_mysql, mock_persistence_manager, False)
 
 class TestIndeedService:
     def test_get_job_id_jk(self, service):

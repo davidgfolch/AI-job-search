@@ -33,7 +33,7 @@ class TestInfojobsExecutor:
     def test_run_preload_page(self, mock_selenium, mock_env_vars, mock_persistence_manager):
         with patch('scrapper.executor.InfojobsExecutor.InfojobsNavigator') as mock_nav_class:
             mock_nav = mock_nav_class.return_value
-            executor = InfojobsExecutor(mock_selenium, mock_persistence_manager)
+            executor = InfojobsExecutor(mock_selenium, mock_persistence_manager, False)
             executor.run(preload_page=True)
             mock_nav.load_search_page.assert_called_once()
             if not mock_selenium.driverUtil.useUndetected:
@@ -48,7 +48,7 @@ class TestInfojobsExecutor:
             mock_service = mock_service_cls.return_value
             mock_service.should_skip_keyword.return_value = (False, 1)
 
-            executor = InfojobsExecutor(mock_selenium, mock_persistence_manager)
+            executor = InfojobsExecutor(mock_selenium, mock_persistence_manager, False)
             executor.run(preload_page=False)
             assert mock_process_keyword.called
             mock_persistence_manager.finalize_scrapper.assert_called_with('Infojobs')
@@ -57,7 +57,7 @@ class TestInfojobsExecutor:
         with patch.object(InfojobsExecutor, '_load_and_process_row', return_value=False) as mock_row, \
              patch('scrapper.executor.InfojobsExecutor.InfojobsNavigator') as mock_nav_class:
             
-            executor = InfojobsExecutor(mock_selenium, mock_persistence_manager)
+            executor = InfojobsExecutor(mock_selenium, mock_persistence_manager, False)
             executor.service = MagicMock()
             mock_nav = executor.navigator
             mock_nav.load_filtered_search_results.return_value = True
@@ -74,7 +74,7 @@ class TestInfojobsExecutor:
 class TestInfojobsService:
     @pytest.fixture
     def service(self, mock_mysql, mock_persistence_manager):
-        return InfojobsService(mock_mysql, mock_persistence_manager)
+        return InfojobsService(mock_mysql, mock_persistence_manager, False)
 
     @pytest.mark.parametrize("url, expected_id", [
         ("https://www.infojobs.net/of-1234567890?other=param", "1234567890"),

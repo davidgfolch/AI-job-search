@@ -15,7 +15,7 @@ class SeleniumService:
     browser_service: BrowserService
     element_service: ElementService
 
-    def __init__(self, debug: bool = False):
+    def __init__(self, debug: bool):
         self.debug = debug
         self.driverUtil = DriverUtil()
         self.driver = self.driverUtil.driver

@@ -14,8 +14,7 @@ class TecnoempleoExecutor(BaseExecutor):
         self.jobs_x_page = 30
         self.remote = ',1,'
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
-        self.navigator = TecnoempleoNavigator(self.selenium_service)
-        self.debug = False
+        self.navigator = TecnoempleoNavigator(self.selenium_service, self.debug)
 
     def _preload_action(self):
         self.navigator.load_page('https://www.tecnoempleo.com')
@@ -24,7 +23,7 @@ class TecnoempleoExecutor(BaseExecutor):
         self.navigator.selenium.waitUntilPageUrlContains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
 
     def _create_service(self, mysql):
-        return TecnoempleoService(mysql, self.persistence_manager)
+        return TecnoempleoService(mysql, self.persistence_manager, self.debug)
 
     def _process_keyword(self, keyword: str, start_page: int):
         try:

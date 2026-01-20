@@ -19,7 +19,7 @@ class TestBaseService:
     
     @pytest.fixture
     def service(self, mock_mysql, mock_persistence_manager):
-        return ConcreteService(mock_mysql, mock_persistence_manager, 'TestPage')
+        return ConcreteService(mock_mysql, mock_persistence_manager, 'TestPage', False)
     
     def test_initialization(self, service, mock_mysql, mock_persistence_manager):
         assert service.mysql == mock_mysql
@@ -27,11 +27,7 @@ class TestBaseService:
         assert service.web_page == 'TestPage'
         assert service.debug is False
     
-    def test_set_debug(self, service):
-        service.set_debug(True)
-        assert service.debug is True
-        service.set_debug(False)
-        assert service.debug is False
+
     
     @pytest.mark.parametrize("url, job_exists, expected_job_id", [
         ("http://example.com/jobs/12345", True, "12345"),

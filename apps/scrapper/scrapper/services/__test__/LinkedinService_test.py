@@ -15,7 +15,7 @@ class TestLinkedinService:
     
     @pytest.fixture
     def service(self, mock_mysql, mock_persistence_manager):
-        return LinkedinService(mock_mysql, mock_persistence_manager)
+        return LinkedinService(mock_mysql, mock_persistence_manager, False)
     
     def test_initialization(self, service):
         assert service.web_page == 'Linkedin'
@@ -86,8 +86,4 @@ class TestLinkedinService:
         service.clear_state()
         mock_persistence_manager.clear_state.assert_called_with('Linkedin')
     
-    def test_set_debug(self, service):
-        service.set_debug(True)
-        assert service.debug is True
-        service.set_debug(False)
-        assert service.debug is False
+

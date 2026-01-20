@@ -11,7 +11,7 @@ class TestInfojobsNavigator:
 
     @pytest.fixture
     def navigator(self, mock_selenium):
-        return InfojobsNavigator(mock_selenium)
+        return InfojobsNavigator(mock_selenium, False)
 
     def test_init(self, navigator, mock_selenium):
         assert navigator.selenium == mock_selenium

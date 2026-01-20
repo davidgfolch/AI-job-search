@@ -11,6 +11,7 @@ from ..selectors.tecnoempleoSelectors import (
     CSS_SEL_JOB_TITLE, CSS_SEL_PAGINATION_LINKS)
 
 class TecnoempleoNavigator(BaseNavigator):
+    
     @retry(retries=10, delay=10)
     def wait_for_undetected_security_filter(self):
         self.selenium.waitUntil_presenceLocatedElement('#e_mail', 20)

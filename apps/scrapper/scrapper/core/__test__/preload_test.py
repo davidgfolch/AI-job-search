@@ -65,7 +65,8 @@ class TestScrapperPreload:
             }]
             
             # Execute
-            scheduler._execute_scrappers(scrappers_status, False, None)
+            with patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False):
+                scheduler._execute_scrappers(scrappers_status, False, None)
 
             # Verify
             mock_executor.execute_preload.assert_called_once()
@@ -91,7 +92,8 @@ class TestScrapperPreload:
             }]
             
             # Execute
-            scheduler._execute_scrappers(scrappers_status, False, None)
+            with patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False):
+                scheduler._execute_scrappers(scrappers_status, False, None)
 
             # Verify
             mock_executor.execute_preload.assert_called_once()

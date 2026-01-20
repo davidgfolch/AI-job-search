@@ -30,7 +30,7 @@ class TestIndeedExecutor:
         # Mocking IndeedNavigator inside IndeedExecutor
         with patch('scrapper.executor.IndeedExecutor.IndeedNavigator') as mock_nav_class:
             mock_nav = mock_nav_class.return_value
-            executor = IndeedExecutor(mock_selenium, mock_persistence_manager)
+            executor = IndeedExecutor(mock_selenium, mock_persistence_manager, False)
             executor.run(preload_page=True)
             mock_nav.login.assert_called_once()
             mock_nav.search.assert_not_called()
@@ -45,7 +45,7 @@ class TestIndeedExecutor:
             mock_service = mock_service_cls.return_value
             mock_service.should_skip_keyword.return_value = (False, 1)
 
-            executor = IndeedExecutor(mock_selenium, mock_persistence_manager)
+            executor = IndeedExecutor(mock_selenium, mock_persistence_manager, False)
             executor.run(preload_page=False)
             assert mock_process_keyword.called
             mock_persistence_manager.get_state.assert_called_with("Indeed")
@@ -56,7 +56,7 @@ class TestIndeedExecutor:
              patch.object(IndeedExecutor, '_load_and_process_row', return_value=True) as mock_row, \
              patch('scrapper.executor.IndeedExecutor.IndeedNavigator'):
             
-            executor = IndeedExecutor(mock_selenium, mock_persistence_manager)
+            executor = IndeedExecutor(mock_selenium, mock_persistence_manager, False)
             executor.service = MagicMock()
             mock_nav = executor.navigator
             mock_nav.click_next_page.side_effect = [True, False]
@@ -74,7 +74,7 @@ class TestIndeedExecutor:
              patch('scrapper.executor.IndeedExecutor.baseScrapper.printPage'), \
              patch('scrapper.executor.IndeedExecutor.IndeedNavigator'):
             
-            executor = IndeedExecutor(mock_selenium, mock_persistence_manager)
+            executor = IndeedExecutor(mock_selenium, mock_persistence_manager, False)
             executor.service = MagicMock()
             mock_nav = executor.navigator
             mock_nav.get_total_results.return_value = 50
@@ -91,7 +91,7 @@ class TestIndeedExecutor:
 
     def test_process_row_insert(self, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch('scrapper.executor.IndeedExecutor.IndeedNavigator'):
-            executor = IndeedExecutor(mock_selenium, mock_persistence_manager)
+            executor = IndeedExecutor(mock_selenium, mock_persistence_manager, False)
             mock_nav = executor.navigator
             mock_svc = MagicMock(spec=IndeedService)
             executor.service = mock_svc
@@ -108,7 +108,7 @@ class TestIndeedExecutor:
         ("https://es.indeed.com/pagead/clk?mo=r&ad=...&jk=0987654321&...", "0987654321")
     ])
     def test_get_job_id(self, url, expected, mock_mysql, mock_persistence_manager):
-        assert IndeedService(mock_mysql, mock_persistence_manager).get_job_id(url) == expected
+        assert IndeedService(mock_mysql, mock_persistence_manager, False).get_job_id(url) == expected
 
     @pytest.mark.parametrize("validate, expected_result, insert_called", [
         (True, True, True),
@@ -116,8 +116,8 @@ class TestIndeedExecutor:
     ])
     def test_service_process_job(self, validate, expected_result, insert_called, mock_mysql, mock_persistence_manager):
         mock_mysql.fetchOne.return_value = None
-        service = IndeedService(mock_mysql, mock_persistence_manager)
-        service.set_debug(False)
+        service = IndeedService(mock_mysql, mock_persistence_manager, False)
+
         with patch("scrapper.services.IndeedService.validate", return_value=validate), \
              patch("scrapper.services.IndeedService.htmlToMarkdown", return_value="D"), \
              patch("scrapper.services.IndeedService.mergeDuplicatedJobs"):
@@ -128,6 +128,6 @@ class TestIndeedExecutor:
                 mock_mysql.insert.assert_not_called()
 
     def test_post_process_markdown(self, mock_mysql, mock_persistence_manager):
-        service = IndeedService(mock_mysql, mock_persistence_manager)
+        service = IndeedService(mock_mysql, mock_persistence_manager, False)
         processed = service.post_process_markdown("Check [this](/ofertas-trabajo/123)")
         assert "this" in processed and "/ofertas-trabajo/123" not in processed

@@ -36,7 +36,7 @@ class TestTecnoempleoExecutor:
             # Explicitly mock selenium attribute which is accessed in _preload_action
             mock_nav.selenium = MagicMock()
 
-            executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager)
+            executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager, False)
             executor.run(preload_page=True)
             
             mock_nav.load_page.assert_called_once()
@@ -52,7 +52,7 @@ class TestTecnoempleoExecutor:
              mock_service = mock_service_cls.return_value
              mock_service.should_skip_keyword.return_value = (False, 1)
 
-             executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager)
+             executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager, False)
              executor.run(preload_page=False)
              mock_process_keyword.assert_called()
 
@@ -60,7 +60,7 @@ class TestTecnoempleoExecutor:
          with patch.object(TecnoempleoExecutor, '_load_and_process_row', return_value=(True, False)) as mock_row, \
               patch('scrapper.executor.TecnoempleoExecutor.TecnoempleoNavigator'):
              
-             executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager)
+             executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager, False)
              executor.service = MagicMock()
              mock_nav = executor.navigator
              mock_nav.check_results.return_value = True
@@ -77,7 +77,7 @@ class TestTecnoempleoExecutor:
 
     def test_load_and_process_row(self, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch('scrapper.executor.TecnoempleoExecutor.TecnoempleoNavigator'):
-            executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager)
+            executor = TecnoempleoExecutor(mock_selenium, mock_persistence_manager, False)
             mock_nav = executor.navigator
             mock_svc = MagicMock(spec=TecnoempleoService)
             executor.service = mock_svc
@@ -98,7 +98,7 @@ class TestTecnoempleoExecutor:
 class TestTecnoempleoService:
     @pytest.fixture
     def service(self, mock_mysql, mock_persistence_manager):
-        return TecnoempleoService(mock_mysql, mock_persistence_manager)
+        return TecnoempleoService(mock_mysql, mock_persistence_manager, False)
         
     def test_process_job_valid(self, service, mock_mysql):
         with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="Markdown"), \

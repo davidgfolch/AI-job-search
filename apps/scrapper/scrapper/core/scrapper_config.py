@@ -40,3 +40,7 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
 RUN_IN_TABS = getEnvBool('RUN_IN_TABS', False)
 NEXT_SCRAP_TIMER = '10m'
 MAX_NAME = max([len(k) for k in SCRAPPERS.keys()]) if SCRAPPERS else 0
+
+
+def get_debug(name):
+    return SCRAPPERS[name.capitalize()][DEBUG]

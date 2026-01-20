@@ -40,7 +40,7 @@ def mock_pm():
 class TestLinkedinExecutor:
     def test_run_modes(self, mocks, mock_selenium, mock_pm):
         # Preload
-        executor = LinkedinExecutor(mock_selenium, mock_pm)
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
         executor.run(preload_page=True)
         mocks['nav'].login.assert_called_with('u', 'p')
         
@@ -54,7 +54,7 @@ class TestLinkedinExecutor:
              pk.assert_called_with('k', 1)
 
     def test_process_keyword_scenarios(self, mocks, mock_selenium, mock_pm):
-        executor = LinkedinExecutor(mock_selenium, mock_pm)
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
         mocks['nav'].check_login_popup.return_value = False
         
         with patch.object(LinkedinExecutor, '_load_page', return_value="url"), \
@@ -72,13 +72,13 @@ class TestLinkedinExecutor:
             search.assert_not_called()
 
     def test_load_page(self, mocks, mock_selenium, mock_pm):
-        executor = LinkedinExecutor(mock_selenium, mock_pm)
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
         assert 'linkedin.com' in executor._load_page('python')
         mocks['nav'].load_page.assert_called()
 
     @pytest.mark.parametrize("start_page,total_res,calls", [(1, 4, 1), (3, 100, 1)])
     def test_search_jobs_flow(self, mocks, mock_selenium, mock_pm, start_page, total_res, calls):
-        executor = LinkedinExecutor(mock_selenium, mock_pm)
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
         # We need to set service on executor because _search_jobs_loop uses self.service
         executor.service = mocks['svc']
         
@@ -98,7 +98,7 @@ class TestLinkedinExecutor:
         ((1, True), True), ((None, False), False)
     ])
     def test_load_and_process_row(self, mocks, mock_selenium, mock_pm, exists, expected_result):
-        executor = LinkedinExecutor(mock_selenium, mock_pm)
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
         executor.service = mocks['svc']
         mocks['nav'].scroll_jobs_list.return_value = "css"
         mocks['svc'].job_exists_in_db.return_value = exists
@@ -115,7 +115,7 @@ class TestLinkedinExecutor:
         (1, True, False), (None, False, True)
     ])
     def test_process_row(self, mocks, mock_selenium, mock_pm, idx, easy_apply, is_direct):
-        executor = LinkedinExecutor(mock_selenium, mock_pm)
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
         executor.service = mocks['svc']
         mocks['nav'].check_easy_apply.return_value = easy_apply
         

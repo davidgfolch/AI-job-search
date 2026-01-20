@@ -15,7 +15,7 @@ class TestInfojobsService:
     
     @pytest.fixture
     def service(self, mock_mysql, mock_persistence_manager):
-        return InfojobsService(mock_mysql, mock_persistence_manager)
+        return InfojobsService(mock_mysql, mock_persistence_manager, False)
     
     def test_initialization(self, service):
         assert service.web_page == 'Infojobs'

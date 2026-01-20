@@ -37,7 +37,7 @@ class TestGlassdoorExecutor:
     def test_run_preload_page(self, mock_selenium, mock_env_vars, mock_persistence_manager, mock_get_env):
         with patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator') as mock_nav_class:
             mock_nav = mock_nav_class.return_value
-            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager)
+            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             executor.run(preload_page=True)
             mock_nav.load_main_page.assert_called_once()
     
@@ -50,7 +50,7 @@ class TestGlassdoorExecutor:
             mock_service = mock_service_class.return_value
             mock_service.should_skip_keyword.return_value = (False, 1)
             
-            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager)
+            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             executor.run(preload_page=False)
             
             assert mock_process_keyword.called
@@ -62,7 +62,7 @@ class TestGlassdoorExecutor:
              patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator') as mock_nav_class:
             
             mock_nav_instance = mock_nav_class.return_value
-            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager)
+            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             # navigator is already mocked via initialization inside Executor using the patched class
             
             executor.navigator.get_total_results.return_value = 5
@@ -77,7 +77,7 @@ class TestGlassdoorExecutor:
 
     def test_load_and_process_row_exists(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
         with patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator'):
-            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager)
+            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             mock_nav = executor.navigator
             mock_service = MagicMock()
             executor.service = mock_service
@@ -93,7 +93,7 @@ class TestGlassdoorExecutor:
 
     def test_load_and_process_row_new_job(self, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
         with patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator'):
-            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager)
+            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             mock_nav = executor.navigator
             mock_service = MagicMock()
             executor.service = mock_service
@@ -117,14 +117,14 @@ class TestGlassdoorExecutor:
 
 class TestGlassdoorNavigator:
     def test_load_main_page(self, mock_selenium):
-        nav = GlassdoorNavigator(mock_selenium)
+        nav = GlassdoorNavigator(mock_selenium, False)
         nav.load_main_page()
         assert mock_selenium.loadPage.call_count >= 1
         mock_selenium.getElm.assert_called()
 
     @patch("scrapper.navigator.glassdoorNavigator.sleep")
     def test_login(self, mock_sleep, mock_selenium):
-        nav = GlassdoorNavigator(mock_selenium)
+        nav = GlassdoorNavigator(mock_selenium, False)
         with patch.object(nav, 'load_main_page'):
             nav.login("user", "pass")
             mock_selenium.sendKeys.assert_any_call('#inlineUserEmail', 'user')
@@ -137,11 +137,11 @@ class TestGlassdoorService:
         ("https://www.glassdoor.es/job-listing/test?jobListingId=0987654321&other=param", "0987654321"),
     ])
     def test_get_job_id(self, url, expected_id, mock_mysql, mock_persistence_manager):
-        service = GlassdoorService(mock_mysql, mock_persistence_manager)
+        service = GlassdoorService(mock_mysql, mock_persistence_manager, False)
         assert service.get_job_id(url) == expected_id
 
     def test_process_job(self, mock_mysql, mock_persistence_manager):
-        service = GlassdoorService(mock_mysql, mock_persistence_manager)
+        service = GlassdoorService(mock_mysql, mock_persistence_manager, False)
         
         with patch('scrapper.services.GlassdoorService.htmlToMarkdown', return_value="MD"), \
              patch('scrapper.services.GlassdoorService.validate', return_value=True), \

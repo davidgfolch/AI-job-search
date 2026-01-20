@@ -13,13 +13,12 @@ from ..selectors.linkedinSelectors import (
     CSS_SEL_DETAIL_COMPANY, CSS_SEL_DETAIL_LOCATION, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND,
     CSS_SEL_COMPANY, CSS_SEL_LOCATION, CSS_SEL_JOB_LI_IDX, CSS_SEL_JOB_FIT_PREFERENCES
 )
-
-
 from .baseNavigator import BaseNavigator
+
 
 class LinkedinNavigator(BaseNavigator):
 
-    def __init__(self, selenium: SeleniumService, debug: bool = False):
+    def __init__(self, selenium: SeleniumService, debug: bool):
         super().__init__(selenium, debug)
         self.current_idx = None
 

@@ -46,7 +46,7 @@ def main(args):
     else:
         startingAt = None
 
-    with SeleniumService() as seleniumUtil:
+    with SeleniumService(debug=False) as seleniumUtil:
         persistenceManager = PersistenceManager()
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
         scheduler = ScrapperScheduler(persistenceManager, seleniumUtil)

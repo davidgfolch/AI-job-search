@@ -5,10 +5,7 @@ from commonlib.terminalUtil import consoleTimer
 from commonlib.dateUtil import getDatetimeNow, getTimeUnits, getDatetimeNowStr, parseDatetime, getSeconds
 from commonlib.environmentUtil import getEnvByPrefix
 from commonlib.terminalColor import cyan, red, yellow
-from scrapper.core.scrapper_config import (
-    SCRAPPERS, TIMER, IGNORE_AUTORUN, NEXT_SCRAP_TIMER,
-    MAX_NAME, RUN_IN_TABS
-)
+from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, IGNORE_AUTORUN, NEXT_SCRAP_TIMER, MAX_NAME, RUN_IN_TABS, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
@@ -133,6 +130,9 @@ class ScrapperScheduler:
             if scrapper['seconds_remaining'] <= 0:
                 name = scrapper['name']
                 properties = scrapper['properties']
+                debug = get_debug(name)
+                print(f'{name} DEBUG: {debug}')
+                self.seleniumUtil.debug = debug
                 if RUN_IN_TABS:
                     self.seleniumUtil.tab(name)
                 if runPreload(properties):

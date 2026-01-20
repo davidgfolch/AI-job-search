@@ -22,8 +22,8 @@ class TestExecutor:
     def test_create_executor(self, mocks, run_mocks, name):
         mock_executor_cls = run_mocks[name]
         
-        # Patch getEnvBool to return True to check if debug flag is passed correctly
-        with patch('scrapper.executor.BaseExecutor.getEnvBool', return_value=True):
+        # Patch get_debug to return True to check if debug flag is passed correctly
+        with patch('scrapper.executor.BaseExecutor.get_debug', return_value=True):
             executor = BaseExecutor.create(name.lower(), mocks['sel'], mocks['pm'])
             
             mock_executor_cls.assert_called_with(mocks['sel'], mocks['pm'], True)

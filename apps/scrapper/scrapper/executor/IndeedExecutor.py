@@ -18,14 +18,14 @@ class IndeedExecutor(BaseExecutor):
         self.remote = True
         self.days_old = 3
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
-        self.navigator = IndeedNavigator(self.selenium_service)
+        self.navigator = IndeedNavigator(self.selenium_service, self.debug)
 
 
     def _preload_action(self):
         self.navigator.login()
 
     def _create_service(self, mysql):
-        return IndeedService(mysql, self.persistence_manager)
+        return IndeedService(mysql, self.persistence_manager, self.debug)
 
     def _process_keyword(self, keyword: str, start_page: int):
         sleep(3,4)

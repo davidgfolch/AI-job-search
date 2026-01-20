@@ -13,8 +13,7 @@ class InfojobsExecutor(BaseExecutor):
         self.jobs_x_page = 22
         self.list_url = 'https://www.infojobs.net/ofertas-trabajo'
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
-        self.navigator = InfojobsNavigator(self.selenium_service)
-        self.debug = True
+        self.navigator = InfojobsNavigator(self.selenium_service, self.debug)
 
     def _preload_action(self):
         # For preloading, we can just use the navigator logic
@@ -23,7 +22,7 @@ class InfojobsExecutor(BaseExecutor):
             self.navigator.security_filter()
 
     def _create_service(self, mysql):
-        return InfojobsService(mysql, self.persistence_manager)
+        return InfojobsService(mysql, self.persistence_manager, self.debug)
 
     def _process_keyword(self, keyword: str, start_page: int):
         print(f'Search keyword={keyword}')
@@ -34,7 +33,6 @@ class InfojobsExecutor(BaseExecutor):
         totalPages = math.ceil(totalResults / self.jobs_x_page)
         page = self.navigator.fast_forward_page(start_page, totalResults, self.jobs_x_page)
         currentItem = (page - 1) * self.jobs_x_page
-        
         while currentItem < totalResults:
             foundNewJobInPage = False
             baseScrapper.printPage(self.site_name, page, totalPages, keyword)
@@ -46,11 +44,9 @@ class InfojobsExecutor(BaseExecutor):
                     foundNewJobInPage = True
                 currentItem += 1
                 idx += 1
-            
             if not foundNewJobInPage and (page > start_page + 1 or (start_page < 2 and page > 2)):
                 print(yellow('No new jobs found in this page, stopping keyword processing.'))
                 break
-            
             if currentItem < totalResults:
                 if self.navigator.click_next_page():
                     page += 1
@@ -58,7 +54,6 @@ class InfojobsExecutor(BaseExecutor):
                     self.service.update_state(keyword, page)
                 else:
                     break
-        
         baseScrapper.summarize(keyword, totalResults, currentItem)
 
     def _load_and_process_row(self, idx) -> bool:
@@ -76,7 +71,6 @@ class InfojobsExecutor(BaseExecutor):
                 print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='', flush=True)
                 return True
             print(yellow('loading...'), end='')
-
             self.navigator.click_job_link(job_link_elm)
             if not self._process_row(url):
                  raise ValueError('Validation failed')

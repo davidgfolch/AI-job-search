@@ -15,14 +15,14 @@ class GlassdoorExecutor(BaseExecutor):
         self.jobs_x_page = 30
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
         self.jobs_search_base_url = getEnv(f'{self.site_name}_JOBS_SEARCH_BASE_URL')
-        self.navigator = GlassdoorNavigator(self.selenium_service)
+        self.navigator = GlassdoorNavigator(self.selenium_service, self.debug)
 
     def _preload_action(self):
         self.navigator.load_main_page()
         self.navigator.login(self.user_email, self.user_pwd)
 
     def _create_service(self, mysql):
-        return GlassdoorService(mysql, self.persistence_manager)
+        return GlassdoorService(mysql, self.persistence_manager, self.debug)
 
     def _process_keyword(self, keyword: str, start_page: int):
         url = self.jobs_search_base_url.format(**{'search': keyword})

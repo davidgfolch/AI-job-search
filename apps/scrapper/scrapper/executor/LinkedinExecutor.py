@@ -18,8 +18,7 @@ class LinkedinExecutor(BaseExecutor):
         self.location = '105646813' # Spain
         self.f_TPR = 'r86400'  # last 24 hours
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
-        self.navigator = LinkedinNavigator(self.selenium_service)
-        self.debug = False
+        self.navigator = LinkedinNavigator(self.selenium_service, self.debug)
 
     def _preload_action(self):
         self.navigator.login(self.user_email, self.user_pwd)
@@ -27,7 +26,7 @@ class LinkedinExecutor(BaseExecutor):
         self.navigator.wait_until_page_url_contains('https://www.linkedin.com/feed/', 60)
 
     def _create_service(self, mysql):
-        return LinkedinService(mysql, self.persistence_manager)
+        return LinkedinService(mysql, self.persistence_manager, self.debug)
 
     def _process_keyword(self, keyword: str, start_page: int):
         url = self._load_page(keyword)
@@ -135,7 +134,7 @@ class LinkedinExecutor(BaseExecutor):
         from ..services.selenium.seleniumService import SeleniumService
         from ..util.persistence_manager import PersistenceManager
         
-        with MysqlUtil() as mysql, SeleniumService() as seleniumUtil:
+        with MysqlUtil() as mysql, SeleniumService(False) as seleniumUtil:
              # We need to instantiate ourselves potentially, or just use components directly?
              # Since this replaces `processUrl` logic which used navigator/service directly, 
              # we can do the same or instantiate Executor.
@@ -143,7 +142,7 @@ class LinkedinExecutor(BaseExecutor):
              # `processUrl` used `USER_EMAIL` global.
              # So we can instantiate Executor.
              pm = PersistenceManager()
-             executor = cls(seleniumUtil, pm)
+             executor = cls(seleniumUtil, pm, False)
              executor.navigator.load_page(url)
              if executor.navigator.check_login_popup(lambda: executor.navigator.login(executor.user_email, executor.user_pwd)):
                  executor.navigator.load_page(url)

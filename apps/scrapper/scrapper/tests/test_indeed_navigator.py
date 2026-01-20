@@ -11,7 +11,7 @@ class TestIndeedNavigator:
     def test_init(self):
         """Test IndeedNavigator initialization"""
         mock_selenium = Mock(spec=SeleniumService)
-        navigator = IndeedNavigator(mock_selenium)
+        navigator = IndeedNavigator(mock_selenium, False)
         assert navigator.selenium == mock_selenium
 
     @patch("scrapper.navigator.indeedNavigator.sleep")
@@ -20,7 +20,7 @@ class TestIndeedNavigator:
         """Test login flow"""
         # Setup mocks
         mock_selenium = Mock(spec=SeleniumService)
-        navigator = IndeedNavigator(mock_selenium)
+        navigator = IndeedNavigator(mock_selenium, False)
         
         # Mock Gmail service
         mock_gmail_instance = MagicMock(spec=IndeedGmailService)
@@ -51,7 +51,7 @@ class TestIndeedNavigator:
     def test_search(self, mock_sleep):
         """Test search functionality"""
         mock_selenium = Mock(spec=SeleniumService)
-        navigator = IndeedNavigator(mock_selenium)
+        navigator = IndeedNavigator(mock_selenium, False)
 
         navigator.search("python developer", "Madrid", True, 1, 1)
 
@@ -65,7 +65,7 @@ class TestIndeedNavigator:
     def test_get_total_results(self):
         """Test parsing total results"""
         mock_selenium = Mock(spec=SeleniumService)
-        navigator = IndeedNavigator(mock_selenium)
+        navigator = IndeedNavigator(mock_selenium, False)
         
         # Mock generic text return
         mock_selenium.getText.return_value = "1.234 results"

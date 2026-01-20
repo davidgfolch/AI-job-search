@@ -6,7 +6,7 @@ from ..core.utils import pageExists
 from ..services.selenium.seleniumService import SeleniumService
 
 class BaseNavigator(ABC):
-    def __init__(self, selenium: SeleniumService, debug: bool = False):
+    def __init__(self, selenium: SeleniumService, debug: bool):
         self.selenium = selenium
         self.debug = debug
 
@@ -33,7 +33,7 @@ class BaseNavigator(ABC):
                 if self.click_next_page():
                     page += 1
                     self.wait_until_page_is_loaded()
-                    sleep(1, 2)
+                    sleep(2, 2)
                 else:
                     break
         return page

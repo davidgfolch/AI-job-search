@@ -11,7 +11,7 @@ class TestLinkedinNavigator:
 
     @pytest.fixture
     def navigator(self, mock_selenium):
-        return LinkedinNavigator(mock_selenium)
+        return LinkedinNavigator(mock_selenium, False)
 
     def test_init(self, navigator, mock_selenium):
         assert navigator.selenium == mock_selenium

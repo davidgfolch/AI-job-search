@@ -6,7 +6,7 @@ from commonlib.environmentUtil import getEnvBool
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.keep_system_awake import KeepSystemAwake
 from commonlib.dateUtil import getDatetimeNowStr
-from ..core.scrapper_config import SCRAPPERS
+from ..core.scrapper_config import SCRAPPERS, get_debug
 from ..core import baseScrapper
 from ..core.utils import debug
 from ..core.baseScrapper import printScrapperTitle
@@ -17,7 +17,7 @@ from ..services.selenium.seleniumService import SeleniumService
 
 
 class BaseExecutor(ABC):
-    def __init__(self, selenium_service: SeleniumService, persistence_manager: PersistenceManager, debug: bool = False):
+    def __init__(self, selenium_service: SeleniumService, persistence_manager: PersistenceManager, debug: bool):
         self.selenium_service = selenium_service
         self.persistence_manager = persistence_manager
         self.navigator = None
@@ -43,13 +43,6 @@ class BaseExecutor(ABC):
         from ..executor.LinkedinExecutor import LinkedinExecutor
         from ..executor.GlassdoorExecutor import GlassdoorExecutor
         from ..executor.IndeedExecutor import IndeedExecutor
-        
-        def get_debug(name):
-            config_debug = SCRAPPERS.get(name.capitalize(), {}).get('DEBUG')
-            if config_debug is not None:
-                return config_debug
-            return False
-
         debug = get_debug(name)
         match name.lower():
             case 'infojobs':
@@ -62,7 +55,6 @@ class BaseExecutor(ABC):
                 return GlassdoorExecutor(selenium_service, persistence_manager, debug)
             case 'indeed':
                 return IndeedExecutor(selenium_service, persistence_manager, debug)
-
         raise ValueError(f"Unknown scrapper: {name}")
 
     @staticmethod
@@ -146,7 +138,6 @@ class BaseExecutor(ABC):
         # Let's standardize on using service.should_skip_keyword if possible, or manual loop.
         with MysqlUtil() as mysql:
             self.service = self._create_service(mysql)
-            self.service.set_debug(self.debug)
             if hasattr(self.service, 'prepare_resume'):
                 self.service.prepare_resume()
             # This loop logic is slightly different across scrappers (Indeed has explicit logic in loop, others use service.should_skip)
