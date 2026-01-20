@@ -32,7 +32,7 @@ class JobsRepository:
 
     def _fetch_jobs(self, db: MysqlUtil, where: str, params: list, order: Optional[str], size: int, offset: int):
         sort_col, sort_dir = parse_job_order(order)
-        query = f"SELECT * FROM jobs WHERE {where} ORDER BY {sort_col} {sort_dir} LIMIT %s OFFSET %s"
+        query = f"SELECT * FROM jobs WHERE {where} ORDER BY {sort_col} {sort_dir}, id DESC LIMIT %s OFFSET %s"
         params_with_limit = params + [size, offset]
         rows = db.fetchAll(query, params_with_limit)
         columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
