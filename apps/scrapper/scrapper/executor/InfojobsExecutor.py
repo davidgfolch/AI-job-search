@@ -56,6 +56,12 @@ class InfojobsExecutor(BaseExecutor):
                     break
         baseScrapper.summarize(keyword, totalResults, currentItem)
 
+    @retry()
+    def getJobLinkAndUrl(self, idx):
+        job_link_elm = self.navigator.get_job_link_element(idx)
+        url = self.navigator.get_job_url(job_link_elm)
+        return job_link_elm, url
+
     def _load_and_process_row(self, idx) -> bool:
         try:
             if idx > 2:
@@ -64,8 +70,7 @@ class InfojobsExecutor(BaseExecutor):
                 except Exception:
                     print(yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
                     return False
-            job_link_elm = self.navigator.get_job_link_element(idx)
-            url = self.navigator.get_job_url(job_link_elm)
+            job_link_elm, url = self.getJobLinkAndUrl(idx)
             job_id, job_exists = self.service.job_exists_in_db(url)
             if job_exists:
                 print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='', flush=True)

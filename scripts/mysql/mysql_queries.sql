@@ -10,12 +10,11 @@ select count(*) from jobs;
 
 select * from jobs WHERE not ai_enriched and not ignored;
 
--- select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
--- TODO: 
-update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
-update jobs set ai_enriched=0, salary=null
--- WHERE ai_enriched and required_technologies like '%\\\\u%';
--- where DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 48 HOUR)
+select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
+-- update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
+-- update jobs set ai_enriched=0, salary=null, required_technologies=null, optional_technologies=null
+WHERE ai_enriched and required_technologies like 'Jms%'
+AND DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 8 HOUR)
 -- where id=XXXXXXXX
 
 
@@ -25,9 +24,9 @@ delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n',
 
 select * from jobs where jobs.company='Michael Page' and applied order by created DESC;
 
-select * from jobs where jobs.web_page='Tecnoempleo' order by created DESC;
+select * from jobs where jobs.web_page='Indeed' order by created DESC;
 
-delete from jobs where jobs.web_page='Linkedin' and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 5 HOUR);
+delete from jobs where jobs.web_page='Indeed' and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) and not (ignored or applied or closed or discarded or seen) ;
 
 update jobs set web_page='Linkedin' where url like '%linkedin%';
 
@@ -37,7 +36,7 @@ update jobs set ai_enriched=False, ai_enrich_error = NULL
 where ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) and not (discarded or ignored);
 
 update jobs set ai_enriched=False, cv_match_percentage=null, salary=null, required_technologies=null, optional_technologies=null
-where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 5 hour) and not (discarded or ignored);
+where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 5 hour) and not (discarded or ignored) and required_technologies like '%nestjs%'
 
 select id, cv_match_percentage, title, ai_enriched, ai_enrich_error, modified from jobs where cv_match_percentage = -1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
 

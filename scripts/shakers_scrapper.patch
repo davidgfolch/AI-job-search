@@ -11,7 +11,6 @@ index d6c5f02..5710d9a 100644
 +SHAKERS_RUN_CADENCY=3h
 +
  # Scrapper options
- SCRAPPER_DEBUG=False  # Enable debug: wait for key input when an error arrises
  RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
 diff --git a/apps/scrapper/scrapper/scrapper_config.py b/apps/scrapper/scrapper/scrapper_config.py
 index 4eb1b24..8cf35d9 100644

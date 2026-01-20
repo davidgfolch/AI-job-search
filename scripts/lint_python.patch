@@ -1,0 +1,266 @@
+diff --git a/.github/workflows/static_analysis.yml b/.github/workflows/static_analysis.yml
+new file mode 100644
+index 0000000..9b26f8d
+--- /dev/null
++++ b/.github/workflows/static_analysis.yml
+@@ -0,0 +1,65 @@
++name: Static Analysis
++
++on: [push, pull_request]
++
++jobs:
++  static-analysis:
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Python
++        uses: actions/setup-python@v5
++        with:
++          python-version: '3.10'
++
++      - name: Set up Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '20'
++
++      - name: Install Poetry
++        run: pip install poetry
++
++      - name: Install uv
++        run: pip install uv
++
++      - name: Install dependencies (Root)
++        run: poetry install
++
++      - name: Install dependencies (Web)
++        run: |
++          cd apps/web
++          npm install
++
++      - name: Install dependencies (Backend)
++        run: |
++          cd apps/backend
++          uv sync
++
++      - name: Install dependencies (Commonlib)
++        run: |
++          cd apps/commonlib
++          poetry install
++
++      - name: Install dependencies (Scrapper)
++        run: |
++          cd apps/scrapper
++          poetry install
++
++      - name: Install dependencies (aiEnrich)
++        if: hashFiles('apps/aiEnrich/uv.lock') != ''
++        run: |
++          cd apps/aiEnrich
++          uv sync
++
++      - name: Install dependencies (aiEnrichNew)
++        if: hashFiles('apps/aiEnrichNew/uv.lock') != ''
++        run: |
++          cd apps/aiEnrichNew
++          uv sync
++
++      - name: Run Static Analysis
++        run: |
++          chmod +x ./scripts/test.sh
++          ./scripts/test.sh --lint
+diff --git a/apps/aiEnrich/pyproject.toml b/apps/aiEnrich/pyproject.toml
+index 2fe18cc..fda930e 100644
+--- a/apps/aiEnrich/pyproject.toml
++++ b/apps/aiEnrich/pyproject.toml
+@@ -23,7 +23,9 @@ commonlib = { path = "../commonlib", editable = true }
+ dev = [
+     "pytest>=8.4.2",
+     "pytest-cov>=7.0.0",
+-    "genbadge[coverage]>=1.1.0"
++    "genbadge[coverage]>=1.1.0",
++    "ruff>=0.1.8",
++    "mypy>=1.7.0",
+ ]
+ 
+ [tool.coverage.run]
+diff --git a/apps/aiEnrichNew/pyproject.toml b/apps/aiEnrichNew/pyproject.toml
+index 2bdd3b2..66ec8fd 100644
+--- a/apps/aiEnrichNew/pyproject.toml
++++ b/apps/aiEnrichNew/pyproject.toml
+@@ -26,7 +26,9 @@ commonlib = { path = "../commonlib", editable = true }
+ dev = [
+     "pytest>=8.4.2",
+     "pytest-cov>=7.0.0",
+-    "genbadge[coverage]>=1.1.0"
++    "genbadge[coverage]>=1.1.0",
++    "ruff>=0.1.8",
++    "mypy>=1.7.0",
+ ]
+ 
+ [tool.coverage.run]
+diff --git a/apps/commonlib/pyproject.toml b/apps/commonlib/pyproject.toml
+index 49efc7b..0750240 100644
+--- a/apps/commonlib/pyproject.toml
++++ b/apps/commonlib/pyproject.toml
+@@ -19,6 +19,8 @@ dependencies = [
+ pytest = "^8.4.2"
+ pytest-cov = "^7.0.0"
+ genbadge = {extras = ["coverage"], version = "^1.1.0"}
++ruff = "^0.1.8"
++mypy = "^1.7.0"
+ 
+ [tool.coverage.run]
+ branch = true
+diff --git a/apps/scrapper/pyproject.toml b/apps/scrapper/pyproject.toml
+index 60f108a..4ecfe8d 100644
+--- a/apps/scrapper/pyproject.toml
++++ b/apps/scrapper/pyproject.toml
+@@ -26,6 +26,8 @@ undetected-chromedriver = "3.5.4"
+ pytest = "^8.4.2"
+ pytest-cov = "^7.0.0"
+ genbadge = {extras = ["coverage"], version = "^1.1.0"}
++ruff = "^0.1.8"
++mypy = "^1.7.0"
+ 
+ [tool.coverage.run]
+ branch = true
+diff --git a/pyproject.toml b/pyproject.toml
+index 6e151c6..42629cf 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -17,4 +17,16 @@ mypy = "^1.7.0"
+ 
+ [build-system]
+ requires = ["poetry-core"]
+-build-backend = "poetry.core.masonry.api"
+\ No newline at end of file
++build-backend = "poetry.core.masonry.api"
++
++[tool.ruff]
++line-length = 88
++target-version = "py310"
++select = ["E", "F", "I", "W"]
++ignore = []
++
++[tool.mypy]
++python_version = "3.10"
++warn_return_any = true
++warn_unused_configs = true
++ignore_missing_imports = true
+diff --git a/scripts/test.bat b/scripts/test.bat
+index cbc7cfa..8ec9d37 100644
+--- a/scripts/test.bat
++++ b/scripts/test.bat
+@@ -4,6 +4,7 @@ set VIRTUAL_ENV=
+ 
+ rem ──────────────────────  Parse command‑line  ─────────────────────
+ set coverage=0
++set lint=0
+ set idx=0
+ set "target="
+ 
+@@ -13,6 +14,9 @@ for %%i in (%*) do (
+     if "%%i"=="--coverage" (
+         set coverage=1
+         echo Coverage enabled
++    ) else if "%%i"=="--lint" (
++        set lint=1
++        echo Linting enabled
+     ) else if exist "%%i" (
+         set "target=%%i"
+     )
+@@ -43,7 +47,9 @@ echo.
+ echo Testing %~nx1...
+ pushd "!target_dir!"
+ if exist "package.json" (
+-    if !coverage!==0 (
++    if !lint!==1 (
++        call npm run lint
++    ) else if !coverage!==0 (
+         call npx vitest run
+     ) else (
+         call npm test -- run --coverage
+@@ -52,7 +58,11 @@ if exist "package.json" (
+ ) else if exist "pyproject.toml" (
+     if exist "uv.lock" (
+         @REM set "UV_PROJECT_ENVIRONMENT=custom-venv"
+-        if !coverage!==0 (
++        if !lint!==1 (
++             call uv run ruff check .
++             call uv run ruff format --check .
++             call uv run mypy .
++        ) else if !coverage!==0 (
+             uv run -m pytest
+         ) else (
+             uv run -m coverage run -m pytest
+@@ -61,7 +71,11 @@ if exist "package.json" (
+             uv run genbadge coverage -i coverage.xml -o coverage.svg -n "%~nx1"
+         )
+     ) else (
+-        if !coverage!==0 (
++        if !lint!==1 (
++             call poetry run ruff check .
++             call poetry run ruff format --check .
++             call poetry run mypy .
++        ) else if !coverage!==0 (
+             poetry run pytest
+         ) else (
+             poetry run coverage run -m pytest
+diff --git a/scripts/test.sh b/scripts/test.sh
+index 9fa88a0..21c7587 100644
+--- a/scripts/test.sh
++++ b/scripts/test.sh
+@@ -3,11 +3,15 @@
+ 
+ # Parse arguments
+ coverage=0
++lint=0
+ target=""
+ for arg in "$@"; do
+     if [ "$arg" == "--coverage" ]; then
+         coverage=1
+         echo "Coverage enabled"
++    elif [ "$arg" == "--lint" ]; then
++        lint=1
++        echo "Linting enabled"
+     elif [ -d "$arg" ]; then
+         target="$arg"
+     fi
+@@ -20,7 +24,9 @@ run_test() {
+     pushd "$dir" > /dev/null
+     
+     if [ -f "package.json" ]; then
+-        if [ $coverage -eq 1 ]; then
++        if [ $lint -eq 1 ]; then
++            npm run lint
++        elif [ $coverage -eq 1 ]; then
+             npm test -- run --coverage
+             npx coverage-badges --label "$(basename "$dir")"
+         else
+@@ -28,7 +34,11 @@ run_test() {
+         fi
+     elif [ -f "pyproject.toml" ]; then
+         if [ -f "uv.lock" ]; then
+-            if [ $coverage -eq 1 ]; then
++            if [ $lint -eq 1 ]; then
++                uv run ruff check .
++                uv run ruff format --check .
++                uv run mypy .
++            elif [ $coverage -eq 1 ]; then
+                 uv run -m coverage run -m pytest
+                 uv run -m coverage report -m
+                 uv run -m coverage xml
+@@ -37,7 +47,11 @@ run_test() {
+                 uv run -m pytest
+             fi
+         else
+-            if [ $coverage -eq 1 ]; then
++            if [ $lint -eq 1 ]; then
++                poetry run ruff check .
++                poetry run ruff format --check .
++                poetry run mypy .
++            elif [ $coverage -eq 1 ]; then
+                 poetry run coverage run -m pytest
+                 poetry run coverage report -m
+                 poetry run coverage xml
