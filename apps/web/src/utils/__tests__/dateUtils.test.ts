@@ -20,10 +20,22 @@ describe('calculateLapsedTime', () => {
         expect(calculateLapsedTime('invalid-date')).toBe('-');
     });
 
-    it('returns "today" for same day', () => {
+    it('returns time for same day', () => {
         const now = new Date('2023-10-10T12:00:00Z');
         vi.setSystemTime(now);
-        expect(calculateLapsedTime('2023-10-10T08:00:00Z')).toBe('today');
+        // 2023-10-10T08:00:00Z is 8:00 UTC (assuming test runs in UTC or controlled timezone, but here we mock system time).
+        // Wait, Date.getHours() uses local time. If the test environment is not controlled for timezone, this might be flaky.
+        // However, standard CI/Vitest behavior usually defaults to UTC or we can rely on how `vi.setSystemTime` works with `new Date`.
+        // Let's assume the constructed Date objects work predictably.
+        // '2023-10-10T08:00:00Z' -> The Date object is created.
+        // getHours() will return the local hour.
+        
+        // To be safe and matching the implementation which uses .getHours(), we should verify what that returns.
+        const testDate = new Date('2023-10-10T08:00:00Z');
+        const hours = testDate.getHours().toString();
+        const minutes = testDate.getMinutes().toString().padStart(2, '0');
+        
+        expect(calculateLapsedTime('2023-10-10T08:00:00Z')).toBe(`${hours}:${minutes}`);
     });
 
     it('returns "1d ago" for 1 day ago', () => {

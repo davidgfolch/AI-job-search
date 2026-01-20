@@ -59,6 +59,12 @@ export const calculateLapsedTime = (dateString: string | null | undefined): stri
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
+    if (diffDays === 0) {
+        const hours = date.getHours().toString(); // No padding needed for hours based on user request example "9:10"
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+    }
+    
     return getLapsedTime(diffDays).short;
 };
 
