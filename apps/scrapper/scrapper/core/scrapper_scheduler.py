@@ -1,11 +1,9 @@
-from typing import Any, Optional
+from typing import Optional
 from datetime import datetime
 
 from commonlib.terminalUtil import consoleTimer
-from commonlib.dateUtil import getDatetimeNow, getTimeUnits, getDatetimeNowStr, parseDatetime, getSeconds
-from commonlib.environmentUtil import getEnvByPrefix
 from commonlib.terminalColor import cyan, red, yellow
-from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, IGNORE_AUTORUN, NEXT_SCRAP_TIMER, MAX_NAME, RUN_IN_TABS, get_debug)
+from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, IGNORE_AUTORUN, RUN_IN_TABS, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
@@ -18,7 +16,7 @@ class ScrapperScheduler:
         self.persistenceManager = persistenceManager
         self.seleniumUtil = seleniumUtil
 
-    def getProperties(self, name: str) -> Optional[dict[str, Any]]:
+    def getProperties(self, name: str) -> Optional[dict]:
         return SCRAPPERS.get(name.capitalize())
 
     def validScrapperName(self, name: str):
@@ -28,22 +26,6 @@ class ScrapperScheduler:
         print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
         return False
 
-    def lastExecution(self, name: str, properties: dict):
-        lastExec = self.persistenceManager.get_last_execution(name)
-        if lastExec is None and properties.get('waitBeforeFirstRun'):
-            lastExec = self.persistenceManager.update_last_execution(name, getDatetimeNowStr())
-        return lastExec
-
-    def timeExpired(self, name: str, properties: dict, lastExecution: str):
-        if lastExecution:
-            lapsed = getDatetimeNow() - parseDatetime(lastExecution)
-            calculator = ScrapperStateCalculator(name, properties, self.persistenceManager)
-            timeoutSeconds, _ = calculator.resolve_timer(properties[TIMER])
-            timeLeft = getTimeUnits(timeoutSeconds - lapsed)
-            print(f'Executing {name.rjust(MAX_NAME)} in {timeLeft.rjust(11)}')
-            if lapsed + 1 <= timeoutSeconds:
-                return False
-        return True
 
     def _calculate_and_print_status(self, starting: bool, startingAt: str):
         scrappers_status = []

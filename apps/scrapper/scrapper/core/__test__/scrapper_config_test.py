@@ -1,7 +1,6 @@
 import pytest
 from scrapper.core.scrapper_config import (
-    TIMER, CLOSE_TAB, IGNORE_AUTORUN, SCRAPPERS, RUN_IN_TABS, 
-    NEXT_SCRAP_TIMER, MAX_NAME
+    TIMER, CLOSE_TAB, IGNORE_AUTORUN, SCRAPPERS, RUN_IN_TABS
 )
 
 class TestScrapperConfig:
@@ -30,8 +29,3 @@ class TestScrapperConfig:
         assert CLOSE_TAB in SCRAPPERS['Linkedin']
         assert SCRAPPERS['Linkedin'][CLOSE_TAB] is True
     
-    def test_max_name_calculation(self):
-        assert isinstance(MAX_NAME, int)
-        if SCRAPPERS:
-            expected_max = max([len(k) for k in SCRAPPERS.keys()])
-            assert MAX_NAME == expected_max
