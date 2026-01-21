@@ -21,6 +21,7 @@ class IndeedNavigator(BaseNavigator):
     @retry(retries=60, delay=1, raiseException=False, stackTrace=StackTrace.NEVER)
     def waitForCloudflareFilterInLogin(self):
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_EMAIL)
+        return True
 
     def login(self):
         print("Navigating to Indeed login page...")

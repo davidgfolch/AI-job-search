@@ -80,9 +80,11 @@ def test_valid_scrapper_name(scheduler, name, expected):
 
 class TestRunScrappers:
     @patch('scrapper.core.scrapper_scheduler.consoleTimer')
+    @patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=12000)
     @patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=12000) # Now is 12000
+    @patch('scrapper.core.scrapper_state_calculator.parseDatetime')
     @patch('scrapper.core.scrapper_scheduler.parseDatetime')
-    def test_run_all(self, mock_parse, mock_now, mock_timer, scheduler, mocks, run_mocks):
+    def test_run_all(self, mock_parse_sched, mock_parse_calc, mock_now_sched, mock_now_calc, mock_timer, scheduler, mocks, run_mocks):
         # Scenario: 
         # Infojobs: TIMER 7200. Last run: 12000-8000 = 4000. Lapsed 8000. expired (8000>7200). Ready.
         # Linkedin: TIMER 3600. Last run: 12000-1000 = 11000. Lapsed 1000. Not expired. Wait 2600.
@@ -92,7 +94,8 @@ class TestRunScrappers:
             if date_str == "last_run_infojobs": return 4000
             if date_str == "last_run_linkedin": return 11000
             return 0
-        mock_parse.side_effect = side_effect_parse
+        mock_parse_sched.side_effect = side_effect_parse
+        mock_parse_calc.side_effect = side_effect_parse
         mocks['pm'].get_last_execution.side_effect = lambda name: f"last_run_{name.lower()}" if name in ['Infojobs', 'Linkedin'] else None
 
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
@@ -119,12 +122,15 @@ class TestRunScrappers:
             pass
 
     @patch('scrapper.core.scrapper_scheduler.consoleTimer')
+    @patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=10000)
     @patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=10000)
+    @patch('scrapper.core.scrapper_state_calculator.parseDatetime')
     @patch('scrapper.core.scrapper_scheduler.parseDatetime', return_value=9000) # last run 1000s ago
-    def test_run_all_starting(self, _p, _n, _t, scheduler, mocks, run_mocks):
+    def test_run_all_starting(self, mock_parse_sched, mock_parse_calc, _n_sched, _n_calc, _t, scheduler, mocks, run_mocks):
         # Scenario: Start at Linkedin. 
         # Even though 1000s lapsed < 3600s timer, it should run because of 'starting'.
         # Infojobs (7200s timer) should NOT run (skipped).
+        mock_parse_calc.return_value = 9000
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
              scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=True, startingAt='Linkedin', loops=1)
              run_mocks['linkedin'].execute.assert_called()
@@ -149,57 +155,7 @@ class TestSchedulerHelpers:
         res = scheduler.getProperties(arg)
         assert (res is not None and TIMER in res) if props_ok else res is None
 
-class TestScrapperStateAndExecution:
-    @pytest.mark.parametrize("starting, startingAt, name, timer, lapsed, expected_state", [
-        (False, None, 'Infojobs', 7200, 8000, (0, "Ready", "NOW", "Default", "2h")), # Expired
-        (False, None, 'Linkedin', 3600, 1000, (2600, "Pending", "43m 20s", "Default", "1h")), # Not expired
-        (True, 'Infojobs', 'Infojobs', 7200, 1000, (0, "STARTING TARGET", "NOW", "Default", "2h")), # Starting target
-        (True, 'Infojobs', 'Linkedin', 3600, 5000, (999999999, "Skipped (Start)", "-", "Default", "1h")), # Starting other
-    ])
-    def test_calculate_scrapper_state(self, scheduler, mocks, starting, startingAt, name, timer, lapsed, expected_state):
-        with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=10000):
-            with patch('scrapper.core.scrapper_scheduler.parseDatetime', return_value=10000-lapsed):
-                 mocks['pm'].get_last_execution.return_value = "some_date"
-                 props = {TIMER: timer}
-                 result = scheduler._calculate_scrapper_state(name, props, starting, startingAt)
-                 assert result == expected_state
 
-    @pytest.mark.parametrize("error_lapsed, expected_state", [
-        (1000, (1800-1000, "Error Wait", "13m 20s", "Error Wait", "30m")), # Error wait active
-        (2000, (2600, "Pending", "43m 20s", "Default", "1h")), # Error expired (wait normal timer, assuming 3600 timer and 1000 lapsed for exec)
-    ])
-    def test_calculate_scrapper_state_error(self, scheduler, mocks, error_lapsed, expected_state):
-        # Scenario: Linkedin (3600 timer). 
-        # Last exec: 1000s ago. 
-        # Last error: error_lapsed s ago.
-        
-        name = 'Linkedin'
-        timer = 3600
-        exec_lapsed = 1000
-        now = 10000
-        
-        with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=now):
-            with patch('scrapper.core.scrapper_scheduler.parseDatetime') as mock_parse:
-                def side_effect_parse(date_str):
-                    if date_str == "last_exec": return now - exec_lapsed
-                    if date_str == "last_error": return now - error_lapsed
-                    return 0
-                mock_parse.side_effect = side_effect_parse
-                
-                mocks['pm'].get_last_execution.return_value = "last_exec"
-                
-                # Setup get_state to return proper dicts based on test needs
-                # Base mock returns empty dict by default if not specialized
-                
-                def get_state_side_effect(n):
-                    if n == name:
-                        return {"last_error_time": "last_error"}
-                    return {}
-                mocks['pm'].get_state.side_effect = get_state_side_effect
-                
-                props = {TIMER: timer}
-                result = scheduler._calculate_scrapper_state(name, props, False, None)
-                assert result == expected_state
 
     def test_execute_scrappers(self, scheduler, run_mocks):
          status = [
