@@ -16,3 +16,7 @@ def get_sources_by_date():
 @router.get("/sources-hour")
 def get_sources_by_hour():
     return service.get_sources_by_hour()
+
+@router.get("/sources-weekday")
+def get_sources_by_weekday():
+    return service.get_sources_by_weekday()

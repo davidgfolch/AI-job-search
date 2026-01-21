@@ -22,3 +22,7 @@ class StatisticsService:
     def get_sources_by_hour(self) -> List[Dict[str, Any]]:
         df = self.repo.get_sources_by_hour_df()
         return df.to_dict(orient='records')
+
+    def get_sources_by_weekday(self) -> list[dict]:
+        df = self.repo.get_sources_by_weekday_df()
+        return df.to_dict(orient='records')

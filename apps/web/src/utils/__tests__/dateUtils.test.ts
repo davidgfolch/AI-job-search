@@ -38,10 +38,10 @@ describe('calculateLapsedTime', () => {
         expect(calculateLapsedTime('2023-10-10T08:00:00Z')).toBe(`${hours}:${minutes}`);
     });
 
-    it('returns "1d ago" for 1 day ago', () => {
+    it('returns "yesterday" for 1 day ago', () => {
         const now = new Date('2023-10-11T12:00:00Z');
         vi.setSystemTime(now);
-        expect(calculateLapsedTime('2023-10-10T12:00:00Z')).toBe('1d ago');
+        expect(calculateLapsedTime('2023-10-10T12:00:00Z')).toBe('yesterday');
     });
 
     it('returns "X days" for less than 7 days', () => {
@@ -106,7 +106,7 @@ describe('calculateLapsedTimeDetail', () => {
         // 1 day ago
         const now2 = new Date('2023-10-11T12:00:00Z');
         vi.setSystemTime(now2);
-        expect(calculateLapsedTimeDetail('2023-10-10T12:00:00Z')).toBe('1 day ago');
+        expect(calculateLapsedTimeDetail('2023-10-10T12:00:00Z')).toBe('yesterday');
     });
 
     it('returns long format for weeks', () => {

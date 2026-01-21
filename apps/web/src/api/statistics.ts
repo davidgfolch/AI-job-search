@@ -37,3 +37,14 @@ export const getSourcesByHour = async (): Promise<SourceHourStat[]> => {
     const response = await axios.get(`${API_Base}/sources-hour`);
     return response.data;
 };
+
+export interface SourceWeekdayStat {
+    weekday: number;
+    total: number;
+    source: string;
+}
+
+export const getSourcesByWeekday = async (): Promise<SourceWeekdayStat[]> => {
+    const response = await axios.get(`${API_Base}/sources-weekday`);
+    return response.data;
+};

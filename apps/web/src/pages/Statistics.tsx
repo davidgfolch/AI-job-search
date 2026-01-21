@@ -3,13 +3,14 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     BarChart, Bar
 } from 'recharts';
-import { getHistoryStats, getSourcesByDate, getSourcesByHour } from '../api/statistics';
+import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday } from '../api/statistics';
 import './Statistics.css';
 
 const Statistics = () => {
     const { data: historyData } = useQuery({ queryKey: ['statistics', 'history'], queryFn: getHistoryStats });
     const { data: sourcesDateData } = useQuery({ queryKey: ['statistics', 'sourcesDate'], queryFn: getSourcesByDate });
     const { data: sourcesHourData } = useQuery({ queryKey: ['statistics', 'sourcesHour'], queryFn: getSourcesByHour });
+    const { data: sourcesWeekdayData } = useQuery({ queryKey: ['statistics', 'sourcesWeekday'], queryFn: getSourcesByWeekday });
 
     // Transform data for stacked bars if needed, or rely on Recharts grouping
     // For "Sources by Date" and "Sources by Hour", the data is flat "long" format (source column).
@@ -34,6 +35,7 @@ const Statistics = () => {
 
     const sourcesDateWide = pivotData(sourcesDateData || [], 'dateCreated', 'source', 'total');
     const sourcesHourWide = pivotData(sourcesHourData || [], 'hour', 'source', 'total');
+    const sourcesWeekdayWide = pivotData(sourcesWeekdayData || [], 'weekday', 'source', 'total');
 
     // Get unique sources for colors/keys
     const getSources = (data: any[]) => {
@@ -41,7 +43,7 @@ const Statistics = () => {
       const sources = new Set<string>();
       data.forEach(item => {
         Object.keys(item).forEach(key => {
-          if (key !== 'dateCreated' && key !== 'hour') sources.add(key);
+          if (key !== 'dateCreated' && key !== 'hour' && key !== 'weekday') sources.add(key);
         });
       });
       return Array.from(sources);
@@ -49,6 +51,7 @@ const Statistics = () => {
 
     const sourcesDateKeys = getSources(sourcesDateWide);
     const sourcesHourKeys = getSources(sourcesHourWide);
+    const sourcesWeekdayKeys = getSources(sourcesWeekdayWide);
     const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00C49F'];
 
     return (
@@ -106,6 +109,27 @@ const Statistics = () => {
                                 <RechartsTooltip />
                                 <Legend />
                                 {sourcesHourKeys.map((key, index) => (
+                                    <Bar key={key} dataKey={key} stackId="a" fill={colors[index % colors.length]} />
+                                ))}
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </section>
+
+                <section className="chart-section">
+                    <h2>Job Postings by Source & Day of Week</h2>
+                    <div className="chart-container">
+                        <ResponsiveContainer width="100%" height={400}>
+                            <BarChart data={sourcesWeekdayWide}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                    dataKey="weekday" 
+                                    tickFormatter={(tick) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][tick - 1] || tick}
+                                />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Legend />
+                                {sourcesWeekdayKeys.map((key, index) => (
                                     <Bar key={key} dataKey={key} stackId="a" fill={colors[index % colors.length]} />
                                 ))}
                             </BarChart>

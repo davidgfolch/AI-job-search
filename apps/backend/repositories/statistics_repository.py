@@ -41,3 +41,16 @@ class StatisticsRepository:
         """
         cnx = getConnection()
         return pd.read_sql(query, cnx)
+
+    def get_sources_by_weekday_df(self) -> pd.DataFrame:
+        query = """
+            SELECT
+                DAYOFWEEK(created) AS weekday,
+                web_page AS source,
+                COUNT(*) AS total
+            FROM jobs
+            GROUP BY weekday, web_page
+            ORDER BY weekday, web_page;
+        """
+        cnx = getConnection()
+        return pd.read_sql(query, cnx)
