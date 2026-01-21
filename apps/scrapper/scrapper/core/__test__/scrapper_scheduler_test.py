@@ -11,6 +11,7 @@ def mocks():
     pm = MagicMock()
     pm.get_last_execution.return_value = None
     pm.get_failed_keywords.return_value = []
+    pm.get_state.return_value = {}
     return {'sel': sel, 'pm': pm}
 
 @pytest.fixture
@@ -162,6 +163,43 @@ class TestScrapperStateAndExecution:
                  props = {TIMER: timer}
                  result = scheduler._calculate_scrapper_state(name, props, starting, startingAt)
                  assert result == expected_state
+
+    @pytest.mark.parametrize("error_lapsed, expected_state", [
+        (1000, (1800-1000, "Error Wait", "13m 20s", "Error Wait", "30m")), # Error wait active
+        (2000, (2600, "Pending", "43m 20s", "Default", "1h")), # Error expired (wait normal timer, assuming 3600 timer and 1000 lapsed for exec)
+    ])
+    def test_calculate_scrapper_state_error(self, scheduler, mocks, error_lapsed, expected_state):
+        # Scenario: Linkedin (3600 timer). 
+        # Last exec: 1000s ago. 
+        # Last error: error_lapsed s ago.
+        
+        name = 'Linkedin'
+        timer = 3600
+        exec_lapsed = 1000
+        now = 10000
+        
+        with patch('scrapper.core.scrapper_scheduler.getDatetimeNow', return_value=now):
+            with patch('scrapper.core.scrapper_scheduler.parseDatetime') as mock_parse:
+                def side_effect_parse(date_str):
+                    if date_str == "last_exec": return now - exec_lapsed
+                    if date_str == "last_error": return now - error_lapsed
+                    return 0
+                mock_parse.side_effect = side_effect_parse
+                
+                mocks['pm'].get_last_execution.return_value = "last_exec"
+                
+                # Setup get_state to return proper dicts based on test needs
+                # Base mock returns empty dict by default if not specialized
+                
+                def get_state_side_effect(n):
+                    if n == name:
+                        return {"last_error_time": "last_error"}
+                    return {}
+                mocks['pm'].get_state.side_effect = get_state_side_effect
+                
+                props = {TIMER: timer}
+                result = scheduler._calculate_scrapper_state(name, props, False, None)
+                assert result == expected_state
 
     def test_execute_scrappers(self, scheduler, run_mocks):
          status = [

@@ -100,8 +100,9 @@ class BaseExecutor(ABC):
             with KeepSystemAwake():
                 self.run(preload_page=False)
             self.persistence_manager.update_last_execution(self.site_name_key, getDatetimeNowStr())
-        except Exception:
+        except Exception as e:
             debug(self.debug, f"Error occurred while executing {name}:", True)
+            self.persistence_manager.set_error(self.site_name_key, str(e))
             self.persistence_manager.update_last_execution(self.site_name_key, None)
         except KeyboardInterrupt:
             self.persistence_manager.update_last_execution(self.site_name_key, None)

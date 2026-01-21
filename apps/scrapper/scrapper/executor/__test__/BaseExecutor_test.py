@@ -17,38 +17,55 @@ def run_mocks():
     yield {name: p.start() for name, p in patchers.items()}
     for p in patchers.values(): p.stop()
 
+class MockBaseExecutor(BaseExecutor):
+    def _create_service(self, mysql):
+        return MagicMock()
+    def _process_keyword(self, keyword, start_page):
+        pass
+
 class TestExecutor:
     @pytest.mark.parametrize("name", ['Infojobs'])
     def test_create_executor(self, mocks, run_mocks, name):
         mock_executor_cls = run_mocks[name]
-        
-        # Patch get_debug to return True to check if debug flag is passed correctly
+        # Patch get_debug to return True
         with patch('scrapper.executor.BaseExecutor.get_debug', return_value=True):
             executor = BaseExecutor.create(name.lower(), mocks['sel'], mocks['pm'])
-            
             mock_executor_cls.assert_called_with(mocks['sel'], mocks['pm'], True)
 
-    @pytest.mark.parametrize("name", ['Infojobs'])
-    def test_execute_preload(self, mocks, run_mocks, name):
-        mock_executor_cls = run_mocks[name]
-        mock_instance = mock_executor_cls.return_value
+    def test_execute_preload(self, mocks):
+        # Use concrete class for testing base methods
+        executor = MockBaseExecutor(mocks['sel'], mocks['pm'], False)
+        executor.site_name = "TestSite"
         props = {}
         
-        executor = BaseExecutor.create(name.lower(), mocks['sel'], mocks['pm'])
-        executor.execute_preload(props)
-        
-        mock_instance.execute_preload.assert_called_with(props)
+        with patch.object(executor, 'run') as mock_run:
+            executor.execute_preload(props)
+            mock_run.assert_called_with(preload_page=True)
+            assert props['preloaded'] is True
 
-    @pytest.mark.parametrize("name", ['Infojobs'])
-    def test_execute(self, mocks, run_mocks, name):
-        mock_executor_cls = run_mocks[name]
-        mock_instance = mock_executor_cls.return_value
+    def test_execute(self, mocks):
+        executor = MockBaseExecutor(mocks['sel'], mocks['pm'], False)
+        executor.site_name = "TestSite"
         props = {}
         
-        executor = BaseExecutor.create(name.lower(), mocks['sel'], mocks['pm'])
-        executor.execute(props)
+        with patch.object(executor, 'run') as mock_run:
+            executor.execute(props)
+            mock_run.assert_called_with(preload_page=False)
+            mocks['pm'].update_last_execution.assert_called()
+
+    def test_execute_exception(self, mocks):
+        executor = MockBaseExecutor(mocks['sel'], mocks['pm'], False)
+        executor.site_name = "TestSite"
+        props = {}
         
-        mock_instance.execute.assert_called_with(props)
+        # Simulate exception in run
+        with patch.object(executor, 'run', side_effect=Exception("Scrapper failed")):
+            executor.execute(props)
+        
+        # Verify set_error is called
+        mocks['pm'].set_error.assert_called_with(executor.site_name_key, "Scrapper failed")
+        # Verify last_execution updated to None
+        mocks['pm'].update_last_execution.assert_called_with(executor.site_name_key, None)
 
 
 class TestProcessPageUrl:

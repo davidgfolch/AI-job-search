@@ -12,6 +12,7 @@ from scrapper.core.utils import runPreload
 from scrapper.executor.BaseExecutor import BaseExecutor
 
 class ScrapperScheduler:
+    
     def __init__(self, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService):
         self.persistenceManager = persistenceManager
         self.seleniumUtil = seleniumUtil
@@ -61,11 +62,24 @@ class ScrapperScheduler:
                 return False
         return True
 
-    def _calculate_scrapper_state(self, name: str, properties: dict, starting: bool, startingAt: str):
-        last_exec_time = self.lastExecution(name, properties)
-        seconds_remaining = 0
-        timer_details = "Unknown"
-        timeoutSeconds = 0
+    def _calculate_error_penalty(self, name: str) -> tuple[int, str, int, bool]:
+        """
+        Calculates if there is an active error penalty.
+        Returns: (timeoutSeconds, timer_details, seconds_remaining, error_penalty_wait)
+        """
+        last_error_time = self.persistenceManager.get_state(name).get('last_error_time')
+        if last_error_time:
+            lapsed_error = getDatetimeNow() - parseDatetime(last_error_time)
+            if lapsed_error < 1800:
+                seconds_remaining = max(0, 1800 - lapsed_error)
+                return 1800, "Error Wait", int(seconds_remaining), True
+        return 0, "Unknown", 0, False
+
+    def _calculate_standard_wait(self, name: str, properties: dict, last_exec_time: Optional[str]) -> tuple[int, str, int]:
+        """
+        Calculates standar wait time based on last execution and failed keywords.
+        Returns: (timeoutSeconds, timer_details, seconds_remaining)
+        """
         failed_keywords = self.persistenceManager.get_failed_keywords(name)
         if last_exec_time:
             lapsed = getDatetimeNow() - parseDatetime(last_exec_time)
@@ -76,8 +90,15 @@ class ScrapperScheduler:
                 timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])
             seconds_remaining = max(0, timeoutSeconds - lapsed)
         else:
-             timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])
-        cadency_str = getTimeUnits(timeoutSeconds)
+            timeoutSeconds, timer_details = self.resolve_timer(name, properties[TIMER])
+            seconds_remaining = 0
+        return timeoutSeconds, timer_details, int(seconds_remaining)
+
+    def _calculate_status_and_display(self, name: str, starting: bool, startingAt: str, seconds_remaining: int, error_penalty_wait: bool) -> tuple[int, str, str]:
+        """
+        Calculates final status message and display wait string.
+        Returns: (seconds_remaining, status_msg, display_wait)
+        """
         is_starting_target = starting and startingAt == name.capitalize()
         is_starting_mode = starting
         status_msg = "Pending"
@@ -91,9 +112,23 @@ class ScrapperScheduler:
                 seconds_remaining = 999999999
                 status_msg = "Skipped (Start)"
                 display_wait = "-"
+        elif error_penalty_wait:
+            status_msg = "Error Wait"
         elif seconds_remaining == 0:
              status_msg = "Ready"
              display_wait = "NOW"
+        return seconds_remaining, status_msg, display_wait
+
+    def _calculate_scrapper_state(self, name: str, properties: dict, starting: bool, startingAt: str):
+        last_exec_time = self.lastExecution(name, properties)
+        seconds_remaining = 0
+        timer_details = "Unknown"
+        timeoutSeconds = 0
+        timeoutSeconds, timer_details, seconds_remaining, error_penalty_wait = self._calculate_error_penalty(name)
+        if not error_penalty_wait:
+             timeoutSeconds, timer_details, seconds_remaining = self._calculate_standard_wait(name, properties, last_exec_time)
+        cadency_str = getTimeUnits(timeoutSeconds)
+        seconds_remaining, status_msg, display_wait = self._calculate_status_and_display(name, starting, startingAt, seconds_remaining, error_penalty_wait)
         return seconds_remaining, status_msg, display_wait, timer_details, cadency_str
 
     def _calculate_and_print_status(self, starting: bool, startingAt: str):
