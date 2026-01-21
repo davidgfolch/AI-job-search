@@ -9,6 +9,7 @@ from ..services.IndeedService import IndeedService
 from .BaseExecutor import BaseExecutor
 
 class IndeedExecutor(BaseExecutor):
+
     def _init_scrapper(self):
         self.site_name = "INDEED"
         self.jobs_x_page = 15 # Indeed usually 15 or 16
@@ -19,7 +20,6 @@ class IndeedExecutor(BaseExecutor):
         self.days_old = 3
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
         self.navigator = IndeedNavigator(self.selenium_service, self.debug)
-
 
     def _preload_action(self):
         self.navigator.login()

@@ -18,7 +18,7 @@ class IndeedNavigator(BaseNavigator):
     def accept_cookies(self):
         self.selenium.waitAndClick_noError(CSS_SEL_COOKIE_ACCEPT, "Could not accept cookies")
 
-    @retry(retries=40, delay=1, raiseException=False, stackTrace=StackTrace.NEVER)
+    @retry(retries=60, delay=1, raiseException=False, stackTrace=StackTrace.NEVER)
     def waitForCloudflareFilterInLogin(self):
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_EMAIL)
 
@@ -26,7 +26,8 @@ class IndeedNavigator(BaseNavigator):
         print("Navigating to Indeed login page...")
         self.selenium.loadPage(LOGIN_PAGE)
         self.selenium.waitUntilPageIsLoaded()
-        self.waitForCloudflareFilterInLogin()
+        if not self.waitForCloudflareFilterInLogin():
+            raise Exception("Could not login because cloudFlare security filter was not resolved")
         print("Filling login form...")
         self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, USER_EMAIL)
         self.accept_cookies()

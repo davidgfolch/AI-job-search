@@ -58,26 +58,32 @@ class InfojobsExecutor(BaseExecutor):
         baseScrapper.summarize(keyword, totalResults, currentItem)
 
     @retry()
-    def getJobLinkAndUrl(self, idx):
+    def _load_row(self, idx):
+        if idx > 2:
+            try:
+                self.navigator.scroll_jobs_list(idx)
+            except Exception:
+                print(yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
+                return None
         job_link_elm = self.navigator.get_job_link_element(idx)
         url = self.navigator.get_job_url(job_link_elm)
-        return job_link_elm, url
+        job_id, job_exists = self.service.job_exists_in_db(url)
+        if job_exists:
+            print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='', flush=True)
+            return True
+        print(yellow('loading...'), end='')
+        self.navigator.click_job_link(job_link_elm)
+        return url
+
+    def _process_row(self, url):
+        title, company, location, _, html = self.navigator.get_job_data()
+        return self.service.process_job(title, company, location, url, html)
 
     def _load_and_process_row(self, idx) -> bool:
         try:
-            if idx > 2:
-                try:
-                    self.navigator.scroll_jobs_list(idx)
-                except Exception:
-                    print(yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
-                    return False
-            job_link_elm, url = self.getJobLinkAndUrl(idx)
-            job_id, job_exists = self.service.job_exists_in_db(url)
-            if job_exists:
-                print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='', flush=True)
-                return True
-            print(yellow('loading...'), end='')
-            self.navigator.click_job_link(job_link_elm)
+            url = self._load_row(idx)
+            if url is True or url is None:
+                return url
             if not self._process_row(url):
                  raise ValueError('Validation failed')
         except Exception:
@@ -88,11 +94,3 @@ class InfojobsExecutor(BaseExecutor):
             if self.list_url not in self.navigator.get_url():
                 self.navigator.go_back()
         return False
-
-    def _process_row(self, url):
-        try:
-            title, company, location, _, html = self.navigator.get_job_data()
-            return self.service.process_job(title, company, location, url, html)
-        except Exception as e:
-            debug(self.debug, exception=True)
-            raise e

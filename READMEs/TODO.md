@@ -30,4 +30,4 @@ This is a prototype beta version, not working yet.
 
 ## apps/web
 - In list, when selected all, it don't un select when click on selected row.  It unselects all, and select the row. The problem is even bigger because is an api bulk operation LLM decided to pass all form filters, so if you change a filter (eg. ignored) the bulk reques doesn't work.
-- in "AI Job Search Statistics" add "by day of week" chart.
+- "Clean - Ignore jobs by title" dont update job list when all ignored & there is pagination scrolled down.
