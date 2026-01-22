@@ -17,6 +17,7 @@ class LinkedinExecutor(BaseExecutor):
         self.remote = '2'   # onsite "1", remote "2", hybrid "3"
         self.location = '105646813' # Spain
         self.f_TPR = 'r86400'  # last 24 hours
+        self.sortBy = 'DD'  # DD most recent, R (default) most relevent
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
         self.navigator = LinkedinNavigator(self.selenium_service, self.debug)
 
@@ -32,21 +33,21 @@ class LinkedinExecutor(BaseExecutor):
         url = self._load_page(keyword)
         if self.navigator.check_login_popup(lambda: self.navigator.login(self.user_email, self.user_pwd)):
             url = self._load_page(keyword)
-        
         if self.navigator.check_results(keyword, url, self.remote, self.location, self.f_TPR):
             self._search_jobs_loop(keyword, start_page)
 
     def _load_page(self, keywords: str) -> str:
         from urllib.parse import quote
         print(f'Search keyword={keywords}')
-        url = f'https://www.linkedin.com/jobs/search/?keywords={quote(keywords)}&f_WT={self.remote}&geoId={self.location}&f_TPR={self.f_TPR}'
+        url = f'https://www.linkedin.com/jobs/search/?keywords={quote(keywords)}&f_WT={self.remote}' + \
+            f'&geoId={self.location}&f_TPR={self.f_TPR}&sortBy={self.sortBy}'
         self.navigator.load_page(url)
         return url
 
     def _search_jobs_loop(self, keywords: str, startPage: int):
         try:
             self.navigator.collapse_messages()
-            totalResults = self.navigator.get_total_results(keywords, self.remote, self.location, self.f_TPR)
+            totalResults = self.navigator.get_total_results(keywords, self.remote, self.location, self.f_TPR, self.sortBy)
             totalPages = math.ceil(totalResults / self.jobs_x_page)
             page = self.navigator.fast_forward_page(startPage, totalResults, self.jobs_x_page)
             currentItem = (page - 1) * self.jobs_x_page

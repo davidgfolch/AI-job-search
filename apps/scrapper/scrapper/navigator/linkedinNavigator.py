@@ -56,11 +56,11 @@ class LinkedinNavigator(BaseNavigator):
         return cssSelector.replace('##idx##', str(idx))
 
     @retry(exception=NoSuchElementException)
-    def get_total_results(self, keywords: str, remote, location, f_TPR) -> int:
+    def get_total_results(self, keywords: str, remote, location, f_TPR, sortBy) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')
         printHR(green)
         print(green(join(f'{total} total results for search: {keywords}',
-                        f'(remote={remote}, location={location}, last={f_TPR})')))
+                        f'(remote={remote}, location={location}, last={f_TPR}, sortBy={sortBy})')))
         printHR(green)
         return int(total.replace('+', ''))
 
