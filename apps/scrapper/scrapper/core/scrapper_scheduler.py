@@ -82,7 +82,7 @@ class ScrapperScheduler:
         return True, executed_starting_target
 
     def runAllScrappers(self, waitBeforeFirstRuns, starting, startingAt, loops=99999999999):
-        print(f'Executing all scrappers: {SCRAPPERS.keys()}')
+        print(f'Executing all scrappers: {list(SCRAPPERS.keys())}')
         if starting:
             print(f'Starting at : {startingAt}')
         count = 0
