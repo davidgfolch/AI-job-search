@@ -1,0 +1,373 @@
+diff --git a/README.md b/README.md
+index 3ef0f08..9d352c0 100644
+--- a/README.md
++++ b/README.md
+@@ -18,7 +18,7 @@ This is a monorepo containing several applications and packages:
+ | **Common Lib**  | [`apps/commonlib`](apps/commonlib/README.md)         | Shared Python utilities and database logic.       | Python, Poetry               |
+ | **Web UI**      | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.         | React, TypeScript, Vite, npm |
+ | **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
+-| **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
++| **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)         | Selenium-based job scrapers with LLM extraction support. | Python, Selenium, Poetry     |
+ | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama (LEGACY)         | Python, CrewAI, uv           |
+ | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using Transformers.           | Python, Transformers, uv     |
+ 
+diff --git a/apps/scrapper/README.md b/apps/scrapper/README.md
+index e05d756..952e7da 100644
+--- a/apps/scrapper/README.md
++++ b/apps/scrapper/README.md
+@@ -14,6 +14,7 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
+ - **Undetected ChromeDriver**: Option to use `undetected-chromedriver` to bypass strict protections (Cloudflare).
+ - **Duplicate Management**: Automatically merges duplicate job listings (`mergeDuplicates.py` from `commonlib`).
+ - **Resilience**: Retry mechanisms for network failures and element loading issues.
++- **LLM-Powered Extraction**: (New) Hybrid approach using LLMs (Zhipu AI, Ollama) to extract high-quality structured data from job descriptions, reducing reliance on fragile CSS selectors.
+ 
+ ## Supported Sites
+ 
+@@ -50,6 +51,15 @@ See `scripts/.env.example`.
+ - `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed).
+ - `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed).
+ 
++### LLM Scraping Configuration
++The scrapper supports an LLM-based hybrid approach for LinkedIn.
++
++- `LINKEDIN_USE_LLM=true`: Enable LLM extraction for LinkedIn.
++- `LLM_PROVIDER`: Choose provider: `zhipu` (Cloud, free), `ollama` (Local, free), or `huggingface`.
++- `LLM_MODEL`: Model name (e.g., `glm-4-flash` for Zhipu, `qwen2.5-coder:7b` for Ollama).
++- `ZHIPU_API_KEY`: API key for Zhipu AI (BigModel.cn).
++- `HF_TOKEN`: API token for Hugging Face Inference API.
++
+ ## Specific Scraper Parameters
+ 
+ You can modify parameters in `scrapper/*.py` (e.g., `linkedin.py`):
+@@ -141,3 +151,4 @@ poetry run pytest
+ - **ARSF (Anti Robot Security Filters)**: If Chrome opens but gets blocked, try `USE_UNDETECTED_CHROMEDRIVER=true` or use a VPN.
+ - **Gmail Issues**: Ensure app password is correctly generated and 2FA is enabled.
+ - **2FA Timeout**: Increase timeout in GmailService if verification emails are slow to arrive.
++- **LLM Extraction Errors**: Ensure your API keys are correct and that models are pulled locally (if using Ollama). If a model fails to extract, the scraper will retry based on standard mechanisms.
+diff --git a/apps/scrapper/scrapper/core/scrapper_config.py b/apps/scrapper/scrapper/core/scrapper_config.py
+index aea9d46..7a556f9 100644
+--- a/apps/scrapper/scrapper/core/scrapper_config.py
++++ b/apps/scrapper/scrapper/core/scrapper_config.py
+@@ -7,6 +7,9 @@ TIMER = 'timer'
+ CLOSE_TAB = 'closeTab'
+ IGNORE_AUTORUN = 'ignoreAutoRun'
+ DEBUG = 'debug'
++USE_LLM = 'use_llm'
++LLM_PROVIDER = 'llm_provider'
++LLM_MODEL = 'llm_model'
+ 
+ SCRAPPERS: Dict[str, Dict[str, Any]] = {
+     'Infojobs': {  # first to solve security filter
+@@ -24,6 +27,9 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
+         IGNORE_AUTORUN: getEnvBool('LINKEDIN_IGNORE_AUTORUN', False),
+         CLOSE_TAB: True,
+         DEBUG: False,
++        USE_LLM: getEnvBool('LINKEDIN_USE_LLM', False),
++        LLM_PROVIDER: getEnv('LLM_PROVIDER', 'zhipu'),
++        LLM_MODEL: getEnv('LLM_MODEL', 'glm-4-flash'),
+     },
+     'Glassdoor': {
+         TIMER: getSeconds(getEnv('GLASSDOOR_RUN_CADENCY')),
+diff --git a/apps/scrapper/scrapper/executor/LinkedinExecutor.py b/apps/scrapper/scrapper/executor/LinkedinExecutor.py
+index f4a537c..60abe52 100644
+--- a/apps/scrapper/scrapper/executor/LinkedinExecutor.py
++++ b/apps/scrapper/scrapper/executor/LinkedinExecutor.py
+@@ -8,7 +8,12 @@ from ..core.baseScrapper import getAndCheckEnvVars
+ from ..services.selenium.browser_service import sleep
+ from ..navigator.linkedinNavigator import LinkedinNavigator
+ from ..services.LinkedinService import LinkedinService
++from ..services.LinkedinService import LinkedinService
+ from .BaseExecutor import BaseExecutor
++from ..core.scrapper_config import USE_LLM, LLM_PROVIDER, LLM_MODEL
++from ..services.llm.llm_service import LLMService
++from ..services.llm.zhipu_provider import ZhipuProvider
++from ..services.llm.ollama_provider import OllamaProvider
+ 
+ class LinkedinExecutor(BaseExecutor):
+     def _init_scrapper(self):
+@@ -19,6 +24,23 @@ class LinkedinExecutor(BaseExecutor):
+         self.f_TPR = 'r86400'  # last 24 hours
+         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
+         self.navigator = LinkedinNavigator(self.selenium_service, self.debug)
++        
++        # Initialize LLM Service if enabled
++        props = self.persistence_manager.get_scrapper_properties(self.site_name_key) or {}
++        if props.get(USE_LLM):
++            provider_name = props.get(LLM_PROVIDER, 'zhipu')
++            model_name = props.get(LLM_MODEL, 'glm-4-flash')
++            if provider_name == 'zhipu':
++                provider = ZhipuProvider(model_name)
++            elif provider_name == 'ollama':
++                provider = OllamaProvider(model_name)
++            else:
++                raise ValueError(f"Unknown LLM provider: {provider_name}")
++            self.llm_service = LLMService(provider)
++            self.use_llm = True
++        else:
++            self.llm_service = None
++            self.use_llm = False
+ 
+     def _preload_action(self):
+         self.navigator.login(self.user_email, self.user_pwd)
+@@ -117,9 +139,26 @@ class LinkedinExecutor(BaseExecutor):
+         sleep(2,2)
+         isDirectUrlScrapping = idx is None
+         try:
+-            title, company, location, url, html = self.navigator.get_job_data()
+-            easyApply = self.navigator.check_easy_apply()
+-            self.service.process_job(title, company, location, url, html, isDirectUrlScrapping, easyApply)
++            if self.use_llm:
++                markdown = self.navigator.get_job_markdown()
++                data = self.llm_service.extract_job_data(markdown)
++                title = data.get('title')
++                company = data.get('company')
++                location = data.get('location')
++                html = data.get('description', '') # Using LLM provided description
++                url = self.navigator.get_job_url_from_element(self.navigator.replace_index(CSS_SEL_JOB_LINK, idx)) if not isDirectUrlScrapping else self.selenium_service.getUrl()
++                
++                # Temporarily change site_name for DB suffix
++                original_site = self.site_name
++                self.site_name = f"{original_site}_LLM"
++                try:
++                    self.service.process_job(title, company, location, url, html, isDirectUrlScrapping, False)
++                finally:
++                    self.site_name = original_site
++            else:
++                title, company, location, url, html = self.navigator.get_job_data()
++                easyApply = self.navigator.check_easy_apply()
++                self.service.process_job(title, company, location, url, html, isDirectUrlScrapping, easyApply)
+         except (ValueError, KeyboardInterrupt) as e:
+             raise e
+         except Exception:
+diff --git a/apps/scrapper/scrapper/navigator/linkedinNavigator.py b/apps/scrapper/scrapper/navigator/linkedinNavigator.py
+index 2d12ae0..993d5e8 100644
+--- a/apps/scrapper/scrapper/navigator/linkedinNavigator.py
++++ b/apps/scrapper/scrapper/navigator/linkedinNavigator.py
+@@ -3,6 +3,7 @@ from commonlib.decorator.retry import retry
+ from commonlib.terminalColor import green, yellow, printHR
+ from commonlib.stringUtil import join
+ from selenium.common.exceptions import NoSuchElementException
++from markdownify import markdownify as md
+ 
+ from ..core.baseScrapper import printPage
+ from ..services.selenium.seleniumService import SeleniumService
+@@ -136,4 +137,11 @@ class LinkedinNavigator(BaseNavigator):
+     def wait_until_page_url_contains(self, url, timeout):
+         self.selenium.waitUntilPageUrlContains(url, timeout)
+ 
++    def get_job_markdown(self) -> str:
++        """Returns the job description + fit preferences as Markdown."""
++        fit_prefs_html = self._get_job_fit_preferences_html()
++        description_html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
++        full_html = f"{fit_prefs_html}<br>{description_html}"
++        return md(full_html, heading_style="ATX")
++
+ 
+diff --git a/apps/scrapper/scrapper/services/llm/__init__.py b/apps/scrapper/scrapper/services/llm/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/apps/scrapper/scrapper/services/llm/__test__/__init__.py b/apps/scrapper/scrapper/services/llm/__test__/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/apps/scrapper/scrapper/services/llm/__test__/llm_service_test.py b/apps/scrapper/scrapper/services/llm/__test__/llm_service_test.py
+new file mode 100644
+index 0000000..5280315
+--- /dev/null
++++ b/apps/scrapper/scrapper/services/llm/__test__/llm_service_test.py
+@@ -0,0 +1,55 @@
++import pytest
++from unittest.mock import MagicMock, patch
++from scrapper.services.llm.llm_service import LLMService
++from scrapper.services.llm.zhipu_provider import ZhipuProvider
++from scrapper.services.llm.ollama_provider import OllamaProvider
++
++@pytest.fixture
++def mock_markdown():
++    return "# Job Title\nCompany Name\nLocation\nDescription"
++
++@pytest.fixture
++def expected_json():
++    return {
++        "title": "Job Title",
++        "company": "Company Name",
++        "location": "Location",
++        "description": "Clean description"
++    }
++
++def test_llm_service_orchestration(mock_markdown, expected_json):
++    provider = MagicMock()
++    provider.extract_job_data.return_value = expected_json
++    service = LLMService(provider)
++    
++    result = service.extract_job_data(mock_markdown)
++    
++    assert result == expected_json
++    provider.extract_job_data.assert_called_once_with(mock_markdown)
++
++@patch('requests.post')
++def test_zhipu_provider(mock_post, mock_markdown, expected_json):
++    mock_post.return_value.json.return_value = {
++        "choices": [{"message": {"content": '{"title": "Job Title", "company": "Company Name", "location": "Location", "description": "Clean description"}'}}]
++    }
++    mock_post.return_value.status_code = 200
++    
++    with patch('commonlib.environmentUtil.getEnv', return_value="fake_key"):
++        provider = ZhipuProvider()
++        result = provider.extract_job_data(mock_markdown)
++        
++    assert result == expected_json
++    assert mock_post.called
++
++@patch('requests.post')
++def test_ollama_provider(mock_post, mock_markdown, expected_json):
++    mock_post.return_value.json.return_value = {
++        "message": {"content": '{"title": "Job Title", "company": "Company Name", "location": "Location", "description": "Clean description"}'}
++    }
++    mock_post.return_value.status_code = 200
++    
++    provider = OllamaProvider()
++    result = provider.extract_job_data(mock_markdown)
++    
++    assert result == expected_json
++    assert mock_post.called
+diff --git a/apps/scrapper/scrapper/services/llm/llm_provider.py b/apps/scrapper/scrapper/services/llm/llm_provider.py
+new file mode 100644
+index 0000000..1e3dbea
+--- /dev/null
++++ b/apps/scrapper/scrapper/services/llm/llm_provider.py
+@@ -0,0 +1,11 @@
++from abc import ABC, abstractmethod
++from typing import Dict, Any, Optional
++
++class LLMProvider(ABC):
++    @abstractmethod
++    def extract_job_data(self, markdown_content: str) -> Dict[str, Any]:
++        """
++        Extracts structured job data from markdown content.
++        Returns a dictionary with job details.
++        """
++        pass
+diff --git a/apps/scrapper/scrapper/services/llm/llm_service.py b/apps/scrapper/scrapper/services/llm/llm_service.py
+new file mode 100644
+index 0000000..af1ec30
+--- /dev/null
++++ b/apps/scrapper/scrapper/services/llm/llm_service.py
+@@ -0,0 +1,10 @@
++from typing import Dict, Any
++from .llm_provider import LLMProvider
++
++class LLMService:
++    def __init__(self, provider: LLMProvider):
++        self.provider = provider
++
++    def extract_job_data(self, markdown_content: str) -> Dict[str, Any]:
++        """Orchestrates the extraction process using the injected provider."""
++        return self.provider.extract_job_data(markdown_content)
+diff --git a/apps/scrapper/scrapper/services/llm/ollama_provider.py b/apps/scrapper/scrapper/services/llm/ollama_provider.py
+new file mode 100644
+index 0000000..111900f
+--- /dev/null
++++ b/apps/scrapper/scrapper/services/llm/ollama_provider.py
+@@ -0,0 +1,36 @@
++import json
++import requests
++from typing import Dict, Any
++from .llm_provider import LLMProvider
++
++class OllamaProvider(LLMProvider):
++    def __init__(self, model: str = "qwen2.5-coder:7b", base_url: str = "http://localhost:11434"):
++        self.model = model
++        self.url = f"{base_url}/api/chat"
++
++    def extract_job_data(self, markdown_content: str) -> Dict[str, Any]:
++        system_prompt = (
++            "You are a professional job data extractor. Extract the following fields in JSON format "
++            "from the provided job description in markdown:\n"
++            "- title: The job title.\n"
++            "- company: The company name.\n"
++            "- location: The job location.\n"
++            "- description: A clean, concise markdown version of the job description.\n"
++            "Return ONLY the raw JSON object."
++        )
++
++        payload = {
++            "model": self.model,
++            "messages": [
++                {"role": "system", "content": system_prompt},
++                {"role": "user", "content": markdown_content}
++            ],
++            "stream": False,
++            "format": "json"
++        }
++
++        response = requests.post(self.url, json=payload, timeout=60)
++        response.raise_for_status()
++        data = response.json()
++        content = data["message"]["content"]
++        return json.loads(content)
+diff --git a/apps/scrapper/scrapper/services/llm/zhipu_provider.py b/apps/scrapper/scrapper/services/llm/zhipu_provider.py
+new file mode 100644
+index 0000000..67f10a0
+--- /dev/null
++++ b/apps/scrapper/scrapper/services/llm/zhipu_provider.py
+@@ -0,0 +1,42 @@
++import json
++import requests
++from typing import Dict, Any
++from commonlib.environmentUtil import getEnv
++from .llm_provider import LLMProvider
++
++class ZhipuProvider(LLMProvider):
++    def __init__(self, model: str = "glm-4-flash"):
++        self.api_key = getEnv("ZHIPU_API_KEY")
++        self.model = model
++        self.url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
++
++    def extract_job_data(self, markdown_content: str) -> Dict[str, Any]:
++        headers = {
++            "Authorization": f"Bearer {self.api_key}",
++            "Content-Type": "application/json"
++        }
++        
++        system_prompt = (
++            "You are a professional job data extractor. Extract the following fields in JSON format "
++            "from the provided job description in markdown:\n"
++            "- title: The job title.\n"
++            "- company: The company name.\n"
++            "- location: The job location.\n"
++            "- description: A clean, concise markdown version of the job description.\n"
++            "Return ONLY the raw JSON object."
++        )
++
++        payload = {
++            "model": self.model,
++            "messages": [
++                {"role": "system", "content": system_prompt},
++                {"role": "user", "content": markdown_content}
++            ],
++            "response_format": {"type": "json_object"}
++        }
++
++        response = requests.post(self.url, headers=headers, json=payload, timeout=30)
++        response.raise_for_status()
++        data = response.json()
++        content = data["choices"][0]["message"]["content"]
++        return json.loads(content)
+diff --git a/scripts/.env.example b/scripts/.env.example
+index a8eaf68..4247787 100644
+--- a/scripts/.env.example
++++ b/scripts/.env.example
+@@ -40,6 +40,13 @@ INDEED_RUN_CADENCY=3h
+ GMAIL_EMAIL=your-gmail@gmail.com
+ GMAIL_APP_PASSWORD=your-16-digit-app-password
+ 
++# LLM Scraping Configuration (LinkedIn hybrid approach)
++LINKEDIN_USE_LLM=False
++LLM_PROVIDER=zhipu # Options: zhipu, ollama, huggingface
++LLM_MODEL=glm-4-flash # Zhipu: glm-4-flash | Ollama: qwen2.5-coder:7b | HF: Qwen/Qwen2.5-72B-Instruct
++ZHIPU_API_KEY=your-zhipu-api-key # Get at https://open.bigmodel.cn/ (GLM-4-Flash is free)
++HF_TOKEN=your-huggingface-token # Get at https://huggingface.co/settings/tokens
++
+ # Scrapper options
+ RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
+ USE_UNDETECTED_CHROMEDRIVER=True  # Use undetected-chromedriver to bypass Cloudflare/bot detection (requires Chrome installed) (recommended for Infojobs, Glassdoor)
