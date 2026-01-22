@@ -18,12 +18,12 @@ class TestLinkedinNavigator:
     @patch("scrapper.navigator.linkedinNavigator.sleep")
     def test_get_total_results(self, mock_sleep, navigator, mock_selenium):
         mock_selenium.getText.return_value = "100+ items"
-        assert navigator.get_total_results("k", "r", "l", "t") == 100
+        assert navigator.get_total_results("k", "r", "l", "t", "d") == 100
     
     @patch("scrapper.navigator.linkedinNavigator.sleep")
     def test_get_total_results_exact(self, mock_sleep, navigator, mock_selenium):
         mock_selenium.getText.return_value = "50 items"
-        assert navigator.get_total_results("k", "r", "l", "t") == 50
+        assert navigator.get_total_results("k", "r", "l", "t", "d") == 50
     
     def test_check_easy_apply_true(self, navigator, mock_selenium):
         mock_selenium.getElms.return_value = [MagicMock()]

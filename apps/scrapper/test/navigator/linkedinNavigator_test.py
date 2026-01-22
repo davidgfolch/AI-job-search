@@ -70,7 +70,7 @@ class TestLinkedinNavigator:
 
     def test_get_total_results(self, navigator, mock_selenium):
         mock_selenium.getText.return_value = "100+ results"
-        result = navigator.get_total_results("key", False, "loc", "tpr")
+        result = navigator.get_total_results("key", False, "loc", "tpr", "d")
         assert result == 100
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 
