@@ -41,8 +41,10 @@ export default function Viewer() {
                                 />
                                 {state.activeTab === 'list' && (
                                     <div className="list-summary">
-                                        <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span>&nbsp;loaded |&nbsp;
-                                        <span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span>&nbsp;Selected
+                                        {status.isLoadingMore && <div className="spinner" style={{position: 'relative', float: 'left'}}></div>}
+                                        <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span> loaded
+                                        <br/>
+                                        <span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span> Selected
                                     </div>
                                 )}
                                 {(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0) && (
@@ -74,7 +76,6 @@ export default function Viewer() {
                                         selectedJob={state.selectedJob}
                                         onJobSelect={actions.selectJob}
                                         onLoadMore={actions.loadMore}
-                                        isLoadingMore={status.isLoadingMore}
                                         hasMore={state.allJobs.length < (state.data?.total || 0)}
                                         selectedIds={state.selectedIds}
                                         selectionMode={state.selectionMode}

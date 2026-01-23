@@ -102,12 +102,34 @@
   cursor: not-allowed;
 }
 
+.list-summary {
+  /* display: flex; */
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  max-height: 2.5rem;
+  padding: 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.list-summary .spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
 .loading-more {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 1rem;
+  height: 2.5rem;
+  padding: 0 1rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
 }

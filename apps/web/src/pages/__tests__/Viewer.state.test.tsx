@@ -57,7 +57,7 @@ describe('Viewer - State Management', () => {
             assertion: async () => {
                 await runTimers();
                 expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-                verifySummary(/2\/2 loaded \| 0 Selected/);
+                verifySummary(/2\/2 loaded\|0 Selected/);
             }
         },
         {

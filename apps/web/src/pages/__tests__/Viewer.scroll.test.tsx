@@ -49,7 +49,7 @@ describe('Viewer - Scroll and Pagination', () => {
         ], total: 50, page: 1, size: 20 });
         renderViewer();
         await runTimers();
-        verifySummary(/2\/50 loaded \| 0 Selected/);
+        verifySummary(/2\/50 loaded\|0 Selected/);
         expect(jobsApi.getJobs).toHaveBeenCalledTimes(1);
     });
 

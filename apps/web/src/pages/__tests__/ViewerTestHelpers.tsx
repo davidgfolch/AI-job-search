@@ -31,7 +31,7 @@ export const verifyJobDetails = async (description: string, company: string) => 
 };
 
 export const verifySummary = (text: RegExp) => {
-  const summary = screen.getByText(/ loaded \| /);
+  const summary = screen.getByText(/ loaded\|/);
   expect(summary).toHaveTextContent(text);
 };
 
