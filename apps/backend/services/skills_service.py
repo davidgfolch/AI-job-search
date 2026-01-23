@@ -6,18 +6,35 @@ class SkillsService:
     def __init__(self):
         self.repository = SkillsRepository()
 
+    def _normalize_skill_name(self, name: str) -> str:
+        """Normalize skill name to TitleCase using .title()"""
+        return name.strip().title()
+
+    def _find_skill_by_name(self, name: str) -> tuple[str, Optional[Dict[str, Any]]]:
+        normalized_name = self._normalize_skill_name(name)
+        return normalized_name, self.repository.find_by_name_case_insensitive(normalized_name)
+
     def list_skills(self) -> List[Skill]:
         return self.repository.list_skills()
 
     def create_skill(self, skill: Skill) -> str:
-        # Check if exists could be done here or in repo, doing blindly in repo for now
+        normalized_name, existing = self._find_skill_by_name(skill.name)
+        if existing:
+            return existing['name']
+        skill.name = normalized_name
         return self.repository.create_skill(skill)
 
     def update_skill(self, name: str, update_data: Dict[str, Any]) -> Optional[str]:
-        return self.repository.update_skill(name, update_data)
+        _, existing = self._find_skill_by_name(name)
+        if not existing:
+            return None
+        return self.repository.update_skill(existing['name'], update_data)
 
     def delete_skill(self, name: str) -> bool:
-        return self.repository.delete_skill(name)
+        _, existing = self._find_skill_by_name(name)
+        if not existing:
+            return False
+        return self.repository.delete_skill(existing['name'])
 
     def bulk_create_skills(self, skills: List[Skill]) -> int:
         count = 0

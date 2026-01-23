@@ -28,6 +28,25 @@ class SkillsRepository:
                 ))
             return skills
 
+    def find_by_name_case_insensitive(self, name: str) -> Optional[Dict[str, Any]]:
+        with self.get_db() as db:
+            query = "SELECT name, description, learning_path, disabled FROM job_skills WHERE LOWER(name) = LOWER(%s)"
+            row = db.fetchOne(query, name)
+            if not row:
+                return None
+            learning_path = []
+            if row[2]:
+                try:
+                    learning_path = json.loads(row[2])
+                except:
+                    learning_path = []
+            return {
+                'name': row[0],
+                'description': row[1] or "",
+                'learning_path': learning_path,
+                'disabled': bool(row[3])
+            }
+
     def create_skill(self, skill: Skill) -> str:
         with self.get_db() as db:
             query = "INSERT INTO job_skills (name, description, learning_path, disabled) VALUES (%s, %s, %s, %s)"

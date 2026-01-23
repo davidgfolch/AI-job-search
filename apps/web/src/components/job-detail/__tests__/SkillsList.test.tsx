@@ -31,6 +31,8 @@ describe('SkillsList', () => {
             saveSkill: mockSaveSkill,
             toggleSkill: mockToggleSkill,
             isInLearnList: mockIsInLearnList,
+            skillExists: (skillName: string) => 
+                mockLearnList.find(s => s.name.toLowerCase() === skillName.trim().toLowerCase()),
             reorderSkills: vi.fn(),
             removeSkill: vi.fn(),
             updateSkill: vi.fn(),

@@ -8,13 +8,13 @@ interface SkillsListProps {
 }
 
 export default function SkillsList({ skills }: SkillsListProps) {
-    const { toggleSkill, isInLearnList, learnList, saveSkill } = useLearnList();
+    const { toggleSkill, isInLearnList, skillExists, saveSkill } = useLearnList();
     const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
 
     if (!skills) return null;
 
     const handleViewDetail = (skillName: string) => {
-        const existing = learnList.find(s => s.name === skillName.trim());
+        const existing = skillExists(skillName);
         if (existing) {
             setEditingSkill(existing);
         } else {

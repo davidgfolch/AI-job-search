@@ -248,6 +248,8 @@ select * from jobs where jobId like '%handMade%';
 
 select * from job_skills;
 
+select * from job_skills where job_skills.name like '%tensorflow%';
+
 
 
 -- Locks

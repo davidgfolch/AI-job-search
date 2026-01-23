@@ -48,12 +48,16 @@ export const useLearnList = () => {
     }
   });
 
+  const skillExists = (skillName: string): Skill | undefined => {
+    return learnList.find(s => s.name.toLowerCase() === skillName.trim().toLowerCase());
+  };
+
   const toggleSkill = async (skillName: string) => {
-    const existing = learnList.find(s => s.name === skillName.trim());
-    if (existing && !existing.disabled) {
+    const skill = skillExists(skillName);
+    if (skill && !skill.disabled) {
         // Remove (soft delete)
         await removeSkill(skillName);
-    } else if (existing && existing.disabled) {
+    } else if (skill && skill.disabled) {
         // Re-enable
         updateMutation.mutate({ name: skillName, updates: { disabled: false } });
     } else {
@@ -67,9 +71,9 @@ export const useLearnList = () => {
     }
   };
 
-  const isInLearnList = (skill: string): boolean => {
-    const s = learnList.find(s => s.name === skill.trim());
-    return !!s && !s.disabled;
+  const isInLearnList = (skillName: string): boolean => {
+    const skill = skillExists(skillName);
+    return !!skill && !skill.disabled;
   };
 
   const reorderSkills = async (newList: Skill[]) => {
@@ -84,7 +88,7 @@ export const useLearnList = () => {
   };
 
   const removeSkill = async (skillName: string) => {
-     const skill = learnList.find(s => s.name === skillName.trim());
+     const skill = skillExists(skillName);
       if (!skill) return;
 
       const hasContent = (skill.description && skill.description.trim().length > 0) || 
@@ -104,12 +108,12 @@ export const useLearnList = () => {
       removeSkill, 
       isInLearnList, 
       updateSkill, 
+      skillExists, 
       isLoading, 
       error, 
       fetchSkills: refetch,
       saveSkill: (skill: Skill) => {
-        const existing = learnList.find(s => s.name === skill.name);
-        if (existing) {
+        if (skillExists(skill.name)) {
              const { name, ...updates } = skill;
              updateMutation.mutate({ name, updates });
         } else {

@@ -31,8 +31,10 @@ export const verifyJobDetails = async (description: string, company: string) => 
 };
 
 export const verifySummary = (text: RegExp) => {
-  const summary = screen.getByText(/ loaded\|/);
-  expect(summary).toHaveTextContent(text);
+  const summary = screen.getByText((_content, element) => {
+    return element?.className === 'list-summary' && text.test(element.textContent || '');
+  });
+  expect(summary).toBeInTheDocument();
 };
 
 export const triggerInfiniteScroll = async (callback: any) => {

@@ -18,6 +18,9 @@ def bulk_create_skills(skills: List[Skill]):
 def create_skill(name: str, skill: SkillCreate):
     if name != skill.name:
         raise HTTPException(status_code=400, detail="Name mismatch")
+    existing = service.repository.find_by_name_case_insensitive(skill.name)
+    if existing:
+        raise HTTPException(status_code=409, detail="Skill already exists")
     return service.create_skill(skill)
 
 @router.put("/{name}", response_model=str)
