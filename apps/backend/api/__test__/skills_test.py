@@ -15,7 +15,9 @@ def test_list_skills(mock_list, client):
     assert response.json()[0]["name"] == "Python"
 
 @patch('services.skills_service.SkillsService.create_skill')
-def test_create_skill(mock_create, client):
+@patch('repositories.skills_repository.SkillsRepository.find_by_name_case_insensitive')
+def test_create_skill(mock_find, mock_create, client):
+    mock_find.return_value = None
     mock_create.return_value = "Python"
     skill_data = {"name": "Python", "description": "Programming language", "learning_path": ["basics"], "disabled": False}
     response = client.post("/api/skills/Python", json=skill_data)
