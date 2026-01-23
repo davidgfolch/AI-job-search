@@ -1,3 +1,4 @@
+import math
 import traceback
 import time
 import random
@@ -26,8 +27,7 @@ def debug(debugFlag: bool, msg: str = '', exception: Optional[bool]=None):
             print(red(msg))
 
 def pageExists(page: int, totalResults: int, jobsXPage: int) -> bool:
-    import math
-    return page > 1 and totalResults > 0 and page < math.ceil(totalResults / jobsXPage)
+    return page > 1 and totalResults > 0 and page <= math.ceil(totalResults / jobsXPage)
 
 def abortExecution() -> bool:
     print(yellow("Scraper interrupted. Waiting 3 seconds... (Ctrl+C to stop all)"))

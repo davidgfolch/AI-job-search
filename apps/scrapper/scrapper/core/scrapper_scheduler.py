@@ -9,6 +9,7 @@ from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
 from scrapper.executor.BaseExecutor import BaseExecutor
 from scrapper.core.scrapper_state_calculator import ScrapperStateCalculator
+from scrapper.util.terminalTableUtil import print_failed_info_table
 
 class ScrapperScheduler:
     
@@ -92,6 +93,7 @@ class ScrapperScheduler:
             if seconds_to_wait > 0:
                 consoleTimer("Waiting for next execution slot", f"{int(seconds_to_wait)}s")
             should_continue, executed_starting_target = self._execute_scrappers(scrappers_status, starting, startingAt)
+            print_failed_info_table(self.persistenceManager)
             if not should_continue:
                 return
             if starting and executed_starting_target:
@@ -109,3 +111,4 @@ class ScrapperScheduler:
                 executor = BaseExecutor.create(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
                 if not executor.execute(properties):
                     return
+        print_failed_info_table(self.persistenceManager)
