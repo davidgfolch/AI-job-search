@@ -101,7 +101,8 @@ def check_layer(working_dir, root_dir, required_deps=None, forbidden_deps=None, 
                 messages.append(f"  - {RED}{v}{RESET}")
             messages.append("") # Empty line between files
             
-        warnings.warn(UserWarning('\n'.join(messages)))
+        return '\n'.join(messages)
+    return None
 
 def get_files_without_sibling_test():
     root_dir = get_project_root()

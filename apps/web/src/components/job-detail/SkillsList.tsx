@@ -52,6 +52,7 @@ export default function SkillsList({ skills }: SkillsListProps) {
                 <EditSkillModal
                     skill={editingSkill}
                     onSave={handleSaveSkill}
+                    onUpdate={saveSkill}
                     onClose={() => setEditingSkill(null)}
                 />
             )}

@@ -1,10 +1,18 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, path.resolve(process.cwd(), '../../'), '')
+  const aiEnrichSkillEnabled = env.AI_ENRICH_SKILL === 'True' || env.AI_ENRICH_SKILL === 'true'
+
+  return {
+    define: {
+      __AI_ENRICH_SKILL_ENABLED__: JSON.stringify(aiEnrichSkillEnabled),
+    },
+    plugins: [react()],
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -33,4 +41,5 @@ export default defineConfig({
       reportOnFailure: true,
     }
   },
+  }
 })

@@ -8,6 +8,24 @@ vi.mock('../../components/skills/useLearnList', () => ({
   useLearnList: vi.fn(),
 }));
 
+vi.mock('../../components/skills/EditSkillModal', () => ({
+  EditSkillModal: ({ skill, onSave }: any) => {
+    // Simple mock that captures input
+    let currentDesc = skill.description;
+    return (
+      <div>
+        <textarea 
+          defaultValue={skill.description} 
+          onChange={(e) => currentDesc = e.target.value}
+        />
+        <button onClick={() => onSave({ description: currentDesc, learningPath: skill.learningPath })}>
+          Save Changes
+        </button>
+      </div>
+    );
+  }
+}));
+
 describe('SkillsManager', () => {
   const mockReorderSkills = vi.fn();
   const mockRemoveSkill = vi.fn();

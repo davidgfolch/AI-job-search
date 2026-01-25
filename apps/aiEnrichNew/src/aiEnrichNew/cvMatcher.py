@@ -49,7 +49,7 @@ class FastCVMatcher:
         return cls._instance
 
     def _initialize(self):
-        print(yellow("Loading embedding model (this may take a while significantly on first run)..."))
+        print("Loading embedding model (this may take a while significantly on first run)...")
         self._model = SentenceTransformer('all-MiniLM-L6-v2') 
         print(cyan("Embedding model loaded."))
 
@@ -98,7 +98,7 @@ class FastCVMatcher:
         if not getEnvBool('AI_CV_MATCH'):
             print(yellow('AI_CV_MATCH disabled'))
             return False
-        print(yellow(f'Loading CV from: {CV_LOCATION}'))
+        print(f'Loading CV from: {CV_LOCATION}')
         try:
             filePath = Path(CV_LOCATION)
             cvLocationTxt = CV_LOCATION.replace('.pdf', '.txt')
@@ -108,18 +108,18 @@ class FastCVMatcher:
                 return False
             if filePath.suffix.lower() == '.pdf' and not filePathTxt.exists():
                 self._cv_content = self._extract_text_from_pdf(CV_LOCATION)
-                print(yellow(f'CV (PDF) loaded from: {CV_LOCATION} ({len(self._cv_content)} chars)'))
+                print(f'CV (PDF) loaded from: {CV_LOCATION} ({len(self._cv_content)} chars)')
                 with open(cvLocationTxt, 'w', encoding='utf-8') as mdFile:
                     mdFile.write(self._cv_content)
             elif filePathTxt.exists():
                 with open(cvLocationTxt, 'r', encoding='utf-8') as f:
                     self._cv_content = f.read()
-                print(yellow(f'CV (text from PDF) loaded from: {cvLocationTxt} ({len(self._cv_content)} chars)'))
+                print(f'CV (text from PDF) loaded from: {cvLocationTxt} ({len(self._cv_content)} chars)')
             else:
-                print(red(f'Unsupported CV file format'))
+                print(yellow(f'Unsupported CV file format'))
                 return False
             if not self._cv_content or not self._cv_content.strip():
-                print(red('CV file is empty'))
+                print(yellow('CV file is empty'))
                 return False
             self._cv_embedding = self._model.encode([self._cv_content])
             return True

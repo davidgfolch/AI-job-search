@@ -1,18 +1,16 @@
 import json
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import magenta, printHR, yellow, cyan
 from commonlib.environmentUtil import getEnv
 from .jsonHelper import footer, mapJob, printJob, saveError, validateResult, rawToJson
+from .llm_client import get_pipeline
 
 # Configuration
 VERBOSE = True 
 DEBUG = False
-MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct"
+# MODEL_ID moved to llm_client.py
 SYSTEM_PROMPT = """You are an expert at analyzing job offers.
 Extract the following information from the job offer below and return it as a valid JSON object:
 - required_technologies: A string with comma-separated list of required technologies. Keep it concise.
@@ -26,32 +24,6 @@ Format your response as a single valid JSON object strictly complying with this 
   "salary": null
 }
 Strictly JSON. No conversational text. No markdown blocks."""
-
-# Global pipeline instance
-_PIPELINE = None
-
-def get_pipeline():
-    global _PIPELINE
-    if _PIPELINE is None:
-        print(cyan(f"Loading local model: {MODEL_ID}..."))
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-        model = AutoModelForCausalLM.from_pretrained(
-            MODEL_ID, 
-            dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-            device_map="auto"
-        )
-        _PIPELINE = pipeline(
-            "text-generation", 
-            model=model, 
-            tokenizer=tokenizer, 
-            max_new_tokens=2048, # Enough for JSON output, increased to avoid truncation
-            temperature=0.1, # Low temp for deterministic extraction
-            top_p=0.9,
-            repetition_penalty=1.1,
-            return_full_text=False
-        )
-        print(cyan("Local model loaded."))
-    return _PIPELINE
 
 QRY_FIND = """
 SELECT id, title, markdown, company

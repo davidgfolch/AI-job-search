@@ -7,11 +7,12 @@ import warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.environmentUtil import getEnvBool
-from commonlib.terminalColor import yellow, printHR
+from commonlib.terminalColor import yellow, printHR, cyan
 from commonlib.terminalUtil import consoleTimer
 import time
 from .dataExtractor import dataExtractor
 from .cvMatcher import FastCVMatcher
+from .skillEnricher import skillEnricher
 
 def run():
     if getEnvBool('AI_CV_MATCH'):
@@ -21,7 +22,9 @@ def run():
 
     while True:
         if dataExtractor()==0:
+            if skillEnricher() > 0:
+                continue
             if cvMatcher is not None:
                 if cvMatcher.process_db_jobs()>0:
                     continue
-        consoleTimer('All jobs enriched. ', '10s', end='\r')
+        consoleTimer(cyan('All jobs enriched. '), '10s', end='\r')

@@ -14,6 +14,13 @@ def list_skills():
 def bulk_create_skills(skills: List[Skill]):
     return service.bulk_create_skills(skills)
 
+@router.get("/{name}", response_model=Skill)
+def get_skill(name: str):
+    _, existing = service._find_skill_by_name(name)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    return existing
+
 @router.post("/{name}", response_model=str)
 def create_skill(name: str, skill: SkillCreate):
     if name != skill.name:

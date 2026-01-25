@@ -243,11 +243,37 @@
   background-color: rgba(var(--primary-color-rgb), 0.1);
 }
 
+
 /* Read Only Text */
 .read-only-text {
   white-space: pre-wrap;
   color: var(--text-secondary);
   font-size: 0.9rem;
+  /* Truncation styles */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 3rem; /* Fallback/approx for 2 lines */
+  line-height: 1.5;
+  cursor: pointer;
+  transition: max-height 0.3s ease; /* Optional: smooth transition if we were using max-height, but line-clamp doesn't animate well usually */
+}
+
+.read-only-text.expanded {
+  -webkit-line-clamp: unset;
+  max-height: none;
+  overflow: visible;
+}
+
+/* Markdown Content Styling */
+.read-only-text p {
+  margin: 0;
+}
+
+.read-only-text ul, .read-only-text ol {
+  margin: 0;
+  padding-left: 1.5rem;
 }
 
 .links-list.read-only {
@@ -273,7 +299,7 @@
   background-color: var(--bg-secondary);
   border-radius: 8px;
   width: 90%;
-  max-width: 600px;
+  max-width: 900px; /* Increased width for side-by-side */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -321,6 +347,32 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.description-editor-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.description-preview {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  background-color: var(--bg-primary);
+  overflow-y: auto;
+  max-height: 200px; /* Match textarea usually or fixed height */
+}
+
+/* Markdown Preview Styling inside Modal */
+.description-preview p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+.description-preview ul, .description-preview ol {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
 }
 
 .form-group label {

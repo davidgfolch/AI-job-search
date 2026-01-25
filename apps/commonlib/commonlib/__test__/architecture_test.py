@@ -42,10 +42,12 @@ def test_backend_layered_architecture(layer_name, required_deps, forbidden_deps,
     backend_dir = root_dir / 'apps' / 'backend'
     if not backend_dir.exists():
         return # Skip if backend directory doesn't exist
-    check_layer(backend_dir / layer_name, root_dir,
+    error_msg = check_layer(backend_dir / layer_name, root_dir,
         required_deps=required_deps,
         forbidden_deps=forbidden_deps,
         ignore_files=ignore_files)
+    if error_msg:
+        pytest.fail(error_msg)
 
 def test_sibling_test_folder_exists():
     violations = get_files_without_sibling_test()
@@ -59,4 +61,5 @@ def test_sibling_test_folder_exists():
         for path, reason in violations:
              message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
              
-        warnings.warn(UserWarning(message))
+        print(message)
+        pytest.fail(message)

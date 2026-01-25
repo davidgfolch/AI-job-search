@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { Skill } from './useLearnList';
 
 interface SkillsTableProps {
@@ -7,6 +8,20 @@ interface SkillsTableProps {
   onEdit: (skill: Skill) => void;
   onRemove: (skillName: string) => void;
 }
+
+const SkillDescriptionCell = ({ description }: { description: string }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div 
+      className={`read-only-text ${expanded ? 'expanded' : ''}`}
+      onClick={() => setExpanded(!expanded)}
+      title={expanded ? "Click to collapse" : "Click to expand"}
+    >
+      <ReactMarkdown>{description}</ReactMarkdown>
+    </div>
+  );
+};
 
 export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTableProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -65,7 +80,7 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
                 <span className="skill-name">{skill.name}</span>
               </td>
               <td>
-                <div className="read-only-text">{skill.description}</div>
+                <SkillDescriptionCell description={skill.description} />
               </td>
               <td>
                 <div className="links-list read-only">

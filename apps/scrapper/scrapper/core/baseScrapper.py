@@ -1,6 +1,5 @@
 import math
 import re
-import traceback
 import urllib.parse
 from typing import Optional
 from markdownify import MarkdownConverter

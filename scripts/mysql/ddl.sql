@@ -86,6 +86,8 @@ CREATE TABLE if not exists `job_skills` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+ALTER TABLE job_skills ADD COLUMN ai_enriched TINYINT(1) DEFAULT 0;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

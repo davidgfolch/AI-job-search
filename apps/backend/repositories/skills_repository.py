@@ -9,7 +9,7 @@ class SkillsRepository:
 
     def list_skills(self) -> List[Skill]:
         with self.get_db() as db:
-            query = "SELECT name, description, learning_path, disabled FROM job_skills ORDER BY name"
+            query = "SELECT name, description, learning_path, disabled, ai_enriched FROM job_skills ORDER BY name"
             rows = db.fetchAll(query)
             skills = []
             for row in rows:
@@ -24,13 +24,14 @@ class SkillsRepository:
                     name=row[0],
                     description=row[1] or "",
                     learning_path=learning_path,
-                    disabled=bool(row[3])
+                    disabled=bool(row[3]),
+                    ai_enriched=bool(row[4]) if row[4] is not None else False
                 ))
             return skills
 
     def find_by_name_case_insensitive(self, name: str) -> Optional[Dict[str, Any]]:
         with self.get_db() as db:
-            query = "SELECT name, description, learning_path, disabled FROM job_skills WHERE LOWER(name) = LOWER(%s)"
+            query = "SELECT name, description, learning_path, disabled, ai_enriched FROM job_skills WHERE LOWER(name) = LOWER(%s)"
             row = db.fetchOne(query, name)
             if not row:
                 return None
@@ -44,17 +45,19 @@ class SkillsRepository:
                 'name': row[0],
                 'description': row[1] or "",
                 'learning_path': learning_path,
-                'disabled': bool(row[3])
+                'disabled': bool(row[3]),
+                'ai_enriched': bool(row[4]) if row[4] is not None else False
             }
 
     def create_skill(self, skill: Skill) -> str:
         with self.get_db() as db:
-            query = "INSERT INTO job_skills (name, description, learning_path, disabled) VALUES (%s, %s, %s, %s)"
+            query = "INSERT INTO job_skills (name, description, learning_path, disabled, ai_enriched) VALUES (%s, %s, %s, %s, %s)"
             params = [
                 skill.name,
                 skill.description,
                 json.dumps(skill.learning_path) if skill.learning_path else None,
-                skill.disabled
+                skill.disabled,
+                skill.ai_enriched
             ]
             db.executeAndCommit(query, params)
             return skill.name
@@ -79,6 +82,10 @@ class SkillsRepository:
             if 'disabled' in update_data:
                 set_clauses.append("disabled = %s")
                 params.append(update_data['disabled'])
+            if 'ai_enriched' in update_data:
+                set_clauses.append("ai_enriched = %s")
+                params.append(update_data['ai_enriched'])
+
             if not set_clauses:
                 return name
             params.append(name)

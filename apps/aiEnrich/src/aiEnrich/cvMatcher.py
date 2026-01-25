@@ -151,7 +151,7 @@ def loadCVContent():
         return False
     if cvContent is not None:
         return True
-    print(yellow(f'Loading CV from: {CV_LOCATION}'))
+    print(f'Loading CV from: {CV_LOCATION}')
     try:
         filePath = Path(CV_LOCATION)
         cvLocationTxt = CV_LOCATION.replace('.pdf', '.txt')
@@ -162,18 +162,18 @@ def loadCVContent():
         fileExtension = filePath.suffix.lower()
         if fileExtension == '.pdf' and not filePathTxt.exists():
             cvContent = extractTextFromPDF(CV_LOCATION)
-            print(yellow(f'CV (PDF) loaded from: {CV_LOCATION} ({len(cvContent)} chars)'))
+            print(f'CV (PDF) loaded from: {CV_LOCATION} ({len(cvContent)} chars)')
             with open(cvLocationTxt, 'w', encoding='utf-8') as mdFile:
                 mdFile.write(cvContent)
         elif filePathTxt.exists():
             with open(cvLocationTxt, 'r', encoding='utf-8') as f:
                 cvContent = f.read()
-            print(yellow(f'CV (text from PDF) loaded from: {cvLocationTxt} ({len(cvContent)} chars)'))
+            print(f'CV (text from PDF) loaded from: {cvLocationTxt} ({len(cvContent)} chars)')
         else:
-            print(red(f'Unsupported CV file format: {fileExtension}. Supported formats: .txt, .pdf'))
+            print(yellow(f'Unsupported CV file format: {fileExtension}. Supported formats: .txt, .pdf'))
             return False
         if not cvContent or len(cvContent.strip()) == 0:
-            print(red('CV file is empty'))
+            print(yellow('CV file is empty'))
             return False
         return True
     except FileNotFoundError:
