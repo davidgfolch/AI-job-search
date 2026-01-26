@@ -92,7 +92,7 @@ describe('JobActions', () => {
         expect(onDeleteMock).toHaveBeenCalled();
     });
 
-    it('should handle copy permalink with filters', () => {
+    it('should handle copy permalink with simplified jobId only', () => {
         const filters = { search: 'dev', order: 'salary desc', days_old: 7 };
         render(<JobActions {...mockProps} filters={filters} />);
         
@@ -100,9 +100,11 @@ describe('JobActions', () => {
         
         expect(navigator.clipboard.writeText).toHaveBeenCalled();
         const calledUrl = (navigator.clipboard.writeText as any).mock.calls[0][0];
+        // Expect jobId to be present
         expect(calledUrl).toContain('jobId=123');
-        expect(calledUrl).toContain('search=dev');
-        expect(calledUrl).toContain('order=salary+desc'); // URL encoded
-        expect(calledUrl).toContain('days_old=7');
+        // Expect other filters to be ABSENT, confirming simple permalink
+        expect(calledUrl).not.toContain('search=dev');
+        expect(calledUrl).not.toContain('order=salary');
+        expect(calledUrl).not.toContain('days_old=7');
     });
 });

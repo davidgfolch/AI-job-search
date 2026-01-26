@@ -1,5 +1,4 @@
 import type { Job, JobListParams } from '../api/jobs';
-import { BOOLEAN_FILTER_KEYS } from '../config/filterConfig';
 import './JobActions.css';
 
 interface JobActionsProps {
@@ -22,7 +21,6 @@ interface JobActionsProps {
 
 export default function JobActions({
     job,
-    filters,
     onSeen,
     onApplied,
     onDiscarded,
@@ -38,24 +36,11 @@ export default function JobActions({
      selectedCount = 0,
  }: JobActionsProps) {
  
-     const handleCopyPermalink = () => {
-         if (!job) return;
-         const params = new URLSearchParams();
-         params.set('jobId', job.id.toString());
-         if (filters.search) params.set('search', filters.search);
-         if (filters.order) params.set('order', filters.order);
-         if (filters.days_old) params.set('days_old', filters.days_old.toString());
-         if (filters.salary) params.set('salary', filters.salary);
-         if (filters.sql_filter) params.set('sql_filter', filters.sql_filter);
-         // Add boolean filters
-         BOOLEAN_FILTER_KEYS.forEach(key => {
-             if (filters[key] !== undefined) {
-                 params.set(key, String(filters[key]));
-             }
-         });
-         const permalink = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-         navigator.clipboard.writeText(permalink);
-     };
+    const handleCopyPermalink = () => {
+        if (!job) return;
+        const permalink = `${window.location.origin}${window.location.pathname}?jobId=${job.id}`;
+        navigator.clipboard.writeText(permalink);
+    };
  
      const isDeleteMode = activeConfigName === 'Clean - Delete old jobs';
  

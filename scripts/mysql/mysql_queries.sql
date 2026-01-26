@@ -250,7 +250,7 @@ select * from job_skills where ai_enriched = 0;
 
 select * from job_skills where job_skills.name like '%Apache Camel%';
 
-update job_skills set ai_enriched = 0 where ai_enriched = 1
+update job_skills set ai_enriched = 0 where ai_enriched = 1 and name like '%Advanced Llm Evaluation%';
 
 
 

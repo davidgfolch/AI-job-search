@@ -43,15 +43,12 @@ def rawToJson(raw: str) -> dict[str, str]:
         # remove json prefix
         res = re.sub(r'(```(json)?\n?)', '', res, flags=IM) # Merged from jsonHelper/crewHelper
         res = re.sub(r'json *object *', '', res, flags=IM)
-        
         # CrewHelper fixers
         res = fixJsonStartCurlyBraces(res)
         res = fixJsonEndCurlyBraces(res)
         res = fixJsonInvalidAttribute(res)
-        
         # repl \& or \. (...) by & or .
         res = re.sub(r'\\([&.*-+#])', r'\1', res, re.I | re.M)
-        
         return dict(json.loads(f'{res}', cls=LazyDecoder))
     except Exception as ex:
         printJsonException(ex, res, raw)
@@ -125,7 +122,6 @@ def validateResult(result: dict[str, str]):
             result['salary'] = salary
         elif salary is not None and not isinstance(salary, str):
             salary = str(salary)
-            
         if salary and re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
             print(yellow(f'Removing no numbers salary: {salary}'))
             result.update({'salary': None})
@@ -133,9 +129,7 @@ def validateResult(result: dict[str, str]):
             regex = r'^(sueldo|salarios?|\(?según experiencia\)?)[: ]+(.+)'
             if hasLen(re.finditer(regex, salary, flags=re.I)):
                 result.update({'salary': re.sub(regex, r'\2', salary, flags=re.I)})
-    
     listsToString(result, ['required_technologies', 'optional_technologies'])
-
     # Validate cv_match_percentage
     cv_match = result.get('cv_match_percentage')
     if cv_match:
@@ -161,7 +155,6 @@ def listsToString(result: dict[str, str], fields: list[str]):
                 items = [str(x).strip() for x in value if x is not None]
             else:
                 items = []
-                
             unique_items = list(dict.fromkeys([x for x in items if x]))
             result[f] = ','.join(unique_items) if unique_items else None
 
@@ -180,13 +173,11 @@ def combineTaskResults(crewOutput, debug) -> dict:
     raw = getattr(crewOutput, 'raw', None)
     if raw is None: # Fallback if passed dict or something else, though unlikely based on usage
          raw = str(crewOutput)
-
     mainResult = rawToJson(raw)
     if mainResult:
         if debug:
             print(yellow(f'Main result: {json.dumps(mainResult, indent=2)}'))
         result.update(mainResult)
-    
     # Process individual task results if available
     tasks_output = getattr(crewOutput, 'tasks_output', None)
     if tasks_output:
