@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { useQueryClient } from '@tanstack/react-query';
 import type { Skill } from './useLearnList';
-import { skillsApi } from '../../api/skills';
+import { useEditSkillForm } from './useEditSkillForm';
 
 interface EditSkillModalProps {
   skill: Skill;
@@ -14,106 +12,20 @@ interface EditSkillModalProps {
 declare const __AI_ENRICH_SKILL_ENABLED__: boolean;
 
 export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillModalProps) => {
-
-  const queryClient = useQueryClient();
-  const [name, setName] = useState(skill.name || '');
-  const [description, setDescription] = useState(skill.description || '');
-  const [learningPath, setLearningPath] = useState<string[]>(skill.learningPath || []);
-  const [newLinkInput, setNewLinkInput] = useState('');
-  const [isPolling, setIsPolling] = useState(false);
-  const isNewSkill = !skill.name;
-
-  useEffect(() => { // Update state when skill changes
-    setName(skill.name || '');
-    setDescription(skill.description || '');
-    setLearningPath(skill.learningPath || []);
-    setNewLinkInput('');
-  }, [skill]);
-
-  useEffect(() => { // Handle Ctrl+Enter to save
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [name, description, learningPath]); // Add dependencies needed for handleSave closure
-
-  const handleAddLink = () => {
-    if (newLinkInput.trim()) {
-      setLearningPath([...learningPath, newLinkInput.trim()]);
-      setNewLinkInput('');
-    }
-  };
-
-  const handleRemoveLink = (index: number) => {
-    const newPath = [...learningPath];
-    newPath.splice(index, 1);
-    setLearningPath(newPath);
-  };
-
-  const handleSave = () => {
-    if (!name.trim()) {
-        alert("Skill name is required");
-        return;
-    }
-    onSave({
-      name,
-      description,
-      learningPath,
-      disabled: skill.disabled,
-      ai_enriched: skill.ai_enriched
-    });
-  };
-
-  const handleAutoFill = async () => {
-    if (!name.trim()) return;
-    setIsPolling(true);
-    // Trigger enrichment, ai_enriched=false (0) forces enrichment
-    await onUpdate?.({ 
-        ...skill, 
-        name,
-        description: '', 
-        learningPath,
-        ai_enriched: false 
-    });
-    
-    const interval = setInterval(async () => { // Start polling
-        try {
-            const latest = await skillsApi.getSkill(name);
-            if (latest && latest.ai_enriched && latest.description) {
-                setDescription(latest.description);
-                setIsPolling(false);
-                clearInterval(interval);
-            }
-        } catch (e) {
-            // ignore error
-        }
-    }, 2000);
-    return () => clearInterval(interval);
-  };
-
-  const handleReload = async () => {
-     if (!name.trim()) return;
-     await queryClient.invalidateQueries({ queryKey: ['skills'] });
-     try {
-         const latest = await skillsApi.getSkill(name);
-         if (latest) {
-             setDescription(latest.description || '');
-             setLearningPath(latest.learningPath || []);
-         }
-     } catch (e) {
-         console.error("Failed to refresh individual skill", e);
-     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleAddLink();
-    }
-  };
+  const {
+    name, setName,
+    description, setDescription,
+    learningPath,
+    newLinkInput, setNewLinkInput,
+    isPolling,
+    isNewSkill,
+    handleAddLink,
+    handleRemoveLink,
+    handleSave,
+    handleAutoFill,
+    handleReload,
+    handleLinkInputKeyDown
+  } = useEditSkillForm({ skill, onSave, onUpdate });
 
   return (
     <div className="modal-overlay">
@@ -198,7 +110,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
                   placeholder="Add URL (https://...)"
                   value={newLinkInput}
                   onChange={(e) => setNewLinkInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={handleLinkInputKeyDown}
                 />
                 <button 
                   className="btn-icon add"
@@ -220,3 +132,4 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
     </div>
   );
 };
+

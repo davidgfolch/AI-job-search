@@ -22,6 +22,31 @@
 ## apps/commonlib
 
 ## apps/scrapper
+- indeed: didn't load the page:
+
+      Indeed DEBUG: False
+      Preventing Windows system sleep...
+      ------------------------------------------------------------------------------------------------------------------------------------------------------
+      2026-01-26 15:14:46 - RUNNING INDEED scrapper
+      ------------------------------------------------------------------------------------------------------------------------------------------------------
+      Search keyword=java
+      Searching for "java" in "España"
+
+      Search keyword=python
+      Searching for "python" in "España"
+
+      Search keyword=scala
+      Searching for "scala" in "España"
+
+      Search keyword=clojure
+      Searching for "clojure" in "España"
+
+      Search keyword=senior software engineer
+      Searching for "senior software engineer" in "España"
+
+      Scrapper finished with failed keywords. State preserved for retry.
+      Allowing Windows system sleep...
+
 - linked in didn't parse markdown correctly in this [job](http://localhost:5173/?jobId=464423&order=created+desc&days_old=1&salary=%5Cd%2B&flagged=null&like=null&ignored=false&seen=false&applied=false&discarded=false&closed=false&interview_rh=null&interview=null&interview_tech=null&interview_technical_test=null&interview_technical_test_done=null&ai_enriched=true&easy_apply=null)
 - reruning errored scrappers after 30 minutes goes to cloudflare filter all the time, rerun in 30 minutes should be configurable for each scrapper.
 
