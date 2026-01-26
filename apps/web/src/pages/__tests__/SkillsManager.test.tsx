@@ -11,15 +11,21 @@ vi.mock('../../components/skills/useLearnList', () => ({
 vi.mock('../../components/skills/EditSkillModal', () => ({
   EditSkillModal: ({ skill, onSave }: any) => {
     // Simple mock that captures input
-    let currentDesc = skill.description;
+    let currentName = skill.name || '';
+    let currentDesc = skill.description || '';
     return (
       <div>
+        <input 
+            placeholder="Skill Name"
+            defaultValue={skill.name}
+            onChange={(e) => currentName = e.target.value}
+        />
         <textarea 
           defaultValue={skill.description} 
           onChange={(e) => currentDesc = e.target.value}
         />
-        <button onClick={() => onSave({ description: currentDesc, learningPath: skill.learningPath })}>
-          Save Changes
+        <button onClick={() => onSave({ name: currentName, description: currentDesc, learningPath: skill.learningPath })}>
+          {skill.name ? 'Save Changes' : 'Create Skill'}
         </button>
       </div>
     );
@@ -29,6 +35,8 @@ vi.mock('../../components/skills/EditSkillModal', () => ({
 describe('SkillsManager', () => {
   const mockReorderSkills = vi.fn();
   const mockRemoveSkill = vi.fn();
+  const mockSaveSkill = vi.fn();
+  const mockUpdateSkill = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,7 +48,8 @@ describe('SkillsManager', () => {
       ],
       reorderSkills: mockReorderSkills,
       removeSkill: mockRemoveSkill,
-      updateSkill: vi.fn(),
+      updateSkill: mockUpdateSkill,
+      saveSkill: mockSaveSkill,
     });
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockImplementation(() => true);
@@ -59,6 +68,7 @@ describe('SkillsManager', () => {
       learnList: [],
       reorderSkills: mockReorderSkills,
       removeSkill: mockRemoveSkill,
+      saveSkill: mockSaveSkill,
     });
     render(<SkillsManager />);
     expect(screen.getByText(/No skills in your learn list yet/i)).toBeInTheDocument();
@@ -110,11 +120,11 @@ describe('SkillsManager', () => {
   });
 
   it('opens modal on edit click and saves changes', () => {
-    const mockUpdateSkill = vi.fn();
     (useLearnListHook.useLearnList as any).mockReturnValue({
       learnList: [{ name: 'React', description: 'Old Desc', learningPath: [] }],
       reorderSkills: mockReorderSkills,
       removeSkill: mockRemoveSkill,
+      saveSkill: mockSaveSkill,
       updateSkill: mockUpdateSkill,
     });
 
@@ -135,8 +145,42 @@ describe('SkillsManager', () => {
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
     
-    expect(mockUpdateSkill).toHaveBeenCalledWith('React', expect.objectContaining({
+    expect(mockSaveSkill).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'React',
       description: 'New Desc'
+    }));
+  });
+
+  it('opens modal on add skill click and creates new skill', () => {
+    (useLearnListHook.useLearnList as any).mockReturnValue({
+      learnList: [],
+      reorderSkills: mockReorderSkills,
+      removeSkill: mockRemoveSkill,
+      saveSkill: mockSaveSkill,
+      updateSkill: mockUpdateSkill,
+    });
+
+    render(<SkillsManager />);
+
+    // Click Add Skill button
+    const addButton = screen.getByText('+ Add Skill');
+    fireEvent.click(addButton);
+
+    // Verify modal content - Input for name should be present
+    const nameInput = screen.getByPlaceholderText('Skill Name');
+    expect(nameInput).toBeInTheDocument();
+
+    // Enter name
+    fireEvent.change(nameInput, { target: { value: 'New Skill' } });
+
+    // Click Save (Create Skill)
+    const createButton = screen.getByText('Create Skill');
+    fireEvent.click(createButton);
+
+    expect(mockSaveSkill).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'New Skill',
+      description: '',
+      learningPath: []
     }));
   });
 });

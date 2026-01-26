@@ -5,7 +5,7 @@ import { EditSkillModal } from '../components/skills/EditSkillModal';
 import './SkillsManager.css';
 
 const SkillsManager = () => {
-  const { learnList, reorderSkills, removeSkill, updateSkill, isLoading, error } = useLearnList();
+  const { learnList, reorderSkills, removeSkill, saveSkill, updateSkill, isLoading, error } = useLearnList();
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
 
   const handleRemove = (skill: string) => {
@@ -14,17 +14,26 @@ const SkillsManager = () => {
     }
   };
 
-  const saveEdit = (updates: { description: string; learningPath: string[] }) => {
-    if (editingSkill) {
-      updateSkill(editingSkill.name, updates);
+  const saveEdit = (skill: Skill) => {
+      saveSkill(skill);
       setEditingSkill(null);
-    }
+  };
+
+  const handleAddSkill = () => {
+      setEditingSkill({
+          name: '',
+          description: '',
+          learningPath: [],
+      });
   };
 
   return (
     <div className="skills-manager">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Skills Manager</h2>
+        <button className="btn-primary" onClick={handleAddSkill}>
+            + Add Skill
+        </button>
       </div>
       
       {error && <div className="error-message" style={{ color: 'red', margin: '10px 0' }}>{error}</div>}
@@ -47,6 +56,7 @@ const SkillsManager = () => {
         <EditSkillModal 
           skill={editingSkill}
           onSave={saveEdit}
+          onUpdate={(skill) => updateSkill(skill.name, skill)} // Used for autofill updates
           onClose={() => setEditingSkill(null)}
         />
       )}

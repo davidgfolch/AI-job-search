@@ -6,7 +6,7 @@ import { skillsApi } from '../../api/skills';
 
 interface EditSkillModalProps {
   skill: Skill;
-  onSave: (updates: { description: string; learningPath: string[] }) => void;
+  onSave: (skill: Skill) => void;
   onUpdate?: (skill: Skill) => void;
   onClose: () => void;
 }
@@ -16,12 +16,15 @@ declare const __AI_ENRICH_SKILL_ENABLED__: boolean;
 export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillModalProps) => {
 
   const queryClient = useQueryClient();
+  const [name, setName] = useState(skill.name || '');
   const [description, setDescription] = useState(skill.description || '');
   const [learningPath, setLearningPath] = useState<string[]>(skill.learningPath || []);
   const [newLinkInput, setNewLinkInput] = useState('');
   const [isPolling, setIsPolling] = useState(false);
+  const isNewSkill = !skill.name;
 
   useEffect(() => { // Update state when skill changes
+    setName(skill.name || '');
     setDescription(skill.description || '');
     setLearningPath(skill.learningPath || []);
     setNewLinkInput('');
@@ -36,7 +39,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [description, learningPath]); // Add dependencies needed for handleSave closure
+  }, [name, description, learningPath]); // Add dependencies needed for handleSave closure
 
   const handleAddLink = () => {
     if (newLinkInput.trim()) {
@@ -52,17 +55,26 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
   };
 
   const handleSave = () => {
+    if (!name.trim()) {
+        alert("Skill name is required");
+        return;
+    }
     onSave({
+      name,
       description,
       learningPath,
+      disabled: skill.disabled,
+      ai_enriched: skill.ai_enriched
     });
   };
 
   const handleAutoFill = async () => {
+    if (!name.trim()) return;
     setIsPolling(true);
     // Trigger enrichment, ai_enriched=false (0) forces enrichment
     await onUpdate?.({ 
         ...skill, 
+        name,
         description: '', 
         learningPath,
         ai_enriched: false 
@@ -70,7 +82,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
     
     const interval = setInterval(async () => { // Start polling
         try {
-            const latest = await skillsApi.getSkill(skill.name);
+            const latest = await skillsApi.getSkill(name);
             if (latest && latest.ai_enriched && latest.description) {
                 setDescription(latest.description);
                 setIsPolling(false);
@@ -84,9 +96,10 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
   };
 
   const handleReload = async () => {
+     if (!name.trim()) return;
      await queryClient.invalidateQueries({ queryKey: ['skills'] });
      try {
-         const latest = await skillsApi.getSkill(skill.name);
+         const latest = await skillsApi.getSkill(name);
          if (latest) {
              setDescription(latest.description || '');
              setLearningPath(latest.learningPath || []);
@@ -106,27 +119,42 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3>Edit Skill: {skill.name}</h3>
+          <h3>{isNewSkill ? 'Add New Skill' : `Edit Skill: ${skill.name}`}</h3>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
+          {isNewSkill && (
+              <div className="form-group">
+                  <label>Skill Name</label>
+                  <input
+                      type="text"
+                      className="skill-input"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. React, Python, ..."
+                      autoFocus
+                  />
+              </div>
+          )}
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <label style={{ marginBottom: 0 }}>Description</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                      className="btn-secondary"
-                      style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                      onClick={handleReload}
-                      title="Reload all skills"
-                  >↻
-                  </button>
+                  {!isNewSkill && (
+                    <button
+                        className="btn-secondary"
+                        style={{ fontSize: '0.8rem', padding: '4px 8px' }}
+                        onClick={handleReload}
+                        title="Reload all skills"
+                    >↻
+                    </button>
+                  )}
                   {__AI_ENRICH_SKILL_ENABLED__ && (
                     <button 
                         className="btn-secondary" 
                         style={{ fontSize: '0.8rem', padding: '4px 8px' }}
                         onClick={handleAutoFill}
-                        disabled={isPolling}
+                        disabled={isPolling || !name.trim()}
                     >
                         {isPolling ? 'Generating...' : 'Auto-fill with AI'}
                     </button>
@@ -139,7 +167,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add a description... (Markdown supported)"
-                  rows={8}
+                  rows={isNewSkill ? 6 : 8}
                   disabled={isPolling}
                 />
                 <div className="description-preview">
@@ -186,7 +214,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={handleSave}>Save Changes</button>
+          <button className="btn-primary" onClick={handleSave}>{isNewSkill ? 'Create Skill' : 'Save Changes'}</button>
         </div>
       </div>
     </div>
