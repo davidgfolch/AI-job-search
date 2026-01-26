@@ -63,16 +63,16 @@ export default function JobActions({
          return (
              <div className="header-actions">
                 <button 
-                 className="header-button delete-button" 
-                 onClick={() => onDelete?.(selectedCount)} 
-                 title="Delete jobs"
-                 style={{ 
-                     backgroundColor: selectedCount < 1 ? undefined : '#dc3545', 
-                     color: selectedCount < 1 ? undefined : 'white', 
-                     fontWeight: 'bold', 
-                     minWidth: '120px' 
-                 }}
-                 disabled={selectedCount < 1}
+                    className="header-button delete-button" 
+                    onClick={() => onDelete?.(selectedCount)} 
+                    title="Delete jobs"
+                    style={{ 
+                        backgroundColor: selectedCount < 1 ? undefined : '#dc3545', 
+                        color: selectedCount < 1 ? undefined : 'white', 
+                        fontWeight: 'bold', 
+                        minWidth: '120px' 
+                    }}
+                    disabled={selectedCount < 1}
                 >
                  {isBulk ? `DELETE ${selectedCount}` : 'DELETE'}
                 </button>
@@ -84,9 +84,9 @@ export default function JobActions({
         <div className="header-actions">
             <button className="header-button state-button seen-button" onClick={onSeen} title="Mark as seen" disabled={isBulk || !job}>👁️</button>
             <button className="header-button state-button applied-button" onClick={onApplied} title="Mark as applied" disabled={isBulk || !job}>✅</button>
-            <button className="header-button state-button discarded-button" onClick={onDiscarded} title="Mark as discarded" disabled={isBulk || !job}>❌</button>
-            <button className="header-button state-button closed-button" onClick={onClosed} title="Mark as closed" disabled={isBulk || !job}>🔒</button>
             <button className="header-button state-button ignore-button" onClick={onIgnore} title="Mark as ignored">🚫</button>
+            <button className="header-button state-button closed-button" onClick={onClosed} title="Mark as closed" disabled={isBulk || !job}>🔒</button>
+            <button className="header-button state-button discarded-button" onClick={onDiscarded} title="Mark as discarded" disabled={isBulk || !job}>❌</button>
             <div className="button-separator"></div>
             <button className="header-button copy-button" onClick={handleCopyPermalink} title="Copy permalink to clipboard" disabled={isBulk || !job}>🔗</button>
             <button className="header-button nav-button" onClick={onPrevious} disabled={isBulk || !hasPrevious || !job} title="Previous job">⏮</button>

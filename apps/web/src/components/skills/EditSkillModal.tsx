@@ -21,22 +21,19 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
   const [newLinkInput, setNewLinkInput] = useState('');
   const [isPolling, setIsPolling] = useState(false);
 
-  // Update state when skill changes
-  useEffect(() => {
+  useEffect(() => { // Update state when skill changes
     setDescription(skill.description || '');
     setLearningPath(skill.learningPath || []);
     setNewLinkInput('');
   }, [skill]);
 
-  // Handle Ctrl+Enter to save
-  useEffect(() => {
+  useEffect(() => { // Handle Ctrl+Enter to save
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleSave();
       }
     };
-
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [description, learningPath]); // Add dependencies needed for handleSave closure
@@ -63,8 +60,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
 
   const handleAutoFill = async () => {
     setIsPolling(true);
-    // Trigger enrichment
-    // ai_enriched=false (0) forces enrichment
+    // Trigger enrichment, ai_enriched=false (0) forces enrichment
     await onUpdate?.({ 
         ...skill, 
         description: '', 
@@ -72,8 +68,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
         ai_enriched: false 
     });
     
-    // Start polling
-    const interval = setInterval(async () => {
+    const interval = setInterval(async () => { // Start polling
         try {
             const latest = await skillsApi.getSkill(skill.name);
             if (latest && latest.ai_enriched && latest.description) {
@@ -85,14 +80,11 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
             // ignore error
         }
     }, 2000);
-    
-    // Safety: clear interval on unmount
     return () => clearInterval(interval);
   };
 
   const handleReload = async () => {
      await queryClient.invalidateQueries({ queryKey: ['skills'] });
-     // Try to refresh local data for this skill immediately if possible
      try {
          const latest = await skillsApi.getSkill(skill.name);
          if (latest) {
@@ -127,8 +119,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
                       style={{ fontSize: '0.8rem', padding: '4px 8px' }}
                       onClick={handleReload}
                       title="Reload all skills"
-                  >
-                      ↻
+                  >↻
                   </button>
                   {__AI_ENRICH_SKILL_ENABLED__ && (
                     <button 
@@ -152,11 +143,8 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
                   disabled={isPolling}
                 />
                 <div className="description-preview">
-                    {description ? (
-                        <ReactMarkdown>{description}</ReactMarkdown>
-                    ) : (
-                        <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Markdown validation</span>
-                    )}
+                    {description ? (<ReactMarkdown>{description}</ReactMarkdown>)
+                     : (<span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Markdown validation</span>)}
                 </div>
             </div>
           </div>

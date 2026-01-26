@@ -48,29 +48,11 @@
     transform: translateY(-1px);
 }
 
-.header-button.seen-button:hover {
-    background: #3b82f6;
-}
-
-.header-button.applied-button:hover {
-    background: #10b981;
-}
-
-.header-button.discarded-button:hover {
-    background: #f59e0b;
-}
-
-.header-button.closed-button:hover {
-    background: #6366f1;
-}
-
 .header-button.ignore-button {
-    background: #ef4444;
     color: white;
 }
 
 .header-button.ignore-button:hover {
-    background: #dc2626;
     transform: translateY(-1px);
 }
 
