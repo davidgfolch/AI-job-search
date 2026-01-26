@@ -10,11 +10,11 @@
 
 ## apps/aiEnrich
 
-- aiEnrichError retry when all others are done
+- aiEnrich* common implementation abstractions to commonlib
 
 ## apps/aiEnrichNew
 
-- aiEnrichError retry when all others are done
+- aiEnrich* common implementation abstractions to commonlib
 
 ## apps/backend
 
