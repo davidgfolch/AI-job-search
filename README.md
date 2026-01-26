@@ -22,6 +22,11 @@ This is a monorepo containing several applications and packages:
 | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama (LEGACY)         | Python, CrewAI, uv           |
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using Transformers.           | Python, Transformers, uv     |
 
+## Features
+
+- Scrapping jobs from multiple platforms
+- UI to manage job offers (& skills)
+- AI enrichment of job offers (& skills)
 
 ## Getting Started
 
