@@ -2,8 +2,6 @@ import json
 import re
 import traceback
 
-from crewai.crews.crew_output import CrewOutput
-
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.mysqlUtil import MysqlUtil
@@ -19,7 +17,7 @@ def printJob(processName, total, idx, id, title, company, inputLen):
 def mapJob(job):
     title = job[1]
     company = job[3]
-    markdown = removeExtraEmptyLines(job[2].decode("utf-8"))  # DB markdown blob decoding
+    markdown = removeExtraEmptyLines(job[2].decode("utf-8") if isinstance(job[2], bytes) else job[2])  # DB markdown blob decoding if bytes
     return title, company, markdown
 
 
@@ -40,17 +38,20 @@ def rawToJson(raw: str) -> dict[str, str]:
     res = raw
     try:
         IM = re.I | re.M
-        # remove Agent Thought or Note
+        # remove Agent Thought or Note (from crewHelper)
         res = re.sub(r'\n(Thought|Note):(.*\n)*', '', res, flags=IM)
         # remove json prefix
+        res = re.sub(r'(```(json)?\n?)', '', res, flags=IM) # Merged from jsonHelper/crewHelper
         res = re.sub(r'json *object *', '', res, flags=IM)
-        res = re.sub(r'(```)', '', res, flags=IM)
+        
+        # CrewHelper fixers
         res = fixJsonStartCurlyBraces(res)
         res = fixJsonEndCurlyBraces(res)
         res = fixJsonInvalidAttribute(res)
+        
         # repl \& or \. (...) by & or .
         res = re.sub(r'\\([&.*-+#])', r'\1', res, re.I | re.M)
-        # res = fixInvalidUnicode(res)
+        
         return dict(json.loads(f'{res}', cls=LazyDecoder))
     except Exception as ex:
         printJsonException(ex, res, raw)
@@ -70,17 +71,12 @@ class LazyDecoder(json.JSONDecoder):
 
 def printJsonException(ex: Exception, res: str, raw: str) -> None:
     print(red(f'Could not parse json after clean it: '))
+    # Traceback is already printed by caller usually, but logic in crewHelper prints it.
+    # jsonHelper commented it out. We will keep it but maybe concise?
     print(red(traceback.format_exc()))
     print(red(f'Json after clean:\n{res}'))
     print(yellow(f'Original json:\n{raw}'))
     raise ex
-
-
-# def fixInvalidUnicode(res):
-#     res = re.sub('\\\\u00ai', '\u00ad', res)  # Ã¡
-#     res = re.sub('\\\\u00f3', '\u00ed', res)  # Ã­
-#     res = re.sub('\\\\u00f3', '\u00ed', res)  # Ã­
-#     return res
 
 
 def fixJsonInvalidAttribute(raw):
@@ -118,13 +114,26 @@ def fixJsonStartCurlyBraces(raw):
 def validateResult(result: dict[str, str]):
     salary = result.get('salary')
     if salary:  # infojobs
-        if re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
+        if isinstance(salary, dict):
+            if 'min' in salary and 'max' in salary:
+                salary = f"{salary.get('min')}-{salary.get('max')}"
+            elif 'amount' in salary:
+                val = salary.get('amount')
+                salary = str(val) if val is not None else None
+            else:
+                salary = str(salary)
+            result['salary'] = salary
+        elif salary is not None and not isinstance(salary, str):
+            salary = str(salary)
+            
+        if salary and re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
             print(yellow(f'Removing no numbers salary: {salary}'))
             result.update({'salary': None})
-        else:
+        elif salary:
             regex = r'^(sueldo|salarios?|\(?según experiencia\)?)[: ]+(.+)'
             if hasLen(re.finditer(regex, salary, flags=re.I)):
                 result.update({'salary': re.sub(regex, r'\2', salary, flags=re.I)})
+    
     listsToString(result, ['required_technologies', 'optional_technologies'])
 
     # Validate cv_match_percentage
@@ -149,41 +158,45 @@ def listsToString(result: dict[str, str], fields: list[str]):
             if isinstance(value, str):
                 items = [x.strip() for x in value.split(',')]
             elif isinstance(value, list):
-                items = [str(x).strip() for x in value]
+                items = [str(x).strip() for x in value if x is not None]
             else:
-                items = [] # Should not happen based on usage, but good for safety
-            # Deduplicate while preserving order (optional but nice) or just set
-            # Using dict.fromkeys to preserve order
+                items = []
+                
             unique_items = list(dict.fromkeys([x for x in items if x]))
             result[f] = ','.join(unique_items) if unique_items else None
 
-
-def combineTaskResults(crewOutput: CrewOutput, debug) -> dict:
-    """Combina los resultados de todas las tareas en un único JSON"""
-    result = {}
-    mainResult = rawToJson(crewOutput.raw)
-    if mainResult:
-        if debug:
-            print(yellow(f'Main result: {json.dumps(mainResult, indent=2)}'))
-        result.update(mainResult)
-    if result is None:
-        # Procesar los resultados de las tareas individuales
-        if hasattr(crewOutput, 'tasks_output') and crewOutput.tasks_output:
-            for task_idx, task_output in enumerate(crewOutput.tasks_output):
-                taskResult = rawToJson(task_output.raw)
-                if taskResult:
-                    if debug:
-                        print(yellow(f'Task {task_idx} result: {json.dumps(taskResult, indent=2)}'))
-                    for key, value in taskResult.items():
-                        if key not in result and key in ["required_technologies", "optional_technologies", "salary", "experience_level", "responsibilities", "cv_match_percentage"]:
-                            result[key] = value
-    return result
 
 def footer(total, idx, totalCount, jobErrors:set):
     print(yellow(f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'),
           end='\n' if len(jobErrors)==0 else ' ')
     if jobErrors:
         print(red(f'Total job errors: {len(jobErrors)}'))
-        # [print(yellow(f'{e[0]} - {e[1]}')) for e in jobErrors]
 
 
+def combineTaskResults(crewOutput, debug) -> dict:
+    """Combina los resultados de todas las tareas en un único JSON"""
+    result = {}
+    # Use getattr or direct access assuming object structure since we don't want crewai dependency here
+    raw = getattr(crewOutput, 'raw', None)
+    if raw is None: # Fallback if passed dict or something else, though unlikely based on usage
+         raw = str(crewOutput)
+
+    mainResult = rawToJson(raw)
+    if mainResult:
+        if debug:
+            print(yellow(f'Main result: {json.dumps(mainResult, indent=2)}'))
+        result.update(mainResult)
+    
+    # Process individual task results if available
+    tasks_output = getattr(crewOutput, 'tasks_output', None)
+    if tasks_output:
+        for task_idx, task_output in enumerate(tasks_output):
+            task_raw = getattr(task_output, 'raw', str(task_output))
+            taskResult = rawToJson(task_raw)
+            if taskResult:
+                if debug:
+                    print(yellow(f'Task {task_idx} result: {json.dumps(taskResult, indent=2)}'))
+                for key, value in taskResult.items():
+                    if key not in result and key in ["required_technologies", "optional_technologies", "salary", "experience_level", "responsibilities", "cv_match_percentage"]:
+                        result[key] = value
+    return result

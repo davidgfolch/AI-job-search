@@ -13,12 +13,16 @@ dependencies = [
     "mysql-connector-python==9.4.0",
     "dotenv==0.9.9",
     "mathparse (>=0.2.7,<0.3.0)",
+    "pdfplumber>=0.11.8",
+    "pandas>=2.2.3",
 ]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.4.2"
-pytest-cov = "^7.0.0"
-genbadge = {extras = ["coverage"], version = "^1.1.0"}
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "genbadge[coverage]>=1.1.0",
+]
 
 [tool.coverage.run]
 branch = true

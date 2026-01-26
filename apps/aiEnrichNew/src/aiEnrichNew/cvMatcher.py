@@ -1,8 +1,5 @@
 import json
 import traceback
-import pandas as pd
-import pdfplumber
-from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -14,6 +11,7 @@ from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.stringUtil import removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
+from commonlib.cv_loader import CVLoader
 
 CV_LOCATION = './cv/cv.txt'
 
@@ -37,6 +35,7 @@ class FastCVMatcher:
     _model = None
     _cv_embedding = None
     _cv_content = None
+    _cv_loader = None
     
     stopWatch = StopWatch()
     totalCount = 0
@@ -52,6 +51,7 @@ class FastCVMatcher:
         print("Loading embedding model (this may take a while significantly on first run)...")
         self._model = SentenceTransformer('all-MiniLM-L6-v2') 
         print(cyan("Embedding model loaded."))
+        self._cv_loader = CVLoader(cv_location=CV_LOCATION, enabled=getEnvBool('AI_CV_MATCH'))
 
     @classmethod
     def instance(cls):
@@ -62,8 +62,10 @@ class FastCVMatcher:
     def process_db_jobs(self) -> int:
         if not getEnvBool('AI_CV_MATCH'):
             return 0
+            
         if not self._load_cv_content():
             return 0
+            
         with MysqlUtil() as mysql:
             total = mysql.count(QRY_COUNT)
             if total == 0:
@@ -95,49 +97,15 @@ class FastCVMatcher:
     def _load_cv_content(self) -> bool:
         if self._cv_content:
             return True
-        if not getEnvBool('AI_CV_MATCH'):
-            print(yellow('AI_CV_MATCH disabled'))
-            return False
-        print(f'Loading CV from: {CV_LOCATION}')
-        try:
-            filePath = Path(CV_LOCATION)
-            cvLocationTxt = CV_LOCATION.replace('.pdf', '.txt')
-            filePathTxt = Path(cvLocationTxt)
-            if not filePath.exists() and not filePathTxt.exists():
-                print(red(f'CV file not found: {CV_LOCATION}'))
-                return False
-            if filePath.suffix.lower() == '.pdf' and not filePathTxt.exists():
-                self._cv_content = self._extract_text_from_pdf(CV_LOCATION)
-                print(f'CV (PDF) loaded from: {CV_LOCATION} ({len(self._cv_content)} chars)')
-                with open(cvLocationTxt, 'w', encoding='utf-8') as mdFile:
-                    mdFile.write(self._cv_content)
-            elif filePathTxt.exists():
-                with open(cvLocationTxt, 'r', encoding='utf-8') as f:
-                    self._cv_content = f.read()
-                print(f'CV (text from PDF) loaded from: {cvLocationTxt} ({len(self._cv_content)} chars)')
-            else:
-                print(yellow(f'Unsupported CV file format'))
-                return False
-            if not self._cv_content or not self._cv_content.strip():
-                print(yellow('CV file is empty'))
-                return False
+        
+        if self._cv_loader.load_cv_content():
+            self._cv_content = self._cv_loader.get_content()
             self._cv_embedding = self._model.encode([self._cv_content])
             return True
-        except Exception:
-            print(red(f'Error loading CV:'))
-            print(red(traceback.format_exc()))
-            return False
+            
+        return False
 
-    def _extract_text_from_pdf(self, pdf_path: str) -> str:
-        all_text = []
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text: all_text.append(text)
-                for table in page.extract_tables():
-                    df = pd.DataFrame(table[1:], columns=table[0])
-                    all_text.append(df.to_markdown(index=False))
-        return "\n\n".join(all_text)
+    # Removed local extract_text_from_pdf
 
     def match(self, job_description: str) -> dict:
         if self._cv_embedding is None:

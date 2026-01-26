@@ -1,0 +1,58 @@
+import traceback
+from typing import Callable
+from commonlib.mysqlUtil import MysqlUtil
+from commonlib.skill_context import get_skill_context
+from commonlib.terminalColor import yellow, magenta, cyan, red
+
+def process_skill_enrichment(
+    mysql: MysqlUtil,
+    generate_description_fn: Callable[[str, str], str],
+    limit: int = 10,
+    check_empty_description_only: bool = True
+) -> int:
+    """
+    Common logic for skill enrichment.
+    
+    :param mysql: MysqlUtil instance
+    :param generate_description_fn: Function that takes (skill_name, context) and returns description
+    :param limit: limit of skills to process
+    :param check_empty_description_only: if True, filters by description IS NULL OR description = ''. 
+                                         If False, only filters by ai_enriched = 0.
+    """
+    
+    where_clause = "ai_enriched = 0"
+    if check_empty_description_only:
+        where_clause += " AND (description IS NULL OR description = '')"
+    else:
+        # If we are not checking for empty description, implies we might re-enrich or enrich regardless of existing desc if ai_enriched=0
+        pass
+
+    query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
+    
+    rows = mysql.fetchAll(query_find)
+    if not rows:
+        print(yellow("No skills to enrich"))
+        return 0
+
+    print(cyan(f"Found {len(rows)} skills to enrich..."))
+    count = 0
+    for row in rows:
+        name = row[0]
+        print("Enriching skill: ", yellow(name))
+        try:
+            context = get_skill_context(mysql, name)
+            description = generate_description_fn(name, context)
+            
+            # Simple validation: valid description and not an error string if API returns one
+            if description and "Error" not in description:
+                print("Description: ", magenta(description))
+                update_query = "UPDATE job_skills SET description = %s, ai_enriched = 1 WHERE name = %s"
+                mysql.executeAndCommit(update_query, [description, name])
+                count += 1
+            else:
+                print(yellow(f"Failed to generate description for {name}"))
+        except Exception as e:
+            print(yellow(f"Error enriching skill {name}"))
+            print(red(traceback.format_exc()))
+    
+    return count

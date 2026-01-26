@@ -1,6 +1,8 @@
 from crewai.flow.flow import Flow, start
 
-from .cvMatcher import cvMatch, loadCVContent
+from .cvMatcher import cvMatch
+from commonlib.cv_loader import CVLoader
+from commonlib.environmentUtil import getEnv
 from .dataExtractor import dataExtractor
 from .skillEnricher import skillEnricher
 from commonlib.terminalColor import printHR, yellow, cyan
@@ -12,7 +14,8 @@ class AiJobSearchFlow(Flow):  # https://docs.crewai.com/concepts/flows
 
     @start()
     def processRows(self):
-        loadedCV = loadCVContent()
+        cvLoader = CVLoader(cv_location=getEnv('CV_LOCATION', './cv/cv.txt'), enabled=getEnvBool('AI_CV_MATCH'))
+        loadedCV = cvLoader.load_cv_content()
         while True:
             if dataExtractor()==0:
                 if skillEnricher() > 0:

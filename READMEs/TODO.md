@@ -2,7 +2,11 @@
 
 ## cross module tasks
 
-- find death code (vibe coding)
+- move scrapper debug to commonlib
+- find death code (vibe coding) 
+  - scrapper done
+  - backend done
+- fix time in mysql created date column 1 hour less
 
 
 ## apps/aiEnrich
@@ -18,10 +22,7 @@
 ## apps/commonlib
 
 ## apps/scrapper
-- DONE: summary: show state of each scrapper
-- DONE: indeed: Starting page X of X.XXXX -> total pages shows decimals.
-- DONE: indeed FIX cloudflare filter with undetected-chromedriver, when load & when enter email OTP password too!!!
-- DONE: infojobs FIX cloudflare filter with undetected-chromedriver
+- linked in didn't parse markdown correctly in this [job](http://localhost:5173/?jobId=464423&order=created+desc&days_old=1&salary=%5Cd%2B&flagged=null&like=null&ignored=false&seen=false&applied=false&discarded=false&closed=false&interview_rh=null&interview=null&interview_tech=null&interview_technical_test=null&interview_technical_test_done=null&ai_enriched=true&easy_apply=null)
 - reruning errored scrappers after 30 minutes goes to cloudflare filter all the time, rerun in 30 minutes should be configurable for each scrapper.
 
 ## apps/web

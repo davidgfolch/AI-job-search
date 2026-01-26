@@ -8,12 +8,11 @@ dependencies = [
     "pandas==2.3.3",
     "sentence-transformers>=3.0.0",
     "scikit-learn>=1.4.0",
-    "numpy>=1.26.0",
+    "numpy>=1.26.0,<2.4.0",
     "transformers>=4.40.0",
     "torch>=2.2.0",
     "accelerate>=0.29.0",
     "langchain-huggingface>=0.0.1",
-    "pdfplumber>=0.11.8",
 ]
 
 [project.scripts]

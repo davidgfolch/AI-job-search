@@ -4,7 +4,7 @@ from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import magenta, printHR, yellow, cyan
 from commonlib.environmentUtil import getEnv
-from .jsonHelper import footer, mapJob, printJob, saveError, validateResult, rawToJson
+from commonlib.ai_helpers import footer, mapJob, printJob, saveError, validateResult, rawToJson
 from .llm_client import get_pipeline
 
 # Configuration

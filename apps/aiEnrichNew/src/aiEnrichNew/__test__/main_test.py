@@ -9,8 +9,9 @@ class TestMain(unittest.TestCase):
     @patch('aiEnrichNew.main.dataExtractor')
     @patch('aiEnrichNew.main.consoleTimer')
     @patch('aiEnrichNew.main.printHR')
+    @patch('aiEnrichNew.main.cyan', side_effect=lambda x: x)
     @patch('time.sleep') # To prevent actual sleeping if any
-    def test_run_cv_match_enabled(self, mock_sleep, mock_printHR, mock_consoleTimer, mock_dataExtractor, mock_cvMatcherClass, mock_getEnvBool):
+    def test_run_cv_match_enabled(self, mock_sleep, mock_cyan, mock_printHR, mock_consoleTimer, mock_dataExtractor, mock_cvMatcherClass, mock_getEnvBool):
         # Setup
         mock_getEnvBool.return_value = True
         mock_cvMatcher = mock_cvMatcherClass.instance.return_value
@@ -39,7 +40,8 @@ class TestMain(unittest.TestCase):
     @patch('aiEnrichNew.main.dataExtractor')
     @patch('aiEnrichNew.main.consoleTimer')
     @patch('aiEnrichNew.main.printHR')
-    def test_run_cv_match_disabled(self, mock_printHR, mock_consoleTimer, mock_dataExtractor, mock_cvMatcherClass, mock_getEnvBool):
+    @patch('aiEnrichNew.main.cyan', side_effect=lambda x: x)
+    def test_run_cv_match_disabled(self, mock_cyan, mock_printHR, mock_consoleTimer, mock_dataExtractor, mock_cvMatcherClass, mock_getEnvBool):
         # Setup
         mock_getEnvBool.return_value = False
         
@@ -71,7 +73,8 @@ class TestMain(unittest.TestCase):
     @patch('aiEnrichNew.main.dataExtractor')
     @patch('aiEnrichNew.main.consoleTimer')
     @patch('aiEnrichNew.main.printHR')
-    def test_run_data_extractor_nonzero(self, mock_printHR, mock_consoleTimer, mock_dataExtractor, mock_cvMatcherClass, mock_getEnvBool):
+    @patch('aiEnrichNew.main.cyan', side_effect=lambda x: x)
+    def test_run_data_extractor_nonzero(self, mock_cyan, mock_printHR, mock_consoleTimer, mock_dataExtractor, mock_cvMatcherClass, mock_getEnvBool):
         # Setup
         mock_getEnvBool.return_value = False
         

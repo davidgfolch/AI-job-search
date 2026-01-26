@@ -1,7 +1,7 @@
 from crewai import Agent, Task, Crew, Process
 from commonlib.mysqlUtil import MysqlUtil
-from commonlib.skill_context import get_skill_context
-from commonlib.terminalColor import yellow, magenta, cyan
+from commonlib.skill_enricher_service import process_skill_enrichment
+from commonlib.environmentUtil import getEnvBool
 
 SYSTEM_PROMPT = """You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
@@ -40,38 +40,11 @@ def generate_skill_description(skill_name, context="") -> str:
     )
     
     result = crew.kickoff()
-    # crewai result is usually a string, or CrewOutput object.
-    # We need to parse it. 
-    # If standard crewai usage, kickoff returns the result of the last task as string if configured properly.
     return str(result).strip().strip('"').strip("'")
 
-from commonlib.environmentUtil import getEnvBool
 
 def skillEnricher() -> int:
     if not getEnvBool("AI_ENRICH_SKILL", True):
         return 0
     with MysqlUtil() as mysql:
-        # Check for skills needing enrichment
-        query_find = "SELECT name FROM job_skills WHERE (ai_enriched IS NULL OR ai_enriched = 0) AND (description IS NULL OR description = '') LIMIT 10"
-        rows = mysql.fetchAll(query_find)
-        if not rows:
-            return 0
-        print(cyan(f"Found {len(rows)} skills to enrich..."))
-        count = 0
-        for row in rows:
-            name = row[0]
-            print("Enriching skill: ", yellow(name))
-            try:
-                context = get_skill_context(mysql, name)
-                description = generate_skill_description(name, context)
-                if description and "Error" not in description:
-                    print("Description: ", magenta(description))
-                    update_query = "UPDATE job_skills SET description = %s, ai_enriched = 1 WHERE name = %s"
-                    mysql.executeAndCommit(update_query, [description, name])
-                    count += 1
-                else:
-                    print(yellow(f"Failed to generate description for {name}"))
-            except Exception as e:
-                print(yellow(f"Error enriching skill {name}"))
-                print(red(traceback.format_exc()))                
-        return count
+        return process_skill_enrichment(mysql, generate_skill_description, limit=10, check_empty_description_only=True)

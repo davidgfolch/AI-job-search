@@ -1,8 +1,10 @@
 import traceback
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.skill_context import get_skill_context
-from commonlib.terminalColor import yellow, magenta, cyan
+from commonlib.terminalColor import yellow, magenta, cyan, red
 from .llm_client import get_pipeline
+from commonlib.environmentUtil import getEnvBool
+from commonlib.skill_enricher_service import process_skill_enrichment
 
 SYSTEM_PROMPT = """You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
@@ -27,34 +29,16 @@ def generate_skill_description(skill_name, context="") -> str:
     generated_text = output[0]['generated_text']
     return generated_text.strip().strip('"').strip("'")
 
-from commonlib.environmentUtil import getEnvBool
 
 def skillEnricher() -> int:
     if not getEnvBool("AI_ENRICH_SKILL", True):
         return 0
     with MysqlUtil() as mysql:
-        # Check for skills needing enrichment
-        query_find = "SELECT name FROM job_skills WHERE ai_enriched = 0 LIMIT 3"
-        rows = mysql.fetchAll(query_find)
-        if not rows:
-            print(yellow("No skills to enrich"))
-            return 0
-        print(cyan(f"Found {len(rows)} skills to enrich..."))
-        count = 0
-        for row in rows:
-            name = row[0]
-            print("Enriching skill: ", yellow(name))
-            try:
-                context = get_skill_context(mysql, name)
-                description = generate_skill_description(name, context)
-                if description:
-                    print("Description: ", magenta(description))
-                    update_query = "UPDATE job_skills SET description = %s, ai_enriched = 1 WHERE name = %s"
-                    mysql.executeAndCommit(update_query, [description, name])
-                    count += 1
-                else:
-                    print(yellow(f"Failed to generate description for {name}"))
-            except Exception as e:
-                print(yellow(f"Error enriching skill {name}"))
-                print(red(traceback.format_exc()))
-        return count
+        # Note: aiEnrichNew logic was limiting to 3 and checking only ai_enriched = 0.
+        # aiEnrich was limiting to 10 and checking also description is empty.
+        # The common service now supports both modes but for consistency I will match logic to common unless specific requirement.
+        # The user request was "abstract common functionalities".
+        # I'll use the common service as configured for typical usage: limit can be parameter, check_empty can be False if that was the logic in New.
+        
+        # Original New logic: "SELECT name FROM job_skills WHERE ai_enriched = 0 LIMIT 3"
+        return process_skill_enrichment(mysql, generate_skill_description, limit=3, check_empty_description_only=False)
