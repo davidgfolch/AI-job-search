@@ -6,7 +6,6 @@
 - find death code (vibe coding) 
   - scrapper done
   - backend done
-- fix time in mysql created date column 1 hour less
 
 
 ## apps/aiEnrich

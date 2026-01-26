@@ -10,7 +10,7 @@ from commonlib.environmentUtil import getEnvBool
 from commonlib.terminalColor import yellow, printHR, cyan
 from commonlib.terminalUtil import consoleTimer
 import time
-from .dataExtractor import dataExtractor
+from .dataExtractor import dataExtractor, retry_failed_jobs
 from .cvMatcher import FastCVMatcher
 from .skillEnricher import skillEnricher
 
@@ -21,10 +21,12 @@ def run():
         cvMatcher = None
 
     while True:
-        if dataExtractor()==0:
-            if skillEnricher() > 0:
-                continue
-            if cvMatcher is not None:
-                if cvMatcher.process_db_jobs()>0:
-                    continue
+        if dataExtractor() > 0:
+            continue
+        if skillEnricher() > 0:
+            continue
+        if cvMatcher is not None and cvMatcher.process_db_jobs() > 0:
+            continue
+        if retry_failed_jobs() > 0:
+            continue
         consoleTimer(cyan('All jobs enriched. '), '10s', end='\r')
