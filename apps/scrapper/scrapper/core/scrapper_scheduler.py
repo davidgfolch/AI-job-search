@@ -58,7 +58,7 @@ class ScrapperScheduler:
         return scrappers_status, seconds_to_wait
 
     def _execute_scrappers(self, scrappers_status: list, starting: bool, startingAt: str) -> tuple[bool, bool]:
-        executed_starting_target = False
+        executed_startingAt = False
         for scrapper in scrappers_status:
             if scrapper['seconds_remaining'] <= 0:
                 name = scrapper['name']
@@ -68,19 +68,19 @@ class ScrapperScheduler:
                 self.seleniumUtil.debug = debug
                 if RUN_IN_TABS:
                     self.seleniumUtil.tab(name)
-                if runPreload(properties):
+                if runPreload(properties, run_in_tabs=RUN_IN_TABS):
                     executor = BaseExecutor.create(name, self.seleniumUtil, self.persistenceManager)
                     if not executor.execute_preload(properties):
-                        return False, executed_starting_target
+                        return False, executed_startingAt
                     if not properties.get('preloaded', True): 
                         print(red(f"Skipping execution for {name} due to preload failure."))
                         continue
                 executor = BaseExecutor.create(name, self.seleniumUtil, self.persistenceManager)
                 if not executor.execute(properties):
-                    return False, executed_starting_target
+                    return False, executed_startingAt
                 if starting and startingAt == name.capitalize():
-                    executed_starting_target = True
-        return True, executed_starting_target
+                    executed_startingAt = True
+        return True, executed_startingAt
 
     def runAllScrappers(self, waitBeforeFirstRuns, starting, startingAt, loops=99999999999):
         print(f'Executing all scrappers: {list(SCRAPPERS.keys())}')
@@ -92,11 +92,11 @@ class ScrapperScheduler:
             scrappers_status, seconds_to_wait = self._calculate_and_print_status(starting, startingAt)
             if seconds_to_wait > 0:
                 consoleTimer("Waiting for next execution slot", f"{int(seconds_to_wait)}s")
-            should_continue, executed_starting_target = self._execute_scrappers(scrappers_status, starting, startingAt)
+            should_continue, executed_startingAt = self._execute_scrappers(scrappers_status, starting, startingAt)
             print_failed_info_table(self.persistenceManager)
             if not should_continue:
                 return
-            if starting and executed_starting_target:
+            if starting and executed_startingAt:
                 starting = False
 
     def runSpecifiedScrappers(self, scrappersList: list):
@@ -104,7 +104,7 @@ class ScrapperScheduler:
         for arg in scrappersList:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
-                if runPreload(properties):
+                if runPreload(properties, run_in_tabs=RUN_IN_TABS):
                     executor = BaseExecutor.create(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
                     if not executor.execute_preload(properties):
                         return
