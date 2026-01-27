@@ -16,7 +16,7 @@ uv.lock
 **/package-lock.json
 **/node_modules/**
 **/.next/**
-scripts/mysql/*backup.*
+scripts/mysql/backups/*
 apps/aiEnrich/cv/*
 **/**/coverage.xml
 **/**/coverage.txt

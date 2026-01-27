@@ -98,13 +98,35 @@ docker exec -i ai-job-search-mysql mysql -uroot -prootPass jobs < scripts/mysql/
 
 ## Database Backup & Restore
 
-```bash
-# backup
-docker exec ai-job-search-mysql /usr/bin/mysqldump -u root --password=rootPass jobs > scripts/mysql/20251219_backup.sql
+You can use the provided scripts in `scripts/mysql` to backup and restore the database. These scripts handle common issues like GTID warnings and secure password usage.
 
-# restore
-cat scripts/mysql/20251219_backup.sql | docker exec -i ai_job_search-mysql /usr/bin/mysql -uroot -prootPass jobs
+### Backup
+
+```bash
+# Bash
+./scripts/mysql/backup.sh
 ```
+
+```powershell
+# Windows (CMD/PowerShell)
+.\scripts\mysql\backup.bat
+```
+
+This will create a timestamped SQL file in `scripts/mysql/backups`.
+
+### Restore
+
+```bash
+# Bash
+./scripts/mysql/restore.sh scripts/mysql/backups/YYYYMMDD_HHMM_backup.sql
+```
+
+```powershell
+# Windows (CMD/PowerShell)
+.\scripts/mysql/restore.bat scripts/mysql/backups/YYYYMMDD_HHMM_backup.sql
+```
+
+> **Note**: The scripts automatically handle the MySQL password securely and suppress common warnings (GTID, etc).
 
 ## Related Documentation
 

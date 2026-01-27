@@ -19,21 +19,17 @@ def process_skill_enrichment(
     :param check_empty_description_only: if True, filters by description IS NULL OR description = ''. 
                                          If False, only filters by ai_enriched = 0.
     """
-    
     where_clause = "ai_enriched = 0"
     if check_empty_description_only:
         where_clause += " AND (description IS NULL OR description = '')"
     else:
         # If we are not checking for empty description, implies we might re-enrich or enrich regardless of existing desc if ai_enriched=0
         pass
-
     query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
-    
     rows = mysql.fetchAll(query_find)
     if not rows:
-        print(yellow("No skills to enrich"))
+        print(magenta("No skills to enrich. "), end='')
         return 0
-
     print(cyan(f"Found {len(rows)} skills to enrich..."))
     count = 0
     for row in rows:
@@ -42,7 +38,6 @@ def process_skill_enrichment(
         try:
             context = get_skill_context(mysql, name)
             description = generate_description_fn(name, context)
-            
             # Simple validation: valid description and not an error string if API returns one
             if description and "Error" not in description:
                 print("Description: ", magenta(description))
@@ -54,5 +49,4 @@ def process_skill_enrichment(
         except Exception as e:
             print(yellow(f"Error enriching skill {name}"))
             print(red(traceback.format_exc()))
-    
     return count
