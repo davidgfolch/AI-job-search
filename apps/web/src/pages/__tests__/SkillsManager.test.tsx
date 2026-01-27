@@ -74,6 +74,30 @@ describe('SkillsManager', () => {
     expect(screen.getByText(/No skills in your learn list yet/i)).toBeInTheDocument();
   });
 
+  it('toggles between table and markdown view', () => {
+    render(<SkillsManager />);
+    
+    // Initial state: View MD button visible, Table visible
+    const toggleButton = screen.getByText('View MD');
+    expect(toggleButton).toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    
+    // Click View MD
+    fireEvent.click(toggleButton);
+    
+    // View Table button visible, Table hidden
+    expect(screen.getByText('View Table')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    
+    // Check for markdown content (Rendered)
+    // "# My Skills" becomes an h1 with text "My Skills"
+    expect(screen.getByRole('heading', { level: 1, name: /My Skills/i })).toBeInTheDocument();
+    
+    // Click View Table
+    fireEvent.click(screen.getByText('View Table'));
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
   it('calls reorderSkills when dragging and dropping', () => {
     render(<SkillsManager />);
     const rows = screen.getAllByRole('row');

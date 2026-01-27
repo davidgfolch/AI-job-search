@@ -4,11 +4,13 @@ import { SkillsTable } from '../components/skills/SkillsTable';
 import { EditSkillModal } from '../components/skills/EditSkillModal';
 import { generateSkillsMarkdown } from '../utils/skillUtils';
 import { downloadFile } from '../utils/fileUtils';
+import ReactMarkdownCustom from '../components/core/ReactMarkdownCustom';
 import './SkillsManager.css';
 
 const SkillsManager = () => {
   const { learnList, reorderSkills, removeSkill, saveSkill, updateSkill, isLoading, error } = useLearnList();
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'markdown'>('table');
 
   const handleRemove = (skill: string) => {
     if (window.confirm(`Remove "${skill}" from learn list?`)) {
@@ -47,6 +49,14 @@ const SkillsManager = () => {
           >
               Export
           </button>
+          <button 
+              className="btn-secondary"
+              onClick={() => setViewMode(prev => prev === 'table' ? 'markdown' : 'table')}
+              disabled={!learnList.length}
+              title={viewMode === 'table' ? "Show Markdown" : "Show Table"}
+          >
+              {viewMode === 'table' ? 'View MD' : 'View Table'}
+          </button>
           <button className="btn-primary" onClick={handleAddSkill}>
               + Add Skill
           </button>
@@ -61,12 +71,18 @@ const SkillsManager = () => {
           <p>No skills in your learn list yet.</p>
         </div>
       ) : (
-        <SkillsTable 
-          skills={learnList}
-          onReorder={reorderSkills}
-          onEdit={setEditingSkill}
-          onRemove={handleRemove}
-        />
+        viewMode === 'table' ? (
+          <SkillsTable 
+            skills={learnList}
+            onReorder={reorderSkills}
+            onEdit={setEditingSkill}
+            onRemove={handleRemove}
+          />
+        ) : (
+          <div className="markdown-view">
+            <ReactMarkdownCustom>{generateSkillsMarkdown(learnList)}</ReactMarkdownCustom>
+          </div>
+        )
       )}
 
       {editingSkill && (
