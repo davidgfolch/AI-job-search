@@ -76,36 +76,29 @@
   max-width: 100%;
 }
 
+
 .skills-table {
-  width: auto;
-  min-width: 100%; /* Ensure it takes full width of container if container is wider */
+  width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   background-color: var(--bg-secondary);
-  /* border-radius: 8px; Removed as container handles it */
-  /* overflow: hidden; Removed as container handles it */
-  /* box-shadow: ... Removed as container handles it */
-  /* table-layout: fixed; Removed to allow shrink to content */
-  margin-bottom: 0; /* consistent spacing */
+  margin-bottom: 0;
 }
 
 /* Column widths */
 .col-handle { 
-  width: 1px; 
-  white-space: nowrap;
+  width: 40px; 
 }
 .col-skill { 
-  width: 1px; 
-  white-space: nowrap;
+  width: 20%; 
 }
-/* .col-desc { \n  // Auto width \n} */
+/* .col-desc { \n  // Auto width -> takes remaining space \n} */
 .col-links { 
-  width: 1px; 
-  white-space: nowrap;
+  width: 25%; 
 }
 .col-actions { 
-  width: 1px; 
-  white-space: nowrap;
-  padding-left: 1rem; /* Add some breathing room */
+  width: 100px; 
+  padding-left: 1rem;
 }
 
 .skills-table th,
@@ -171,6 +164,8 @@
   color: var(--text-primary);
   display: block;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Inputs */

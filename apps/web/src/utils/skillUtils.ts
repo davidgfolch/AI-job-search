@@ -12,6 +12,16 @@ export const generateSkillsMarkdown = (skills: Skill[]): string => {
     return markdown + 'No skills found.\n';
   }
 
+  markdown += '## Table of Contents\n\n';
+  skills.forEach((skill) => {
+    const slug = skill.name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-');
+    markdown += `- [${skill.name}](#${slug})\n`;
+  });
+  markdown += '\n';
+
   skills.forEach((skill) => {
     markdown += `## ${skill.name}\n\n`;
     
