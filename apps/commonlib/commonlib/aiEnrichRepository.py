@@ -37,6 +37,7 @@ class AiEnrichRepository:
             SELECT id FROM jobs 
             WHERE ai_enrich_error IS NOT NULL AND ai_enrich_error != '' 
             AND ai_enrich_error NOT LIKE '{RETRY_ERROR_PREFIX}%'
+            AND created > DATE_SUB(NOW(), INTERVAL 2 DAY)
             ORDER BY created DESC LIMIT 1"""
         rows = self.mysql.fetchAll(query)
         return rows[0][0] if rows else None

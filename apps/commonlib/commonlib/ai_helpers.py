@@ -22,9 +22,6 @@ def mapJob(job):
     return title, company, markdown
 
 
-
-
-
 def rawToJson(raw: str) -> dict[str, str]:
     res = raw
     try:
