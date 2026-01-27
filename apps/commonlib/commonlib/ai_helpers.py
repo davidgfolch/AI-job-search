@@ -9,6 +9,7 @@ from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.terminalColor import green, red, yellow
 
 MAX_AI_ENRICH_ERROR_LEN = 500
+RETRY_ERROR_PREFIX = "RETRY ERROR: "
 
 def printJob(processName, total, idx, id, title, company, inputLen):
     print(green(f'AI {processName} job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={inputLen}'))
@@ -21,17 +22,7 @@ def mapJob(job):
     return title, company, markdown
 
 
-def saveError(mysql: MysqlUtil, jobErrors: set, id, title, company, ex, dataExtractor:bool):
-    print(red(traceback.format_exc()))
-    jobErrors.add((id, f'{title} - {company}: {ex}'))
-    aiEnrichError = str(ex)[:MAX_AI_ENRICH_ERROR_LEN]
-    fields = {'ai_enrich_error': aiEnrichError, 'ai_enriched': True} if dataExtractor else {'cv_match_percentage': -1}
-    query, params = updateFieldsQuery([id], fields)
-    count = mysql.executeAndCommit(query, params)
-    if count == 0:
-        print(red(f"could not update ai_enrich_error, id={id}"))
-    else:
-        print(yellow(f"ai_enrich_error set, id={id}"))
+
 
 
 def rawToJson(raw: str) -> dict[str, str]:

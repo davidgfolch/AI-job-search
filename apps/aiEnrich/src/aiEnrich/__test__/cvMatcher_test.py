@@ -1,16 +1,17 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from ..cvMatcher import cvMatch, save, CVMatcher, getJobIdsList
+from ..cvMatcher import cvMatch, _save, CVMatcher
 
 @pytest.fixture
 def mock_deps():
     with patch('aiEnrich.cvMatcher.getEnvBool') as env, \
          patch('aiEnrich.cvMatcher.CVLoader') as cv_loader_cls, \
          patch('aiEnrich.cvMatcher.MysqlUtil') as mysql_util, \
-         patch('aiEnrich.cvMatcher.save') as save_chk, \
+         patch('aiEnrich.cvMatcher._save') as save_chk, \
          patch('aiEnrich.cvMatcher.printJob'), patch('aiEnrich.cvMatcher.printHR'), \
          patch('aiEnrich.cvMatcher.footer'), patch('aiEnrich.cvMatcher.StopWatch'), \
-         patch('aiEnrich.cvMatcher.combineTaskResults'), patch('aiEnrich.cvMatcher.mapJob'):
+         patch('aiEnrich.cvMatcher.combineTaskResults'), patch('aiEnrich.cvMatcher.mapJob'), \
+         patch('aiEnrich.cvMatcher.AiEnrichRepository') as repo_cls:
         
         env.return_value = True
         
@@ -22,7 +23,10 @@ def mock_deps():
         mysql = MagicMock()
         mysql_util.return_value.__enter__.return_value = mysql
         
-        yield {'env': env, 'cv_loader': cv_loader_instance, 'mysql': mysql, 'save': save_chk}
+        repo = MagicMock()
+        repo_cls.return_value = repo
+        
+        yield {'env': env, 'cv_loader': cv_loader_instance, 'mysql': mysql, 'save': save_chk, 'repo': repo}
 
 class TestCVMatcher:
     def test_cv_match_early_exits_loader_false(self, mock_deps):
@@ -30,17 +34,16 @@ class TestCVMatcher:
         mock_deps['cv_loader'].load_cv_content.return_value = False
         assert cvMatch() == 0
 
-    @patch('aiEnrich.cvMatcher.getJobIdsList', return_value=[1])
     @patch('aiEnrich.cvMatcher.CVMatcher')
-    def test_cv_match_success(self, mock_cls, mock_ids, mock_deps):
+    def test_cv_match_success(self, mock_cls, mock_deps):
         """Test success"""
-        mock_deps['mysql'].count.return_value = 1
-        mock_deps['mysql'].fetchOne.return_value = (1, 'Job', 'Desc', 'Comp')
+        mock_deps['repo'].count_pending_cv_match.return_value = 1
+        mock_deps['repo'].get_pending_cv_match_ids.return_value = [1]
+        mock_deps['repo'].get_job_to_match_cv.return_value = (1, 'Job', 'Desc', 'Comp')
         
         crew_mock = MagicMock()
         mock_cls.return_value.crew.return_value = crew_mock
         
-        # combineTaskResults is mocked in fixture
         with patch('aiEnrich.cvMatcher.combineTaskResults', return_value={'cv_match_percentage': 85}), \
              patch('aiEnrich.cvMatcher.mapJob', return_value=('Job', 'Comp', 'Desc')):
             assert cvMatch() == 1
@@ -48,18 +51,10 @@ class TestCVMatcher:
 
     def test_save(self, mock_deps):
         """Test save"""
-        with patch('aiEnrich.cvMatcher.validateResult'), \
-             patch('aiEnrich.cvMatcher.maxLen', return_value=(85, 1)), \
-             patch('aiEnrich.cvMatcher.emptyToNone', return_value=(85, 1)):
-            save(mock_deps['mysql'], 1, {'cv_match_percentage': 85})
-            mock_deps['mysql'].updateFromAI.assert_called_once()
-
-    def test_get_job_ids_list(self):
-        """Test get job IDs"""
-        mysql = MagicMock()
-        mysql.fetchAll.return_value = [(1,), (2,), (3,)]
-        with patch('aiEnrich.cvMatcher.yellow'):
-            assert getJobIdsList(mysql) == [1, 2, 3]
+        repo = MagicMock()
+        with patch('aiEnrich.cvMatcher.validateResult'):
+            _save(repo, 1, {'cv_match_percentage': 85})
+            repo.update_cv_match.assert_called_once_with(1, 85)
 
     def test_classes(self):
         """Test classes"""

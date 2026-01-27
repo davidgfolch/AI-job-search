@@ -5,11 +5,12 @@ from crewai.crews.crew_output import CrewOutput
 
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
-from commonlib.terminalColor import cyan, printHR, yellow
+from commonlib.terminalColor import cyan, printHR, yellow, red
 from commonlib.environmentUtil import getEnv, getEnvBool
-from commonlib.ai_helpers import combineTaskResults, footer, mapJob, printJob, saveError, validateResult
-from commonlib.sqlUtil import updateFieldsQuery, maxLen, emptyToNone
+from commonlib.ai_helpers import combineTaskResults, footer, mapJob, printJob, validateResult
 from commonlib.cv_loader import CVLoader
+from commonlib.aiEnrichRepository import AiEnrichRepository
+import traceback
 
 VERBOSE = False
 DEBUG = False
@@ -24,19 +25,6 @@ LLM_CFG = LLM(
     base_url="http://localhost:11434",
     temperature=0)
 
-QRY_FROM = """
-FROM jobs
-WHERE cv_match_percentage is null and not (ignored or discarded or closed)
-ORDER BY created desc"""
-QRY_COUNT = f"""SELECT count(id) {QRY_FROM}"""
-QRY_FIND_IDS = f"""SELECT id {QRY_FROM} LIMIT {getEnv('AI_CV_MATCH_LIMIT', '10')}"""
-QRY_FIND = f"""
-SELECT id, title, markdown, company
-FROM jobs
-WHERE id=%s and cv_match_percentage is null and not (ignored or discarded or closed)
-ORDER BY created desc 
-"""
-QRY_UPDATE = """UPDATE jobs SET cv_match_percentage=%s WHERE id=%s"""
 
 mysql = None
 stopWatch = StopWatch()
@@ -49,24 +37,26 @@ jobErrors = set[tuple[int, str]]()
 def cvMatch() -> int:
     global totalCount, jobErrors
     cv_loader = CVLoader(cv_location=getEnv('CV_LOCATION', './cv/cv.txt'), enabled=getEnvBool('AI_CV_MATCH'))
-    
     if not cv_loader.load_cv_content():
         return 0
-        
     cvContent = cv_loader.get_content()
-    
     with MysqlUtil() as mysql:
-        total = mysql.count(QRY_COUNT)
+        repo = AiEnrichRepository(mysql)
+        total = repo.count_pending_cv_match()
         if total == 0:
             return total
         crew: Crew = CVMatcher().crew()
-        for idx, id in enumerate(getJobIdsList(mysql)):
+        limit = int(getEnv('AI_CV_MATCH_LIMIT', '10'))
+        jobIds = repo.get_pending_cv_match_ids(limit)
+        print(yellow(f'{jobIds}'))
+        for idx, id in enumerate(jobIds):
             printHR(yellow)
             stopWatch.start()
+            title, company = "Unknown", "Unknown"
             try:
-                job = mysql.fetchOne(QRY_FIND, id)
+                job = repo.get_job_to_match_cv(id)
                 if job is None:
-                    print(f'Job id={id} not found in database (or mark as ignored, discarded, closed) , skipping')
+                    print(f'Job id={id} not found regarding CV MATCH, skipping')
                     continue
                 title, company, markdown = mapJob(job)
                 printJob('CV match', total, idx, id, title, company, len(markdown) + (len(cvContent) if cvContent else 0))
@@ -75,19 +65,20 @@ def cvMatch() -> int:
                 result = combineTaskResults(crewOutput, DEBUG)
                 print('Result: ', cyan(json.dumps(result)))
                 if result is not None:
-                    save(mysql, id, result)
+                    _save(repo, id, result)
             except (Exception, KeyboardInterrupt) as ex:
-                saveError(mysql, jobErrors, id, title, company, ex, False)
+                print(red(traceback.format_exc()))
+                jobErrors.add((id, f'{title} - {company}: {ex}'))
+                repo.update_enrichment_error(id, str(ex), False)
             totalCount += 1
             stopWatch.end()
             footer(total, idx, totalCount, jobErrors)
         return total
 
 
-def save(mysql: MysqlUtil, id, result: dict):
+def _save(repo: AiEnrichRepository, id, result: dict):
     validateResult(result)
-    params = maxLen(emptyToNone((result.get('cv_match_percentage', None), id)), (None, None))
-    mysql.updateFromAI(QRY_UPDATE, params)
+    repo.update_cv_match(id, result.get('cv_match_percentage', None))
 
 
 @CrewBase
@@ -117,9 +108,3 @@ class CVMatcher:
         agents = [self.cv_matcher_agent()]
         tasks = [self.cv_matcher_task()]
         return Crew(agents=agents, tasks=tasks, process=Process.sequential, verbose=VERBOSE)
-
-
-def getJobIdsList(mysql: MysqlUtil) -> list[int]:
-    jobIds = [row[0] for row in mysql.fetchAll(QRY_FIND_IDS)]
-    print(yellow(f'{jobIds}'))
-    return jobIds

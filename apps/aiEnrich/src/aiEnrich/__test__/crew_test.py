@@ -5,6 +5,7 @@ from ..crew import AiJobSearchFlow
 
 
 class TestAiJobSearchFlow:
+    @patch('crewai.flow.flow.Flow.__init__', return_value=None)
     @patch('aiEnrich.crew.CVLoader')
     @patch('aiEnrich.crew.dataExtractor')
     @patch('aiEnrich.crew.cvMatch')
@@ -13,7 +14,7 @@ class TestAiJobSearchFlow:
     @patch('aiEnrich.crew.printHR')
     def test_process_rows_no_cv_match(self, mock_print_hr, mock_console_timer, 
                                      mock_get_env_bool, mock_cv_match, 
-                                     mock_data_extractor, mock_cv_loader_cls):
+                                     mock_data_extractor, mock_cv_loader_cls, mock_flow_init):
         mock_get_env_bool.return_value = False
         mock_cv_loader = mock_cv_loader_cls.return_value
         mock_cv_loader.load_cv_content.return_value = True
@@ -31,6 +32,7 @@ class TestAiJobSearchFlow:
         mock_cv_loader.load_cv_content.assert_called_once()
         assert mock_data_extractor.call_count >= 1
 
+    @patch('crewai.flow.flow.Flow.__init__', return_value=None)
     @patch('aiEnrich.crew.CVLoader')
     @patch('aiEnrich.crew.dataExtractor')
     @patch('aiEnrich.crew.cvMatch')
@@ -39,7 +41,7 @@ class TestAiJobSearchFlow:
     @patch('aiEnrich.crew.printHR')
     def test_process_rows_with_cv_match(self, mock_print_hr, mock_console_timer,
                                        mock_get_env_bool, mock_cv_match,
-                                       mock_data_extractor, mock_cv_loader_cls):
+                                       mock_data_extractor, mock_cv_loader_cls, mock_flow_init):
         mock_get_env_bool.return_value = True
         mock_cv_loader = mock_cv_loader_cls.return_value
         mock_cv_loader.load_cv_content.return_value = True
@@ -67,6 +69,7 @@ class TestAiJobSearchFlow:
         mock_cv_loader.load_cv_content.assert_called_once()
         mock_cv_match.assert_called()
 
+    @patch('crewai.flow.flow.Flow.__init__', return_value=None)
     @patch('aiEnrich.crew.CVLoader')
     @patch('aiEnrich.crew.dataExtractor')
     @patch('aiEnrich.crew.getEnvBool')
@@ -74,7 +77,7 @@ class TestAiJobSearchFlow:
     @patch('aiEnrich.crew.printHR')
     def test_process_rows_cv_not_loaded(self, mock_print_hr, mock_console_timer,
                                        mock_get_env_bool, mock_data_extractor, 
-                                       mock_cv_loader_cls):
+                                       mock_cv_loader_cls, mock_flow_init):
         mock_get_env_bool.return_value = True
         mock_cv_loader = mock_cv_loader_cls.return_value
         mock_cv_loader.load_cv_content.return_value = False  # CV not loaded

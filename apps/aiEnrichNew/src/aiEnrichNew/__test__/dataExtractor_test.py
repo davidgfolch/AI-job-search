@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from ..dataExtractor import dataExtractor, extract_job_data, save
+from ..dataExtractor import dataExtractor, extract_job_data, _save
 
 def test_extract_job_data():
     pipe = MagicMock()
@@ -13,12 +13,16 @@ def test_extract_job_data():
 
 @patch('aiEnrichNew.dataExtractor.MysqlUtil')
 @patch('aiEnrichNew.dataExtractor.get_pipeline')
-def test_dataExtractor_flow(mock_pipe, mock_mysql):
+@patch('aiEnrichNew.dataExtractor.AiEnrichRepository')
+def test_dataExtractor_flow(mock_repo_cls, mock_pipe, mock_mysql):
     mysql = MagicMock()
     mock_mysql.return_value.__enter__.return_value = mysql
-    mysql.count.return_value = 1
-    mysql.fetchAll.return_value = [(1,)]
-    mysql.fetchOne.return_value = (1, 'Title', b'Desc', 'Comp')
+    
+    repo = MagicMock()
+    mock_repo_cls.return_value = repo
+    repo.count_pending_enrichment.return_value = 1
+    repo.get_pending_enrichment_ids.return_value = [1]
+    repo.get_job_to_enrich.return_value = (1, 'Title', b'Desc', 'Comp')
     
     # pipe mock
     pipe = MagicMock()
@@ -27,7 +31,8 @@ def test_dataExtractor_flow(mock_pipe, mock_mysql):
     
     with patch('aiEnrichNew.dataExtractor.rawToJson', return_value={}), \
          patch('aiEnrichNew.dataExtractor.mapJob', return_value=('Title', 'Comp', 'Desc')), \
-         patch('aiEnrichNew.dataExtractor.save') as mock_save:
+         patch('aiEnrichNew.dataExtractor._save') as mock_save, \
+         patch('aiEnrichNew.dataExtractor._getJobIdsList', return_value=[1]):
          
         dataExtractor()
         mock_save.assert_called()

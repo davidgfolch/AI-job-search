@@ -1,24 +1,10 @@
 ============================= test session starts =============================
-platform win32 -- Python 3.10.11, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\TRENDINGPC\projects\AI-job-search\apps\aiEnrich\.venv\Scripts\python.exe
-cachedir: .pytest_cache
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
 rootdir: C:\Users\TRENDINGPC\projects\AI-job-search\apps\aiEnrich
 configfile: pyproject.toml
-plugins: anyio-4.11.0, cov-7.0.0
-collecting ... collected 0 items / 1 error
+plugins: anyio-4.12.1, cov-7.0.0
+collected 3 items
 
-=================================== ERRORS ====================================
-__________ ERROR collecting src/aiEnrich/__test__/cvMatcher_test.py ___________
-ImportError while importing test module 'C:\Users\TRENDINGPC\projects\AI-job-search\apps\aiEnrich\src\aiEnrich\__test__\cvMatcher_test.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-..\..\..\..\AppData\Local\Python\pythoncore-3.10-64\lib\importlib\__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-src\aiEnrich\__test__\cvMatcher_test.py:3: in <module>
-    from ..cvMatcher import cvMatch, save, CVMatcher, getJobIdsList
-src\aiEnrich\cvMatcher.py:10: in <module>
-    from commonlib.ai_helpers import combineTaskResults, footer, mapJob, printJob, saveError, validateResult, updateFieldsQuery, maxLen, emptyToNone
-E   ImportError: cannot import name 'maxLen' from 'commonlib.ai_helpers' (C:\Users\TRENDINGPC\projects\AI-job-search\apps\commonlib\commonlib\ai_helpers.py)
-=========================== short test summary info ===========================
-ERROR src/aiEnrich/__test__/cvMatcher_test.py
-!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
-============================== 1 error in 3.14s ===============================
+src\aiEnrich\__test__\crew_test.py ...                                   [100%]
+
+============================= 3 passed in 18.69s ==============================
