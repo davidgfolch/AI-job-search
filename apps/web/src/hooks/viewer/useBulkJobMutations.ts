@@ -6,6 +6,12 @@ interface UseBulkJobMutationsProps {
   setMessage: (msg: { text: string; type: "success" | "error" } | null) => void;
   setSelectionMode: (mode: "none" | "manual" | "all") => void;
   setSelectedIds: (ids: Set<number>) => void;
+  onUpdateSuccess?: (variables: {
+    ids?: number[];
+    filters?: JobListParams;
+    update: Partial<Job>;
+    select_all?: boolean;
+  }) => void;
 }
 
 export function useBulkJobMutations({
@@ -13,6 +19,7 @@ export function useBulkJobMutations({
   setMessage,
   setSelectionMode,
   setSelectedIds,
+  onUpdateSuccess,
 }: UseBulkJobMutationsProps) {
   const queryClient = useQueryClient();
 
@@ -31,6 +38,7 @@ export function useBulkJobMutations({
       if (variables.ids && onJobsDeleted) {
         onJobsDeleted(variables.ids);
       }
+      onUpdateSuccess?.(variables);
     },
     onError: (err) => {
       setMessage({

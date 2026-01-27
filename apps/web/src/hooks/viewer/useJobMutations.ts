@@ -27,6 +27,8 @@ interface UseJobMutationsProps {
   >;
   onJobUpdated?: (job: Job) => void;
   onJobsDeleted?: (ids: number[] | 'all') => void;
+  activeConfigName?: string;
+  onReload?: () => void;
 }
 
 export const useJobMutations = ({
@@ -41,6 +43,8 @@ export const useJobMutations = ({
   setSelectionMode,
   onJobUpdated,
   onJobsDeleted,
+  activeConfigName,
+  onReload,
 }: UseJobMutationsProps) => {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState<{
@@ -54,18 +58,27 @@ export const useJobMutations = ({
       onJobsDeleted,
       setMessage,
       setSelectionMode,
-      setSelectedIds
+      setSelectedIds,
+      onUpdateSuccess: (variables) => {
+          if (variables.update.ignored && activeConfigName === 'Clean - Ignore jobs by title') {
+              onReload?.();
+          }
+      }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Job> }) =>
       jobsApi.updateJob(id, data),
-    onSuccess: (updatedJob) => {
+    onSuccess: (updatedJob, variables) => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       if (selectedJob && updatedJob.id === selectedJob.id) {
         setSelectedJob(updatedJob);
       }
       onJobUpdated?.(updatedJob);
+
+      if (variables.data.ignored && activeConfigName === 'Clean - Ignore jobs by title') {
+        onReload?.();
+      }
     },
   });
 

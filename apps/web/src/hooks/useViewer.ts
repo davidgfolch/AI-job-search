@@ -49,6 +49,16 @@ export const useViewer = () => {
             } else {
                 setAllJobs(jobs => jobs.filter(j => !ids.includes(j.id)));
             }
+        },
+        activeConfigName,
+        onReload: async () => {
+             if (filters.page !== 1) {
+                setShouldSelectFirst(true);
+                setFilters(f => ({ ...f, page: 1 }));
+            } else {
+                setShouldSelectFirst(true);
+                await hardRefresh();
+            }
         }
     });
 
