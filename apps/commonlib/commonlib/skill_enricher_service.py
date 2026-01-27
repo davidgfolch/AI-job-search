@@ -6,7 +6,7 @@ from commonlib.terminalColor import yellow, magenta, cyan, red
 
 def process_skill_enrichment(
     mysql: MysqlUtil,
-    generate_description_fn: Callable[[str, str], str],
+    generate_description_fn: Callable[[str, str], tuple[str, str]],
     limit: int = 10,
     check_empty_description_only: bool = True
 ) -> int:
@@ -14,7 +14,7 @@ def process_skill_enrichment(
     Common logic for skill enrichment.
     
     :param mysql: MysqlUtil instance
-    :param generate_description_fn: Function that takes (skill_name, context) and returns description
+    :param generate_description_fn: Function that takes (skill_name, context) and returns (description, category)
     :param limit: limit of skills to process
     :param check_empty_description_only: if True, filters by description IS NULL OR description = ''. 
                                          If False, only filters by ai_enriched = 0.
@@ -37,12 +37,26 @@ def process_skill_enrichment(
         print("Enriching skill: ", yellow(name))
         try:
             context = get_skill_context(mysql, name)
-            description = generate_description_fn(name, context)
+            result = generate_description_fn(name, context)
+            # Handle both tuple (desc, cat) and old string format for backward compatibility if needed, 
+            # though we are changing the implementation so we can enforce tuple.
+            description = ""
+            category = None
+            if isinstance(result, tuple) and len(result) == 2:
+                description, category = result
+            elif isinstance(result, str):
+                description = result
+                category = None
+            else:
+                print(yellow(f"Invalid result format for {name}: {type(result)}"))
+                continue
             # Simple validation: valid description and not an error string if API returns one
             if description and "Error" not in description:
-                print("Description: ", magenta(description))
-                update_query = "UPDATE job_skills SET description = %s, ai_enriched = 1 WHERE name = %s"
-                mysql.executeAndCommit(update_query, [description, name])
+                print("Description: ", magenta(description[:50] + "..."))
+                if category:
+                    print("Category: ", magenta(category))
+                update_query = "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1 WHERE name = %s"
+                mysql.executeAndCommit(update_query, [description, category, name])
                 count += 1
             else:
                 print(yellow(f"Failed to generate description for {name}"))

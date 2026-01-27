@@ -6,6 +6,7 @@ export interface Skill {
   learningPath: string[];
   disabled?: boolean;
   ai_enriched?: boolean;
+  category?: string;
 }
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -24,6 +25,7 @@ export const skillsApi = {
       ...s,
       learningPath: s.learning_path || s.learningPath || [],
       ai_enriched: s.ai_enriched,
+      category: s.category,
     })) as Skill[];
   },
 
@@ -52,6 +54,7 @@ export const skillsApi = {
           ...response.data,
           learningPath: response.data.learning_path || response.data.learningPath || [],
           ai_enriched: response.data.ai_enriched,
+          category: response.data.category,
       } as Skill;
     } catch (e) {
       return null;
@@ -71,7 +74,8 @@ export const skillsApi = {
       // But frontend Skill interface uses `learningPath`
       // We need to map it.
       disabled: skill.disabled,
-      ai_enriched: skill.ai_enriched
+      ai_enriched: skill.ai_enriched,
+      category: skill.category
     };
     // The SkillCreate model in backend expects learning_path
     // We should probably map it here.
@@ -94,6 +98,7 @@ export const skillsApi = {
     if (skill.ai_enriched !== undefined) {
         payload.ai_enriched = skill.ai_enriched;
     }
+    // category doesn't need mapping if names match
     const response = await apiClient.put<string>(`/skills/${name}`, payload);
     return response.data;
   },

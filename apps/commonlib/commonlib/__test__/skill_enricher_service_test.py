@@ -19,7 +19,7 @@ def test_process_skill_enrichment_success():
     
     # Mock get_skill_context to return something
     with patch("commonlib.skill_enricher_service.get_skill_context", return_value="Context"):
-        gen_fn = MagicMock(return_value="Description")
+        gen_fn = MagicMock(return_value=("Description", "Category"))
         
         count = process_skill_enrichment(mysql, gen_fn)
         
@@ -27,7 +27,7 @@ def test_process_skill_enrichment_success():
         gen_fn.assert_called_with("Skill1", "Context")
         mysql.executeAndCommit.assert_called_once()
         args = mysql.executeAndCommit.call_args[0]
-        assert args[1] == ["Description", "Skill1"]
+        assert args[1] == ["Description", "Category", "Skill1"]
 
 def test_process_skill_enrichment_gen_fail():
     mysql = MagicMock()

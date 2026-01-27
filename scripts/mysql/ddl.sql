@@ -87,6 +87,7 @@ CREATE TABLE if not exists `job_skills` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 ALTER TABLE job_skills ADD COLUMN ai_enriched TINYINT(1) DEFAULT 0;
+ALTER TABLE job_skills ADD COLUMN category VARCHAR(255);
 
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -100,3 +101,4 @@ ALTER TABLE job_skills ADD COLUMN ai_enriched TINYINT(1) DEFAULT 0;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2025-10-10  6:46:51
+

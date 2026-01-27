@@ -13,18 +13,43 @@ export const generateSkillsMarkdown = (skills: Skill[]): string => {
   }
 
   markdown += '## Table of Contents\n\n';
-  skills.forEach((skill) => {
-    const slug = skill.name
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-');
-    markdown += `- [${skill.name}](#${slug})\n`;
+  
+  // Group skills by category
+  const categories: Record<string, Skill[]> = {};
+  skills.forEach(skill => {
+      // Split category by comma if multiple
+      const cats = skill.category ? skill.category.split(',').map(c => c.trim()) : ['Other'];
+      cats.forEach(cat => {
+          if (!categories[cat]) categories[cat] = [];
+          categories[cat].push(skill);
+      });
   });
-  markdown += '\n';
+
+  // Sort categories and skills
+  const sortedCategories = Object.keys(categories).sort();
+  
+  sortedCategories.forEach(cat => {
+      markdown += `### ${cat}\n`;
+      categories[cat].sort((a, b) => a.name.localeCompare(b.name)).forEach(skill => {
+        const slug = skill.name
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-');
+        markdown += `- [${skill.name}](#${slug})\n`;
+      });
+      markdown += '\n';
+  });
+
+  // Full Details
+  markdown += '\n---\n\n';
 
   skills.forEach((skill) => {
     markdown += `## ${skill.name}\n\n`;
     
+    if (skill.category) {
+        markdown += `**Category**: ${skill.category}\n\n`;
+    }
+
     if (skill.description) {
       markdown += `${skill.description.trim()}\n\n`;
     }

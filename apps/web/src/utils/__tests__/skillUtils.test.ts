@@ -58,15 +58,20 @@ describe('skillUtils', () => {
              expect(markdown).toContain('Desc B');
         });
 
-        it('should include a Table of Contents', () => {
+        it('should include a Table of Contents grouped by category', () => {
              const skills: Skill[] = [
-                 { name: 'React Native', description: 'Desc', learningPath: [], disabled: false },
-                 { name: 'Go Lang', description: 'Desc', learningPath: [], disabled: false }
+                 { name: 'React Native', description: 'Desc', learningPath: [], disabled: false, category: 'Frameworks' },
+                 { name: 'Go Lang', description: 'Desc', learningPath: [], disabled: false, category: 'Languages' },
+                 { name: 'Unknown', description: 'Desc', learningPath: [], disabled: false } // Should be Other
              ];
              const markdown = generateSkillsMarkdown(skills);
              expect(markdown).toContain('## Table of Contents');
+             expect(markdown).toContain('### Frameworks');
              expect(markdown).toContain('- [React Native](#react-native)');
+             expect(markdown).toContain('### Languages');
              expect(markdown).toContain('- [Go Lang](#go-lang)');
+             expect(markdown).toContain('### Other');
+             expect(markdown).toContain('- [Unknown](#unknown)');
         });
     });
 });

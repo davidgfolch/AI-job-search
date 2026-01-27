@@ -78,6 +78,11 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
               </td>
               <td>
                 <span className="skill-name">{skill.name}</span>
+                {skill.category && (
+                    <div style={{ fontSize: '0.8em', color: '#888', marginTop: '2px' }}>
+                        {skill.category}
+                    </div>
+                )}
               </td>
               <td>
                 <SkillDescriptionCell description={skill.description} />

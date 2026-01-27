@@ -12,6 +12,7 @@ interface UseEditSkillFormProps {
 export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormProps) => {
   const queryClient = useQueryClient();
   const [name, setName] = useState(skill.name || '');
+  const [category, setCategory] = useState(skill.category || '');
   const [description, setDescription] = useState(skill.description || '');
   const [learningPath, setLearningPath] = useState<string[]>(skill.learningPath || []);
   const [newLinkInput, setNewLinkInput] = useState('');
@@ -21,6 +22,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
 
   useEffect(() => {
     setName(skill.name || '');
+    setCategory(skill.category || '');
     setDescription(skill.description || '');
     setLearningPath(skill.learningPath || []);
     setNewLinkInput('');
@@ -33,6 +35,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     }
     onSave({
       name,
+      category,
       description,
       learningPath,
       disabled: skill.disabled,
@@ -49,7 +52,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [name, description, learningPath, skill]); // Dependencies for handleSave closure
+  }, [name, category, description, learningPath, skill]); // Dependencies for handleSave closure
 
   const handleAddLink = () => {
     if (newLinkInput.trim()) {
@@ -80,6 +83,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
             const latest = await skillsApi.getSkill(name);
             if (latest && latest.ai_enriched && latest.description) {
                 setDescription(latest.description);
+                if (latest.category) setCategory(latest.category);
                 setIsPolling(false);
                 clearInterval(interval);
             }
@@ -97,6 +101,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
          const latest = await skillsApi.getSkill(name);
          if (latest) {
              setDescription(latest.description || '');
+             setCategory(latest.category || '');
              setLearningPath(latest.learningPath || []);
          }
      } catch (e) {
@@ -111,6 +116,8 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
   return {
     name,
     setName,
+    category,
+    setCategory,
     description,
     setDescription,
     learningPath,

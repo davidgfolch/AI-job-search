@@ -12,4 +12,4 @@ def test_skillEnricher_calls_service(mock_env, mock_process, mock_mysql):
 def test_generate_skill_description(mock_pipe):
     mock_pipe.return_value.tokenizer.apply_chat_template.return_value = "Prompt"
     mock_pipe.return_value.return_value = [{'generated_text': 'Desc'}]
-    assert generate_skill_description("Skill") == "Desc"
+    assert generate_skill_description("Skill") == ("Desc", "Other")

@@ -9,8 +9,8 @@ def test_list_skills(mock_get_connection, mock_mysql_util):
     mock_db = MagicMock()
     mock_mysql_util.return_value.__enter__.return_value = mock_db
     mock_db.fetchAll.return_value = [
-        ('Python', 'Programming language', '["basics", "advanced"]', 0, 0),
-        ('JavaScript', 'Web language', None, 0, 0)
+        ('Python', 'Programming language', '["basics", "advanced"]', 0, 0, 'Language'),
+        ('JavaScript', 'Web language', None, 0, 0, 'Language')
     ]
     repo = SkillsRepository()
     skills = repo.list_skills()

@@ -246,11 +246,11 @@ select * from jobs where jobId like '%handMade%';
 
 --- SKILL MANAGER
 
-select * from job_skills where ai_enriched = 0;
+select * from job_skills where category is not null;
 
 select * from job_skills where job_skills.name like '%Apache Camel%';
 
-update job_skills set ai_enriched = 0 where ai_enriched = 1 and name like '%Advanced Llm Evaluation%';
+update job_skills set ai_enriched = 0 where ai_enriched = 1 and category is null limit 10;
 
 
 
@@ -258,7 +258,6 @@ update job_skills set ai_enriched = 0 where ai_enriched = 1 and name like '%Adva
 show open tables where in_use>0;
 
 show performance_schema.processlist;
-
 
 SHOW ENGINE INNODB STATUS\G;
 

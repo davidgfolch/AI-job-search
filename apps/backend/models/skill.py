@@ -7,6 +7,7 @@ class SkillBase(BaseModel):
     learning_path: Optional[List[str]] = None
     disabled: Optional[bool] = False
     ai_enriched: Optional[bool] = False
+    category: Optional[str] = None
 
 class Skill(SkillBase):
     pass
@@ -16,7 +17,5 @@ class SkillCreate(SkillBase):
 
 class SkillUpdate(SkillBase):
     name: Optional[str] = None
-    description: Optional[str] = None
-    learning_path: Optional[List[str]] = None
     disabled: Optional[bool] = None
     ai_enriched: Optional[bool] = None

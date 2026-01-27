@@ -13,4 +13,5 @@ def test_skillEnricher_calls_service(mock_env, mock_process, mock_mysql):
 @patch('aiEnrich.skillEnricher.Crew')
 def test_generate_skill_description(mock_crew, mock_task, mock_agent):
     mock_crew.return_value.kickoff.return_value = "Desc"
-    assert generate_skill_description("Skill") == "Desc"
+    # It now returns (description, category), defaulting to "Other" if not found
+    assert generate_skill_description("Skill") == ("Desc", "Other")

@@ -14,6 +14,7 @@ declare const __AI_ENRICH_SKILL_ENABLED__: boolean;
 export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillModalProps) => {
   const {
     name, setName,
+    category, setCategory,
     description, setDescription,
     learningPath,
     newLinkInput, setNewLinkInput,
@@ -48,6 +49,16 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
                   />
               </div>
           )}
+          <div className="form-group">
+            <label>Category</label>
+            <input
+                type="text"
+                className="skill-input"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Frameworks, Languages, Tools..."
+            />
+          </div>
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <label style={{ marginBottom: 0 }}>Description</label>
