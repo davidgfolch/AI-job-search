@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useLearnList, type Skill } from '../components/skills/useLearnList';
 import { SkillsTable } from '../components/skills/SkillsTable';
 import { EditSkillModal } from '../components/skills/EditSkillModal';
+import { generateSkillsMarkdown } from '../utils/skillUtils';
+import { downloadFile } from '../utils/fileUtils';
 import './SkillsManager.css';
 
 const SkillsManager = () => {
@@ -27,13 +29,28 @@ const SkillsManager = () => {
       });
   };
 
+  const handleExport = () => {
+    const markdown = generateSkillsMarkdown(learnList);
+    downloadFile(markdown, 'my-skills.md', 'text/markdown');
+  };
+
   return (
     <div className="skills-manager">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Skills Manager</h2>
-        <button className="btn-primary" onClick={handleAddSkill}>
-            + Add Skill
-        </button>
+        <div className="actions-group">
+          <button 
+            className="btn-secondary" 
+            onClick={handleExport} 
+            disabled={!learnList.length}
+            title="Export to Markdown"
+          >
+              Export
+          </button>
+          <button className="btn-primary" onClick={handleAddSkill}>
+              + Add Skill
+          </button>
+        </div>
       </div>
       
       {error && <div className="error-message" style={{ color: 'red', margin: '10px 0' }}>{error}</div>}
