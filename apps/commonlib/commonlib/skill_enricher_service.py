@@ -1,6 +1,8 @@
 import traceback
 from typing import Callable
 from commonlib.mysqlUtil import MysqlUtil
+from commonlib.dateUtil import getDatetimeNowStr
+from commonlib.terminalColor import green
 from commonlib.skill_context import get_skill_context
 from commonlib.terminalColor import yellow, magenta, cyan, red
 
@@ -19,6 +21,10 @@ def process_skill_enrichment(
     :param check_empty_description_only: if True, filters by description IS NULL OR description = ''. 
                                          If False, only filters by ai_enriched = 0.
     """
+    from commonlib.stopWatch import StopWatch
+    import json
+    from datetime import datetime
+
     where_clause = "ai_enriched = 0"
     if check_empty_description_only:
         where_clause += " AND (description IS NULL OR description = '')"
@@ -31,15 +37,29 @@ def process_skill_enrichment(
         print(magenta("No skills to enrich. "), end='')
         return 0
     print(cyan(f"Found {len(rows)} skills to enrich..."))
+    
     count = 0
-    for row in rows:
+    stop_watch = StopWatch()
+    
+    for i, row in enumerate(rows):
+        stop_watch.start()
         name = row[0]
-        print("Enriching skill: ", yellow(name))
+        current_idx = i + 1
+        total = len(rows)
+        # Determine context length for logging (approximate input length)
+        # We don't have the exact prompt here but we can log the context size
+        context = ""
         try:
             context = get_skill_context(mysql, name)
+        except Exception:
+            pass # context fetching fail shouldn't stop flow
+            
+        print(green(f"AI enrich skill {current_idx}/{total} - {getDatetimeNowStr()} -> name={name} -> input length={len(context) + len(name)}"))
+
+        try:
+            # Re-fetch context inside try block to be safe, though duplicate
+            # context = get_skill_context(mysql, name) # Already fetched above
             result = generate_description_fn(name, context)
-            # Handle both tuple (desc, cat) and old string format for backward compatibility if needed, 
-            # though we are changing the implementation so we can enforce tuple.
             description = ""
             category = None
             if isinstance(result, tuple) and len(result) == 2:
@@ -50,11 +70,14 @@ def process_skill_enrichment(
             else:
                 print(yellow(f"Invalid result format for {name}: {type(result)}"))
                 continue
-            # Simple validation: valid description and not an error string if API returns one
             if description and "Error" not in description:
-                print("Description: ", magenta(description[:50] + "..."))
-                if category:
-                    print("Category: ", magenta(category))
+                # Log Result
+                result_log = {
+                    "description": description[:100] + "..." if len(description) > 100 else description,
+                    "category": category
+                }
+                print(f"Result:\n {json.dumps(result_log, indent=2)}")
+                print(f"Updated database: description, category")
                 update_query = "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1 WHERE name = %s"
                 mysql.executeAndCommit(update_query, [description, category, name])
                 count += 1
@@ -63,6 +86,8 @@ def process_skill_enrichment(
         except Exception as e:
             print(yellow(f"Error enriching skill {name}"))
             print(red(traceback.format_exc()))
+        stop_watch.end()
+        print("-" * 50) # Separator
     return count
 
 def parse_skill_llm_output(result: str) -> tuple[str, str]:
@@ -73,11 +98,9 @@ def parse_skill_llm_output(result: str) -> tuple[str, str]:
     import re
     category = "Other"
     description = result
-    
     # Try to find "Category: ..." pattern
     # Case insensitive, handles bolding/markdown like **Category**: or ## Category:
     match = re.search(r'(?:^|\n)[#*]*\s*Category\s*[#*]*\s*:\s*(.+)', result, re.IGNORECASE)
-    
     if match:
         category_part = match.group(1).strip()
         # Clean up if there are trailing characters or it captured too much (e.g. end of line)
@@ -91,5 +114,4 @@ def parse_skill_llm_output(result: str) -> tuple[str, str]:
         # Find the start index of the match in the original string
         start_index = match.start()
         description = result[:start_index].strip()
-    
     return description, category

@@ -29,7 +29,7 @@ def generate_skill_description(skill_name, context="") -> tuple[str, str]:
         {"role": "user", "content": user_message}
     ]
     prompt = get_pipeline().tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    output = get_pipeline()(prompt)
+    output = get_pipeline()(prompt, max_time=float(getEnv('AI_ENRICH_TIMEOUT_SKILL', 90)))
     generated_text = output[0]['generated_text']
     result = generated_text.strip().strip('"').strip("'")
     return parse_skill_llm_output(result)

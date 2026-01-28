@@ -96,7 +96,7 @@ class CVMatcher:
                      verbose=VERBOSE,
                      max_iter=1,
                      respect_context_window=True,  # auto-manage context limits
-                     max_execution_time=getEnv('AI_ENRICH_CV_MATCH_TIMEOUT_SECONDS'))
+                     max_execution_time=getEnv('AI_ENRICH_TIMEOUT_CV_MATCH'))
 
     @task
     def cv_matcher_task(self) -> Task:

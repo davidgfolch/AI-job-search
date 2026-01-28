@@ -135,7 +135,7 @@ class DataExtractor:
                        verbose=VERBOSE,
                        max_iter=1,
                        # max_rpm=1,
-                       max_execution_time=getEnv('AI_ENRICH_EXTRACT_TIMEOUT_SECONDS'))
+                       max_execution_time=getEnv('AI_ENRICH_TIMEOUT_JOB'))
         return result
 
     @task

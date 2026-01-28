@@ -92,7 +92,7 @@ def extract_job_data(pipe, title, markdown) -> dict:
     ]
     # Apply chat template
     prompt = pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    output = pipe(prompt)
+    output = pipe(prompt, max_time=float(getEnv('AI_ENRICH_TIMEOUT_JOB', 90)))
     generated_text = output[0]['generated_text']
     if DEBUG:
          print(yellow(f"Raw LLM Output: {generated_text}"))
