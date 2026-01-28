@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict, Any
+import re
 from repositories.skills_repository import SkillsRepository
 from models.skill import Skill
 
@@ -7,8 +8,9 @@ class SkillsService:
         self.repository = SkillsRepository()
 
     def _normalize_skill_name(self, name: str) -> str:
-        """Normalize skill name to TitleCase using .title()"""
-        return name.strip().title()
+        cleaned = re.sub(r'[^a-zA-Z0-9\s\+\.#]', ' ', name)
+        normalized = re.sub(r'\s+', ' ', cleaned).strip()
+        return normalized.title()
 
     def _find_skill_by_name(self, name: str) -> tuple[str, Optional[Dict[str, Any]]]:
         normalized_name = self._normalize_skill_name(name)

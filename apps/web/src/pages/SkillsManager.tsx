@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLearnList, type Skill } from '../components/skills/useLearnList';
 import { SkillsTable } from '../components/skills/SkillsTable';
 import { EditSkillModal } from '../components/skills/EditSkillModal';
-import { generateSkillsMarkdown } from '../utils/skillUtils';
+import { generateSkillsMarkdown } from '../components/skills/skillUtils';
 import { downloadFile } from '../utils/fileUtils';
 import ReactMarkdownCustom from '../components/core/ReactMarkdownCustom';
 import './SkillsManager.css';

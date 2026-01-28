@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { skillsApi, type Skill } from '../../api/skills';
+import { normalizeName } from './skillUtils';
 
 export type { Skill };
 
@@ -49,7 +50,8 @@ export const useLearnList = () => {
   });
 
   const skillExists = (skillName: string): Skill | undefined => {
-    return learnList.find(s => s.name.toLowerCase() === skillName.trim().toLowerCase());
+    const search = normalizeName(skillName);
+    return learnList.find(s => normalizeName(s.name) === search);
   };
 
   const toggleSkill = async (skillName: string) => {

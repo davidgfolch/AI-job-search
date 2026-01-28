@@ -1,10 +1,22 @@
-import { type Skill } from '../components/skills/useLearnList';
+import { type Skill } from './useLearnList';
 
 /**
  * Generates a markdown string from a list of skills.
  * @param skills The list of skills to export.
  * @returns A formatted markdown string.
  */
+/**
+ * Normalizes skill name for comparison (case-insensitive, specific replacements).
+ * Matches backend normalization.
+ */
+export const normalizeName = (name: string): string => {
+  // Replace non-alphanumeric chars (except space, +, #, .) with space
+  // Maintain consistency with backend
+  const cleaned = name.replace(/[^a-zA-Z0-9\s\+\.#]/g, ' ');
+  // Collapse multiple spaces and trim, then lowercase
+  return cleaned.replace(/\s+/g, ' ').trim().toLowerCase();
+};
+
 export const generateSkillsMarkdown = (skills: Skill[]): string => {
   let markdown = '# My Skills\n\n';
 

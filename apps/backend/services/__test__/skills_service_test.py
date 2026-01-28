@@ -67,3 +67,23 @@ def test_bulk_create_skills(mock_repo_class):
     result = service.bulk_create_skills(skills)
     assert result == 2
     assert mock_repo.create_skill.call_count == 2
+
+@patch('services.skills_service.SkillsRepository')
+def test_normalize_skill_name(mock_repo_class):
+    mock_repo = MagicMock()
+    mock_repo_class.return_value = mock_repo
+    service = SkillsService()
+    
+    # Control M cases
+    assert service._normalize_skill_name("Control-m") == "Control M"
+    assert service._normalize_skill_name("control m") == "Control M"
+    
+    # Generic replacement tests
+    assert service._normalize_skill_name("React-Native") == "React Native"
+    assert service._normalize_skill_name("Node_js") == "Node Js" # _ replaced by space
+    assert service._normalize_skill_name("Node.js") == "Node.Js" # . preserved (Title case makes it Node.Js)
+    assert service._normalize_skill_name("C++") == "C++" # + preserved
+    assert service._normalize_skill_name("C#") == "C#" # # preserved
+    assert service._normalize_skill_name("multiple   spaces") == "Multiple Spaces"
+    assert service._normalize_skill_name("special@char") == "Special Char"
+

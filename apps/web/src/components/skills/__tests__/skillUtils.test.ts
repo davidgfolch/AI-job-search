@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generateSkillsMarkdown } from '../skillUtils';
-import { type Skill } from '../../components/skills/useLearnList';
+import { generateSkillsMarkdown, normalizeName } from '../skillUtils';
+import { type Skill } from '../useLearnList';
 
 describe('skillUtils', () => {
     describe('generateSkillsMarkdown', () => {
@@ -73,5 +73,27 @@ describe('skillUtils', () => {
              expect(markdown).toContain('### Other');
              expect(markdown).toContain('- [Unknown](#unknown)');
         });
+    });
+    
+    describe('normalizeName', () => {
+         it('should normalize "Control-m" to "control m"', () => {
+             expect(normalizeName('Control-m')).toBe('control m');
+         });
+
+         it('should handle generic special chars', () => {
+             expect(normalizeName('React-Native')).toBe('react native');
+             expect(normalizeName('Node_js')).toBe('node js');
+             expect(normalizeName('special@char')).toBe('special char');
+         });
+         
+         it('should preserve tech symbols', () => {
+             expect(normalizeName('C++')).toBe('c++');
+             expect(normalizeName('C#')).toBe('c#');
+             expect(normalizeName('Node.js')).toBe('node.js');
+         });
+
+         it('should collapse spaces', () => {
+             expect(normalizeName('multiple   spaces')).toBe('multiple spaces');
+         });
     });
 });

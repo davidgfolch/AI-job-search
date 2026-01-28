@@ -250,7 +250,7 @@ select * from job_skills where category is not null;
 
 select * from job_skills where job_skills.name like '%Apache Camel%';
 
-update job_skills set ai_enriched = 0 where ai_enriched = 1 and category is null limit 10;
+update job_skills set ai_enriched = 0 where ai_enriched = 1 and category is null or category = '' limit 10;
 
 
 
