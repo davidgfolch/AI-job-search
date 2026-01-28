@@ -4,7 +4,7 @@ from commonlib.skill_context import get_skill_context
 from commonlib.terminalColor import yellow, magenta, cyan, red
 from .llm_client import get_pipeline
 from commonlib.environmentUtil import getEnv, getEnvBool
-from commonlib.skill_enricher_service import process_skill_enrichment
+from commonlib.skill_enricher_service import process_skill_enrichment, parse_skill_llm_output
 import os
 
 SKILL_CATEGORIES = getEnv("SKILL_CATEGORIES", required=True)
@@ -32,22 +32,7 @@ def generate_skill_description(skill_name, context="") -> tuple[str, str]:
     output = get_pipeline()(prompt)
     generated_text = output[0]['generated_text']
     result = generated_text.strip().strip('"').strip("'")
-    # Simple parsing to extract category
-    # Assumes Category is at the end or clearly marked
-    category = "Other"
-    description = result
-    if "Category:" in result:
-        parts = result.split("Category:")
-        if len(parts) > 1:
-            description = parts[0].strip()
-            # Remove trailing ** or ## if present in description due to split
-            category_part = parts[1].strip()
-            # Cleanup category part (remove likely trailing chars or newlines)
-            category = category_part.split('\n')[0].strip()
-            # Remove ** if agent wrapped it
-            category = category.replace("*", "").strip()
-            
-    return description, category
+    return parse_skill_llm_output(result)
 
 
 def skillEnricher() -> int:

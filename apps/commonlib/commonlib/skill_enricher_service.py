@@ -64,3 +64,32 @@ def process_skill_enrichment(
             print(yellow(f"Error enriching skill {name}"))
             print(red(traceback.format_exc()))
     return count
+
+def parse_skill_llm_output(result: str) -> tuple[str, str]:
+    """
+    Parses the LLM output to extract description and category.
+    Robust against various formatting issues.
+    """
+    import re
+    category = "Other"
+    description = result
+    
+    # Try to find "Category: ..." pattern
+    # Case insensitive, handles bolding/markdown like **Category**: or ## Category:
+    match = re.search(r'(?:^|\n)[#*]*\s*Category\s*[#*]*\s*:\s*(.+)', result, re.IGNORECASE)
+    
+    if match:
+        category_part = match.group(1).strip()
+        # Clean up if there are trailing characters or it captured too much (e.g. end of line)
+        # Just take the first line of the matched group
+        category_part = category_part.split('\n')[0].strip()
+        # Remove common markdown clutter
+        category = category_part.replace('*', '').replace('`', '').strip()
+        
+        # Split description to be everything BEFORE the category line
+        # This is a bit heuristic; if Category is at the end, we take everything before it.
+        # Find the start index of the match in the original string
+        start_index = match.start()
+        description = result[:start_index].strip()
+    
+    return description, category

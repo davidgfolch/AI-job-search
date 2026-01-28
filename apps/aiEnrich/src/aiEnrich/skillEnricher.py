@@ -1,6 +1,6 @@
 from crewai import Agent, Task, Crew, Process
 from commonlib.mysqlUtil import MysqlUtil
-from commonlib.skill_enricher_service import process_skill_enrichment
+from commonlib.skill_enricher_service import process_skill_enrichment, parse_skill_llm_output
 from commonlib.environmentUtil import getEnvBool, getEnv
 import os
 
@@ -44,24 +44,7 @@ def generate_skill_description(skill_name, context="") -> tuple[str, str]:
     )
     
     result = str(crew.kickoff()).strip().strip('"').strip("'")
-    
-    # Simple parsing to extract category
-    # Assumes Category is at the end or clearly marked
-    category = "Other"
-    description = result
-    
-    if "Category:" in result:
-        parts = result.split("Category:")
-        if len(parts) > 1:
-            description = parts[0].strip()
-            # Remove trailing ** or ## if present in description due to split
-            category_part = parts[1].strip()
-            # Cleanup category part (remove likely trailing chars or newlines)
-            category = category_part.split('\n')[0].strip()
-            # Remove ** if agent wrapped it
-            category = category.replace("*", "").strip()
-            
-    return description, category
+    return parse_skill_llm_output(result)
 
 
 def skillEnricher() -> int:
