@@ -4,8 +4,7 @@ from commonlib.skill_enricher_service import process_skill_enrichment
 from commonlib.environmentUtil import getEnvBool, getEnv
 import os
 
-SKILL_CATEGORIES_DEFAULT = "Languages, Frameworks, Libraries, Tools, Databases, Platforms, AI, Big Data, Soft Skills, Other"
-SKILL_CATEGORIES = getEnv("SKILL_CATEGORIES", SKILL_CATEGORIES_DEFAULT)
+SKILL_CATEGORIES = getEnv("SKILL_CATEGORIES", required=True)
 
 SYSTEM_PROMPT = f"""You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
