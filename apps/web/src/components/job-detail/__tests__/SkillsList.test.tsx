@@ -116,32 +116,60 @@ describe('SkillsList', () => {
         expect(screen.queryByTestId('edit-skill-modal')).not.toBeInTheDocument();
     });
 
-    it('navigates through all database skills across provided sections', () => {
-        // Setup: React and Node.js exist in database. Unknown does not.
-        mockIsInLearnList.mockImplementation((name) => ['React', 'Node.js'].includes(name));
+    it('navigates through database skills with case-insensitivity and unique normalized names', () => {
+        // Setup: React and Node.js exist in database with different casing. 
+        // BSM also exists.
+        const dbSkills = [
+            { name: 'react', description: 'React Desc', learningPath: [], disabled: false },
+            { name: 'Node.js', description: 'Node Desc', learningPath: [], disabled: false },
+            { name: 'bsm', description: 'BSM Desc', learningPath: [], disabled: false }
+        ];
         
+        vi.spyOn(useLearnListHook, 'useLearnList').mockReturnValue({
+            learnList: dbSkills,
+            saveSkill: mockSaveSkill,
+            toggleSkill: mockToggleSkill,
+            isInLearnList: (name: string) => dbSkills.some(s => s.name.toLowerCase() === name.toLowerCase()),
+            skillExists: (skillName: string) => 
+                dbSkills.find(s => s.name.toLowerCase() === skillName.trim().toLowerCase()),
+            reorderSkills: vi.fn(),
+            removeSkill: vi.fn(),
+            updateSkill: vi.fn(),
+            isLoading: false,
+            error: null,
+            fetchSkills: vi.fn(),
+        } as any);
+
         render(<SkillsList 
             skills="React" 
-            allJobSkills="React, Unknown, Node.js" 
+            allJobSkills="React, Jenkins, Node.js, BSM, bsm" 
         />);
         
-        // Open React
+        // Open React (which exists as 'react' in DB)
         fireEvent.click(screen.getByText('👁')); 
-        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('React');
+        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('react');
         
-        // Click Next - Should go to Node.js (skipping Unknown since it's not in database, even if it's in allJobSkills)
         const nextBtn = screen.getByTestId('next-btn');
+        const prevBtn = screen.getByTestId('prev-btn');
+
+        // Initial state: React
+        expect(prevBtn).toBeDisabled();
         expect(nextBtn).not.toBeDisabled();
         
+        // Click Next - Should go to Node.js (skipping Jenkins since it's not in database)
         fireEvent.click(nextBtn);
         expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('Node.js');
-        expect(nextBtn).toBeDisabled();
-        
-        // Click Previous - Should go back to React
-        const prevBtn = screen.getByTestId('prev-btn');
         expect(prevBtn).not.toBeDisabled();
-        
+        expect(nextBtn).not.toBeDisabled();
+
+        // Click Next - Should go to BSM (even if it was listed twice in job, it should be unique)
+        fireEvent.click(nextBtn);
+        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('bsm');
+        expect(nextBtn).toBeDisabled();
+        expect(prevBtn).not.toBeDisabled();
+
+        // Click Previous - Should go back to Node.js
         fireEvent.click(prevBtn);
-        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('React');
+        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('Node.js');
     });
 });

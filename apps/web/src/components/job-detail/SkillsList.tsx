@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import SkillTag from '../skills/SkillTag';
 import { useLearnList, type Skill } from '../skills/useLearnList';
 import { EditSkillModal } from '../skills/EditSkillModal';
+import { normalizeName } from '../skills/skillUtils';
 
 interface SkillsListProps {
     skills: string | null;
@@ -20,8 +21,17 @@ export default function SkillsList({ skills, allJobSkills }: SkillsListProps) {
     const navigableSkills = useMemo(() => {
         const sourceSkills = allJobSkills || skills;
         if (!sourceSkills) return [];
-        const uniqueSkills = Array.from(new Set(sourceSkills.split(',').map(s => s.trim()).filter(Boolean)));
-        return uniqueSkills.filter(skill => skillExists(skill));
+        const rawSkills = sourceSkills.split(',').map(s => s.trim()).filter(Boolean);
+        const seen = new Set<string>();
+        const uniqueByNormalized: string[] = [];
+        for (const skill of rawSkills) {
+            const normalized = normalizeName(skill);
+            if (!seen.has(normalized)) {
+                seen.add(normalized);
+                uniqueByNormalized.push(skill);
+            }
+        }
+        return uniqueByNormalized.filter(skill => skillExists(skill));
     }, [skills, allJobSkills, skillExists]);
 
     if (!skills) return null;
@@ -50,7 +60,7 @@ export default function SkillsList({ skills, allJobSkills }: SkillsListProps) {
         }
     };
 
-    const currentIndex = editingSkill ? navigableSkills.indexOf(editingSkill.name) : -1;
+    const currentIndex = editingSkill ? navigableSkills.findIndex(s => normalizeName(s) === normalizeName(editingSkill.name)) : -1;
     const hasPrevious = currentIndex > 0;
     const hasNext = currentIndex !== -1 && currentIndex < navigableSkills.length - 1;
 
