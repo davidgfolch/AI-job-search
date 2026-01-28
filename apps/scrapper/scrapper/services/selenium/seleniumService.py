@@ -107,6 +107,13 @@ class SeleniumService:
     def waitUntil_presenceLocatedElement(self, cssSel: str | WebElement, timeout: int = 10):
         self.element_service.waitUntil_presenceLocatedElement(cssSel, timeout)
 
+    def waitUntil_presenceLocatedElement_noError(self, cssSel: str | WebElement, timeout: int = 10):
+        try:
+            self.element_service.waitUntil_presenceLocatedElement(cssSel, timeout)
+            return True
+        except Exception:
+            return False
+
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         self.element_service.waitAndClick(cssSel, timeout, scrollIntoView)
 

@@ -30,6 +30,7 @@ class TestIndeedNavigator:
         # Mock Selenium methods
         mock_selenium.waitAndClick_noError.return_value = True
         mock_selenium.getElms.return_value = [] # Return empty list for error check
+        mock_selenium.waitUntil_presenceLocatedElement_noError.return_value = False
 
 
         # Execute login
