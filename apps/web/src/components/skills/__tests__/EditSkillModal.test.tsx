@@ -108,6 +108,74 @@ describe('EditSkillModal', () => {
         // We might need to add a data-testid to the modal-content in the main file if we want to be strict, 
         // but for now verifying the button title toggle is a good proxy that state updated.
     });
+
+    it('calls onNext and onPrevious when navigation buttons are clicked', () => {
+        const onNext = vi.fn();
+        const onPrevious = vi.fn();
+        
+        renderWithClient(
+            <EditSkillModal 
+                skill={mockSkill} 
+                onSave={vi.fn()} 
+                onClose={vi.fn()} 
+                onNext={onNext}
+                onPrevious={onPrevious}
+                hasNext={true}
+                hasPrevious={true}
+            />
+        );
+
+        const nextBtn = screen.getByTitle('Next Skill');
+        const prevBtn = screen.getByTitle('Previous Skill');
+
+        expect(nextBtn).toBeInTheDocument();
+        expect(prevBtn).toBeInTheDocument();
+        expect(nextBtn).not.toBeDisabled();
+        expect(prevBtn).not.toBeDisabled();
+
+        fireEvent.click(nextBtn);
+        expect(onNext).toHaveBeenCalledTimes(1);
+
+        fireEvent.click(prevBtn);
+        expect(onPrevious).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables navigation buttons when hasNext/hasPrevious are false', () => {
+        renderWithClient(
+            <EditSkillModal 
+                skill={mockSkill} 
+                onSave={vi.fn()} 
+                onClose={vi.fn()} 
+                onNext={vi.fn()}
+                onPrevious={vi.fn()}
+                hasNext={false}
+                hasPrevious={false}
+            />
+        );
+
+        const nextBtn = screen.getByTitle('Next Skill');
+        const prevBtn = screen.getByTitle('Previous Skill');
+
+        expect(nextBtn).toBeDisabled();
+        expect(prevBtn).toBeDisabled();
+    });
+    it('shows auto-fill button when feature flag is enabled', () => {
+        vi.stubGlobal('__AI_ENRICH_SKILL_ENABLED__', true);
+        renderWithClient(<EditSkillModal skill={mockSkill} onSave={vi.fn()} onClose={vi.fn()} />);
+        
+        expect(screen.getByRole('button', { name: /Auto-fill with AI/i })).toBeInTheDocument();
+        vi.stubGlobal('__AI_ENRICH_SKILL_ENABLED__', false);
+    });
+
+    it('disables auto-fill button if name is empty', () => {
+        vi.stubGlobal('__AI_ENRICH_SKILL_ENABLED__', true);
+        const emptySkill = { ...mockSkill, name: '' };
+        renderWithClient(<EditSkillModal skill={emptySkill} onSave={vi.fn()} onClose={vi.fn()} />);
+        
+        const autoFillBtn = screen.getByRole('button', { name: /Auto-fill with AI/i });
+        expect(autoFillBtn).toBeDisabled();
+        vi.stubGlobal('__AI_ENRICH_SKILL_ENABLED__', false);
+    });
 });
 
 

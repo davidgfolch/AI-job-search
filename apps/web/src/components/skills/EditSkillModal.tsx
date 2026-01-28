@@ -4,14 +4,20 @@ import { useEditSkillForm } from './useEditSkillForm';
 import { SkillDescriptionField } from './SkillDescriptionField';
 import { SkillLearningPathField } from './SkillLearningPathField';
 
+declare const __AI_ENRICH_SKILL_ENABLED__: boolean;
+
 interface EditSkillModalProps {
   skill: Skill;
   onSave: (skill: Skill) => void;
   onUpdate?: (skill: Skill) => void;
   onClose: () => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 }
 
-export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillModalProps) => {
+export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPrevious, hasNext, hasPrevious }: EditSkillModalProps) => {
   const {
     name, setName,
     category, setCategory,
@@ -44,6 +50,16 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
             }
           </h3>
           <div style={{ display: 'flex', gap: '8px' }}>
+            {__AI_ENRICH_SKILL_ENABLED__ && (
+              <button
+                className="btn-secondary"
+                style={{ fontSize: '0.8rem', padding: '4px 8px' }}
+                onClick={handleAutoFill}
+                disabled={isPolling || !name.trim()}
+              >
+                {isPolling ? 'Generating...' : 'Auto-fill with AI'}
+              </button>
+            )}
             <button
                 className="btn-secondary"
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -60,6 +76,38 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
                 >
                     {isViewMode ? 'Edit' : 'View'}
                 </button>
+            )}
+            {!isNewSkill && (
+              <button
+                className="btn-secondary"
+                style={{ padding: '4px 8px', fontSize: '1.2rem', lineHeight: '1rem' }}
+                onClick={handleReload}
+                title="Reload all skills"
+              >
+                ↻
+              </button>
+            )}
+            {!isNewSkill && (
+              <>
+                <button
+                  className="btn-secondary"
+                  onClick={onPrevious}
+                  disabled={!hasPrevious}
+                  style={{ padding: '4px 8px', fontSize: '1.2rem', lineHeight: '1rem' }}
+                  title="Previous Skill"
+                >
+                  ⏮
+                </button>
+                <button
+                  className="btn-secondary"
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  style={{ padding: '4px 8px', fontSize: '1.2rem', lineHeight: '1rem' }}
+                  title="Next Skill"
+                >
+                  ⏭
+                </button>
+              </>
             )}
             <button className="close-btn" onClick={onClose}>×</button>
           </div>
@@ -82,7 +130,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
           <div className="form-group">
             <label>Category</label>
             {isViewMode ? (
-                <div style={{ padding: '8px 0', fontSize: '1rem' }}>{skill.category || 'No category'}</div>
+                <div style={{ padding: '8px 0', fontSize: '1rem' }}>{category || 'No category'}</div>
             ) : (
                 <input
                     type="text"
@@ -98,17 +146,11 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
              description={description}
              setDescription={setDescription}
              isViewMode={isViewMode}
-             isNewSkill={isNewSkill}
-             isPolling={isPolling}
-             skill={skill}
-             name={name}
-             onReload={handleReload}
-             onAutoFill={handleAutoFill}
           />
 
           <SkillLearningPathField
             learningPath={learningPath}
-            skillLearningPath={skill.learningPath || []}
+            skillLearningPath={learningPath}
             isViewMode={isViewMode}
             newLinkInput={newLinkInput}
             setNewLinkInput={setNewLinkInput}
@@ -117,12 +159,11 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
             handleLinkInputKeyDown={handleLinkInputKeyDown}
           />
         </div>
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>{isViewMode ? 'Close' : 'Cancel'}</button>
-          {!isViewMode && (
+        {!isViewMode && (
+          <div className="modal-footer">
             <button className="btn-primary" onClick={handleSave}>{isNewSkill ? 'Create Skill' : 'Save Changes'}</button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

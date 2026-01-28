@@ -14,12 +14,7 @@ describe('SkillDescriptionField', () => {
         description: 'Lib',
         setDescription: vi.fn(),
         isViewMode: true,
-        isNewSkill: false,
-        isPolling: false,
         skill: mockSkill,
-        name: 'React',
-        onReload: vi.fn(),
-        onAutoFill: vi.fn(),
     };
 
     it('renders description in view mode', () => {
@@ -32,13 +27,6 @@ describe('SkillDescriptionField', () => {
         render(<SkillDescriptionField {...defaultProps} isViewMode={false} />);
         expect(screen.getByRole('textbox')).toBeInTheDocument();
         expect(screen.getByDisplayValue('Lib')).toBeInTheDocument();
-    });
-
-    it('shows auto-fill button when enabled and not view mode', () => {
-        // Mock the global variable
-        vi.stubGlobal('__AI_ENRICH_SKILL_ENABLED__', true);
-        render(<SkillDescriptionField {...defaultProps} isViewMode={false} />);
-        expect(screen.getByText('Auto-fill with AI')).toBeInTheDocument();
     });
 
     it('calls setDescription on change', () => {

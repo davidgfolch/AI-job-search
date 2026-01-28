@@ -5,11 +5,13 @@ import * as useLearnListHook from '../../skills/useLearnList';
 
 // Mock the EditSkillModal to avoid rendering the complex modal and simplify testing
 vi.mock('../../skills/EditSkillModal', () => ({
-    EditSkillModal: ({ skill, onSave, onClose }: any) => (
+    EditSkillModal: ({ skill, onSave, onClose, onNext, onPrevious, hasNext, hasPrevious }: any) => (
         <div data-testid="edit-skill-modal">
             <span data-testid="modal-skill-name">{skill.name}</span>
             <button onClick={() => onSave({ description: 'New Desc', learningPath: ['link1'] })}>Save</button>
             <button onClick={onClose}>Close</button>
+            <button onClick={onNext} disabled={!hasNext} data-testid="next-btn">Next</button>
+            <button onClick={onPrevious} disabled={!hasPrevious} data-testid="prev-btn">Previous</button>
         </div>
     ),
 }));
@@ -68,12 +70,16 @@ describe('SkillsList', () => {
         expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('React'); 
     });
 
-    it('does not show view detail button for skill not in learn list', () => {
+    it('shows view detail button only for database skills', () => {
         // Mock isInLearnList to return false for NewSkill
         mockIsInLearnList.mockReturnValue(false);
         render(<SkillsList skills="NewSkill" />);
-        
         expect(screen.queryByText('👁')).not.toBeInTheDocument();
+
+        // Mock isInLearnList to return true for React
+        mockIsInLearnList.mockReturnValue(true);
+        render(<SkillsList skills="React" />);
+        expect(screen.getByText('👁')).toBeInTheDocument();
     });
 
     it('calls saveSkill when save is triggered in modal', () => {
@@ -108,5 +114,34 @@ describe('SkillsList', () => {
         fireEvent.click(screen.getByText('Close'));
         
         expect(screen.queryByTestId('edit-skill-modal')).not.toBeInTheDocument();
+    });
+
+    it('navigates through all database skills across provided sections', () => {
+        // Setup: React and Node.js exist in database. Unknown does not.
+        mockIsInLearnList.mockImplementation((name) => ['React', 'Node.js'].includes(name));
+        
+        render(<SkillsList 
+            skills="React" 
+            allJobSkills="React, Unknown, Node.js" 
+        />);
+        
+        // Open React
+        fireEvent.click(screen.getByText('👁')); 
+        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('React');
+        
+        // Click Next - Should go to Node.js (skipping Unknown since it's not in database, even if it's in allJobSkills)
+        const nextBtn = screen.getByTestId('next-btn');
+        expect(nextBtn).not.toBeDisabled();
+        
+        fireEvent.click(nextBtn);
+        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('Node.js');
+        expect(nextBtn).toBeDisabled();
+        
+        // Click Previous - Should go back to React
+        const prevBtn = screen.getByTestId('prev-btn');
+        expect(prevBtn).not.toBeDisabled();
+        
+        fireEvent.click(prevBtn);
+        expect(screen.getByTestId('modal-skill-name')).toHaveTextContent('React');
     });
 });

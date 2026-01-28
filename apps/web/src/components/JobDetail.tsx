@@ -65,6 +65,10 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
         }
     }, [job]);
 
+    const allJobSkills = [job.required_technologies, job.optional_technologies]
+        .filter(Boolean)
+        .join(', ');
+
     return (
         <div className="job-detail">
             <JobDetailHeader job={job} onCreateNew={onCreateNew} onDelete={onDelete} />
@@ -110,13 +114,19 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                                 {job.required_technologies && (
                                     <li>
                                         Required:{' '}
-                                        <SkillsList skills={job.required_technologies} />
+                                        <SkillsList 
+                                            skills={job.required_technologies} 
+                                            allJobSkills={allJobSkills}
+                                        />
                                     </li>
                                 )}
                                 {job.optional_technologies && (
                                     <li>
                                         Optional:{' '}
-                                        <SkillsList skills={job.optional_technologies} />
+                                        <SkillsList 
+                                            skills={job.optional_technologies} 
+                                            allJobSkills={allJobSkills}
+                                        />
                                     </li>
                                 )}
                             </ul>

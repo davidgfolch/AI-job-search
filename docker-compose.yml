@@ -64,6 +64,7 @@ services:
     volumes:
       - ./apps/web:/app
       - /app/node_modules # Anonymous volume for node_modules
+      - ./.env:/workspace/.env # Mount .env at workspace level
     ports:
       - "5173:5173"
     environment:

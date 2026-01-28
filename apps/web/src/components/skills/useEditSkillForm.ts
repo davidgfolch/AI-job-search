@@ -67,10 +67,30 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     setLearningPath(newPath);
   };
 
+  useEffect(() => {
+    if (!isPolling || !name.trim()) return;
+    const interval = setInterval(async () => {
+      try {
+        const latest = await skillsApi.getSkill(name);
+        if (latest && latest.ai_enriched && latest.description) {
+          setDescription(latest.description);
+          if (latest.category) setCategory(latest.category);
+          if (latest.learningPath && latest.learningPath.length > 0) {
+              setLearningPath(latest.learningPath);
+          }
+          setIsPolling(false);
+          await queryClient.invalidateQueries({ queryKey: ['skills'] });
+        }
+      } catch (e) {
+        console.error("Polling error:", e);
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [isPolling, name, queryClient]);
+
   const handleAutoFill = async () => {
     if (!name.trim()) return;
     setIsPolling(true);
-    // Trigger enrichment, ai_enriched=false (0) forces enrichment
     await onUpdate?.({ 
         ...skill, 
         name,
@@ -78,20 +98,6 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
         learningPath,
         ai_enriched: false 
     });
-    const interval = setInterval(async () => { // Start polling
-        try {
-            const latest = await skillsApi.getSkill(name);
-            if (latest && latest.ai_enriched && latest.description) {
-                setDescription(latest.description);
-                if (latest.category) setCategory(latest.category);
-                setIsPolling(false);
-                clearInterval(interval);
-            }
-        } catch (e) {
-            // ignore error
-        }
-    }, 2000);
-    return () => clearInterval(interval);
   };
 
   const handleReload = async () => {
