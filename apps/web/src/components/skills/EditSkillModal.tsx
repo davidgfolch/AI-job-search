@@ -1,6 +1,8 @@
-import ReactMarkdown from 'react-markdown';
+import React from 'react';
 import type { Skill } from './useLearnList';
 import { useEditSkillForm } from './useEditSkillForm';
+import { SkillDescriptionField } from './SkillDescriptionField';
+import { SkillLearningPathField } from './SkillLearningPathField';
 
 interface EditSkillModalProps {
   skill: Skill;
@@ -8,8 +10,6 @@ interface EditSkillModalProps {
   onUpdate?: (skill: Skill) => void;
   onClose: () => void;
 }
-
-declare const __AI_ENRICH_SKILL_ENABLED__: boolean;
 
 export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillModalProps) => {
   const {
@@ -28,12 +28,41 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
     handleLinkInputKeyDown
   } = useEditSkillForm({ skill, onSave, onUpdate });
 
+  const [isViewMode, setIsViewMode] = React.useState(!isNewSkill);
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className={`modal-content ${isExpanded ? 'expanded' : ''}`}>
         <div className="modal-header">
-          <h3>{isNewSkill ? 'Add New Skill' : `Edit Skill: ${skill.name}`}</h3>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h3>
+            {isNewSkill 
+              ? 'Add New Skill' 
+              : isViewMode 
+                ? `Skill: ${skill.name}` 
+                : `Edit Skill: ${skill.name}`
+            }
+          </h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+                className="btn-secondary"
+                onClick={() => setIsExpanded(!isExpanded)}
+                style={{ padding: '4px 8px', fontSize: '1.2rem', lineHeight: '1rem' }}
+                title={isExpanded ? "Collapse" : "Expand"}
+            >
+                {isExpanded ? '↙' : '↗'}
+            </button>
+            {!isNewSkill && (
+                <button 
+                    className="btn-secondary" 
+                    onClick={() => setIsViewMode(!isViewMode)}
+                    style={{ padding: '4px 8px', fontSize: '0.9rem' }}
+                >
+                    {isViewMode ? 'Edit' : 'View'}
+                </button>
+            )}
+            <button className="close-btn" onClick={onClose}>×</button>
+          </div>
         </div>
         <div className="modal-body">
           {isNewSkill && (
@@ -49,98 +78,54 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose }: EditSkillMo
                   />
               </div>
           )}
+          
           <div className="form-group">
             <label>Category</label>
-            <input
-                type="text"
-                className="skill-input"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Frameworks, Languages, Tools..."
-            />
-          </div>
-          <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ marginBottom: 0 }}>Description</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {!isNewSkill && (
-                    <button
-                        className="btn-secondary"
-                        style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                        onClick={handleReload}
-                        title="Reload all skills"
-                    >↻
-                    </button>
-                  )}
-                  {__AI_ENRICH_SKILL_ENABLED__ && (
-                    <button 
-                        className="btn-secondary" 
-                        style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                        onClick={handleAutoFill}
-                        disabled={isPolling || !name.trim()}
-                    >
-                        {isPolling ? 'Generating...' : 'Auto-fill with AI'}
-                    </button>
-                  )}
-                </div>
-            </div>
-            <div className="description-editor-container">
-                <textarea
-                  className="skill-textarea"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add a description... (Markdown supported)"
-                  rows={isNewSkill ? 6 : 8}
-                  disabled={isPolling}
-                />
-                <div className="description-preview">
-                    {description ? (<ReactMarkdown>{description}</ReactMarkdown>)
-                     : (<span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Markdown validation</span>)}
-                </div>
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Learning Path</label>
-            <div className="links-list">
-              {learningPath.map((link, i) => (
-                <div key={i} className="link-item">
-                  <span className="link-url">{link}</span>
-                  <button 
-                    className="btn-icon delete"
-                    onClick={() => handleRemoveLink(i)}
-                    title="Remove link"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              <div className="link-input-group">
+            {isViewMode ? (
+                <div style={{ padding: '8px 0', fontSize: '1rem' }}>{skill.category || 'No category'}</div>
+            ) : (
                 <input
-                  type="url"
-                  className="skill-input"
-                  placeholder="Add URL (https://...)"
-                  value={newLinkInput}
-                  onChange={(e) => setNewLinkInput(e.target.value)}
-                  onKeyDown={handleLinkInputKeyDown}
+                    type="text"
+                    className="skill-input"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="e.g. Frameworks, Languages, Tools..."
                 />
-                <button 
-                  className="btn-icon add"
-                  onClick={handleAddLink}
-                  disabled={!newLinkInput}
-                  title="Add link"
-                >
-                  +
-                </button>
-              </div>
-            </div>
+            )}
           </div>
+
+          <SkillDescriptionField
+             description={description}
+             setDescription={setDescription}
+             isViewMode={isViewMode}
+             isNewSkill={isNewSkill}
+             isPolling={isPolling}
+             skill={skill}
+             name={name}
+             onReload={handleReload}
+             onAutoFill={handleAutoFill}
+          />
+
+          <SkillLearningPathField
+            learningPath={learningPath}
+            skillLearningPath={skill.learningPath || []}
+            isViewMode={isViewMode}
+            newLinkInput={newLinkInput}
+            setNewLinkInput={setNewLinkInput}
+            handleAddLink={handleAddLink}
+            handleRemoveLink={handleRemoveLink}
+            handleLinkInputKeyDown={handleLinkInputKeyDown}
+          />
         </div>
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={handleSave}>{isNewSkill ? 'Create Skill' : 'Save Changes'}</button>
+          <button className="btn-secondary" onClick={onClose}>{isViewMode ? 'Close' : 'Cancel'}</button>
+          {!isViewMode && (
+            <button className="btn-primary" onClick={handleSave}>{isNewSkill ? 'Create Skill' : 'Save Changes'}</button>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
 

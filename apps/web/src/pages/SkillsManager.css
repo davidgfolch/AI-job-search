@@ -333,6 +333,14 @@
   flex-direction: column;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--border-color);
+  transition: all 0.2s ease-in-out;
+}
+
+.modal-content.expanded {
+    width: 70vw;
+    max-width: 80vw;
+    height: 95vh;
+    max-height: 95vh;
 }
 
 .modal-header {
@@ -369,6 +377,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  flex: 1; /* Grow to fill available space */
+  min-height: 0; /* Necessary for nested flex scrolling */
 }
 
 .form-group {
@@ -377,10 +387,16 @@
   gap: 0.5rem;
 }
 
+.form-group.flex-grow {
+  flex: 1;
+  min-height: 0; /* Allow shrinking/scrolling */
+}
+
 .description-editor-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  height: 100%; /* Fill container */
 }
 
 .description-preview {
@@ -389,7 +405,15 @@
   padding: 0.5rem;
   background-color: var(--bg-primary);
   overflow-y: auto;
-  max-height: 200px; /* Match textarea usually or fixed height */
+  height: 100%; /* Fill container */
+  max-height: none; /* Override default limit */
+}
+
+/* Also ensure textarea fills height in expanded mode or when in flex-grow container */
+.form-group.flex-grow .skill-textarea {
+  height: 100%;
+  max-height: none;
+  resize: none; /* Disable manual resize if we control it layout-wise, or 'horizontal' only */
 }
 
 /* Markdown Preview Styling inside Modal */
