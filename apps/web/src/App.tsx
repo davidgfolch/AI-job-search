@@ -1,10 +1,10 @@
 import './App.css';
-import Viewer from './pages/Viewer';
-import HeaderMenu from './components/HeaderMenu';
+import Viewer from './pages/viewer/Viewer';
+import HeaderMenu from './pages/common/components/HeaderMenu';
 
 import { Routes, Route } from 'react-router-dom';
-import Statistics from './pages/Statistics';
-import SkillsManager from './pages/SkillsManager';
+import Statistics from './pages/statistics/Statistics';
+import SkillsManager from './pages/skillsManager/SkillsManager';
 
 function App() {
   return (

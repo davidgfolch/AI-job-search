@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => {
         url: 'http://localhost',
       },
     },
-    setupFiles: './src/test/setup.ts',
+    setupFiles: './src/pages/viewer/test/setup.ts',
     css: true,
     exclude: ['**/node_modules/**', '**/tests/**'],
     coverage: {
