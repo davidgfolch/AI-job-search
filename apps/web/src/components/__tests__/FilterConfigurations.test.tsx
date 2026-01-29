@@ -168,6 +168,26 @@ describe('FilterConfigurations', () => {
         });
     });
 
+    it('resets input name if deleted configuration was active', async () => {
+        const { input } = await setup([{ name: 'Active', filters: mockFilters }]);
+        fireEvent.focus(input);
+        
+        // Load it
+        fireEvent.click(await screen.findByText('Active'));
+        expect((input as HTMLInputElement).value).toBe('Active');
+
+        // Open again to delete
+        fireEvent.focus(input);
+        const item = await screen.findByText('Active');
+        fireEvent.click(item.closest('li')!.querySelector('.config-delete-btn')!);
+        
+        fireEvent.click(screen.getByText('Confirm', { selector: 'button.modal-button' }));
+        
+        await waitFor(() => {
+            expect((input as HTMLInputElement).value).toBe('');
+        });
+    });
+
     it('should not cause infinite updates with default configs', async () => {
         const consoleSpy = vi.spyOn(console, 'error');
         await setup();

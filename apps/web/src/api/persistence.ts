@@ -17,7 +17,6 @@ export const persistenceApi = {
         if (Object.prototype.hasOwnProperty.call(persistenceDefaults, key)) {
             return persistenceDefaults[key] as T;
         }
-
         return null;
     } catch (error) {
         console.error("Failed to load persistence data for key:", key, error);

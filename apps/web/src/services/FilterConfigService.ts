@@ -22,7 +22,7 @@ export class FilterConfigService {
   }
 
   private mergeDefaults(stored: FilterConfig[], defaults: FilterConfig[]): FilterConfig[] {
-    const defaultsToAdd = defaults.filter(d => !stored.some(c => c.name === d.name));
-    return defaultsToAdd.length > 0 ? [...stored, ...defaultsToAdd] : stored;
+    if (stored.length === 0) return defaults;
+    return stored;
   }
 }

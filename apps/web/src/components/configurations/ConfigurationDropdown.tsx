@@ -37,6 +37,7 @@ export function ConfigurationDropdown({
                     <span className="config-name">{config.name}</span>
                     <button
                         type="button"
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => onDelete(config.name, e)}
                         className="config-delete-btn"
                         title="Delete configuration"

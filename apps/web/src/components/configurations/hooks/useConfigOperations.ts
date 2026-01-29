@@ -79,12 +79,16 @@ export const useConfigOperations = ({
       try {
         await service.save(updated);
         setSavedConfigs(updated);
+        if (configName === name) {
+          setConfigName('');
+          setSavedConfigName('');
+        }
       } catch (e) {
         console.error('Failed to delete configuration', e);
         notify('Failed to delete configuration', 'error');
       }
     });
-  }, [confirmModal, savedConfigs, service, setSavedConfigs, notify]);
+  }, [confirmModal, savedConfigs, service, setSavedConfigs, notify, configName, setConfigName, setSavedConfigName]);
 
   const exportToDefaults = useCallback(async () => {
     try {
