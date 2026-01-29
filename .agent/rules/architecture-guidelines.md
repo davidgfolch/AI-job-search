@@ -8,6 +8,30 @@ trigger: always_on
    - apps\web> npx vitest run src\test\architecture.test.ts
 3. Monorepo module's:
    - This project contains several modules in apps folder.
-   - Each modulee use a package manager, check scripts/test.bat or test.sh to know wich to use.
+   - Each module use a package manager, check test.* or install.* in scripts folder to know wich to use.
       - for npm tests use `npx vitest run`.
-      - always use parameterized tests when possible.
+      - always implement parameterized tests when applies.
+## Best practices
+
+- Use simpliest SOLID implementation possible.
+- Follow repository pattern in data layer.
+- Use dependency injection.
+- Separate business logic, apis, and repositories.
+- Use services for business logic.
+- Use repositories for data access logic.
+- Use models/entities for data representation.
+- Use DTOs for data transfer between layers.
+- Follow clean architecture principles.
+- Ensure high cohesion and low coupling between components.
+- Write unit tests for all layers.
+- Use interfaces to define contracts between layers.
+- Follow single responsibility principle for classes and methods.
+- Use simple and meaningful in context names for classes, methods, and variables.
+- Avoid code duplication by reusing components and methods.
+- Document architecture decisions and patterns used in the project.
+- Ensure scalability and maintainability of the architecture.
+
+Tests implementations:
+- Test scope must be separated from Production code scope.
+- Use test helpers to abstract duplicated code (mocks, fixtures, payloads, etc).
+- Use (or create) production code constants in tests (dont duplicate them).
