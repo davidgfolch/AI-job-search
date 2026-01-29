@@ -149,7 +149,8 @@ jobs:
           
           if $changes; then
             git commit -m "Update coverage badges"
-            git pull --rebase
+            # Xtheirs ignore conflicts keeping this commit version
+            git pull --rebase -Xtheirs
             git push
           else
             echo "No coverage badge files changed"
