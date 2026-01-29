@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import type { JobListParams } from '../api/jobs';
-import { persistenceApi } from '../api/persistence';
+import type { JobListParams } from '../api/ViewerApi';
+import { persistenceApi } from '../../common/api/CommonPersistenceApi';
 import { BOOLEAN_FILTERS } from '../constants';
 import { useFilterDropdown } from './useFilterDropdown';
-import { useConfirmationModal } from './useConfirmationModal';
+import { useConfirmationModal } from '../../common/hooks/useConfirmationModal';
 
-import { defaultFilterConfigurations } from '../data/defaults';
+import { defaultFilterConfigurations } from '../../common/api/defaults';
 
 export interface FilterConfig {
     name: string;
