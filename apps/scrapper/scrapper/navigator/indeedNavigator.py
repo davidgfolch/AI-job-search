@@ -27,7 +27,7 @@ class IndeedNavigator(BaseNavigator):
         print("Navigating to Indeed login page...")
         self.selenium.loadPage(LOGIN_PAGE)
         self.selenium.waitUntilPageIsLoaded()
-        sleep(1,1)
+        sleep(3, 3)
         if self.selenium.waitUntil_presenceLocatedElement_noError('#AccountMenu'):
             return
         if not self.waitForCloudflareFilterInLogin():
