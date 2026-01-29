@@ -17,7 +17,7 @@ CSS_SEL_LOGIN_EMAIL = '#inlineUserEmail'
 
 class GlassdoorNavigator(BaseNavigator):
 
-    @retry(exceptionFnc=lambda self, *args, **kwargs: None if self.selenium.usesUndetectedDriver() else self.security_filter())
+    @retry(delay=5, exceptionFnc=lambda self, *args, **kwargs: None if self.selenium.usesUndetectedDriver() else self.security_filter())
     def load_main_page(self):
         self.selenium.loadPage('https://www.glassdoor.es/index.htm')
         sleep(2, 2)
