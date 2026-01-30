@@ -3,11 +3,10 @@ import re
 from unittest.mock import MagicMock, patch, call
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 from scrapper.navigator.indeedNavigator import (
-    IndeedNavigator, CSS_SEL_COOKIE_ACCEPT, CSS_SEL_LOGIN_EMAIL, LOGIN_PAGE,
-    CSS_SEL_LOGIN_SUBMIT, CSS_SEL_SEARCH_WHAT, CSS_SEL_SEARCH_WHERE,
-    CSS_SEL_SEARCH_BTN, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_2FA_PASSCODE_INPUT,
-    CSS_SEL_2FA_VERIFY_SUBMIT, CSS_SEL_WEBAUTHN_CONTINUE, CSS_SEL_SORT_BY_DATE,
-    CSS_SEL_JOB_LINK
+    IndeedNavigator, 
+    CSS_SEL_SEARCH_WHAT, CSS_SEL_SEARCH_WHERE,
+    CSS_SEL_SEARCH_BTN, CSS_SEL_NEXT_PAGE_BUTTON, 
+    CSS_SEL_SORT_BY_DATE, CSS_SEL_JOB_LINK
 )
 
 class TestIndeedNavigator:
@@ -16,37 +15,28 @@ class TestIndeedNavigator:
         return MagicMock()
 
     @pytest.fixture
-    def navigator(self, mock_selenium):
-        with patch('scrapper.navigator.indeedNavigator.baseScrapper.getAndCheckEnvVars', return_value=('user@test.com', 'pass', 'key')):
-            return IndeedNavigator(mock_selenium, False)
+    def mock_authenticator(self):
+        with patch('scrapper.navigator.indeedNavigator.IndeedAuthenticator') as mock:
+            yield mock.return_value
 
-    def test_accept_cookies(self, navigator, mock_selenium):
+    @pytest.fixture
+    def navigator(self, mock_selenium, mock_authenticator):
+        # We need to patch where IndeedAuthenticator is instantiated if we want to check it
+        return IndeedNavigator(mock_selenium, False)
+
+    def test_init(self, mock_selenium):
+        with patch('scrapper.navigator.indeedNavigator.IndeedAuthenticator') as mock_auth_cls:
+            nav = IndeedNavigator(mock_selenium, False)
+            mock_auth_cls.assert_called_with(mock_selenium)
+            assert nav.authenticator == mock_auth_cls.return_value
+
+    def test_accept_cookies(self, navigator, mock_authenticator):
         navigator.accept_cookies()
-        mock_selenium.waitAndClick_noError.assert_called_with(CSS_SEL_COOKIE_ACCEPT, "Could not accept cookies")
+        mock_authenticator.accept_cookies.assert_called_once()
 
-    def test_waitForCloudflareFilterInLogin(self, navigator, mock_selenium):
-        mock_selenium.waitUntil_presenceLocatedElement.return_value = True
-        assert navigator.waitForCloudflareFilterInLogin() is True
-        mock_selenium.waitUntil_presenceLocatedElement.assert_called_with(CSS_SEL_LOGIN_EMAIL)
-
-    @patch('scrapper.navigator.indeedNavigator.sleep')
-    @patch.object(IndeedNavigator, 'click_google_otp_fallback')
-    @patch.object(IndeedNavigator, 'getEmail2faCode')
-    @patch.object(IndeedNavigator, 'ignore_access_key_form')
-    def test_login_success(self, mock_ignore, mock_2fa, mock_otp, mock_sleep, navigator, mock_selenium):
-        mock_selenium.waitUntil_presenceLocatedElement_noError.return_value = False
-        with patch.object(IndeedNavigator, 'waitForCloudflareFilterInLogin', return_value=True), \
-             patch.object(IndeedNavigator, 'accept_cookies') as mock_accept, \
-             patch('scrapper.navigator.indeedNavigator.USER_EMAIL', 'user@test.com'), \
-             patch('scrapper.navigator.indeedNavigator.USER_PWD', 'pass'):
-            navigator.login()
-            mock_selenium.loadPage.assert_called_with(LOGIN_PAGE)
-            mock_selenium.sendKeys.assert_any_call(CSS_SEL_LOGIN_EMAIL, 'user@test.com')
-            mock_accept.assert_called_once()
-            mock_selenium.waitAndClick.assert_any_call(CSS_SEL_LOGIN_SUBMIT)
-            mock_otp.assert_called_once()
-            mock_2fa.assert_called_once()
-            mock_ignore.assert_called_once()
+    def test_login(self, navigator, mock_authenticator):
+        navigator.login()
+        mock_authenticator.login.assert_called_once()
 
     def test_search(self, navigator, mock_selenium):
         with patch('scrapper.navigator.indeedNavigator.sleep'):
@@ -115,21 +105,6 @@ class TestIndeedNavigator:
         assert l == "Location"
         assert u == "http://job-url"
         assert h == "<html>Description</html>"
-
-    @patch('scrapper.navigator.indeedNavigator.IndeedGmailService')
-    @patch('scrapper.navigator.indeedNavigator.sleep')
-    def test_getEmail2faCode_success(self, mock_sleep, mock_gmail_class, navigator, mock_selenium):
-        mock_gmail = mock_gmail_class.return_value.__enter__.return_value
-        mock_gmail.wait_for_verification_code.return_value = "123456"
-        mock_selenium.getElms.return_value = []
-        navigator.getEmail2faCode()
-        mock_selenium.sendKeys.assert_called_with(CSS_SEL_2FA_PASSCODE_INPUT, "123456")
-        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_2FA_VERIFY_SUBMIT)
-
-    def test_ignore_access_key_form(self, navigator, mock_selenium):
-        navigator.ignore_access_key_form()
-        mock_selenium.waitUntil_presenceLocatedElement.assert_called_with(CSS_SEL_WEBAUTHN_CONTINUE)
-        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_WEBAUTHN_CONTINUE)
 
     def test_clickSortByDate(self, navigator, mock_selenium):
         navigator.clickSortByDate()
