@@ -57,7 +57,7 @@ class JobsService:
             company_words = company_words[:-1]
             words = ' '.join(company_words)
             part1 = re.escape(words)
-            if len(part1) > 2 and part1 not in ['grupo']:
+            if len(part1) > 2 and part1 not in ['grupo', 'the', 'inc', 'ltd', 'llc']:
                 regex_lookup = f'(^| ){part1}($| )'
                 try:
                     rows = self.repo.find_applied_jobs_by_regex(regex_lookup)

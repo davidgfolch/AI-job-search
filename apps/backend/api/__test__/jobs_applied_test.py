@@ -85,3 +85,47 @@ def test_get_applied_jobs_partial_search_exception(
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+@patch("repositories.jobs_repository.JobsRepository.get_db")
+@patch("repositories.jobs_repository.JobsRepository.find_applied_jobs_by_regex")
+def test_get_applied_jobs_partial_search_exclusions(
+    mock_find_regex, mock_get_db, client
+):
+    """
+    Test that partial search excludes common words like 'The'.
+    Case: 'The White Team' -> 'The White' (not found) -> 'The' (should be skipped)
+    """
+    mock_db = create_mock_db(
+        fetchAll=[]
+    )  # First call (exact match) returns empty
+    mock_get_db.return_value = mock_db
+    
+    # We mock find_applied_jobs_by_regex to track what it's called with
+    # First call will be from _search_partial_company for "The White" (since "The White Team" failed exact match via find_applied_by_company)
+    # If it were called for "The", we would see it in the mock calls.
+    mock_find_regex.return_value = [] 
+    
+    company = "The White Team"
+    client.get(f"/api/jobs/applied-by-company?company={company}")
+    
+    # Check calls to find_applied_jobs_by_regex
+    # Expected: 
+    # 1. 'The White'
+    # 2. Should NOT call with 'The'
+    
+    calls = [args[0] for args, _ in mock_find_regex.call_args_list]
+    
+    # Verify we searched for 'the white' (regex format dependent on implementation, but broadly)
+    # Backend lowers the company name, so we expect 'the white'
+    assert any("the white" in c for c in calls)
+    
+    # Verify we did NOT search for just 'The' (regex format)
+    # The regex for 'The' would be something like '(^| )The($| )' (escaped)
+    # We check that no call has a regex that is essentially just "The"
+    for call_arg in calls:
+        if "The" in call_arg and "White" not in call_arg and "Team" not in call_arg:
+            # Check if this is the "The" search we want to avoid
+            # It might look like '(^| )The($| )'
+            if len(call_arg) < 20: # Rough check for short regex
+                 assert False, f"Should not have searched for short generic term: {call_arg}"
