@@ -27,7 +27,7 @@ class TestIndeedAuthenticator:
 
     def test_waitForCloudflareFilterInLogin(self, authenticator, mock_selenium):
         mock_selenium.waitUntil_presenceLocatedElement_noError.return_value = True
-        assert authenticator.waitForCloudflareFilterInLogin() is True
+        assert authenticator.waitForCloudflareFilterInLogin() is None
         mock_selenium.waitUntil_presenceLocatedElement_noError.assert_called()
 
     @patch('scrapper.navigator.components.indeedAuthenticator.sleep')
