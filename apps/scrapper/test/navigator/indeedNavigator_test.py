@@ -2,8 +2,13 @@ import pytest
 import re
 from unittest.mock import MagicMock, patch, call
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
-from scrapper.navigator.indeedNavigator import IndeedNavigator
-from scrapper.selectors.indeedSelectors import *
+from scrapper.navigator.indeedNavigator import (
+    IndeedNavigator, CSS_SEL_COOKIE_ACCEPT, CSS_SEL_LOGIN_EMAIL, LOGIN_PAGE,
+    CSS_SEL_LOGIN_SUBMIT, CSS_SEL_SEARCH_WHAT, CSS_SEL_SEARCH_WHERE,
+    CSS_SEL_SEARCH_BTN, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_2FA_PASSCODE_INPUT,
+    CSS_SEL_2FA_VERIFY_SUBMIT, CSS_SEL_WEBAUTHN_CONTINUE, CSS_SEL_SORT_BY_DATE,
+    CSS_SEL_JOB_LINK
+)
 
 class TestIndeedNavigator:
     @pytest.fixture

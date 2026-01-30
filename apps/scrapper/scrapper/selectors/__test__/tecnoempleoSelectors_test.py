@@ -1,9 +1,0 @@
-import pytest
-from scrapper.selectors import tecnoempleoSelectors
-
-class TestTecnoempleoSelectors:
-    def test_constants_defined(self):
-        assert hasattr(tecnoempleoSelectors, 'CSS_SEL_JOB_LI')
-        assert isinstance(tecnoempleoSelectors.CSS_SEL_JOB_LI, str)
-        assert hasattr(tecnoempleoSelectors, 'CSS_SEL_JOB_DETAIL')
-        assert isinstance(tecnoempleoSelectors.CSS_SEL_JOB_DETAIL, str)
