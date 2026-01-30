@@ -1,4 +1,4 @@
-import type { JobListParams } from '../api/jobs';
+import type { JobListParams } from '../api/ViewerApi';
 import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
