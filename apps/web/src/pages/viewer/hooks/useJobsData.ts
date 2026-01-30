@@ -1,10 +1,35 @@
 import { useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../api/ViewerApi';
 import { DEFAULT_FILTERS } from '../constants';
 
 export const useJobsData = () => {
-    const [filters, setFilters] = useState<JobListParams>(DEFAULT_FILTERS);
+    const [searchParams] = useSearchParams();
+
+    const getInitialFilters = (): JobListParams => {
+        const idsParam = searchParams.get('ids');
+        if (idsParam) {
+            const ids = idsParam.split(',').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+            if (ids.length > 0) {
+                return {
+                    ...DEFAULT_FILTERS,
+                    ids,
+                    // When showing specific IDs, disable default filters to ensure they are visible
+                    ai_enriched: undefined,
+                    ignored: undefined,
+                    seen: undefined,
+                    applied: undefined,
+                    discarded: undefined,
+                    closed: undefined,
+                    page: 1,
+                };
+            }
+        }
+        return DEFAULT_FILTERS;
+    };
+
+    const [filters, setFilters] = useState<JobListParams>(getInitialFilters);
     const [allJobs, setAllJobs] = useState<Job[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 

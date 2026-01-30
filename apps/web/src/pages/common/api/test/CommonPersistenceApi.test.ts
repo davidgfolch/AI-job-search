@@ -1,11 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { persistenceApi } from '../CommonPersistenceApi';
 import { defaultFilterConfigurations } from '../defaults';
+import { mockLocalStorage } from '../../../../test/mocks/storageMocks';
 
 describe('persistenceApi', () => {
   beforeEach(() => {
-    localStorage.clear();
+    mockLocalStorage();
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('getValue', () => {
@@ -36,7 +41,6 @@ describe('persistenceApi', () => {
         'invalid_json',
         expect.any(Error)
       );
-      consoleSpy.mockRestore();
     });
   });
 
@@ -51,27 +55,21 @@ describe('persistenceApi', () => {
     it('handles errors when localStorage is unavailable', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
-      // Save original implementation
-      const originalSetItem = localStorage.setItem;
-      
-      // Mock setItem to throw
-      const setItemMock = vi.fn(() => {
-        throw new Error('Storage full');
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+          throw new Error('Storage full');
       });
-      localStorage.setItem = setItemMock;
+      
+      (window.localStorage.setItem as any).mockImplementation(() => {
+           throw new Error('Storage full');
+      });
 
-      try {
-        await persistenceApi.setValue('test_key', { data: 'test' });
-        expect(consoleSpy).toHaveBeenCalledWith(
-          'Failed to save persistence data for key:',
-          'test_key',
-          expect.any(Error)
-        );
-      } finally {
-        // Restore original implementation
-        localStorage.setItem = originalSetItem;
-        consoleSpy.mockRestore();
-      }
+      await persistenceApi.setValue('test_key', { data: 'test' });
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to save persistence data for key:',
+        'test_key',
+        expect.any(Error)
+      );
     });
   });
 });
+

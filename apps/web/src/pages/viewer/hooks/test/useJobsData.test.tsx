@@ -4,6 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useJobsData } from '../useJobsData';
 import { jobsApi } from '../../api/ViewerApi';
 
+// Mock react-router-dom
+const mockSearchParams = new URLSearchParams();
+vi.mock('react-router-dom', () => ({
+  useSearchParams: () => [mockSearchParams],
+}));
+
 vi.mock('../../api/ViewerApi', () => ({
   jobsApi: {
     getJobs: vi.fn(),
@@ -12,7 +18,7 @@ vi.mock('../../api/ViewerApi', () => ({
 }));
 
 vi.mock('../../constants', () => ({
-  DEFAULT_FILTERS: { page: 1, size: 20 },
+  DEFAULT_FILTERS: { page: 1, size: 20, ai_enriched: true, ignored: false },
 }));
 
 const createWrapper = () => {
@@ -25,10 +31,31 @@ const createWrapper = () => {
 };
 
 describe('useJobsData', () => {
-  it('initializes with default filters', () => {
+  it('initializes with default filters when no URL params', () => {
     vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [], total: 0, page: 1, size: 20 });
     const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
-    expect(result.current.filters).toEqual({ page: 1, size: 20 });
+    expect(result.current.filters).toEqual({ page: 1, size: 20, ai_enriched: true, ignored: false });
+  });
+
+  it('initializes filters from URL ids', () => {
+    vi.spyOn(mockSearchParams, 'get').mockReturnValue('1,2,3');
+    vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [], total: 0, page: 1, size: 20 });
+    
+    // We need to re-render hook to pick up new mock return value? 
+    // Actually renderHook runs in isolation.
+    // Ideally we should mock per test, but we defined mock globally.
+    // Let's rely on the mock return value change before renderHook.
+    
+    const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
+    
+    expect(result.current.filters).toEqual(expect.objectContaining({
+        ids: [1, 2, 3],
+        ai_enriched: undefined,
+        ignored: undefined
+    }));
+    
+    // Reset mock
+    vi.spyOn(mockSearchParams, 'get').mockReturnValue(null);
   });
 
   it('fetches jobs data', async () => {
@@ -58,3 +85,4 @@ describe('useJobsData', () => {
     expect(jobsApi.getJobs).toHaveBeenCalled();
   });
 });
+
