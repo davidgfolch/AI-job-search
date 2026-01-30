@@ -32,21 +32,17 @@ class IndeedAuthenticator:
     def waitForCloudflareFilterInLogin(self):
         if self.selenium.waitUntil_presenceLocatedElement_noError(CSS_SEL_LOGIN_EMAIL) or \
             self.selenium.waitUntil_presenceLocatedElement_noError('#AccountMenu'):
-            return True
-        return False
+            return
+        raise Exception("Could not login because cloudFlare security filter was not resolved")
 
     def login(self):
         print("Navigating to Indeed login page...")
         self.selenium.loadPage(LOGIN_PAGE)
         self.selenium.waitUntilPageIsLoaded()
         sleep(3, 3)
-        if not self.waitForCloudflareFilterInLogin():
-            raise Exception("Could not login because cloudFlare security filter was not resolved")
-        
-        # If we are already logged in (AccountMenu found), we can check and return
+        self.waitForCloudflareFilterInLogin()
         if self.selenium.waitUntil_presenceLocatedElement_noError('#AccountMenu'):
             return
-
         print("Filling login form...")
         self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, self.USER_EMAIL)
         self.accept_cookies()

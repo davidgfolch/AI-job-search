@@ -1,1 +1,0 @@
-# Tests for Indeed scraper

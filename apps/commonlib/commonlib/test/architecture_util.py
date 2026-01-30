@@ -79,7 +79,9 @@ def check_layer(working_dir, root_dir, required_deps=None, forbidden_deps=None, 
         if file_path.name in ignore_files:
             continue
 
-        if '__test__' in str(file_path):
+        # Ignore test folders for architecture violations (they can import whatever they need for mocking)
+        # We check for 'test' in the parts of the path to be robust
+        if 'test' in file_path.parts:
             continue
         imports = get_file_imports(file_path)
         
@@ -119,18 +121,37 @@ def get_files_without_sibling_test():
     IGNORED_FILES = {'__init__.py', 'conftest.py', 'setup.py', 'main.py'}
     
     # Directories to skip
+    # We verify 'test' exists via logic below, but we don't need to scan inside it for source files
     SKIP_DIRS = {
         'node_modules', '.venv', 'custom-venv', 'dist', 'build', '.git', 
-        '__pycache__', 'coverage', '.pytest_cache', 'test', 'tests'
+        '__pycache__', 'coverage', '.pytest_cache', 'test'
     }
+    
+    INVALID_TEST_DIRS = {'__test__', 'tests', '__tests__'}
 
     for root, dirs, files in os.walk(apps_dir):
+        # Check for invalid directory names
+        for d in dirs:
+            if d in INVALID_TEST_DIRS:
+                # Check if it contains python files to confirm it's a python test folder
+                dir_path = Path(root) / d
+                has_py = False
+                try:
+                    for p_root, _, p_files in os.walk(dir_path):
+                         if any(f.endswith('.py') for f in p_files):
+                             has_py = True
+                             break
+                except Exception:
+                    pass
+                
+                if has_py:
+                    violations.append((str(dir_path), f"Invalid test folder name '{d}'. Rename to 'test'."))
+
         # Filter directories inplace
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and d not in EXCLUDES]
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and d not in EXCLUDES and d not in INVALID_TEST_DIRS]
         
-        # If we are inside a __test__ dir, we probably don't need to check for tests there
-        # depending on if we recursively allow tests of tests. usually no.
-        if Path(root).name == '__test__':
+        # If we are inside a test dir (shouldn't happen with filter above), continue
+        if Path(root).name == 'test':
             continue
 
         for filename in files:
@@ -140,21 +161,19 @@ def get_files_without_sibling_test():
             if filename in IGNORED_FILES:
                 continue
 
-            # Skip test files themselves if they happen to be outside __test__ but follow pattern
-            # (though the goal IS to enforce __test__ so we should flag them if they are code?)
-            # Usually simple heuristic: if it looks like a test, skip it.
+            # Skip test files themselves if they happen to be outside test but follow pattern
             if filename.startswith('test_') or filename.endswith('_test.py'):
                 continue
             
             path = Path(root) / filename
             
-            # Look for __test__ sibling
-            test_dir = path.parent / '__test__'
+            # Look for 'test' sibling
+            test_dir = path.parent / 'test'
             
             relative_path = path.relative_to(root_dir)
             
             if not test_dir.exists() or not test_dir.is_dir():
-                violations.append((str(relative_path), "Missing sibling '__test__' directory."))
+                violations.append((str(relative_path), "Missing sibling 'test' directory."))
                 continue
             
             # Check for test file variants
@@ -172,9 +191,9 @@ def get_files_without_sibling_test():
                 continue # All good
             
             if legacy_path.exists():
-                violations.append((str(relative_path), f"Found legacy test '{legacy_test_name}'. Rename to '{preferred_test_name}'."))
+                violations.append((str(relative_path), f"Found legacy test '{legacy_test_name}' in 'test'. Rename to '{preferred_test_name}'."))
                 continue
                 
-            violations.append((str(relative_path), f"Missing test file in '__test__'. Expected '{preferred_test_name}'."))
+            violations.append((str(relative_path), f"Missing test file in 'test'. Expected '{preferred_test_name}'."))
 
     return violations

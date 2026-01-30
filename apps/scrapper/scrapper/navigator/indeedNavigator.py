@@ -50,7 +50,6 @@ class IndeedNavigator(BaseNavigator):
     def login(self):
         self.authenticator.login()
 
-
     def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):
         print(f'Searching for "{keyword}" in "{location}"')
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_SEARCH_WHAT)
