@@ -55,13 +55,27 @@ class TestSqlUtil:
         else:
             assert all(part in query for part in expected_parts)
 
-    def test_emptyToNone(self):
-        assert emptyToNone(("a", "", "b", "   ")) == ("a", None, "b", None)
+    @pytest.mark.parametrize("input_tuple, expected", [
+        (("a", "", "b", "   "), ("a", None, "b", None)),
+        (('', 'test', None), (None, 'test', None)),
+        (('  ', 'test'), (None, 'test')),
+        (('value1', 'value2'), ('value1', 'value2')),
+        ((None, None), (None, None)),
+    ])
+    def test_emptyToNone(self, input_tuple, expected):
+        assert emptyToNone(input_tuple) == expected
 
     @pytest.mark.parametrize("params,max_lens,expected", [
         (("short", "very long string"), (10, 5), ("short", "[...]")),
         (("exact",), (5,), ("exact",)),
-        (("longer",), (5,), ("[...]",))
+        (("longer",), (5,), ("[...]",)),
+        (("short", "text"), (10, 10), ("short", "text")),
+        (("very long text", "short"), (6, 10), ("v[...]", "short")),
+        ((None, "text"), (10, 10), (None, "text")),
+        (("text", "more text"), (None, 6), ("text", "m[...]")),
+        ((), (), ()),
+        # Mismatched lengths case (strict=False behavior in zip)
+        (("text1", "text2"), (5,), ("text1",)),
     ])
     def test_maxLen(self, params, max_lens, expected):
         assert maxLen(params, max_lens) == expected

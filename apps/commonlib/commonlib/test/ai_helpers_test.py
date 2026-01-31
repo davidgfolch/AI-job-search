@@ -1,17 +1,24 @@
 import pytest
-from commonlib.ai_helpers import rawToJson, validateResult, listsToString, fixJsonInvalidAttribute
+from unittest.mock import MagicMock, patch
+from commonlib.ai_helpers import (
+    rawToJson, validateResult, listsToString, fixJsonInvalidAttribute, 
+    mapJob, combineTaskResults, footer, LazyDecoder, printJsonException
+)
+import json
 
-def test_rawToJson_valid():
-    json_str = '{"key": "value"}'
-    assert rawToJson(json_str) == {"key": "value"}
+@pytest.mark.parametrize("json_str, expected", [
+    ('{"key": "value"}', {"key": "value"}),
+    ('```json\n{"key": "value"}\n```', {"key": "value"}),
+    ('Here is the json:\n```{"key": "value"}```', {"key": "value"}),
+    ('Thought: thinking...\njson object\n{"key": "value"}', {"key": "value"}),
+    (r'{"path": "C:\Windows\System32"}', {"path": r"C:\Windows\System32"}),
+])
+def test_rawToJson_valid_cases(json_str, expected):
+    assert rawToJson(json_str) == expected
 
-def test_rawToJson_with_markdown():
-    json_str = '```json\n{"key": "value"}\n```'
-    assert rawToJson(json_str) == {"key": "value"}
-
-def test_rawToJson_with_text():
-    json_str = 'Here is the json:\n```{"key": "value"}```'
-    assert rawToJson(json_str) == {"key": "value"}
+def test_rawToJson_exception():
+    with pytest.raises(json.JSONDecodeError):
+        rawToJson("{invalid json}")
 
 def test_fixJsonInvalidAttribute():
     malformed = '{"salary": "100" + "k", "test": "val",",}'
@@ -30,20 +37,61 @@ def test_listsToString():
     assert data["opt"] == "c,d"
     assert data["none"] is None
 
-def test_validateResult_salary_numbers():
-    data = {"salary": "Competitive String with no numbers"}
-    validateResult(data)
-    assert data["salary"] is None
+@pytest.mark.parametrize("input_data, expected_salary", [
+    ({"salary": "Competitive String with no numbers"}, None),
+    ({"salary": "50k-60k"}, "50k-60k"),
+    ({"salary": {"min": 50, "max": 60}}, "50-60"),
+    ({"salary": {"amount": 70}}, "70"),
+    ({"salary": {"other": "value"}}, None),
+    ({"salary": "Sueldo: 50k"}, "50k"),
+])
+def test_validateResult_salary(input_data, expected_salary):
+    validateResult(input_data)
+    assert input_data["salary"] == expected_salary
 
-def test_validateResult_salary_with_numbers():
-    data = {"salary": "50k-60k"}
-    validateResult(data)
-    assert data["salary"] == "50k-60k"
+@pytest.mark.parametrize("input_data, expected_cv_match", [
+    ({"cv_match_percentage": "85"}, "85"),
+    ({"cv_match_percentage": "105"}, None),
+    ({"cv_match_percentage": "high"}, None),
+])
+def test_validateResult_cv_match(input_data, expected_cv_match):
+    validateResult(input_data)
+    assert input_data["cv_match_percentage"] == expected_cv_match
 
-def test_validateResult_cv_match():
-    data = {"cv_match_percentage": "85"}
-    validateResult(data)
-    assert data["cv_match_percentage"] == "85" # Should stay as string or be whatever validateResult leaves it as. 
-    # Actually validateResult doesn't cast to int in place, it just validates it can be cast. 
-    # Wait, looking at code: result.update({'cv_match_percentage': None}) if invalid. 
-    # It does NOT update it to int if valid.
+def test_mapJob():
+    job = (1, "Title", b"Markdown", "Company")
+    title, company, markdown = mapJob(job)
+    assert title == "Title"
+    assert company == "Company"
+    assert markdown == "Markdown"
+
+    job_str = (1, "Title", "MarkdownStr", "Company")
+    title, company, markdown = mapJob(job_str)
+    assert markdown == "MarkdownStr"
+
+def test_combineTaskResults():
+    # Mock crewOutput
+    mock_output = MagicMock()
+    mock_output.raw = '{"main": "result"}'
+    mock_output.tasks_output = []
+    
+    res = combineTaskResults(mock_output, debug=False)
+    assert res["main"] == "result"
+
+    # With tasks
+    task1 = MagicMock()
+    task1.raw = '{"salary": "100k"}'
+    mock_output.tasks_output = [task1]
+    
+    res = combineTaskResults(mock_output, debug=True) # cover debug print
+    assert res["salary"] == "100k"
+    assert res["main"] == "result"
+
+@pytest.mark.parametrize("job_errors, expected_output", [
+    (set(), "Processed jobs this run: 1/10"),
+    ({"error1"}, "Total job errors: 1"),
+])
+def test_footer(capsys, job_errors, expected_output):
+    footer(10, 0, 100, job_errors)
+    captured = capsys.readouterr()
+    assert expected_output in captured.out
