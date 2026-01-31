@@ -94,3 +94,71 @@ def get_files_without_sibling_test():
             violations.append((str(relative_path), f"Missing test file in 'test'. Expected '{preferred_test_name}'."))
 
     return violations
+
+def get_test_location_violations():
+    root_dir = get_project_root()
+    apps_dir = root_dir / 'apps'
+    
+    if not apps_dir.exists():
+        return []
+
+    violations = []
+    
+    # Directories to skip
+    SKIP_DIRS = {
+        'node_modules', '.venv', 'custom-venv', 'dist', 'build', '.git', 
+        '__pycache__', 'coverage', '.pytest_cache', '.mypy_cache'
+    }
+
+    # Files to skip correspondence check
+    SKIP_FILES = {'architecture_test.py'}
+
+    for root, dirs, files in os.walk(apps_dir):
+        # Filter directories inplace
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and d not in EXCLUDES]
+        
+        current_dir = Path(root)
+        
+        for filename in files:
+            if filename in SKIP_FILES:
+                continue
+
+            if not filename.endswith('.py'):
+                continue
+
+            if not filename.endswith('_test.py') and not filename.startswith('test_'):
+                continue
+                
+            file_path = current_dir / filename
+            relative_path = file_path.relative_to(root_dir)
+            
+            # Check if in 'test' directory
+            if current_dir.name != 'test':
+                 violations.append((str(relative_path), f"Test file found in '{current_dir.name}'. Must be in a 'test' directory."))
+                 continue
+            
+            # Check correspondence
+            parent_dir = current_dir.parent
+            
+            # Extract production name
+            if filename.endswith('_test.py'):
+                prod_name = filename[:-8] + ".py"
+            elif filename.startswith('test_'):
+                prod_name = filename[5:]
+                # assuming it keeps extension but typical usage is test_foo.py -> foo.py
+                # but if startswith test_, wait. filename likely includes .py.
+                # test_foo.py -> foo.py
+                pass
+            else:
+                continue
+            
+            prod_file = parent_dir / prod_name
+            
+            if not prod_file.exists():
+                # Check if it corresponds to a package (directory)
+                prod_dir = parent_dir / prod_name[:-3] # remove .py
+                if not prod_dir.exists() or not prod_dir.is_dir():
+                    violations.append((str(relative_path), f"Corresponding production file '{prod_name}' not found in parent directory."))
+
+    return violations
+

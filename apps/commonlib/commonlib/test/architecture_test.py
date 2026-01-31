@@ -4,7 +4,7 @@ import warnings
 from commonlib.test.architecture.architecture_util import get_project_root
 from commonlib.test.architecture.architecture_metrics import getLongFiles
 from commonlib.test.architecture.architecture_layers import check_layer
-from commonlib.test.architecture.architecture_structure import get_files_without_sibling_test
+from commonlib.test.architecture.architecture_structure import get_files_without_sibling_test, get_test_location_violations
 from commonlib.test.architecture.architecture_naming import get_test_naming_violations
 from commonlib.terminalColor import YELLOW, RED, ORANGE, RESET
 
@@ -72,6 +72,15 @@ def test_test_file_naming_conventions():
     violations = get_test_naming_violations()
     if violations:
         message = f"\n{YELLOW}Found test file naming violations:{RESET}\n"
+        for path, reason in violations:
+             message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
+        print(message)
+        pytest.fail(message)
+
+def test_test_file_location_and_correspondence():
+    violations = get_test_location_violations()
+    if violations:
+        message = f"\n{YELLOW}Found test file location/correspondence violations:{RESET}\n"
         for path, reason in violations:
              message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
         print(message)

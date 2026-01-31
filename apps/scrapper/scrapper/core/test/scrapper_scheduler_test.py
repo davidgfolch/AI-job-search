@@ -30,7 +30,6 @@ def run_mocks():
     # Patch the actual executor modules
     patchers = {key: patch(f'scrapper.executor.{cls}.{cls}') for key, cls in mapping.items()}
     started_patchers = {key: p.start() for key, p in patchers.items()}
-    
     # Mock both execute and execute_preload methods
     mocked_methods = {}
     for key, mock_cls in started_patchers.items():
@@ -38,9 +37,7 @@ def run_mocks():
         mock_instance.execute.return_value = True
         mock_instance.execute_preload.return_value = True
         mocked_methods[key] = mock_instance
-    
     yield mocked_methods
-    
     for p in patchers.values():
         p.stop()
 
@@ -69,7 +66,6 @@ class TestRunScrappers:
         # Scenario: 
         # Infojobs: TIMER 7200. Last run: 12000-8000 = 4000. Lapsed 8000. expired (8000>7200). Ready.
         # Linkedin: TIMER 3600. Last run: 12000-1000 = 11000. Lapsed 1000. Not expired. Wait 2600.
-        
         def side_effect_parse(date_str):
             # Map mock dates for testing
             if date_str == "last_run_infojobs": return 4000
@@ -78,7 +74,6 @@ class TestRunScrappers:
         mock_parse.side_effect = side_effect_parse
         # mock_now doesn't need side_effect as it has return_value=12000
         mocks['pm'].get_last_execution.side_effect = lambda name: f"last_run_{name.lower()}" if name in ['Infojobs', 'Linkedin'] else None
-
         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
              # Only 1 loop to test one pass
             scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, loops=1)
@@ -134,8 +129,6 @@ class TestSchedulerHelpers:
         res = scheduler.getProperties(arg)
         assert (res is not None and TIMER in res) if props_ok else res is None
 
-
-
     def test_execute_scrappers(self, scheduler, run_mocks):
          status = [
              {'name': 'Infojobs', 'properties': {TIMER: 7200}, 'seconds_remaining': 0},
@@ -147,3 +140,49 @@ class TestSchedulerHelpers:
              assert executed_start is False
              run_mocks['infojobs'].execute.assert_called()
              assert not run_mocks['linkedin'].execute.called
+    @patch('scrapper.core.scrapper_scheduler.BaseExecutor.create')
+    def test_scheduler_skips_execution_on_preload_failure(self, mock_create, scheduler, mocks):
+        mock_executor = MagicMock()
+        mock_create.return_value = mock_executor
+        
+        # Simulate preload failure
+        def side_effect_preload(properties):
+            properties['preloaded'] = False
+            return True
+        mock_executor.execute_preload.side_effect = side_effect_preload
+        scrappers_status = [{
+            "name": "TestScrapper",
+            "properties": {"preloaded": False, "TIMER": 60},
+            "seconds_remaining": 0
+        }]
+        # Execute
+        with patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False):
+            with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+                scheduler._execute_scrappers(scrappers_status, False, None)
+        # Verify
+        mock_executor.execute_preload.assert_called_once()
+        mock_executor.execute.assert_not_called()
+
+    @patch('scrapper.core.scrapper_scheduler.BaseExecutor.create')
+    def test_scheduler_executes_on_preload_success(self, mock_create, scheduler, mocks):
+        mock_executor = MagicMock()
+        mock_create.return_value = mock_executor
+        
+        def side_effect_preload(properties):
+            properties['preloaded'] = True
+            return True
+        
+        mock_executor.execute_preload.side_effect = side_effect_preload
+        mock_executor.execute.return_value = True
+        scrappers_status = [{
+            "name": "TestScrapper",
+            "properties": {"preloaded": False, "TIMER": 60},
+            "seconds_remaining": 0
+        }]
+        # Execute
+        with patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False):
+             with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+                scheduler._execute_scrappers(scrappers_status, False, None)
+        # Verify
+        mock_executor.execute_preload.assert_called_once()
+        mock_executor.execute.assert_called_once()

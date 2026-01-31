@@ -91,17 +91,11 @@ def list_jobs(
         ids=ids
     )
 
-@router.get("/applied-by-company", response_model=List[AppliedCompanyJob])
-def get_applied_jobs_by_company(
-    company: str = Query(..., description="Company name to search for"),
-    client: Optional[str] = Query(None, description="Optional client name for Joppy special case"),
-    service: JobsService = Depends(get_service)
-):
-    try:
-        results = service.get_applied_jobs_by_company_name(company, client)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return [AppliedCompanyJob(**r) for r in results]
+
+# Import the new router
+from api.jobs_applied import router as jobs_applied_router
+router.include_router(jobs_applied_router)
+
 
 @router.get("/{job_id}", response_model=Job)
 def get_job(job_id: int, service: JobsService = Depends(get_service)):

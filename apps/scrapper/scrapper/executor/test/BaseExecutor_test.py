@@ -67,6 +67,31 @@ class TestExecutor:
         # Verify last_execution updated to None
         mocks['pm'].update_last_execution.assert_called_with(executor.site_name_key, None)
 
+    def test_preload_failure_sets_error_in_persistence(self, mocks):
+        # Setup - patch the executor to test execute_preload directly
+        name = "infojobs"
+        properties = {"preloaded": False}
+        
+        # We need to simulate the class/instance structure expected by execute_preload
+        # BaseExecutor.execute_preload calls self.run(preload_page=True)
+        # We can reuse MockBaseExecutor
+        
+        executor = MockBaseExecutor(mocks['sel'], mocks['pm'], False)
+        executor.site_name = "INFOJOBS"
+
+        
+        with patch.object(executor, 'run', side_effect=Exception("Preload Error")):
+            # Call bound method
+            result = executor.execute_preload(properties)
+            
+            # Verify
+            assert result is True
+            assert properties["preloaded"] is False
+            mocks['pm'].set_error.assert_called_once()
+            args = mocks['pm'].set_error.call_args[0]
+            assert args[0] == "Infojobs"
+            assert "Preload Error" in args[1]
+
 
 class TestProcessPageUrl:
     def test_linkedin_url(self, mocks):

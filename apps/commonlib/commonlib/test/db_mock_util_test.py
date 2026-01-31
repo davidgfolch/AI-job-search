@@ -1,4 +1,4 @@
-from commonlib.test.db_mock_util import create_mock_db
+from commonlib.db_mock_util import create_mock_db
 from unittest.mock import MagicMock
 
 def test_create_mock_db_structure():

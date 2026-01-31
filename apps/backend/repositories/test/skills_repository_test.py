@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from repositories.skills_repository import SkillsRepository
 from models.skill import Skill
-from commonlib.test.db_mock_util import create_mock_db
+from commonlib.db_mock_util import create_mock_db
 
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')

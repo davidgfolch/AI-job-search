@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.core.scrapper_config import TIMER
 from scrapper.core.scrapper_state_calculator import ScrapperStateCalculator
+from datetime import datetime
 
 @pytest.fixture
 def mocks():
@@ -59,13 +60,36 @@ class TestScrapperStateCalculator:
                 result = calculator.calculate(False, None)
                 assert result == expected_state
 
-    def test_resolve_timer_default(self, mocks):
-        props = {}
-        calculator = ScrapperStateCalculator("Test", props, mocks['pm'])
-        # Mock getEnvByPrefix to return empty
-        with patch('scrapper.core.scrapper_state_calculator.getEnvByPrefix', return_value={}):
-             # Mock getDatetimeNow
-             with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=10000):
-                 val, source = calculator.resolve_timer(3600)
-                 assert val == 3600
-                 assert source == "Default"
+    # Merged from scrapper_cadency_test.py
+    def get_timestamp_for_hour(self, hour):
+        dt = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)
+        return dt.timestamp()
+
+    @pytest.mark.parametrize("current_hour, env_vars, default_timer, expected_timer, expected_range", [
+        (10, {}, 3600, 3600, "Default"),
+        (10, {'7-18': '1h'}, 7200, 3600, "7-18"),
+        (20, {'7-18': '1h'}, 7200, 7200, "Default"),
+        (10, {'7-18': '1h', '19-22': '30m'}, 7200, 3600, "7-18"),
+    ])
+    def test_resolve_timer(self, mocks, current_hour, env_vars, default_timer, expected_timer, expected_range):
+         # We now patch getEnvByPrefix to return the dictionary directly
+         # The env_vars in parametrize are simplified to be what getEnvByPrefix would return
+         # i.e., keys are suffixes, not full env vars
+        calculator = ScrapperStateCalculator('Infojobs', {}, mocks['pm'])
+        with patch('scrapper.core.scrapper_state_calculator.getEnvByPrefix', return_value=env_vars):
+            ts = self.get_timestamp_for_hour(current_hour)
+            with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=ts):
+                actual_timer, actual_range = calculator.resolve_timer(default_timer)
+                assert actual_timer == expected_timer
+                assert actual_range == expected_range
+
+    @pytest.mark.parametrize("env_vars", [
+        ({'22-6': '1h'}),  # Overnight not supported
+        ({'INVALID': '1h'}), # Invalid format
+    ])
+    def test_resolve_timer_error(self, mocks, env_vars):
+        calculator = ScrapperStateCalculator('Infojobs', {}, mocks['pm'])
+        with patch('scrapper.core.scrapper_state_calculator.getEnvByPrefix', return_value=env_vars):
+            with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=100000): # Any time
+                with pytest.raises(ValueError):
+                    calculator.resolve_timer(3600)
