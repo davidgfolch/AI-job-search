@@ -2,16 +2,16 @@ import pytest
 from unittest.mock import patch, MagicMock
 from repositories.skills_repository import SkillsRepository
 from models.skill import Skill
+from commonlib.test.db_mock_util import create_mock_db
 
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')
 def test_list_skills(mock_get_connection, mock_mysql_util):
-    mock_db = MagicMock()
-    mock_mysql_util.return_value.__enter__.return_value = mock_db
-    mock_db.fetchAll.return_value = [
+    mock_db = create_mock_db(fetchAll=[
         ('Python', 'Programming language', '["basics", "advanced"]', 0, 0, 'Language'),
         ('JavaScript', 'Web language', None, 0, 0, 'Language')
-    ]
+    ])
+    mock_mysql_util.return_value = mock_db
     repo = SkillsRepository()
     skills = repo.list_skills()
     assert len(skills) == 2
@@ -21,8 +21,8 @@ def test_list_skills(mock_get_connection, mock_mysql_util):
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')
 def test_create_skill(mock_get_connection, mock_mysql_util):
-    mock_db = MagicMock()
-    mock_mysql_util.return_value.__enter__.return_value = mock_db
+    mock_db = create_mock_db()
+    mock_mysql_util.return_value = mock_db
     repo = SkillsRepository()
     skill = Skill(name="Python", description="Language", learning_path=["basics"], disabled=False)
     result = repo.create_skill(skill)
@@ -32,9 +32,8 @@ def test_create_skill(mock_get_connection, mock_mysql_util):
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')
 def test_update_skill(mock_get_connection, mock_mysql_util):
-    mock_db = MagicMock()
-    mock_mysql_util.return_value.__enter__.return_value = mock_db
-    mock_db.fetchOne.return_value = ('Python',)
+    mock_db = create_mock_db(fetchOne=('Python',))
+    mock_mysql_util.return_value = mock_db
     repo = SkillsRepository()
     result = repo.update_skill('Python', {'description': 'Updated'})
     assert result == 'Python'
@@ -43,9 +42,8 @@ def test_update_skill(mock_get_connection, mock_mysql_util):
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')
 def test_update_skill_not_found(mock_get_connection, mock_mysql_util):
-    mock_db = MagicMock()
-    mock_mysql_util.return_value.__enter__.return_value = mock_db
-    mock_db.fetchOne.return_value = None
+    mock_db = create_mock_db(fetchOne=None)
+    mock_mysql_util.return_value = mock_db
     repo = SkillsRepository()
     result = repo.update_skill('Unknown', {'description': 'Test'})
     assert result is None
@@ -53,9 +51,8 @@ def test_update_skill_not_found(mock_get_connection, mock_mysql_util):
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')
 def test_delete_skill(mock_get_connection, mock_mysql_util):
-    mock_db = MagicMock()
-    mock_mysql_util.return_value.__enter__.return_value = mock_db
-    mock_db.executeAndCommit.return_value = 1
+    mock_db = create_mock_db(executeAndCommit=1)
+    mock_mysql_util.return_value = mock_db
     repo = SkillsRepository()
     result = repo.delete_skill('Python')
     assert result is True

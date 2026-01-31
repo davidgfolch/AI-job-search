@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from repositories.jobs_repository import JobsRepository
+from commonlib.test.db_mock_util import create_mock_db
 
 @patch('repositories.jobs_repository.MysqlUtil')
 @patch('repositories.jobs_repository.getConnection')
@@ -11,12 +12,10 @@ def test_update_jobs_by_filter_uses_return_value(mock_get_conn, mock_mysql_util_
     instead of trying to access db.cursor.rowcount.
     """
     # Setup
-    mock_db_instance = mock_mysql_util_cls.return_value
-    mock_db_instance.__enter__.return_value = mock_db_instance
+    mock_db_instance = create_mock_db(executeAndCommit=42)
+    mock_mysql_util_cls.return_value = mock_db_instance
     
-    # Mock executeAndCommit to return a specific value
     expected_rowcount = 42
-    mock_db_instance.executeAndCommit.return_value = expected_rowcount
     
     # Ensure accessing db.cursor.rowcount would trigger the AttributeError if the code was still buggy
     # Ideally, we don't even define rowcount on the cursor mock if we want to simulate strictness,
