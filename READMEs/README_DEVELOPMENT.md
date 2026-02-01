@@ -16,6 +16,18 @@ Run all tests across the monorepo:
 - **Linux**: `./scripts/test.sh` (Optional: `--coverage`)
 - **Windows**: `.\scripts\test.bat` (Optional: `--coverage`)
 
+## Agent Skills
+
+The agent has access to specialized skills located in `.agent/skills`.
+
+### Skill Builder
+A meta-skill used to create new skills for the agent.
+
+**Usage:**
+Ask the agent to "create a new skill named [skill-name]" or "use the skill builder".
+
+**Location:** `.agent/skills/skill-builder/SKILL.md`
+
 ## Related Documentation
 
 - **Installation Guide**: [README_INSTALL.md](README_INSTALL.md)
