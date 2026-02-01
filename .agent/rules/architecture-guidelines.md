@@ -30,8 +30,3 @@ trigger: always_on
 - Avoid code duplication by reusing components and methods.
 - Document architecture decisions and patterns used in the project.
 - Ensure scalability and maintainability of the architecture.
-
-Tests implementations:
-- Test scope must be separated from Production code scope.
-- Use test helpers to abstract duplicated code (mocks, fixtures, payloads, etc).
-- Use (or create) production code constants in tests (dont duplicate them).

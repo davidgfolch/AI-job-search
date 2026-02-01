@@ -20,8 +20,19 @@ test.describe('Viewer E2E', () => {
             const url = route.request().url();
             console.log('MOCKING REQUEST:', url);
 
+            // Handle applied-by-company request
+            if (url.includes('/applied-by-company')) {
+                 await route.fulfill({
+                    contentType: 'application/json',
+                    json: []
+                });
+                return;
+            }
+
             // Handle single job request (e.g. /api/jobs/1)
-            if (url.match(/\/api\/jobs\/\d+$/)) {
+            // Use strict regex to avoid matching list requests that might happen to look similar
+            if (/\/api\/jobs\/\d+$/.test(url)) {
+                console.log('MOCKING SINGLE JOB:', url);
                 await route.fulfill({
                     contentType: 'application/json',
                     json: {
@@ -93,67 +104,74 @@ test.describe('Viewer E2E', () => {
                 return;
             }
 
-            // Default list response
-            await route.fulfill({
-                contentType: 'application/json',
-                json: {
-                    items: [
-                        {
-                            id: 1,
-                            title: 'Frontend Engineer',
-                            company: 'Tech Corp',
-                            salary: '120k',
-                            location: 'Remote',
-                            url: 'http://example.com/1',
-                            markdown: 'Job Description',
-                            web_page: 'LinkedIn',
-                            created: '2023-01-01',
-                            modified: null,
-                            flagged: false,
-                            like: false,
-                            ignored: false,
-                            seen: false,
-                            applied: false,
-                            discarded: false,
-                            closed: false,
-                            ai_enriched: true,
-                            required_technologies: 'React',
-                            optional_technologies: 'TypeScript',
-                            client: null,
-                            comments: null,
-                            cv_match_percentage: 95,
-                        },
-                        {
-                            id: 2,
-                            title: 'Backend Developer',
-                            company: 'Data Inc',
-                            salary: '130k',
-                            location: 'New York',
-                            url: 'http://example.com/2',
-                            markdown: 'Backend Description',
-                            web_page: 'Indeed',
-                            created: '2023-01-02',
-                            modified: null,
-                            flagged: false,
-                            like: false,
-                            ignored: false,
-                            seen: false,
-                            applied: false,
-                            discarded: false,
-                            closed: false,
-                            ai_enriched: true,
-                            required_technologies: 'Python',
-                            optional_technologies: 'FastAPI',
-                            client: null,
-                            comments: null,
-                            cv_match_percentage: 88,
-                        },
-                    ],
-                    total: 2,
-                    page: 1,
-                    size: 20,
-                }
-            });
+            // Default list response for /api/jobs (without ID)
+             if (/\/api\/jobs(\?|$)/.test(url)) {
+                 console.log('MOCKING JOB LIST:', url);
+                await route.fulfill({
+                    contentType: 'application/json',
+                    json: {
+                        items: [
+                            {
+                                id: 1,
+                                title: 'Frontend Engineer',
+                                company: 'Tech Corp',
+                                salary: '120k',
+                                location: 'Remote',
+                                url: 'http://example.com/1',
+                                markdown: 'Job Description',
+                                web_page: 'LinkedIn',
+                                created: '2023-01-01',
+                                modified: null,
+                                flagged: false,
+                                like: false,
+                                ignored: false,
+                                seen: false,
+                                applied: false,
+                                discarded: false,
+                                closed: false,
+                                ai_enriched: true,
+                                required_technologies: 'React',
+                                optional_technologies: 'TypeScript',
+                                client: null,
+                                comments: null,
+                                cv_match_percentage: 95,
+                            },
+                            {
+                                id: 2,
+                                title: 'Backend Developer',
+                                company: 'Data Inc',
+                                salary: '130k',
+                                location: 'New York',
+                                url: 'http://example.com/2',
+                                markdown: 'Backend Description',
+                                web_page: 'Indeed',
+                                created: '2023-01-02',
+                                modified: null,
+                                flagged: false,
+                                like: false,
+                                ignored: false,
+                                seen: false,
+                                applied: false,
+                                discarded: false,
+                                closed: false,
+                                ai_enriched: true,
+                                required_technologies: 'Python',
+                                optional_technologies: 'FastAPI',
+                                client: null,
+                                comments: null,
+                                cv_match_percentage: 88,
+                            },
+                        ],
+                        total: 2,
+                        page: 1,
+                        size: 20,
+                    }
+                });
+                return;
+            }
+            
+            console.log('UNHANDLED REQUEST:', url);
+            route.continue();
         });
     });
 

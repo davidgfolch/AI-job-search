@@ -28,3 +28,7 @@ apps/aiEnrich/src/aiEnrich/cv/*
 
 !AI-job-search.code-workspace
 .a0proj/
+
+# Playwright
+playwright-report
+test-results

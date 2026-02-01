@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Sequence, TypeVar, Union
 from contextlib import contextmanager
 import mysql.connector as mysqlConnector
@@ -8,7 +9,7 @@ from .terminalColor import green, red, yellow
 
 DEBUG = False
 
-DB_NAME = 'jobs'
+DB_NAME = os.getenv('DB_NAME', 'jobs')
 QRY_FIND_JOB_BY_JOB_ID = """
 SELECT id,jobId FROM jobs WHERE jobId = %s"""
 QRY_INSERT = """

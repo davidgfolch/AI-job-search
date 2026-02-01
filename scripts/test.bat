@@ -26,12 +26,33 @@ if defined target (
     if exist "apps\commonlib" (
         call :run_test "%CD%\apps\commonlib"
     )
+)
     rem Execute other apps tests
+    set "tests_failed=0"
     for /d %%a in (apps\*) do (
-        if /i not "%%~nxa"=="commonlib" (
+        if /i not "%%~nxa"=="commonlib" if /i not "%%~nxa"=="e2e" (
             call :run_test "%%~fa"
+            if !errorlevel! neq 0 set tests_failed=1
         )
     )
+    
+    if !tests_failed!==0 (
+        echo.
+        echo ────────────────────────────────────────────────────────
+        echo Unit tests passed. Running E2E tests...
+        echo ────────────────────────────────────────────────────────
+        if exist "apps\backend\uv.lock" (
+            uv run --project apps/backend python scripts/run_e2e_tests.py
+        ) else (
+            python scripts/run_e2e_tests.py
+        )
+        if !errorlevel! neq 0 set tests_failed=1
+    ) else (
+        echo.
+        echo Skipping E2E tests because unit tests failed.
+    )
+
+    if !tests_failed! neq 0 exit /b 1
 )
 
 endlocal

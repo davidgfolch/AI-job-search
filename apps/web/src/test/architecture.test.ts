@@ -56,5 +56,16 @@ describe('Component Architecture', () => {
       }
       expect(violations).toHaveLength(0);
     });
+
+    it('should not contain .spec.ts files (E2E tests should be in apps/e2e)', () => {
+        const allFiles = getFilesRecursively(pagesDir);
+        const specFiles = allFiles.filter(file => file.endsWith('.spec.ts'));
+        if (specFiles.length > 0) {
+             const errorMessage = specFiles.map(v => `\n  ❌ ${relative(process.cwd(), v)}`).join('\n');
+             expect.fail(
+                `Found ${specFiles.length} .spec.ts files in apps/web. These should be moved to apps/e2e:\n${errorMessage}\n`
+             );
+        }
+    });
   });
 });
