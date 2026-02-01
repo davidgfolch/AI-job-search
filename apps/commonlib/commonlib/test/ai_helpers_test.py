@@ -58,16 +58,16 @@ def test_validateResult_cv_match(input_data, expected_cv_match):
     validateResult(input_data)
     assert input_data["cv_match_percentage"] == expected_cv_match
 
-def test_mapJob():
-    job = (1, "Title", b"Markdown", "Company")
+@pytest.mark.parametrize("markdown, expected_markdown", [
+    (b"Markdown", "Markdown\n"),
+    ("MarkdownStr", "MarkdownStr\n"),
+])
+def test_mapJob(markdown, expected_markdown):
+    job = (1, "Title", markdown, "Company")
     title, company, markdown = mapJob(job)
     assert title == "Title"
     assert company == "Company"
-    assert markdown == "Markdown"
-
-    job_str = (1, "Title", "MarkdownStr", "Company")
-    title, company, markdown = mapJob(job_str)
-    assert markdown == "MarkdownStr"
+    assert markdown == expected_markdown
 
 def test_combineTaskResults():
     # Mock crewOutput

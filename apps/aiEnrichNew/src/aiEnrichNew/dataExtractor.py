@@ -9,10 +9,7 @@ from commonlib.aiEnrichRepository import AiEnrichRepository
 from .llm_client import get_pipeline
 import traceback
 
-# Configuration
-VERBOSE = True 
 DEBUG = False
-# MODEL_ID moved to llm_client.py
 SYSTEM_PROMPT = """You are an expert at analyzing job offers.
 Extract the following information from the job offer below and return it as a valid JSON object:
 - required_technologies: A string with comma-separated list of required technologies. Keep it concise.
@@ -47,7 +44,8 @@ def dataExtractor() -> int:
         for idx, id in enumerate(_getJobIdsList(repo)):
             _process_job_safe(repo, pipe, id, total, idx, "enrich")
         return total
-    
+
+
 def retry_failed_jobs() -> int:
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
@@ -74,6 +72,8 @@ def _process_job_safe(repo: AiEnrichRepository, pipe, id: int, total: int, idx: 
             return  # Will hit finally/end of func
         title, company, markdown = mapJob(job)
         printJob(process_name, total, idx, id, title, company, len(markdown))
+        if DEBUG:
+            print(yellow(f"Markdown: {markdown}"))
         result = extract_job_data(pipe, title, markdown)
         print('Result:\n', magenta(json.dumps(result, indent=2)))
         if result is not None:
@@ -83,6 +83,7 @@ def _process_job_safe(repo: AiEnrichRepository, pipe, id: int, total: int, idx: 
     totalCount += 1
     stopWatch.end()
     footer(total, idx, totalCount, jobErrors)
+
 
 def extract_job_data(pipe, title, markdown) -> dict:
     user_message = f"Job Title: {title}\n\nDescription:\n{markdown}"
@@ -106,6 +107,7 @@ def _save(repo: AiEnrichRepository, id, company, result: dict):
                            result.get('required_technologies', None),
                            result.get('optional_technologies', None))
 
+
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):
     print(red(traceback.format_exc()))
     jobErrors.add((id, f'{title} - {company}: {ex}'))
@@ -115,6 +117,7 @@ def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name
         print(red(f"could not update ai_enrich_error, id={id}"))
     else:
         print(yellow(f"ai_enrich_error set, id={id}"))
+
 
 def _getJobIdsList(repo: AiEnrichRepository) -> list[int]:
     jobIds = repo.get_pending_enrichment_ids()

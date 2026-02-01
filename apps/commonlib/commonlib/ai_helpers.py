@@ -18,7 +18,7 @@ def printJob(processName, total, idx, id, title, company, inputLen):
 def mapJob(job):
     title = job[1]
     company = job[3]
-    markdown = removeExtraEmptyLines(job[2].decode("utf-8") if isinstance(job[2], bytes) else job[2])  # DB markdown blob decoding if bytes
+    markdown = removeExtraEmptyLines(job[2].decode("utf-8") if isinstance(job[2], bytes) else job[2])+'\n'  # DB markdown blob decoding if bytes
     return title, company, markdown
 
 
