@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { persistenceApi } from '../CommonPersistenceApi';
-import { defaultFilterConfigurations } from '../defaults';
+import defaultFilterConfigurations from '../../../../resources/defaultFilterConfigurations.json';
 import { mockLocalStorage } from '../../../../test/mocks/storageMocks';
 
 describe('persistenceApi', () => {

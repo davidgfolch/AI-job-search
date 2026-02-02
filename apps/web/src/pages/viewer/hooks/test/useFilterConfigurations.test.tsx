@@ -21,7 +21,7 @@ vi.mock('../useFilterDropdown', () => ({
   useFilterDropdown: vi.fn(),
 }));
 
-vi.mock('../../../common/api/defaultFilterConfigurations.json', () => ({
+vi.mock('../../../../resources/defaultFilterConfigurations.json', () => ({
   default: [{ name: 'Default 1', filters: {} }]
 }));
 

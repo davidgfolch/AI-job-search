@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { JobListParams } from '../../../api/ViewerApi';
-import { defaultFilterConfigurations } from '../../../../common/api/defaults';
+import defaultFilterConfigurations from '../../../../../resources/defaultFilterConfigurations.json';
 import { FilterConfigService } from '../../../hooks/FilterConfigService';
 import { useFilterDropdown } from './useFilterDropdown';
 import { useConfirmationModal } from './useConfirmationModal';

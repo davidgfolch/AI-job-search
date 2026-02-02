@@ -5,7 +5,7 @@ import { BOOLEAN_FILTERS } from '../constants';
 import { useFilterDropdown } from './useFilterDropdown';
 import { useConfirmationModal } from '../../common/hooks/useConfirmationModal';
 
-import defaultFilterConfigurations from '../../common/api/defaultFilterConfigurations.json';
+import defaultFilterConfigurations from '../../../resources/defaultFilterConfigurations.json';
 
 export interface FilterConfig {
     name: string;

@@ -1,10 +1,4 @@
-/**
- * Default persistence data.
- * Update this file and commit to Git to share default configurations.
- */
-
-
-export const defaultFilterConfigurations = [
+[
     {
         "name": "Senior software engineer",
         "filters": {
@@ -274,4 +268,4 @@ export const defaultFilterConfigurations = [
             "easy_apply": null
         }
     }
-];
+]

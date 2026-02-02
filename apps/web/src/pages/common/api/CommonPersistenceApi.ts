@@ -1,4 +1,4 @@
-import { defaultFilterConfigurations } from './defaults';
+import defaultFilterConfigurations from '../../../resources/defaultFilterConfigurations.json';
 
 const persistenceDefaults: Record<string, any> = {
     'filter_configurations': defaultFilterConfigurations,

@@ -6,8 +6,8 @@ import type { JobListParams } from '../api/ViewerApi.ts';
 
 // Mocks first
 // Default mocks
-vi.mock('../../common/api/defaults.ts', () => ({ 
-    defaultFilterConfigurations: []
+vi.mock('../../../../resources/defaultFilterConfigurations.json', () => ({ 
+    default: []
 }));
 
 // Service mock

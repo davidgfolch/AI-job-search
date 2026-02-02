@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultFilterConfigurations } from '../defaults';
+import defaultFilterConfigurations from '../../../../resources/defaultFilterConfigurations.json';
 
 describe('defaults', () => {
   describe('defaultFilterConfigurations', () => {

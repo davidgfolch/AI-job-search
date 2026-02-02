@@ -11,8 +11,8 @@ vi.mock('../../../../../common/api/CommonPersistenceApi', () => ({
     }
 }));
 
-vi.mock('../../../../../common/api/defaults', () => ({
-    defaultFilterConfigurations: []
+vi.mock('../../../../../../resources/defaultFilterConfigurations.json', () => ({
+    default: []
 }));
 
 describe('useFilterConfigurations', () => {
