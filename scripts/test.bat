@@ -26,7 +26,7 @@ if defined target (
     if exist "apps\commonlib" (
         call :run_test "%CD%\apps\commonlib"
     )
-)
+
     rem Execute other apps tests
     set "tests_failed=0"
     for /d %%a in (apps\*) do (
