@@ -151,5 +151,20 @@ def test_list_jobs_by_ids(mock_get_db, client):
     params = call_args[0][1]
     
     assert "id IN (%s, %s)" in query
+    assert "id IN (%s, %s)" in query
     assert 1 in params
     assert 3 in params
+
+def test_list_jobs_with_created_after(mock_db_session, client):
+    """Test listing jobs with created_after filter"""
+    cutoff = "2023-01-01T00:00:00"
+    response = client.get(f"/api/jobs?created_after={cutoff}")
+    assert response.status_code == 200
+    
+    matched_query = _get_query_from_mock(mock_db_session)
+    assert "created > %s" in matched_query
+    
+    matched_call = next((call for call in mock_db_session.fetchAll.call_args_list if "SELECT" in str(call[0][0])), None)
+    if matched_call:
+        params = matched_call[0][1]
+        assert cutoff in params

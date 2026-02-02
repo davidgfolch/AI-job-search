@@ -9,6 +9,8 @@ interface ConfigurationInputProps {
     onBlur: () => void;
     onSave: () => void;
     onExport: () => void;
+    onWatch: () => void;
+    isWatching: boolean;
 }
 
 export function ConfigurationInput({
@@ -19,8 +21,23 @@ export function ConfigurationInput({
     onClick,
     onBlur,
     onSave,
-    onExport
+    onExport,
+    onWatch,
+    isWatching
 }: ConfigurationInputProps) {
+    if (isWatching) {
+        return (
+            <button
+                type="button"
+                onClick={onWatch}
+                className="config-btn config-watch-btn active"
+                title="Stop watching filter configurations"
+            >
+                Stop Watch
+            </button>
+        );
+    }
+
     return (
         <>
             <input
@@ -51,6 +68,14 @@ export function ConfigurationInput({
                 title="Copy configurations to clipboard for defaults.ts"
             >
                 Export
+            </button>
+            <button
+                type="button"
+                onClick={onWatch}
+                className="config-btn config-watch-btn"
+                title="Watch all filter configurations for new items (every 5 min)"
+            >
+                Watch
             </button>
         </>
     );

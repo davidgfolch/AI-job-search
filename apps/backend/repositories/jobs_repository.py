@@ -10,10 +10,10 @@ class JobsRepository:
     def list_jobs(self, page: int, size: int, search: Optional[str] = None, status: Optional[str] = None,
         not_status: Optional[str] = None, days_old: Optional[int] = None, salary: Optional[str] = None,
         order: Optional[str] = "created desc", boolean_filters: Dict[str, Optional[bool]] = None,
-        sql_filter: Optional[str] = None, ids: Optional[List[int]] = None) -> Dict[str, Any]:
+        sql_filter: Optional[str] = None, ids: Optional[List[int]] = None, created_after: Optional[str] = None) -> Dict[str, Any]:
         offset = (page - 1) * size
         where_clauses, params = build_jobs_where_clause(
-            search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids)
+            search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after)
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
             total = self._count_jobs(db, where_str, params)
@@ -24,8 +24,8 @@ class JobsRepository:
                     not_status: Optional[str] = None, days_old: Optional[int] = None, 
                     salary: Optional[str] = None, sql_filter: Optional[str] = None, 
                     boolean_filters: Dict[str, Optional[bool]] = None, 
-                    ids: Optional[List[int]] = None):
-        return build_jobs_where_clause(search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids)
+                    ids: Optional[List[int]] = None, created_after: Optional[str] = None):
+        return build_jobs_where_clause(search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after)
 
     def _count_jobs(self, db: MysqlUtil, where: str, params: list):
         return db.count(f"SELECT COUNT(*) FROM jobs WHERE {where}", params)

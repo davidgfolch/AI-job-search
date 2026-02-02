@@ -41,3 +41,14 @@ def test_parse_job_order(order_input, expected_col, expected_dir):
     col, dir = parse_job_order(order_input)
     assert col == expected_col
     assert dir == expected_dir
+
+def test_build_jobs_where_clause_created_after():
+    """Test building where clause with created_after"""
+    where, params = build_jobs_where_clause(
+        search=None, status=None, not_status=None, days_old=None, 
+        salary=None, sql_filter=None, boolean_filters={},
+        created_after="2023-01-01T12:00:00"
+    )
+    
+    assert "created > %s" in where
+    assert "2023-01-01T12:00:00" in params

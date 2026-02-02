@@ -58,6 +58,7 @@ def list_jobs(
     easy_apply: Optional[bool] = None,
     sql_filter: Optional[str] = None,
     ids: Optional[List[int]] = Query(None),
+    created_after: Optional[str] = None,
     service: JobsService = Depends(get_service)
 ):
     boolean_filters = {
@@ -88,7 +89,8 @@ def list_jobs(
         order=order,
         boolean_filters=boolean_filters,
         sql_filter=sql_filter,
-        ids=ids
+        ids=ids,
+        created_after=created_after
     )
 
 

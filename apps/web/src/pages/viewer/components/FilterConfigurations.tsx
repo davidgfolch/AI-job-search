@@ -5,6 +5,9 @@ import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import ConfirmModal from '../../common/components/core/ConfirmModal';
 import './FilterConfigurations.css';
 
+import { useFilterWatcher } from './configurations/hooks/useFilterWatcher';
+import { FilterConfigurationsWatcher } from './configurations/FilterConfigurationsWatcher';
+
 const CLEAN_OLD_JOBS_CONFIG = {
     "name": "Clean - Delete old jobs",
     "filters": {
@@ -33,6 +36,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         highlightIndex,
         wrapperRef,
         filteredConfigs,
+        savedConfigs,
         saveConfiguration,
         loadConfiguration,
         deleteConfiguration,
@@ -44,6 +48,37 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         setHighlightIndex,
         confirmModal
     } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: ADDITIONAL_DEFAULTS });
+
+    const {
+        isWatching,
+        results: watcherResults,
+        lastCheckTime,
+        startWatching,
+        stopWatching,
+        resetWatcher
+    } = useFilterWatcher({ savedConfigs });
+
+    const toggleWatch = () => {
+        if (isWatching) {
+            stopWatching();
+        } else {
+            startWatching();
+        }
+    };
+
+    const handleLoadWithReset = (config: any) => {
+        loadConfiguration(config);
+        if (isWatching) {
+            resetWatcher(config.name);
+        }
+    };
+
+    const handleBadgeClick = (name: string) => {
+        const config = savedConfigs.find(c => c.name === name);
+        if (config) {
+            handleLoadWithReset(config);
+        }
+    };
 
     return (
         <div className="filter-configurations">
@@ -63,15 +98,27 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                     onClick={handleFocus}
                     onBlur={handleBlur}
                     onSave={saveConfiguration}
-                    onExport={exportToDefaults}/>
-                <ConfigurationDropdown
-                    isOpen={isOpen}
-                    filteredConfigs={filteredConfigs}
-                    highlightIndex={highlightIndex}
-                    onLoad={loadConfiguration}
-                    onDelete={deleteConfiguration}
-                    setHighlightIndex={setHighlightIndex}/>
+                    onExport={exportToDefaults}
+                    onWatch={toggleWatch}
+                    isWatching={isWatching}
+                />
+                {!isWatching && (
+                    <ConfigurationDropdown
+                        isOpen={isOpen}
+                        filteredConfigs={filteredConfigs}
+                        highlightIndex={highlightIndex}
+                        onLoad={handleLoadWithReset}
+                        onDelete={deleteConfiguration}
+                        setHighlightIndex={setHighlightIndex}
+                    />
+                )}
             </div>
+            <FilterConfigurationsWatcher 
+                isWatching={isWatching}
+                results={watcherResults}
+                lastCheckTime={lastCheckTime}
+                onConfigClick={handleBadgeClick}
+            />
         </div>
     );
 }

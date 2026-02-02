@@ -8,7 +8,8 @@ def build_jobs_where_clause(
     salary: Optional[str], 
     sql_filter: Optional[str],
     boolean_filters: Dict[str, Optional[bool]], 
-    ids: Optional[List[int]] = None
+    ids: Optional[List[int]] = None,
+    created_after: Optional[str] = None # Expecting ISO string or datetime compatible string
 ) -> Tuple[List[str], List[Any]]:
     
     where = ["1=1"]
@@ -17,37 +18,33 @@ def build_jobs_where_clause(
     if search:
         where.append("(title LIKE %s OR company LIKE %s)")
         params.extend([f"%{search}%", f"%{search}%"])
-    
     if status:
         statuses = status.split(',')
         for s in statuses:
             where.append(f"`{s.strip()}` = 1")
-            
     if not_status:
         statuses = not_status.split(',')
         for s in statuses:
             where.append(f"`{s.strip()}` = 0")
-            
     if days_old:
         where.append("DATE(created) >= DATE_SUB(CURDATE(), INTERVAL %s DAY)")
         params.append(days_old)
-        
     if salary:
         where.append("salary RLIKE %s")
         params.append(salary)
-        
     if sql_filter:
         where.append(f"({sql_filter})")
-        
     if boolean_filters:
         for field_name, field_value in boolean_filters.items():
             if field_value is not None:
                 where.append(f"`{field_name}` = {1 if field_value else 0}")
-                
     if ids:
         placeholders = ', '.join(['%s'] * len(ids))
         where.append(f"id IN ({placeholders})")
         params.extend(ids)
+    if created_after:
+        where.append("created > %s")
+        params.append(created_after)
         
     return where, params
 

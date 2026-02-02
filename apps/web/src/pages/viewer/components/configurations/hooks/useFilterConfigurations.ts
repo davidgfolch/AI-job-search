@@ -44,7 +44,7 @@ export function useFilterConfigurations({
     useEffect(() => {
         const loadConfigs = async () => {
             try {
-                const allDefaults = [...defaultFilterConfigurations, ...additionalDefaults];
+                const allDefaults = [...(defaultFilterConfigurations as any[]), ...additionalDefaults];
                 const configs = await service.load(allDefaults);
                 setSavedConfigs(configs);
             } catch (e) {
@@ -104,5 +104,6 @@ export function useFilterConfigurations({
             onConfirm: confirmModal.handleConfirm,
             close: confirmModal.close,
         },
+        savedConfigs,
     };
 }
