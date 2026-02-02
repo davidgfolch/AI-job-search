@@ -1,6 +1,6 @@
-import traceback
+import pytest
 from unittest.mock import patch, MagicMock
-from commonlib.exceptionUtil import getProjectTraceItems
+from commonlib.exceptionUtil import getProjectTraceItems, cleanUnresolvedTrace
 
 def test_getProjectTraceItems_basic():
     try:
@@ -33,3 +33,14 @@ def test_getProjectTraceItems_filtering(mock_extract_tb):
     assert 'module.py' not in result
     # Assert user code is present
     assert 'main.py:20' in result
+
+@pytest.mark.parametrize("input_str, expected", [
+    ("Error\n0x12345678\n(nil)\nEnd", "Error\nEnd"),
+    ("0x328543\n0x328584", ""),
+    ("No symbol [0x00007FF7D38A0CE2]", ""),
+    ("Valid content", "Valid content"),
+    (None, "None"),
+    ("A" * 310, "A" * 297 + "..."),
+])
+def test_cleanUnresolvedTrace(input_str, expected):
+    assert cleanUnresolvedTrace(input_str) == expected

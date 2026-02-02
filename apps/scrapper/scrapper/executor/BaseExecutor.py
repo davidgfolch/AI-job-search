@@ -7,6 +7,7 @@ from commonlib.mysqlUtil import MysqlUtil
 from commonlib.keep_system_awake import KeepSystemAwake
 from commonlib.dateUtil import getDatetimeNowStr
 from ..core.scrapper_config import SCRAPPERS, get_debug
+from commonlib.exceptionUtil import cleanUnresolvedTrace
 from ..core import baseScrapper
 from ..core.utils import debug
 from ..core.baseScrapper import printScrapperTitle
@@ -84,8 +85,9 @@ class BaseExecutor(ABC):
                 self.run(preload_page=True)
             properties['preloaded'] = True
         except Exception as e:
+            error_msg = cleanUnresolvedTrace(e)
             debug(self.debug, f"Error occurred while preloading {name}:", True)
-            self.persistence_manager.set_error(self.site_name_key, f"Preload failed: {str(e)}")
+            self.persistence_manager.set_error(self.site_name_key, f"Preload failed: {error_msg}")
             properties['preloaded'] = False
         except KeyboardInterrupt:
             self.persistence_manager.update_last_execution(self.site_name_key, None)
@@ -101,8 +103,9 @@ class BaseExecutor(ABC):
                 self.run(preload_page=False)
             self.persistence_manager.update_last_execution(self.site_name_key, getDatetimeNowStr())
         except Exception as e:
+            error_msg = cleanUnresolvedTrace(e)
             debug(self.debug, f"Error occurred while executing {name}:", True)
-            self.persistence_manager.set_error(self.site_name_key, str(e))
+            self.persistence_manager.set_error(self.site_name_key, error_msg)
             self.persistence_manager.update_last_execution(self.site_name_key, None)
         except KeyboardInterrupt:
             self.persistence_manager.update_last_execution(self.site_name_key, None)
