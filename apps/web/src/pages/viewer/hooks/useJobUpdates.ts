@@ -14,8 +14,12 @@ export const useJobUpdates = (filters: JobListParams, knownJobIds: Set<number>) 
         refetchIntervalInBackground: true,
     });
 
-    const newJobsCount = data?.items.filter(job => !knownJobIds.has(job.id)).length ?? 0;
+    const newJobIds = data?.items
+        .filter(job => !knownJobIds.has(job.id))
+        .map(job => job.id) ?? [];
+        
+    const newJobsCount = newJobIds.length;
     const hasNewJobs = newJobsCount > 0;
 
-    return { hasNewJobs, newJobsCount };
+    return { hasNewJobs, newJobsCount, newJobIds };
 };

@@ -62,7 +62,7 @@ describe('useViewer', () => {
         (useJobsData as any).mockReturnValue(mockJobsData);
         (useJobSelection as any).mockReturnValue(mockJobSelection);
         (useJobMutations as any).mockReturnValue(mockJobMutations);
-        (useJobUpdates as any).mockReturnValue({ hasNewJobs: false, newJobsCount: 0 });
+        (useJobUpdates as any).mockReturnValue({ hasNewJobs: false, newJobsCount: 0, newJobIds: [] });
     });
 
     it('should aggregate state correctly', () => {
@@ -165,7 +165,7 @@ describe('useViewer', () => {
     });
 
     it('should return newJobsCount from useJobUpdates', () => {
-        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5 });
+        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5, newJobIds: [1,2,3,4,5] });
         const { result } = renderHook(() => useViewer());
         expect(result.current.state.hasNewJobs).toBe(true);
         expect(result.current.state.newJobsCount).toBe(5);

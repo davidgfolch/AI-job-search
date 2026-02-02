@@ -17,7 +17,7 @@ vi.mock('../viewer/api/ViewerApi', () => ({
     },
 }));
 vi.mock('../viewer/hooks/useJobUpdates', () => ({
-    useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0 }),
+    useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0, newJobIds: [] }),
 }));
 vi.mock('../../services/FilterConfigService', () => ({
     FilterConfigService: vi.fn().mockImplementation(function() {
@@ -55,7 +55,7 @@ describe('Viewer - Scroll and Pagination', () => {
 
     it('refreshes list when clicking List tab if new jobs exist', async () => {
         const { useJobUpdates } = await import('../viewer/hooks/useJobUpdates');
-        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5 });
+        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5, newJobIds: [1,2,3,4,5] });
         mockJobsApiDefault();
         renderViewer();
         await runTimers();

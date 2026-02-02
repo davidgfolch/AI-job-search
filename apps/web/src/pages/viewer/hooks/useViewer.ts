@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useJobsData } from './useJobsData';
 import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
@@ -9,20 +9,26 @@ export type { TabType };
 
 export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
-
     const {
         filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, hardRefresh
     } = useJobsData();
-
     const {
         selectedJob, setSelectedJob, selectedIds, setSelectedIds,
         selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext
     } = useJobSelection({ allJobs, filters, setFilters });
-
     const [knownJobIds, setKnownJobIds] = useState<Set<number>>(new Set());
-    const { hasNewJobs, newJobsCount } = useJobUpdates(filters, knownJobIds);
-
+    const { hasNewJobs, newJobsCount, newJobIds } = useJobUpdates(filters, knownJobIds);
     const [activeConfigName, setActiveConfigName] = useState<string>('');
+
+    const acknowledgeNewJobs = useCallback(() => {
+        if (newJobIds.length > 0) {
+            setKnownJobIds(prev => {
+                const next = new Set(prev);
+                newJobIds.forEach(id => next.add(id));
+                return next;
+            });
+        }
+    }, [newJobIds]);
 
     const {
         message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation
@@ -52,6 +58,7 @@ export const useViewer = () => {
         },
         activeConfigName,
         onReload: async () => {
+             acknowledgeNewJobs();
              if (filters.page !== 1) {
                 setShouldSelectFirst(true);
                 setFilters(f => ({ ...f, page: 1 }));
@@ -76,14 +83,18 @@ export const useViewer = () => {
                     return [...jobs, ...newItems];
                 }
             });
-            
             // Update knownJobIds to include all jobs we've seen in this session
             setKnownJobIds(prev => {
                 const next = new Set(prev);
-                data.items.forEach(j => next.add(j.id));
-                return next;
+                let changed = false;
+                data.items.forEach(j => {
+                    if (!next.has(j.id)) {
+                        next.add(j.id);
+                        changed = true;
+                    }
+                });
+                return changed ? next : prev;
             });
-            
             setIsLoadingMore(false);
         }
     }, [data, filters.page, setAllJobs, setIsLoadingMore]);
@@ -101,7 +112,6 @@ export const useViewer = () => {
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;
     const hasNext = selectedIndex >= 0 && selectedIndex < allJobs.length - 1;
     const hasPrevious = selectedIndex > 0;
-
     return {
         state: {
             filters,
@@ -171,6 +181,7 @@ export const useViewer = () => {
                 setCreationSessionId(prev => prev + 1);
             },
             refreshJobs: async () => {
+                acknowledgeNewJobs();
                 if (filters.page !== 1) {
                     setShouldSelectFirst(true);
                     setFilters(f => ({ ...f, page: 1 }));

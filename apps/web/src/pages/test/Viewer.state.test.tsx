@@ -17,7 +17,7 @@ vi.mock('../viewer/api/ViewerApi', () => ({
     },
 }));
 vi.mock('../../hooks/viewer/useJobUpdates', () => ({
-    useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0 }),
+    useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0, newJobIds: [] }),
 }));
 vi.mock('../../services/FilterConfigService', () => ({
     FilterConfigService: vi.fn().mockImplementation(function() {
