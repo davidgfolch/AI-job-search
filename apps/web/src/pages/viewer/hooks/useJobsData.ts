@@ -41,7 +41,10 @@ export const useJobsData = () => {
     });
 
     const hardRefresh = useCallback(async () => {
-        await queryClient.resetQueries({ queryKey: ['jobs'] });
+        await Promise.all([
+            queryClient.resetQueries({ queryKey: ['jobs'] }),
+            queryClient.resetQueries({ queryKey: ['jobUpdates'] })
+        ]);
     }, [queryClient]);
 
     const handleLoadMore = useCallback(() => {
