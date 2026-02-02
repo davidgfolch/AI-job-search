@@ -24,14 +24,6 @@ class MockBaseExecutor(BaseExecutor):
         pass
 
 class TestExecutor:
-    @pytest.mark.parametrize("name", ['Infojobs'])
-    def test_create_executor(self, mocks, run_mocks, name):
-        mock_executor_cls = run_mocks[name]
-        # Patch get_debug to return True
-        with patch('scrapper.executor.BaseExecutor.get_debug', return_value=True):
-            executor = BaseExecutor.create(name.lower(), mocks['sel'], mocks['pm'])
-            mock_executor_cls.assert_called_with(mocks['sel'], mocks['pm'], True)
-
     def test_execute_preload(self, mocks):
         # Use concrete class for testing base methods
         executor = MockBaseExecutor(mocks['sel'], mocks['pm'], False)
@@ -92,22 +84,3 @@ class TestExecutor:
             assert args[0] == "Infojobs"
             assert "Preload Error" in args[1]
 
-
-class TestProcessPageUrl:
-    def test_linkedin_url(self, mocks):
-        url = "https://www.linkedin.com/jobs/view/123"
-        with patch('scrapper.executor.LinkedinExecutor.LinkedinExecutor.process_specific_url') as mock_process:
-            BaseExecutor.process_page_url(url)
-            mock_process.assert_called_once_with(url)
-
-    def test_unimplemented_scrapper(self):
-        url = "https://www.infojobs.net/job/123"
-        with pytest.raises(Exception) as excinfo:
-            BaseExecutor.process_page_url(url)
-        assert "Invalid scrapper web page name Infojobs, only linkedin is implemented" in str(excinfo.value)
-
-    def test_unknown_url(self):
-        url = "https://www.google.com"
-        with patch('scrapper.executor.LinkedinExecutor.LinkedinExecutor.process_specific_url') as mock_process:
-            BaseExecutor.process_page_url(url)
-            mock_process.assert_not_called()

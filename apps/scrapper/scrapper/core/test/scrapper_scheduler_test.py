@@ -140,7 +140,7 @@ class TestSchedulerHelpers:
              assert executed_start is False
              run_mocks['infojobs'].execute.assert_called()
              assert not run_mocks['linkedin'].execute.called
-    @patch('scrapper.core.scrapper_scheduler.BaseExecutor.create')
+    @patch('scrapper.core.scrapper_scheduler.create_executor')
     def test_scheduler_skips_execution_on_preload_failure(self, mock_create, scheduler, mocks):
         mock_executor = MagicMock()
         mock_create.return_value = mock_executor
@@ -163,7 +163,7 @@ class TestSchedulerHelpers:
         mock_executor.execute_preload.assert_called_once()
         mock_executor.execute.assert_not_called()
 
-    @patch('scrapper.core.scrapper_scheduler.BaseExecutor.create')
+    @patch('scrapper.core.scrapper_scheduler.create_executor')
     def test_scheduler_executes_on_preload_success(self, mock_create, scheduler, mocks):
         mock_executor = MagicMock()
         mock_create.return_value = mock_executor

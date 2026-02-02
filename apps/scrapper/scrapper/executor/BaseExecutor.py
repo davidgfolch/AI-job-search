@@ -2,13 +2,10 @@ import math
 from abc import ABC, abstractmethod
 
 from commonlib.terminalColor import yellow, cyan
-from commonlib.environmentUtil import getEnvBool
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.keep_system_awake import KeepSystemAwake
 from commonlib.dateUtil import getDatetimeNowStr
-from ..core.scrapper_config import SCRAPPERS, get_debug
 from commonlib.exceptionUtil import cleanUnresolvedTrace
-from ..core import baseScrapper
 from ..core.utils import debug
 from ..core.baseScrapper import printScrapperTitle
 from ..core.scrapper_config import CLOSE_TAB, RUN_IN_TABS
@@ -35,42 +32,6 @@ class BaseExecutor(ABC):
     def site_name_key(self) -> str:
         """Returns the standardized site name for persistence."""
         return self.site_name.capitalize()
-
-    @staticmethod
-    def create(name: str, selenium_service: SeleniumService, persistence_manager: PersistenceManager):
-        """Factory method to create executor instances by name."""
-        from ..executor.InfojobsExecutor import InfojobsExecutor
-        from ..executor.TecnoempleoExecutor import TecnoempleoExecutor
-        from ..executor.LinkedinExecutor import LinkedinExecutor
-        from ..executor.GlassdoorExecutor import GlassdoorExecutor
-        from ..executor.IndeedExecutor import IndeedExecutor
-        debug = get_debug(name)
-        match name.lower():
-            case 'infojobs':
-                return InfojobsExecutor(selenium_service, persistence_manager, debug)
-            case 'tecnoempleo':
-                return TecnoempleoExecutor(selenium_service, persistence_manager, debug)
-            case 'linkedin':
-                return LinkedinExecutor(selenium_service, persistence_manager, debug)
-            case 'glassdoor':
-                return GlassdoorExecutor(selenium_service, persistence_manager, debug)
-            case 'indeed':
-                return IndeedExecutor(selenium_service, persistence_manager, debug)
-        raise ValueError(f"Unknown scrapper: {name}")
-
-    @staticmethod
-    def process_page_url(url: str):
-        """Process a specific URL (only LinkedIn is currently supported)."""
-        for name, properties in SCRAPPERS.items():
-            if url.find(name.lower()) != -1:
-                print(cyan(f'Running scrapper for pageUrl: {url}'))
-                from ..executor.LinkedinExecutor import LinkedinExecutor
-                match name.lower():
-                    case 'linkedin':
-                        LinkedinExecutor.process_specific_url(url)
-                    case _:
-                        raise Exception(f"Invalid scrapper web page name {name}, only linkedin is implemented")
-                return
 
     def _init_scrapper(self):
         """Initialize scrapper specific variables like site_name, credentials, navigator, etc."""

@@ -7,7 +7,7 @@ from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, IGNORE_AUTORUN, RUN
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
-from scrapper.executor.BaseExecutor import BaseExecutor
+from scrapper.executor.executor_factory import create_executor
 from scrapper.core.scrapper_state_calculator import ScrapperStateCalculator
 from scrapper.util.terminalTableUtil import print_failed_info_table
 
@@ -69,13 +69,13 @@ class ScrapperScheduler:
                 if RUN_IN_TABS:
                     self.seleniumUtil.tab(name)
                 if runPreload(properties, run_in_tabs=RUN_IN_TABS):
-                    executor = BaseExecutor.create(name, self.seleniumUtil, self.persistenceManager)
+                    executor = create_executor(name, self.seleniumUtil, self.persistenceManager)
                     if not executor.execute_preload(properties):
                         return False, executed_startingAt
                     if not properties.get('preloaded', True): 
                         print(red(f"Skipping execution for {name} due to preload failure."))
                         continue
-                executor = BaseExecutor.create(name, self.seleniumUtil, self.persistenceManager)
+                executor = create_executor(name, self.seleniumUtil, self.persistenceManager)
                 if not executor.execute(properties):
                     return False, executed_startingAt
                 if starting and startingAt == name.capitalize():
@@ -105,10 +105,10 @@ class ScrapperScheduler:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
                 if runPreload(properties, run_in_tabs=RUN_IN_TABS):
-                    executor = BaseExecutor.create(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
+                    executor = create_executor(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
                     if not executor.execute_preload(properties):
                         return
-                executor = BaseExecutor.create(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
+                executor = create_executor(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
                 if not executor.execute(properties):
                     return
         print_failed_info_table(self.persistenceManager)
