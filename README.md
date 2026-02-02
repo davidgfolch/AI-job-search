@@ -39,10 +39,10 @@ This is a monorepo containing several applications and packages:
   - MySQL
   - Backend API
   - Web UI
+  - AiEnrichNew
 - Run `apps/scrappers/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
-- Run (optional) AiEnrichNew (using huddingface transformer no need to install ollama):
-  - Run `apps/aiEnrichNew/run.(bat/sh)` in separated terminal.
+- Run (optional)
 - ~~LEGACY: Run (optional) AiEnrich~~:
   - ~~Install Ollama & llama3.2 model~~
   - ~~Run aiEnrich in separated terminals manually~~.
