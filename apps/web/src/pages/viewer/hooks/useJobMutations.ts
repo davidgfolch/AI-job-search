@@ -60,6 +60,7 @@ export const useJobMutations = ({
       setSelectionMode,
       setSelectedIds,
       onUpdateSuccess: (variables) => {
+          queryClient.invalidateQueries({ queryKey: ["jobUpdates"] });
           if (variables.update.ignored && activeConfigName === 'Clean - Ignore jobs by title') {
               onReload?.();
           }
@@ -71,6 +72,7 @@ export const useJobMutations = ({
       jobsApi.updateJob(id, data),
     onSuccess: (updatedJob, variables) => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["jobUpdates"] }); 
       if (selectedJob && updatedJob.id === selectedJob.id) {
         setSelectedJob(updatedJob);
       }
