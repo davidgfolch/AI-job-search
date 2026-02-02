@@ -11,6 +11,8 @@ trigger: always_on
    - Each module use a package manager, check test.* or install.* in scripts folder to know wich to use.
       - for npm tests use `npx vitest run`.
       - always implement parameterized tests when applies.
+   - Always run module full suite tests after any change in code.
+
 ## Best practices
 
 - Use simpliest SOLID implementation possible.
