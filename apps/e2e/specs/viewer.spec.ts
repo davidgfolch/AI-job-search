@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { MOCK_JOB_1, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND } from './viewer.mocks';
 
 test.use({
     bypassCSP: true,
@@ -35,31 +36,7 @@ test.describe('Viewer E2E', () => {
                 console.log('MOCKING SINGLE JOB:', url);
                 await route.fulfill({
                     contentType: 'application/json',
-                    json: {
-                        id: 1,
-                        title: 'Frontend Engineer',
-                        company: 'Tech Corp',
-                        salary: '120k',
-                        location: 'Remote',
-                        url: 'http://example.com/1',
-                        markdown: 'Job Description',
-                        web_page: 'LinkedIn',
-                        created: '2023-01-01',
-                        modified: null,
-                        flagged: false,
-                        like: false,
-                        ignored: false,
-                        seen: false,
-                        applied: false,
-                        discarded: false,
-                        closed: false,
-                        ai_enriched: true,
-                        required_technologies: 'React',
-                        optional_technologies: 'TypeScript',
-                        client: null,
-                        comments: null,
-                        cv_match_percentage: 95,
-                    }
+                    json: MOCK_JOB_1
                 });
                 return;
             }
@@ -68,38 +45,7 @@ test.describe('Viewer E2E', () => {
             if (url.includes('search=Backend')) {
                 await route.fulfill({
                     contentType: 'application/json',
-                    json: {
-                        items: [
-                            {
-                                id: 2,
-                                title: 'Backend Developer',
-                                company: 'Data Inc',
-                                salary: '130k',
-                                location: 'New York',
-                                url: 'http://example.com/2',
-                                markdown: 'Backend Description',
-                                web_page: 'Indeed',
-                                created: '2023-01-02',
-                                modified: null,
-                                flagged: false,
-                                like: false,
-                                ignored: false,
-                                seen: false,
-                                applied: false,
-                                discarded: false,
-                                closed: false,
-                                ai_enriched: true,
-                                required_technologies: 'Python',
-                                optional_technologies: 'FastAPI',
-                                client: null,
-                                comments: null,
-                                cv_match_percentage: 88,
-                            },
-                        ],
-                        total: 1,
-                        page: 1,
-                        size: 20,
-                    }
+                    json: MOCK_SEARCH_BACKEND
                 });
                 return;
             }
@@ -109,63 +55,7 @@ test.describe('Viewer E2E', () => {
                  console.log('MOCKING JOB LIST:', url);
                 await route.fulfill({
                     contentType: 'application/json',
-                    json: {
-                        items: [
-                            {
-                                id: 1,
-                                title: 'Frontend Engineer',
-                                company: 'Tech Corp',
-                                salary: '120k',
-                                location: 'Remote',
-                                url: 'http://example.com/1',
-                                markdown: 'Job Description',
-                                web_page: 'LinkedIn',
-                                created: '2023-01-01',
-                                modified: null,
-                                flagged: false,
-                                like: false,
-                                ignored: false,
-                                seen: false,
-                                applied: false,
-                                discarded: false,
-                                closed: false,
-                                ai_enriched: true,
-                                required_technologies: 'React',
-                                optional_technologies: 'TypeScript',
-                                client: null,
-                                comments: null,
-                                cv_match_percentage: 95,
-                            },
-                            {
-                                id: 2,
-                                title: 'Backend Developer',
-                                company: 'Data Inc',
-                                salary: '130k',
-                                location: 'New York',
-                                url: 'http://example.com/2',
-                                markdown: 'Backend Description',
-                                web_page: 'Indeed',
-                                created: '2023-01-02',
-                                modified: null,
-                                flagged: false,
-                                like: false,
-                                ignored: false,
-                                seen: false,
-                                applied: false,
-                                discarded: false,
-                                closed: false,
-                                ai_enriched: true,
-                                required_technologies: 'Python',
-                                optional_technologies: 'FastAPI',
-                                client: null,
-                                comments: null,
-                                cv_match_percentage: 88,
-                            },
-                        ],
-                        total: 2,
-                        page: 1,
-                        size: 20,
-                    }
+                    json: MOCK_JOBS_LIST
                 });
                 return;
             }
