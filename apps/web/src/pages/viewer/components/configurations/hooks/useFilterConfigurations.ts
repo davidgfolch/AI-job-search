@@ -6,6 +6,7 @@ import { useFilterDropdown } from './useFilterDropdown';
 import { useConfirmationModal } from './useConfirmationModal';
 import { useConfigDropdownState } from './useConfigDropdownState';
 import { useConfigOperations } from './useConfigOperations';
+import { useFilterWatcher, type WatcherResult } from './useFilterWatcher';
 
 export interface FilterConfig {
     id?: number;
@@ -58,6 +59,23 @@ export function useFilterConfigurations({
         loadConfigs();
     }, [service, additionalDefaults, notify]);
 
+    const {
+        isWatching,
+        results: watcherResults,
+        lastCheckTime,
+        startWatching,
+        stopWatching,
+        resetWatcher
+    } = useFilterWatcher({ savedConfigs });
+
+    const toggleWatch = useCallback(() => {
+        if (isWatching) {
+            stopWatching();
+        } else {
+            startWatching();
+        }
+    }, [isWatching, startWatching, stopWatching]);
+
     const operations = useConfigOperations({
         service,
         savedConfigs,
@@ -71,6 +89,14 @@ export function useFilterConfigurations({
         notify,
         confirmModal,
     });
+
+    // Intercept loadConfiguration to reset watcher
+    const handleLoadConfiguration = useCallback((config: FilterConfig) => {
+        operations.loadConfiguration(config);
+        if (isWatching) {
+            resetWatcher(config.name);
+        }
+    }, [operations.loadConfiguration, isWatching, resetWatcher]);
 
     const toggleNotification = useCallback(async (name: string) => {
         const configIndex = savedConfigs.findIndex(c => c.name === name);
@@ -126,11 +152,12 @@ export function useFilterConfigurations({
     const dropdown = useFilterDropdown({
         configs: savedConfigs,
         configName,
-        onLoad: operations.loadConfiguration,
+        onLoad: handleLoadConfiguration,
         onSave: operations.saveConfiguration,
         onDelete: operations.deleteConfiguration,
         setIsOpen,
         isOpen,
+        results: watcherResults,
     });
 
     useEffect(() => {
@@ -144,7 +171,7 @@ export function useFilterConfigurations({
         wrapperRef: dropdown.wrapperRef,
         filteredConfigs: dropdown.filteredConfigs,
         saveConfiguration: operations.saveConfiguration,
-        loadConfiguration: operations.loadConfiguration,
+        loadConfiguration: handleLoadConfiguration,
         deleteConfiguration: operations.deleteConfiguration,
         handleKeyDown: dropdown.handleKeyDown,
         handleChange,
@@ -161,5 +188,9 @@ export function useFilterConfigurations({
         savedConfigs,
         toggleNotification,
         toggleStatistics,
+        isWatching,
+        watcherResults,
+        lastCheckTime,
+        toggleWatch
     };
 }

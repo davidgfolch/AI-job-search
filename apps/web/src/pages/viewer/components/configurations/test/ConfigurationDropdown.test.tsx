@@ -10,6 +10,8 @@ describe('ConfigurationDropdown', () => {
         onLoad: vi.fn(),
         onDelete: vi.fn(),
         setHighlightIndex: vi.fn(),
+        onToggleNotify: vi.fn(),
+        onToggleStats: vi.fn(),
     };
 
     it('renders nothing when closed', () => {
@@ -20,5 +22,7 @@ describe('ConfigurationDropdown', () => {
     it('renders configs when open', () => {
         render(<ConfigurationDropdown {...defaultProps} />);
         expect(screen.getByText('Test Config')).toBeInTheDocument();
+        expect(screen.getByText('📈')).toBeInTheDocument();
+        expect(screen.getByText('🔕')).toBeInTheDocument();
     });
 });

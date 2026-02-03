@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { FilterConfig } from './useFilterConfigurations';
+import type { WatcherResult } from './useFilterWatcher';
 
 interface UseFilterDropdownProps {
     configs: FilterConfig[];
@@ -9,6 +10,7 @@ interface UseFilterDropdownProps {
     onDelete: (name: string, event: React.MouseEvent) => void;
     setIsOpen: (isOpen: boolean) => void;
     isOpen: boolean;
+    results?: Record<string, WatcherResult>;
 }
 
 export function useFilterDropdown({ 
@@ -18,14 +20,31 @@ export function useFilterDropdown({
     onSave, 
     onDelete,
     setIsOpen,
-    isOpen
+    isOpen,
+    results = {}
 }: UseFilterDropdownProps) {
     const [highlightIndex, setHighlightIndex] = useState(-1);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
     const filteredConfigs = configs.filter(config =>
         config.name.toLowerCase().includes((configName || '').toLowerCase())
-    ).sort((a, b) => a.name.localeCompare(b.name));
+    ).sort((a, b) => {
+        const resultA = results[a.name];
+        const resultB = results[b.name];
+        const newA = resultA?.newItems || 0;
+        const newB = resultB?.newItems || 0;
+        if (newA !== newB) return newB - newA; // Descending new items
+        
+        const notifyA = a.notify ? 1 : 0;
+        const notifyB = b.notify ? 1 : 0;
+        if (notifyA !== notifyB) return notifyB - notifyA; // Descending notify
+        
+        const statsA = a.statistics !== false ? 1 : 0; // Default true
+        const statsB = b.statistics !== false ? 1 : 0;
+        if (statsA !== statsB) return statsB - statsA; // Descending statistics
+        
+        return a.name.localeCompare(b.name);
+    });
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

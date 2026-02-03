@@ -88,7 +88,7 @@ describe('FilterConfigurations Interactions', () => {
         fireEvent.focus(input);
         
         const items = await screen.findAllByRole('listitem');
-        const names = items.map(i => i.textContent?.replace('×', '').trim());
+        const names = items.map(i => i.textContent?.replace(/[\+\d+\📈📉🔔🔕×]/g, '').trim());
         expect(names).toEqual(['A', 'Z']);
     });
 

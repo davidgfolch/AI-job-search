@@ -1,11 +1,10 @@
+import React from 'react';
 import './FilterConfigurations.css';
 import type { JobListParams } from '../api/ViewerApi';
 import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import ConfirmModal from '../../common/components/core/ConfirmModal';
-import { useFilterWatcher } from './configurations/hooks/useFilterWatcher';
-import { FilterConfigurationsWatcher } from './configurations/FilterConfigurationsWatcher';
 
 const CLEAN_OLD_JOBS_CONFIG = {
     "name": "Clean - Delete old jobs",
@@ -35,7 +34,6 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         highlightIndex,
         wrapperRef,
         filteredConfigs,
-        savedConfigs,
         saveConfiguration,
         loadConfiguration,
         deleteConfiguration,
@@ -47,39 +45,17 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         setHighlightIndex,
         confirmModal,
         toggleNotification,
-        toggleStatistics
-    } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: ADDITIONAL_DEFAULTS });
-
-    const {
+        toggleStatistics,
         isWatching,
-        results: watcherResults,
+        watcherResults,
         lastCheckTime,
-        startWatching,
-        stopWatching,
-        resetWatcher
-    } = useFilterWatcher({ savedConfigs });
-
-    const toggleWatch = () => {
-        if (isWatching) {
-            stopWatching();
-        } else {
-            startWatching();
-        }
-    };
-
-    const handleLoadWithReset = (config: any) => {
-        loadConfiguration(config);
-        if (isWatching) {
-            resetWatcher(config.name);
-        }
-    };
-
-    const handleBadgeClick = (name: string) => {
-        const config = savedConfigs.find(c => c.name === name);
-        if (config) {
-            handleLoadWithReset(config);
-        }
-    };
+        toggleWatch
+    } = useFilterConfigurations({ 
+        currentFilters, 
+        onLoadConfig, 
+        onMessage, 
+        additionalDefaults: ADDITIONAL_DEFAULTS 
+    });
 
     return (
         <div className="filter-configurations">
@@ -107,20 +83,15 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                     isOpen={isOpen}
                     filteredConfigs={filteredConfigs}
                     highlightIndex={highlightIndex}
-                    onLoad={handleLoadWithReset}
+                    onLoad={loadConfiguration}
                     onDelete={deleteConfiguration}
                     setHighlightIndex={setHighlightIndex}
+                    onToggleNotify={toggleNotification}
+                    onToggleStats={toggleStatistics}
+                    results={watcherResults}
+                    lastCheckTime={lastCheckTime}
                 />
             </div>
-            <FilterConfigurationsWatcher 
-                isWatching={isWatching}
-                results={watcherResults}
-                lastCheckTime={lastCheckTime}
-                onConfigClick={handleBadgeClick}
-                savedConfigs={savedConfigs}
-                onToggleNotify={toggleNotification}
-                onToggleStats={toggleStatistics}
-            />
         </div>
     );
 }
