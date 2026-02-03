@@ -23,7 +23,8 @@
             "interview_technical_test_done": null,
             "easy_apply": null,
             "days_old": 1
-        }
+        },
+        "notify": true
     },
     {
         "name": "By company",
@@ -49,7 +50,8 @@
             "interview_technical_test": null,
             "interview_technical_test_done": null,
             "easy_apply": null
-        }
+        },
+        "notify": false
     },
     {
         "name": "Clean - Delete old jobs",
@@ -74,7 +76,8 @@
             "interview_technical_test": null,
             "interview_technical_test_done": null,
             "easy_apply": null
-        }
+        },
+        "notify": false
     },
     {
         "name": "Applied last 4 months",
@@ -87,7 +90,8 @@
             "salary": "",
             "sql_filter": "",
             "days_old": 120
-        }
+        },
+        "notify": false
     },
     {
         "name": "Salary",
@@ -113,7 +117,8 @@
             "interview_technical_test_done": null,
             "easy_apply": null,
             "days_old": 1
-        }
+        },
+        "notify": false
     },
     {
         "name": "Clean - Ignore jobs by title",
@@ -138,7 +143,8 @@
             "interview_technical_test": null,
             "interview_technical_test_done": null,
             "easy_apply": null
-        }
+        },
+        "notify": false
     },
     {
         "name": "Python",
@@ -164,7 +170,8 @@
             "interview_technical_test_done": null,
             "easy_apply": null,
             "days_old": 1
-        }
+        },
+        "notify": true
     },
     {
         "name": "Java fullstack",
@@ -190,7 +197,8 @@
             "interview_technical_test_done": null,
             "easy_apply": null,
             "days_old": 1
-        }
+        },
+        "notify": true
     },
     {
         "name": "Java backend only",
@@ -216,7 +224,8 @@
             "interview_technical_test_done": null,
             "easy_apply": null,
             "days_old": 1
-        }
+        },
+        "notify": true
     },
     {
         "name": "(All)",
@@ -240,7 +249,8 @@
             "interview_technical_test": null,
             "interview_technical_test_done": null,
             "easy_apply": null
-        }
+        },
+        "notify": false
     },
     {
         "name": "CV match",
@@ -266,6 +276,7 @@
             "interview_technical_test": null,
             "interview_technical_test_done": null,
             "easy_apply": null
-        }
+        },
+        "notify": false
     }
 ]
