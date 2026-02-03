@@ -1,13 +1,19 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from .terminalColor import yellow
 
+# Resolve .env path relative to this file: 
+# apps/commonlib/commonlib/environmentUtil.py -> ../../../.env (Root)
+ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+
 def getEnvModified() -> float | None:
-    x = os.stat('../../.env').st_ctime if os.stat('../../.env') else None
-    return x
+    if not ENV_PATH.exists():
+        return None
+    return ENV_PATH.stat().st_ctime
 
 # Initialize module-level state
-load_dotenv()
+load_dotenv(dotenv_path=ENV_PATH)
 envLastModified = getEnvModified()
 
 def checkEnvReload():
