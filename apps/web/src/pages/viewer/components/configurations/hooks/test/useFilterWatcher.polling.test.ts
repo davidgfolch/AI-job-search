@@ -27,7 +27,7 @@ describe('useFilterWatcher - Polling Logic', () => {
         cleanupMocks();
     });
 
-    it.skip('should poll periodically', async () => {
+    it('should poll periodically', async () => {
         vi.useFakeTimers();
         (jobsApi.countJobs as any).mockResolvedValue(5);
         

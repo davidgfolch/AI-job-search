@@ -1,4 +1,5 @@
 import { useViewer } from "./hooks/useViewer";
+import { useCallback } from "react";
 import JobList from './components/JobList';
 import JobDetail from './components/JobDetail';
 import JobEditForm from './components/JobEditForm';
@@ -13,6 +14,14 @@ export default function Viewer() {
     const { state, status, actions } = useViewer();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
 
+    const handleFiltersChange = useCallback((newFilters) => {
+        actions.setFilters({ ...state.filters, ...newFilters, page: 1 });
+    }, [actions.setFilters, state.filters]);
+
+    const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
+        actions.setMessage({ text, type });
+    }, [actions.setMessage]);
+
     return (
         <div className="viewer">
             <ConfirmModal
@@ -25,8 +34,8 @@ export default function Viewer() {
                 <MessageContainer message={state.message} error={status.error}
                     onDismissMessage={() => actions.setMessage(null)} />
                 <Filters filters={state.filters}
-                    onFiltersChange={(newFilters) => actions.setFilters({ ...state.filters, ...newFilters, page: 1 })}
-                    onMessage={(text, type) => actions.setMessage({ text, type })} 
+                    onFiltersChange={handleFiltersChange}
+                    onMessage={handleMessage} 
                     onConfigNameChange={actions.setActiveConfigName} />
                 <div className="viewer-content">
                     <div className="viewer-left">
