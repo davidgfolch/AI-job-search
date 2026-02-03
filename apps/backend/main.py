@@ -5,6 +5,7 @@ from api import salary
 from api import ddl
 from api import statistics
 from api import skills
+from api import filter_configurations
 
 app = FastAPI(title="AI Job Search API")
 
@@ -21,6 +22,7 @@ app.include_router(salary.router, prefix="/api/salary", tags=["salary"])
 app.include_router(ddl.router, prefix="/api/ddl", tags=["ddl"])
 app.include_router(statistics.router, prefix="/api/statistics", tags=["statistics"])
 app.include_router(skills.router, prefix="/api/skills", tags=["skills"])
+app.include_router(filter_configurations.router, prefix="/api/filter-configurations", tags=["filter-configurations"])
 
 @app.get("/health")
 def health_check():

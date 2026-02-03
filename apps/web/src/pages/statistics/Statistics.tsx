@@ -3,7 +3,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     BarChart, Bar
 } from 'recharts';
-import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday } from './api/StatisticsApi';
+import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats } from './api/StatisticsApi';
 import './Statistics.css';
 
 const Statistics = () => {
@@ -11,6 +11,7 @@ const Statistics = () => {
     const { data: sourcesDateData } = useQuery({ queryKey: ['statistics', 'sourcesDate'], queryFn: getSourcesByDate });
     const { data: sourcesHourData } = useQuery({ queryKey: ['statistics', 'sourcesHour'], queryFn: getSourcesByHour });
     const { data: sourcesWeekdayData } = useQuery({ queryKey: ['statistics', 'sourcesWeekday'], queryFn: getSourcesByWeekday });
+    const { data: filterConfigData } = useQuery({ queryKey: ['statistics', 'filterConfigs'], queryFn: getFilterConfigStats });
 
     // Transform data for stacked bars if needed, or rely on Recharts grouping
     // For "Sources by Date" and "Sources by Hour", the data is flat "long" format (source column).
@@ -132,6 +133,26 @@ const Statistics = () => {
                                 {sourcesWeekdayKeys.map((key, index) => (
                                     <Bar key={key} dataKey={key} stackId="a" fill={colors[index % colors.length]} />
                                 ))}
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </section>
+
+                <section className="chart-section">
+                    <h2>Filter Configurations & Job Counts</h2>
+                    <div className="chart-container">
+                        <ResponsiveContainer width="100%" height={400}>
+                            <BarChart data={filterConfigData || []}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                    dataKey="name" 
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={100}
+                                />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Bar dataKey="count" fill="#8884d8" name="Job Count" />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

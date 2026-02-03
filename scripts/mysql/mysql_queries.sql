@@ -254,6 +254,10 @@ update job_skills set ai_enriched = 0 where ai_enriched = 1 and (category is nul
 
 delete from job_skills where job_skills.name = 'Control-M';
 
+--- Filter Configurations
+
+select * from filter_configurations;
+
 
 
 -- Locks

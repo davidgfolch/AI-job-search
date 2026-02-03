@@ -4,6 +4,15 @@ import Filters from '../Filters';
 import type { JobListParams } from '../../../api/ViewerApi';
 import { createMockFilters } from '../../test/test-utils';
 
+vi.mock('../../hooks/FilterConfigService', () => {
+    return {
+        FilterConfigService: class {
+            load = vi.fn().mockResolvedValue([]);
+            save = vi.fn().mockResolvedValue(undefined);
+        }
+    }
+});
+
 describe('Filters', () => {
     const mockFilters = createMockFilters();
 

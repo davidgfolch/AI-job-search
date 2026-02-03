@@ -48,3 +48,13 @@ export const getSourcesByWeekday = async (): Promise<SourceWeekdayStat[]> => {
     const response = await axios.get(`${API_Base}/sources-weekday`);
     return response.data;
 };
+
+export interface FilterConfigStat {
+    name: string;
+    count: number;
+}
+
+export const getFilterConfigStats = async (): Promise<FilterConfigStat[]> => {
+    const response = await axios.get(`${API_Base}/filter-configs`);
+    return response.data;
+};

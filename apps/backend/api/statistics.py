@@ -20,3 +20,7 @@ def get_sources_by_hour():
 @router.get("/sources-weekday")
 def get_sources_by_weekday():
     return service.get_sources_by_weekday()
+
+@router.get("/filter-configs")
+def get_filter_config_stats():
+    return service.get_filter_configuration_stats()

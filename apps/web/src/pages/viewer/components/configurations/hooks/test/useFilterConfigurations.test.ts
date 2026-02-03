@@ -2,12 +2,21 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useFilterConfigurations } from '../useFilterConfigurations';
 import { persistenceApi as commonPersistenceApi } from "../../../../../common/api/CommonPersistenceApi";
+import { filterConfigsApi } from '../../../../api/FilterConfigurationsApi';
 
-// Mock dependencies
 vi.mock('../../../../../common/api/CommonPersistenceApi', () => ({
     persistenceApi: {
         getValue: vi.fn(),
         setValue: vi.fn(),
+    }
+}));
+
+vi.mock('../../../../api/FilterConfigurationsApi', () => ({
+    filterConfigsApi: {
+        getAll: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
     }
 }));
 
@@ -28,11 +37,22 @@ describe('useFilterConfigurations', () => {
         vi.clearAllMocks();
         (commonPersistenceApi.getValue as any).mockResolvedValue([]);
         (commonPersistenceApi.setValue as any).mockResolvedValue(true);
+        (filterConfigsApi.getAll as any).mockResolvedValue([]);
+        (filterConfigsApi.create as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, notify: false, created: new Date().toISOString(), modified: null });
+        (filterConfigsApi.update as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, notify: false, created: new Date().toISOString(), modified: null });
+        (filterConfigsApi.delete as any).mockResolvedValue(undefined);
     });
 
     it('should load saved configs on mount', async () => {
-        const savedConfigs = [{ name: 'Saved 1', filters: mockFilters }];
-        (commonPersistenceApi.getValue as any).mockResolvedValue(savedConfigs);
+        const backendConfigs = [{
+            id: 1,
+            name: 'Saved 1',
+            filters: mockFilters,
+            notify: false,
+            created: new Date().toISOString(),
+            modified: null
+        }];
+        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
         const { result } = renderHook(() => useFilterConfigurations(defaultProps));
 
@@ -45,11 +65,9 @@ describe('useFilterConfigurations', () => {
     it('should save a new configuration', async () => {
         const { result } = renderHook(() => useFilterConfigurations(defaultProps));
 
-        // Wait for initial load
-        await waitFor(() => expect(commonPersistenceApi.getValue).toHaveBeenCalled());
+        await waitFor(() => expect(filterConfigsApi.getAll).toHaveBeenCalled());
 
         act(() => {
-            // Type the name
             result.current.handleChange({ target: { value: 'New Config' } } as any);
         });
 
@@ -57,22 +75,28 @@ describe('useFilterConfigurations', () => {
              await result.current.saveConfiguration();
         });
 
-        expect(commonPersistenceApi.setValue).toHaveBeenCalledWith(
-            'filter_configurations',
-            expect.arrayContaining([
-                expect.objectContaining({ name: 'New Config', filters: mockFilters })
-            ])
+        expect(filterConfigsApi.create).toHaveBeenCalledWith(
+            expect.objectContaining({ 
+                name: 'New Config', 
+                filters: mockFilters 
+            })
         );
 
-        // Should update internal state
         expect(result.current.filteredConfigs).toHaveLength(1);
         expect(result.current.filteredConfigs[0].name).toBe('New Config');
-        expect(result.current.configName).toBe(''); // Resets after save
+        expect(result.current.configName).toBe('');
     });
 
     it('should delete a configuration', async () => {
-        const savedConfigs = [{ name: 'To Delete', filters: mockFilters }];
-        (commonPersistenceApi.getValue as any).mockResolvedValue(savedConfigs);
+        const backendConfigs = [{
+            id: 1,
+            name: 'To Delete',
+            filters: mockFilters,
+            notify: false,
+            created: new Date().toISOString(),
+            modified: null
+        }];
+        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
         const { result } = renderHook(() => useFilterConfigurations(defaultProps));
 
@@ -82,27 +106,32 @@ describe('useFilterConfigurations', () => {
 
         const stopPropagation = vi.fn();
         
-        // Trigger delete
         act(() => {
             result.current.deleteConfiguration('To Delete', { stopPropagation } as any);
         });
 
-        // Should open confirmation modal
         expect(result.current.confirmModal.isOpen).toBe(true);
 
-        // Confirm delete
         await act(async () => {
             result.current.confirmModal.onConfirm();
         });
 
-        expect(commonPersistenceApi.setValue).toHaveBeenCalledWith('filter_configurations', []);
-        expect(result.current.filteredConfigs).toHaveLength(0);
+        await waitFor(() => {
+            expect(result.current.filteredConfigs).toHaveLength(0);
+        });
     });
 
     it('should reset missing filters when loading configuration', async () => {
-        const savedFilters = { search: 'saved' }; // days_old missing
-        const savedConfigs = [{ name: 'Saved 1', filters: savedFilters }];
-        (commonPersistenceApi.getValue as any).mockResolvedValue(savedConfigs);
+        const savedFilters = { search: 'saved' };
+        const backendConfigs = [{
+            id: 1,
+            name: 'Saved 1',
+            filters: savedFilters,
+            notify: false,
+            created: new Date().toISOString(),
+            modified: null
+        }];
+        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
         const { result } = renderHook(() => useFilterConfigurations(defaultProps));
 
@@ -111,7 +140,11 @@ describe('useFilterConfigurations', () => {
         });
 
         act(() => {
-            result.current.loadConfiguration(savedConfigs[0] as any);
+            result.current.loadConfiguration({ 
+                name: backendConfigs[0].name, 
+                filters: backendConfigs[0].filters,
+                notify: backendConfigs[0].notify 
+            });
         });
 
         // onLoadConfig should be called with normalized filters

@@ -71,13 +71,7 @@ ALTER TABLE jobs ADD COLUMN cv_match_percentage TINYINT NULL;
 
 ALTER TABLE jobs ADD INDEX cv_match_percentage_index (cv_match_percentage);
 
---
--- Table structure for table `job_skills`
---
-
 -- DROP TABLE IF EXISTS `job_skills`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE if not exists `job_skills` (
   `name` varchar(255) NOT NULL,
   `description` text,
@@ -88,6 +82,19 @@ CREATE TABLE if not exists `job_skills` (
 
 ALTER TABLE job_skills ADD COLUMN ai_enriched TINYINT(1) DEFAULT 0;
 ALTER TABLE job_skills ADD COLUMN category VARCHAR(255);
+
+
+CREATE TABLE IF NOT EXISTS `filter_configurations` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  `filters` JSON NOT NULL,
+  `notify` TINYINT(1) DEFAULT 0,
+  `created` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `modified` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name_unique` (`name`),
+  KEY `name_index` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -100,5 +107,4 @@ ALTER TABLE job_skills ADD COLUMN category VARCHAR(255);
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-10-10  6:46:51
 
