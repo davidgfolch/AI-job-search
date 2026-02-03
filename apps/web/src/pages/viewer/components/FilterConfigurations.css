@@ -68,7 +68,7 @@
     width: auto;
     min-width: 200px;
     max-width: 100rem;
-    max-height: 300px;
+    max-height: 60vh;
     overflow-y: auto;
     background: var(--bg-primary);
     border-width: 1px;
