@@ -156,4 +156,37 @@ describe('useFilterConfigurations', () => {
             'Saved 1'
         );
     });
+    
+    it('should update statistics setting using single API call', async () => {
+        const backendConfigs = [{
+            id: 123,
+            name: 'Stats Config',
+            filters: mockFilters,
+            notify: false,
+            statistics: true,
+            created: new Date().toISOString(),
+            modified: null
+        }];
+        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
+
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps));
+
+        await waitFor(() => {
+            expect(result.current.filteredConfigs).toHaveLength(1);
+        });
+
+        // Initial state
+        expect(result.current.filteredConfigs[0].statistics).toBe(true);
+
+        // Toggle statistics
+        await act(async () => {
+            await result.current.toggleStatistics('Stats Config');
+        });
+
+        // Verify API was called with just the ID and the new value
+        expect(filterConfigsApi.update).toHaveBeenCalledWith(123, { statistics: false });
+        
+        // Verify local state updated
+        expect(result.current.filteredConfigs[0].statistics).toBe(false);
+    });
 });

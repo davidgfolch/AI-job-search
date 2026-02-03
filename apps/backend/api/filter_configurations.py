@@ -15,7 +15,7 @@ def get_all_configurations(service: FilterConfigurationsService = Depends(get_se
 @router.post("", response_model=FilterConfiguration, status_code=201)
 def create_configuration(config: FilterConfigurationCreate, service: FilterConfigurationsService = Depends(get_service)):
     try:
-        return service.create(config.name, config.filters, config.notify)
+        return service.create(config.name, config.filters, config.notify, config.statistics)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -29,7 +29,7 @@ def get_configuration(config_id: int, service: FilterConfigurationsService = Dep
 @router.put("/{config_id}", response_model=FilterConfiguration)
 def update_configuration(config_id: int, config: FilterConfigurationUpdate, service: FilterConfigurationsService = Depends(get_service)):
     try:
-        return service.update(config_id, config.name, config.filters, config.notify)
+        return service.update(config_id, config.name, config.filters, config.notify, config.statistics)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

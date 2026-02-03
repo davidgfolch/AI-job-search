@@ -8,9 +8,11 @@ import { useConfigDropdownState } from './useConfigDropdownState';
 import { useConfigOperations } from './useConfigOperations';
 
 export interface FilterConfig {
+    id?: number;
     name: string;
     filters: JobListParams;
     notify?: boolean;
+    statistics?: boolean;
 }
 
 interface UseFilterConfigurationsProps {
@@ -89,6 +91,38 @@ export function useFilterConfigurations({
         }
     }, [savedConfigs, service, notify]);
 
+    const toggleStatistics = useCallback(async (name: string) => {
+        const configIndex = savedConfigs.findIndex(c => c.name === name);
+        if (configIndex === -1) return;
+
+        const config = savedConfigs[configIndex];
+        const newStatsValue = !config.statistics;
+
+        const updatedConfigs = [...savedConfigs];
+        updatedConfigs[configIndex] = {
+            ...config,
+            statistics: newStatsValue
+        };
+        
+        // Optimistic update
+        setSavedConfigs(updatedConfigs);
+
+        try {
+            if (config.id !== undefined) {
+                await service.updateStatistics(config.id, newStatsValue);
+            } else {
+                // Fallback for configs without ID (should be rare/impossible for backend configs)
+                await service.save(updatedConfigs);
+            }
+        } catch (e) {
+            console.error('Failed to save configuration', e);
+            notify('Failed to update statistics setting', 'error');
+            // Revert on failure
+            updatedConfigs[configIndex] = config;
+            setSavedConfigs([...updatedConfigs]);
+        }
+    }, [savedConfigs, service, notify]);
+
     const dropdown = useFilterDropdown({
         configs: savedConfigs,
         configName,
@@ -126,5 +160,6 @@ export function useFilterConfigurations({
         },
         savedConfigs,
         toggleNotification,
+        toggleStatistics,
     };
 }

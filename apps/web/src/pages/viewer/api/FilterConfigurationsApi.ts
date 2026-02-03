@@ -8,6 +8,7 @@ export interface FilterConfiguration {
     name: string;
     filters: JobListParams;
     notify: boolean;
+    statistics: boolean;
     created: string;
     modified: string | null;
 }
@@ -16,12 +17,14 @@ export interface FilterConfigurationCreate {
     name: string;
     filters: JobListParams;
     notify?: boolean;
+    statistics?: boolean;
 }
 
 export interface FilterConfigurationUpdate {
     name?: string;
     filters?: JobListParams;
     notify?: boolean;
+    statistics?: boolean;
 }
 
 export const filterConfigsApi = {

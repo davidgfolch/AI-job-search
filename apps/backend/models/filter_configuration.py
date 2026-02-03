@@ -6,11 +6,13 @@ class FilterConfigurationCreate(BaseModel):
     name: str
     filters: dict
     notify: bool = False
+    statistics: bool = True
 
 class FilterConfigurationUpdate(BaseModel):
     name: Optional[str] = None
     filters: Optional[dict] = None
     notify: Optional[bool] = None
+    statistics: Optional[bool] = None
 
 class FilterConfiguration(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -19,5 +21,6 @@ class FilterConfiguration(BaseModel):
     name: str
     filters: dict
     notify: bool
+    statistics: bool
     created: datetime
     modified: Optional[datetime] = None

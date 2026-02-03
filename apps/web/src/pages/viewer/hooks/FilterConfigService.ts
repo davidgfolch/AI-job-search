@@ -12,9 +12,11 @@ export class FilterConfigService {
       const backendConfigs = await filterConfigsApi.getAll();
       await this.migrateFromLocalStorageIfNeeded();
       const configs = backendConfigs.map(bc => ({
+        id: bc.id,
         name: bc.name,
         filters: bc.filters,
-        notify: bc.notify
+        notify: bc.notify,
+        statistics: bc.statistics
       }));
       return this.mergeDefaults(configs, defaults);
     } catch (error) {
@@ -23,6 +25,10 @@ export class FilterConfigService {
       const configs = stored && Array.isArray(stored) ? stored : [];
       return this.mergeDefaults(configs, defaults);
     }
+  }
+
+  async updateStatistics(id: number, statistics: boolean): Promise<void> {
+    await filterConfigsApi.update(id, { statistics });
   }
 
   async save(configs: FilterConfig[]): Promise<void> {
@@ -38,14 +44,16 @@ export class FilterConfigService {
           // Update if changed
           await filterConfigsApi.update(existing.id, {
             filters: config.filters,
-            notify: config.notify
+            notify: config.notify,
+            statistics: config.statistics
           });
         } else {
           // Create new
           await filterConfigsApi.create({
             name: config.name,
             filters: config.filters,
-            notify: config.notify
+            notify: config.notify,
+            statistics: config.statistics
           });
         }
       }
@@ -71,7 +79,8 @@ export class FilterConfigService {
       return backendConfigs.map(bc => ({
         name: bc.name,
         filters: bc.filters,
-        notify: bc.notify
+        notify: bc.notify,
+        statistics: bc.statistics
       }));
     } catch (error) {
       console.error('Failed to export filter configurations:', error);
@@ -102,7 +111,8 @@ export class FilterConfigService {
           await filterConfigsApi.create({
             name: config.name,
             filters: config.filters,
-            notify: config.notify || false
+            notify: config.notify || false,
+            statistics: config.statistics || true
           });
         }
       }

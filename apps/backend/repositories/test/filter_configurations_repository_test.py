@@ -23,8 +23,8 @@ def test_find_all(repo_with_mock):
     
     # Mock the fetchAll to return rows
     mock_db.fetchAll.return_value = [
-        (1, 'Config 1', '{"page": 1}', 1, '2024-01-01', None),
-        (2, 'Config 2', '{"page": 2}', 0, '2024-01-02', None)
+        (1, 'Config 1', '{"page": 1}', 1, 1, '2024-01-01', None),
+        (2, 'Config 2', '{"page": 2}', 0, 1, '2024-01-02', None)
     ]
     
     result = repo.find_all()
@@ -46,7 +46,7 @@ def test_find_by_id(repo_with_mock):
     """Test finding configuration by ID"""
     repo, mock_db = repo_with_mock
     
-    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, '2024-01-01', None)
     
     result = repo.find_by_id(1)
     
@@ -67,7 +67,7 @@ def test_find_by_name(repo_with_mock):
     """Test finding configuration by name"""
     repo, mock_db = repo_with_mock
     
-    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, '2024-01-01', None)
     
     result = repo.find_by_name('Test')
     

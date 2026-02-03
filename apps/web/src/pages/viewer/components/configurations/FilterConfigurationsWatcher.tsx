@@ -9,6 +9,7 @@ interface FilterConfigurationsWatcherProps {
     savedConfigs: FilterConfig[];
     onConfigClick: (name: string) => void;
     onToggleNotify: (name: string) => void;
+    onToggleStats: (name: string) => void;
 }
 
 export function FilterConfigurationsWatcher({
@@ -17,7 +18,8 @@ export function FilterConfigurationsWatcher({
     lastCheckTime,
     savedConfigs,
     onConfigClick,
-    onToggleNotify
+    onToggleNotify,
+    onToggleStats
 }: FilterConfigurationsWatcherProps) {
     if (!isWatching) return null;
 
@@ -51,16 +53,28 @@ export function FilterConfigurationsWatcher({
                     >
                         <span className="badge-name">{name}</span>
                         <span className="badge-count">+{result.newItems}</span>
-                        <button 
-                            className={`watcher-notify-toggle ${isNotifying ? 'enabled' : 'disabled'}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleNotify(name);
-                            }}
-                            title={isNotifying ? "Disable notifications" : "Enable notifications"}
-                        >
-                            {isNotifying ? '🔔' : '🔕'}
-                        </button>
+                        <div className="watcher-actions">
+                            <button
+                                className={`watcher-toggle ${config?.statistics !== false ? 'enabled' : 'disabled'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleStats(name);
+                                }}
+                                title={config?.statistics !== false ? "Include in Statistics" : "Exclude from Statistics"}
+                            >
+                                {config?.statistics !== false ? '📈' : '📉'}
+                            </button>
+                            <button 
+                                className={`watcher-toggle ${isNotifying ? 'enabled' : 'disabled'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleNotify(name);
+                                }}
+                                title={isNotifying ? "Disable notifications" : "Enable notifications"}
+                            >
+                                {isNotifying ? '🔔' : '🔕'}
+                            </button>
+                        </div>
                     </div>
                 );
             })}

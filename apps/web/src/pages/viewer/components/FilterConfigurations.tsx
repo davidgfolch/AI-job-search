@@ -46,7 +46,8 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         exportToDefaults,
         setHighlightIndex,
         confirmModal,
-        toggleNotification
+        toggleNotification,
+        toggleStatistics
     } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: ADDITIONAL_DEFAULTS });
 
     const {
@@ -118,6 +119,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                 onConfigClick={handleBadgeClick}
                 savedConfigs={savedConfigs}
                 onToggleNotify={toggleNotification}
+                onToggleStats={toggleStatistics}
             />
         </div>
     );

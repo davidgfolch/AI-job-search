@@ -35,6 +35,10 @@ class StatisticsService:
         configs = self.filter_repo.find_all()
         results = []
         for config in configs:
+            # Only include if statistics flag is True (default to True for backward compatibility)
+            if not config.get('statistics', True):
+                continue
+
             filters = config.get('filters', {})
             where_clauses, params = self.jobs_repo.build_where(
                 search=filters.get('search'),

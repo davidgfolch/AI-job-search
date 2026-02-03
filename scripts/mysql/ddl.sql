@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS `filter_configurations` (
   KEY `name_index` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+ALTER TABLE filter_configurations ADD COLUMN statistics TINYINT(1) DEFAULT 1;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
