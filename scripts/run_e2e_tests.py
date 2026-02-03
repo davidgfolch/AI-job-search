@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from apps.commonlib.commonlib.mysqlUtil import getConnection
 
-DEBUG = False
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 DB_NAME_PREFIX = 'jobs_e2e'
 DDL_SCRIPT_PATH = 'scripts/mysql/ddl.sql'
 BACKEND_DIR = 'apps/backend'
@@ -114,8 +114,8 @@ def run_e2e_tests():
         backend_cmd,
         cwd=BACKEND_DIR,
         env=env,
-        stdout=subprocess.DEVNULL if DEBUG else subprocess.DEVNULL,
-        # stderr=subprocess.DEVNULL
+        stdout=None if DEBUG else subprocess.DEVNULL,
+        stderr=None if DEBUG else subprocess.DEVNULL,
     )
     test_passed = False
     try:
