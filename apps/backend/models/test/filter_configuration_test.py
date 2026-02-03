@@ -35,6 +35,7 @@ def test_filter_configuration():
         name="Test Filter",
         filters={"key": "value"},
         notify=True,
+        statistics=True,
         created=now
     )
     assert config.id == 1
@@ -51,6 +52,7 @@ def test_filter_configuration_with_modified():
         name="Test",
         filters={},
         notify=False,
+        statistics=True,
         created=now,
         modified=now
     )

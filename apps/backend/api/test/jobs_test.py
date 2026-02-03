@@ -168,3 +168,24 @@ def test_list_jobs_with_created_after(mock_db_session, client):
     if matched_call:
         params = matched_call[0][1]
         assert cutoff in params
+
+def test_count_jobs(client):
+    from main import app
+    from api.jobs import get_service
+    
+    # Mock the service
+    mock_service = MagicMock()
+    mock_service.count_jobs.return_value = 42
+    
+    app.dependency_overrides[get_service] = lambda: mock_service
+    
+    try:
+        response = client.get("/api/jobs/count?search=developer")
+        
+        assert response.status_code == 200
+        assert response.json() == {"total": 42}
+        mock_service.count_jobs.assert_called_once()
+        call_args = mock_service.count_jobs.call_args[1]
+        assert call_args['search'] == 'developer'
+    finally:
+        app.dependency_overrides = {}

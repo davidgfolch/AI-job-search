@@ -15,6 +15,14 @@ class JobsService:
         return self.repo.list_jobs(page, size, search, status, not_status,
             days_old, salary, order, boolean_filters, sql_filter, ids, created_after)
 
+    def count_jobs(self, search: Optional[str] = None,
+                    status: Optional[str] = None, not_status: Optional[str] = None,
+                    days_old: Optional[int] = None, salary: Optional[str] = None,
+                    boolean_filters: Dict[str, Optional[bool]] = None,
+                    sql_filter: Optional[str] = None, ids: Optional[List[int]] = None, created_after: Optional[str] = None) -> int:
+        return self.repo.count_jobs(search, status, not_status,
+            days_old, salary, boolean_filters, sql_filter, ids, created_after)
+
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:
         with self.repo.get_db() as db:
             row = self.repo.fetch_job_row(db, job_id)

@@ -59,7 +59,7 @@ def test_create_success(service, mock_repo):
     
     result = service.create('New Config', {}, False)
     assert result['id'] == 1
-    mock_repo.create.assert_called_once_with('New Config', {}, False)
+    mock_repo.create.assert_called_once_with('New Config', {}, False, True)
 
 def test_create_duplicate_name(service, mock_repo):
     """Test error when creating config with duplicate name"""

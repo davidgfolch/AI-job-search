@@ -24,8 +24,8 @@ describe('FilterConfigService', () => {
   describe('load', () => {
     it('should load configurations from backend API', async () => {
       const mockBackendConfigs = [
-        { id: 1, name: 'Config 1', filters: { page: 1 }, notify: false, created: '2024-01-01', modified: null },
-        { id: 2, name: 'Config 2', filters: { page: 2 }, notify: true, created: '2024-01-02', modified: null }
+        { id: 1, name: 'Config 1', filters: { page: 1 }, notify: false, statistics: true, created: '2024-01-01', modified: null },
+        { id: 2, name: 'Config 2', filters: { page: 2 }, notify: true, statistics: true, created: '2024-01-02', modified: null }
       ];
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(mockBackendConfigs);
       vi.mocked(persistenceApi.getValue).mockResolvedValue(null);
@@ -62,7 +62,7 @@ describe('FilterConfigService', () => {
 
     it('should migrate localStorage configs on first load', async () => {
       const backendConfigs = [
-        { id: 1, name: 'Backend Config', filters: { page: 1 }, notify: false, created: '2024-01-01', modified: null }
+        { id: 1, name: 'Backend Config', filters: { page: 1 }, notify: false, statistics: true, created: '2024-01-01', modified: null }
       ];
       const localStorageConfigs = [
         { name: 'Local Config', filters: { page: 2 }, notify: false }
@@ -71,7 +71,7 @@ describe('FilterConfigService', () => {
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
       vi.mocked(persistenceApi.getValue).mockResolvedValue(localStorageConfigs);
       vi.mocked(filterConfigsApi.create).mockResolvedValue({
-        id: 2, name: 'Local Config', filters: { page: 2 }, notify: false, created: '2024-01-01', modified: null
+        id: 2, name: 'Local Config', filters: { page: 2 }, notify: false, statistics: true, created: '2024-01-01', modified: null
       });
 
       await service.load(mockDefaults);
@@ -80,7 +80,8 @@ describe('FilterConfigService', () => {
       expect(filterConfigsApi.create).toHaveBeenCalledWith({
         name: 'Local Config',
         filters: { page: 2 },
-        notify: false
+        notify: false,
+        statistics: true
       });
     });
   });
@@ -91,7 +92,7 @@ describe('FilterConfigService', () => {
         { name: 'Config 1', filters: { page: 1 }, notify: false }
       ];
       const backendConfigs = [
-        { id: 1, name: 'Config 1', filters: { page: 1 }, notify: false, created: '2024-01-01', modified: null }
+        { id: 1, name: 'Config 1', filters: { page: 1 }, notify: false, statistics: true, created: '2024-01-01', modified: null }
       ];
 
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
@@ -107,12 +108,12 @@ describe('FilterConfigService', () => {
 
     it('should create new configs if they do not exist in backend', async () => {
       const configs: FilterConfig[] = [
-        { name: 'New Config', filters: { page: 3 }, notify: true }
+        { name: 'New Config', filters: { page: 3 }, notify: true, statistics: true }
       ];
 
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue([]);
       vi.mocked(filterConfigsApi.create).mockResolvedValue({
-        id: 1, name: 'New Config', filters: { page: 3 }, notify: true, created: '2024-01-01', modified: null
+        id: 1, name: 'New Config', filters: { page: 3 }, notify: true, statistics: true, created: '2024-01-01', modified: null
       });
 
       await service.save(configs);
@@ -120,14 +121,15 @@ describe('FilterConfigService', () => {
       expect(filterConfigsApi.create).toHaveBeenCalledWith({
         name: 'New Config',
         filters: { page: 3 },
-        notify: true
+        notify: true,
+        statistics: true
       });
     });
 
     it('should delete configs that are no longer in the list', async () => {
       const configs: FilterConfig[] = [];
       const backendConfigs = [
-        { id: 1, name: 'Old Config', filters: { page: 1 }, notify: false, created: '2024-01-01', modified: null }
+        { id: 1, name: 'Old Config', filters: { page: 1 }, notify: false, statistics: true, created: '2024-01-01', modified: null }
       ];
 
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);

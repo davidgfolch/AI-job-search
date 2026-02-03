@@ -95,6 +95,7 @@ export interface JobListParams {
   easy_apply?: boolean;
   sql_filter?: string;
   ids?: number[];
+  created_after?: string;
 }
 
 const handleRequest = async <T>(request: Promise<{ data: T }>, errorMessage: string): Promise<T> => {
@@ -110,6 +111,12 @@ export const jobsApi = {
   getJobs: async (params: JobListParams = {}): Promise<JobListResponse> => {
     return handleRequest(apiClient.get<JobListResponse>('/jobs', { params }),
       'Error loading jobs');
+  },
+
+  countJobs: async (params: JobListParams = {}): Promise<number> => {
+    const response = await handleRequest(apiClient.get<{ total: number }>('/jobs/count', { params }),
+      'Error counting jobs');
+    return response.total;
   },
 
   createJob: async (data: Partial<Job>): Promise<Job> => {

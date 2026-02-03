@@ -6,7 +6,7 @@ import { mockSavedConfigs, cleanupMocks } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
-        getJobs: vi.fn()
+        countJobs: vi.fn()
     }
 }));
 
@@ -29,7 +29,7 @@ describe('useFilterWatcher - Polling Logic', () => {
 
     it.skip('should poll periodically', async () => {
         vi.useFakeTimers();
-        (jobsApi.getJobs as any).mockResolvedValue({ total: 5, items: [] });
+        (jobsApi.countJobs as any).mockResolvedValue(5);
         
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
 
@@ -37,36 +37,36 @@ describe('useFilterWatcher - Polling Logic', () => {
             result.current.startWatching();
         });
 
-        expect(jobsApi.getJobs).toHaveBeenCalledTimes(2);
+        expect(jobsApi.countJobs).toHaveBeenCalledTimes(2);
 
         await act(async () => {
             vi.advanceTimersByTime(5 * 60 * 1000);
         });
 
-        expect(jobsApi.getJobs).toHaveBeenCalledTimes(4);
+        expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
     });
     
     it('should pass created_after parameter when checking new items', async () => {
          const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
          
-         (jobsApi.getJobs as any).mockResolvedValue({ total: 5, items: [] });
+         (jobsApi.countJobs as any).mockResolvedValue(5);
 
          act(() => {
              result.current.startWatching();
          });
 
          await waitFor(() => {
-             expect(jobsApi.getJobs).toHaveBeenCalled();
+             expect(jobsApi.countJobs).toHaveBeenCalled();
          });
          
-         const calls = (jobsApi.getJobs as any).mock.calls;
+         const calls = (jobsApi.countJobs as any).mock.calls;
          const newItemsCallParams = calls[1][0];
          expect(newItemsCallParams).toHaveProperty('created_after');
          expect(typeof newItemsCallParams.created_after).toBe('string');
     });
 
     it('should reset watcher for a config without triggering immediate check', async () => {
-         (jobsApi.getJobs as any).mockResolvedValue({ total: 10, items: [] });
+         (jobsApi.countJobs as any).mockResolvedValue(10);
          const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
 
          await act(async () => {
@@ -74,16 +74,16 @@ describe('useFilterWatcher - Polling Logic', () => {
          });
 
          await waitFor(() => {
-             expect(jobsApi.getJobs).toHaveBeenCalledTimes(4);
+             expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
          });
 
-         (jobsApi.getJobs as any).mockClear();
+         (jobsApi.countJobs as any).mockClear();
 
          act(() => {
              result.current.resetWatcher('Config 1');
          });
 
          expect(result.current.results['Config 1'].newItems).toBe(0);
-         expect(jobsApi.getJobs).not.toHaveBeenCalled();
+         expect(jobsApi.countJobs).not.toHaveBeenCalled();
     });
 });

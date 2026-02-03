@@ -6,7 +6,7 @@ import { mockSavedConfigs, cleanupMocks } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
-        getJobs: vi.fn()
+        countJobs: vi.fn()
     }
 }));
 
@@ -34,7 +34,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
     });
 
     it('should start watching and trigger immediate check', async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ total: 10, items: [] });
+        (jobsApi.countJobs as any).mockResolvedValue(10);
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
 
         act(() => {
@@ -44,7 +44,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
         expect(result.current.isWatching).toBe(true);
 
         await waitFor(() => {
-            expect(jobsApi.getJobs).toHaveBeenCalledTimes(4);
+            expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
         });
         
         expect(Object.keys(result.current.results)).toHaveLength(2);
@@ -60,7 +60,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
         });
         
         await waitFor(() => {
-            expect(jobsApi.getJobs).toHaveBeenCalled();
+            expect(jobsApi.countJobs).toHaveBeenCalled();
         });
 
         expect(result.current.isWatching).toBe(true);

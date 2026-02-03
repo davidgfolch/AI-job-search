@@ -20,6 +20,16 @@ class JobsRepository:
             items = self._fetch_jobs(db, where_str, params, order, size, offset)
         return { "items": items, "total": total, "page": page, "size": size }
 
+    def count_jobs(self, search: Optional[str] = None, status: Optional[str] = None,
+        not_status: Optional[str] = None, days_old: Optional[int] = None, salary: Optional[str] = None,
+        boolean_filters: Dict[str, Optional[bool]] = None,
+        sql_filter: Optional[str] = None, ids: Optional[List[int]] = None, created_after: Optional[str] = None) -> int:
+        where_clauses, params = build_jobs_where_clause(
+            search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after)
+        where_str = " AND ".join(where_clauses)
+        with self.get_db() as db:
+            return self._count_jobs(db, where_str, params)
+
     def build_where(self, search: Optional[str] = None, status: Optional[str] = None,
                     not_status: Optional[str] = None, days_old: Optional[int] = None, 
                     salary: Optional[str] = None, sql_filter: Optional[str] = None, 

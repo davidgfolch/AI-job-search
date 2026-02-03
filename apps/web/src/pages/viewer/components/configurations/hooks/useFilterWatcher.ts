@@ -53,22 +53,18 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                 const createdAfterIso = configStartTime.toISOString();
 
                 // Get total count
-                const totalResponse = await jobsApi.getJobs({ ...config.filters, page: 1, size: 1 });
+                const totalCount = await jobsApi.countJobs({ ...config.filters });
                 
                 // Get new items count
-                const newItemsResponse = await jobsApi.getJobs({ 
+                const newItemsCount = await jobsApi.countJobs({ 
                     ...config.filters, 
-                    page: 1, 
-                    size: 1,
-                    // casting to any because created_after is not yet defined in JobListParams interface
-                    // @ts-ignore
                     created_after: createdAfterIso 
                 });
 
-                if (isMounted.current && totalResponse && newItemsResponse) {
+                if (isMounted.current) {
                     newResults[config.name] = {
-                        total: totalResponse.total,
-                        newItems: newItemsResponse.total
+                        total: totalCount,
+                        newItems: newItemsCount
                     };
                 }
             } catch (error) {

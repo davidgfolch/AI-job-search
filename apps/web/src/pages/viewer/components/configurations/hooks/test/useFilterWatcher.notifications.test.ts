@@ -7,7 +7,7 @@ import { mockSavedConfigs, cleanupMocks } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
-        getJobs: vi.fn()
+        countJobs: vi.fn()
     }
 }));
 
@@ -23,7 +23,7 @@ describe('useFilterWatcher - Notifications', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         // Default mock implementation to prevent undefined errors
-        (jobsApi.getJobs as any).mockResolvedValue({ total: 0, items: [] });
+        (jobsApi.countJobs as any).mockResolvedValue(0);
     });
 
     afterEach(() => {
@@ -43,7 +43,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should trigger aggregated notification for enabled configs', async () => {
-         (jobsApi.getJobs as any).mockResolvedValue({ total: 5, items: [] });
+         (jobsApi.countJobs as any).mockResolvedValue(5);
          
          const config1 = { ...mockSavedConfigs[0], notify: true };
          const config2 = { ...mockSavedConfigs[1], notify: true };
@@ -55,7 +55,7 @@ describe('useFilterWatcher - Notifications', () => {
          });
 
          await waitFor(() => {
-             expect(jobsApi.getJobs).toHaveBeenCalledTimes(4);
+             expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
          });
 
          expect(notificationService.notify).toHaveBeenCalledWith(
@@ -73,7 +73,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should NOT trigger notification for disabled configs', async () => {
-         (jobsApi.getJobs as any).mockResolvedValue({ total: 5, items: [] });
+         (jobsApi.countJobs as any).mockResolvedValue(5);
          
          const config1 = { ...mockSavedConfigs[0], notify: false };
          
@@ -84,14 +84,14 @@ describe('useFilterWatcher - Notifications', () => {
          });
 
          await waitFor(() => {
-             expect(jobsApi.getJobs).toHaveBeenCalled();
+             expect(jobsApi.countJobs).toHaveBeenCalled();
          });
 
          expect(notificationService.notify).not.toHaveBeenCalled();
     });
 
     it('should NOT trigger notification if no new items found', async () => {
-         (jobsApi.getJobs as any).mockResolvedValue({ total: 0, items: [] });
+         (jobsApi.countJobs as any).mockResolvedValue(0);
          
          const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }));
 
@@ -100,7 +100,7 @@ describe('useFilterWatcher - Notifications', () => {
          });
 
          await waitFor(() => {
-             expect(jobsApi.getJobs).toHaveBeenCalled();
+             expect(jobsApi.countJobs).toHaveBeenCalled();
          });
 
          expect(notificationService.notify).not.toHaveBeenCalled();
