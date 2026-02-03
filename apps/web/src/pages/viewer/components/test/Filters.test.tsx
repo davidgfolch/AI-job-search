@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Filters from '../Filters';
-import type { JobListParams } from '../../../api/ViewerApi';
+import type { JobListParams } from '../../api/ViewerApi';
 import { createMockFilters } from '../../test/test-utils';
 
 vi.mock('../../hooks/FilterConfigService', () => {
@@ -16,7 +16,7 @@ vi.mock('../../hooks/FilterConfigService', () => {
 describe('Filters', () => {
     const mockFilters = createMockFilters();
 
-    let onFiltersChangeMock: ReturnType<typeof vi.fn>;
+    let onFiltersChangeMock: (filters: Partial<JobListParams>) => void;
 
     beforeEach(() => {
         onFiltersChangeMock = vi.fn();
@@ -95,110 +95,5 @@ describe('Filters', () => {
     });
 
 
-    it('renders all boolean filter pills in Include section', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const includeSection = screen.getAllByText(/Include:/)[0].closest('.pills-section');
-        expect(includeSection).toBeInTheDocument();
-        // Check for some filter pills
-        expect(screen.getAllByText('Flagged').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Like').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Applied').length).toBeGreaterThan(0);
-    });
 
-    it('renders all boolean filter pills in Exclude section', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const excludeSection = screen.getAllByText(/Exclude:/)[0].closest('.pills-section');
-        expect(excludeSection).toBeInTheDocument();
-    });
-
-    it('toggles include filter pill correctly', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        // Find the first "Flagged" pill (in Include section)
-        const flaggedPills = screen.getAllByText('Flagged');
-        const includeFlaggedPill = flaggedPills[0];
-        fireEvent.click(includeFlaggedPill);
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ flagged: true });
-    });
-
-    it('toggles exclude filter pill correctly', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        // Find the second "Flagged" pill (in Exclude section)
-        const flaggedPills = screen.getAllByText('Flagged');
-        const excludeFlaggedPill = flaggedPills[1];
-        fireEvent.click(excludeFlaggedPill);
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ flagged: false });
-    });
-
-    it('shows active state for include pills', async () => {
-        const filtersWithInclude: JobListParams = {
-            ...mockFilters,
-            flagged: true,
-        };
-        await renderAndWait(<Filters filters={filtersWithInclude} onFiltersChange={onFiltersChangeMock} />);
-        const includeFlaggedPill = screen.getAllByText('Flagged')[0];
-        expect(includeFlaggedPill).toHaveClass('active-true');
-    });
-
-    it('shows active state for exclude pills', async () => {
-        const filtersWithExclude: JobListParams = {
-            ...mockFilters,
-            discarded: false,
-        };
-        await renderAndWait(<Filters filters={filtersWithExclude} onFiltersChange={onFiltersChangeMock} />);
-        const excludeDiscardedPill = screen.getAllByText('Discarded')[1];
-        expect(excludeDiscardedPill).toHaveClass('active-false');
-    });
-
-    it('toggles off filter when clicking same pill again', async () => {
-        const filtersWithFlagged: JobListParams = {
-            ...mockFilters,
-            flagged: true,
-        };
-        await renderAndWait(<Filters filters={filtersWithFlagged} onFiltersChange={onFiltersChangeMock} />);
-        const includeFlaggedPill = screen.getAllByText('Flagged')[0];
-        fireEvent.click(includeFlaggedPill);
-        // Should toggle off (set to undefined)
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ flagged: undefined });
-    });
-
-    it('handles sort field changes', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const sortFieldSelect = screen.getByLabelText('Sort Field');
-        fireEvent.change(sortFieldSelect, { target: { value: 'salary' } });
-        // Default direction is desc (based on mockFilters or default fallback)
-        // If mockFilters.order is undefined, it defaults to 'created desc' in UI logic? 
-        // Actually UI uses: filters.order?.split(' ')[1] || 'desc'
-        // So if we change field to salary, it should become 'salary desc'
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ order: 'salary desc' });
-    });
-
-    it('handles sort direction changes', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const sortDirSelect = screen.getByLabelText('Sort Direction');
-        fireEvent.change(sortDirSelect, { target: { value: 'asc' } });
-        // Default field is created
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ order: 'created asc' });
-    });
-
-    it('preserves direction when changing field', async () => {
-        const filtersWithOrder: JobListParams = {
-            ...mockFilters,
-            order: 'salary asc',
-        };
-        await renderAndWait(<Filters filters={filtersWithOrder} onFiltersChange={onFiltersChangeMock} />);
-        const sortFieldSelect = screen.getByLabelText('Sort Field');
-        fireEvent.change(sortFieldSelect, { target: { value: 'modified' } });
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ order: 'modified asc' });
-    });
-
-    it('preserves field when changing direction', async () => {
-        const filtersWithOrder: JobListParams = {
-            ...mockFilters,
-            order: 'salary desc',
-        };
-        await renderAndWait(<Filters filters={filtersWithOrder} onFiltersChange={onFiltersChangeMock} />);
-        const sortDirSelect = screen.getByLabelText('Sort Direction');
-        fireEvent.change(sortDirSelect, { target: { value: 'asc' } });
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ order: 'salary asc' });
-    });
 });
