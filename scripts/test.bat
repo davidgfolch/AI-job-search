@@ -7,6 +7,8 @@ set coverage=0
 set idx=0
 set "target="
 
+set "app_args="
+
 for %%i in (%*) do (
     set /a idx+=1
     echo Arguments !idx!: %%i
@@ -15,12 +17,16 @@ for %%i in (%*) do (
         echo Coverage enabled
     ) else if exist "%%i" (
         set "target=%%i"
+    ) else (
+        set "app_args=!app_args! %%i"
     )
 )
 
 rem ──────────────────────  Execute tests  ─────────────────────
 if defined target (
-     call :run_test "%CD%\!target!"
+    if /i "!target!"=="apps\e2e" goto :run_e2e_specific
+    if /i "!target!"=="apps/e2e" goto :run_e2e_specific
+    call :run_test "%CD%\!target!"
 ) else (
     rem Execute commonlib tests first
     if exist "apps\commonlib" (
@@ -38,9 +44,9 @@ if defined target (
     
     if !tests_failed!==0 (
         echo.
-        echo ────────────────────────────────────────────────────────
+        echo --------------------------------------------------------
         echo Unit tests passed. Running E2E tests...
-        echo ────────────────────────────────────────────────────────
+        echo --------------------------------------------------------
         if exist "apps\backend\uv.lock" (
             uv run --project apps/backend python scripts/run_e2e_tests.py
         ) else (
@@ -56,6 +62,20 @@ if defined target (
 )
 
 endlocal
+exit /b
+
+
+:run_e2e_specific
+echo.
+echo --------------------------------------------------------
+echo Running E2E tests for apps/e2e...
+echo --------------------------------------------------------
+if exist "apps\backend\uv.lock" (
+    uv run --project apps/backend python scripts/run_e2e_tests.py !app_args!
+) else (
+    python scripts/run_e2e_tests.py !app_args!
+)
+if !errorlevel! neq 0 exit /b 1
 exit /b
 
 :run_test

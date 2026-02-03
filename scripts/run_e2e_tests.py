@@ -96,7 +96,7 @@ def wait_for_backend(port):
     print("Backend failed to start in time.")
     sys.exit(1)
 
-def run_e2e_tests():
+def run_e2e_tests(args):
     """Main orchestration function."""
     port = get_free_port()
     db_name = f"{DB_NAME_PREFIX}_{port}"
@@ -123,8 +123,16 @@ def run_e2e_tests():
         print("Running Playwright tests...")
         env['VITE_API_BASE_URL'] = f"http://localhost:{port}/api"
         npm_cmd = 'npm.cmd' if os.name == 'nt' else 'npm'
+        
+        # Pass additional arguments to npm test
+        # Note: npm test -- <args> passes args to the script
+        cmd = [npm_cmd, 'test']
+        if args:
+             cmd.append('--')
+             cmd.extend(args)
+             
         test_result = subprocess.run(
-            [npm_cmd, 'test'],
+            cmd,
             cwd=E2E_DIR,
             env=env
         )
@@ -148,4 +156,4 @@ def run_e2e_tests():
 
 
 if __name__ == "__main__":
-    run_e2e_tests()
+    run_e2e_tests(sys.argv[1:])
