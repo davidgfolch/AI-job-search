@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { FilterConfig } from './useFilterConfigurations';
 import { jobsApi } from '../../../api/ViewerApi';
+import { notificationService } from '../../../../../common/services/NotificationService';
 
 export interface WatcherResult {
     total: number;
@@ -19,6 +20,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
     const [startTime, setStartTime] = useState<Date | null>(null);
     const configStartTimes = useRef<Record<string, Date>>({});
+    const notifiedCountsRef = useRef<Record<string, number>>({});
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const savedConfigsRef = useRef(savedConfigs);
     const isMounted = useRef(true);
@@ -40,6 +42,8 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         const newResults: Record<string, WatcherResult> = {};
         
         const configsToCheck = savedConfigsRef.current;
+        const notificationAggregator: string[] = [];
+        let totalNewJobs = 0;
 
         for (const config of configsToCheck) {
             try {
@@ -75,16 +79,42 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         if (isMounted.current) {
             setResults(newResults);
             setLastCheckTime(new Date());
+            // Check for notifications
+            Object.entries(newResults).forEach(([name, result]) => {
+                const prevCount = notifiedCountsRef.current[name] || 0;
+                
+                // If we found more items than before
+                if (result.newItems > prevCount) {
+                    // Update the tracker
+                    notifiedCountsRef.current[name] = result.newItems;
+
+                    // Check if this config has notifications enabled
+                    const config = configsToCheck.find(c => c.name === name);
+                    if (config && config.notify) {
+                        notificationAggregator.push(`${name} (${result.newItems})`);
+                        totalNewJobs += result.newItems;
+                    }
+                }
+            });
+
+            if (notificationAggregator.length > 0) {
+                 const summary = notificationAggregator.join(', ');
+                 notificationService.notify(`New jobs found`, {
+                     body: summary,
+                 });
+            }
         }
     }, [startTime]);
 
     const startWatching = () => {
+        notificationService.requestPermission();
         setIsWatching(true);
         const now = new Date();
         setStartTime(now);
         setLastCheckTime(now);
         setResults({});
         configStartTimes.current = {}; // Reset all individual times
+        notifiedCountsRef.current = {};
     };
 
     const stopWatching = () => {
@@ -92,6 +122,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         setStartTime(null);
         setLastCheckTime(null);
         configStartTimes.current = {};
+        notifiedCountsRef.current = {};
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -101,6 +132,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     const resetWatcher = (configName: string) => {
         const now = new Date();
         configStartTimes.current[configName] = now;
+        notifiedCountsRef.current[configName] = 0;
         
         // Optimistically reset count to 0 for this config in results
         setResults(prev => {

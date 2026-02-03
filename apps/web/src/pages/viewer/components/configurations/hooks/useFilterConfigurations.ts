@@ -10,6 +10,7 @@ import { useConfigOperations } from './useConfigOperations';
 export interface FilterConfig {
     name: string;
     filters: JobListParams;
+    notify?: boolean;
 }
 
 interface UseFilterConfigurationsProps {
@@ -69,6 +70,25 @@ export function useFilterConfigurations({
         confirmModal,
     });
 
+    const toggleNotification = useCallback(async (name: string) => {
+        const configIndex = savedConfigs.findIndex(c => c.name === name);
+        if (configIndex === -1) return;
+
+        const updatedConfigs = [...savedConfigs];
+        updatedConfigs[configIndex] = {
+            ...updatedConfigs[configIndex],
+            notify: !updatedConfigs[configIndex].notify
+        };
+
+        try {
+            await service.save(updatedConfigs);
+            setSavedConfigs(updatedConfigs);
+        } catch (e) {
+            console.error('Failed to save configuration', e);
+            notify('Failed to update notification setting', 'error');
+        }
+    }, [savedConfigs, service, notify]);
+
     const dropdown = useFilterDropdown({
         configs: savedConfigs,
         configName,
@@ -105,5 +125,6 @@ export function useFilterConfigurations({
             close: confirmModal.close,
         },
         savedConfigs,
+        toggleNotification,
     };
 }

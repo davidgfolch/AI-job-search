@@ -1,10 +1,9 @@
+import './FilterConfigurations.css';
 import type { JobListParams } from '../api/ViewerApi';
 import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import ConfirmModal from '../../common/components/core/ConfirmModal';
-import './FilterConfigurations.css';
-
 import { useFilterWatcher } from './configurations/hooks/useFilterWatcher';
 import { FilterConfigurationsWatcher } from './configurations/FilterConfigurationsWatcher';
 
@@ -46,7 +45,8 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         handleBlur,
         exportToDefaults,
         setHighlightIndex,
-        confirmModal
+        confirmModal,
+        toggleNotification
     } = useFilterConfigurations({ currentFilters, onLoadConfig, onMessage, additionalDefaults: ADDITIONAL_DEFAULTS });
 
     const {
@@ -102,22 +102,22 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                     onWatch={toggleWatch}
                     isWatching={isWatching}
                 />
-                {!isWatching && (
-                    <ConfigurationDropdown
-                        isOpen={isOpen}
-                        filteredConfigs={filteredConfigs}
-                        highlightIndex={highlightIndex}
-                        onLoad={handleLoadWithReset}
-                        onDelete={deleteConfiguration}
-                        setHighlightIndex={setHighlightIndex}
-                    />
-                )}
+                <ConfigurationDropdown
+                    isOpen={isOpen}
+                    filteredConfigs={filteredConfigs}
+                    highlightIndex={highlightIndex}
+                    onLoad={handleLoadWithReset}
+                    onDelete={deleteConfiguration}
+                    setHighlightIndex={setHighlightIndex}
+                />
             </div>
             <FilterConfigurationsWatcher 
                 isWatching={isWatching}
                 results={watcherResults}
                 lastCheckTime={lastCheckTime}
                 onConfigClick={handleBadgeClick}
+                savedConfigs={savedConfigs}
+                onToggleNotify={toggleNotification}
             />
         </div>
     );
