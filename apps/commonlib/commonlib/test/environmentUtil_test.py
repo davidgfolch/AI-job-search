@@ -14,8 +14,9 @@ import commonlib.environmentUtil as envUtil
 class TestEnvironmentUtil:
 
     def test_getEnvModified_exists(self):
-        with patch('commonlib.environmentUtil.os.stat') as mock_stat:
-            mock_stat.return_value.st_ctime = 12345.0
+        with patch('commonlib.environmentUtil.ENV_PATH') as mock_path:
+            mock_path.exists.return_value = True
+            mock_path.stat.return_value.st_ctime = 12345.0
             assert getEnvModified() == 12345.0
             
     def test_getEnvModified_not_exists(self):
