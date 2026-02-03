@@ -17,6 +17,8 @@ for %%i in (%*) do (
         echo Coverage enabled
     ) else if exist "%%i" (
         set "target=%%i"
+    ) else if exist "apps\%%i" (
+        set "target=apps\%%i"
     ) else (
         set "app_args=!app_args! %%i"
     )

@@ -12,6 +12,8 @@ for arg in "$@"; do
         echo "Coverage enabled"
     elif [ -d "$arg" ]; then
         target="$arg"
+    elif [ -d "apps/$arg" ]; then
+        target="apps/$arg"
     else
         app_args="$app_args $arg"
     fi

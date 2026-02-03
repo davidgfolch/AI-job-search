@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from apps.commonlib.commonlib.mysqlUtil import getConnection
 
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEBUG = False
 DB_NAME_PREFIX = 'jobs_e2e'
 DDL_SCRIPT_PATH = 'scripts/mysql/ddl.sql'
 BACKEND_DIR = 'apps/backend'
@@ -131,14 +131,46 @@ def run_e2e_tests(args):
              cmd.append('--')
              cmd.extend(args)
              
-        test_result = subprocess.run(
+        process = subprocess.Popen(
             cmd,
             cwd=E2E_DIR,
-            env=env
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace'
         )
-        if test_result.returncode != 0:
+
+        # specific strings to suppress when DEBUG is False
+        suppress_strings = [
+            "PAGE LOG",
+            "MOCKING REQUEST",
+            "MOCKING JOB LIST",
+            "MOCKING SINGLE JOB", 
+            "UNHANDLED REQUEST",
+            "PAGE ERROR",
+            "REQUEST FAILED"
+        ]
+
+        prev_line_was_empty = False
+        for line in process.stdout:
+            if not DEBUG:
+                if any(s in line for s in suppress_strings):
+                    continue
+                
+                is_empty = line.strip() == ""
+                if is_empty and prev_line_was_empty:
+                    continue
+                prev_line_was_empty = is_empty
+
+            print(line, end='')
+
+        process.wait()
+
+        if process.returncode != 0:
             print("Tests failed!")
-            sys.exit(test_result.returncode)
+            sys.exit(process.returncode)
         else:
             print("Tests passed!")
             test_passed = True
