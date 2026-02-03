@@ -22,20 +22,24 @@ vi.mock('../../../../../../common/services/NotificationService', () => ({
 describe('useFilterWatcher - Notifications', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        // Default mock implementation to prevent undefined errors
+        (jobsApi.getJobs as any).mockResolvedValue({ total: 0, items: [] });
     });
 
     afterEach(() => {
         cleanupMocks();
     });
 
-    it('should request notification permission when starting watch', () => {
+    it('should request notification permission when starting watch', async () => {
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
         
         act(() => {
             result.current.startWatching();
         });
 
-        expect(notificationService.requestPermission).toHaveBeenCalled();
+        await waitFor(() => {
+            expect(notificationService.requestPermission).toHaveBeenCalled();
+        });
     });
 
     it('should trigger aggregated notification for enabled configs', async () => {

@@ -65,7 +65,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                     created_after: createdAfterIso 
                 });
 
-                if (isMounted.current) {
+                if (isMounted.current && totalResponse && newItemsResponse) {
                     newResults[config.name] = {
                         total: totalResponse.total,
                         newItems: newItemsResponse.total
