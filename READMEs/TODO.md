@@ -1,5 +1,20 @@
 # TODO
 
+## try claude with ollama run qwen3-coder-next
+
+Didn't install required ollama pre-resease.
+
+[ollama linkedin post](https://www.linkedin.com/posts/ollama_ollama-run-qwen3-coder-next-qwen3-coder-next-activity-7424756919287902208-qDd0?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAZZizwBuntXrHiItXZY-quYzSMB_DQy5oM)
+
+```bash
+ollama run qwen3-coder-next
+ollama launch claude --config 
+# docker sandbox run claude ~/projects/AI-job-search/
+```
+
+## try claude with ommana 
+[claude ollama](https://www.linkedin.com/posts/uttammgupta-aisolutionsexpert_claude-code-ai-share-7424786356650045440-kxRX?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAZZizwBuntXrHiItXZY-quYzSMB_DQy5oM)
+
 ## cross module tasks
 
 - move scrapper debug to commonlib
