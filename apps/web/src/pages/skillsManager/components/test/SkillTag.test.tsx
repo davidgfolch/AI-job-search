@@ -80,4 +80,45 @@ describe('SkillTag', () => {
     expect(onViewDetail).toHaveBeenCalledWith('Rust');
     expect(onToggle).not.toHaveBeenCalled();
   });
+
+  it('displays description card on hover when provided', async () => {
+    const onToggle = vi.fn();
+    const onViewDetail = vi.fn();
+    render(
+      <SkillTag 
+        skill="Rust" 
+        description="A systems programming language"
+        isInLearnList={true} 
+        onToggle={onToggle} 
+        onViewDetail={onViewDetail} 
+      />
+    );
+    
+    const button = screen.getByLabelText('View skill details');
+    fireEvent.mouseEnter(button);
+    
+    expect(await screen.findByText('A systems programming language')).toBeInTheDocument();
+    
+    fireEvent.mouseLeave(button);
+    // Since it's in a portal, we might need to wait for removal or use queryByText
+    await vi.waitFor(() => {
+        expect(screen.queryByText('A systems programming language')).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not display default title on button', () => {
+    const onToggle = vi.fn();
+    const onViewDetail = vi.fn();
+    render(
+      <SkillTag 
+        skill="Rust" 
+        isInLearnList={true} 
+        onToggle={onToggle} 
+        onViewDetail={onViewDetail} 
+      />
+    );
+    
+    const button = screen.getByLabelText('View skill details');
+    expect(button).not.toHaveAttribute('title');
+  });
 });

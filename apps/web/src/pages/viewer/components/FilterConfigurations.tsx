@@ -4,6 +4,7 @@ import type { JobListParams } from '../api/ViewerApi';
 import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
+import { PinnedConfigurations } from './configurations/PinnedConfigurations';
 import ConfirmModal from '../../common/components/core/ConfirmModal';
 
 const CLEAN_OLD_JOBS_CONFIG = {
@@ -46,10 +47,12 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         confirmModal,
         toggleNotification,
         toggleStatistics,
+        togglePin,
         isWatching,
         watcherResults,
         lastCheckTime,
-        toggleWatch
+        toggleWatch,
+        savedConfigs
     } = useFilterConfigurations({ 
         currentFilters, 
         onLoadConfig, 
@@ -57,41 +60,52 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         additionalDefaults: ADDITIONAL_DEFAULTS 
     });
 
+    const pinnedConfigs = savedConfigs.filter(c => c.pinned);
+
     return (
-        <div className="filter-configurations">
+        <div className="filter-configurations-wrapper">
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
                 message={confirmModal.message}
                 onConfirm={confirmModal.onConfirm}
                 onCancel={confirmModal.close}
             />
-            <label htmlFor="filter-config-input">Filter Configurations:</label>
-            <div className="config-controls" ref={wrapperRef}>
-                <ConfigurationInput
-                    configName={configName}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDown}
-                    onFocus={handleFocus}
-                    onClick={handleFocus}
-                    onBlur={handleBlur}
-                    onSave={saveConfiguration}
-                    onExport={exportToDefaults}
-                    onWatch={toggleWatch}
-                    isWatching={isWatching}
-                />
-                <ConfigurationDropdown
-                    isOpen={isOpen}
-                    filteredConfigs={filteredConfigs}
-                    highlightIndex={highlightIndex}
-                    onLoad={loadConfiguration}
-                    onDelete={deleteConfiguration}
-                    setHighlightIndex={setHighlightIndex}
-                    onToggleNotify={toggleNotification}
-                    onToggleStats={toggleStatistics}
-                    results={watcherResults}
-                    lastCheckTime={lastCheckTime}
-                />
+            <div className="filter-configurations">
+                <label htmlFor="filter-config-input">Filter Configurations:</label>
+                <div className="config-controls" ref={wrapperRef}>
+                    <ConfigurationInput
+                        configName={configName}
+                        onChange={handleChange}
+                        onKeyDown={handleKeyDown}
+                        onFocus={handleFocus}
+                        onClick={handleFocus}
+                        onBlur={handleBlur}
+                        onSave={saveConfiguration}
+                        onExport={exportToDefaults}
+                        onWatch={toggleWatch}
+                        isWatching={isWatching}
+                    />
+                    <ConfigurationDropdown
+                        isOpen={isOpen}
+                        filteredConfigs={filteredConfigs}
+                        highlightIndex={highlightIndex}
+                        onLoad={loadConfiguration}
+                        onDelete={deleteConfiguration}
+                        setHighlightIndex={setHighlightIndex}
+                        onToggleNotify={toggleNotification}
+                        onToggleStats={toggleStatistics}
+                        onTogglePin={togglePin}
+                        results={watcherResults}
+                        lastCheckTime={lastCheckTime}
+                    />
+                </div>
             </div>
+            <PinnedConfigurations
+                pinnedConfigs={pinnedConfigs}
+                onLoad={loadConfiguration}
+                onUnpin={togglePin}
+                results={watcherResults}
+            />
         </div>
     );
 }

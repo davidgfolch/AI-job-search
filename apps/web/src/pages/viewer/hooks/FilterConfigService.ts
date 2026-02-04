@@ -16,7 +16,8 @@ export class FilterConfigService {
         name: bc.name,
         filters: bc.filters,
         notify: bc.notify,
-        statistics: bc.statistics
+        statistics: bc.statistics,
+        pinned: bc.pinned
       }));
       return this.mergeDefaults(configs, defaults);
     } catch (error) {
@@ -29,6 +30,10 @@ export class FilterConfigService {
 
   async updateStatistics(id: number, statistics: boolean): Promise<void> {
     await filterConfigsApi.update(id, { statistics });
+  }
+
+  async updatePinned(id: number, pinned: boolean): Promise<void> {
+    await filterConfigsApi.update(id, { pinned });
   }
 
   async save(configs: FilterConfig[]): Promise<void> {
@@ -45,7 +50,8 @@ export class FilterConfigService {
           await filterConfigsApi.update(existing.id, {
             filters: config.filters,
             notify: config.notify,
-            statistics: config.statistics
+            statistics: config.statistics,
+            pinned: config.pinned
           });
         } else {
           // Create new
@@ -53,7 +59,8 @@ export class FilterConfigService {
             name: config.name,
             filters: config.filters,
             notify: config.notify,
-            statistics: config.statistics
+            statistics: config.statistics,
+            pinned: config.pinned
           });
         }
       }
@@ -80,7 +87,8 @@ export class FilterConfigService {
         name: bc.name,
         filters: bc.filters,
         notify: bc.notify,
-        statistics: bc.statistics
+        statistics: bc.statistics,
+        pinned: bc.pinned
       }));
     } catch (error) {
       console.error('Failed to export filter configurations:', error);
@@ -112,7 +120,8 @@ export class FilterConfigService {
             name: config.name,
             filters: config.filters,
             notify: config.notify || false,
-            statistics: config.statistics || true
+            statistics: config.statistics || true,
+            pinned: config.pinned || false
           });
         }
       }

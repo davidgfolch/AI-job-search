@@ -78,15 +78,19 @@ export default function SkillsList({ skills, allJobSkills }: SkillsListProps) {
 
     return (
         <>
-            {parsedSkills.map((skill) => (
-                <SkillTag
-                    key={skill}
-                    skill={skill}
-                    isInLearnList={isInLearnList(skill)}
-                    onToggle={toggleSkill}
-                    onViewDetail={handleViewDetail}
-                />
-            ))}
+            {parsedSkills.map((skill) => {
+                const skillObj = skillExists(skill);
+                return (
+                    <SkillTag
+                        key={skill}
+                        skill={skill}
+                        description={skillObj?.description}
+                        isInLearnList={isInLearnList(skill)}
+                        onToggle={toggleSkill}
+                        onViewDetail={handleViewDetail}
+                    />
+                );
+            })}
             {editingSkill && (
                 <EditSkillModal
                     skill={editingSkill}

@@ -11,6 +11,7 @@ interface ConfigurationDropdownProps {
     setHighlightIndex: (index: number) => void;
     onToggleNotify: (name: string) => void;
     onToggleStats: (name: string) => void;
+    onTogglePin: (name: string) => void;
     results?: Record<string, WatcherResult>;
     lastCheckTime?: Date | null;
 }
@@ -24,6 +25,7 @@ export function ConfigurationDropdown({
     setHighlightIndex,
     onToggleNotify,
     onToggleStats,
+    onTogglePin,
     results = {},
     lastCheckTime
 }: ConfigurationDropdownProps) {
@@ -52,6 +54,17 @@ export function ConfigurationDropdown({
                         {config.name}
                         {hasNew && <span className="watcher-badge-inline">+{result.newItems}</span>}
                     </span>
+                    <button
+                        className={`config-toggle-btn ${config.pinned ? 'enabled' : 'disabled'}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onTogglePin(config.name);
+                        }}
+                        title={config.pinned ? "Unpin configuration" : "Pin configuration"}
+                        onMouseDown={(e) => e.stopPropagation()}
+                    >
+                        📌
+                    </button>
                     <button
                         className={`config-toggle-btn ${config.statistics !== false ? 'enabled' : 'disabled'}`}
                         onClick={(e) => {

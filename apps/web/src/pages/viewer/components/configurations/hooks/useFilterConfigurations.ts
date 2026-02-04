@@ -7,6 +7,7 @@ import { useConfirmationModal } from './useConfirmationModal';
 import { useConfigDropdownState } from './useConfigDropdownState';
 import { useConfigOperations } from './useConfigOperations';
 import { useFilterWatcher, type WatcherResult } from './useFilterWatcher';
+import { useConfigToggles } from './useConfigToggles';
 
 export interface FilterConfig {
     id?: number;
@@ -14,6 +15,7 @@ export interface FilterConfig {
     filters: JobListParams;
     notify?: boolean;
     statistics?: boolean;
+    pinned?: boolean;
 }
 
 interface UseFilterConfigurationsProps {
@@ -91,6 +93,7 @@ export function useFilterConfigurations({
     });
 
     // Intercept loadConfiguration to reset watcher
+    // Intercept loadConfiguration to reset watcher
     const handleLoadConfiguration = useCallback((config: FilterConfig) => {
         operations.loadConfiguration(config);
         if (isWatching) {
@@ -98,56 +101,16 @@ export function useFilterConfigurations({
         }
     }, [operations.loadConfiguration, isWatching, resetWatcher]);
 
-    const toggleNotification = useCallback(async (name: string) => {
-        const configIndex = savedConfigs.findIndex(c => c.name === name);
-        if (configIndex === -1) return;
-
-        const updatedConfigs = [...savedConfigs];
-        updatedConfigs[configIndex] = {
-            ...updatedConfigs[configIndex],
-            notify: !updatedConfigs[configIndex].notify
-        };
-
-        try {
-            await service.save(updatedConfigs);
-            setSavedConfigs(updatedConfigs);
-        } catch (e) {
-            console.error('Failed to save configuration', e);
-            notify('Failed to update notification setting', 'error');
-        }
-    }, [savedConfigs, service, notify]);
-
-    const toggleStatistics = useCallback(async (name: string) => {
-        const configIndex = savedConfigs.findIndex(c => c.name === name);
-        if (configIndex === -1) return;
-
-        const config = savedConfigs[configIndex];
-        const newStatsValue = !config.statistics;
-
-        const updatedConfigs = [...savedConfigs];
-        updatedConfigs[configIndex] = {
-            ...config,
-            statistics: newStatsValue
-        };
-        
-        // Optimistic update
-        setSavedConfigs(updatedConfigs);
-
-        try {
-            if (config.id !== undefined) {
-                await service.updateStatistics(config.id, newStatsValue);
-            } else {
-                // Fallback for configs without ID (should be rare/impossible for backend configs)
-                await service.save(updatedConfigs);
-            }
-        } catch (e) {
-            console.error('Failed to save configuration', e);
-            notify('Failed to update statistics setting', 'error');
-            // Revert on failure
-            updatedConfigs[configIndex] = config;
-            setSavedConfigs([...updatedConfigs]);
-        }
-    }, [savedConfigs, service, notify]);
+    const {
+        toggleNotification,
+        toggleStatistics,
+        togglePin
+    } = useConfigToggles({
+        savedConfigs,
+        setSavedConfigs,
+        service,
+        notify
+    });
 
     const dropdown = useFilterDropdown({
         configs: savedConfigs,
@@ -188,6 +151,7 @@ export function useFilterConfigurations({
         savedConfigs,
         toggleNotification,
         toggleStatistics,
+        togglePin,
         isWatching,
         watcherResults,
         lastCheckTime,

@@ -88,7 +88,7 @@ describe('FilterConfigurations Interactions', () => {
         fireEvent.focus(input);
         
         const items = await screen.findAllByRole('listitem');
-        const names = items.map(i => i.textContent?.replace(/[\+\d+\📈📉🔔🔕×]/g, '').trim());
+        const names = items.map(i => i.textContent?.replace(/[\+\d+\📈📉🔔🔕📌×]/g, '').trim());
         expect(names).toEqual(['A', 'Z']);
     });
 
@@ -145,5 +145,26 @@ describe('FilterConfigurations Interactions', () => {
         await waitFor(() => {
             expect(input.value).toBe('');
         });
+    });
+
+    it('keeps pinned configurations visible even when filter does not match', async () => {
+        const configs = [{ name: 'PinnedJava', filters: mockFilters, pinned: true }];
+        const { input } = await setup(configs, {}, isLoadedRef);
+        
+        fireEvent.focus(input);
+        // Initially visible in pinned section
+        expect(screen.getByText('PinnedJava', { selector: '.pinned-config-name' })).toBeInTheDocument();
+        
+        // Filter for something else
+        fireEvent.change(input, { target: { value: 'Python' } });
+        
+        // Should still be visible in pinned section
+        await waitFor(() => {
+             expect(screen.getByText('PinnedJava', { selector: '.pinned-config-name' })).toBeInTheDocument();
+        });
+        
+        // Verify it is NOT in the dropdown list (which is filtered)
+        //Dropdown items use .config-name
+        expect(screen.queryByText('PinnedJava', { selector: '.config-name' })).not.toBeInTheDocument();
     });
 });

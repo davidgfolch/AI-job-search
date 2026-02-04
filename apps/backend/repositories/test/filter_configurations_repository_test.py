@@ -23,14 +23,16 @@ def test_find_all(repo_with_mock):
     
     # Mock the fetchAll to return rows
     mock_db.fetchAll.return_value = [
-        (1, 'Config 1', '{"page": 1}', 1, 1, '2024-01-01', None),
-        (2, 'Config 2', '{"page": 2}', 0, 1, '2024-01-02', None)
+        (1, 'Config 1', '{"page": 1}', 1, 1, 0, '2024-01-01', None),
+        (2, 'Config 2', '{"page": 2}', 0, 1, 1, '2024-01-02', None)
     ]
     
     result = repo.find_all()
     
     assert len(result) == 2
     assert result[0]['name'] == 'Config 1'
+    assert result[0]['pinned'] == 0
+    assert result[1]['pinned'] == 1
     assert result[0]['filters'] == {'page': 1}
 
 def test_find_all_empty(repo_with_mock):
@@ -46,13 +48,14 @@ def test_find_by_id(repo_with_mock):
     """Test finding configuration by ID"""
     repo, mock_db = repo_with_mock
     
-    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, 1, '2024-01-01', None)
     
     result = repo.find_by_id(1)
     
     assert result is not None
     assert result['id'] == 1
     assert result['name'] == 'Test'
+    assert result['pinned'] == 1
 
 def test_find_by_id_not_found(repo_with_mock):
     """Test finding non-existent configuration"""
@@ -67,7 +70,7 @@ def test_find_by_name(repo_with_mock):
     """Test finding configuration by name"""
     repo, mock_db = repo_with_mock
     
-    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, 0, '2024-01-01', None)
     
     result = repo.find_by_name('Test')
     
@@ -81,16 +84,19 @@ def test_create(repo_with_mock):
     # Mock the last insert ID
     mock_db.fetchOne.return_value = (123,)
     
-    result = repo.create('New Config', {'page': 1}, True)
+    result = repo.create('New Config', {'page': 1}, True, True, True)
     
     assert result == 123
     mock_db.executeAndCommit.assert_called_once()
+    # Check parameters
+    args = mock_db.executeAndCommit.call_args[0]
+    assert args[1][4] is True # pinned
 
 def test_update(repo_with_mock):
     """Test updating configuration"""
     repo, mock_db = repo_with_mock
     
-    result = repo.update(1, name='Updated', filters={'page': 2}, notify=True)
+    result = repo.update(1, name='Updated', filters={'page': 2}, notify=True, pinned=True)
     
     assert result is True
     mock_db.executeAndCommit.assert_called_once()
