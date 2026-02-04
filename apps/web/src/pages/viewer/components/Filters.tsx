@@ -46,11 +46,10 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                             }
                         }}
                         onMessage={onMessage}
+                        isExpanded={isExpanded}
+                        onToggleExpand={() => setIsExpanded(!isExpanded)}
+                        hasActiveFilters={hasActiveFilters}
                     />
-                    <button className={`toggle-button ${hasActiveFilters ? 'has-active' : ''}`}
-                        onClick={() => setIsExpanded(!isExpanded)}>
-                        Filters {hasActiveFilters && <span className="color-green">●</span>} {isExpanded ? '▼' : '▶'}
-                    </button>
                 </div>
 
                 {isExpanded && (

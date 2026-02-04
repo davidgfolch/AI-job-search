@@ -15,30 +15,7 @@
     padding: 0.75rem 1rem;
 }
 
-.color-green {
-    color: #10b981;
-}
 
-.toggle-button {
-    flex: 1;
-    padding: 0.5rem 1rem;
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.toggle-button:hover {
-    background: var(--bg-hover);
-}
-
-.toggle-button.has-active {
-    color: var(--primary-color);
-}
 
 .filters-content {
     padding: 1rem;

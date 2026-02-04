@@ -24,11 +24,14 @@ interface FilterConfigurationsProps {
     currentFilters: JobListParams;
     onLoadConfig: (filters: JobListParams, name: string) => void;
     onMessage?: (message: string, type: 'success' | 'error') => void;
+    isExpanded: boolean;
+    onToggleExpand: () => void;
+    hasActiveFilters: boolean;
 }
 
 const ADDITIONAL_DEFAULTS = [CLEAN_OLD_JOBS_CONFIG];
 
-export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage }: FilterConfigurationsProps) {
+export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters }: FilterConfigurationsProps) {
     const {
         configName,
         isOpen,
@@ -85,6 +88,12 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                         onWatch={toggleWatch}
                         isWatching={isWatching}
                     />
+                    <button className={`toggle-button ${hasActiveFilters ? 'has-active' : ''}`}
+                        onClick={onToggleExpand}
+                        title={isExpanded ? "Collapse filters" : "Expand filters"}
+                    >
+                        Filters {hasActiveFilters && <span className="color-green">●</span>} {isExpanded ? '▼' : '▶'}
+                    </button>
                     <ConfigurationDropdown
                         isOpen={isOpen}
                         filteredConfigs={filteredConfigs}

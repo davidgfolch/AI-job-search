@@ -223,6 +223,31 @@
     transition: color 0.2s;
 }
 
-.pinned-config-unpin:hover {
-    color: #ef4444;
+
+.toggle-button {
+    padding: 0.4rem 0.8rem;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+.toggle-button:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-color);
+}
+
+.toggle-button.has-active {
+    color: var(--primary-color);
+}
+
+.toggle-button .color-green {
+    color: #10b981;
 }

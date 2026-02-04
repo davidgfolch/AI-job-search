@@ -59,6 +59,9 @@ export async function setup(
             currentFilters={curFilters} 
             onLoadConfig={onLoad} 
             onMessage={onMsg} 
+            isExpanded={true}
+            onToggleExpand={vi.fn()}
+            hasActiveFilters={false}
         />
     );
     
