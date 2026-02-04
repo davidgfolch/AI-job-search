@@ -1,8 +1,10 @@
+import pytest
 from unittest.mock import patch, MagicMock
-from commonlib.dateUtil import getDatetimeNow, getTimeUnits
+from commonlib.dateUtil import getDatetimeNow, getTimeUnits, getSeconds
+
 
 class TestTimeFunctions:
-    @patch('commonlib.dateUtil.datetime')
+    @patch("commonlib.dateUtil.datetime")
     def test_get_datetime_now(self, mock_datetime):
         mock_now = MagicMock()
         mock_now.timestamp.return_value = 1234567890
@@ -10,23 +12,23 @@ class TestTimeFunctions:
         result = getDatetimeNow()
         assert result == 1234567890
 
-    def test_get_time_units_seconds(self):
-        result = getTimeUnits(65)
-        assert result == '1m 5s'
+    @pytest.mark.parametrize(
+        "seconds,expected", [(65, "1m 5s"), (3665, "1h 1m 5s"), (0, "0s")]
+    )
+    def test_get_time_units(self, seconds, expected):
+        result = getTimeUnits(seconds)
+        assert result == expected
 
-    def test_get_time_units_hours(self):
-        result = getTimeUnits(3665)
-        assert result == '1h 1m 5s'
-
-    def test_get_time_units_zero(self):
-        result = getTimeUnits(0)
-        assert result == '0s'
-
-    def test_get_seconds(self):
-        from commonlib.dateUtil import getSeconds
-        assert getSeconds("30s") == 30
-        assert getSeconds("2m") == 120
-        assert getSeconds("1h") == 3600
-        assert getSeconds("1h 30m") == 5400
-        assert getSeconds("1h 1m 1s") == 3661
-        assert getSeconds("   1h   30m   ") == 5400
+    @pytest.mark.parametrize(
+        "time_str,expected_seconds",
+        [
+            ("30s", 30),
+            ("2m", 120),
+            ("1h", 3600),
+            ("1h 30m", 5400),
+            ("1h 1m 1s", 3661),
+            ("   1h   30m   ", 5400),
+        ],
+    )
+    def test_get_seconds(self, time_str, expected_seconds):
+        assert getSeconds(time_str) == expected_seconds

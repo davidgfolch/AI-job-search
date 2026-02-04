@@ -22,12 +22,13 @@ describe('NotificationService', () => {
         expect(MockNotification.requestPermission).toHaveBeenCalled();
     });
 
-    it('should check permission correctly', () => {
-        MockNotification.permission = 'granted';
-        expect(notificationService.hasPermission()).toBe(true);
-
-        MockNotification.permission = 'denied';
-        expect(notificationService.hasPermission()).toBe(false);
+it.each([
+        ['granted', true],
+        ['denied', false],
+        ['default', false]
+    ])('should check permission correctly for %s', (permission, expected) => {
+        MockNotification.permission = permission;
+        expect(notificationService.hasPermission()).toBe(expected);
     });
 
     it('should send notification if permission granted', () => {
