@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useJobsData } from './useJobsData';
 import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
-import { useJobUpdates } from './useJobUpdates';
 import type { Job } from '../api/ViewerApi';
 
 export type { TabType };
@@ -16,19 +15,7 @@ export const useViewer = () => {
         selectedJob, setSelectedJob, selectedIds, setSelectedIds,
         selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext
     } = useJobSelection({ allJobs, filters, setFilters });
-    const [knownJobIds, setKnownJobIds] = useState<Set<number>>(new Set());
-    const { hasNewJobs, newJobsCount, newJobIds } = useJobUpdates(filters, knownJobIds);
     const [activeConfigName, setActiveConfigName] = useState<string>('');
-
-    const acknowledgeNewJobs = useCallback(() => {
-        if (newJobIds.length > 0) {
-            setKnownJobIds(prev => {
-                const next = new Set(prev);
-                newJobIds.forEach(id => next.add(id));
-                return next;
-            });
-        }
-    }, [newJobIds]);
 
     const {
         message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation
@@ -58,7 +45,6 @@ export const useViewer = () => {
         },
         activeConfigName,
         onReload: async () => {
-             acknowledgeNewJobs();
              if (filters.page !== 1) {
                 setShouldSelectFirst(true);
                 setFilters(f => ({ ...f, page: 1 }));
@@ -82,18 +68,6 @@ export const useViewer = () => {
                     const newItems = data.items.filter(item => !jobs.some(p => p.id === item.id));
                     return [...jobs, ...newItems];
                 }
-            });
-            // Update knownJobIds to include all jobs we've seen in this session
-            setKnownJobIds(prev => {
-                const next = new Set(prev);
-                let changed = false;
-                data.items.forEach(j => {
-                    if (!next.has(j.id)) {
-                        next.add(j.id);
-                        changed = true;
-                    }
-                });
-                return changed ? next : prev;
             });
             setIsLoadingMore(false);
         }
@@ -124,8 +98,6 @@ export const useViewer = () => {
             selectionMode,
             confirmModal,
             activeConfigName,
-            hasNewJobs,
-            newJobsCount,
             creationSessionId,
         },
         status: {
@@ -181,7 +153,6 @@ export const useViewer = () => {
                 setCreationSessionId(prev => prev + 1);
             },
             refreshJobs: async () => {
-                acknowledgeNewJobs();
                 if (filters.page !== 1) {
                     setShouldSelectFirst(true);
                     setFilters(f => ({ ...f, page: 1 }));
@@ -193,3 +164,4 @@ export const useViewer = () => {
         },
     };
 };
+

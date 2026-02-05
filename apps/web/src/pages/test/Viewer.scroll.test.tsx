@@ -16,9 +16,6 @@ vi.mock('../viewer/api/ViewerApi', () => ({
         getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
     },
 }));
-vi.mock('../viewer/hooks/useJobUpdates', () => ({
-    useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0, newJobIds: [] }),
-}));
 vi.mock('../../services/FilterConfigService', () => ({
     FilterConfigService: vi.fn().mockImplementation(function() {
         return {
@@ -36,7 +33,7 @@ import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { jobsApi } from '../viewer/api/ViewerApi';
 import { renderViewer } from './ViewerTestUtils';
-import { mockJobsApiDefault, selectJob, switchToTab, verifySummary } from './ViewerTestHelpers';
+import { selectJob, verifySummary } from './ViewerTestHelpers';
 import { runTimers, setupTestLifecycle } from './ViewerMocks';
 
 describe('Viewer - Scroll and Pagination', () => {
@@ -50,23 +47,6 @@ describe('Viewer - Scroll and Pagination', () => {
         renderViewer();
         await runTimers();
         verifySummary(/2\/50 loaded/);
-        expect(jobsApi.getJobs).toHaveBeenCalled();
-    });
-
-    it('refreshes list when clicking List tab if new jobs exist', async () => {
-        const { useJobUpdates } = await import('../viewer/hooks/useJobUpdates');
-        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5, newJobIds: [1,2,3,4,5] });
-        mockJobsApiDefault();
-        renderViewer();
-        await runTimers();
-        expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-        selectJob('Job 1');
-        switchToTab('Edit');
-        expect(screen.getByText('Edit Comments')).toBeInTheDocument();
-        (jobsApi.getJobs as any).mockClear();
-        const reloadBtn = screen.getByText((content, element) => element?.tagName.toLowerCase() === 'button' && content.includes('new'));
-        fireEvent.click(reloadBtn);
-        await runTimers();
         expect(jobsApi.getJobs).toHaveBeenCalled();
     });
 

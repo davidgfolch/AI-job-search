@@ -44,9 +44,6 @@ export default function Viewer() {
                                 <ViewTabs 
                                     activeTab={state.activeTab} 
                                     onTabChange={actions.setActiveTab} 
-                                    hasNewJobs={state.hasNewJobs}
-                                    newJobsCount={state.newJobsCount}
-                                    onReload={actions.refreshJobs}
                                 />
                                 {state.activeTab === 'list' && (
                                     <div className="list-summary">

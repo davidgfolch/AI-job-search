@@ -4,7 +4,6 @@ import { useViewer } from '../useViewer';
 import { useJobsData } from '../useJobsData';
 import { useJobSelection } from '../useJobSelection';
 import { useJobMutations } from '../useJobMutations';
-import { useJobUpdates } from '../useJobUpdates';
 
 // Mock dependencies
 vi.mock('../useJobsData', () => ({
@@ -15,9 +14,6 @@ vi.mock('../useJobSelection', () => ({
 }));
 vi.mock('../useJobMutations', () => ({
     useJobMutations: vi.fn(),
-}));
-vi.mock('../useJobUpdates', () => ({
-    useJobUpdates: vi.fn(),
 }));
 
 describe('useViewer', () => {
@@ -62,7 +58,6 @@ describe('useViewer', () => {
         (useJobsData as any).mockReturnValue(mockJobsData);
         (useJobSelection as any).mockReturnValue(mockJobSelection);
         (useJobMutations as any).mockReturnValue(mockJobMutations);
-        (useJobUpdates as any).mockReturnValue({ hasNewJobs: false, newJobsCount: 0, newJobIds: [] });
     });
 
     it('should aggregate state correctly', () => {
@@ -162,13 +157,6 @@ describe('useViewer', () => {
             result2.current.actions.toggleSelectAll();
         });
         expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('all');
-    });
-
-    it('should return newJobsCount from useJobUpdates', () => {
-        (useJobUpdates as any).mockReturnValue({ hasNewJobs: true, newJobsCount: 5, newJobIds: [1,2,3,4,5] });
-        const { result } = renderHook(() => useViewer());
-        expect(result.current.state.hasNewJobs).toBe(true);
-        expect(result.current.state.newJobsCount).toBe(5);
     });
 
     it('should refresh jobs when calling refreshJobs action', async () => {
