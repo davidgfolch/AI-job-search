@@ -61,6 +61,8 @@ export const useViewer = () => {
     // Update allJobs when data changes
     useEffect(() => {
         if (data?.items) {
+            if (data.page !== (filters.page || 1)) return;
+
             setAllJobs(jobs => {
                 if (filters.page === 1) { // Reset on first page (new search/filter)
                     return data.items;
