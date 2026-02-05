@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../api/ViewerApi';
 import { DEFAULT_FILTERS } from '../constants';
 
@@ -38,6 +38,7 @@ export const useJobsData = () => {
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['jobs', filters],
         queryFn: () => jobsApi.getJobs(filters),
+        placeholderData: keepPreviousData,
     });
 
     const hardRefresh = useCallback(async () => {

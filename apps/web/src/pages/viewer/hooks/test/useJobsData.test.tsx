@@ -84,5 +84,41 @@ describe('useJobsData', () => {
     await result.current.hardRefresh();
     expect(jobsApi.getJobs).toHaveBeenCalled();
   });
+
+  it('keeps previous data while fetching new page', async () => {
+    const page1Data = { items: [{ id: 1, title: 'Job 1' }], total: 10, page: 1, size: 20 };
+    const page2Data = { items: [{ id: 2, title: 'Job 2' }], total: 10, page: 2, size: 20 };
+    
+    // First call resolves immediately
+    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce(page1Data as any);
+    
+    const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
+    
+    // Wait for page 1
+    await waitFor(() => expect(result.current.data).toEqual(page1Data));
+    
+    // Second call will resolve delayed
+    let resolvePage2: (value: any) => void;
+    const page2Promise = new Promise(resolve => { resolvePage2 = resolve; });
+    vi.mocked(jobsApi.getJobs).mockImplementationOnce(async () => {
+        const val = await page2Promise;
+        return val as any; 
+    });
+
+    // Trigger page change
+    act(() => {
+        result.current.setFilters(prev => ({ ...prev, page: 2 }));
+    });
+
+    // Check that we still have page 1 data (keepPreviousData behavior)
+    expect(result.current.data).toEqual(page1Data);
+    
+    // Resolve page 2
+    await act(async () => {
+        resolvePage2!(page2Data);
+    });
+    
+    await waitFor(() => expect(result.current.data).toEqual(page2Data));
+  });
 });
 
