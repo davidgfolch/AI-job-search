@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { JobListParams } from '../../../api/ViewerApi';
 import defaultFilterConfigurations from '../../../../../resources/defaultFilterConfigurations.json';
 import { FilterConfigService } from '../../../hooks/FilterConfigService';
@@ -47,19 +48,30 @@ export function useFilterConfigurations({
         [onMessage]
     );
 
+    const allDefaults = useMemo(() => 
+        [...(defaultFilterConfigurations as any[]), ...additionalDefaults],
+        [additionalDefaults]
+    );
+
+    const { data: loadedConfigs, error: loadError } = useQuery({
+        queryKey: ['filterConfigs', allDefaults.length], // Include defaults length as dependency if needed, or just service
+        queryFn: () => service.load(allDefaults),
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: 1,
+    });
+
     useEffect(() => {
-        const loadConfigs = async () => {
-            try {
-                const allDefaults = [...(defaultFilterConfigurations as any[]), ...additionalDefaults];
-                const configs = await service.load(allDefaults);
-                setSavedConfigs(configs);
-            } catch (e) {
-                console.error('Failed to load configurations', e);
-                notify('Failed to load configurations', 'error');
-            }
-        };
-        loadConfigs();
-    }, [service, additionalDefaults, notify]);
+        if (loadedConfigs) {
+            setSavedConfigs(loadedConfigs);
+        }
+    }, [loadedConfigs]);
+
+    useEffect(() => {
+        if (loadError) {
+             console.error('Failed to load configurations', loadError);
+             notify('Failed to load configurations', 'error');
+        }
+    }, [loadError, notify]);
 
     const {
         isWatching,

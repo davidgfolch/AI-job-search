@@ -1,4 +1,4 @@
-import { filterConfigsApi } from '../api/FilterConfigurationsApi';
+import { filterConfigsApi, type FilterConfiguration as BackendFilterConfiguration } from '../api/FilterConfigurationsApi';
 import { persistenceApi } from "../../common/api/CommonPersistenceApi";
 import type { FilterConfig } from '../components/configurations/hooks/useFilterConfigurations';
 
@@ -10,7 +10,7 @@ export class FilterConfigService {
   async load(defaults: FilterConfig[]): Promise<FilterConfig[]> {
     try {
       const backendConfigs = await filterConfigsApi.getAll();
-      await this.migrateFromLocalStorageIfNeeded();
+      await this.migrateFromLocalStorageIfNeeded(backendConfigs);
       const configs = backendConfigs.map(bc => ({
         id: bc.id,
         name: bc.name,
@@ -97,7 +97,7 @@ export class FilterConfigService {
     }
   }
 
-  private async migrateFromLocalStorageIfNeeded(): Promise<void> {
+  private async migrateFromLocalStorageIfNeeded(backendConfigs: BackendFilterConfiguration[]): Promise<void> {
     const migrated = localStorage.getItem(this.migrationKey);
     if (migrated === 'true') {
       return; // Already migrated
@@ -110,7 +110,7 @@ export class FilterConfigService {
         return;
       }
 
-      const backendConfigs = await filterConfigsApi.getAll();
+      // const backendConfigs = await filterConfigsApi.getAll(); // Removed duplicate call
       const backendNames = new Set(backendConfigs.map(bc => bc.name));
 
       // Migrate user-created configs (skip defaults that are already seeded)
