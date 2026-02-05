@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Filters from '../Filters';
 import type { JobListParams } from '../../api/ViewerApi';
@@ -23,7 +24,15 @@ describe('Filters - Pills', () => {
     });
 
     const renderAndWait = async (ui: React.ReactElement) => {
-        const result = render(ui);
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        });
+
+        const result = render(
+            <QueryClientProvider client={queryClient}>
+                {ui}
+            </QueryClientProvider>
+        );
         // Wait for FilterConfigurations async load to avoid act warnings
         await act(async () => {
             await new Promise(resolve => setTimeout(resolve, 0));

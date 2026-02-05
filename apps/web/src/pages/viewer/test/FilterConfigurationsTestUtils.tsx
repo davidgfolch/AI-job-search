@@ -41,6 +41,8 @@ export const waitForLoad = async (isLoaded: { value: boolean }) => {
     });
 };
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 export async function setup(
     configs: { name: string, filters: JobListParams }[] = [], 
     props: any = {},
@@ -54,15 +56,25 @@ export async function setup(
     const curFilters = props.currentFilters || mockFilters;
     const onMsg = props.onMessage || vi.fn();
 
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+
     const result = render(
-        <FilterConfigurations 
-            currentFilters={curFilters} 
-            onLoadConfig={onLoad} 
-            onMessage={onMsg} 
-            isExpanded={true}
-            onToggleExpand={vi.fn()}
-            hasActiveFilters={false}
-        />
+        <QueryClientProvider client={queryClient}>
+            <FilterConfigurations 
+                currentFilters={curFilters} 
+                onLoadConfig={onLoad} 
+                onMessage={onMsg} 
+                isExpanded={true}
+                onToggleExpand={vi.fn()}
+                hasActiveFilters={false}
+            />
+        </QueryClientProvider>
     );
     
     await waitForLoad(isLoadedRef);

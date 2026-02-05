@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useFilterWatcher, POLLING_INTERVAL } from '../useFilterWatcher';
 import { jobsApi } from '../../../../api/ViewerApi';
-import { mockSavedConfigs, cleanupMocks } from './testHelpers';
+import { mockSavedConfigs, cleanupMocks, createWrapper } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
@@ -31,7 +31,7 @@ describe('useFilterWatcher - Polling Logic', () => {
         vi.useFakeTimers();
         (jobsApi.countJobs as any).mockResolvedValue(5);
         
-        renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
+        renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper: createWrapper() });
 
         // Handle initial check on mount. Since it's async but triggered immediately, 
         // a zero-time advance helps flush microtasks in Vitest's fake timer environment.
@@ -53,7 +53,7 @@ describe('useFilterWatcher - Polling Logic', () => {
     
     it('should pass created_after parameter when checking new items', async () => {
          (jobsApi.countJobs as any).mockResolvedValue(5);
-         renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
+         renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper: createWrapper() });
          
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalled();
@@ -67,7 +67,7 @@ describe('useFilterWatcher - Polling Logic', () => {
 
     it('should reset watcher for a config without triggering immediate check', async () => {
          (jobsApi.countJobs as any).mockResolvedValue(10);
-         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
+         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
 
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);

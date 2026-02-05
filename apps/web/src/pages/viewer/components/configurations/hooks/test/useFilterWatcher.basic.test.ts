@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useFilterWatcher } from '../useFilterWatcher';
 import { jobsApi } from '../../../../api/ViewerApi';
-import { mockSavedConfigs, cleanupMocks } from './testHelpers';
+import { mockSavedConfigs, cleanupMocks, createWrapper } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
@@ -28,7 +28,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
     });
 
     it('should initialize with watching state', async () => {
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
+        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
         await waitFor(() => {
             expect(result.current.isWatching).toBe(true);
         });
@@ -37,7 +37,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
 
     it('should start watching and trigger immediate check', async () => {
         (jobsApi.countJobs as any).mockResolvedValue(10);
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
+        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
 
         // Already triggered on mount
         await waitFor(() => {
@@ -62,7 +62,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
     });
 
     it('should stop watching', async () => {
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
+        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
 
         // Already watching on mount
         await waitFor(() => {

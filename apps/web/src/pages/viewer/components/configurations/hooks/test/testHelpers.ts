@@ -1,4 +1,19 @@
 import { vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
+
+export const createWrapper = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+    return ({ children }: { children: React.ReactNode }) => (
+        React.createElement(QueryClientProvider, { client: queryClient }, children)
+    );
+};
 
 export const mockSavedConfigs = [
     { name: 'Config 1', filters: { search: 'python' } },

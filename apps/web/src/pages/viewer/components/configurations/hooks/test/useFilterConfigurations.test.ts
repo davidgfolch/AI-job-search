@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useFilterConfigurations } from '../useFilterConfigurations';
 import { persistenceApi as commonPersistenceApi } from "../../../../../common/api/CommonPersistenceApi";
 import { filterConfigsApi } from '../../../../api/FilterConfigurationsApi';
+import { createWrapper, setupMocks } from './testHelpers';
 
 vi.mock('../../../../../common/api/CommonPersistenceApi', () => ({
     persistenceApi: {
@@ -35,6 +36,7 @@ describe('useFilterConfigurations', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        setupMocks();
         (commonPersistenceApi.getValue as any).mockResolvedValue([]);
         (commonPersistenceApi.setValue as any).mockResolvedValue(true);
         (filterConfigsApi.getAll as any).mockResolvedValue([]);
@@ -54,7 +56,7 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps));
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);
@@ -63,7 +65,7 @@ describe('useFilterConfigurations', () => {
     });
 
     it('should save a new configuration', async () => {
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps));
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
 
         await waitFor(() => expect(filterConfigsApi.getAll).toHaveBeenCalled());
 
@@ -98,7 +100,7 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps));
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);
@@ -133,7 +135,7 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps));
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);
@@ -169,7 +171,7 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps));
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);

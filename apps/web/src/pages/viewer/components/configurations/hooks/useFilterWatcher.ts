@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { FilterConfig } from './useFilterConfigurations';
 import { jobsApi } from '../../../api/ViewerApi';
 import { notificationService } from '../../../../../common/services/NotificationService';
@@ -24,6 +25,8 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const savedConfigsRef = useRef(savedConfigs);
     const isMounted = useRef(true);
+
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         if (isWatching) {
@@ -147,21 +150,31 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         });
     };
 
-    // Effect to handle polling
+    // Effect to handle polling and query updates
     useEffect(() => {
         if (isWatching && startTime) {
             // Immediate check when starting (or rather when startTime is set)
             checkItems();
 
             intervalRef.current = setInterval(checkItems, POLLING_INTERVAL);
-        }
 
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, [isWatching, startTime, checkItems]);
+            // Subscribe to query updates to trigger refresh on job changes
+            const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+                if (event.type === 'updated' && 
+                    Array.isArray(event.query.queryKey) && 
+                    (event.query.queryKey[0] === 'jobs' || event.query.queryKey[0] === 'jobUpdates')) {
+                    checkItems();
+                }
+            });
+
+            return () => {
+                if (intervalRef.current) {
+                    clearInterval(intervalRef.current);
+                }
+                unsubscribe();
+            };
+        }
+    }, [isWatching, startTime, checkItems, queryClient]);
 
     return {
         isWatching,

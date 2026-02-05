@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useFilterWatcher } from '../useFilterWatcher';
 import { jobsApi } from '../../../../api/ViewerApi';
 import { notificationService } from '../../../../../../common/services/NotificationService';
-import { mockSavedConfigs, cleanupMocks } from './testHelpers';
+import { mockSavedConfigs, cleanupMocks, createWrapper } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
@@ -31,7 +31,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should request notification permission on mount when isWatching is true', async () => {
-        renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
+        renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
         
         await waitFor(() => {
             expect(notificationService.requestPermission).toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('useFilterWatcher - Notifications', () => {
          const config1 = { ...mockSavedConfigs[0], notify: true };
          const config2 = { ...mockSavedConfigs[1], notify: true };
          
-         renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }));
+         renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }), { wrapper: createWrapper() });
 
          // Automatically triggered on mount
          await waitFor(() => {
@@ -70,7 +70,7 @@ describe('useFilterWatcher - Notifications', () => {
          
          const config1 = { ...mockSavedConfigs[0], notify: false };
          
-         renderHook(() => useFilterWatcher({ savedConfigs: [config1] }));
+         renderHook(() => useFilterWatcher({ savedConfigs: [config1] }), { wrapper: createWrapper() });
 
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalled();
@@ -82,7 +82,7 @@ describe('useFilterWatcher - Notifications', () => {
     it('should NOT trigger notification if no new items found', async () => {
          (jobsApi.countJobs as any).mockResolvedValue(0);
          
-         renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }));
+         renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }), { wrapper: createWrapper() });
 
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalled();
