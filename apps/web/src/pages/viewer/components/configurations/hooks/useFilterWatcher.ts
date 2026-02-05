@@ -51,29 +51,46 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         const newResults: Record<string, WatcherResult> = {};
         
         const configsToCheck = savedConfigsRef.current;
+        const configIdsWithNames: Array<{ id: number; name: string }> = [];
+        
+        for (const config of configsToCheck) {
+            if (!config.id) {
+                console.warn(`Config ${config.name} has no ID, skipping watcher stats`);
+                continue;
+            }
+            configIdsWithNames.push({ id: config.id, name: config.name });
+        }
+
+        if (configIdsWithNames.length === 0) return;
+
+        try {
+            const configIds = configIdsWithNames.map(c => c.id);
+            const oldestCutoff = Math.min(
+                ...configIdsWithNames.map(c => {
+                    const configStartTime = configStartTimes.current[c.name] || startTime;
+                    return new Date(configStartTime).getTime();
+                })
+            );
+            const createdAfterIso = new Date(oldestCutoff).toISOString();
+            const statsMap = await jobsApi.getWatcherStats(configIds, createdAfterIso);
+            
+            if (isMounted.current) {
+                for (const { id, name } of configIdsWithNames) {
+                    const stats = statsMap[id];
+                    if (stats) {
+                        newResults[name] = {
+                            total: stats.total,
+                            newItems: stats.new_items
+                        };
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking watcher stats:', error);
+        }
+
         const notificationAggregator: string[] = [];
         let totalNewJobs = 0;
-
-        for (const config of configsToCheck) {
-            try {
-                // Determine the created_after for this specific config
-                // Use individual config start time if available, otherwise global start time
-                const configStartTime = configStartTimes.current[config.name] || startTime;
-                const createdAfterIso = configStartTime.toISOString();
-
-                // Get stats
-                const stats = await jobsApi.getWatcherStats(config.filters, createdAfterIso);
-                
-                if (isMounted.current) {
-                    newResults[config.name] = {
-                        total: stats.total,
-                        newItems: stats.new_items
-                    };
-                }
-            } catch (error) {
-                console.error(`Error checking config ${config.name}:`, error);
-            }
-        }
 
         if (isMounted.current) {
             setResults(newResults);

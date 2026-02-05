@@ -169,23 +169,27 @@ def test_list_jobs_with_created_after(mock_db_session, client):
         params = matched_call[0][1]
         assert cutoff in params
 
-def test_count_jobs(client):
+def test_get_watcher_stats(client):
+    """Test get_watcher_stats endpoint returns total and new_items counts for multiple configs"""
     from main import app
     from api.jobs import get_service
-    
-    # Mock the service
     mock_service = MagicMock()
-    mock_service.count_jobs.return_value = 42
-    
+    mock_service.get_watcher_stats.return_value = {
+        1: {"total": 100, "new_items": 5},
+        2: {"total": 50, "new_items": 3}
+    }
     app.dependency_overrides[get_service] = lambda: mock_service
-    
     try:
-        response = client.get("/api/jobs/count?search=developer")
-        
+        response = client.get("/api/jobs/watcher-stats?config_ids=1,2&watcher_cutoff=2023-01-01")
         assert response.status_code == 200
-        assert response.json() == {"total": 42}
-        mock_service.count_jobs.assert_called_once()
-        call_args = mock_service.count_jobs.call_args[1]
-        assert call_args['search'] == 'developer'
+        result = response.json()
+        assert result["1"] == {"total": 100, "new_items": 5}
+        assert result["2"] == {"total": 50, "new_items": 3}
+        mock_service.get_watcher_stats.assert_called_once()
+        call_args = mock_service.get_watcher_stats.call_args[1]
+        assert call_args['config_ids'] == [1, 2]
+        assert call_args['watcher_cutoff'] == '2023-01-01'
     finally:
         app.dependency_overrides = {}
+
+

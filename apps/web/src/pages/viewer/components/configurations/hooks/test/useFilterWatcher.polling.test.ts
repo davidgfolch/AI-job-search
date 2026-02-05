@@ -29,7 +29,7 @@ describe('useFilterWatcher - Polling Logic', () => {
 
     it('should poll periodically', async () => {
         vi.useFakeTimers();
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 5, new_items: 5 });
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 } });
         
         renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper: createWrapper() });
 
@@ -52,7 +52,7 @@ describe('useFilterWatcher - Polling Logic', () => {
     });
     
     it('should pass created_after parameter when checking new items', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 5, new_items: 5 });
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 } });
          renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper: createWrapper() });
          
          await waitFor(() => {
@@ -60,17 +60,19 @@ describe('useFilterWatcher - Polling Logic', () => {
          });
          
          const calls = (jobsApi.getWatcherStats as any).mock.calls;
+         const configIdsArg = calls[0][0];
          const watcherCutoffArg = calls[0][1];
+         expect(configIdsArg).toEqual([1]);
          expect(watcherCutoffArg).toBeDefined();
          expect(typeof watcherCutoffArg).toBe('string');
     });
 
     it('should reset watcher for a config without triggering immediate check', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 10, new_items: 10 });
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 10 }, 2: { total: 10, new_items: 10 } });
          const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
 
          await waitFor(() => {
-             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
+             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
          });
 
          (jobsApi.getWatcherStats as any).mockClear();

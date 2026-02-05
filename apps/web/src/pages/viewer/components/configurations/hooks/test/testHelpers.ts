@@ -16,8 +16,8 @@ export const createWrapper = () => {
 };
 
 export const mockSavedConfigs = [
-    { name: 'Config 1', filters: { search: 'python' } },
-    { name: 'Config 2', filters: { location: 'remote' } }
+    { id: 1, name: 'Config 1', filters: { search: 'python' } },
+    { id: 2, name: 'Config 2', filters: { location: 'remote' } }
 ];
 
 export const setupMocks = () => {

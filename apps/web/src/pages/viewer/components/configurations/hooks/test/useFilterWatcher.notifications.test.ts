@@ -23,7 +23,7 @@ describe('useFilterWatcher - Notifications', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         // Default mock implementation to prevent undefined errors
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 0, new_items: 0 });
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 0, new_items: 0 }, 2: { total: 0, new_items: 0 } });
     });
 
     afterEach(() => {
@@ -39,7 +39,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should trigger aggregated notification for enabled configs', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 5, new_items: 5 });
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 }, 2: { total: 5, new_items: 5 } });
          
          const config1 = { ...mockSavedConfigs[0], notify: true };
          const config2 = { ...mockSavedConfigs[1], notify: true };
@@ -48,7 +48,7 @@ describe('useFilterWatcher - Notifications', () => {
 
          // Automatically triggered on mount
          await waitFor(() => {
-             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
+             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
          });
 
          expect(notificationService.notify).toHaveBeenCalledWith(
@@ -66,7 +66,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should NOT trigger notification for disabled configs', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 5, new_items: 5 });
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 } });
          
          const config1 = { ...mockSavedConfigs[0], notify: false };
          
@@ -80,7 +80,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should NOT trigger notification if no new items found', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 0, new_items: 0 });
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 0, new_items: 0 } });
          
          renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }), { wrapper: createWrapper() });
 

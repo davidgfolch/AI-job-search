@@ -118,15 +118,14 @@ export const jobsApi = {
       'Error loading jobs');
   },
 
-  countJobs: async (params: JobListParams = {}): Promise<number> => {
-    const response = await handleRequest(apiClient.get<{ total: number }>('/jobs/count', { params }),
-      'Error counting jobs');
-    return response.total;
-  },
 
-  getWatcherStats: async (params: JobListParams, watcher_cutoff: string): Promise<WatcherStats> => {
-    const allParams = { ...params, watcher_cutoff };
-    return handleRequest(apiClient.get<WatcherStats>('/jobs/watcher-stats', { params: allParams }),
+
+  getWatcherStats: async (configIds: number[], watcher_cutoff: string): Promise<Record<number, WatcherStats>> => {
+    const params = { 
+      config_ids: configIds.join(','),
+      watcher_cutoff 
+    };
+    return handleRequest(apiClient.get<Record<number, WatcherStats>>('/jobs/watcher-stats', { params }),
       'Error getting watcher stats');
   },
 

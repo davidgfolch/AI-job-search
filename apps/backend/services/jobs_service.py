@@ -23,20 +23,29 @@ class JobsService:
         return self.repo.count_jobs(search, status, not_status,
             days_old, salary, boolean_filters, sql_filter, ids, created_after)
 
-    def get_watcher_stats(self, search: Optional[str] = None,
-                    status: Optional[str] = None, not_status: Optional[str] = None,
-                    days_old: Optional[int] = None, salary: Optional[str] = None,
-                    boolean_filters: Dict[str, Optional[bool]] = None,
-                    sql_filter: Optional[str] = None, ids: Optional[List[int]] = None, 
-                    created_after: Optional[str] = None,
-                    watcher_cutoff: Optional[str] = None) -> Dict[str, int]:
-        
-        total = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, ids, created_after)
-        # For new items, we want to count jobs created after the watcher cutoff
-        # This overrides any existing created_after filter, matching the frontend behavior
-        new_items = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, ids, created_after=watcher_cutoff)
-        
-        return {"total": total, "new_items": new_items}
+    def get_watcher_stats(self, config_ids: List[int], watcher_cutoff: Optional[str] = None) -> Dict[int, Dict[str, int]]:
+        from services.filter_configurations_service import FilterConfigurationsService
+        config_service = FilterConfigurationsService()
+        results = {}
+        for config_id in config_ids:
+            try:
+                config = config_service.get_by_id(config_id)
+                filters = config['filters']
+                search = filters.get('search')
+                status = filters.get('status')
+                not_status = filters.get('not_status')
+                days_old = filters.get('days_old')
+                salary = filters.get('salary')
+                sql_filter = filters.get('sql_filter')
+                created_after = filters.get('created_after')
+                boolean_filters = {k: filters.get(k) for k in JOB_BOOLEAN_KEYS if k in filters}
+                total = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, None, created_after)
+                new_items = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, None, created_after=watcher_cutoff)
+                results[config_id] = {"total": total, "new_items": new_items}
+            except Exception as e:
+                print(f"Error getting watcher stats for config {config_id}: {e}")
+                results[config_id] = {"total": 0, "new_items": 0}
+        return results
 
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:
         with self.repo.get_db() as db:
