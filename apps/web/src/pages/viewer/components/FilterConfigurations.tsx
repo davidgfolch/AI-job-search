@@ -74,6 +74,12 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                 onCancel={confirmModal.close}
             />
             <div className="filter-configurations">
+                <button className={`toggle-button ${hasActiveFilters ? 'has-active' : ''}`}
+                    onClick={onToggleExpand}
+                    title={isExpanded ? "Collapse filters" : "Expand filters"}
+                >
+                    Filters {hasActiveFilters && <span className="color-green">●</span>} {isExpanded ? '▼' : '▶'}
+                </button>
                 <label htmlFor="filter-config-input">Filter Configurations:</label>
                 <div className="config-controls" ref={wrapperRef}>
                     <ConfigurationInput
@@ -88,12 +94,6 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                         onWatch={toggleWatch}
                         isWatching={isWatching}
                     />
-                    <button className={`toggle-button ${hasActiveFilters ? 'has-active' : ''}`}
-                        onClick={onToggleExpand}
-                        title={isExpanded ? "Collapse filters" : "Expand filters"}
-                    >
-                        Filters {hasActiveFilters && <span className="color-green">●</span>} {isExpanded ? '▼' : '▶'}
-                    </button>
                     <ConfigurationDropdown
                         isOpen={isOpen}
                         filteredConfigs={filteredConfigs}

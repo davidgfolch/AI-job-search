@@ -50,19 +50,19 @@ export function ConfigurationInput({
             </button>
             <button
                 type="button"
-                onClick={onExport}
-                className="config-btn config-export-btn"
-                title="Copy configurations to clipboard for defaults.ts"
-            >
-                Export
-            </button>
-            <button
-                type="button"
                 onClick={onWatch}
                 className="config-btn config-watch-btn"
                 title="Watch all filter configurations for new items (every 5 min)"
             >
                 {isWatching ? "🔕" : "🔔"}
+            </button>
+            <button
+                type="button"
+                onClick={onExport}
+                className="config-btn config-export-btn"
+                title="Copy configurations to clipboard for defaultFilterConfigurations.json"
+            >
+                Export
             </button>
         </>
     );
