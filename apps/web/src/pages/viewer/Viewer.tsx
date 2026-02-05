@@ -47,7 +47,7 @@ export default function Viewer() {
                                 />
                                 {state.activeTab === 'list' && (
                                     <div className="list-summary">
-                                        {status.isLoadingMore && <div className="spinner" style={{position: 'relative', float: 'left'}}></div>}
+                                        <div className="spinner" style={{position: 'relative', float: 'left', visibility: status.isLoadingMore ? 'visible' : 'hidden'}}></div>
                                         <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span> loaded
                                         <br/>
                                         <span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span> Selected
