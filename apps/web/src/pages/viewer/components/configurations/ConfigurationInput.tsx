@@ -52,7 +52,7 @@ export function ConfigurationInput({
                 type="button"
                 onClick={onWatch}
                 className="config-btn config-watch-btn"
-                title="Watch all filter configurations for new items (every 5 min)"
+                title={(isWatching ? "Unwatch" : "Watch filter configurations for new jobs (every 5 min)")}
             >
                 {isWatching ? "🔕" : "🔔"}
             </button>

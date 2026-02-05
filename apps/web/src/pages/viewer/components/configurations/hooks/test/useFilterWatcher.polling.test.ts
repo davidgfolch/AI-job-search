@@ -1,6 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useFilterWatcher } from '../useFilterWatcher';
+import { useFilterWatcher, POLLING_INTERVAL } from '../useFilterWatcher';
 import { jobsApi } from '../../../../api/ViewerApi';
 import { mockSavedConfigs, cleanupMocks } from './testHelpers';
 
@@ -31,30 +31,30 @@ describe('useFilterWatcher - Polling Logic', () => {
         vi.useFakeTimers();
         (jobsApi.countJobs as any).mockResolvedValue(5);
         
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
+        renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
 
+        // Handle initial check on mount. Since it's async but triggered immediately, 
+        // a zero-time advance helps flush microtasks in Vitest's fake timer environment.
         await act(async () => {
-            result.current.startWatching();
+            await vi.advanceTimersByTimeAsync(0);
         });
 
         expect(jobsApi.countJobs).toHaveBeenCalledTimes(2);
+        vi.clearAllMocks();
 
+        // Periodic poll
         await act(async () => {
-            vi.advanceTimersByTime(5 * 60 * 1000);
+            await vi.advanceTimersByTimeAsync(POLLING_INTERVAL);
         });
 
-        expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
+        // 2 calls for one config (total and new)
+        expect(jobsApi.countJobs).toHaveBeenCalledTimes(2);
     });
     
     it('should pass created_after parameter when checking new items', async () => {
-         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
-         
          (jobsApi.countJobs as any).mockResolvedValue(5);
-
-         act(() => {
-             result.current.startWatching();
-         });
-
+         renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }));
+         
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalled();
          });
@@ -68,10 +68,6 @@ describe('useFilterWatcher - Polling Logic', () => {
     it('should reset watcher for a config without triggering immediate check', async () => {
          (jobsApi.countJobs as any).mockResolvedValue(10);
          const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
-
-         await act(async () => {
-             result.current.startWatching();
-         });
 
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);

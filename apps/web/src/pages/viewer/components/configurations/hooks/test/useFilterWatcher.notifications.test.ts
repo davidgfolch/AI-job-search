@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useFilterWatcher } from '../useFilterWatcher';
 import { jobsApi } from '../../../../api/ViewerApi';
@@ -30,13 +30,9 @@ describe('useFilterWatcher - Notifications', () => {
         cleanupMocks();
     });
 
-    it('should request notification permission when starting watch', async () => {
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
+    it('should request notification permission on mount when isWatching is true', async () => {
+        renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
         
-        act(() => {
-            result.current.startWatching();
-        });
-
         await waitFor(() => {
             expect(notificationService.requestPermission).toHaveBeenCalled();
         });
@@ -48,12 +44,9 @@ describe('useFilterWatcher - Notifications', () => {
          const config1 = { ...mockSavedConfigs[0], notify: true };
          const config2 = { ...mockSavedConfigs[1], notify: true };
          
-         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }));
+         renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }));
 
-         await act(async () => {
-             result.current.startWatching();
-         });
-
+         // Automatically triggered on mount
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
          });
@@ -77,11 +70,7 @@ describe('useFilterWatcher - Notifications', () => {
          
          const config1 = { ...mockSavedConfigs[0], notify: false };
          
-         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [config1] }));
-
-         await act(async () => {
-             result.current.startWatching();
-         });
+         renderHook(() => useFilterWatcher({ savedConfigs: [config1] }));
 
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalled();
@@ -93,11 +82,7 @@ describe('useFilterWatcher - Notifications', () => {
     it('should NOT trigger notification if no new items found', async () => {
          (jobsApi.countJobs as any).mockResolvedValue(0);
          
-         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }));
-
-         await act(async () => {
-             result.current.startWatching();
-         });
+         renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }));
 
          await waitFor(() => {
              expect(jobsApi.countJobs).toHaveBeenCalled();

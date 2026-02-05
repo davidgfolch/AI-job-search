@@ -28,6 +28,11 @@ Use this skill when you need to implement or run tests. Follow these strict guid
 - **SOLID/KISS**: Keep tests simple and focused.
 - **Performance**: Unit tests MUST execute quickly (under 500ms each).
 - **Mocking**: To achieve the performance goal, all external layers (database, network, file system, etc.) and dependencies MUST be properly mocked. Do not rely on real I/O operations in unit tests.
+- **Handling State Updates (`act`)**: Always wrap code that triggers React state updates in `act(...)`.
+    - Use `await waitFor(() => { ... })` for asynchronous updates in standard tests.
+    - **Fake Timers**: When using `vi.useFakeTimers()`, use `await act(async () => await vi.advanceTimersByTimeAsync(MS))` to advance time and flush microtasks. Avoid `waitFor` with fake timers unless time is advanced manually.
+    - **Initial Check on Mount**: If a hook/component performs async work on mount, use `await vi.advanceTimersByTimeAsync(0)` (with fake timers) or `await waitFor(...)` (with real timers) to ensure it completes before asserting or clearing mocks.
+- **TanStack Query (React Query)**: Ensure ALL query functions used by the SUT are mocked. If using `vi.mock()`, explicitly mock setiap function with `mockResolvedValue` to avoid "Query data cannot be undefined" errors, as React Query v5+ does not allow `undefined` returns.
 
 ## 4. Architecture Verification
 Refuse to complete the task without verifying architecture compliance.

@@ -12,18 +12,24 @@ export interface UseFilterWatcherProps {
     savedConfigs: FilterConfig[];
 }
 
-const POLLING_INTERVAL = 5 * 60 * 1000; // 5 minutes
+export const POLLING_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
-    const [isWatching, setIsWatching] = useState(false);
+    const [isWatching, setIsWatching] = useState(true);
     const [results, setResults] = useState<Record<string, WatcherResult>>({});
-    const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
-    const [startTime, setStartTime] = useState<Date | null>(null);
+    const [lastCheckTime, setLastCheckTime] = useState<Date | null>(new Date());
+    const [startTime, setStartTime] = useState<Date | null>(new Date());
     const configStartTimes = useRef<Record<string, Date>>({});
     const notifiedCountsRef = useRef<Record<string, number>>({});
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const savedConfigsRef = useRef(savedConfigs);
     const isMounted = useRef(true);
+
+    useEffect(() => {
+        if (isWatching) {
+            notificationService.requestPermission();
+        }
+    }, []);
 
     useEffect(() => {
         savedConfigsRef.current = savedConfigs;

@@ -23,6 +23,7 @@ describe('Statistics', () => {
     vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([]);
     vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
     vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
+    vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
     render(<Statistics />, { wrapper: createWrapper() });
     expect(screen.getByText('AI Job Search Statistics')).toBeInTheDocument();
   });
@@ -32,6 +33,7 @@ describe('Statistics', () => {
     vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([]);
     vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
     vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
+    vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
     render(<Statistics />, { wrapper: createWrapper() });
     expect(screen.getByText('Applied vs Discarded Jobs (History)')).toBeInTheDocument();
     expect(screen.getByText('Job Postings by Source & Created Date')).toBeInTheDocument();

@@ -27,15 +27,24 @@ describe('useFilterWatcher - Basic Functionality', () => {
         cleanupMocks();
     });
 
-    it('should initialize with not watching state', () => {
+    it('should initialize with watching state', async () => {
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
-        expect(result.current.isWatching).toBe(false);
+        await waitFor(() => {
+            expect(result.current.isWatching).toBe(true);
+        });
         expect(result.current.results).toEqual({});
     });
 
     it('should start watching and trigger immediate check', async () => {
         (jobsApi.countJobs as any).mockResolvedValue(10);
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
+
+        // Already triggered on mount
+        await waitFor(() => {
+            expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
+        });
+
+        vi.clearAllMocks();
 
         act(() => {
             result.current.startWatching();
@@ -55,10 +64,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
     it('should stop watching', async () => {
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }));
 
-        await act(async () => {
-            result.current.startWatching();
-        });
-        
+        // Already watching on mount
         await waitFor(() => {
             expect(jobsApi.countJobs).toHaveBeenCalled();
         });
