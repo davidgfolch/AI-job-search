@@ -61,19 +61,13 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                 const configStartTime = configStartTimes.current[config.name] || startTime;
                 const createdAfterIso = configStartTime.toISOString();
 
-                // Get total count
-                const totalCount = await jobsApi.countJobs({ ...config.filters });
+                // Get stats
+                const stats = await jobsApi.getWatcherStats(config.filters, createdAfterIso);
                 
-                // Get new items count
-                const newItemsCount = await jobsApi.countJobs({ 
-                    ...config.filters, 
-                    created_after: createdAfterIso 
-                });
-
                 if (isMounted.current) {
                     newResults[config.name] = {
-                        total: totalCount,
-                        newItems: newItemsCount
+                        total: stats.total,
+                        newItems: stats.new_items
                     };
                 }
             } catch (error) {

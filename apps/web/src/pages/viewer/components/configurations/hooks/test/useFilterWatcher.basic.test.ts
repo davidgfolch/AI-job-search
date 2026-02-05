@@ -6,7 +6,7 @@ import { mockSavedConfigs, cleanupMocks, createWrapper } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
-        countJobs: vi.fn()
+        getWatcherStats: vi.fn()
     }
 }));
 
@@ -36,12 +36,12 @@ describe('useFilterWatcher - Basic Functionality', () => {
     });
 
     it('should start watching and trigger immediate check', async () => {
-        (jobsApi.countJobs as any).mockResolvedValue(10);
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ total: 10, new_items: 10 });
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
 
         // Already triggered on mount
         await waitFor(() => {
-            expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
+            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
         });
 
         vi.clearAllMocks();
@@ -53,7 +53,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
         expect(result.current.isWatching).toBe(true);
 
         await waitFor(() => {
-            expect(jobsApi.countJobs).toHaveBeenCalledTimes(4);
+            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
         });
         
         expect(Object.keys(result.current.results)).toHaveLength(2);
@@ -66,7 +66,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
 
         // Already watching on mount
         await waitFor(() => {
-            expect(jobsApi.countJobs).toHaveBeenCalled();
+            expect(jobsApi.getWatcherStats).toHaveBeenCalled();
         });
 
         expect(result.current.isWatching).toBe(true);

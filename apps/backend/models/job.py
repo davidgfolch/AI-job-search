@@ -59,3 +59,7 @@ class JobListResponse(BaseModel):
 class AppliedCompanyJob(BaseModel):
     id: int
     created: Optional[str] = None
+
+class WatcherStatsResponse(BaseModel):
+    total: int
+    new_items: int

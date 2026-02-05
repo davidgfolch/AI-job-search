@@ -1,9 +1,8 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
-from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate
+from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate, WatcherStatsResponse
 from services.jobs_service import JobsService
 from pydantic import BaseModel
-
 
 
 router = APIRouter()
@@ -149,6 +148,64 @@ def count_jobs(
         created_after=created_after
     )
     return {"total": count}
+
+@router.get("/watcher-stats", response_model=WatcherStatsResponse)
+def get_watcher_stats(
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    not_status: Optional[str] = None,
+    days_old: Optional[int] = None,
+    salary: Optional[str] = None,
+    # Boolean field filters
+    flagged: Optional[bool] = None,
+    like: Optional[bool] = None,
+    ignored: Optional[bool] = None,
+    seen: Optional[bool] = None,
+    applied: Optional[bool] = None,
+    discarded: Optional[bool] = None,
+    closed: Optional[bool] = None,
+    interview_rh: Optional[bool] = None,
+    interview: Optional[bool] = None,
+    interview_tech: Optional[bool] = None,
+    interview_technical_test: Optional[bool] = None,
+    interview_technical_test_done: Optional[bool] = None,
+    ai_enriched: Optional[bool] = None,
+    easy_apply: Optional[bool] = None,
+    sql_filter: Optional[str] = None,
+    ids: Optional[List[int]] = Query(None),
+    created_after: Optional[str] = None,
+    watcher_cutoff: Optional[str] = None,
+    service: JobsService = Depends(get_service)
+):
+    boolean_filters = {
+        'flagged': flagged,
+        'like': like,
+        'ignored': ignored,
+        'seen': seen,
+        'applied': applied,
+        'discarded': discarded,
+        'closed': closed,
+        'interview_rh': interview_rh,
+        'interview': interview,
+        'interview_tech': interview_tech,
+        'interview_technical_test': interview_technical_test,
+        'interview_technical_test_done': interview_technical_test_done,
+        'ai_enriched': ai_enriched,
+        'easy_apply': easy_apply,
+    }
+    
+    return service.get_watcher_stats(
+        search=search,
+        status=status,
+        not_status=not_status,
+        days_old=days_old,
+        salary=salary,
+        boolean_filters=boolean_filters,
+        sql_filter=sql_filter,
+        ids=ids,
+        created_after=created_after,
+        watcher_cutoff=watcher_cutoff
+    )
 
 
 # Import the new router

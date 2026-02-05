@@ -98,6 +98,11 @@ export interface JobListParams {
   created_after?: string;
 }
 
+export interface WatcherStats {
+  total: number;
+  new_items: number;
+}
+
 const handleRequest = async <T>(request: Promise<{ data: T }>, errorMessage: string): Promise<T> => {
   try {
     const response = await request;
@@ -117,6 +122,12 @@ export const jobsApi = {
     const response = await handleRequest(apiClient.get<{ total: number }>('/jobs/count', { params }),
       'Error counting jobs');
     return response.total;
+  },
+
+  getWatcherStats: async (params: JobListParams, watcher_cutoff: string): Promise<WatcherStats> => {
+    const allParams = { ...params, watcher_cutoff };
+    return handleRequest(apiClient.get<WatcherStats>('/jobs/watcher-stats', { params: allParams }),
+      'Error getting watcher stats');
   },
 
   createJob: async (data: Partial<Job>): Promise<Job> => {
