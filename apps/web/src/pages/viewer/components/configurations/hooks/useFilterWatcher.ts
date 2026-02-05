@@ -49,10 +49,8 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         if (!startTime) return;
 
         const newResults: Record<string, WatcherResult> = {};
-        
         const configsToCheck = savedConfigsRef.current;
         const configIdsWithNames: Array<{ id: number; name: string }> = [];
-        
         for (const config of configsToCheck) {
             if (!config.id) {
                 console.warn(`Config ${config.name} has no ID, skipping watcher stats`);
@@ -60,9 +58,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             }
             configIdsWithNames.push({ id: config.id, name: config.name });
         }
-
         if (configIdsWithNames.length === 0) return;
-
         try {
             const configIds = configIdsWithNames.map(c => c.id);
             const oldestCutoff = Math.min(
@@ -73,7 +69,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             );
             const createdAfterIso = new Date(oldestCutoff).toISOString();
             const statsMap = await jobsApi.getWatcherStats(configIds, createdAfterIso);
-            
             if (isMounted.current) {
                 for (const { id, name } of configIdsWithNames) {
                     const stats = statsMap[id];
@@ -88,22 +83,18 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         } catch (error) {
             console.error('Error checking watcher stats:', error);
         }
-
         const notificationAggregator: string[] = [];
         let totalNewJobs = 0;
-
         if (isMounted.current) {
             setResults(newResults);
             setLastCheckTime(new Date());
             // Check for notifications
             Object.entries(newResults).forEach(([name, result]) => {
                 const prevCount = notifiedCountsRef.current[name] || 0;
-                
                 // If we found more items than before
                 if (result.newItems > prevCount) {
                     // Update the tracker
                     notifiedCountsRef.current[name] = result.newItems;
-
                     // Check if this config has notifications enabled
                     const config = configsToCheck.find(c => c.name === name);
                     if (config && config.notify) {
@@ -112,7 +103,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                     }
                 }
             });
-
             if (notificationAggregator.length > 0) {
                  const summary = notificationAggregator.join(', ');
                  notificationService.notify(`New jobs found`, {
@@ -122,6 +112,9 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         }
     }, [startTime]);
 
+    // Track whether we have any configs with IDs
+    // This will cause the main effect to re-run when configs with IDs become available
+    const hasConfigsWithIds = savedConfigs.some(c => c.id);
     const startWatching = () => {
         notificationService.requestPermission();
         setIsWatching(true);
@@ -132,7 +125,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         configStartTimes.current = {}; // Reset all individual times
         notifiedCountsRef.current = {};
     };
-
     const stopWatching = () => {
         setIsWatching(false);
         setStartTime(null);
@@ -144,12 +136,10 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             intervalRef.current = null;
         }
     };
-
     const resetWatcher = (configName: string) => {
         const now = new Date();
         configStartTimes.current[configName] = now;
         notifiedCountsRef.current[configName] = 0;
-        
         // Optimistically reset count to 0 for this config in results
         setResults(prev => {
             const current = prev[configName];
@@ -163,12 +153,10 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
 
     // Effect to handle polling and query updates
     useEffect(() => {
-        if (isWatching && startTime) {
+        if (isWatching && startTime && hasConfigsWithIds) {
             // Immediate check when starting (or rather when startTime is set)
             checkItems();
-
             intervalRef.current = setInterval(checkItems, POLLING_INTERVAL);
-
             // Subscribe to query updates to trigger refresh on job changes
             const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
                 if (event.type === 'updated' && 
@@ -177,7 +165,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                     checkItems();
                 }
             });
-
             return () => {
                 if (intervalRef.current) {
                     clearInterval(intervalRef.current);
@@ -185,7 +172,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                 unsubscribe();
             };
         }
-    }, [isWatching, startTime, checkItems, queryClient]);
+    }, [isWatching, startTime, hasConfigsWithIds, checkItems, queryClient]);
 
     return {
         isWatching,

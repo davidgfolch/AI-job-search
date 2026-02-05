@@ -71,6 +71,8 @@ ALTER TABLE jobs ADD COLUMN cv_match_percentage TINYINT NULL;
 
 ALTER TABLE jobs ADD INDEX cv_match_percentage_index (cv_match_percentage);
 
+ALTER TABLE jobs ADD INDEX created_index (created);
+
 -- DROP TABLE IF EXISTS `job_skills`;
 CREATE TABLE if not exists `job_skills` (
   `name` varchar(255) NOT NULL,
@@ -82,6 +84,7 @@ CREATE TABLE if not exists `job_skills` (
 
 ALTER TABLE job_skills ADD COLUMN ai_enriched TINYINT(1) DEFAULT 0;
 ALTER TABLE job_skills ADD COLUMN category VARCHAR(255);
+
 
 
 CREATE TABLE IF NOT EXISTS `filter_configurations` (
@@ -98,6 +101,7 @@ CREATE TABLE IF NOT EXISTS `filter_configurations` (
 
 ALTER TABLE filter_configurations ADD COLUMN statistics TINYINT(1) DEFAULT 1;
 ALTER TABLE filter_configurations ADD COLUMN pinned BOOLEAN DEFAULT True;
+
 
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
