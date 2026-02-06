@@ -28,13 +28,20 @@ export default function JobTable({
     onToggleSelectAll
 }: JobTableProps) {
     const observerTarget = useRef<HTMLTableRowElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!onLoadMore || !hasMore) return;
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting) {
-                    onLoadMore();
+                    const container = containerRef.current;
+                    if (container) {
+                        const hasScrollbar = container.scrollHeight > container.clientHeight;
+                        if (hasScrollbar) {
+                            onLoadMore();
+                        }
+                    }
                 }
             },
             { threshold: 0.1, rootMargin: '100px' }
@@ -51,7 +58,7 @@ export default function JobTable({
     }, [onLoadMore, hasMore, jobs.length]);
 
     return (
-        <div className="job-table-container">
+        <div className="job-table-container" ref={containerRef}>
             <table className="job-table">
                 <thead>
                     <tr>
