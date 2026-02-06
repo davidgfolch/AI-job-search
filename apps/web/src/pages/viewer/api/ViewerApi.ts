@@ -120,11 +120,13 @@ export const jobsApi = {
 
 
 
-  getWatcherStats: async (configIds: number[], watcher_cutoff: string): Promise<Record<number, WatcherStats>> => {
-    const params = { 
-      config_ids: configIds.join(','),
-      watcher_cutoff 
+  getWatcherStats: async (cutoffMap: Record<number, string>): Promise<Record<number, WatcherStats>> => {
+    const params: Record<string, string> = { 
+      config_ids: Object.keys(cutoffMap).join(',')
     };
+    Object.entries(cutoffMap).forEach(([id, cutoff]) => {
+      params[`from_${id}`] = cutoff;
+    });
     return handleRequest(apiClient.get<Record<number, WatcherStats>>('/jobs/watcher-stats', { params }),
       'Error getting watcher stats');
   },

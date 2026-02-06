@@ -68,9 +68,7 @@ CREATE TABLE if not exists `jobs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 ALTER TABLE jobs ADD COLUMN cv_match_percentage TINYINT NULL;
-
 ALTER TABLE jobs ADD INDEX cv_match_percentage_index (cv_match_percentage);
-
 ALTER TABLE jobs ADD INDEX created_index (created);
 
 -- DROP TABLE IF EXISTS `job_skills`;

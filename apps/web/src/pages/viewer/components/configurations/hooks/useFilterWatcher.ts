@@ -60,15 +60,12 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         }
         if (configIdsWithNames.length === 0) return;
         try {
-            const configIds = configIdsWithNames.map(c => c.id);
-            const oldestCutoff = Math.min(
-                ...configIdsWithNames.map(c => {
-                    const configStartTime = configStartTimes.current[c.name] || startTime;
-                    return new Date(configStartTime).getTime();
-                })
-            );
-            const createdAfterIso = new Date(oldestCutoff).toISOString();
-            const statsMap = await jobsApi.getWatcherStats(configIds, createdAfterIso);
+            const cutoffMap: Record<number, string> = {};
+            configIdsWithNames.forEach(c => {
+                const configStartTime = configStartTimes.current[c.name] || startTime;
+                cutoffMap[c.id] = new Date(configStartTime).toISOString();
+            });
+            const statsMap = await jobsApi.getWatcherStats(cutoffMap);
             if (isMounted.current) {
                 for (const { id, name } of configIdsWithNames) {
                     const stats = statsMap[id];

@@ -60,11 +60,11 @@ describe('useFilterWatcher - Polling Logic', () => {
          });
          
          const calls = (jobsApi.getWatcherStats as any).mock.calls;
-         const configIdsArg = calls[0][0];
-         const watcherCutoffArg = calls[0][1];
-         expect(configIdsArg).toEqual([1]);
-         expect(watcherCutoffArg).toBeDefined();
-         expect(typeof watcherCutoffArg).toBe('string');
+         const cutoffMapArg = calls[0][0];
+         expect(cutoffMapArg).toBeDefined();
+         expect(typeof cutoffMapArg).toBe('object');
+         expect(cutoffMapArg[1]).toBeDefined();
+         expect(typeof cutoffMapArg[1]).toBe('string');
     });
 
     it('should reset watcher for a config without triggering immediate check', async () => {

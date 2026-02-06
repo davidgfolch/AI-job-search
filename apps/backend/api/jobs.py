@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate, WatcherStatsResponse
 from services.jobs_service import JobsService
 from pydantic import BaseModel
@@ -96,12 +96,17 @@ def list_jobs(
 
 @router.get("/watcher-stats")
 def get_watcher_stats(
+    request: Request,
     config_ids: str = Query(..., description="Comma-separated list of filter configuration IDs"),
-    watcher_cutoff: Optional[str] = None,
     service: JobsService = Depends(get_service)
 ):
     ids = [int(id.strip()) for id in config_ids.split(',') if id.strip()]
-    return service.get_watcher_stats(config_ids=ids, watcher_cutoff=watcher_cutoff)
+    cutoff_map = {}
+    for config_id in ids:
+        param_name = f"from_{config_id}"
+        if param_name in request.query_params:
+            cutoff_map[config_id] = request.query_params[param_name]
+    return service.get_watcher_stats(config_ids=ids, cutoff_map=cutoff_map)
 
 
 # Import the new router

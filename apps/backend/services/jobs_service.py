@@ -23,9 +23,10 @@ class JobsService:
         return self.repo.count_jobs(search, status, not_status,
             days_old, salary, boolean_filters, sql_filter, ids, created_after)
 
-    def get_watcher_stats(self, config_ids: List[int], watcher_cutoff: Optional[str] = None) -> Dict[int, Dict[str, int]]:
+    def get_watcher_stats(self, config_ids: List[int], cutoff_map: Optional[Dict[int, str]] = None) -> Dict[int, Dict[str, int]]:
         from services.filter_configurations_service import FilterConfigurationsService
         config_service = FilterConfigurationsService()
+        cutoff_map = cutoff_map or {}
         results = {}
         for config_id in config_ids:
             try:
@@ -40,7 +41,8 @@ class JobsService:
                 created_after = filters.get('created_after')
                 boolean_filters = {k: filters.get(k) for k in JOB_BOOLEAN_KEYS if k in filters}
                 total = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, None, created_after)
-                new_items = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, None, created_after=watcher_cutoff)
+                config_cutoff = cutoff_map.get(config_id)
+                new_items = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, None, created_after=config_cutoff)
                 results[config_id] = {"total": total, "new_items": new_items}
             except Exception as e:
                 print(f"Error getting watcher stats for config {config_id}: {e}")

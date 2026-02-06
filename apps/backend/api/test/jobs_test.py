@@ -180,7 +180,7 @@ def test_get_watcher_stats(client):
     }
     app.dependency_overrides[get_service] = lambda: mock_service
     try:
-        response = client.get("/api/jobs/watcher-stats?config_ids=1,2&watcher_cutoff=2023-01-01")
+        response = client.get("/api/jobs/watcher-stats?config_ids=1,2&from_1=2023-01-01&from_2=2023-01-02")
         assert response.status_code == 200
         result = response.json()
         assert result["1"] == {"total": 100, "new_items": 5}
@@ -188,7 +188,7 @@ def test_get_watcher_stats(client):
         mock_service.get_watcher_stats.assert_called_once()
         call_args = mock_service.get_watcher_stats.call_args[1]
         assert call_args['config_ids'] == [1, 2]
-        assert call_args['watcher_cutoff'] == '2023-01-01'
+        assert call_args['cutoff_map'] == {1: '2023-01-01', 2: '2023-01-02'}
     finally:
         app.dependency_overrides = {}
 
