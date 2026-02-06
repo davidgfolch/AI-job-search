@@ -37,16 +37,18 @@ describe('useFilterWatcher - Basic Functionality', () => {
     });
 
     it('should start watching and trigger immediate check', async () => {
-        vi.useRealTimers();
+        vi.useFakeTimers();
         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 10 }, 2: { total: 10, new_items: 10 } });
         const { wrapper, queryClient } = createWrapper();
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
         // First check after start/reset should force newItems to 0
-        await waitFor(() => {
-            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
-        }, { timeout: 2000 });
+        // Initial check is debounced by 200ms
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
+        });
 
+        expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
         expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 0 });
         expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 0 });
 
@@ -54,9 +56,10 @@ describe('useFilterWatcher - Basic Functionality', () => {
         act(() => {
             queryClient.setQueryData(['jobs'], []);
         });
-        await waitFor(() => {
-            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
         });
+        expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
         // Should STILL be 0 because stats.new_items was 10
         expect(result.current.results['Config 1'].newItems).toBe(0);
 
@@ -65,9 +68,10 @@ describe('useFilterWatcher - Basic Functionality', () => {
         act(() => {
             queryClient.setQueryData(['jobs'], []);
         });
-        await waitFor(() => {
-            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(3);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
         });
+        expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(3);
         expect(result.current.results['Config 1'].newItems).toBe(0);
 
         // Fourth check: new items arrive AFTER server caught up
@@ -75,9 +79,10 @@ describe('useFilterWatcher - Basic Functionality', () => {
         act(() => {
             queryClient.setQueryData(['jobs'], []);
         });
-        await waitFor(() => {
-            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(4);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
         });
+        expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(4);
         expect(result.current.results['Config 1'].newItems).toBe(1);
     });
 
