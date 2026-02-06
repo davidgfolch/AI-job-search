@@ -2,7 +2,7 @@
   flex: 1;
   overflow-y: auto;
   border-radius: 8px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color-light);
 }
 
 .job-table {
@@ -13,41 +13,41 @@
 .job-table thead {
   position: sticky;
   top: 0;
-  background: #1a1a1a;
+  background: var(--bg-secondary);
   z-index: 1;
 }
 
 .job-table th {
   padding: 0.75rem 1rem;
   text-align: left;
-  color: #667eea;
+  color: var(--primary-color);
   font-weight: 600;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .job-table tbody tr {
   cursor: pointer;
   transition: all 0.2s;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color-dark);
 }
 
 .job-table tbody tr:hover {
-  background: #333;
+  background: var(--border-color-dark);
 }
 
 .job-table tbody tr.selected {
-  background: linear-gradient(90deg, #667eea22, #764ba222);
-  border-left: 3px solid #667eea;
+  background: var(--gradient-selected);
+  border-left: 3px solid var(--primary-color);
 }
 
 .job-table td {
   padding: 0.75rem 1rem;
-  color: #ddd;
+  color: var(--text-secondary);
 }
 
 .job-table td:first-child {
   font-weight: 500;
-  color: #76d7c4;
+  color: var(--text-link);
 }
 
 .salary-column {
@@ -84,34 +84,34 @@
 
 /* Status colors matching JobDetail.css but solid for visibility */
 .status-badge.status-like {
-  background-color: #ec4899; /* Pink */
+  background-color: var(--status-like-bg);
 }
 
 .status-badge.status-ignored,
 .status-badge.status-rejected,
 .status-badge.status-discarded {
-  background-color: #ef4444; /* Red */
+  background-color: var(--status-rejected-bg);
 }
 
 .status-badge.status-seen {
-  background-color: #3b82f6; /* Blue */
+  background-color: var(--status-seen-bg);
 }
 
 .status-badge.status-applied,
 .status-badge.status-interview,
 .status-badge.status-interview_rh,
 .status-badge.status-interview_tech {
-  background-color: #10b981; /* Green */
+  background-color: var(--status-applied-bg);
 }
 
 .status-badge.status-closed {
-  background-color: #6366f1; /* Indigo */
+  background-color: var(--status-closed-bg);
 }
 
 .status-badge.status-flagged {
-  background-color: #f59e0b; /* Amber */
+  background-color: var(--status-flagged-bg);
 }
 
 .status-badge.status-comments {
-  background-color: #8b5cf6; /* Violet */
+  background-color: var(--status-comments-bg);
 }

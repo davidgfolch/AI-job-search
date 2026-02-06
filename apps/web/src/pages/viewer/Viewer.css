@@ -59,14 +59,14 @@
 }
 
 .error {
-  color: #ef4444;
+  color: var(--error-color);
 }
 
 .spinner {
   width: 20px;
   height: 20px;
   border: 5px solid var(--border-color);
-  border-top-color: #667eea;
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -172,11 +172,11 @@
 
 .tab-button:hover {
   background: var(--bg-secondary);
-  border-color: #667eea;
+  border-color: var(--primary-color);
 }
 
 .tab-button.active {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
   border-color: transparent;
   color: var(--text-primary);
 }
@@ -190,5 +190,5 @@
 }
 
 .green {
-  color: #00c151;
+  color: var(--color-green-light);
 }

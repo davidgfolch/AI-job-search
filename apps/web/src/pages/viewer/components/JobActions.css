@@ -22,29 +22,29 @@
 }
 
 .header-button:disabled {
-    background: #444;
-    color: #888;
+    background: var(--border-color-light);
+    color: var(--skill-disabled-text);
     cursor: not-allowed;
     opacity: 0.5;
 }
 
 .header-button.copy-button {
-    background: #667eea;
+    background: var(--primary-color);
     color: var(--text-primary);
 }
 
 .header-button.copy-button:hover {
-    background: #764ba2;
+    background: var(--secondary-color);
     transform: translateY(-1px);
 }
 
 .header-button.state-button {
-    background: #444;
+    background: var(--border-color-light);
     color: var(--text-primary);
 }
 
 .header-button.state-button:hover {
-    background: #555;
+    background: var(--job-detail-alt-bg);
     transform: translateY(-1px);
 }
 
@@ -59,23 +59,23 @@
 .button-separator {
     width: 1px;
     height: 24px;
-    background: #666;
+    background: var(--job-detail-muted-bg);
     margin: 0 0.25rem;
 }
 
 .header-button.nav-button {
-    background: #667eea;
+    background: var(--primary-color);
     color: var(--text-primary);
 }
 
 .header-button.nav-button:hover:not(:disabled) {
-    background: #764ba2;
+    background: var(--secondary-color);
     transform: translateY(-1px);
 }
 
 .header-button.nav-button:disabled {
-    background: #444;
-    color: #888;
+    background: var(--border-color-light);
+    color: var(--skill-disabled-text);
     cursor: not-allowed;
     opacity: 0.5;
 }

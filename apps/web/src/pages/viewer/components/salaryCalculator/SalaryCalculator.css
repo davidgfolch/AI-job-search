@@ -18,7 +18,7 @@
 }
 
 .salary-value {
-  color: #4caf50; /* Green similar to :green[] in streamlit/markdown but accessible */
+  color: var(--color-salary);
   font-weight: bold;
 }
 

@@ -6,9 +6,9 @@
 
 .job-edit-form h2 {
     margin: 0 0 1.5rem 0;
-    color: #fff;
+    color: var(--text-white);
     padding-bottom: 1rem;
-    border-bottom: 2px solid #444;
+    border-bottom: 2px solid var(--border-color-light);
 }
 
 .job-edit-form .no-selection {
@@ -36,22 +36,22 @@
 
 .status-pill {
     padding: 0.5rem 1rem;
-    border: 1px solid #444;
+    border: 1px solid var(--border-color-light);
     border-radius: 20px;
-    background: #1a1a1a;
-    color: #999;
+    background: var(--bg-secondary);
+    color: var(--text-tertiary);
     cursor: pointer;
     transition: all 0.3s;
     text-transform: capitalize;
 }
 
 .status-pill:hover {
-    border-color: #667eea;
+    border-color: var(--primary-color);
     transform: translateY(-2px);
 }
 
 .status-pill.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--gradient-primary);
     border-color: transparent;
     color: var(--text-primary);
     font-weight: 500;
@@ -92,7 +92,7 @@
 }
 
 .form-field label {
-    color: #667eea;
+    color: var(--primary-color);
     font-weight: 500;
 }
 
@@ -103,9 +103,9 @@
 .form-field input,
 .form-field textarea {
     padding: 0.75rem;
-    border: 1px solid #444;
+    border: 1px solid var(--border-color-light);
     border-radius: 6px;
-    background: #1a1a1a;
+    background: var(--bg-secondary);
     color: var(--text-primary);
     font-family: inherit;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -114,8 +114,8 @@
 .form-field input:focus,
 .form-field textarea:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-primary-ring);
 }
 
 /* Auto-resizing textarea for comments with height constraints */
@@ -137,7 +137,7 @@
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 8px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--gradient-primary);
     color: var(--text-primary);
     font-weight: 600;
     cursor: pointer;
@@ -146,7 +146,7 @@
 
 .save-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: var(--shadow-primary);
 }
 
 .create-btn {
@@ -155,7 +155,7 @@
     border-width: 1px;
     border-style: solid;
     border-color: transparent;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--gradient-primary);
     color: var(--text-primary);
     border-radius: 6px;
     cursor: pointer;

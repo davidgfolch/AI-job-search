@@ -13,7 +13,7 @@
     height: 100%;
     background: linear-gradient(90deg, #00c151 0%, #00e676 100%); /* Green gradient */
     transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 10px rgba(0, 193, 81, 0.3);
+    box-shadow: var(--shadow-cv-glow);
 }
 
 .cv-match-bar-container .cv-match-text {
@@ -28,7 +28,7 @@
     color: #ffffff;
     font-size: 0.85rem;
     font-weight: 700;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    text-shadow: var(--text-shadow);
     z-index: 2;
     letter-spacing: 0.02em;
 }

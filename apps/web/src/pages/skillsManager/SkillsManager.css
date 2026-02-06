@@ -2,8 +2,8 @@
 
 .skill-row.disabled {
   opacity: 0.6;
-  background-color: #4b1515;
-  color: #888;
+  background-color: var(--skill-disabled-bg);
+  color: var(--skill-disabled-text);
 }
 
 .skill-row.disabled .skill-name {
@@ -15,7 +15,7 @@
 }
 
 .skill-row.disabled:hover {
-  background-color: #643232;
+  background-color: var(--skill-disabled-hover-bg);
 }
 .skills-manager {
   display: flex;
@@ -41,9 +41,9 @@
 
 /* Fallback for btn-secondary if not globally defined */
 .btn-secondary {
-    background-color: #f0f0f0;
-    color: #333;
-    border: 1px solid #ccc;
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
@@ -52,7 +52,7 @@
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background-color: #e0e0e0;
+    background-color: var(--btn-secondary-hover);
 }
 
 .btn-secondary:disabled {
@@ -70,7 +70,7 @@
   flex: 1;
   overflow: auto; /* Handle both vertical and horizontal if needed */
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   width: fit-content;
   max-width: 100%;
@@ -116,7 +116,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .skills-table tr {
@@ -254,11 +254,11 @@
 }
 
 .btn-icon.delete {
-  color: #ef4444;
+  color: var(--error-color);
 }
 
 .btn-icon.delete:hover {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(var(--error-color-rgb), 0.1);
 }
 
 .btn-icon.add {
@@ -315,7 +315,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -331,7 +331,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-modal);
   border: 1px solid var(--border-color);
   transition: all 0.2s ease-in-out;
 }

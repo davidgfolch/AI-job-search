@@ -65,7 +65,7 @@
 
 .config-export-btn {
     margin-left: 0.5rem;
-    background-color: #4a5568;
+    background-color: var(--export-btn-bg);
 }
 
 .config-suggestions {
@@ -82,7 +82,7 @@
     border-style: solid;
     border-color: var(--border-color);
     border-radius: 4px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     list-style: none;
     padding: 0;
     margin: 0;
@@ -143,12 +143,12 @@
 }
 
 .config-delete-btn:hover {
-    color: #ef4444;
+    color: var(--error-color);
 }
 
 .watcher-badge-inline {
     display: inline-block;
-    background-color: #ef4444;
+    background-color: var(--error-color);
     color: var(--text-primary);
     border-radius: 999px;
     padding: 0.1rem 0.4rem;
@@ -254,5 +254,5 @@
 }
 
 .toggle-button .color-green {
-    color: #10b981;
+    color: var(--success-color);
 }

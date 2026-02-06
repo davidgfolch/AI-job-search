@@ -1,6 +1,6 @@
 .boolean-filters {
     width: 100%;
-    background: #353040;
+    background: var(--bg-tertiary);
     border-radius: 8px;
     border-width: 1px;
     border-style: solid;
@@ -128,13 +128,13 @@
 }
 
 .filter-pill.active-true {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: #10b981;
-    color: #10b981;
+    background: rgba(var(--success-color-rgb), 0.1);
+    border-color: var(--success-color);
+    color: var(--success-color);
 }
 
 .filter-pill.active-false {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: #ef4444;
-    color: #ef4444;
+    background: rgba(var(--error-color-rgb), 0.1);
+    border-color: var(--error-color);
+    color: var(--error-color);
 }
