@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate, WatcherStatsResponse
 from services.jobs_service import JobsService
 from pydantic import BaseModel
+from utils.filter_parser import BOOLEAN_FILTER_KEYS
 
 
 router = APIRouter()
@@ -61,20 +62,22 @@ def list_jobs(
     service: JobsService = Depends(get_service)
 ):
     boolean_filters = {
-        'flagged': flagged,
-        'like': like,
-        'ignored': ignored,
-        'seen': seen,
-        'applied': applied,
-        'discarded': discarded,
-        'closed': closed,
-        'interview_rh': interview_rh,
-        'interview': interview,
-        'interview_tech': interview_tech,
-        'interview_technical_test': interview_technical_test,
-        'interview_technical_test_done': interview_technical_test_done,
-        'ai_enriched': ai_enriched,
-        'easy_apply': easy_apply,
+        key: value for key, value in [
+            ('flagged', flagged),
+            ('like', like),
+            ('ignored', ignored),
+            ('seen', seen),
+            ('applied', applied),
+            ('discarded', discarded),
+            ('closed', closed),
+            ('interview_rh', interview_rh),
+            ('interview', interview),
+            ('interview_tech', interview_tech),
+            ('interview_technical_test', interview_technical_test),
+            ('interview_technical_test_done', interview_technical_test_done),
+            ('ai_enriched', ai_enriched),
+            ('easy_apply', easy_apply),
+        ] if value is not None
     }
     
     return service.list_jobs(

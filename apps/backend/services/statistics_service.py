@@ -2,6 +2,8 @@ from typing import List, Dict, Any
 from repositories.statistics_repository import StatisticsRepository
 from repositories.filter_configurations_repository import FilterConfigurationsRepository
 from repositories.jobs_repository import JobsRepository
+from utils.filter_parser import extract_boolean_filters
+
 
 class StatisticsService:
     def __init__(self, repo: StatisticsRepository = None, filter_repo: FilterConfigurationsRepository = None, jobs_repo: JobsRepository = None):
@@ -47,12 +49,7 @@ class StatisticsService:
                 days_old=filters.get('days_old'),
                 salary=filters.get('salary'),
                 sql_filter=filters.get('sql_filter'),
-                boolean_filters={k: filters.get(k) for k in [
-                    'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded',
-                    'closed', 'interview_rh', 'interview', 'interview_tech',
-                    'interview_technical_test', 'interview_technical_test_done',
-                    'ai_enriched', 'easy_apply'
-                ] if k in filters},
+                boolean_filters=extract_boolean_filters(filters),
                 ids=filters.get('ids'),
                 created_after=filters.get('created_after')
             )

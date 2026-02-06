@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any, List
 from repositories.jobs_repository import JobsRepository
-from constants import JOB_BOOLEAN_KEYS
+from utils.filter_parser import extract_boolean_filters, extract_filter_params, BOOLEAN_FILTER_KEYS
 
 
 class JobsService:
@@ -39,7 +39,7 @@ class JobsService:
                 salary = filters.get('salary')
                 sql_filter = filters.get('sql_filter')
                 created_after = filters.get('created_after')
-                boolean_filters = {k: filters.get(k) for k in JOB_BOOLEAN_KEYS if k in filters}
+                boolean_filters = extract_boolean_filters(filters)
                 total = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, None, created_after)
                 config_cutoff = cutoff_map.get(config_id)
                 new_items = self.count_jobs(search, status, not_status, days_old, salary, boolean_filters, sql_filter, None, created_after=config_cutoff)
@@ -117,12 +117,7 @@ class JobsService:
             salary = filters.get('salary')
             order = filters.get('order') # Not used for update but part of params
             sql_filter = filters.get('sql_filter')
-            # Extract boolean filters
-            boolean_keys = [
-                'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
-                'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
-                'interview_technical_test_done', 'ai_enriched', 'easy_apply']
-            boolean_filters = {k: filters.get(k) for k in boolean_keys}
+            boolean_filters = extract_boolean_filters(filters)
             where, params = self.repo.build_where(
                 search, status, not_status, days_old, salary, sql_filter, boolean_filters)
             return self.repo.update_jobs_by_filter(where, params, update_data)
@@ -147,8 +142,7 @@ class JobsService:
             salary = filters.get('salary')
             order = filters.get('order') # Not used 
             sql_filter = filters.get('sql_filter')
-            # Extract boolean filters
-            boolean_filters = {k: filters.get(k) for k in JOB_BOOLEAN_KEYS}
+            boolean_filters = extract_boolean_filters(filters)
             where, params = self.repo.build_where(
                 search, status, not_status, days_old, salary, sql_filter, boolean_filters
             )

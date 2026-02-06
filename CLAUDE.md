@@ -91,6 +91,8 @@ Uses SQLAlchemy-style repository pattern with `commonlib.mysqlUtil.MysqlUtil`.
 5. **Watcher Pattern**: Polling with 5-minute intervals, aggressive debouncing
 6. **SQL Filters**: Raw SQL supported via `sql_filter` parameter
 7. **Docker**: `docker-compose up -d` starts core services (MySQL, Backend, Web, aiEnrichNew)
+8. **Testing**: `./scripts/test.sh` for Linux/Mac, `./scripts/test.bat` for Windows, or specific module `./scripts/test.sh <module_name>`. Always run `commonlib\test\architecture_test.py` and for apps/web run `src\test\architecture.test.ts`.
+9. **Documentation in code**: Avoid comments or docstrings to explain code logic, this is a monorepo and the code should be self-explanatory.
 
 ## Key Features
 
