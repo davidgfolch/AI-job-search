@@ -7,7 +7,7 @@ import { useFilterDropdown } from './useFilterDropdown';
 import { useConfirmationModal } from './useConfirmationModal';
 import { useConfigDropdownState } from './useConfigDropdownState';
 import { useConfigOperations } from './useConfigOperations';
-import { useFilterWatcher, type WatcherResult } from './useFilterWatcher';
+import { useFilterWatcher } from './useFilterWatcher';
 import { useConfigToggles } from './useConfigToggles';
 
 export interface FilterConfig {
@@ -107,10 +107,10 @@ export function useFilterConfigurations({
     // Intercept loadConfiguration to reset watcher
     // Intercept loadConfiguration to reset watcher
     const handleLoadConfiguration = useCallback((config: FilterConfig) => {
-        operations.loadConfiguration(config);
         if (isWatching) {
             resetWatcher(config.name);
         }
+        operations.loadConfiguration(config);
     }, [operations.loadConfiguration, isWatching, resetWatcher]);
 
     const {

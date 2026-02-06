@@ -56,7 +56,8 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);
@@ -65,7 +66,8 @@ describe('useFilterConfigurations', () => {
     });
 
     it('should save a new configuration', async () => {
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
 
         await waitFor(() => expect(filterConfigsApi.getAll).toHaveBeenCalled());
 
@@ -100,7 +102,8 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);
@@ -135,7 +138,8 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);
@@ -171,7 +175,8 @@ describe('useFilterConfigurations', () => {
         }];
         (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
 
-        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
 
         await waitFor(() => {
             expect(result.current.filteredConfigs).toHaveLength(1);

@@ -10,9 +10,10 @@ export const createWrapper = () => {
             },
         },
     });
-    return ({ children }: { children: React.ReactNode }) => (
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
         React.createElement(QueryClientProvider, { client: queryClient }, children)
     );
+    return { wrapper, queryClient };
 };
 
 export const mockSavedConfigs = [

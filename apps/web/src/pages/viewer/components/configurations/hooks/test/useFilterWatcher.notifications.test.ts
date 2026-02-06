@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useFilterWatcher } from '../useFilterWatcher';
 import { jobsApi } from '../../../../api/ViewerApi';
@@ -31,7 +31,8 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should request notification permission on mount when isWatching is true', async () => {
-        renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper });
         
         await waitFor(() => {
             expect(notificationService.requestPermission).toHaveBeenCalled();
@@ -44,11 +45,22 @@ describe('useFilterWatcher - Notifications', () => {
          const config1 = { ...mockSavedConfigs[0], notify: true };
          const config2 = { ...mockSavedConfigs[1], notify: true };
          
-         renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }), { wrapper: createWrapper() });
+         const { wrapper, queryClient } = createWrapper();
+         renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }), { wrapper });
 
-         // Automatically triggered on mount
+         // First check: newItems should be 0 (due to justReset clock-skew protection)
          await waitFor(() => {
              expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
+         });
+         expect(notificationService.notify).not.toHaveBeenCalled();
+
+         // Trigger second check via query update (does NOT reset clock-skew protection)
+         act(() => {
+             queryClient.setQueryData(['jobs'], []);
+         });
+
+         await waitFor(() => {
+             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
          });
 
          expect(notificationService.notify).toHaveBeenCalledWith(
@@ -70,11 +82,17 @@ describe('useFilterWatcher - Notifications', () => {
          
          const config1 = { ...mockSavedConfigs[0], notify: false };
          
-         renderHook(() => useFilterWatcher({ savedConfigs: [config1] }), { wrapper: createWrapper() });
+         const { wrapper, queryClient } = createWrapper();
+         renderHook(() => useFilterWatcher({ savedConfigs: [config1] }), { wrapper });
 
-         await waitFor(() => {
-             expect(jobsApi.getWatcherStats).toHaveBeenCalled();
+         // We need two checks here as well if we want to test disabled notifications
+         await waitFor(() => expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1));
+         
+         act(() => {
+             queryClient.setQueryData(['jobs'], []);
          });
+
+         await waitFor(() => expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2));
 
          expect(notificationService.notify).not.toHaveBeenCalled();
     });
@@ -82,11 +100,16 @@ describe('useFilterWatcher - Notifications', () => {
     it('should NOT trigger notification if no new items found', async () => {
          (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 0, new_items: 0 } });
          
-         renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }), { wrapper: createWrapper() });
+         const { wrapper, queryClient } = createWrapper();
+         renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }), { wrapper });
 
-         await waitFor(() => {
-             expect(jobsApi.getWatcherStats).toHaveBeenCalled();
+         await waitFor(() => expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1));
+         
+         act(() => {
+             queryClient.setQueryData(['jobs'], []);
          });
+
+         await waitFor(() => expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2));
 
          expect(notificationService.notify).not.toHaveBeenCalled();
     });

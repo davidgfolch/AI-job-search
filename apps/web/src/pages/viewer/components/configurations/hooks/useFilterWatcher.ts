@@ -25,6 +25,9 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const savedConfigsRef = useRef(savedConfigs);
     const isMounted = useRef(true);
+    const lastRequestIdRef = useRef(0);
+    const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const justResetRef = useRef<Set<string>>(new Set(savedConfigs.map(c => c.name)));
 
     const queryClient = useQueryClient();
 
@@ -47,6 +50,9 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
 
     const checkItems = useCallback(async () => {
         if (!startTime) return;
+        const requestId = ++lastRequestIdRef.current;
+        const justReset = new Set(justResetRef.current);
+        justResetRef.current.clear();
 
         const newResults: Record<string, WatcherResult> = {};
         const configsToCheck = savedConfigsRef.current;
@@ -66,13 +72,13 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                 cutoffMap[c.id] = new Date(configStartTime).toISOString();
             });
             const statsMap = await jobsApi.getWatcherStats(cutoffMap);
-            if (isMounted.current) {
+            if (isMounted.current && requestId === lastRequestIdRef.current) {
                 for (const { id, name } of configIdsWithNames) {
                     const stats = statsMap[id];
                     if (stats) {
                         newResults[name] = {
                             total: stats.total,
-                            newItems: stats.new_items
+                            newItems: justReset.has(name) ? 0 : stats.new_items
                         };
                     }
                 }
@@ -82,7 +88,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         }
         const notificationAggregator: string[] = [];
         let totalNewJobs = 0;
-        if (isMounted.current) {
+        if (isMounted.current && requestId === lastRequestIdRef.current) {
             setResults(newResults);
             setLastCheckTime(new Date());
             // Check for notifications
@@ -119,6 +125,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         setStartTime(now);
         setLastCheckTime(now);
         setResults({});
+        justResetRef.current = new Set(savedConfigsRef.current.map(c => c.name));
         configStartTimes.current = {}; // Reset all individual times
         notifiedCountsRef.current = {};
     };
@@ -126,6 +133,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         setIsWatching(false);
         setStartTime(null);
         setLastCheckTime(null);
+        setResults({});
         configStartTimes.current = {};
         notifiedCountsRef.current = {};
         if (intervalRef.current) {
@@ -137,6 +145,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         const now = new Date();
         configStartTimes.current[configName] = now;
         notifiedCountsRef.current[configName] = 0;
+        justResetRef.current.add(configName);
         // Optimistically reset count to 0 for this config in results
         setResults(prev => {
             const current = prev[configName];
@@ -151,21 +160,23 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     // Effect to handle polling and query updates
     useEffect(() => {
         if (isWatching && startTime && hasConfigsWithIds) {
-            // Immediate check when starting (or rather when startTime is set)
-            checkItems();
+            const debouncedCheck = () => {
+                if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+                checkTimeoutRef.current = setTimeout(checkItems, 200);
+            };
+            debouncedCheck();
             intervalRef.current = setInterval(checkItems, POLLING_INTERVAL);
             // Subscribe to query updates to trigger refresh on job changes
             const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
                 if (event.type === 'updated' && 
                     Array.isArray(event.query.queryKey) && 
                     (event.query.queryKey[0] === 'jobs' || event.query.queryKey[0] === 'jobUpdates')) {
-                    checkItems();
+                    debouncedCheck();
                 }
             });
             return () => {
-                if (intervalRef.current) {
-                    clearInterval(intervalRef.current);
-                }
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
                 unsubscribe();
             };
         }

@@ -28,7 +28,8 @@ describe('useFilterWatcher - Basic Functionality', () => {
     });
 
     it('should initialize with watching state', async () => {
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
         await waitFor(() => {
             expect(result.current.isWatching).toBe(true);
         });
@@ -36,36 +37,36 @@ describe('useFilterWatcher - Basic Functionality', () => {
     });
 
     it('should start watching and trigger immediate check', async () => {
+        vi.useRealTimers();
         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 10 }, 2: { total: 10, new_items: 10 } });
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
+        const { wrapper, queryClient } = createWrapper();
+        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
-        // Already triggered on mount
+        // First check after start/reset should force newItems to 0
         await waitFor(() => {
             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
-        });
+        }, { timeout: 2000 });
 
-        vi.clearAllMocks();
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 10 }, 2: { total: 10, new_items: 10 } });
+        expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 0 });
+        expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 0 });
 
+        // Trigger another check via query update (does not reset the justReset flag)
         act(() => {
-            result.current.startWatching();
+            queryClient.setQueryData(['jobs'], []);
         });
 
-        expect(result.current.isWatching).toBe(true);
+        // Second check should reflect actual values
+        await waitFor(() => {
+            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
+        }, { timeout: 2000 });
 
-        await waitFor(() => {
-            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
-        });
-        
-        await waitFor(() => {
-            expect(Object.keys(result.current.results)).toHaveLength(2);
-        });
         expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 10 });
         expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 10 });
     });
 
     it('should stop watching', async () => {
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper: createWrapper() });
+        const { wrapper } = createWrapper();
+        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
         // Already watching on mount
         await waitFor(() => {
