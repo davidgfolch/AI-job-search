@@ -30,7 +30,7 @@
 
 .header-button.copy-button {
     background: #667eea;
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.copy-button:hover {
@@ -40,7 +40,7 @@
 
 .header-button.state-button {
     background: #444;
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.state-button:hover {
@@ -49,7 +49,7 @@
 }
 
 .header-button.ignore-button {
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.ignore-button:hover {
@@ -65,7 +65,7 @@
 
 .header-button.nav-button {
     background: #667eea;
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.nav-button:hover:not(:disabled) {

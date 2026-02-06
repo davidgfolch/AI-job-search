@@ -167,7 +167,7 @@
 
 .editor-button.save {
     background-color: #007acc;
-    color: white;
+    color: var(--text-primary);
 }
 
 .editor-button:hover {

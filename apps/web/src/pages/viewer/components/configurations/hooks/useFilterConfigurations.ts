@@ -161,6 +161,7 @@ export function useFilterConfigurations({
             close: confirmModal.close,
         },
         savedConfigs,
+        savedConfigName,
         toggleNotification,
         toggleStatistics,
         togglePin,

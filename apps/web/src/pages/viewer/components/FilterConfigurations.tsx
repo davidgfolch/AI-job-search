@@ -55,7 +55,8 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         watcherResults,
         lastCheckTime,
         toggleWatch,
-        savedConfigs
+        savedConfigs,
+        savedConfigName
     } = useFilterConfigurations({ 
         currentFilters, 
         onLoadConfig, 
@@ -114,6 +115,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                 onLoad={loadConfiguration}
                 onUnpin={togglePin}
                 results={watcherResults}
+                selectedConfigName={savedConfigName}
             />
         </div>
     );

@@ -12,13 +12,13 @@
 }
 
 .message.success {
-    background: #10b981;
-    color: white;
+    background: #0c8e63;
+    color: var(--text-primary);
     border: 1px solid #059669;
 }
 
 .message.error {
     background: #ef4444;
-    color: white;
+    color: var(--text-primary);
     border: 1px solid #dc2626;
 }

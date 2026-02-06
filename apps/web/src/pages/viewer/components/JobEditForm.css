@@ -53,7 +53,7 @@
 .status-pill.active {
     background: linear-gradient(135deg, #667eea, #764ba2);
     border-color: transparent;
-    color: white;
+    color: var(--text-primary);
     font-weight: 500;
 }
 
@@ -106,7 +106,7 @@
     border: 1px solid #444;
     border-radius: 6px;
     background: #1a1a1a;
-    color: white;
+    color: var(--text-primary);
     font-family: inherit;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -138,7 +138,7 @@
     border: none;
     border-radius: 8px;
     background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    color: var(--text-primary);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
@@ -156,7 +156,7 @@
     border-style: solid;
     border-color: transparent;
     background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    color: var(--text-primary);
     border-radius: 6px;
     cursor: pointer;
     font-weight: 500;

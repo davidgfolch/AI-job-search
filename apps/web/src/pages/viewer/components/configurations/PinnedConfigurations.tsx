@@ -6,9 +6,10 @@ interface PinnedConfigurationsProps {
     onLoad: (config: FilterConfig) => void;
     onUnpin: (name: string) => void;
     results?: Record<string, WatcherResult>;
+    selectedConfigName?: string;
 }
 
-export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results = {} }: PinnedConfigurationsProps) {
+export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results = {}, selectedConfigName }: PinnedConfigurationsProps) {
     if (pinnedConfigs.length === 0) {
         return null;
     }
@@ -17,8 +18,9 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
             {pinnedConfigs.map((config) => {
                 const result = results[config.name];
                 const hasNew = result && result.newItems > 0;
+                const isSelected = config.name === selectedConfigName;
                 return (
-                    <div key={config.name} className="pinned-config-item">
+                    <div key={config.name} className={`pinned-config-item ${isSelected ? 'selected' : ''}`}>
                         <button
                             className="pinned-config-load"
                             onClick={() => onLoad(config)}

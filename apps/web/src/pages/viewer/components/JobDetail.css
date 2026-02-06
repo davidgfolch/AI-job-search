@@ -32,7 +32,7 @@
 
 .create-job-btn {
     background-color: var(--secondary-color);
-    color: white;
+    color: var(--text-primary);
     border: none;
     border-radius: 4px;
     padding: 5px 10px;
@@ -80,7 +80,7 @@
 
 .header-button.copy-button {
     background: #667eea;
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.copy-button:hover {
@@ -90,7 +90,7 @@
 
 .header-button.state-button {
     background: #444;
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.state-button:hover {
@@ -116,7 +116,7 @@
 
 .header-button.ignore-button {
     background: #ef4444;
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.ignore-button:hover {
@@ -133,7 +133,7 @@
 
 .header-button.nav-button {
     background: #667eea;
-    color: white;
+    color: var(--text-primary);
 }
 
 .header-button.nav-button:hover:not(:disabled) {

@@ -58,7 +58,7 @@
 
 .modal-button.confirm {
     background-color: var(--primary-color, #2563eb);
-    color: white;
+    color: var(--text-primary);
 }
 
 .modal-button.confirm:hover {

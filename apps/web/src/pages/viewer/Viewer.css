@@ -178,7 +178,7 @@
 .tab-button.active {
   background: linear-gradient(135deg, #667eea, #764ba2);
   border-color: transparent;
-  color: white;
+  color: var(--text-primary);
 }
 
 .tab-content {
