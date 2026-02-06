@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate, WatcherStatsResponse
 from services.jobs_service import JobsService
 from pydantic import BaseModel
-from utils.filter_parser import BOOLEAN_FILTER_KEYS
 
 
 router = APIRouter()
