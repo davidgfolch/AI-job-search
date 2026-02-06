@@ -31,7 +31,7 @@ describe('useFilterWatcher - Polling Logic', () => {
         vi.useFakeTimers();
         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 } });
         
-        const { wrapper } = createWrapper();
+        const { wrapper, queryClient } = createWrapper();
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper });
 
         // Handle initial check on mount. Since it's debounced by 200ms,
@@ -44,14 +44,24 @@ describe('useFilterWatcher - Polling Logic', () => {
         // First check after reset/mount should be 0
         expect(Object.values(result.current.results)[0].newItems).toBe(0);
 
+        // Catch up check: server reports 0 for the future cutoff
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 } });
+        await act(async () => {
+             await vi.advanceTimersByTimeAsync(1000); // Trigger another debounced check if we can, or just wait for next poll
+             // Wait, query update is the easiest way to trigger in this test environment
+             queryClient.setQueryData(['jobs'], []);
+             await vi.advanceTimersByTimeAsync(200);
+        });
+        expect(Object.values(result.current.results)[0].newItems).toBe(0);
+
         vi.clearAllMocks();
 
-        // Periodic poll (should work normally as justReset is cleared)
+        // Periodic poll: now server reports 5 new items since the catch-up
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 5 } });
         await act(async () => {
             await vi.advanceTimersByTimeAsync(POLLING_INTERVAL);
         });
 
-        // 1 call for one config (total and new)
         expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
         expect(Object.values(result.current.results)[0].newItems).toBe(5);
     });

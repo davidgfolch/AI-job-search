@@ -52,7 +52,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         if (!startTime) return;
         const requestId = ++lastRequestIdRef.current;
         const justReset = new Set(justResetRef.current);
-        justResetRef.current.clear();
 
         const newResults: Record<string, WatcherResult> = {};
         const configsToCheck = savedConfigsRef.current;
@@ -65,6 +64,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             configIdsWithNames.push({ id: config.id, name: config.name });
         }
         if (configIdsWithNames.length === 0) return;
+
         try {
             const cutoffMap: Record<number, string> = {};
             configIdsWithNames.forEach(c => {
@@ -72,14 +72,20 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                 cutoffMap[c.id] = new Date(configStartTime).toISOString();
             });
             const statsMap = await jobsApi.getWatcherStats(cutoffMap);
-            if (isMounted.current && requestId === lastRequestIdRef.current) {
+                if (isMounted.current && requestId === lastRequestIdRef.current) {
                 for (const { id, name } of configIdsWithNames) {
                     const stats = statsMap[id];
                     if (stats) {
+                        const isReset = justReset.has(name);
                         newResults[name] = {
                             total: stats.total,
-                            newItems: justReset.has(name) ? 0 : stats.new_items
+                            newItems: isReset ? 0 : stats.new_items
                         };
+                        // Only remove from reset set if server confirms 0 items for the new cutoff
+                        // This persists the 0 in the UI until the server catches up (skew mitigation)
+                        if (isReset && stats.new_items === 0) {
+                            justResetRef.current.delete(name);
+                        }
                     }
                 }
             }
@@ -87,22 +93,16 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             console.error('Error checking watcher stats:', error);
         }
         const notificationAggregator: string[] = [];
-        let totalNewJobs = 0;
         if (isMounted.current && requestId === lastRequestIdRef.current) {
             setResults(newResults);
             setLastCheckTime(new Date());
-            // Check for notifications
             Object.entries(newResults).forEach(([name, result]) => {
                 const prevCount = notifiedCountsRef.current[name] || 0;
-                // If we found more items than before
                 if (result.newItems > prevCount) {
-                    // Update the tracker
                     notifiedCountsRef.current[name] = result.newItems;
-                    // Check if this config has notifications enabled
                     const config = configsToCheck.find(c => c.name === name);
                     if (config && config.notify) {
                         notificationAggregator.push(`${name} (${result.newItems})`);
-                        totalNewJobs += result.newItems;
                     }
                 }
             });
@@ -142,17 +142,22 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         }
     };
     const resetWatcher = (configName: string) => {
-        const now = new Date();
+        // Increased buffer to 5s for better safety against clock skew
+        const now = new Date(Date.now() + 5000);
         configStartTimes.current[configName] = now;
         notifiedCountsRef.current[configName] = 0;
         justResetRef.current.add(configName);
+        // Invalidate any pending requests to prevent them from overwriting this reset
+        lastRequestIdRef.current++;
         // Optimistically reset count to 0 for this config in results
         setResults(prev => {
             const current = prev[configName];
-            if (!current) return prev;
             return {
                 ...prev,
-                [configName]: { ...current, newItems: 0 }
+                [configName]: { 
+                    total: current?.total ?? 0, 
+                    newItems: 0 
+                }
             };
         });
     };

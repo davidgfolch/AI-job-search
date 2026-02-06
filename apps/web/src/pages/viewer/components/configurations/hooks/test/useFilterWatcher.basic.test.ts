@@ -50,18 +50,35 @@ describe('useFilterWatcher - Basic Functionality', () => {
         expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 0 });
         expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 0 });
 
-        // Trigger another check via query update (does not reset the justReset flag)
+        // Second check: server still reports 10 (simulating clock skew or lag)
         act(() => {
             queryClient.setQueryData(['jobs'], []);
         });
-
-        // Second check should reflect actual values
         await waitFor(() => {
             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
-        }, { timeout: 2000 });
+        });
+        // Should STILL be 0 because stats.new_items was 10
+        expect(result.current.results['Config 1'].newItems).toBe(0);
 
-        expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 10 });
-        expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 10 });
+        // Third check: server finally reports 0 (catches up)
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 0 }, 2: { total: 10, new_items: 0 } });
+        act(() => {
+            queryClient.setQueryData(['jobs'], []);
+        });
+        await waitFor(() => {
+            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(3);
+        });
+        expect(result.current.results['Config 1'].newItems).toBe(0);
+
+        // Fourth check: new items arrive AFTER server caught up
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 11, new_items: 1 }, 2: { total: 11, new_items: 1 } });
+        act(() => {
+            queryClient.setQueryData(['jobs'], []);
+        });
+        await waitFor(() => {
+            expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(4);
+        });
+        expect(result.current.results['Config 1'].newItems).toBe(1);
     });
 
     it('should stop watching', async () => {

@@ -48,19 +48,29 @@ describe('useFilterWatcher - Notifications', () => {
          const { wrapper, queryClient } = createWrapper();
          renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }), { wrapper });
 
-         // First check: newItems should be 0 (due to justReset clock-skew protection)
+         // First check: newItems should be 0 (due to justReset protection)
          await waitFor(() => {
              expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
          });
          expect(notificationService.notify).not.toHaveBeenCalled();
 
-         // Trigger second check via query update (does NOT reset clock-skew protection)
+         // Second check: server returns 0 (catching up)
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 }, 2: { total: 5, new_items: 0 } });
          act(() => {
              queryClient.setQueryData(['jobs'], []);
          });
-
          await waitFor(() => {
              expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
+         });
+         expect(notificationService.notify).not.toHaveBeenCalled();
+
+         // Third check: server returns 5 (new items arrive after catch-up)
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 5 }, 2: { total: 10, new_items: 5 } });
+         act(() => {
+             queryClient.setQueryData(['jobs'], []);
+         });
+         await waitFor(() => {
+             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(3);
          });
 
          expect(notificationService.notify).toHaveBeenCalledWith(
