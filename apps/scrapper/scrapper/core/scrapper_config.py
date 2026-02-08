@@ -33,7 +33,7 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
     'Indeed': {
         TIMER: getSeconds(getEnv('INDEED_RUN_CADENCY')),
         IGNORE_AUTORUN: getEnvBool('INDEED_IGNORE_AUTORUN', False),
-        DEBUG: True,
+        DEBUG: False,
     },
 }
 

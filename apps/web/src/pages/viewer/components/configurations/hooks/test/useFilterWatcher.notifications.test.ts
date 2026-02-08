@@ -7,7 +7,8 @@ import { mockSavedConfigs, cleanupMocks, createWrapper } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
-        getWatcherStats: vi.fn()
+        getWatcherStats: vi.fn(),
+        getSystemTimezone: vi.fn().mockResolvedValue({ offset_minutes: 0 })
     }
 }));
 

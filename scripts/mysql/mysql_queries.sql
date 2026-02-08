@@ -195,6 +195,14 @@ interview_rh, interview, interview_tech, interview_technical_test, interview_tec
 ai_enriched, easy_apply
     from jobs where id in (30755, 31097)
     order by created asc
+
+SELECT config_id, job_created
+FROM config_view_1 where job_created > DATE_SUB(NOW(), INTERVAL 50 MINUTE) LIMIT 100
+
+SELECT config_id, job_created
+FROM config_view_1 WHERE job_created > DATE_SUB(NOW(), INTERVAL 1 DAY) LIMIT 100
+
+select * from filter_configurations;
     
 -- Statistics
 SELECT CONVERT(created,DATE) as createdDate, CONVERT(created,TIME) as createdTime from jobs order by created;

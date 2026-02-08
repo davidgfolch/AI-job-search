@@ -6,7 +6,8 @@ import { mockSavedConfigs, cleanupMocks, createWrapper } from './testHelpers';
 
 vi.mock('../../../../api/ViewerApi', () => ({
     jobsApi: {
-        getWatcherStats: vi.fn()
+        getWatcherStats: vi.fn(),
+        getSystemTimezone: vi.fn().mockResolvedValue({ offset_minutes: 0 })
     }
 }));
 
@@ -62,7 +63,7 @@ describe('useFilterWatcher - Polling Logic', () => {
             await vi.advanceTimersByTimeAsync(POLLING_INTERVAL);
         });
 
-        expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
+        expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
         expect(Object.values(result.current.results)[0].newItems).toBe(5);
     });
     

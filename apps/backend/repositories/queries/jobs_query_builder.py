@@ -1,5 +1,41 @@
 from typing import List, Optional, Dict, Any, Tuple
 
+# Reusable filter condition generators
+def _col(name: str, alias: str) -> str:
+    return f"{alias}.{name}" if alias else f"`{name}`" if "." not in name else name
+
+def get_search_conditions(search_term_provider: str, alias: str = "") -> str:
+    """
+    Returns SQL condition for search.
+    Args:
+        search_term_provider: SQL snippet that provides the search term
+        alias: Table alias for columns (e.g. 'j')
+    """
+    title_col = _col("title", alias)
+    comp_col = _col("company", alias)
+    t = f"{alias}.title" if alias else "title"
+    c = f"{alias}.company" if alias else "company"
+    return f"({t} LIKE {search_term_provider} OR {c} LIKE {search_term_provider})"
+
+def get_days_old_condition(days_provider: str, alias: str = "") -> str:
+    col = f"{alias}.created" if alias else "created"
+    return f"DATE({col}) >= DATE_SUB(CURDATE(), INTERVAL {days_provider} DAY)"
+
+def get_salary_condition(salary_provider: str, alias: str = "") -> str:
+    col = f"{alias}.salary" if alias else "salary"
+    return f"({salary_provider} IS NOT NULL AND {col} RLIKE {salary_provider})"
+
+def get_boolean_condition(field_name: str, value_provider: str, alias: str = "") -> str:
+    """
+    Args:
+        field_name: Column name
+        value_provider: SQL snippet providing the value
+        alias: Table alias
+    """
+    if alias:
+        return f"{alias}.`{field_name}` = {value_provider}"
+    return f"`{field_name}` = {value_provider}"
+
 def build_jobs_where_clause(
     search: Optional[str], 
     status: Optional[str], 
@@ -11,12 +47,10 @@ def build_jobs_where_clause(
     ids: Optional[List[int]] = None,
     created_after: Optional[str] = None # Expecting ISO string or datetime compatible string
 ) -> Tuple[List[str], List[Any]]:
-    
     where = ["1=1"]
     params = []
-    
     if search:
-        where.append("(title LIKE %s OR company LIKE %s)")
+        where.append(get_search_conditions("%s"))
         params.extend([f"%{search}%", f"%{search}%"])
     if status:
         statuses = status.split(',')
@@ -27,17 +61,18 @@ def build_jobs_where_clause(
         for s in statuses:
             where.append(f"`{s.strip()}` = 0")
     if days_old:
-        where.append("DATE(created) >= DATE_SUB(CURDATE(), INTERVAL %s DAY)")
+        where.append(get_days_old_condition("%s"))
         params.append(days_old)
     if salary:
-        where.append("salary RLIKE %s")
-        params.append(salary)
+        where.append(get_salary_condition("%s"))
+        params.extend([salary, salary])
     if sql_filter:
         where.append(f"({sql_filter})")
     if boolean_filters:
         for field_name, field_value in boolean_filters.items():
             if field_value is not None:
-                where.append(f"`{field_name}` = {1 if field_value else 0}")
+                val = 1 if field_value else 0
+                where.append(get_boolean_condition(field_name, str(val)))
     if ids:
         placeholders = ', '.join(['%s'] * len(ids))
         where.append(f"id IN ({placeholders})")
@@ -45,18 +80,15 @@ def build_jobs_where_clause(
     if created_after:
         where.append("created > %s")
         params.append(created_after)
-        
     return where, params
 
 def parse_job_order(order: Optional[str]) -> Tuple[str, str]:
     allowed_sort_columns = ["created", "modified", "salary", "title", "company", "cv_match_percentage"]
     sort_col, sort_dir = "created", "desc"
-    
     if order:
         parts = order.split()
         if len(parts) >= 1 and parts[0] in allowed_sort_columns:
             sort_col = parts[0]
         if len(parts) >= 2 and parts[1].lower() in ["asc", "desc"]:
             sort_dir = parts[1].lower()
-            
     return sort_col, sort_dir

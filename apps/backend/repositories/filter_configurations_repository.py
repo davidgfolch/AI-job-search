@@ -1,8 +1,10 @@
 import json
 from typing import List, Optional, Dict, Any
 from commonlib.mysqlUtil import MysqlUtil, getConnection
+from repositories.queries.view_generator import drop_config_view_sql
 
 class FilterConfigurationsRepository:
+
     def get_db(self):
         return MysqlUtil(getConnection())
     
@@ -15,24 +17,10 @@ class FilterConfigurationsRepository:
             columns = ['id', 'name', 'filters', 'notify', 'statistics', 'created', 'modified']
             result = []
             for row in rows:
-                # Handle case where statistics column might not exist yet in DB or old rows
-                # If row length is 6, it means statistics is missing (backward compatibility if needed, 
-                # but better to assume migration ran). 
-                # Ideally we should select specific columns.
                 if len(row) == 6:
-                     # Fallback for old schema if feasible, or just fail. 
-                     # Given implied task is to add feature, we assume DB is migrated.
-                     # But wait, SELECT * returns columns in table order. If I add it at end, it's 7th.
-                     # If I add it after notify, it's 5th.
-                     # To be safe and explicit, let's select specific columns.
                      pass 
-            
-            # Let's use explicit select to be safe against column ordering changes
-            # But wait, the original code used *.
-            # I will switch to explicit columns.
             pass
 
-    # Rewrite methods to use explicit columns for safety
     def find_all(self) -> List[Dict[str, Any]]:
         query = "SELECT id, name, filters, notify, statistics, pinned, created, modified FROM filter_configurations ORDER BY created"
         with self.get_db() as db:
@@ -84,9 +72,13 @@ class FilterConfigurationsRepository:
     def create(self, name: str, filters: dict, notify: bool = False, statistics: bool = True, pinned: bool = False) -> int:
         filters_json = json.dumps(filters)
         query = "INSERT INTO filter_configurations (name, filters, notify, statistics, pinned) VALUES (%s, %s, %s, %s, %s)"
+        
+        def op(c):
+            c.execute(query, [name, filters_json, notify, statistics, pinned])
+            return c.lastrowid
+            
         with self.get_db() as db:
-            db.executeAndCommit(query, [name, filters_json, notify, statistics, pinned])
-            return db.fetchOne("SELECT LAST_INSERT_ID()")[0]
+            return db._transaction(op)
     
     def update(self, config_id: int, name: Optional[str] = None, filters: Optional[dict] = None, notify: Optional[bool] = None, statistics: Optional[bool] = None, pinned: Optional[bool] = None) -> bool:
         updates = []
@@ -115,9 +107,14 @@ class FilterConfigurationsRepository:
             return True
     
     def delete(self, config_id: int) -> bool:
-        query = "DELETE FROM filter_configurations WHERE id = %s"
+        drop_view_sql = drop_config_view_sql(config_id)
+        delete_query = "DELETE FROM filter_configurations WHERE id = %s"
+        queries = [
+            {'query': delete_query, 'params': [config_id]},
+            {'query': drop_view_sql}
+        ]
         with self.get_db() as db:
-            db.executeAndCommit(query, [config_id])
+            db.executeAllAndCommit(queries)
             return True
     
     def count(self) -> int:

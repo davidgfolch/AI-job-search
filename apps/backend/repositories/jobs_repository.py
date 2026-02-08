@@ -1,3 +1,4 @@
+import json
 from typing import List, Optional, Dict, Any
 from commonlib.mysqlUtil import MysqlUtil, getConnection, SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, SELECT_APPLIED_JOB_ORDER_BY
 from commonlib.sqlUtil import scapeRegexChars, avoidInjection
@@ -86,9 +87,9 @@ class JobsRepository:
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
                 params.append(value)
-            placeholders = ', '.join(['%s'] * len(job_ids))
+            ids = ', '.join(['%s'] * len(job_ids))
             params.extend(job_ids)
-            query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id IN ({placeholders})"
+            query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id IN ({ids})"
             db.executeAndCommit(query, params)
             return len(job_ids)
 
@@ -111,8 +112,8 @@ class JobsRepository:
         if not job_ids:
             return 0
         with self.get_db() as db:
-            placeholders = ', '.join(['%s'] * len(job_ids))
-            query = f"DELETE FROM jobs WHERE id IN ({placeholders})"
+            ids = ', '.join(['%s'] * len(job_ids))
+            query = f"DELETE FROM jobs WHERE id IN ({ids})"
             return db.executeAndCommit(query, job_ids)
 
     def delete_jobs_by_filter(self, where_clauses: List[str], params: List[Any]) -> int:
@@ -143,3 +144,4 @@ class JobsRepository:
     def create_job(self, job_data: Dict[str, Any]) -> int:
         with self.get_db() as db:
             return db.insertJob(job_data)
+

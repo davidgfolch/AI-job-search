@@ -32,25 +32,7 @@ class JobsService:
             salary=salary, boolean_filters=boolean_filters, sql_filter=sql_filter,
             ids=ids, created_after=created_after)
 
-    def get_watcher_stats(self, config_ids: List[int],
-                          cutoff_map: Optional[Dict[int, str]] = None,
-                          filter_config_service: Optional[Any] = None) -> Dict[int, Dict[str, int]]:
-        if filter_config_service is None:
-            from services.filter_configurations_service import FilterConfigurationsService
-            filter_config_service = FilterConfigurationsService()
-        cutoff_map = cutoff_map or {}
-        results = {}
-        for config_id in config_ids:
-            try:
-                config = filter_config_service.get_by_id(config_id)
-                params = extract_filter_params(config.get('filters', {}))
-                total = self.count_jobs(**params)
-                cutoff = cutoff_map.get(config_id)
-                new_items = self.count_jobs(**params, created_after=cutoff) if cutoff else 0
-                results[config_id] = {"total": total, "new_items": new_items}
-            except Exception:
-                results[config_id] = {"total": 0, "new_items": 0}
-        return results
+
 
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:
         with self.repo.get_db() as db:

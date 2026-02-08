@@ -1,29 +1,8 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from api import jobs
-from api import salary
-from api import ddl
-from api import statistics
-from api import skills
-from api import filter_configurations
+import os
+import uvicorn
+from api.main import app
 
-app = FastAPI(title="AI Job Search API")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for dev
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
-app.include_router(salary.router, prefix="/api/salary", tags=["salary"])
-app.include_router(ddl.router, prefix="/api/ddl", tags=["ddl"])
-app.include_router(statistics.router, prefix="/api/statistics", tags=["statistics"])
-app.include_router(skills.router, prefix="/api/skills", tags=["skills"])
-app.include_router(filter_configurations.router, prefix="/api/filter-configurations", tags=["filter-configurations"])
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
+if __name__ == "__main__":
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host=host, port=port, reload=True)

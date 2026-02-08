@@ -2,10 +2,14 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate, WatcherStatsResponse
 from services.jobs_service import JobsService
+from services.watcher_service import WatcherService
 from pydantic import BaseModel
 
 
 router = APIRouter()
+
+from api.jobs_applied import router as jobs_applied_router
+router.include_router(jobs_applied_router)
 
 class BulkJobUpdate(BaseModel):
     ids: Optional[List[int]] = None
@@ -18,9 +22,11 @@ class BulkJobDelete(BaseModel):
     filters: Optional[dict] = None
     select_all: bool = False
 
-
 def get_service():
     return JobsService()
+
+def get_watcher_service():
+    return WatcherService()
 
 @router.post("", response_model=Job)
 def create_job(job_create: JobCreate, service: JobsService = Depends(get_service)):
@@ -78,7 +84,6 @@ def list_jobs(
             ('easy_apply', easy_apply),
         ] if value is not None
     }
-    
     return service.list_jobs(
         page=page,
         size=size,
@@ -91,16 +96,13 @@ def list_jobs(
         boolean_filters=boolean_filters,
         sql_filter=sql_filter,
         ids=ids,
-        created_after=created_after
-    )
-
-
+        created_after=created_after)
 
 @router.get("/watcher-stats")
 def get_watcher_stats(
     request: Request,
     config_ids: str = Query(..., description="Comma-separated list of filter configuration IDs"),
-    service: JobsService = Depends(get_service)
+    service: WatcherService = Depends(get_watcher_service)
 ):
     ids = [int(id.strip()) for id in config_ids.split(',') if id.strip()]
     cutoff_map = {}
@@ -109,12 +111,6 @@ def get_watcher_stats(
         if param_name in request.query_params:
             cutoff_map[config_id] = request.query_params[param_name]
     return service.get_watcher_stats(config_ids=ids, cutoff_map=cutoff_map)
-
-
-# Import the new router
-from api.jobs_applied import router as jobs_applied_router
-router.include_router(jobs_applied_router)
-
 
 @router.get("/{job_id}", response_model=Job)
 def get_job(job_id: int, service: JobsService = Depends(get_service)):
@@ -138,8 +134,7 @@ def bulk_update_jobs(bulk_update: BulkJobUpdate, service: JobsService = Depends(
         update_data=update_data,
         ids=bulk_update.ids,
         filters=bulk_update.filters,
-        select_all=bulk_update.select_all
-    )
+        select_all=bulk_update.select_all)
     return {"updated": count}
 
 @router.post("/bulk/delete", response_model=dict)
@@ -148,6 +143,5 @@ def bulk_delete_jobs(bulk_delete: BulkJobDelete, service: JobsService = Depends(
     count = service.delete_jobs(
         ids=bulk_delete.ids,
         filters=bulk_delete.filters,
-        select_all=bulk_delete.select_all
-    )
+        select_all=bulk_delete.select_all)
     return {"deleted": count}

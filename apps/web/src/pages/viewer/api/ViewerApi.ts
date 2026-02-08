@@ -174,4 +174,9 @@ export const jobsApi = {
     return handleRequest(apiClient.post<{ deleted: number }>('/jobs/bulk/delete', payload),
       'Error deleting jobs');
   },
+  
+  getSystemTimezone: async (): Promise<{ offset_minutes: number }> => {
+    return handleRequest(apiClient.get<{ offset_minutes: number }>('/system/timezone'),
+      'Error getting system timezone');
+  },
 };

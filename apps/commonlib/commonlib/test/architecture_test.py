@@ -60,11 +60,9 @@ def test_sibling_test_folder_exists():
         # Group by type of violation for cleaner output or just list them
         # Sorting by path
         violations.sort(key=lambda x: x[0])
-        
         message += f"\n{YELLOW}Found files missing sibling tests (or using legacy naming):{RESET}\n"
         for path, reason in violations:
              message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
-             
         print(message)
         pytest.fail(message)
 
