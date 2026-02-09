@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from repositories.statistics_repository import StatisticsRepository
 from repositories.filter_configurations_repository import FilterConfigurationsRepository
 from repositories.jobs_repository import JobsRepository
-from utils.filter_parser import extract_boolean_filters
+
 
 
 class StatisticsService:
@@ -44,14 +44,14 @@ class StatisticsService:
             filters = config.get('filters', {})
             where_clauses, params = self.jobs_repo.build_where(
                 search=filters.get('search'),
-                status=filters.get('status'),
-                not_status=filters.get('not_status'),
-                days_old=filters.get('days_old'),
+                status=None,
+                not_status=None,
+                days_old=None,
                 salary=filters.get('salary'),
                 sql_filter=filters.get('sql_filter'),
-                boolean_filters=extract_boolean_filters(filters),
+                boolean_filters=None,
                 ids=filters.get('ids'),
-                created_after=filters.get('created_after')
+                created_after=None
             )
             where_str = " AND ".join(where_clauses)
             with self.jobs_repo.get_db() as db:

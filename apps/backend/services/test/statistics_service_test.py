@@ -3,14 +3,24 @@ from unittest.mock import MagicMock
 import pandas as pd
 from services.statistics_service import StatisticsService
 from repositories.statistics_repository import StatisticsRepository
+from repositories.filter_configurations_repository import FilterConfigurationsRepository
+from repositories.jobs_repository import JobsRepository
 
 @pytest.fixture
 def mock_repo():
     return MagicMock(spec=StatisticsRepository)
 
 @pytest.fixture
-def service(mock_repo):
-    return StatisticsService(repo=mock_repo)
+def mock_filter_repo():
+    return MagicMock(spec=FilterConfigurationsRepository)
+
+@pytest.fixture
+def mock_jobs_repo():
+    return MagicMock(spec=JobsRepository)
+
+@pytest.fixture
+def service(mock_repo, mock_filter_repo, mock_jobs_repo):
+    return StatisticsService(repo=mock_repo, filter_repo=mock_filter_repo, jobs_repo=mock_jobs_repo)
 
 def test_get_history_stats(service, mock_repo):
     # Mock data
@@ -49,3 +59,51 @@ def test_get_sources_by_hour(service, mock_repo):
     
     service.get_sources_by_hour()
     mock_repo.get_sources_by_hour_df.assert_called_once()
+
+
+def test_get_filter_configuration_stats_removes_boolean_filters(service, mock_filter_repo, mock_jobs_repo):
+    # Setup
+    config = {
+        'name': 'Test Config',
+        'statistics': True,
+        'filters': {
+            'search': 'python',
+            'status': 'applied',
+            'not_status': 'discarded',
+            'days_old': 7,
+            'ignored': True, # boolean filter
+            'applied': True  # boolean filter
+        }
+    }
+    mock_filter_repo.find_all.return_value = [config]
+    
+    # Mock db context manager from jobs_repo
+    mock_db = MagicMock()
+    # Mock context manager return value
+    mock_jobs_repo.get_db.return_value.__enter__.return_value = mock_db
+    mock_db.count.return_value = 10
+    
+    # Mock build_where to return something
+    mock_jobs_repo.build_where.return_value = (["1=1"], [])
+
+    # Execute
+    result = service.get_filter_configuration_stats()
+    
+    # Assert
+    assert len(result) == 1
+    assert result[0]['count'] == 10
+    
+    # CRITICAL ASSERTION: Check that build_where was called with None for status, not_status and boolean_filters
+    mock_jobs_repo.build_where.assert_called_once()
+    
+    # Get kwargs
+    call_kwargs = mock_jobs_repo.build_where.call_args[1]
+    
+    # Check that boolean/stat filters are explicitly None
+    assert call_kwargs.get('status') is None
+    assert call_kwargs.get('not_status') is None
+    assert call_kwargs.get('boolean_filters') is None
+    
+    # Check that other filters are preserved
+    assert call_kwargs.get('search') == 'python'
+    assert call_kwargs.get('days_old') == 7
