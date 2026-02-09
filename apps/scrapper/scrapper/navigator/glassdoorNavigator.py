@@ -4,9 +4,7 @@ from commonlib.decorator.retry import retry
 from commonlib.terminalColor import yellow, green, printHR
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
-
 from .baseNavigator import BaseNavigator
-
 
 
 #LOGIN
@@ -39,6 +37,10 @@ class GlassdoorNavigator(BaseNavigator):
     def load_main_page(self):
         self.selenium.loadPage('https://www.glassdoor.es/index.htm')
         sleep(2, 2)
+        # self.selenium.waitAndClick('button[data-test="unified-auth-indeed-button"]')
+        if len(self.selenium.getElms('a[data-test="legacy-auth-link"]')) > 0:
+            self.selenium.waitAndClick('a[data-test="legacy-auth-link"]')
+            sleep(2, 2)
         self.selenium.getElm(CSS_SEL_LOGIN_EMAIL)
 
     @retry(retries=60, delay=5, exception=NoSuchElementException)

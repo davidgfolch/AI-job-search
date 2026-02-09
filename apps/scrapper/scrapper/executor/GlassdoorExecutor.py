@@ -59,18 +59,13 @@ class GlassdoorExecutor(BaseExecutor):
             all_lis = self.navigator.get_job_li_elements()
             if idx >= len(all_lis):
                  return
-            
-            # Scroll logic from original
             self.navigator.scroll_jobs_list(idx)
-            # Re-fetch after scroll as per original logic (though sometimes dangerous if DOM changes, but copying original logic)
             all_lis = self.navigator.get_job_li_elements()
             if idx >= len(all_lis): # Safety check again
                  return
             li_elm = all_lis[idx]
-            
             url = self.navigator.get_job_url(li_elm)
             job_id, job_exists = self.service.job_exists_in_db(url)
-            
             if job_exists:
                 print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='')
             else:
