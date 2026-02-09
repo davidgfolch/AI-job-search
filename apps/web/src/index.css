@@ -73,7 +73,7 @@
   --color-salary: #4caf50;
   
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #4a5fd8 0%, #5a3582 100%);
+  --gradient-primary: linear-gradient(135deg, #4a5fd8 0%, #2e41a9 100%);
   --gradient-selected: linear-gradient(90deg, rgba(74, 95, 216, 0.13), rgba(90, 53, 130, 0.13));
   
   /* Shadows & Effects */

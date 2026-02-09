@@ -64,6 +64,8 @@ const Statistics = () => {
                         <option value="Last year">Last year</option>
                         <option value="Last 6 months">Last 6 months</option>
                         <option value="Last month">Last month</option>
+                        <option value="Last week">Last week</option>
+                        <option value="Last day">Last day</option>
                     </select>
 
                     <span className="layout-label">Layout:</span>

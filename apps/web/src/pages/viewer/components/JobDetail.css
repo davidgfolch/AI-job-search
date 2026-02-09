@@ -31,19 +31,19 @@
 }
 
 .create-job-btn {
-    background-color: var(--secondary-color);
+    background-color: var(--primary-color);
     color: var(--text-primary);
     border: none;
     border-radius: 4px;
     padding: 5px 10px;
-    margin-left: 10px;
+    margin-left: 0.5rem;
     cursor: pointer;
     font-size: 0.9rem;
     transition: background-color 0.2s;
 }
-
-.create-job-btn:hover {
-    background-color: var(--secondary-color-hover);
+.create-job-btn span {
+    font-size: 1.1rem;
+    font-weight: bold;
 }
 
 .job-link {

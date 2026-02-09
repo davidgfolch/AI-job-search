@@ -16,6 +16,10 @@ export const useStatistics = () => {
             start.setMonth(start.getMonth() - 6);
         } else if (timeRange === 'Last month') {
             start.setMonth(start.getMonth() - 1);
+        } else if (timeRange === 'Last week') {
+            start.setDate(start.getDate() - 7);
+        } else if (timeRange === 'Last day') {
+            start.setDate(start.getDate() - 1);
         }
         return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
     }, [timeRange]);

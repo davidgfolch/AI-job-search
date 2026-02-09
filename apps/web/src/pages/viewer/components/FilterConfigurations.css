@@ -184,8 +184,8 @@
 }
 
 .pinned-config-item.selected {
-    background: var(--primary-color, #007acc);
-    border-color: var(--primary-color, #007acc);
+    background: var(--primary-color);
+    border-color: var(--secondary-color);
 }
 
 .pinned-config-item.selected .pinned-config-load,

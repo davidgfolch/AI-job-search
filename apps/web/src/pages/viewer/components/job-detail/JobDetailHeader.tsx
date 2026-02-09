@@ -16,7 +16,7 @@ export default function JobDetailHeader({ job, onCreateNew, onDelete }: JobDetai
             </h2>
             {onCreateNew && (
                 <button className="create-job-btn" onClick={onCreateNew} title="Create New Job">
-                    ➕ Create
+                    <span>+</span> Create
                 </button>
             )}
             {onDelete && (
