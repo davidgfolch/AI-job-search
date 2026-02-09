@@ -74,19 +74,13 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                     className="compact-input"/>
                             </div>
                             <div className="compact-filter sql-filter">
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ alignItems: 'center', justifyContent: 'normal', gap: '1rem' }}>
                                     <label htmlFor="filter-sql">SQL Where Filter:</label>
                                     <button type="button" 
                                         onClick={() => setIsSqlEditorOpen(true)}
-                                        style={{ 
-                                            background: 'none', 
-                                            border: 'none', 
-                                            color: '#007acc', 
-                                            cursor: 'pointer', 
-                                            fontSize: '0.8rem',
-                                            textDecoration: 'underline'
-                                        }}>
-                                        Open Editor
+                                        style={{ marginLeft: '1rem' }}
+                                        className="btn btn-primary">
+                                        SQL Editor
                                     </button>
                                 </div>
                                 <HistoryInput id="filter-sql"

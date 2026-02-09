@@ -107,3 +107,29 @@ def test_get_filter_configuration_stats_removes_boolean_filters(service, mock_fi
     # Check that other filters are preserved
     assert call_kwargs.get('search') == 'python'
     assert call_kwargs.get('days_old') == 7
+
+def test_get_history_stats_with_dates(service, mock_repo):
+    df = pd.DataFrame({
+        'dateCreated': ['2023-01-01'],
+        'applied': [1],
+        'discarded': [0],
+        'interview': [0]
+    })
+    mock_repo.get_history_stats_df.return_value = df
+    
+    service.get_history_stats(start_date='2023-01-01', end_date='2023-12-31')
+    
+    mock_repo.get_history_stats_df.assert_called_once_with(start_date='2023-01-01', end_date='2023-12-31')
+
+def test_get_filter_configuration_stats_with_dates(service, mock_filter_repo, mock_jobs_repo):
+    mock_filter_repo.find_all.return_value = [{'name': 'Test', 'statistics': True, 'filters': {}}]
+    mock_db = MagicMock()
+    mock_jobs_repo.get_db.return_value.__enter__.return_value = mock_db
+    mock_db.count.return_value = 5
+    mock_jobs_repo.build_where.return_value = (["1=1"], [])
+    
+    service.get_filter_configuration_stats(start_date='2023-01-01', end_date='2023-12-31')
+    
+    call_kwargs = mock_jobs_repo.build_where.call_args[1]
+    assert call_kwargs.get('start_date') == '2023-01-01'
+    assert call_kwargs.get('end_date') == '2023-12-31'

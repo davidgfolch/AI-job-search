@@ -23,18 +23,27 @@ export interface SourceHourStat {
     source: string;
 }
 
-export const getHistoryStats = async (): Promise<HistoryStat[]> => {
-    const response = await axios.get(`${API_Base}/history`);
+export const getHistoryStats = async (startDate?: string, endDate?: string): Promise<HistoryStat[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const response = await axios.get(`${API_Base}/history`, { params });
     return response.data;
 };
 
-export const getSourcesByDate = async (): Promise<SourceDateStat[]> => {
-    const response = await axios.get(`${API_Base}/sources-date`);
+export const getSourcesByDate = async (startDate?: string, endDate?: string): Promise<SourceDateStat[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const response = await axios.get(`${API_Base}/sources-date`, { params });
     return response.data;
 };
 
-export const getSourcesByHour = async (): Promise<SourceHourStat[]> => {
-    const response = await axios.get(`${API_Base}/sources-hour`);
+export const getSourcesByHour = async (startDate?: string, endDate?: string): Promise<SourceHourStat[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const response = await axios.get(`${API_Base}/sources-hour`, { params });
     return response.data;
 };
 
@@ -44,8 +53,11 @@ export interface SourceWeekdayStat {
     source: string;
 }
 
-export const getSourcesByWeekday = async (): Promise<SourceWeekdayStat[]> => {
-    const response = await axios.get(`${API_Base}/sources-weekday`);
+export const getSourcesByWeekday = async (startDate?: string, endDate?: string): Promise<SourceWeekdayStat[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const response = await axios.get(`${API_Base}/sources-weekday`, { params });
     return response.data;
 };
 
@@ -54,7 +66,10 @@ export interface FilterConfigStat {
     count: number;
 }
 
-export const getFilterConfigStats = async (): Promise<FilterConfigStat[]> => {
-    const response = await axios.get(`${API_Base}/filter-configs`);
+export const getFilterConfigStats = async (startDate?: string, endDate?: string): Promise<FilterConfigStat[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const response = await axios.get(`${API_Base}/filter-configs`, { params });
     return response.data;
 };

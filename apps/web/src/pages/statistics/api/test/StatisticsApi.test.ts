@@ -27,7 +27,7 @@ describe('StatisticsApi', () => {
       }];
       mockAxios.get.mockResolvedValue({ data: mockData });
       const result = await getHistoryStats();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/history');
+      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/history', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
 
@@ -46,7 +46,7 @@ describe('StatisticsApi', () => {
       }];
       mockAxios.get.mockResolvedValue({ data: mockData });
       const result = await getSourcesByDate();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-date');
+      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-date', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
   });
@@ -60,7 +60,7 @@ describe('StatisticsApi', () => {
       }];
       mockAxios.get.mockResolvedValue({ data: mockData });
       const result = await getSourcesByHour();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-hour');
+      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-hour', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
   });
@@ -74,7 +74,7 @@ describe('StatisticsApi', () => {
       }];
       mockAxios.get.mockResolvedValue({ data: mockData });
       const result = await getSourcesByWeekday();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-weekday');
+      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-weekday', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
   });

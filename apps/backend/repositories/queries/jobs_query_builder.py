@@ -45,7 +45,9 @@ def build_jobs_where_clause(
     sql_filter: Optional[str],
     boolean_filters: Dict[str, Optional[bool]], 
     ids: Optional[List[int]] = None,
-    created_after: Optional[str] = None # Expecting ISO string or datetime compatible string
+    created_after: Optional[str] = None, # Expecting ISO string or datetime compatible string
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
 ) -> Tuple[List[str], List[Any]]:
     where = ["1=1"]
     params = []
@@ -80,6 +82,12 @@ def build_jobs_where_clause(
     if created_after:
         where.append("created > %s")
         params.append(created_after)
+    if start_date:
+        where.append("created >= %s")
+        params.append(start_date)
+    if end_date:
+        where.append("created <= %s")
+        params.append(end_date)
     return where, params
 
 def parse_job_order(order: Optional[str]) -> Tuple[str, str]:
