@@ -35,8 +35,7 @@ def get_timezone():
     Returns the server's UTC offset in minutes.
     Example: UTC+1 returns 60.
     """
-    now = datetime.now()
-    offset_seconds = now.astimezone().utcoffset().total_seconds()
+    offset_seconds = datetime.now().astimezone().utcoffset().total_seconds()
     offset_minutes = int(offset_seconds / 60)
     return {"offset_minutes": offset_minutes}
 
