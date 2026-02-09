@@ -23,6 +23,15 @@
     color: var(--text-primary);
 }
 
+.statistics-controls {
+    padding: 15px 20px;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
 .header-content h1 {
     font-size: 1.5rem;
     margin: 0;

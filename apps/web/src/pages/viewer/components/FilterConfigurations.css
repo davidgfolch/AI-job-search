@@ -160,6 +160,8 @@
 
 .pinned-configurations {
     display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.5rem;
     width: fit-content;
     max-width: 100%;
