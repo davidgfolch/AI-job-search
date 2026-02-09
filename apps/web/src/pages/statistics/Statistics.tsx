@@ -7,7 +7,7 @@ import ChartCard from './components/ChartCard';
 import { getColorForSource } from './utils/chartUtils';
 import './Statistics.css';
 import { useStatistics } from './useStatistics';
-import HeaderMenu from '../common/components/HeaderMenu';
+import PageHeader from '../common/components/PageHeader';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -50,12 +50,7 @@ const Statistics = () => {
 
     return (
         <div className="statistics-page">
-            <header className="app-header">
-                <div className="header-content">
-                    <h1>AI Job Search Statistics</h1>
-                    <HeaderMenu />
-                </div>
-            </header>
+            <PageHeader title="Statistics" />
             <div className="statistics-controls">
                 <div className="layout-controls">
                     <span className="layout-label">Date Range:</span>

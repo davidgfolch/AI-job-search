@@ -25,7 +25,7 @@ describe('Statistics', () => {
     vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
     vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
     render(<Statistics />, { wrapper: createWrapper() });
-    expect(screen.getByText('AI Job Search Statistics')).toBeInTheDocument();
+    expect(screen.getByText('AI Job Search - Statistics')).toBeInTheDocument();
   });
 
   it('renders all chart sections', () => {

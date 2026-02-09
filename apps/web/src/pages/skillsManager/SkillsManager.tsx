@@ -5,6 +5,7 @@ import { EditSkillModal } from './components/EditSkillModal';
 import { generateSkillsMarkdown } from './utils/skillUtils';
 import { downloadFile } from '../common/utils/fileUtils';
 import ReactMarkdownCustom from '../common/components/core/ReactMarkdownCustom';
+import PageHeader from '../common/components/PageHeader';
 import './SkillsManager.css';
 
 const SkillsManager = () => {
@@ -37,9 +38,9 @@ const SkillsManager = () => {
   };
 
   return (
+    <>
+    <PageHeader title="Skills Manager" />
     <div className="skills-manager">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Skills Manager</h2>
         <div className="actions-group">
           <button 
             className="btn-secondary" 
@@ -61,7 +62,6 @@ const SkillsManager = () => {
               + Add Skill
           </button>
         </div>
-      </div>
       
       {error && <div className="error-message" style={{ color: 'red', margin: '10px 0' }}>{error}</div>}
       {isLoading && <div className="loading-indicator">Loading skills...</div>}
@@ -94,6 +94,7 @@ const SkillsManager = () => {
         />
       )}
     </div>
+    </>
   );
 };
 

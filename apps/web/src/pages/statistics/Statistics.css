@@ -13,16 +13,6 @@
     overflow-y: auto; /* Allow content to scroll */
 }
 
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-primary);
-}
-
 .statistics-controls {
     padding: 15px 20px;
     background-color: var(--bg-primary);
@@ -30,11 +20,6 @@
     display: flex;
     align-items: center;
     gap: 20px;
-}
-
-.header-content h1 {
-    font-size: 1.5rem;
-    margin: 0;
 }
 
 .layout-controls {

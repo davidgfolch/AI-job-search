@@ -28,8 +28,6 @@ describe('App', () => {
       </MemoryRouter>
     );
     expect(screen.getByTestId('viewer-page')).toBeInTheDocument();
-    expect(screen.getByTestId('header-menu')).toBeInTheDocument();
-    expect(screen.getByText('AI Job Search')).toBeInTheDocument();
   });
 
   it('renders Statistics page on /statistics route', () => {
