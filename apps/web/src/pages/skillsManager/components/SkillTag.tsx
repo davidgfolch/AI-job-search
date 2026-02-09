@@ -16,6 +16,21 @@ export default function SkillTag({ skill, description, isInLearnList, onToggle, 
   const [descriptionStyle, setDescriptionStyle] = useState<React.CSSProperties>({});
   const buttonRef = useRef<HTMLButtonElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setShowDescription(true);
+  };
+
+  const handleMouseLeave = () => {
+    timerRef.current = setTimeout(() => {
+      setShowDescription(false);
+    }, 300);
+  };
 
   useLayoutEffect(() => {
     if (showDescription && buttonRef.current && cardRef.current) {
@@ -61,14 +76,10 @@ export default function SkillTag({ skill, description, isInLearnList, onToggle, 
     }
   }, [showDescription]);
 
-  const handleClick = () => {
-    onToggle(skill);
-  };
-
   return (
     <span
       className={`skill-tag ${isInLearnList ? 'skill-tag-learn' : ''}`}
-      onClick={handleClick}
+      onClick={() => onToggle(skill)}
       title={isInLearnList ? 'Click to remove from learn list' : 'Click to add to learn list'}
     >
       {skill}
@@ -81,8 +92,8 @@ export default function SkillTag({ skill, description, isInLearnList, onToggle, 
               e.stopPropagation();
               onViewDetail(skill);
             }}
-            onMouseEnter={() => setShowDescription(true)}
-            onMouseLeave={() => setShowDescription(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             aria-label="View skill details"
           >
             👁
@@ -92,6 +103,9 @@ export default function SkillTag({ skill, description, isInLearnList, onToggle, 
                 ref={cardRef}
                 className="skill-description-card"
                 style={descriptionStyle}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onClick={(e) => e.stopPropagation()}
             >
               <ReactMarkdown>{description}</ReactMarkdown>
             </div>,

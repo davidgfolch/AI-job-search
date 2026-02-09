@@ -66,34 +66,22 @@
 
 .skill-description-card {
   /* Position, top, left are set via inline styles for dynamic positioning */
-  position: fixed; 
-  background-color: var(--text-primary);
-  border: 1px solid #e5e5e5;
+  color: var(--text-primary);
+  background-color: #1f2937;
+  border: 1px solid #374151;
   border-radius: 8px;
   padding: 12px;
-  width: max-content;
-  max-width: 400px;
-  min-width: 200px;
+  width: fit-content;
+  max-width: 40rem;
+  min-width: 20rem;
   max-height: 60vh;
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
   z-index: 10000;
-  color: #374151;
-  font-size: 0.875rem;
   line-height: 1.5;
   text-align: left;
   pointer-events: auto;
   visibility: hidden; /* Hidden by default until JS calculates position */
-}
-
-/* Dark mode support - assuming standard dark mode class or media query, 
-   but since global styles aren't fully visible, using a safe fallback */
-@media (prefers-color-scheme: dark) {
-  .skill-description-card {
-    background-color: #1f2937;
-    border-color: #374151;
-    color: #f3f4f6;
-  }
 }
 
 .skill-description-card p {
