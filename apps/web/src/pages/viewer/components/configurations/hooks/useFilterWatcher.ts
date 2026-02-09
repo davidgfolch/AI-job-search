@@ -32,7 +32,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         if (isWatching) notificationService.requestPermission();
         jobsApi.getSystemTimezone().then(data => setServerOffset(data.offset_minutes))
             .catch(() => setServerOffset(-new Date().getTimezoneOffset()));
-
         const loadPersistedTime = async () => {
             const storedTime = await persistenceApi.getValue<string>(LAST_WATCHER_CHECK_TIME_KEY);
             if (storedTime) {
@@ -44,7 +43,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             }
         };
         loadPersistedTime();
-
         isMounted.current = true;
         return () => { isMounted.current = false; };
     }, []);
@@ -135,6 +133,5 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             };
         }
     }, [isWatching, startTime, checkItems, queryClient, savedConfigs]);
-
     return { isWatching, results, lastCheckTime, startWatching, stopWatching, resetWatcher };
 }

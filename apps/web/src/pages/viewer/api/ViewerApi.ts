@@ -112,6 +112,8 @@ const handleRequest = async <T>(request: Promise<{ data: T }>, errorMessage: str
   }
 };
 
+let timezonePromise: Promise<{ offset_minutes: number }> | null = null;
+
 export const jobsApi = {
   getJobs: async (params: JobListParams = {}): Promise<JobListResponse> => {
     return handleRequest(apiClient.get<JobListResponse>('/jobs', { params }),
@@ -176,7 +178,10 @@ export const jobsApi = {
   },
   
   getSystemTimezone: async (): Promise<{ offset_minutes: number }> => {
-    return handleRequest(apiClient.get<{ offset_minutes: number }>('/system/timezone'),
-      'Error getting system timezone');
+    if (!timezonePromise) {
+      timezonePromise = handleRequest(apiClient.get<{ offset_minutes: number }>('/system/timezone'),
+        'Error getting system timezone');
+    }
+    return timezonePromise;
   },
 };
