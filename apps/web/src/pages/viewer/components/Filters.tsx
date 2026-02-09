@@ -13,26 +13,20 @@ interface BooleanFiltersProps {
     onConfigNameChange?: (name: string) => void;
 }
 
-
-
 export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange }: BooleanFiltersProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
-
     const handleSearchChange = (search: string) => {
         onFiltersChange({ ...filters, search, page: 1 });
     };
-
     const handlePillClick = (key: keyof JobListParams, value: boolean) => {
         // If clicking the same value, toggle it off (undefined)
         // If clicking different value, set it to that value
         const newValue = filters[key];
         onFiltersChange({ [key]: (newValue === value ? undefined : value) });
     };
-
     const hasActiveFilters = BOOLEAN_FILTERS.some(filter => filters[filter.key] !== undefined)
         || !!filters.sql_filter || !!filters.days_old || !!filters.salary;
-
     return (
         <>
             <div className="boolean-filters">
@@ -48,10 +42,8 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                         onMessage={onMessage}
                         isExpanded={isExpanded}
                         onToggleExpand={() => setIsExpanded(!isExpanded)}
-                        hasActiveFilters={hasActiveFilters}
-                    />
+                        hasActiveFilters={hasActiveFilters}/>
                 </div>
-
                 {isExpanded && (
                     <div className="filters-content">
                         <div className="general-filters">
@@ -64,32 +56,27 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                     placeholder="Search jobs..."
                                     value={filters.search || ''}
                                     onValueChange={handleSearchChange}
-                                    className="compact-input"
-                                />
+                                    className="compact-input"/>
                             </div>
-
                             <label className="compact-filter">
                                 Days old:
-                                <input type="number" value={filters.days_old || ''}
+                                <input name="days_old" type="number" value={filters.days_old || ''}
                                     onChange={(e) => onFiltersChange({ days_old: parseInt(e.target.value) || undefined })}
-                                    className="compact-input" />
+                                    className="compact-input"/>
                             </label>
                             <div className="compact-filter">
                                 <label htmlFor="filter-salary">Salary (Regex):</label>
-                                <HistoryInput
-                                    id="filter-salary"
+                                <HistoryInput id="filter-salary"
                                     storageKey="history_salary"
                                     type="text"
                                     value={filters.salary || ''}
                                     onValueChange={(val) => onFiltersChange({ salary: val })}
-                                    className="compact-input"
-                                />
+                                    className="compact-input"/>
                             </div>
                             <div className="compact-filter sql-filter">
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <label htmlFor="filter-sql">SQL Where Filter:</label>
-                                    <button 
-                                        type="button" 
+                                    <button type="button" 
                                         onClick={() => setIsSqlEditorOpen(true)}
                                         style={{ 
                                             background: 'none', 
@@ -98,25 +85,22 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                             cursor: 'pointer', 
                                             fontSize: '0.8rem',
                                             textDecoration: 'underline'
-                                        }}
-                                    >
+                                        }}>
                                         Open Editor
                                     </button>
                                 </div>
-                                <HistoryInput
-                                    id="filter-sql"
+                                <HistoryInput id="filter-sql"
                                     storageKey="history_sql"
                                     type="text"
                                     value={filters.sql_filter || ''}
                                     onValueChange={(val) => onFiltersChange({ sql_filter: val })}
                                     placeholder="e.g. salary > 50000 AND title LIKE '%Senior%'"
-                                    className="sql-input"
-                                />
+                                    className="sql-input"/>
                             </div>
                             <div className="compact-filter sort-filter">
-                                <label>Sort:</label>
+                                <label htmlFor="sort_field">Sort:</label>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <select 
+                                    <select id="sort_field" name="sort_field"
                                         value={filters.order?.split(' ')[0] || 'created'}
                                         onChange={(e) => {
                                             const newField = e.target.value;
@@ -124,15 +108,13 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                             onFiltersChange({ order: `${newField} ${currentDir}` });
                                         }}
                                         className="compact-select"
-                                        aria-label="Sort Field"
-                                    >
+                                        aria-label="Sort Field">
                                         <option value="created">Created</option>
                                         <option value="modified">Modified</option>
                                         <option value="salary">Salary</option>
                                         <option value="cv_match_percentage">Match %</option>
                                     </select>
-                                    <select
-                                        value={filters.order?.split(' ')[1] || 'desc'}
+                                    <select name="sort_dir" value={filters.order?.split(' ')[1] || 'desc'}
                                         onChange={(e) => {
                                             const newDir = e.target.value;
                                             const currentField = filters.order?.split(' ')[0] || 'created';
@@ -140,15 +122,13 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                         }}
                                         className="compact-select"
                                         aria-label="Sort Direction"
-                                        style={{ width: '80px' }}
-                                    >
+                                        style={{ width: '80px' }}>
                                         <option value="desc">Desc</option>
                                         <option value="asc">Asc</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-
                         <div className="boolean-filter-groups">
                             <div className="filter-group">
                                 <div className="filter-pills-row">
@@ -181,16 +161,13 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                         </div>
                     </div>
                 )}
-                
-                <SqlEditor
-                    isOpen={isSqlEditorOpen}
+                <SqlEditor isOpen={isSqlEditorOpen}
                     initialValue={filters.sql_filter || ''}
                     onSave={(value) => {
                         onFiltersChange({ sql_filter: value });
                         setIsSqlEditorOpen(false);
                     }}
-                    onClose={() => setIsSqlEditorOpen(false)}
-                />
+                    onClose={() => setIsSqlEditorOpen(false)}/>
             </div>
         </>
     );

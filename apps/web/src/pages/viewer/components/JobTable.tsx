@@ -64,6 +64,8 @@ export default function JobTable({
                     <tr>
                         <th className="checkbox-column">
                             <input 
+                                id="job-table-select-all"
+                                name="select_all"
                                 type="checkbox" 
                                 checked={selectionMode === 'all'}
                                 onChange={onToggleSelectAll}
@@ -86,6 +88,8 @@ export default function JobTable({
                             onClick={() => onJobSelect(job)}>
                             <td className="checkbox-column" onClick={(e) => e.stopPropagation()}>
                                 <input 
+                                    id={`job-table-select-${job.id}`}
+                                    name={`select_job_${job.id}`}
                                     type="checkbox" 
                                     checked={selectionMode === 'all' || selectedIds.has(job.id)}
                                     onChange={() => onToggleSelectJob(job.id)}
