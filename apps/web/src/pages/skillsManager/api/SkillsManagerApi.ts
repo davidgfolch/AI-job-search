@@ -9,7 +9,7 @@ export interface Skill {
   category?: string;
 }
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -31,25 +31,7 @@ export const skillsApi = {
 
   getSkill: async (name: string): Promise<Skill | null> => {
     try {
-      // Since we don't have a single skill endpoint (unless I missed it, listing shows list),
-      // Actually backend repo has find_by_name... do we have an endpoint?
-      // checking api/skills.py in backend... 
-      // It has create, update, delete, bulk create. It does NOT have get_skill(name).
-      // I generally need to add it or use list_skills filtering?
-      // Wait, list_skills returns all. Polling list_skills is inefficient.
-      // I should add get_skill endpoint in backend if it doesn't exist.
-      // Or I can rely on list_skills for now if list is small? No, "AI Job Search" sounds like it might have many skills.
-      // Let's assume I need to add get_skill endpoint or check if I missed it.
-      // Backend api/skills.py lines 1-39 shown in step 58:
-      // @router.get("", response_model=List[Skill])
-      // @router.post("", ...)
-      // @router.post("/{name}", ...)
-      // @router.put("/{name}", ...)
-      // @router.delete("/{name}")
-      // NO GET /{name}!
-      // I MUST ADD GET /{name} to backend first!
-      // I will implement getSkill here assuming I will add the endpoint.
-      const response = await apiClient.get<any>(`/skills/${name}`);
+      const response = await apiClient.get<any>(`/skills/${encodeURIComponent(name)}`);
       return {
           ...response.data,
           learningPath: response.data.learning_path || response.data.learningPath || [],
@@ -62,30 +44,16 @@ export const skillsApi = {
   },
 
   createSkill: async (skill: Skill): Promise<string> => {
-    // For manual creation/API, we might need to adjust the payload if the backend expects different structure
-    // But our models map 1:1 roughly.
-    // Note: Backend bulk_create expects List[Skill] for migration
-    // Single create expects SkillCreate
-    const payload = {
+    const payloadToSend: any = {
       name: skill.name,
       description: skill.description,
-      learning_path: skill.learningPath, // Map camelCase to snake_case? 
-      // Wait, backend Pydantic model uses snake_case: `learning_path`
-      // But frontend Skill interface uses `learningPath`
-      // We need to map it.
+      learning_path: skill.learningPath,
       disabled: skill.disabled,
       ai_enriched: skill.ai_enriched,
       category: skill.category
     };
-    // The SkillCreate model in backend expects learning_path
-    // We should probably map it here.
-    const payloadToSend: any = {
-      ...payload,
-      learning_path: skill.learningPath
-    };
-    if (skill.ai_enriched !== undefined) payloadToSend.ai_enriched = skill.ai_enriched;
 
-    const response = await apiClient.post<string>(`/skills/${skill.name}`, payloadToSend);
+    const response = await apiClient.post<string>(`/skills/${encodeURIComponent(skill.name)}`, payloadToSend);
     return response.data;
   },
 
@@ -95,16 +63,12 @@ export const skillsApi = {
       payload.learning_path = skill.learningPath;
       delete payload.learningPath;
     }
-    if (skill.ai_enriched !== undefined) {
-        payload.ai_enriched = skill.ai_enriched;
-    }
-    // category doesn't need mapping if names match
-    const response = await apiClient.put<string>(`/skills/${name}`, payload);
+    const response = await apiClient.put<string>(`/skills/${encodeURIComponent(name)}`, payload);
     return response.data;
   },
 
   deleteSkill: async (name: string): Promise<void> => {
-    await apiClient.delete(`/skills/${name}`);
+    await apiClient.delete(`/skills/${encodeURIComponent(name)}`);
   },
   
   // For migration
