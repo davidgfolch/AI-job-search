@@ -40,30 +40,30 @@ class StatisticsService:
     def get_filter_configuration_stats(self, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
         configs = self.filter_repo.find_all()
         results = []
-        for config in configs:
-            # Only include if statistics flag is True (default to True for backward compatibility)
-            if not config.get('statistics', True):
-                continue
+        with self.jobs_repo.get_db() as db:
+            for config in configs:
+                # Only include if statistics flag is True (default to True for backward compatibility)
+                if not config.get('statistics', True):
+                    continue
 
-            filters = config.get('filters', {})
-            where_clauses, params = self.jobs_repo.build_where(
-                search=filters.get('search'),
-                status=None,
-                not_status=None,
-                days_old=filters.get('days_old'),
-                salary=filters.get('salary'),
-                sql_filter=filters.get('sql_filter'),
-                boolean_filters=None,
-                ids=filters.get('ids'),
-                created_after=None,
-                start_date=start_date,
-                end_date=end_date
-            )
-            where_str = " AND ".join(where_clauses)
-            with self.jobs_repo.get_db() as db:
-                count = db.count(f"SELECT COUNT(*) FROM jobs WHERE {where_str}", params)
-            results.append({
-                'name': config['name'],
-                'count': count
-            })
+                filters = config.get('filters', {})
+                where_clauses, params = self.jobs_repo.build_where(
+                    search=filters.get('search'),
+                    status=None,
+                    not_status=None,
+                    days_old=filters.get('days_old'),
+                    salary=filters.get('salary'),
+                    sql_filter=filters.get('sql_filter'),
+                    boolean_filters=None,
+                    ids=filters.get('ids'),
+                    created_after=None,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                where_str = " AND ".join(where_clauses)
+                count = self.jobs_repo.count_jobs(db, where_str, params)
+                results.append({
+                    'name': config['name'],
+                    'count': count
+                })
         return results

@@ -39,7 +39,10 @@ class StatisticsRepository:
         """
         query, params = self._apply_date_filter(query, start_date, end_date)
         cnx = getConnection()
-        return pd.read_sql(query, cnx, params=params)
+        try:
+            return pd.read_sql(query, cnx, params=params)
+        finally:
+            cnx.close()
 
     def get_sources_by_date_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
         query = """
@@ -47,13 +50,16 @@ class StatisticsRepository:
                 date(created) as dateCreated,
                 count(*) as total,
                 web_page as source
-            from jobs
-            group by dateCreated, web_page
-            order by dateCreated
+            FROM jobs
+            GROUP BY dateCreated, web_page
+            ORDER BY dateCreated
         """
         query, params = self._apply_date_filter(query, start_date, end_date)
         cnx = getConnection()
-        return pd.read_sql(query, cnx, params=params)
+        try:
+            return pd.read_sql(query, cnx, params=params)
+        finally:
+            cnx.close()
 
     def get_sources_by_hour_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
         query = """
@@ -63,11 +69,14 @@ class StatisticsRepository:
                 COUNT(*) AS total
             FROM jobs
             GROUP BY HOUR(created), web_page
-            order by web_page, hour
+            ORDER BY web_page, hour
         """
         query, params = self._apply_date_filter(query, start_date, end_date)
         cnx = getConnection()
-        return pd.read_sql(query, cnx, params=params)
+        try:
+            return pd.read_sql(query, cnx, params=params)
+        finally:
+            cnx.close()
 
     def get_sources_by_weekday_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
         query = """
@@ -81,4 +90,7 @@ class StatisticsRepository:
         """
         query, params = self._apply_date_filter(query, start_date, end_date)
         cnx = getConnection()
-        return pd.read_sql(query, cnx, params=params)
+        try:
+            return pd.read_sql(query, cnx, params=params)
+        finally:
+            cnx.close()

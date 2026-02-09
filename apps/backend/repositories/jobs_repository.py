@@ -18,7 +18,7 @@ class JobsRepository:
             search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date)
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
-            total = self._count_jobs(db, where_str, params)
+            total = self.count_jobs(db, where_str, params)
             items = self._fetch_jobs(db, where_str, params, order, size, offset)
         return { "items": items, "total": total, "page": page, "size": size }
 
@@ -31,7 +31,7 @@ class JobsRepository:
             search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date)
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
-            return self._count_jobs(db, where_str, params)
+            return self.count_jobs(db, where_str, params)
 
     def build_where(self, search: Optional[str] = None, status: Optional[str] = None,
                     not_status: Optional[str] = None, days_old: Optional[int] = None, 
@@ -41,7 +41,7 @@ class JobsRepository:
                     start_date: Optional[str] = None, end_date: Optional[str] = None):
         return build_jobs_where_clause(search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date)
 
-    def _count_jobs(self, db: MysqlUtil, where: str, params: list):
+    def count_jobs(self, db: MysqlUtil, where: str, params: list):
         return db.count(f"SELECT COUNT(*) FROM jobs WHERE {where}", params)
 
     def _fetch_jobs(self, db: MysqlUtil, where: str, params: list, order: Optional[str], size: int, offset: int):
