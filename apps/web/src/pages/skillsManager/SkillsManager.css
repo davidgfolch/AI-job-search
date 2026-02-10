@@ -320,8 +320,8 @@
 .modal-content {
   background-color: var(--bg-secondary);
   border-radius: 8px;
-  width: 90%;
-  max-width: 900px; /* Increased width for side-by-side */
+  width: fit-content;
+  max-width: 80%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -459,7 +459,7 @@
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-color-dark, #2563eb); /* Fallback if var not set */
+  background-color: var(--primary-color-dark); /* Fallback if var not set */
   opacity: 0.9;
 }
 

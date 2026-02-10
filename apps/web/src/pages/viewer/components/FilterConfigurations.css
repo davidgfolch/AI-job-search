@@ -172,15 +172,15 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem;
-    background: var(--bg-secondary, #f7f7f7);
-    border: 1px solid var(--border-color, #ddd);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     transition: all 0.2s;
 }
 
 .pinned-config-item:hover {
-    background: var(--bg-hover, #e9e9e9);
-    border-color: var(--primary-color, #007acc);
+    background: var(--bg-hover);
+    border-color: var(--primary-color);
 }
 
 .pinned-config-item.selected {

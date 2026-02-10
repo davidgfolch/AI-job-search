@@ -12,13 +12,13 @@
 }
 
 .modal-content {
-    background: var(--bg-primary, #ffffff);
+    background: var(--bg-primary);
     padding: 24px;
     border-radius: 8px;
     box-shadow: var(--shadow-md);
-    max-width: 400px;
-    width: 90%;
-    color: var(--text-primary, #333);
+    max-width: 80%;
+    width: fit-content;
+    color: var(--text-primary);
 }
 
 .modal-header {
@@ -48,8 +48,8 @@
 }
 
 .modal-button.cancel {
-    background-color: var(--bg-secondary, #f3f4f6);
-    color: var(--text-secondary, #4b5563);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
 }
 
 .modal-button.cancel:hover {
@@ -57,7 +57,7 @@
 }
 
 .modal-button.confirm {
-    background-color: var(--primary-color, #2563eb);
+    background-color: var(--primary-color);
     color: var(--text-primary);
 }
 
