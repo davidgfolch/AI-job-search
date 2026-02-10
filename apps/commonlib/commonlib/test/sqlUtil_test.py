@@ -39,8 +39,7 @@ class TestSqlUtil:
         assert all(x in query for x in ["UPDATE jobs SET", "name=%(name)s", "age=%(age)s", "WHERE id  in (1,2)"])
         assert params == fields
         
-        query_merged, _ = updateFieldsQuery(ids, fields, merged=True)
-        assert "merged=NOW()" in query_merged
+
 
         assert updateFieldsQuery([], {}) == (None, None)
 

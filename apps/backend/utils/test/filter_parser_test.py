@@ -28,6 +28,7 @@ class TestExtractBooleanFilters:
             'interview_technical_test_done': True,
             'ai_enriched': False,
             'easy_apply': True,
+            'duplicated': True,
             'search': 'python',  # Non-boolean should not be included
         }
 
@@ -48,6 +49,7 @@ class TestExtractBooleanFilters:
             'interview_technical_test_done': True,
             'ai_enriched': False,
             'easy_apply': True,
+            'duplicated': True,
         }
 
         assert result == expected
@@ -173,7 +175,9 @@ class TestJobBooleanKeys:
 
     @pytest.mark.parametrize("key", [
         'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded',
-        'closed', 'interview_rh', 'interview', 'interview_tech'
+        'closed', 'interview_rh', 'interview', 'interview_tech',
+        'interview_technical_test', 'interview_technical_test_done',
+        'ai_enriched', 'easy_apply', 'duplicated'
     ])
     def test_specific_keys_present(self, key):
         """Test that specific keys are present in JOB_BOOLEAN_KEYS."""

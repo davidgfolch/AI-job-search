@@ -59,7 +59,7 @@ def list_jobs(
     interview_technical_test_done: Optional[bool] = None,
     ai_enriched: Optional[bool] = None,
     easy_apply: Optional[bool] = None,
-    merged: Optional[bool] = None,
+    duplicated: Optional[bool] = None,
     sql_filter: Optional[str] = None,
     ids: Optional[List[int]] = Query(None),
     created_after: Optional[str] = None,
@@ -81,7 +81,7 @@ def list_jobs(
             ('interview_technical_test_done', interview_technical_test_done),
             ('ai_enriched', ai_enriched),
             ('easy_apply', easy_apply),
-            ('merged', merged),
+            ('duplicated', duplicated),
         ] if value is not None
     }
     return service.list_jobs(

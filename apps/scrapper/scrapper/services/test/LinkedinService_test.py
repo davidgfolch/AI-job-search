@@ -51,7 +51,7 @@ class TestLinkedinService:
     def test_process_job_valid(self, service, mock_mysql):
         with patch('scrapper.core.baseScrapper.validate', return_value=True), \
              patch('scrapper.core.baseScrapper.htmlToMarkdown', return_value="MD"), \
-             patch('scrapper.services.LinkedinService.mergeDuplicatedJobs'):
+             patch('scrapper.services.LinkedinService.find_last_duplicated'):
             mock_mysql.jobExists.return_value = False
             mock_mysql.insert.return_value = 1
             service.process_job("Title", "Company", "Loc", "https://www.linkedin.com/jobs/view/123/", "HTML", False, False)

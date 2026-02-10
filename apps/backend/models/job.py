@@ -37,8 +37,8 @@ class Job(JobBase):
     id: int
     created: Optional[datetime] = None
     modified: Optional[datetime] = None
-    merged: Optional[datetime] = None
-    merged_id: Optional[Union[str, int]] = None
+
+    duplicated_id: Optional[Union[str, int]] = None
 
 class JobCreate(JobBase):
     title: str

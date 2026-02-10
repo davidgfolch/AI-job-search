@@ -41,7 +41,7 @@ class TestInfojobsService:
     def test_process_job_valid(self, service, mock_mysql):
         with patch('scrapper.services.InfojobsService.htmlToMarkdown', return_value="Markdown"), \
              patch('scrapper.services.InfojobsService.validate', return_value=True), \
-             patch('scrapper.services.InfojobsService.mergeDuplicatedJobs'):
+             patch('scrapper.services.InfojobsService.find_last_duplicated'):
             mock_mysql.insert.return_value = 1
             result = service.process_job("Title", "Company", "Location", "https://www.infojobs.net/of-123", "<html>")
             assert result is True

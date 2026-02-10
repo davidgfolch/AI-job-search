@@ -33,7 +33,7 @@ class TestGlassdoorService:
     def test_process_job_valid(self, service, mock_mysql):
         with patch('scrapper.services.GlassdoorService.htmlToMarkdown', return_value="MD"), \
              patch('scrapper.services.GlassdoorService.validate', return_value=True), \
-             patch('scrapper.services.GlassdoorService.mergeDuplicatedJobs'):
+             patch('scrapper.services.GlassdoorService.find_last_duplicated'):
             mock_mysql.insert.return_value = 1
             result = service.process_job("Title", "Company", "Loc", "http://url?jl=123", "HTML", False)
             assert result is True

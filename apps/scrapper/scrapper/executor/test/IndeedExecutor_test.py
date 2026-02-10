@@ -120,7 +120,7 @@ class TestIndeedExecutor:
 
         with patch("scrapper.services.IndeedService.validate", return_value=validate), \
              patch("scrapper.services.IndeedService.htmlToMarkdown", return_value="D"), \
-             patch("scrapper.services.IndeedService.mergeDuplicatedJobs"):
+             patch("scrapper.services.IndeedService.find_last_duplicated"):
             assert service.process_job("T", "C", "L", "http://u?jk=1", "<h/>", False) is expected_result
             if insert_called:
                 mock_mysql.insert.assert_called_once()

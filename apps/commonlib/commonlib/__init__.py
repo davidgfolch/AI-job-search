@@ -5,7 +5,7 @@ from . import sqlUtil
 from . import stopWatch
 from . import terminalColor
 
-from . import mergeDuplicates
+from . import findLastDuplicated
 from .decorator import retry
 
 __version__ = "0.1.0"
@@ -17,5 +17,5 @@ __all__ = [
     "terminalColor",
 
     "retry",
-    "mergeDuplicates",
+    "findLastDuplicated",
 ]

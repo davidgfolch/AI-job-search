@@ -16,12 +16,12 @@ import SkillsList from './job-detail/SkillsList';
 interface JobDetailProps {
     job: Job;
     onUpdate?: (data: Partial<Job>) => void;
-    onOpenMerged?: (id: number) => void;
+    onOpenDuplicated?: (id: number) => void;
     onClose?: () => void;
-    hideMergedButton?: boolean;
+    hideDuplicatedButton?: boolean;
 }
 
-export default function JobDetail({ job, onUpdate, onOpenMerged, onClose, hideMergedButton }: JobDetailProps) {
+export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hideDuplicatedButton }: JobDetailProps) {
     const { data: appliedCompanyJobs = [], isLoading: loadingApplied } = useQuery({
         queryKey: ['appliedCompanyJobs', job.company, job.client],
         queryFn: async () => {
@@ -74,7 +74,7 @@ export default function JobDetail({ job, onUpdate, onOpenMerged, onClose, hideMe
             <JobDetailHeader 
                 job={job} 
                 onClose={onClose} 
-                onOpenMerged={hideMergedButton ? undefined : onOpenMerged}
+                onOpenDuplicated={hideDuplicatedButton ? undefined : onOpenDuplicated}
             />
             <div className="job-detail-content" ref={contentRef}>
                 <div className="job-status-floating">

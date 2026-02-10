@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Job } from '../api/jobs';
+import type { Job } from '../api/ViewerApi';
 import JobTable from './JobTable';
 
 interface JobListProps {

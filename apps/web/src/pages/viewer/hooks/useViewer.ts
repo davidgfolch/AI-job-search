@@ -63,19 +63,19 @@ export const useViewer = () => {
 
     const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
     const [creationSessionId, setCreationSessionId] = useState(0);
-    const [mergedJob, setMergedJob] = useState<Job | null>(null);
+    const [duplicatedJob, setDuplicatedJob] = useState<Job | null>(null);
 
-    const openMergedJob = async (id: number) => {
+    const openDuplicatedJob = async (id: number) => {
         try {
             const job = await jobsApi.getJob(id);
-            setMergedJob(job);
+            setDuplicatedJob(job);
         } catch (e) {
-            console.error("Failed to load merged job", e);
+            console.error("Failed to load duplicated job", e);
         }
     };
 
-    const closeMergedJob = () => {
-        setMergedJob(null);
+    const closeDuplicatedJob = () => {
+        setDuplicatedJob(null);
     };
 
     // Update allJobs when data changes
@@ -127,7 +127,7 @@ export const useViewer = () => {
             confirmModal,
             activeConfigName,
             creationSessionId,
-            mergedJob,
+            duplicatedJob,
         },
         status: {
             isLoading: isLoading && (filters.page || 1) === 1,
@@ -190,8 +190,8 @@ export const useViewer = () => {
                     await hardRefresh();
                 }
             },
-            openMergedJob,
-            closeMergedJob,
+            openDuplicatedJob,
+            closeDuplicatedJob,
         },
     };
 };

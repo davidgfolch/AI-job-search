@@ -63,7 +63,7 @@ export default function JobTable({
         if (selectedJob && selectedRowRef.current) {
             selectedRowRef.current.scrollIntoView({ 
                 behavior: 'smooth', 
-                block: 'center',
+                block: 'nearest',
                 inline: 'nearest'
             });
         }

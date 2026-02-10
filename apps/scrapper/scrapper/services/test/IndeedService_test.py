@@ -65,17 +65,18 @@ class TestIndeedService:
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     @patch("scrapper.services.IndeedService.validate")
-    @patch("scrapper.services.IndeedService.mergeDuplicatedJobs")
+    @patch("scrapper.services.IndeedService.find_last_duplicated")
     def test_process_job_new(self, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
         mock_html2md.return_value = "markdown"
         mock_validate.return_value = True
+        mock_merge.return_value = None
         mock_mysql.fetchOne.return_value = None # Job not in DB
         mock_mysql.insert.return_value = 100 # Inserted ID
         
         result = service.process_job("Title", "Company", "Loc", "http://url?jk=1", "html", False)
         
         assert result is True
-        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "http://url?jk=1", "markdown", False, "Indeed"))
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "http://url?jk=1", "markdown", False, "Indeed", None))
         mock_merge.assert_called()
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
@@ -101,7 +102,7 @@ class TestIndeedService:
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     @patch("scrapper.services.IndeedService.validate")
-    @patch("scrapper.services.IndeedService.mergeDuplicatedJobs")
+    @patch("scrapper.services.IndeedService.find_last_duplicated")
     def test_process_job_removes_turnstile(self, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
         mock_html2md.return_value = "markdown"
         mock_validate.return_value = True

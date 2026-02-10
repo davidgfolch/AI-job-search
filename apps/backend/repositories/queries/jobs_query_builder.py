@@ -73,8 +73,8 @@ def build_jobs_where_clause(
     if boolean_filters:
         for field_name, field_value in boolean_filters.items():
             if field_value is not None:
-                if field_name == 'merged': # TODO: USE DDL TO CHECK IF NOT BOOLEAN FIELD
-                    where.append("merged IS NOT NULL" if field_value else "merged IS NULL")
+                if field_name == 'duplicated':
+                    where.append("duplicated_id IS NOT NULL" if field_value else "duplicated_id IS NULL")
                 else:
                     val = 1 if field_value else 0
                     where.append(get_boolean_condition(field_name, str(val)))

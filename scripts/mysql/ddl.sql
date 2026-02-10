@@ -53,7 +53,7 @@ CREATE TABLE if not exists `jobs` (
   `flagged` tinyint(1) DEFAULT '0',
   `ai_enrich_error` varchar(500) DEFAULT NULL,
   `web_page` varchar(100) DEFAULT NULL,
-  `merged` datetime DEFAULT NULL,
+
   PRIMARY KEY (`id`),
   UNIQUE KEY `jobId` (`jobId`),
   KEY `title_index` (`title`),
@@ -71,6 +71,8 @@ ALTER TABLE jobs ADD COLUMN cv_match_percentage TINYINT NULL;
 ALTER TABLE jobs ADD INDEX cv_match_percentage_index (cv_match_percentage);
 ALTER TABLE jobs ADD INDEX created_index (created);
 alter table jobs add column duplicated_id int DEFAULT NULL;
+-- ALTER TABLE jobs DROP COLUMN IF EXISTS merged; -- Removed due to incompatibility on some MySQL versions
+
 
 -- DROP TABLE IF EXISTS `job_skills`;
 CREATE TABLE if not exists `job_skills` (

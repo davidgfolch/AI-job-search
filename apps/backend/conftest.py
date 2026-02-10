@@ -1,5 +1,6 @@
 """Pytest configuration and shared fixtures"""
 import pytest
+
 import sys
 from pathlib import Path
 from fastapi.testclient import TestClient
@@ -21,7 +22,7 @@ from commonlib.db_mock_util import create_mock_db
 
 JOB_COLUMNS = [
     'id', 'title', 'company', 'location', 'salary', 'url', 'markdown',
-    'web_page', 'created', 'modified', 'merged'
+    'web_page', 'created', 'modified'
 ]
 
 

@@ -40,14 +40,13 @@ def getColumnTranslated(c):
     return re.sub(r'`', '', re.sub(r'[_-]', ' ', c)).capitalize()
 
 
-def updateFieldsQuery(ids: list, fieldsValues: dict, merged=False) -> Tuple[Optional[str], Optional[dict]]:
+def updateFieldsQuery(ids: list, fieldsValues: dict) -> Tuple[Optional[str], Optional[dict]]:
     if len(ids) < 1:
         return (None,None)
     query = 'UPDATE jobs SET '
     for field in fieldsValues.keys():
         query += f'{field}=%({field})s,'
-    if merged:
-        query += 'merged=NOW(),'
+
     query = query[:len(query)-1] + '\n'
     query += 'WHERE id ' + inFilter(ids)
     return query, fieldsValues

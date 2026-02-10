@@ -33,7 +33,7 @@ export interface Job {
   web_page: string | null;
   created: string | null;
   modified: string | null;
-  merged_id: number | string | null;
+  duplicated_id: number | string | null;
   flagged: boolean | null;
   like: boolean | null;
   ignored: boolean | null;
@@ -93,7 +93,7 @@ export interface JobListParams {
   interview_technical_test_done?: boolean;
   ai_enriched?: boolean;
   easy_apply?: boolean;
-  merged?: boolean;
+  duplicated?: boolean;
   sql_filter?: string;
   ids?: number[];
   created_after?: string;

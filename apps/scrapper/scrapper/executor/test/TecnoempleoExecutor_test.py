@@ -103,7 +103,7 @@ class TestTecnoempleoService:
     def test_process_job_valid(self, service, mock_mysql):
         with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="Markdown"), \
              patch('scrapper.services.TecnoempleoService.validate', return_value=True), \
-             patch('scrapper.services.TecnoempleoService.mergeDuplicatedJobs'):
+             patch('scrapper.services.TecnoempleoService.find_last_duplicated'):
              
              mock_mysql.insert.return_value = 1
              result = service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")

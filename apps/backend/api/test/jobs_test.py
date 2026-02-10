@@ -1,4 +1,5 @@
 import pytest
+
 from unittest.mock import patch, MagicMock
 
 # From jobs_ids_test.py
@@ -58,8 +59,8 @@ def test_list_jobs_with_single_filters(mock_get_db, client, query_param, expecte
     """Test listing jobs with various single filters"""
     mock_db = create_mock_db(
         count=1,
-        fetchAll=[(1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None, None)],
-        columns=['id', 'title', 'company', 'location', 'salary', 'url', 'markdown', 'web_page', 'created', 'modified', 'merged']
+        fetchAll=[(1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None)],
+        columns=['id', 'title', 'company', 'location', 'salary', 'url', 'markdown', 'web_page', 'created', 'modified']
     )
     mock_get_db.return_value = mock_db
     
@@ -95,7 +96,9 @@ def test_list_jobs_pagination(mock_get_db, client):
     ("applied=false", ["`applied` = 0"]),
     ("flagged=true&ai_enriched=true&ignored=false", ["`flagged` = 1", "`ai_enriched` = 1", "`ignored` = 0"]),
     ("search=Python&flagged=true&status=applied", ["LIKE", "`flagged` = 1", "`applied` = 1"]),
-], ids=["bool_true", "bool_false", "multiple_bool", "mixed_filters"])
+    ("duplicated=true", ["duplicated_id IS NOT NULL"]),
+    ("duplicated=false", ["duplicated_id IS NULL"]),
+], ids=["bool_true", "bool_false", "multiple_bool", "mixed_filters", "duplicated_true", "duplicated_false"])
 def test_list_jobs_with_combined_filters(mock_get_db, client, query_params, expected_conditions):
     """Test listing jobs with boolean and combined filters"""
     mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title', 'company'])
@@ -126,8 +129,8 @@ def test_list_jobs_by_ids(mock_get_db, client):
     mock_db.fetchAll.side_effect = [
         # First call for fetch_jobs
         [
-            (1, 'Target Job 1', 'Company A', 'Remote', None, None, None, None, None, None, None),
-            (3, 'Target Job 3', 'Company B', 'Remote', None, None, None, None, None, None, None),
+            (1, 'Target Job 1', 'Company A', 'Remote', None, None, None, None, None, None),
+            (3, 'Target Job 3', 'Company B', 'Remote', None, None, None, None, None, None),
         ],
         # Second call for columns
         [(col,) for col in JOB_COLUMNS]

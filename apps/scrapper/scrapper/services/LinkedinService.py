@@ -1,8 +1,8 @@
 import re
 from typing import Tuple
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
-from commonlib.mergeDuplicates import mergeDuplicatedJobs
-from commonlib.terminalColor import green, magenta, yellow
+from commonlib.findLastDuplicated import find_last_duplicated
+from commonlib.terminalColor import green, magenta, yellow, cyan
 from ..core import baseScrapper
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
@@ -32,9 +32,12 @@ class LinkedinService(BaseService):
             if baseScrapper.validate(title, url_short, company, md, self.debug):
                 if is_direct_url_scrapping and self.mysql.jobExists(str(jobId)):
                     self.update_job(jobId, title, company, location, url_short, html, md, easy_apply)
-                elif id := self.mysql.insert((jobId, title, company, location, url_short, md, easy_apply, self.web_page)):
-                    print(green(f'INSERTED {id}!'), end='', flush=True)
-                    mergeDuplicatedJobs(self.mysql)
+                else:
+                    duplicated_id = find_last_duplicated(self.mysql, title, company)
+                    if id := self.mysql.insert((jobId, title, company, location, url_short, md, easy_apply, self.web_page, duplicated_id)):
+                        print(green(f'INSERTED {id}!'), end='', flush=True)
+                        if duplicated_id:
+                            print(cyan(f' DUPLICATED {duplicated_id}'), end="")
             else:
                 raise ValueError('Validation failed')
         except (ValueError, KeyboardInterrupt) as e:

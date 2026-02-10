@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Sequence, TypeVar, Union
+from typing import Dict, Sequence, TypeVar, Union, Any
 from contextlib import contextmanager
 import mysql.connector as mysqlConnector
 from mysql.connector.types import RowItemType
@@ -14,8 +14,8 @@ QRY_FIND_JOB_BY_JOB_ID = """
 SELECT id,jobId FROM jobs WHERE jobId = %s"""
 QRY_INSERT = """
 INSERT INTO jobs (
-    jobId,title,company,location,url,markdown,easy_apply,web_page)
-          values (%s,%s,%s,%s,%s,%s,%s,%s)"""
+    jobId,title,company,location,url,markdown,easy_apply,web_page,duplicated_id)
+          values (%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
 
 QRY_SELECT_JOBS_VIEWER = """
 SELECT {selectFields}
@@ -137,7 +137,8 @@ class MysqlUtil:
             job_data.get('url', ''),
             job_data.get('markdown', ''),
             job_data.get('easy_apply', False),
-            job_data.get('web_page', '')
+            job_data.get('web_page', ''),
+            job_data.get('duplicated_id', None)
         )
         return self.insert(params)
 

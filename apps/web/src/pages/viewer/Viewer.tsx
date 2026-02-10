@@ -42,7 +42,7 @@ export default function Viewer() {
                             onMessage={handleMessage} 
                             onConfigNameChange={actions.setActiveConfigName} />
                         <div className="viewer-content">
-                            <div className="viewer-left" style={{ display: state.mergedJob ? 'none' : 'flex' }}>
+                            <div className="viewer-left" style={{ display: state.duplicatedJob ? 'none' : 'flex' }}>
                                 <div className="tab-group">
                                     <div className="tab-buttons">
                                         <ViewTabs 
@@ -114,25 +114,25 @@ export default function Viewer() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="viewer-right" style={state.mergedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
+                                    <div className="viewer-right" style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
                                 {state.selectedJob ? (
                                     <>
-                                        <div style={state.mergedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                        <div style={state.duplicatedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                                             <JobDetail 
                                                 key={state.selectedJob.id}
                                                 job={state.selectedJob} 
                                                 onUpdate={actions.updateJob} 
-                                                onOpenMerged={actions.openMergedJob}
-                                                hideMergedButton={!!state.mergedJob}
+                                                onOpenDuplicated={actions.openDuplicatedJob}
+                                                hideDuplicatedButton={!!state.duplicatedJob}
                                             />
                                         </div>
-                                        {state.mergedJob && (
+                                        {state.duplicatedJob && (
                                             <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>
                                                 <JobDetail 
-                                                    key={state.mergedJob.id}
-                                                    job={state.mergedJob} 
-                                                    onUpdate={actions.updateJob} // Allows updating the merged job too
-                                                    onClose={actions.closeMergedJob}
+                                                    key={state.duplicatedJob.id}
+                                                    job={state.duplicatedJob} 
+                                                    onUpdate={actions.updateJob} // Allows updating the duplicated job too
+                                                    onClose={actions.closeDuplicatedJob}
                                                 />
                                             </div>
                                         )}

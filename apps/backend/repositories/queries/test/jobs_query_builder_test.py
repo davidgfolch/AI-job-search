@@ -54,10 +54,10 @@ def test_build_jobs_where_clause_created_after():
     assert "2023-01-01T12:00:00" in params
 
 @pytest.mark.parametrize("boolean_filters, expected_clauses", [
-    ({"merged": True}, ["merged IS NOT NULL"]),
-    ({"merged": False}, ["merged IS NULL"]),
+    ({"duplicated": True}, ["duplicated_id IS NOT NULL"]),
+    ({"duplicated": False}, ["duplicated_id IS NULL"]),
     ({"flagged": True}, ["`flagged` = 1"]),
-], ids=["merged_true", "merged_false", "flagged_true"])
+], ids=["duplicated_true", "duplicated_false", "flagged_true"])
 def test_build_jobs_where_clause_boolean_filters(boolean_filters, expected_clauses):
     where, _ = build_jobs_where_clause(
         search=None, status=None, not_status=None, days_old=None, 
