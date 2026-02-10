@@ -71,13 +71,21 @@ export const useJobMutations = ({
     mutationFn: ({ id, data }: { id: number; data: Partial<Job> }) =>
       jobsApi.updateJob(id, data),
     onSuccess: (updatedJob, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
       queryClient.invalidateQueries({ queryKey: ["jobUpdates"] }); 
       if (selectedJob && updatedJob.id === selectedJob.id) {
         setSelectedJob(updatedJob);
       }
-      onJobUpdated?.(updatedJob);
-
+      const jobNoLongerMatchesFilters = 
+        (filters.ignored !== undefined && filters.ignored !== updatedJob.ignored) ||
+        (filters.seen !== undefined && filters.seen !== updatedJob.seen) ||
+        (filters.applied !== undefined && filters.applied !== updatedJob.applied) ||
+        (filters.discarded !== undefined && filters.discarded !== updatedJob.discarded) ||
+        (filters.closed !== undefined && filters.closed !== updatedJob.closed);
+      if (jobNoLongerMatchesFilters) {
+        queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      } else {
+        onJobUpdated?.(updatedJob);
+      }
       if (variables.data.ignored && activeConfigName === 'Clean - Ignore jobs by title') {
         onReload?.();
       }
@@ -87,9 +95,7 @@ export const useJobMutations = ({
   const createMutation = useMutation({
     mutationFn: (data: Partial<Job>) => jobsApi.createJob(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      // Determine what to do after creation: maybe select it?
-      // For now we just refresh list and maybe selection logic handles it
+      // Parent component refreshes the list via setFilters, no need to invalidate here
     },
   });
 
