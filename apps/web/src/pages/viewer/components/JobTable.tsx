@@ -97,6 +97,7 @@ export default function JobTable({
                         const isLastRow = index === jobs.length - 1;
                         return (
                             <tr
+                                id={`job-row-${job.id}`}
                                 key={job.id}
                                 ref={isSelected ? selectedRowRef : (isLastRow ? observerTarget : undefined)}
                                 className={isSelected ? 'selected' : ''}

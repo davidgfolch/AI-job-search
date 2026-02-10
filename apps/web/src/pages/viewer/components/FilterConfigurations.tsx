@@ -1,4 +1,3 @@
-import React from 'react';
 import './FilterConfigurations.css';
 import type { JobListParams } from '../api/ViewerApi';
 import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
@@ -75,7 +74,9 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                 onCancel={confirmModal.close}
             />
             <div className="filter-configurations">
-                <button className={`toggle-button ${hasActiveFilters ? 'has-active' : ''}`}
+                <button 
+                    id="toggle-filters"
+                    className={`toggle-button ${hasActiveFilters ? 'has-active' : ''}`}
                     onClick={onToggleExpand}
                     title={isExpanded ? "Collapse filters" : "Expand filters"}
                 >

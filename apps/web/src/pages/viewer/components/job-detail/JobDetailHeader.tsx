@@ -9,7 +9,7 @@ interface JobDetailHeaderProps {
 export default function JobDetailHeader({ job, onClose, onOpenDuplicated }: JobDetailHeaderProps) {
     return (
         <div className="job-detail-header">
-            <h2>
+            <h2 id="job-detail-title">
                 <a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">
                     {job.title}
                 </a>

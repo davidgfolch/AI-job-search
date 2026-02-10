@@ -6,9 +6,11 @@ import socket
 import mysql.connector
 import signal
 from pathlib import Path
-# Add project root to sys.path to allow imports from apps
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from apps.commonlib.commonlib.mysqlUtil import getConnection
+# Add project root and commonlib to sys.path to allow imports
+root = Path(__file__).resolve().parent.parent
+sys.path.append(str(root))
+sys.path.append(str(root / 'apps' / 'commonlib'))
+from commonlib.mysqlUtil import getConnection
 
 DEBUG = False
 DB_NAME_PREFIX = 'jobs_e2e'

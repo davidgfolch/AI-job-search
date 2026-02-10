@@ -18,10 +18,10 @@ Use this skill when implementing or modifying End-to-End (E2E) tests. These test
 -   **Page Objects**: Must end in `Page.ts` (e.g., `LoginPage.ts`).
 
 ## 3. Best Practices
--   **Page Object Model**: ALWAYS use POM. Do not define selectors or logic inside specs.
--   **Independence**: Tests should not depend on each other.
--   **Selectors**: Use user-facing locators (e.g., `getByRole`, `getByText`) over CSS selectors where possible.
--   **Database**: Do NOT use the production database. Use the `scripts/run_e2e_tests.py` script which handles isolation.
+- **Page Object Model**: ALWAYS use POM. Do not define selectors or logic inside specs.
+- **Independence**: Tests should not depend on each other.
+- **Selectors**: ALWAYS use IDs to locate DOM objects. Ensure target elements have unique `id` attributes in the source code. Avoid using text-based locators or CSS classes unless absolutely necessary.
+- **Database**: Do NOT use the production database. Use the `scripts/run_e2e_tests.py` script which handles isolation.
 
 ## 4. Architecture Verification
 -   Ensure `apps/e2e` does not import internal implementations from other apps directly (unless it's a shared type/constant). It should interact via the browser.
