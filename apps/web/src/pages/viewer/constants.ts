@@ -63,6 +63,7 @@ export const BOOLEAN_FILTERS: BooleanFilterConfig[] = [
     // Other
     { key: 'ai_enriched', label: 'AI Enriched' },
     { key: 'easy_apply', label: 'Easy Apply' },
+    { key: 'merged', label: 'Merged' }, // datetime field treated as boolean
 ];
 
 /**

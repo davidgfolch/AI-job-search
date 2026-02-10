@@ -4,11 +4,9 @@ from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCr
 from services.jobs_service import JobsService
 from services.watcher_service import WatcherService
 from pydantic import BaseModel
-
+from api.jobs_applied import router as jobs_applied_router
 
 router = APIRouter()
-
-from api.jobs_applied import router as jobs_applied_router
 router.include_router(jobs_applied_router)
 
 class BulkJobUpdate(BaseModel):
@@ -61,6 +59,7 @@ def list_jobs(
     interview_technical_test_done: Optional[bool] = None,
     ai_enriched: Optional[bool] = None,
     easy_apply: Optional[bool] = None,
+    merged: Optional[bool] = None,
     sql_filter: Optional[str] = None,
     ids: Optional[List[int]] = Query(None),
     created_after: Optional[str] = None,
@@ -82,6 +81,7 @@ def list_jobs(
             ('interview_technical_test_done', interview_technical_test_done),
             ('ai_enriched', ai_enriched),
             ('easy_apply', easy_apply),
+            ('merged', merged),
         ] if value is not None
     }
     return service.list_jobs(

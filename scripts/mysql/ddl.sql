@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS `filter_configurations` (
 
 ALTER TABLE filter_configurations ADD COLUMN statistics TINYINT(1) DEFAULT 1;
 ALTER TABLE filter_configurations ADD COLUMN pinned BOOLEAN DEFAULT True;
+ALTER TABLE jobs ADD COLUMN merged_id VARCHAR(50) DEFAULT NULL;
 
 
 /*!40101 SET character_set_client = @saved_cs_client */;

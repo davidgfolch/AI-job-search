@@ -1,6 +1,6 @@
 import re
 from commonlib.mysqlUtil import MysqlUtil
-from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
+from commonlib.mergeDuplicates import mergeDuplicatedJobs
 from commonlib.terminalColor import green
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
@@ -25,7 +25,7 @@ class GlassdoorService(BaseService):
                 if id := self.mysql.insert((job_id, title, company, location, url, md,
                                        easy_apply, self.web_page)):
                     print(green(f'INSERTED {id}!'), end='')
-                    mergeDuplicatedJobs(self.mysql, getSelect())
+                    mergeDuplicatedJobs(self.mysql)
                     return True
             else:
                 raise ValueError('Validation failed')

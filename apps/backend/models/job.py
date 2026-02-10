@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -38,6 +38,7 @@ class Job(JobBase):
     created: Optional[datetime] = None
     modified: Optional[datetime] = None
     merged: Optional[datetime] = None
+    merged_id: Optional[Union[str, int]] = None
 
 class JobCreate(JobBase):
     title: str

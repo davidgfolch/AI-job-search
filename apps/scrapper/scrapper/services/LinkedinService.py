@@ -1,7 +1,7 @@
 import re
 from typing import Tuple
 from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
-from commonlib.mergeDuplicates import getSelect, mergeDuplicatedJobs
+from commonlib.mergeDuplicates import mergeDuplicatedJobs
 from commonlib.terminalColor import green, magenta, yellow
 from ..core import baseScrapper
 from ..util.persistence_manager import PersistenceManager
@@ -34,7 +34,7 @@ class LinkedinService(BaseService):
                     self.update_job(jobId, title, company, location, url_short, html, md, easy_apply)
                 elif id := self.mysql.insert((jobId, title, company, location, url_short, md, easy_apply, self.web_page)):
                     print(green(f'INSERTED {id}!'), end='', flush=True)
-                    mergeDuplicatedJobs(self.mysql, getSelect())
+                    mergeDuplicatedJobs(self.mysql)
             else:
                 raise ValueError('Validation failed')
         except (ValueError, KeyboardInterrupt) as e:

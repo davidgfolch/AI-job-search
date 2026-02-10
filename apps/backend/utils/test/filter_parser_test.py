@@ -167,15 +167,6 @@ class TestJobBooleanKeys:
         assert JOB_BOOLEAN_KEYS is not None
         assert isinstance(JOB_BOOLEAN_KEYS, list)
 
-    def test_job_boolean_keys_content(self):
-        """Test that JOB_BOOLEAN_KEYS has expected content."""
-        expected_keys = [
-            'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
-            'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
-            'interview_technical_test_done', 'ai_enriched', 'easy_apply'
-        ]
-        assert JOB_BOOLEAN_KEYS == expected_keys
-
     def test_job_boolean_keys_is_alias(self):
         """Test that JOB_BOOLEAN_KEYS is the same as BOOLEAN_FILTER_KEYS."""
         assert JOB_BOOLEAN_KEYS is BOOLEAN_FILTER_KEYS

@@ -16,11 +16,12 @@ import SkillsList from './job-detail/SkillsList';
 interface JobDetailProps {
     job: Job;
     onUpdate?: (data: Partial<Job>) => void;
-    onCreateNew?: () => void;
-    onDelete?: () => void;
+    onOpenMerged?: (id: number) => void;
+    onClose?: () => void;
+    hideMergedButton?: boolean;
 }
 
-export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobDetailProps) {
+export default function JobDetail({ job, onUpdate, onOpenMerged, onClose, hideMergedButton }: JobDetailProps) {
     const { data: appliedCompanyJobs = [], isLoading: loadingApplied } = useQuery({
         queryKey: ['appliedCompanyJobs', job.company, job.client],
         queryFn: async () => {
@@ -70,7 +71,11 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
 
     return (
         <div className="job-detail">
-            <JobDetailHeader job={job} onCreateNew={onCreateNew} onDelete={onDelete} />
+            <JobDetailHeader 
+                job={job} 
+                onClose={onClose} 
+                onOpenMerged={hideMergedButton ? undefined : onOpenMerged}
+            />
             <div className="job-detail-content" ref={contentRef}>
                 <div className="job-status-floating">
                     {STATE_FIELDS.filter(field => job[field as keyof Job] === true).map(status => (
@@ -147,9 +152,7 @@ export default function JobDetail({ job, onUpdate, onCreateNew, onDelete }: JobD
                         </li>
                     )}
                 </ul>
-                
                 {showCalculator && <SalaryCalculator onClose={() => setShowCalculator(false)} job={job} onUpdate={onUpdate} />}
-
                 {job.comments && (
                     <div className="job-comments">
                         <h3>Comments</h3>

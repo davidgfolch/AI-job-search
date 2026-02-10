@@ -32,8 +32,6 @@ class JobsService:
             salary=salary, boolean_filters=boolean_filters, sql_filter=sql_filter,
             ids=ids, created_after=created_after)
 
-
-
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:
         with self.repo.get_db() as db:
             row = self.repo.fetch_job_row(db, job_id)

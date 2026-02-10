@@ -12,7 +12,7 @@ from typing import Dict, Optional, List, Any, Tuple
 BOOLEAN_FILTER_KEYS = [
     'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
     'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
-    'interview_technical_test_done', 'ai_enriched', 'easy_apply'
+    'interview_technical_test_done', 'ai_enriched', 'easy_apply', 'merged'
 ]
 
 # Backward compatibility alias

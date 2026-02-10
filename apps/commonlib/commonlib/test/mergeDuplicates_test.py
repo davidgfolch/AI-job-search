@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.mergeDuplicates import (
     stripFields,
-    getSelect,
     _mergeJobDuplicates,
     getFieldValue,
     _mergeAll,
@@ -15,14 +14,6 @@ def test_stripFields():
     input_str = "  field1 , field2\n, field3  "
     expected = ["field1", "field2", "field3"]
     assert stripFields(input_str) == expected
-
-def test_getSelect():
-    query = getSelect()
-    assert "select r.counter, r.ids, r.title, r.company" in query
-    assert "from jobs" in query
-    assert "group by title, company" in query
-    assert "having r.counter>1" not in query # It's in the outer query where clause
-    assert "where r.counter>1" in query
 
 def test_getFieldValue():
     row = ["val1", "val2", "val3"]
@@ -103,11 +94,8 @@ def test_mergeDuplicatedJobs(mock_mergeAll):
     mock_mysql.fetchAll.return_value = [
         (2, "1,2", "Title", "Company")
     ]
-    
     mock_mergeAll.return_value = [[{'text': 'Done'}]]
-    
-    mergeDuplicatedJobs(mock_mysql, "SELECT ...")
-    
+    mergeDuplicatedJobs(mock_mysql)
     mock_mergeAll.assert_called_once()
     call_args = mock_mergeAll.call_args
     assert call_args[0][1] == ["1,2"]
@@ -116,7 +104,5 @@ def test_mergeDuplicatedJobs(mock_mergeAll):
 def test_mergeDuplicatedJobs_no_rows(mock_mergeAll):
     mock_mysql = MagicMock()
     mock_mysql.fetchAll.return_value = []
-    
-    mergeDuplicatedJobs(mock_mysql, "SELECT ...")
-    
+    mergeDuplicatedJobs(mock_mysql)
     mock_mergeAll.assert_not_called()

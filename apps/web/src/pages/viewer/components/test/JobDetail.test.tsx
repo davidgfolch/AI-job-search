@@ -95,17 +95,7 @@ describe('JobDetail', () => {
             expect(onUpdateMock).toHaveBeenCalledWith({ salary: null });
         });
 
-        it('handles job deletion existence and action', async () => {
-            const onDeleteMock = vi.fn();
-            const { rerender } = renderWithProviders(<JobDetail job={mockJob} onDelete={onDeleteMock} />);
-            await waitFor(() => expect(screen.getByTitle('Delete this job')).toBeInTheDocument());
 
-            fireEvent.click(screen.getByTitle('Delete this job'));
-            expect(onDeleteMock).toHaveBeenCalledTimes(1);
-
-            rerender(<JobDetail job={mockJob} />);
-            expect(screen.queryByTitle('Delete this job')).not.toBeInTheDocument();
-        });
 
         it('handles ai_enrich_error presence and copy', async () => {
             const jobWithError: Job = { ...mockJob, ai_enrich_error: 'Test Error' };

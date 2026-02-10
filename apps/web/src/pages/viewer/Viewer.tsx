@@ -15,7 +15,7 @@ export default function Viewer() {
     const { state, status, actions } = useViewer();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
 
-    const handleFiltersChange = useCallback((newFilters) => {
+    const handleFiltersChange = useCallback((newFilters: any) => {
         actions.setFilters({ ...state.filters, ...newFilters, page: 1 });
     }, [actions.setFilters, state.filters]);
 
@@ -42,12 +42,21 @@ export default function Viewer() {
                             onMessage={handleMessage} 
                             onConfigNameChange={actions.setActiveConfigName} />
                         <div className="viewer-content">
-                            <div className="viewer-left">
+                            <div className="viewer-left" style={{ display: state.mergedJob ? 'none' : 'flex' }}>
                                 <div className="tab-group">
                                     <div className="tab-buttons">
                                         <ViewTabs 
                                             activeTab={state.activeTab} 
                                             onTabChange={actions.setActiveTab} 
+                                            onDelete={(count) => {
+                                                if (state.selectionMode === 'all' || state.selectedIds.size > 0) {
+                                                    actions.deleteSelected(count);
+                                                } else if (state.selectedJob) {
+                                                    actions.deleteJob();
+                                                }
+                                            }}
+                                            selectedCount={state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}
+                                            hasSelection={!!(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0)}
                                         />
                                         {state.activeTab === 'list' && (
                                             <div className="list-summary">
@@ -108,23 +117,32 @@ export default function Viewer() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="viewer-right">
+                            <div className="viewer-right" style={state.mergedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
                                 {state.selectedJob ? (
-                                    <JobDetail 
-                                        key={state.selectedJob.id}
-                                        job={state.selectedJob} 
-                                        onUpdate={actions.updateJob} 
-                                        onCreateNew={() => actions.setActiveTab('create')}
-                                        onDelete={actions.deleteJob}
-                                    />
+                                    <>
+                                        <div style={state.mergedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                            <JobDetail 
+                                                key={state.selectedJob.id}
+                                                job={state.selectedJob} 
+                                                onUpdate={actions.updateJob} 
+                                                onOpenMerged={actions.openMergedJob}
+                                                hideMergedButton={!!state.mergedJob}
+                                            />
+                                        </div>
+                                        {state.mergedJob && (
+                                            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>
+                                                <JobDetail 
+                                                    key={state.mergedJob.id}
+                                                    job={state.mergedJob} 
+                                                    onUpdate={actions.updateJob} // Allows updating the merged job too
+                                                    onClose={actions.closeMergedJob}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="no-selection">
                                         Select a job to view details
-                                        <br/>
-                                        <button className="create-job-btn" style={{ marginTop: '20px' }}
-                                            onClick={() => actions.setActiveTab('create')}>
-                                            Create Job
-                                        </button>
                                     </div>
                                 )}
                             </div>

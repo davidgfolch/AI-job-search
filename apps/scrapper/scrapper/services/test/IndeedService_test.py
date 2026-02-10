@@ -66,8 +66,7 @@ class TestIndeedService:
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     @patch("scrapper.services.IndeedService.validate")
     @patch("scrapper.services.IndeedService.mergeDuplicatedJobs")
-    @patch("scrapper.services.IndeedService.getSelect")
-    def test_process_job_new(self, mock_getSelect, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
+    def test_process_job_new(self, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
         mock_html2md.return_value = "markdown"
         mock_validate.return_value = True
         mock_mysql.fetchOne.return_value = None # Job not in DB
@@ -103,8 +102,7 @@ class TestIndeedService:
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     @patch("scrapper.services.IndeedService.validate")
     @patch("scrapper.services.IndeedService.mergeDuplicatedJobs")
-    @patch("scrapper.services.IndeedService.getSelect")
-    def test_process_job_removes_turnstile(self, mock_getSelect, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
+    def test_process_job_removes_turnstile(self, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
         mock_html2md.return_value = "markdown"
         mock_validate.return_value = True
         mock_mysql.fetchOne.return_value = None # Job not in DB

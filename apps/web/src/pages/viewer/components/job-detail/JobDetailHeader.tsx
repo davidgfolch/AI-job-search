@@ -1,12 +1,12 @@
-import type { Job } from '../../api/jobs';
+import type { Job } from '../../api/ViewerApi';
 
 interface JobDetailHeaderProps {
     job: Job;
-    onCreateNew?: () => void;
-    onDelete?: () => void;
+    onClose?: () => void;
+    onOpenMerged?: (id: number) => void;
 }
 
-export default function JobDetailHeader({ job, onCreateNew, onDelete }: JobDetailHeaderProps) {
+export default function JobDetailHeader({ job, onClose, onOpenMerged }: JobDetailHeaderProps) {
     return (
         <div className="job-detail-header">
             <h2>
@@ -14,14 +14,23 @@ export default function JobDetailHeader({ job, onCreateNew, onDelete }: JobDetai
                     {job.title}
                 </a>
             </h2>
-            {onCreateNew && (
-                <button className="create-job-btn" onClick={onCreateNew} title="Create New Job">
-                    <span>+</span> Create
-                </button>
+            {job.merged_id && onOpenMerged && (
+                <>
+                {String(job.merged_id).split(',').map(id => (
+                    <button 
+                        key={id}
+                        className="create-job-btn" 
+                        onClick={() => onOpenMerged(Number(id.trim()))} 
+                        title={`Open Merged Job (${id.trim()})`}
+                    >
+                        ⎋ Open Merged
+                    </button>
+                ))}
+                </>
             )}
-            {onDelete && (
-                <button className="create-job-btn" onClick={onDelete} title="Delete this job">
-                    🗑️ Delete
+            {onClose && (
+                <button className="create-job-btn" onClick={onClose} title="Close merged view">
+                    ✕ Close
                 </button>
             )}
         </div>

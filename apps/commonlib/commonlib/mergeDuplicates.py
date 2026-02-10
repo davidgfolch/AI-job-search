@@ -27,19 +27,18 @@ if 'closed' in COLS_ARR:
 COL_COMPANY_IDX = COLS_ARR.index('title')
 
 
-def getSelect():
-    return """
-    select r.counter, r.ids, r.title, r.company
+SELECT = """
+    select r.counter, r.ids, r.title, r.company, r.location
     from (select count(*) as counter,
                 GROUP_CONCAT(CAST(id as CHAR(50)) SEPARATOR ',') as ids,
                 max(created) as max_created,  -- to delete all, but last
-                title, company
+                title, company, location
             from jobs
-            -- where company != 'Joppy'
-            group by title, company
+            where company != 'Joppy' and merged_id is null
+            group by title, company, location
         ) as r
     where r.counter>1
-    order by r.title, r.company, r.max_created desc"""
+    order by r.title, r.company, r.location, r.max_created desc"""
 
 
 def _mergeAll(mysql: MysqlUtil, rowsIds) -> list:
@@ -51,11 +50,13 @@ def _mergeAll(mysql: MysqlUtil, rowsIds) -> list:
         queries = [{'query': updateQry, 'params': params}]
         idsArr = ids.split(',')
         idsArr.remove(str(id))
-        deleteQry = deleteJobsQuery(idsArr)
-        queries.append({'query': deleteQry})
+        # Update instead of delete
+        updateMergedQry, paramsMerged = updateFieldsQuery(idsArr, {'merged_id': id}, merged=True)
+        queries.append({'query': updateMergedQry, 'params': paramsMerged})
+
         affectedRows = mysql.executeAllAndCommit(queries)
         results.append([{'arr': out, 'query': query}] + queries + [{
-            'text': f'Merge duplicates: affected rows (updated {id} & deleted {idsArr}):' +
+            'text': f'Merge duplicates: affected rows (updated {id} & merged {idsArr}):' +
             f' {affectedRows}'}])
     return results
 
@@ -76,9 +77,9 @@ def _mergeJobDuplicates(rows, ids):
     return id, merged, out
 
 
-def mergeDuplicatedJobs(mysql: MysqlUtil, selectQuery: str):
+def mergeDuplicatedJobs(mysql: MysqlUtil):
     try:
-        rows = mysql.fetchAll(selectQuery)
+        rows = mysql.fetchAll(SELECT)
         if len(rows) == 0:
             return
         idsIdx = 1
@@ -88,9 +89,7 @@ def mergeDuplicatedJobs(mysql: MysqlUtil, selectQuery: str):
                 print(' ', end='')
                 if arr := line.get('arr', None):
                     print(cyan(' '.join([removeNewLines(a) for a in arr])), end=' ')
-                query = line.get('query', None)
-                if getEnvBool('SHOW_SQL_IN_AI_ENRICHMENT') and query:
-                    print(blue(removeNewLines(query)), end=' ')
+                #query = line.get('query', None)
                 if txt := line.get('text', None):
                     print(blue(removeNewLines(txt)), end=' ')
     except Exception:

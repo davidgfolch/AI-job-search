@@ -134,7 +134,10 @@ export const useJobMutations = ({
   }, [selectionMode, selectedIds, filters, bulkUpdateMutation, confirmModal]);
 
   const deleteSelected = useCallback((count: number) => {
-    const msg = getDeleteOldJobsMsg(count);
+    let msg = `Are you sure you want to delete ${count} job${count !== 1 ? 's' : ''}?`;
+    if (activeConfigName === 'Clean - Delete old jobs') {
+        msg = getDeleteOldJobsMsg(count);
+    }
     confirmModal.confirm(msg, () => {
         if (selectionMode === "all") {
           bulkDeleteMutation.mutate({
@@ -147,7 +150,7 @@ export const useJobMutations = ({
           });
         }
     });
-  }, [selectionMode, selectedIds, filters, bulkDeleteMutation, confirmModal]);
+  }, [selectionMode, selectedIds, filters, bulkDeleteMutation, confirmModal, activeConfigName]);
 
   const deleteSingleJob = useCallback(() => {
     if (!selectedJob) return;

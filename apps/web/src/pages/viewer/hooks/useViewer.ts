@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useJobsData } from './useJobsData';
 import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
-import type { Job } from '../api/ViewerApi';
+import { type Job, jobsApi } from '../api/ViewerApi';
 
 export type { TabType };
 
@@ -57,6 +57,20 @@ export const useViewer = () => {
 
     const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
     const [creationSessionId, setCreationSessionId] = useState(0);
+    const [mergedJob, setMergedJob] = useState<Job | null>(null);
+
+    const openMergedJob = async (id: number) => {
+        try {
+            const job = await jobsApi.getJob(id);
+            setMergedJob(job);
+        } catch (e) {
+            console.error("Failed to load merged job", e);
+        }
+    };
+
+    const closeMergedJob = () => {
+        setMergedJob(null);
+    };
 
     // Update allJobs when data changes
     useEffect(() => {
@@ -101,6 +115,7 @@ export const useViewer = () => {
             confirmModal,
             activeConfigName,
             creationSessionId,
+            mergedJob,
         },
         status: {
             isLoading: isLoading && (filters.page || 1) === 1,
@@ -163,6 +178,8 @@ export const useViewer = () => {
                     await hardRefresh();
                 }
             },
+            openMergedJob,
+            closeMergedJob,
         },
     };
 };
