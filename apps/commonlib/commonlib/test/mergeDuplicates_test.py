@@ -39,21 +39,12 @@ def test_mergeJobDuplicates():
     row1[title_idx] = "Software Engineer"
     row1[company_idx] = "Tech Corp"
     
-    # Add some data to merge
-    # Assuming there are other fields after company that are not 'created'
-    # Let's find a field to test merging.
-    # DB_FIELDS_MERGE includes 'salary'.
-    if 'salary' in COLS_ARR:
-        salary_idx = COLS_ARR.index('salary')
-        row1[salary_idx] = "100k"
-
     rows = [row1]
     ids = "1,2"
     
     id_res, merged, out = _mergeJobDuplicates(rows, ids)
     
     assert id_res == 1
-    assert merged.get('salary') == "100k"
     assert "Software Engineer" in out[0]
     assert "Tech Corp" in out[0]
 

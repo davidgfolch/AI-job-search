@@ -74,24 +74,6 @@ describe('JobActions', () => {
         expect(screen.getByTitle('Previous job')).toBeDisabled();
     });
 
-    it('should show delete buttons when in delete mode', () => {
-        render(<JobActions {...mockProps} activeConfigName="Clean - Delete old jobs" selectedCount={5} />);
-        expect(screen.getByText('DELETE')).toBeInTheDocument();
-        expect(screen.queryByTitle('Mark as seen')).not.toBeInTheDocument();
-    });
-
-    it('should show delete all button when in delete mode and bulk is true', () => {
-        render(<JobActions {...mockProps} activeConfigName="Clean - Delete old jobs" isBulk={true} selectedCount={5} />);
-        expect(screen.getByText('DELETE 5')).toBeInTheDocument();
-    });
-
-    it('should call onDelete when delete button is clicked', () => {
-        const onDeleteMock = vi.fn();
-        render(<JobActions {...mockProps} activeConfigName="Clean - Delete old jobs" onDelete={onDeleteMock} selectedCount={1} />);
-        fireEvent.click(screen.getByText('DELETE'));
-        expect(onDeleteMock).toHaveBeenCalled();
-    });
-
     it('should handle copy permalink with simplified jobId only', () => {
         const filters = { search: 'dev', order: 'salary desc', days_old: 7 };
         render(<JobActions {...mockProps} filters={filters} />);

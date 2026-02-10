@@ -11,6 +11,7 @@ const mockJobs = createMockJobs(2, {
 describe('JobTable', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        Element.prototype.scrollIntoView = vi.fn();
     });
 
     afterEach(() => {

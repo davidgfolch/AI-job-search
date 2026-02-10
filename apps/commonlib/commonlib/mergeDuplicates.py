@@ -13,17 +13,12 @@ def stripFields(fields: str) -> list[str]:
     return list(map(lambda c: re.sub('\n', '', c.strip()), fields.split(',')))
 
 
-DB_FIELDS_MERGE = """salary,required_technologies,optional_technologies,
-ai_enriched,ai_enrich_error,company,client,comments, created"""
-FIELDS_MERGE = stripFields(DB_FIELDS_MERGE)
 COLUMNS = stripFields('Counter,Ids,Title,Company')
 SELECT_FOR_MERGE = """select {cols}
     from jobs where id in ({ids})
     order by created asc"""
-COLS = f'id, title,{DB_FIELDS_MERGE},{DB_FIELDS_BOOL}'
+COLS = f'id,title,company,{DB_FIELDS_BOOL}'
 COLS_ARR = stripFields(COLS)
-if 'closed' in COLS_ARR:
-    COLS_ARR.remove('closed')
 COL_COMPANY_IDX = COLS_ARR.index('title')
 
 

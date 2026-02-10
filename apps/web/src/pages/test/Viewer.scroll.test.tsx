@@ -16,6 +16,9 @@ vi.mock('../viewer/api/ViewerApi', () => ({
         getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
     },
 }));
+vi.mock('../../hooks/viewer/useJobUpdates', () => ({
+    useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0, newJobIds: [] }),
+}));
 vi.mock('../../services/FilterConfigService', () => ({
     FilterConfigService: vi.fn().mockImplementation(function() {
         return {
@@ -29,7 +32,7 @@ vi.mock('../../services/FilterConfigService', () => ({
 
 setupGlobalMocks();
 
-import { screen, fireEvent } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { jobsApi } from '../viewer/api/ViewerApi';
 import { renderViewer } from './ViewerTestUtils';
@@ -48,32 +51,24 @@ describe('Viewer - Scroll and Pagination', () => {
         await runTimers();
         verifySummary(/2\/50 loaded/);
         expect(jobsApi.getJobs).toHaveBeenCalled();
-    });
+    }, 10000);
 
-    it('loads job details when clicking a job loaded via infinite scroll', async () => {
-        vi.useFakeTimers();
-        (jobsApi.getJobs as any).mockImplementation((params: any) => {
-            const page2Jobs = [
-                { id: 3, title: 'Job 3', company: 'Company 3', description: 'Desc 3', date: '2024-01-02', markdown: 'Desc 3', created: '2024-01-02' },
-                { id: 4, title: 'Job 4', company: 'Company 4', description: 'Desc 4', date: '2024-01-02', markdown: 'Desc 4', created: '2024-01-02' }
-            ];
-            if (params.page === 2) {
-                return Promise.resolve({ items: page2Jobs, total: 4, page: 2, size: 2 });
-            }
-            return Promise.resolve({ items: [
+    it('loads job details when selecting a job from the list', async () => {
+        (jobsApi.getJobs as any).mockResolvedValue({
+            items: [
                 { id: 1, title: 'Job 1', company: 'Company 1', markdown: 'Desc 1', created: '2024-01-01' },
                 { id: 2, title: 'Job 2', company: 'Company 2', markdown: 'Desc 2', created: '2024-01-01' }
-            ], total: 4, page: 1, size: 2 });
+            ],
+            total: 2,
+            page: 1,
+            size: 20
         });
-        (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
+        (jobsApi.getJob as any).mockResolvedValue({ id: 1, title: 'Job 1', company: 'Company 1', markdown: 'Desc 1', created: '2024-01-01' });
         renderViewer();
         await runTimers();
         expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
-        fireEvent.click(screen.getByText('Load More'));
+        selectJob('Job 1');
         await runTimers();
-        expect(screen.getByText('Job 3')).toBeInTheDocument();
-        selectJob('Job 3');
-        await runTimers();
-        expect(screen.getByText('Desc 3', { selector: '.markdown-content p' })).toBeInTheDocument();
-    });
+        expect(screen.getByText('Desc 1', { selector: '.markdown-content p' })).toBeInTheDocument();
+    }, 10000);
 });

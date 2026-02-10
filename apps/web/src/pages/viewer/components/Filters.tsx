@@ -5,6 +5,7 @@ import './Filters.css';
 import HistoryInput from "../../common/components/core/HistoryInput";
 import FilterConfigurations from './FilterConfigurations';
 import SqlEditor from "../../common/components/core/SqlEditor";
+import { useFilterExpanded } from '../hooks/useFilterExpanded';
 
 interface BooleanFiltersProps {
     filters: JobListParams;
@@ -14,7 +15,7 @@ interface BooleanFiltersProps {
 }
 
 export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange }: BooleanFiltersProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const { isExpanded, setIsExpanded } = useFilterExpanded();
     const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
     const handleSearchChange = (search: string) => {
         onFiltersChange({ ...filters, search, page: 1 });

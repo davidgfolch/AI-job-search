@@ -6,9 +6,11 @@ interface UseJobSelectionProps {
     allJobs: Job[];
     filters: JobListParams;
     setFilters: React.Dispatch<React.SetStateAction<JobListParams>>;
+    onLoadMore?: () => void;
+    hasMorePages?: boolean;
 }
 
-export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectionProps) => {
+export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasMorePages }: UseJobSelectionProps) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -176,8 +178,10 @@ export const useJobSelection = ({ allJobs, filters, setFilters }: UseJobSelectio
         const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
         if (nextIndex >= 0 && nextIndex < allJobs.length) {
             handleJobSelect(allJobs[nextIndex]);
+        } else if (direction === 'next' && nextIndex >= allJobs.length && hasMorePages && onLoadMore) {
+            onLoadMore();
         }
-    }, [allJobs, selectedJob, handleJobSelect]);
+    }, [allJobs, selectedJob, handleJobSelect, hasMorePages, onLoadMore]);
 
     return {
         selectedJob,

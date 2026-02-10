@@ -196,6 +196,8 @@ ai_enriched, easy_apply
     from jobs where id in (30755, 31097)
     order by created asc
 
+select * from jobs where merged_id is not null order by merged desc;
+
 SELECT config_id, job_created
 FROM config_view_1 where job_created > DATE_SUB(NOW(), INTERVAL 50 MINUTE) LIMIT 100
 

@@ -70,6 +70,7 @@ CREATE TABLE if not exists `jobs` (
 ALTER TABLE jobs ADD COLUMN cv_match_percentage TINYINT NULL;
 ALTER TABLE jobs ADD INDEX cv_match_percentage_index (cv_match_percentage);
 ALTER TABLE jobs ADD INDEX created_index (created);
+alter table jobs add column duplicated_id int DEFAULT NULL;
 
 -- DROP TABLE IF EXISTS `job_skills`;
 CREATE TABLE if not exists `job_skills` (
@@ -99,7 +100,6 @@ CREATE TABLE IF NOT EXISTS `filter_configurations` (
 
 ALTER TABLE filter_configurations ADD COLUMN statistics TINYINT(1) DEFAULT 1;
 ALTER TABLE filter_configurations ADD COLUMN pinned BOOLEAN DEFAULT True;
-ALTER TABLE jobs ADD COLUMN merged_id VARCHAR(50) DEFAULT NULL;
 
 
 /*!40101 SET character_set_client = @saved_cs_client */;

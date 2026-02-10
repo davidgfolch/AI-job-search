@@ -75,14 +75,11 @@ export default function Viewer() {
                                                 onDiscarded={actions.discardedJob}
                                                 onClosed={actions.closedJob}
                                                 onIgnore={isBulk ? actions.ignoreSelected : actions.ignoreJob}
-                                                onDelete={actions.deleteSelected}
                                                 onNext={actions.nextJob}
                                                 onPrevious={actions.previousJob}
                                                 hasNext={status.hasNext}
                                                 hasPrevious={status.hasPrevious}
                                                 isBulk={isBulk}
-                                                activeConfigName={state.activeConfigName}
-                                                selectedCount={state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}
                                             />
                                         )}
                                     </div>

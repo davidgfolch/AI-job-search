@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useJobsData } from './useJobsData';
 import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
@@ -11,10 +11,16 @@ export const useViewer = () => {
     const {
         filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, hardRefresh
     } = useJobsData();
+    const hasMorePages = allJobs.length < (data?.total || 0);
+    const shouldAutoSelectNextPage = useRef(false);
+    const handleLoadMoreWithAutoSelect = () => {
+        shouldAutoSelectNextPage.current = true;
+        handleLoadMore();
+    };
     const {
         selectedJob, setSelectedJob, selectedIds, setSelectedIds,
         selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext
-    } = useJobSelection({ allJobs, filters, setFilters });
+    } = useJobSelection({ allJobs, filters, setFilters, onLoadMore: handleLoadMoreWithAutoSelect, hasMorePages });
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
     const {
@@ -82,12 +88,18 @@ export const useViewer = () => {
                     return data.items;
                 } else { // Append on subsequent pages
                     const newItems = data.items.filter(item => !jobs.some(p => p.id === item.id));
+                    if (newItems.length > 0 && shouldAutoSelectNextPage.current) {
+                        setTimeout(() => {
+                            handleJobSelect(newItems[0]);
+                            shouldAutoSelectNextPage.current = false;
+                        }, 0);
+                    }
                     return [...jobs, ...newItems];
                 }
             });
             setIsLoadingMore(false);
         }
-    }, [data, filters.page, setAllJobs, setIsLoadingMore]);
+    }, [data, filters.page, setAllJobs, setIsLoadingMore, handleJobSelect]);
 
     // Handle initial selection purely based on flag
     useEffect(() => {
@@ -100,7 +112,7 @@ export const useViewer = () => {
     
     // Calculate navigation state
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;
-    const hasNext = selectedIndex >= 0 && selectedIndex < allJobs.length - 1;
+    const hasNext = (selectedIndex >= 0 && selectedIndex < allJobs.length - 1) || hasMorePages;
     const hasPrevious = selectedIndex > 0;
     return {
         state: {

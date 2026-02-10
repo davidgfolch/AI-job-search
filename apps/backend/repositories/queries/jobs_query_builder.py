@@ -49,7 +49,7 @@ def build_jobs_where_clause(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ) -> Tuple[List[str], List[Any]]:
-    where = ["1=1"]
+    where = []
     params = []
     if search:
         where.append(get_search_conditions("%s"))
@@ -74,7 +74,7 @@ def build_jobs_where_clause(
         for field_name, field_value in boolean_filters.items():
             if field_value is not None:
                 if field_name == 'merged': # TODO: USE DDL TO CHECK IF NOT BOOLEAN FIELD
-                    where.append("merged_id IS NOT NULL" if field_value else "merged_id IS NULL")
+                    where.append("merged IS NOT NULL" if field_value else "merged IS NULL")
                 else:
                     val = 1 if field_value else 0
                     where.append(get_boolean_condition(field_name, str(val)))
@@ -91,6 +91,8 @@ def build_jobs_where_clause(
     if end_date:
         where.append("created <= %s")
         params.append(end_date)
+    if len(where) == 0:
+        where.append("1=1")
     return where, params
 
 def parse_job_order(order: Optional[str]) -> Tuple[str, str]:

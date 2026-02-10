@@ -14,9 +14,6 @@ interface JobActionsProps {
     hasNext: boolean;
     hasPrevious: boolean;
     isBulk?: boolean;
-    activeConfigName?: string;
-    onDelete?: (count: number) => void;
-    selectedCount?: number;
 }
 
 export default function JobActions({
@@ -30,40 +27,14 @@ export default function JobActions({
     onPrevious,
     hasNext,
     hasPrevious,
-     isBulk = false,
-     activeConfigName,
-     onDelete,
-     selectedCount = 0,
- }: JobActionsProps) {
+    isBulk = false,
+}: JobActionsProps) {
  
     const handleCopyPermalink = () => {
         if (!job) return;
         const permalink = `${window.location.origin}${window.location.pathname}?jobId=${job.id}`;
         navigator.clipboard.writeText(permalink);
     };
- 
-     const isDeleteMode = activeConfigName === 'Clean - Delete old jobs';
- 
-     if (isDeleteMode) {
-         return (
-             <div className="header-actions">
-                <button 
-                    className="header-button delete-button" 
-                    onClick={() => onDelete?.(selectedCount)} 
-                    title="Delete jobs"
-                    style={{ 
-                        backgroundColor: selectedCount < 1 ? undefined : '#dc3545', 
-                        color: selectedCount < 1 ? undefined : 'white', 
-                        fontWeight: 'bold', 
-                        minWidth: '120px' 
-                    }}
-                    disabled={selectedCount < 1}
-                >
-                 {isBulk ? `DELETE ${selectedCount}` : 'DELETE'}
-                </button>
-             </div>
-         );
-     }
 
     return (
         <div className="header-actions">

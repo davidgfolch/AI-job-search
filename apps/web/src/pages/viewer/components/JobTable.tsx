@@ -57,6 +57,18 @@ export default function JobTable({
         };
     }, [onLoadMore, hasMore, jobs.length]);
 
+    const selectedRowRef = useRef<HTMLTableRowElement>(null);
+
+    useEffect(() => {
+        if (selectedJob && selectedRowRef.current) {
+            selectedRowRef.current.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center',
+                inline: 'nearest'
+            });
+        }
+    }, [selectedJob?.id]);
+
     return (
         <div className="job-table-container" ref={containerRef}>
             <table className="job-table">
@@ -80,12 +92,15 @@ export default function JobTable({
                     </tr>
                 </thead>
                 <tbody>
-                    {jobs.map((job, index) => (
-                        <tr
-                            key={job.id}
-                            ref={index === jobs.length - 1 ? observerTarget : undefined}
-                            className={selectedJob?.id === job.id ? 'selected' : ''}
-                            onClick={() => onJobSelect(job)}>
+                    {jobs.map((job, index) => {
+                        const isSelected = selectedJob?.id === job.id;
+                        const isLastRow = index === jobs.length - 1;
+                        return (
+                            <tr
+                                key={job.id}
+                                ref={isSelected ? selectedRowRef : (isLastRow ? observerTarget : undefined)}
+                                className={isSelected ? 'selected' : ''}
+                                onClick={() => onJobSelect(job)}>
                             <td className="checkbox-column" onClick={(e) => e.stopPropagation()}>
                                 <input 
                                     id={`job-table-select-${job.id}`}
@@ -116,7 +131,8 @@ export default function JobTable({
                             </td>
                             <td title={calculateLapsedTimeDetail(job.created)}>{calculateLapsedTime(job.created)}</td>
                         </tr>
-                    ))}
+                        );
+                    })}
                 </tbody>
             </table>
         </div>
