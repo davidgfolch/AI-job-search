@@ -3,7 +3,7 @@ from typing import Dict, Sequence, TypeVar, Union, Any
 from contextlib import contextmanager
 import mysql.connector as mysqlConnector
 from mysql.connector.types import RowItemType
-from commonlib.sqlUtil import error, getColumnTranslated, scapeRegexChars, avoidInjection
+from commonlib.sqlUtil import error, getColumnTranslated, avoidInjection
 from .decorator.retry import retry
 from .terminalColor import green, red, yellow
 

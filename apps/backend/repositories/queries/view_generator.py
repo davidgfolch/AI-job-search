@@ -45,8 +45,13 @@ def _get_where(filters: dict) -> str:
         if val is None:
             val = filters.get(key)
         if val is not None:
-            sql_val = '1' if str(val).lower() == 'true' else '0'
-            parts.append(get_boolean_condition(key, sql_val, alias='jobs'))
+            is_true = str(val).lower() == 'true'
+            if key == 'duplicated':
+                sql = "jobs.duplicated_id IS NOT NULL" if is_true else "jobs.duplicated_id IS NULL"
+                parts.append(sql)
+            else:
+                sql_val = '1' if is_true else '0'
+                parts.append(get_boolean_condition(key, sql_val, alias='jobs'))
     _get_where_status(filters.get('status'), parts, True)
     _get_where_status(filters.get('not_status'), parts, False)
     if sql_filter := filters.get('sql_filter'):
@@ -58,4 +63,8 @@ def _get_where(filters: dict) -> str:
 def _get_where_status(status: str, parts: list, asTrue: bool):
     if status:
         for s in status.split(','):
-            parts.append(f"jobs.`{s.strip()}` = " + ("1" if asTrue else "0"))
+            field = s.strip()
+            if field == 'duplicated':
+                parts.append("jobs.duplicated_id IS " + ("NOT NULL" if asTrue else "NULL"))
+            else:
+                parts.append(f"jobs.`{field}` = " + ("1" if asTrue else "0"))

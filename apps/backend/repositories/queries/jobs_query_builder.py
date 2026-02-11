@@ -57,11 +57,19 @@ def build_jobs_where_clause(
     if status:
         statuses = status.split(',')
         for s in statuses:
-            where.append(f"`{s.strip()}` = 1")
+            field = s.strip()
+            if field == 'duplicated':
+                where.append("duplicated_id IS NOT NULL")
+            else:
+                where.append(f"`{field}` = 1")
     if not_status:
         statuses = not_status.split(',')
         for s in statuses:
-            where.append(f"`{s.strip()}` = 0")
+            field = s.strip()
+            if field == 'duplicated':
+                where.append("duplicated_id IS NULL")
+            else:
+                where.append(f"`{field}` = 0")
     if days_old:
         where.append(get_days_old_condition("%s"))
         params.append(days_old)

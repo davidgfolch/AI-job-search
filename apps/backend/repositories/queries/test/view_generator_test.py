@@ -43,3 +43,13 @@ def test_generate_config_view_sql_with_flat_boolean_filters():
     assert "FROM jobs" in sql
     assert "FROM jobs j" not in sql
 
+
+def test_generate_config_view_sql_with_duplicated():
+    """Test generating SQL with duplicated filter"""
+    filters = {'duplicated': True}
+    sql, _ = generate_config_view_sql(500, filters)
+    assert "jobs.duplicated_id IS NOT NULL" in sql
+    
+    filters = {'duplicated': False}
+    sql, _ = generate_config_view_sql(501, filters)
+    assert "jobs.duplicated_id IS NULL" in sql
