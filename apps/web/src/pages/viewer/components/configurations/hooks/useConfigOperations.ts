@@ -114,10 +114,26 @@ export const useConfigOperations = ({
     }
   }, [service, notify]);
 
+  const reorderConfigurations = useCallback(async (newConfigs: FilterConfig[]) => {
+    try {
+      const configsWithOrdering = newConfigs.map((config, index) => ({
+        ...config,
+        ordering: index
+      }));
+      setSavedConfigs(configsWithOrdering);
+      await service.save(configsWithOrdering);
+    } catch (e) {
+      console.error('Failed to reorder configurations', e);
+      notify('Failed to save new order', 'error');
+
+    }
+  }, [service, setSavedConfigs, notify]);
+
   return {
     saveConfiguration,
     loadConfiguration,
     deleteConfiguration,
     exportToDefaults,
+    reorderConfigurations,
   };
 };

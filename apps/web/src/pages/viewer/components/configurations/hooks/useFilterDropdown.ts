@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { FilterConfig } from './useFilterConfigurations';
-import type { WatcherResult } from './useFilterWatcher';
+
 
 interface UseFilterDropdownProps {
     configs: FilterConfig[];
@@ -10,7 +10,7 @@ interface UseFilterDropdownProps {
     onDelete: (name: string, event: React.MouseEvent) => void;
     setIsOpen: (isOpen: boolean) => void;
     isOpen: boolean;
-    results?: Record<string, WatcherResult>;
+    results?: Record<string, { newItems: number; total: number }>;
 }
 
 export function useFilterDropdown({ 
@@ -21,30 +21,42 @@ export function useFilterDropdown({
     onDelete,
     setIsOpen,
     isOpen,
-    results = {}
+    results
 }: UseFilterDropdownProps) {
     const [highlightIndex, setHighlightIndex] = useState(-1);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    const filteredConfigs = configs.filter(config =>
-        config.name.toLowerCase().includes((configName || '').toLowerCase())
-    ).sort((a, b) => {
-        const resultA = results[a.name];
-        const resultB = results[b.name];
-        const newA = resultA?.newItems || 0;
-        const newB = resultB?.newItems || 0;
-        if (newA !== newB) return newB - newA; // Descending new items
-        
-        const notifyA = a.notify ? 1 : 0;
-        const notifyB = b.notify ? 1 : 0;
-        if (notifyA !== notifyB) return notifyB - notifyA; // Descending notify
-        
-        const statsA = a.statistics !== false ? 1 : 0; // Default true
-        const statsB = b.statistics !== false ? 1 : 0;
-        if (statsA !== statsB) return statsB - statsA; // Descending statistics
-        
-        return a.name.localeCompare(b.name);
-    });
+    const filteredConfigs = configs
+        .filter(config =>
+            config.name.toLowerCase().includes((configName || '').toLowerCase())
+        )
+        .sort((a, b) => {
+            // Priority 0: Explicit Ordering (from drag-and-drop)
+            const hasOrdering = a.ordering !== undefined || b.ordering !== undefined;
+            if (hasOrdering) {
+                const aOrder = a.ordering ?? Number.MAX_SAFE_INTEGER;
+                const bOrder = b.ordering ?? Number.MAX_SAFE_INTEGER;
+                return aOrder - bOrder;
+            }
+
+            // Priority 1: New Items (if results exist)
+            const aNew = results?.[a.name]?.newItems ?? 0;
+            const bNew = results?.[b.name]?.newItems ?? 0;
+            if (aNew > 0 && bNew === 0) return -1;
+            if (bNew > 0 && aNew === 0) return 1;
+            if (aNew > 0 && bNew > 0 && aNew !== bNew) return bNew - aNew;
+
+            // Priority 2: Notify
+            if (a.notify && !b.notify) return -1;
+            if (b.notify && !a.notify) return 1;
+
+            // Priority 3: Statistics
+            if (a.statistics && !b.statistics) return -1;
+            if (b.statistics && !a.statistics) return 1;
+
+            // Priority 4: Name (Alphabetical)
+            return a.name.localeCompare(b.name);
+        });
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

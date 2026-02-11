@@ -8,6 +8,7 @@ class FilterConfigurationCreate(BaseModel):
     notify: bool = False
     statistics: bool = True
     pinned: bool = False
+    ordering: int = 0
 
 class FilterConfigurationUpdate(BaseModel):
     name: Optional[str] = None
@@ -15,6 +16,7 @@ class FilterConfigurationUpdate(BaseModel):
     notify: Optional[bool] = None
     statistics: Optional[bool] = None
     pinned: Optional[bool] = None
+    ordering: Optional[int] = None
 
 class FilterConfiguration(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -25,5 +27,6 @@ class FilterConfiguration(BaseModel):
     notify: bool
     statistics: bool
     pinned: bool
+    ordering: int
     created: datetime
     modified: Optional[datetime] = None

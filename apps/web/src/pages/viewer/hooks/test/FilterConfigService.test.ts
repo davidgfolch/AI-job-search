@@ -82,7 +82,8 @@ describe('FilterConfigService', () => {
         filters: { page: 2 },
         notify: false,
         statistics: true,
-        pinned: false
+        pinned: false,
+        ordering: 0
       });
     });
   });
@@ -103,7 +104,10 @@ describe('FilterConfigService', () => {
 
       expect(filterConfigsApi.update).toHaveBeenCalledWith(1, {
         filters: { page: 1 },
-        notify: false
+        notify: false,
+        ordering: 0,
+        pinned: undefined,
+        statistics: undefined
       });
     });
 
@@ -123,7 +127,9 @@ describe('FilterConfigService', () => {
         name: 'New Config',
         filters: { page: 3 },
         notify: true,
-        statistics: true
+        statistics: true,
+        ordering: 0,
+        pinned: undefined
       });
     });
 

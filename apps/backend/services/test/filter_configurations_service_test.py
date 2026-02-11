@@ -54,13 +54,13 @@ def test_create_success(service, mock_repo):
     mock_repo.find_by_name.return_value = None
     mock_repo.create.return_value = 1
     mock_repo.find_by_id.return_value = {
-        'id': 1, 'name': 'New Config', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': True, 'created': '2024-01-01', 'modified': None
+        'id': 1, 'name': 'New Config', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': True, 'ordering': 0, 'created': '2024-01-01', 'modified': None
     }
     
     result = service.create('New Config', {}, False, True, True)
     assert result['id'] == 1
     assert result['pinned'] is True
-    mock_repo.create.assert_called_once_with('New Config', {}, False, True, True)
+    mock_repo.create.assert_called_once_with('New Config', {}, False, True, True, 0)
 
 def test_create_duplicate_name(service, mock_repo):
     """Test error when creating config with duplicate name"""
@@ -121,5 +121,5 @@ def test_seed_defaults(mock_json_load, mock_open, mock_exists, service, mock_rep
     service.seed_defaults()
     
     assert mock_repo.create.call_count == 2
-    mock_repo.create.assert_any_call('Default 1', {'page': 1}, False)
-    mock_repo.create.assert_any_call('Default 2', {'page': 2}, False)
+    mock_repo.create.assert_any_call('Default 1', {'page': 1}, False, ordering=0)
+    mock_repo.create.assert_any_call('Default 2', {'page': 2}, False, ordering=1)

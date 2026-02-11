@@ -17,7 +17,8 @@ export class FilterConfigService {
         filters: bc.filters,
         notify: bc.notify,
         statistics: bc.statistics,
-        pinned: bc.pinned
+        pinned: bc.pinned,
+        ordering: bc.ordering
       }));
       return this.mergeDefaults(configs, defaults);
     } catch (error) {
@@ -43,7 +44,7 @@ export class FilterConfigService {
       const backendConfigs = await filterConfigsApi.getAll();
       const backendMap = new Map(backendConfigs.map(bc => [bc.name, bc]));
       // Update or create each config
-      for (const config of limited) {
+      for (const [index, config] of limited.entries()) {
         const existing = backendMap.get(config.name);
         if (existing) {
           // Update if changed
@@ -51,7 +52,8 @@ export class FilterConfigService {
             filters: config.filters,
             notify: config.notify,
             statistics: config.statistics,
-            pinned: config.pinned
+            pinned: config.pinned,
+            ordering: index
           });
         } else {
           // Create new
@@ -60,7 +62,8 @@ export class FilterConfigService {
             filters: config.filters,
             notify: config.notify,
             statistics: config.statistics,
-            pinned: config.pinned
+            pinned: config.pinned,
+            ordering: index
           });
         }
       }
@@ -121,7 +124,8 @@ export class FilterConfigService {
             filters: config.filters,
             notify: config.notify || false,
             statistics: config.statistics || true,
-            pinned: config.pinned || false
+            pinned: config.pinned || false,
+            ordering: 0 // Default ordering for migrated configs
           });
         }
       }

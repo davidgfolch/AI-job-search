@@ -46,6 +46,7 @@ def test_filter_configuration():
         notify=True,
         statistics=True,
         pinned=True,
+        ordering=0,
         created=now
     )
     assert config.id == 1
@@ -65,6 +66,7 @@ def test_filter_configuration_with_modified():
         notify=False,
         statistics=True,
         pinned=False,
+        ordering=0,
         created=now,
         modified=now
     )

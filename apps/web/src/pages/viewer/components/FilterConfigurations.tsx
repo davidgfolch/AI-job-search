@@ -55,7 +55,8 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         lastCheckTime,
         toggleWatch,
         savedConfigs,
-        savedConfigName
+        savedConfigName,
+        reorderConfigurations
     } = useFilterConfigurations({ 
         currentFilters, 
         onLoadConfig, 
@@ -108,6 +109,8 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                         onTogglePin={togglePin}
                         results={watcherResults}
                         lastCheckTime={lastCheckTime}
+                        onReorder={reorderConfigurations}
+                        allowReorder={!configName}
                     />
                 </div>
             </div>

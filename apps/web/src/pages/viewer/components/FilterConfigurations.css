@@ -167,7 +167,6 @@
 .pinned-config-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     padding: 0.5rem;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -194,7 +193,7 @@
     flex: 1;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
     background: none;
     border: none;
     cursor: pointer;

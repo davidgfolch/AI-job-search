@@ -10,6 +10,7 @@ export interface FilterConfiguration {
     notify: boolean;
     statistics: boolean;
     pinned: boolean;
+    ordering: number;
     created: string;
     modified: string | null;
 }
@@ -20,6 +21,7 @@ export interface FilterConfigurationCreate {
     notify?: boolean;
     statistics?: boolean;
     pinned?: boolean;
+    ordering?: number;
 }
 
 export interface FilterConfigurationUpdate {
@@ -28,6 +30,7 @@ export interface FilterConfigurationUpdate {
     notify?: boolean;
     statistics?: boolean;
     pinned?: boolean;
+    ordering?: number;
 }
 
 export const filterConfigsApi = {

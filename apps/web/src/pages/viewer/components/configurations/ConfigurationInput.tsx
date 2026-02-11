@@ -6,7 +6,7 @@ interface ConfigurationInputProps {
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
     onFocus: () => void;
     onClick: () => void;
-    onBlur: () => void;
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
     onSave: () => void;
     onExport: () => void;
     onWatch: () => void;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import type { WatcherResult } from './hooks/useFilterWatcher.types';
 import type { FilterConfig } from './hooks/useFilterConfigurations';
 
@@ -14,6 +14,8 @@ interface ConfigurationDropdownProps {
     onTogglePin: (name: string) => void;
     results?: Record<string, WatcherResult>;
     lastCheckTime?: Date | null;
+    onReorder?: (configs: FilterConfig[]) => void;
+    allowReorder?: boolean;
 }
 
 export function ConfigurationDropdown({
@@ -27,11 +29,48 @@ export function ConfigurationDropdown({
     onToggleStats,
     onTogglePin,
     results = {},
-    lastCheckTime
+    lastCheckTime,
+    onReorder,
+    allowReorder = false
 }: ConfigurationDropdownProps) {
+    const dragItem = useRef<number | null>(null);
+    const dragOverItem = useRef<number | null>(null);
+
     if (!isOpen || filteredConfigs.length === 0) {
         return null;
     }
+
+    const handleDragStart = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+        dragItem.current = index;
+        e.dataTransfer.effectAllowed = "move";
+        // e.target.style.opacity = '0.5'; // Optional visual feedback
+    };
+
+    const handleDragEnter = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+        dragOverItem.current = index;
+        e.preventDefault();
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLLIElement>) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLLIElement>) => {
+        e.preventDefault();
+        const fromIndex = dragItem.current;
+        const toIndex = dragOverItem.current;
+        
+        if (fromIndex !== null && toIndex !== null && fromIndex !== toIndex && onReorder) {
+            const copyListItems = [...filteredConfigs];
+            const [reorderedItem] = copyListItems.splice(fromIndex, 1);
+            copyListItems.splice(toIndex, 0, reorderedItem);
+            onReorder(copyListItems);
+        }
+        
+        dragItem.current = null;
+        dragOverItem.current = null;
+    };
 
     return (
         <ul className="config-suggestions">
@@ -43,12 +82,20 @@ export function ConfigurationDropdown({
                 <li
                     key={config.name}
                     className={`config-suggestion-item ${index === highlightIndex ? 'active' : ''}`}
-                    onMouseDown={(e) => {
-                        e.preventDefault(); // Prevent blur
+                    tabIndex={-1}
+                    style={{ outline: 'none' }}
+                    onMouseDown={() => {
+                        // Allow default for drag and drop to work.
+                        // We handle focus/blur in the parent component to prevent closing on interaction.
                     }}
                     onClick={() => onLoad(config)}
                     onMouseEnter={() => setHighlightIndex(index)}
                     title={result ? `Total: ${result.total} | New: ${result.newItems} | Last check: ${lastCheckTime?.toLocaleTimeString()}` : undefined}
+                    draggable={allowReorder}
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnter={(e) => handleDragEnter(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
                 >
                     <span className="config-name text-no-wrap">
                         {config.name}

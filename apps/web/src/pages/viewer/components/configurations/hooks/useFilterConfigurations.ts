@@ -17,6 +17,7 @@ export interface FilterConfig {
     notify?: boolean;
     statistics?: boolean;
     pinned?: boolean;
+    ordering?: number;
 }
 
 interface UseFilterConfigurationsProps {
@@ -132,12 +133,21 @@ export function useFilterConfigurations({
         onDelete: operations.deleteConfiguration,
         setIsOpen,
         isOpen,
-        results: watcherResults,
+        results: watcherResults
     });
 
     useEffect(() => {
         if (!isOpen) dropdown.setHighlightIndex(-1);
     }, [isOpen, dropdown.setHighlightIndex]);
+
+    const handleInputBlur = useCallback((e: React.FocusEvent) => {
+        if (dropdown.wrapperRef.current && 
+            e.relatedTarget instanceof Node && 
+            dropdown.wrapperRef.current.contains(e.relatedTarget)) {
+             return;
+        }
+        handleBlur();
+    }, [handleBlur, dropdown.wrapperRef]);
 
     return {
         configName,
@@ -151,7 +161,7 @@ export function useFilterConfigurations({
         handleKeyDown: dropdown.handleKeyDown,
         handleChange,
         handleFocus,
-        handleBlur,
+        handleBlur: handleInputBlur,
         exportToDefaults: operations.exportToDefaults,
         setHighlightIndex: dropdown.setHighlightIndex,
         confirmModal: {
@@ -168,6 +178,7 @@ export function useFilterConfigurations({
         isWatching,
         watcherResults,
         lastCheckTime,
-        toggleWatch
+        toggleWatch,
+        reorderConfigurations: operations.reorderConfigurations
     };
 }

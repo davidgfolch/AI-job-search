@@ -4,7 +4,7 @@ from unittest.mock import patch
 @patch('services.filter_configurations_service.FilterConfigurationsService.get_all')
 def test_get_all_configurations(mock_get_all, client):
     mock_data = [
-        {'id': 1, 'name': 'Config 1', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': False,
+        {'id': 1, 'name': 'Config 1', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': False, 'ordering': 0,
          'created': '2024-01-01T10:00:00', 'modified': None}
     ]
     mock_get_all.return_value = mock_data
@@ -15,7 +15,7 @@ def test_get_all_configurations(mock_get_all, client):
 @patch('services.filter_configurations_service.FilterConfigurationsService.create')
 def test_create_configuration(mock_create, client):
     mock_create.return_value = {
-        'id': 1, 'name': 'New Config', 'filters': {'page': 1}, 'notify': False, 'statistics': True, 'pinned': True,
+        'id': 1, 'name': 'New Config', 'filters': {'page': 1}, 'notify': False, 'statistics': True, 'pinned': True, 'ordering': 0,
         'created': '2024-01-01T10:00:00', 'modified': None
     }
     response = client.post("/api/filter-configurations", json={
@@ -35,7 +35,7 @@ def test_create_duplicate_name(mock_create, client):
 
 @patch('services.filter_configurations_service.FilterConfigurationsService.get_by_id')
 def test_get_configuration_by_id(mock_get, client):
-    mock_get.return_value = {'id': 1, 'name': 'Test', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': False,
+    mock_get.return_value = {'id': 1, 'name': 'Test', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': False, 'ordering': 0,
                              'created': '2024-01-01T10:00:00', 'modified': None}
     response = client.get("/api/filter-configurations/1")
     assert response.status_code == 200
@@ -43,7 +43,7 @@ def test_get_configuration_by_id(mock_get, client):
 
 @patch('services.filter_configurations_service.FilterConfigurationsService.update')
 def test_update_configuration(mock_update, client):
-    mock_update.return_value = {'id': 1, 'name': 'Updated', 'filters': {}, 'notify': True, 'statistics': True, 'pinned': True,
+    mock_update.return_value = {'id': 1, 'name': 'Updated', 'filters': {}, 'notify': True, 'statistics': True, 'pinned': True, 'ordering': 0,
                                 'created': '2024-01-01T10:00:00', 'modified': None}
     response = client.put("/api/filter-configurations/1", json={'name': 'Updated', 'pinned': True})
     assert response.status_code == 200
