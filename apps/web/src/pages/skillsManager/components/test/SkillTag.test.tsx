@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import SkillTag from '../SkillTag';
 
@@ -82,6 +82,7 @@ describe('SkillTag', () => {
   });
 
   it('displays description card on hover when provided', async () => {
+    vi.useFakeTimers();
     const onToggle = vi.fn();
     const onViewDetail = vi.fn();
     render(
@@ -95,15 +96,23 @@ describe('SkillTag', () => {
     );
     
     const button = screen.getByLabelText('View skill details');
-    fireEvent.mouseEnter(button);
     
-    expect(await screen.findByText('A systems programming language')).toBeInTheDocument();
-    
-    fireEvent.mouseLeave(button);
-    // Since it's in a portal, we might need to wait for removal or use queryByText
-    await vi.waitFor(() => {
-        expect(screen.queryByText('A systems programming language')).not.toBeInTheDocument();
+    act(() => {
+      fireEvent.mouseEnter(button);
     });
+    
+    expect(screen.getByText('A systems programming language')).toBeInTheDocument();
+    
+    act(() => {
+      fireEvent.mouseLeave(button);
+    });
+    
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.queryByText('A systems programming language')).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('does not display default title on button', () => {

@@ -4,7 +4,7 @@ import JobDetail from "../JobDetail";
 import type { Job } from '../../api/ViewerApi';
 import { jobsApi } from '../../api/ViewerApi';
 import { skillsApi } from '../../../skillsManager/api/SkillsManagerApi';
-import { renderWithProviders, createMockJobs, createMockJob } from "../../test/test-utils";
+import { renderWithProviders, createMockJob } from "../../test/test-utils";
 
 vi.mock('../../api/ViewerApi', () => ({
     jobsApi: {
@@ -110,6 +110,17 @@ describe('JobDetail', () => {
 
             rerender(<JobDetail job={{ ...mockJob, ai_enrich_error: null }} />);
             expect(screen.queryByText('Enrich Error:')).not.toBeInTheDocument();
+        });
+
+        it('handles force re-enrichment', async () => {
+            const onUpdateMock = vi.fn();
+            const jobWithError: Job = { ...mockJob, ai_enrich_error: 'Test Error', ai_enriched: false };
+            renderWithProviders(<JobDetail job={jobWithError} onUpdate={onUpdateMock} />);
+            
+            await waitFor(() => expect(screen.getByText('Force Re-enrich')).toBeInTheDocument());
+            fireEvent.click(screen.getByText('Force Re-enrich'));
+            
+            expect(onUpdateMock).toHaveBeenCalledWith({ ai_enrich_error: null, ai_enriched: false });
         });
     });
 

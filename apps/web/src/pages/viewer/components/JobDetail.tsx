@@ -93,6 +93,12 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
                                 style={{ cursor: 'pointer' }}>
                                 {job.ai_enrich_error}
                             </span>
+                            <button 
+                                className="config-btn" 
+                                style={{ marginLeft: '1rem', padding: '2px 8px', fontSize: '0.75rem' }}
+                                onClick={() => onUpdate?.({ ai_enrich_error: null, ai_enriched: false })}>
+                                Force Re-enrich
+                            </button>
                         </li>
                     )}
                     {job.company && (
