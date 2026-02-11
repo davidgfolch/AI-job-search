@@ -27,6 +27,10 @@
         {
             "name": "aiEnrich (Legacy)",
             "path": "apps/aiEnrich"
+        },
+        {
+            "name": "e2e",
+            "path": "apps/e2e"
         }
     ],
     "settings": {

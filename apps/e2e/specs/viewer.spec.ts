@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { MOCK_JOB_1, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND } from './viewer.mocks';
+import { MOCK_JOB_1, MOCK_JOB_2, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND } from './viewer.mocks';
 
 test.use({
     bypassCSP: true,
@@ -108,5 +108,90 @@ test.describe('Viewer E2E', () => {
         // We expect Frontend Engineer to disappear and Backend Developer to remain
         await expect(page.locator('#job-row-1')).not.toBeVisible();
         await expect(page.locator('#job-row-2')).toBeVisible();
+    });
+    test('should remove job from list view and select next on state change', async ({ page }) => {
+        // Unroute the default handler from beforeEach to avoid conflicts
+        await page.unroute(/.*\/api\/jobs.*/);
+
+        // Override mock for this test to handle state change flow
+        let listRequestCount = 0;
+        await page.route(/.*\/api\/jobs.*/, async (route) => {
+            const url = route.request().url();
+            
+            // Handle applied-by-company request (keep default behavior)
+            if (url.includes('/applied-by-company')) {
+                 await route.fulfill({ json: [] });
+                 return;
+            }
+
+            // Handle single job request (e.g. /api/jobs/1)
+            // Note: This regex needs to be precise to not match list with query params
+            if (/\/api\/jobs\/\d+$/.test(url)) {
+                 const jobId = url.split('/').pop();
+                 if (jobId === '1') await route.fulfill({ json: MOCK_JOB_1 });
+                 if (jobId === '2') await route.fulfill({ json: MOCK_JOB_2 });
+                 return;
+            }
+
+            // List requests (default fallthrough if not single job)
+            if (/\/api\/jobs(\?|$)/.test(url)) {
+                listRequestCount++;
+                if (listRequestCount === 1) {
+                    // Initial load: return both jobs
+                    await route.fulfill({ json: MOCK_JOBS_LIST });
+                } else {
+                    // Second load (after update): return only job 2
+                    // We return job 2 as the single item
+                    await route.fulfill({ 
+                        json: { 
+                            ...MOCK_JOBS_LIST, 
+                            items: [MOCK_JOB_2], 
+                            total: 1 
+                        } 
+                    });
+                }
+                return;
+            }
+
+            // Fallback
+            await route.continue();
+        });
+
+        // Mock the update request
+        await page.route(/.*\/api\/jobs\/1/, async (route) => {
+            if (route.request().method() === 'PATCH') {
+                await route.fulfill({ json: { ...MOCK_JOB_1, applied: true } });
+            } else {
+                await route.continue();
+            }
+        });
+
+        await page.goto('http://127.0.0.1:5173');
+        
+        // 1. Select the first job
+        await page.locator('#job-row-1').click();
+        await expect(page.locator('#job-detail-title')).toContainText('Frontend Engineer');
+
+        // 2. Click "Mark as applied" button
+        // Wait for the update request to happen
+        const updateRequest = page.waitForResponse(resp => resp.url().includes('/api/jobs/1') && resp.request().method() === 'PATCH');
+        // Wait for the list refresh request to happen
+        const listRefresh = page.waitForResponse(resp => resp.url().includes('/api/jobs') && !resp.url().includes('/1') && resp.status() === 200);
+
+        await page.getByTitle('Mark as applied').click();
+        
+        await updateRequest;
+        await listRefresh;
+
+        // 3. Verify job 1 is removed and job 2 is selected
+        // Wait for the list to update (row 1 gone, row 2 present)
+        await expect(page.locator('#job-row-1')).not.toBeVisible();
+        await expect(page.locator('#job-row-2')).toBeVisible();
+
+        // Verify selection moved to the next job (Backend Developer)
+        // Check that the detail view now shows the second job
+        await expect(page.locator('#job-detail-title')).toContainText('Backend Developer');
+        // Also verify the row is highlighted
+        await expect(page.locator('#job-row-2')).toHaveClass(/selected/);
     });
 });
