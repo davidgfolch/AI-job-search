@@ -47,8 +47,9 @@ def test_get_applied_jobs_by_company(
     [
         "O%27Reilly%20Media",
         "Company%20%26%20Co",
+        "Bridgetech%20%7C%20Alfresco",
     ],
-    ids=["apostrophe", "ampersand"],
+    ids=["apostrophe", "ampersand", "pipe"],
 )
 @patch("repositories.jobs_repository.JobsRepository.get_db")
 def test_get_applied_jobs_by_company_special_characters(
