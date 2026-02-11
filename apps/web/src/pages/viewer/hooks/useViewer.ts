@@ -78,8 +78,7 @@ export const useViewer = () => {
         setDuplicatedJob(null);
     };
 
-    // Update allJobs when data changes
-    useEffect(() => {
+    useEffect(() => { // Update allJobs when data changes
         if (data?.items) {
             if (data.page !== (filters.page || 1)) return;
 
@@ -88,7 +87,10 @@ export const useViewer = () => {
                     return data.items;
                 } else { // Append on subsequent pages
                     const newItems = data.items.filter(item => !jobs.some(p => p.id === item.id));
-                    if (newItems.length > 0 && shouldAutoSelectNextPage.current) {
+                    if (newItems.length === 0) {
+                        return jobs;
+                    }
+                    if (shouldAutoSelectNextPage.current) {
                         setTimeout(() => {
                             handleJobSelect(newItems[0]);
                             shouldAutoSelectNextPage.current = false;
@@ -101,8 +103,7 @@ export const useViewer = () => {
         }
     }, [data, filters.page, setAllJobs, setIsLoadingMore, handleJobSelect]);
 
-    // Handle initial selection purely based on flag
-    useEffect(() => {
+    useEffect(() => { // Handle initial selection purely based on flag
         if (shouldSelectFirst && data?.items && data.items.length > 0) {
             // We use a timeout to avoid immediate state clash or loop, though splitting effects should be enough
             handleJobSelect(data.items[0]);
@@ -195,4 +196,3 @@ export const useViewer = () => {
         },
     };
 };
-

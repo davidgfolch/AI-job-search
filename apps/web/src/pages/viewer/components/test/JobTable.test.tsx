@@ -48,19 +48,26 @@ describe('JobTable', () => {
         const now = new Date('2023-10-15T12:00:00Z');
         vi.setSystemTime(now);
         
+        const createdDate = '2023-10-10T12:00:00Z';
         const jobsWithDate = [
-            { ...mockJobs[0], created: '2023-10-10T12:00:00Z' }, // 5 days ago
+            { ...mockJobs[0], created: createdDate }, // 5 days ago
         ];
         render(<JobTable {...defaultProps} jobs={jobsWithDate} />);
         
-        const cell = screen.getByText('5d ago');
+        const cell = screen.getByText('5d');
         expect(cell).toBeInTheDocument();
-        expect(cell).toHaveAttribute('title', '5 days ago');
+
+        // Helper to match local time output of dateUtils
+        const date = new Date(createdDate);
+        const hours = date.getHours().toString();
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const expectedTime = `${hours}:${minutes}`;
+
+        expect(cell).toHaveAttribute('title', `5 days ago ${expectedTime}`);
     });
 
     it('highlights selected job', () => {
         render(<JobTable {...defaultProps} selectedJob={mockJobs[0]} />);
-
         const rows = screen.getAllByRole('row');
         // Header + 2 data rows. First data row should be selected.
         expect(rows[1]).toHaveClass('selected');

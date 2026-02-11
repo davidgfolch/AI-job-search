@@ -6,7 +6,6 @@ import { useConfirmationModal } from '../../common/hooks/useConfirmationModal';
 import { useBulkJobMutations } from "./useBulkJobMutations";
 
 export type TabType = "list" | "edit" | "create";
-
 export const getDeleteOldJobsMsg = (count: number) => `Going to delete ${count} older jobs (see sql filter)`;
 
 
@@ -47,12 +46,11 @@ export const useJobMutations = ({
   onReload,
 }: UseJobMutationsProps) => {
   const queryClient = useQueryClient();
+  const confirmModal = useConfirmationModal();
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error";
   } | null>(null);
-
-  const confirmModal = useConfirmationModal();
 
   const { bulkUpdateMutation, bulkDeleteMutation } = useBulkJobMutations({
       onJobsDeleted,
@@ -118,11 +116,9 @@ export const useJobMutations = ({
 
   const ignoreSelected = useCallback(() => {
     const count = selectionMode === "all" ? "all" : selectedIds.size;
-    const msg =
-      selectionMode === "all"
+    const msg = selectionMode === "all"
         ? "Are you sure you want to ignore ALL jobs matching the current filters?"
         : `Are you sure you want to ignore ${count} selected jobs?`;
-
     confirmModal.confirm(msg, () => {
         if (selectionMode === "all") {
           bulkUpdateMutation.mutate({
@@ -160,7 +156,6 @@ export const useJobMutations = ({
 
   const deleteSingleJob = useCallback(() => {
     if (!selectedJob) return;
-    
     const msg = `Are you sure you want to delete "${selectedJob.title || 'this job'}"?`;
     confirmModal.confirm(msg, () => {
       if (activeTab === "list") {
