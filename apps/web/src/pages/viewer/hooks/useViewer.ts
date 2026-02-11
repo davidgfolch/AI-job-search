@@ -50,15 +50,6 @@ export const useViewer = () => {
             }
         },
         activeConfigName,
-        onReload: async () => {
-             if (filters.page !== 1) {
-                setShouldSelectFirst(true);
-                setFilters(f => ({ ...f, page: 1 }));
-            } else {
-                setShouldSelectFirst(true);
-                await hardRefresh();
-            }
-        }
     });
 
     const [shouldSelectFirst, setShouldSelectFirst] = useState(false);

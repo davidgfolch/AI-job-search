@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { jobsApi, type JobListParams, type Job } from "../api/ViewerApi";
 
 interface UseBulkJobMutationsProps {
@@ -21,7 +21,6 @@ export function useBulkJobMutations({
   setSelectedIds,
   onUpdateSuccess,
 }: UseBulkJobMutationsProps) {
-  const queryClient = useQueryClient();
 
   const bulkUpdateMutation = useMutation({
     mutationFn: (payload: {
@@ -31,7 +30,6 @@ export function useBulkJobMutations({
       select_all?: boolean;
     }) => jobsApi.bulkUpdateJobs(payload),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setMessage({ text: `Updated ${data.updated} jobs`, type: "success" });
       setSelectionMode("none");
       setSelectedIds(new Set());
@@ -55,7 +53,6 @@ export function useBulkJobMutations({
       select_all?: boolean;
     }) => jobsApi.deleteJobs(payload),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
       setMessage({ text: `Deleted ${data.deleted} jobs`, type: "success" });
       setSelectionMode("none");
       setSelectedIds(new Set());

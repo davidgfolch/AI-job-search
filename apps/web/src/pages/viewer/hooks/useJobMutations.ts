@@ -27,7 +27,6 @@ interface UseJobMutationsProps {
   onJobUpdated?: (job: Job) => void;
   onJobsDeleted?: (ids: number[] | 'all') => void;
   activeConfigName?: string;
-  onReload?: () => void;
 }
 
 export const useJobMutations = ({
@@ -43,7 +42,6 @@ export const useJobMutations = ({
   onJobUpdated,
   onJobsDeleted,
   activeConfigName,
-  onReload,
 }: UseJobMutationsProps) => {
   const queryClient = useQueryClient();
   const confirmModal = useConfirmationModal();
@@ -57,36 +55,19 @@ export const useJobMutations = ({
       setMessage,
       setSelectionMode,
       setSelectedIds,
-      onUpdateSuccess: (variables) => {
+      onUpdateSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["jobUpdates"] });
-          if (variables.update.ignored && activeConfigName === 'Clean - Ignore jobs by title') {
-              onReload?.();
-          }
       }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Job> }) =>
       jobsApi.updateJob(id, data),
-    onSuccess: (updatedJob, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobUpdates"] }); 
+    onSuccess: (updatedJob) => {
       if (selectedJob && updatedJob.id === selectedJob.id) {
         setSelectedJob(updatedJob);
       }
-      const jobNoLongerMatchesFilters = 
-        (filters.ignored !== undefined && filters.ignored !== updatedJob.ignored) ||
-        (filters.seen !== undefined && filters.seen !== updatedJob.seen) ||
-        (filters.applied !== undefined && filters.applied !== updatedJob.applied) ||
-        (filters.discarded !== undefined && filters.discarded !== updatedJob.discarded) ||
-        (filters.closed !== undefined && filters.closed !== updatedJob.closed);
-      if (jobNoLongerMatchesFilters) {
-        queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      } else {
-        onJobUpdated?.(updatedJob);
-      }
-      if (variables.data.ignored && activeConfigName === 'Clean - Ignore jobs by title') {
-        onReload?.();
-      }
+      onJobUpdated?.(updatedJob);
     },
   });
 
