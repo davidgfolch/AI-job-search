@@ -1,5 +1,5 @@
 .viewer {
-  height: 94vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;

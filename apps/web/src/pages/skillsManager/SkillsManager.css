@@ -20,18 +20,13 @@
 .skills-manager {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
   box-sizing: border-box;
-  padding: 1rem;
   width: 100%;
-  margin: 0;
-  overflow: hidden;
-}
-
-.skills-manager {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 1rem;
+  overflow: hidden;
 }
 
 .actions-group {

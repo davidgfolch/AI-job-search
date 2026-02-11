@@ -73,7 +73,7 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
         <div className="job-detail">
             <JobDetailHeader 
                 job={job} 
-                onClose={onClose} 
+                onCloseDuplicated={onClose} 
                 onOpenDuplicated={hideDuplicatedButton ? undefined : onOpenDuplicated}
             />
             <div className="job-detail-content" ref={contentRef}>

@@ -2,11 +2,11 @@ import type { Job } from '../../api/ViewerApi';
 
 interface JobDetailHeaderProps {
     job: Job;
-    onClose?: () => void;
+    onCloseDuplicated?: () => void;
     onOpenDuplicated?: (id: number) => void;
 }
 
-export default function JobDetailHeader({ job, onClose, onOpenDuplicated }: JobDetailHeaderProps) {
+export default function JobDetailHeader({ job, onCloseDuplicated, onOpenDuplicated }: JobDetailHeaderProps) {
     return (
         <div className="job-detail-header">
             <h2 id="job-detail-title">
@@ -23,14 +23,14 @@ export default function JobDetailHeader({ job, onClose, onOpenDuplicated }: JobD
                         onClick={() => onOpenDuplicated(Number(id.trim()))} 
                         title={`Open Duplicated Job (${id.trim()})`}
                     >
-                        ⎋ Open Duplicated
+                        Open Duplicated
                     </button>
                 ))}
                 </>
             )}
-            {onClose && (
-                <button className="create-job-btn" onClick={onClose} title="Close duplicated view">
-                    ✕ Close
+            {onCloseDuplicated && (
+                <button className="create-job-btn" style={{fontSize: '1rem'}} onClick={onCloseDuplicated} title="Close duplicated view">
+                    ✕ Close old duplicated
                 </button>
             )}
         </div>
