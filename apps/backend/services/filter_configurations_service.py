@@ -19,14 +19,14 @@ class FilterConfigurationsService:
             raise ValueError(f"Configuration with id {config_id} not found")
         return config
     
-    def create(self, name: str, filters: dict, notify: bool = False, statistics: bool = True, pinned: bool = False, ordering: int = 0) -> Dict[str, Any]:
+    def create(self, name: str, filters: dict, watched: bool = False, statistics: bool = True, pinned: bool = False, ordering: int = 0) -> Dict[str, Any]:
         existing = self.repo.find_by_name(name)
         if existing:
             raise ValueError(f"Configuration with name '{name}' already exists")
-        config_id = self.repo.create(name, filters, notify, statistics, pinned, ordering)
+        config_id = self.repo.create(name, filters, watched, statistics, pinned, ordering)
         return self.repo.find_by_id(config_id)
     
-    def update(self, config_id: int, name: str = None, filters: dict = None, notify: bool = None, statistics: bool = None, pinned: bool = None, ordering: int = None) -> Dict[str, Any]:
+    def update(self, config_id: int, name: str = None, filters: dict = None, watched: bool = None, statistics: bool = None, pinned: bool = None, ordering: int = None) -> Dict[str, Any]:
         existing = self.repo.find_by_id(config_id)
         if not existing:
             raise ValueError(f"Configuration with id {config_id} not found")
@@ -34,7 +34,7 @@ class FilterConfigurationsService:
             name_exists = self.repo.find_by_name(name)
             if name_exists:
                 raise ValueError(f"Configuration with name '{name}' already exists")
-        self.repo.update(config_id, name, filters, notify, statistics, pinned, ordering)
+        self.repo.update(config_id, name, filters, watched, statistics, pinned, ordering)
         return self.repo.find_by_id(config_id)
     
     def delete(self, config_id: int) -> bool:
@@ -53,7 +53,7 @@ class FilterConfigurationsService:
         for i, config in enumerate(defaults):
             name = config.get('name')
             filters = config.get('filters', {})
-            notify = config.get('notify', False)
+            watched = config.get('watched', False)
             existing = self.repo.find_by_name(name)
             if not existing:
-                self.repo.create(name, filters, notify, ordering=i)
+                self.repo.create(name, filters, watched, ordering=i)

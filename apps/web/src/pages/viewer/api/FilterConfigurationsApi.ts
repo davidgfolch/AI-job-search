@@ -7,7 +7,7 @@ export interface FilterConfiguration {
     id: number;
     name: string;
     filters: JobListParams;
-    notify: boolean;
+    watched: boolean;
     statistics: boolean;
     pinned: boolean;
     ordering: number;
@@ -18,7 +18,7 @@ export interface FilterConfiguration {
 export interface FilterConfigurationCreate {
     name: string;
     filters: JobListParams;
-    notify?: boolean;
+    watched?: boolean;
     statistics?: boolean;
     pinned?: boolean;
     ordering?: number;
@@ -27,7 +27,7 @@ export interface FilterConfigurationCreate {
 export interface FilterConfigurationUpdate {
     name?: string;
     filters?: JobListParams;
-    notify?: boolean;
+    watched?: boolean;
     statistics?: boolean;
     pinned?: boolean;
     ordering?: number;

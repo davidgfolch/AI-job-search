@@ -46,9 +46,9 @@ export function useFilterDropdown({
             if (bNew > 0 && aNew === 0) return 1;
             if (aNew > 0 && bNew > 0 && aNew !== bNew) return bNew - aNew;
 
-            // Priority 2: Notify
-            if (a.notify && !b.notify) return -1;
-            if (b.notify && !a.notify) return 1;
+            // Priority 2: Watched
+            if (a.watched && !b.watched) return -1;
+            if (b.watched && !a.watched) return 1;
 
             // Priority 3: Statistics
             if (a.statistics && !b.statistics) return -1;

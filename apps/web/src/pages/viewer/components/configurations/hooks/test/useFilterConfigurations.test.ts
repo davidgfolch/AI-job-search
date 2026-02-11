@@ -40,8 +40,8 @@ describe('useFilterConfigurations', () => {
         (commonPersistenceApi.getValue as any).mockResolvedValue([]);
         (commonPersistenceApi.setValue as any).mockResolvedValue(true);
         (filterConfigsApi.getAll as any).mockResolvedValue([]);
-        (filterConfigsApi.create as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, notify: false, created: new Date().toISOString(), modified: null });
-        (filterConfigsApi.update as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, notify: false, created: new Date().toISOString(), modified: null });
+        (filterConfigsApi.create as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, watched: false, created: new Date().toISOString(), modified: null });
+        (filterConfigsApi.update as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, watched: false, created: new Date().toISOString(), modified: null });
         (filterConfigsApi.delete as any).mockResolvedValue(undefined);
     });
 
@@ -50,7 +50,7 @@ describe('useFilterConfigurations', () => {
             id: 1,
             name: 'Saved 1',
             filters: mockFilters,
-            notify: false,
+            watched: false,
             created: new Date().toISOString(),
             modified: null
         }];
@@ -96,7 +96,7 @@ describe('useFilterConfigurations', () => {
             id: 1,
             name: 'To Delete',
             filters: mockFilters,
-            notify: false,
+            watched: false,
             created: new Date().toISOString(),
             modified: null
         }];
@@ -132,7 +132,7 @@ describe('useFilterConfigurations', () => {
             id: 1,
             name: 'Saved 1',
             filters: savedFilters,
-            notify: false,
+            watched: false,
             created: new Date().toISOString(),
             modified: null
         }];
@@ -149,7 +149,7 @@ describe('useFilterConfigurations', () => {
             result.current.loadConfiguration({ 
                 name: backendConfigs[0].name, 
                 filters: backendConfigs[0].filters,
-                notify: backendConfigs[0].notify 
+                watched: backendConfigs[0].notify 
             });
         });
 
@@ -168,7 +168,7 @@ describe('useFilterConfigurations', () => {
             id: 123,
             name: 'Stats Config',
             filters: mockFilters,
-            notify: false,
+            watched: false,
             statistics: true,
             created: new Date().toISOString(),
             modified: null

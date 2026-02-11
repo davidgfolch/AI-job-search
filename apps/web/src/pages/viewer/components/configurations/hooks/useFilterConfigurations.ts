@@ -14,7 +14,7 @@ export interface FilterConfig {
     id?: number;
     name: string;
     filters: JobListParams;
-    notify?: boolean;
+    watched?: boolean;
     statistics?: boolean;
     pinned?: boolean;
     ordering?: number;
@@ -83,7 +83,7 @@ export function useFilterConfigurations({
         resetWatcher
     } = useFilterWatcher({ savedConfigs });
 
-    const toggleWatch = useCallback(() => {
+    const toggleWatcherActive = useCallback(() => {
         if (isWatching) {
             stopWatching();
         } else {
@@ -115,7 +115,7 @@ export function useFilterConfigurations({
     }, [operations.loadConfiguration, isWatching, resetWatcher]);
 
     const {
-        toggleNotification,
+        toggleWatch: toggleConfigWatch,
         toggleStatistics,
         togglePin
     } = useConfigToggles({
@@ -172,13 +172,13 @@ export function useFilterConfigurations({
         },
         savedConfigs,
         savedConfigName,
-        toggleNotification,
+        toggleWatch: toggleConfigWatch,
         toggleStatistics,
         togglePin,
         isWatching,
         watcherResults,
         lastCheckTime,
-        toggleWatch,
+        toggleWatcherActive,
         reorderConfigurations: operations.reorderConfigurations
     };
 }

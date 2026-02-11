@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS `filter_configurations` (
 ALTER TABLE filter_configurations ADD COLUMN statistics TINYINT(1) DEFAULT 1;
 ALTER TABLE filter_configurations ADD COLUMN pinned BOOLEAN DEFAULT True;
 ALTER TABLE filter_configurations ADD COLUMN ordering INT DEFAULT 0;
+ALTER TABLE filter_configurations CHANGE COLUMN notify watched TINYINT(1) DEFAULT 0;
 
 
 /*!40101 SET character_set_client = @saved_cs_client */;

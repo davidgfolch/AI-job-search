@@ -43,8 +43,8 @@ describe('useFilterWatcher - Notifications', () => {
     it('should trigger aggregated notification for enabled configs', async () => {
          (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 }, 2: { total: 5, new_items: 5 } });
          
-         const config1 = { ...mockSavedConfigs[0], notify: true };
-         const config2 = { ...mockSavedConfigs[1], notify: true };
+         const config1 = { ...mockSavedConfigs[0], watched: true };
+         const config2 = { ...mockSavedConfigs[1], watched: true };
          
          const { wrapper, queryClient } = createWrapper();
          renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }), { wrapper });
@@ -88,23 +88,18 @@ describe('useFilterWatcher - Notifications', () => {
          );
     });
 
-    it('should NOT trigger notification for disabled configs', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 } });
+    it('should NOT make API calls for unwatched configs', async () => {
+         // With the new behavior, configs with watched=false are filtered out before API calls
+         const config1 = { ...mockSavedConfigs[0], watched: false };
          
-         const config1 = { ...mockSavedConfigs[0], notify: false };
-         
-         const { wrapper, queryClient } = createWrapper();
+         const { wrapper } = createWrapper();
          renderHook(() => useFilterWatcher({ savedConfigs: [config1] }), { wrapper });
 
-         // We need two checks here as well if we want to test disabled notifications
-         await waitFor(() => expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1));
-         
-         act(() => {
-             queryClient.setQueryData(['jobs'], []);
-         });
+         // Wait a bit to ensure no API calls are made
+         await new Promise(resolve => setTimeout(resolve, 100));
 
-         await waitFor(() => expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2));
-
+         // Should NOT make any API calls since the config is not watched
+         expect(jobsApi.getWatcherStats).not.toHaveBeenCalled();
          expect(notificationService.notify).not.toHaveBeenCalled();
     });
 
@@ -112,7 +107,7 @@ describe('useFilterWatcher - Notifications', () => {
          (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 0, new_items: 0 } });
          
          const { wrapper, queryClient } = createWrapper();
-         renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], notify: true}] }), { wrapper });
+         renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], watched: true}] }), { wrapper });
 
          await waitFor(() => expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1));
          

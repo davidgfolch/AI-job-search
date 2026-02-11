@@ -5,9 +5,9 @@ import { useFilterDropdown } from '../useFilterDropdown';
 describe('useFilterDropdown Ordering', () => {
     it('respects explicit ordering field over smart sorting', () => {
         const mockConfigs = [
-            { name: 'Config A', filters: {}, statistics: true, notify: true, ordering: 2 },
-            { name: 'Config B', filters: {}, statistics: false, notify: false, ordering: 0 },
-            { name: 'Config C', filters: {}, statistics: true, notify: true, ordering: 1 },
+            { name: 'Config A', filters: {}, statistics: true, watched: true, ordering: 2 },
+            { name: 'Config B', filters: {}, statistics: false, watched: false, ordering: 0 },
+            { name: 'Config C', filters: {}, statistics: true, watched: true, ordering: 1 },
         ];
 
         const { result } = renderHook(() => useFilterDropdown({
@@ -31,9 +31,9 @@ describe('useFilterDropdown Ordering', () => {
 
     it('falls back to smart sorting when no ordering field exists', () => {
         const mockConfigs = [
-            { name: 'C Normal', filters: {}, statistics: true, notify: false },
-            { name: 'B Notify', filters: {}, statistics: true, notify: true },
-            { name: 'A NoStats', filters: {}, statistics: false, notify: false },
+            { name: 'C Normal', filters: {}, statistics: true, watched: false },
+            { name: 'B Notify', filters: {}, statistics: true, watched: true },
+            { name: 'A NoStats', filters: {}, statistics: false, watched: false },
         ];
 
         const { result } = renderHook(() => useFilterDropdown({
@@ -58,7 +58,7 @@ describe('useFilterDropdown Ordering', () => {
     it('handles mixed configs with and without ordering', () => {
         const mockConfigs = [
             { name: 'With Order 1', filters: {}, ordering: 1 },
-            { name: 'No Order A', filters: {}, notify: true },
+            { name: 'No Order A', filters: {}, watched: true },
             { name: 'With Order 0', filters: {}, ordering: 0 },
             { name: 'No Order B', filters: {} },
         ];

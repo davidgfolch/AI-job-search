@@ -105,7 +105,7 @@ def test_update(repo_with_mock):
     """Test updating configuration"""
     repo, mock_db = repo_with_mock
     
-    result = repo.update(1, name='Updated', filters={'page': 2}, notify=True, pinned=True)
+    result = repo.update(1, name='Updated', filters={'page': 2}, watched=True, pinned=True)
     
     assert result is True
     mock_db.executeAndCommit.assert_called_once()

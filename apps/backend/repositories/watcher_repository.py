@@ -15,7 +15,7 @@ class WatcherRepository:
         results = []
         with self.get_db() as db:
             ids_str = ', '.join(['%s'] * len(config_ids))
-            configs = db.fetchAll(f"SELECT id, filters FROM filter_configurations WHERE id IN ({ids_str})", config_ids)
+            configs = db.fetchAll(f"SELECT id, filters FROM filter_configurations WHERE id IN ({ids_str}) AND watched = 1", config_ids)
             view_names = []
             for cfg in configs:
                 cfgId = cfg[0]

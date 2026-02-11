@@ -10,7 +10,7 @@ describe('ConfigurationDropdown', () => {
         onLoad: vi.fn(),
         onDelete: vi.fn(),
         setHighlightIndex: vi.fn(),
-        onToggleNotify: vi.fn(),
+        onTogglewatched: vi.fn(),
         onToggleStats: vi.fn(),
     };
 

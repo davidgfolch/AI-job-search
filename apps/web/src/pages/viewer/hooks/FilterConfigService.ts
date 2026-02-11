@@ -15,7 +15,7 @@ export class FilterConfigService {
         id: bc.id,
         name: bc.name,
         filters: bc.filters,
-        notify: bc.notify,
+        watched: bc.watched,
         statistics: bc.statistics,
         pinned: bc.pinned,
         ordering: bc.ordering
@@ -50,7 +50,7 @@ export class FilterConfigService {
           // Update if changed
           await filterConfigsApi.update(existing.id, {
             filters: config.filters,
-            notify: config.notify,
+            watched: config.watched,
             statistics: config.statistics,
             pinned: config.pinned,
             ordering: index
@@ -60,7 +60,7 @@ export class FilterConfigService {
           await filterConfigsApi.create({
             name: config.name,
             filters: config.filters,
-            notify: config.notify,
+            watched: config.watched,
             statistics: config.statistics,
             pinned: config.pinned,
             ordering: index
@@ -89,7 +89,7 @@ export class FilterConfigService {
       return backendConfigs.map(bc => ({
         name: bc.name,
         filters: bc.filters,
-        notify: bc.notify,
+        watched: bc.watched,
         statistics: bc.statistics,
         pinned: bc.pinned
       }));
@@ -122,7 +122,7 @@ export class FilterConfigService {
           await filterConfigsApi.create({
             name: config.name,
             filters: config.filters,
-            notify: config.notify || false,
+            watched: config.watched || false,
             statistics: config.statistics || true,
             pinned: config.pinned || false,
             ordering: 0 // Default ordering for migrated configs

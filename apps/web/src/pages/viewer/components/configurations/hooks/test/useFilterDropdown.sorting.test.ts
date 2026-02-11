@@ -4,10 +4,10 @@ import { useFilterDropdown } from '../useFilterDropdown';
 
 describe('useFilterDropdown Sorting', () => {
     const mockConfigs = [
-        { name: 'C NoStats', filters: {}, statistics: false, notify: false },
-        { name: 'B Notify', filters: {}, statistics: true, notify: true },
-        { name: 'A Normal', filters: {}, statistics: true, notify: false },
-        { name: 'D NewItems', filters: {}, statistics: true, notify: false },
+        { name: 'C NoStats', filters: {}, statistics: false, watched: false },
+        { name: 'B Notify', filters: {}, statistics: true, watched: true },
+        { name: 'A Normal', filters: {}, statistics: true, watched: false },
+        { name: 'D NewItems', filters: {}, statistics: true, watched: false },
     ];
 
     const mockResults = {
@@ -15,7 +15,7 @@ describe('useFilterDropdown Sorting', () => {
         'A Normal': { newItems: 0, total: 20 },
     };
 
-    it('sorts by new items, then notify, then statistics, then name', () => {
+    it('sorts by new items, then watched, then statistics, then name', () => {
         const { result } = renderHook(() => useFilterDropdown({
             configs: mockConfigs as any,
             configName: '',

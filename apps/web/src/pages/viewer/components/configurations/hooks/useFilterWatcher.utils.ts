@@ -32,7 +32,7 @@ export function processNotifications(
         if (result.newItems > prevCount) {
             notifiedCounts[name] = result.newItems;
             const config = configsToCheck.find(c => c.name === name);
-            if (config && config.notify) {
+            if (config && config.watched) {
                 notificationAggregator.push(`${name} (${result.newItems})`);
             }
         }

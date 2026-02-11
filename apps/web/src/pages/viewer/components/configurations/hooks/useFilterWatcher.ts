@@ -11,6 +11,7 @@ import { persistenceApi } from '../../../../../pages/common/api/CommonPersistenc
 export const LAST_WATCHER_CHECK_TIME_KEY = 'last_watcher_check_time';
 
 export { POLLING_INTERVAL };
+export type { WatcherResult };
 
 export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     const [isWatching, setIsWatching] = useState(true);
@@ -53,7 +54,8 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         if (!startTime) return;
         const requestId = ++lastRequestIdRef.current;
         const configIdsWithNames = savedConfigsRef.current
-            .filter(c => c.id).map(c => ({ id: c.id!, name: c.name }));
+            .filter(c => c.id && c.watched !== false)
+            .map(c => ({ id: c.id!, name: c.name }));
         if (configIdsWithNames.length === 0) return;
         const justReset = new Set(justResetRef.current);
         try {

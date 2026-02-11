@@ -49,8 +49,8 @@ export function useConfigToggles({ savedConfigs, setSavedConfigs, service, notif
         }
     }, [savedConfigs, setSavedConfigs, service, notify]);
 
-    const toggleNotification = useCallback((name: string) => {
-        // Special case for notification: it persists via service.save for generic update
+    const toggleWatch = useCallback((name: string) => {
+        // Special case for watch: it persists via service.save for generic update
         // But the original code persisted via service.save specifically.
         // Let's adapt to maintain exact behavior:
         // Original behavior: update config object, call service.save(allConfigs)
@@ -58,13 +58,13 @@ export function useConfigToggles({ savedConfigs, setSavedConfigs, service, notif
         // Which is slightly different from updateStatistics/updatePinned which have specific methods.
         
         // Wait, looking at original code:
-        // toggleNotification calls service.save(updatedConfigs) 
+        // toggleWatch calls service.save(updatedConfigs) 
         // toggleStatistics calls service.updateStatistics(id, value) OR service.save(updatedConfigs)
         // togglePin calls service.updatePinned(id, value) OR service.save(updatedConfigs)
         
-        // So toggleNotification is the only one NOT using a specific update method? 
+        // So toggleWatch is the only one NOT using a specific update method? 
         // Let's check FilterConfigService.ts...
-        // It has updateStatistics and updatePinned. It does NOT have updateNotification.
+        // It has updateStatistics and updatePinned. It does NOT have updateWatch.
         // So validation of my assumption is correct.
         
         const configIndex = savedConfigs.findIndex(c => c.name === name);
@@ -73,7 +73,7 @@ export function useConfigToggles({ savedConfigs, setSavedConfigs, service, notif
         const updatedConfigs = [...savedConfigs];
         updatedConfigs[configIndex] = {
             ...updatedConfigs[configIndex],
-            notify: !updatedConfigs[configIndex].notify
+            watched: !updatedConfigs[configIndex].watched
         };
 
         const executeSave = async () => {
@@ -82,7 +82,7 @@ export function useConfigToggles({ savedConfigs, setSavedConfigs, service, notif
                 setSavedConfigs(updatedConfigs);
             } catch (e) {
                 console.error('Failed to save configuration', e);
-                notify('Failed to update notification setting', 'error');
+                notify('Failed to update watch setting', 'error');
             }
         };
         executeSave();
@@ -108,7 +108,7 @@ export function useConfigToggles({ savedConfigs, setSavedConfigs, service, notif
     [toggleProperty, service]);
 
     return {
-        toggleNotification,
+        toggleWatch,
         toggleStatistics,
         togglePin
     };

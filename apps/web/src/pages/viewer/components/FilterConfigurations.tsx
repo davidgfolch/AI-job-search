@@ -47,13 +47,13 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         exportToDefaults,
         setHighlightIndex,
         confirmModal,
-        toggleNotification,
+        toggleWatch,
         toggleStatistics,
         togglePin,
         isWatching,
         watcherResults,
         lastCheckTime,
-        toggleWatch,
+        toggleWatcherActive,
         savedConfigs,
         savedConfigName,
         reorderConfigurations
@@ -94,7 +94,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                         onBlur={handleBlur}
                         onSave={saveConfiguration}
                         onExport={exportToDefaults}
-                        onWatch={toggleWatch}
+                        onWatch={toggleWatcherActive}
                         isWatching={isWatching}
                     />
                     <ConfigurationDropdown
@@ -104,7 +104,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                         onLoad={loadConfiguration}
                         onDelete={deleteConfiguration}
                         setHighlightIndex={setHighlightIndex}
-                        onToggleNotify={toggleNotification}
+                        onToggleWatch={toggleWatch}
                         onToggleStats={toggleStatistics}
                         onTogglePin={togglePin}
                         results={watcherResults}

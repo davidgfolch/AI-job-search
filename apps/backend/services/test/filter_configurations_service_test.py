@@ -14,7 +14,7 @@ def test_get_all_seeds_when_empty(service, mock_repo):
     """Test auto-seeding when database is empty"""
     mock_repo.count.return_value = 0
     mock_repo.find_all.return_value = [
-        {'id': 1, 'name': 'Config 1', 'filters': {}, 'notify': False, 'created': '2024-01-01', 'modified': None}
+        {'id': 1, 'name': 'Config 1', 'filters': {}, 'watched': False, 'created': '2024-01-01', 'modified': None}
     ]
     
     with patch.object(service, 'seed_defaults') as mock_seed:
@@ -26,7 +26,7 @@ def test_get_all_skips_seeding_when_not_empty(service, mock_repo):
     """Test no seeding when database already has data"""
     mock_repo.count.return_value = 5
     mock_repo.find_all.return_value = [
-        {'id': 1, 'name': 'Config 1', 'filters': {}, 'notify': False, 'created': '2024-01-01', 'modified': None}
+        {'id': 1, 'name': 'Config 1', 'filters': {}, 'watched': False, 'created': '2024-01-01', 'modified': None}
     ]
     
     with patch.object(service, 'seed_defaults') as mock_seed:
@@ -36,7 +36,7 @@ def test_get_all_skips_seeding_when_not_empty(service, mock_repo):
 def test_get_by_id_found(service, mock_repo):
     """Test getting configuration by ID"""
     mock_repo.find_by_id.return_value = {
-        'id': 1, 'name': 'Test', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': False, 'created': '2024-01-01', 'modified': None
+        'id': 1, 'name': 'Test', 'filters': {}, 'watched': False, 'statistics': True, 'pinned': False, 'created': '2024-01-01', 'modified': None
     }
     
     result = service.get_by_id(1)
@@ -54,7 +54,7 @@ def test_create_success(service, mock_repo):
     mock_repo.find_by_name.return_value = None
     mock_repo.create.return_value = 1
     mock_repo.find_by_id.return_value = {
-        'id': 1, 'name': 'New Config', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': True, 'ordering': 0, 'created': '2024-01-01', 'modified': None
+        'id': 1, 'name': 'New Config', 'filters': {}, 'watched': False, 'statistics': True, 'pinned': True, 'ordering': 0, 'created': '2024-01-01', 'modified': None
     }
     
     result = service.create('New Config', {}, False, True, True)
@@ -72,8 +72,8 @@ def test_create_duplicate_name(service, mock_repo):
 def test_update_success(service, mock_repo):
     """Test updating existing configuration"""
     mock_repo.find_by_id.side_effect = [
-        {'id': 1, 'name': 'Old', 'filters': {}, 'notify': False, 'statistics': True, 'pinned': False, 'created': '2024-01-01', 'modified': None},
-        {'id': 1, 'name': 'New', 'filters': {}, 'notify': True, 'statistics': True, 'pinned': True, 'created': '2024-01-01', 'modified': None}
+        {'id': 1, 'name': 'Old', 'filters': {}, 'watched': False, 'statistics': True, 'pinned': False, 'created': '2024-01-01', 'modified': None},
+        {'id': 1, 'name': 'New', 'filters': {}, 'watched': True, 'statistics': True, 'pinned': True, 'created': '2024-01-01', 'modified': None}
     ]
     mock_repo.find_by_name.return_value = None
     mock_repo.update.return_value = True
@@ -84,7 +84,7 @@ def test_update_success(service, mock_repo):
 
 def test_update_duplicate_name(service, mock_repo):
     """Test error when updating to duplicate name"""
-    mock_repo.find_by_id.return_value = {'id': 1, 'name': 'Current', 'filters': {}, 'notify': False}
+    mock_repo.find_by_id.return_value = {'id': 1, 'name': 'Current', 'filters': {}, 'watched': False}
     mock_repo.find_by_name.return_value = {'id': 2, 'name': 'Existing'}
     
     with pytest.raises(ValueError, match="already exists"):
@@ -113,8 +113,8 @@ def test_seed_defaults(mock_json_load, mock_open, mock_exists, service, mock_rep
     """Test seeding default configurations from JSON file"""
     mock_exists.return_value = True
     mock_json_load.return_value = [
-        {'name': 'Default 1', 'filters': {'page': 1}, 'notify': False},
-        {'name': 'Default 2', 'filters': {'page': 2}, 'notify': False}
+        {'name': 'Default 1', 'filters': {'page': 1}, 'watched': False},
+        {'name': 'Default 2', 'filters': {'page': 2}, 'watched': False}
     ]
     mock_repo.find_by_name.return_value = None
     

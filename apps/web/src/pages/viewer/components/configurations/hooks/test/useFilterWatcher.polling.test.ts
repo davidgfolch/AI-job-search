@@ -14,7 +14,7 @@ vi.mock('../../../../api/ViewerApi', () => ({
 vi.mock('../../../../../../common/services/NotificationService', () => ({
     notificationService: {
         requestPermission: vi.fn(),
-        notify: vi.fn(),
+        watched: vi.fn(),
         hasPermission: vi.fn().mockReturnValue(true)
     }
 }));

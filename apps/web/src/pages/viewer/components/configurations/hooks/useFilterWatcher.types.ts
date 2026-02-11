@@ -7,7 +7,7 @@ export interface UseFilterWatcherProps {
     savedConfigs: Array<{
         id?: number;
         name: string;
-        notify?: boolean;
+        watched?: boolean;
     }>;
 }
 

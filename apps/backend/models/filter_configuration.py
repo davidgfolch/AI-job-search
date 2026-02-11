@@ -5,7 +5,7 @@ from datetime import datetime
 class FilterConfigurationCreate(BaseModel):
     name: str
     filters: dict
-    notify: bool = False
+    watched: bool = False
     statistics: bool = True
     pinned: bool = False
     ordering: int = 0
@@ -13,7 +13,7 @@ class FilterConfigurationCreate(BaseModel):
 class FilterConfigurationUpdate(BaseModel):
     name: Optional[str] = None
     filters: Optional[dict] = None
-    notify: Optional[bool] = None
+    watched: Optional[bool] = None
     statistics: Optional[bool] = None
     pinned: Optional[bool] = None
     ordering: Optional[int] = None
@@ -24,7 +24,7 @@ class FilterConfiguration(BaseModel):
     id: int
     name: str
     filters: dict
-    notify: bool
+    watched: bool
     statistics: bool
     pinned: bool
     ordering: int

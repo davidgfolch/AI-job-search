@@ -32,7 +32,7 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
                             </span>
                             <span className="pinned-config-badges">
                                 {config.statistics !== false && <span title="Included in Statistics">📈</span>}
-                                {config.notify && <span title="Notifications enabled">🔔</span>}
+                                {config.watched && <span title="Watched">🔔</span>}
                             </span>
                         </button>
                         <button

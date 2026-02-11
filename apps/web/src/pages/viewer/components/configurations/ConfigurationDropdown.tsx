@@ -9,7 +9,7 @@ interface ConfigurationDropdownProps {
     onLoad: (config: FilterConfig) => void;
     onDelete: (name: string, event: React.MouseEvent) => void;
     setHighlightIndex: (index: number) => void;
-    onToggleNotify: (name: string) => void;
+    onToggleWatch: (name: string) => void;
     onToggleStats: (name: string) => void;
     onTogglePin: (name: string) => void;
     results?: Record<string, WatcherResult>;
@@ -25,7 +25,7 @@ export function ConfigurationDropdown({
     onLoad,
     onDelete,
     setHighlightIndex,
-    onToggleNotify,
+    onToggleWatch,
     onToggleStats,
     onTogglePin,
     results = {},
@@ -130,18 +130,18 @@ export function ConfigurationDropdown({
                         {config.statistics !== false ? '📈' : '📉'}
                     </button>
                     <button 
-                        className={`config-toggle-btn ${config.notify ? 'enabled' : 'disabled'}`}
+                        className={`config-toggle-btn ${config.watched ? 'enabled' : 'disabled'}`}
                         onClick={(e) => {
                             e.stopPropagation();
-                            onToggleNotify(config.name);
+                            onToggleWatch(config.name);
                         }}
-                        title={config.notify ? "Disable notifications" : "Enable notifications"}
+                        title={config.watched ? "Unwatch" : "Watch"}
                         onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                         }}
                     >
-                        {config.notify ? '🔔' : '🔕'}
+                        {config.watched ? '🔔' : '🔕'}
                     </button>
                     <button
                         type="button"
