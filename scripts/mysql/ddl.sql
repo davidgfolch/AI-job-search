@@ -71,7 +71,8 @@ ALTER TABLE jobs ADD COLUMN cv_match_percentage TINYINT NULL;
 ALTER TABLE jobs ADD INDEX cv_match_percentage_index (cv_match_percentage);
 ALTER TABLE jobs ADD INDEX created_index (created);
 alter table jobs add column duplicated_id int DEFAULT NULL;
--- ALTER TABLE jobs DROP COLUMN IF EXISTS merged; -- Removed due to incompatibility on some MySQL versions
+alter table jobs add CONSTRAINT FK_DUPLICATED_ID 
+FOREIGN KEY (duplicated_id) REFERENCES jobs(id) ON DELETE SET NULL;
 
 
 -- DROP TABLE IF EXISTS `job_skills`;
