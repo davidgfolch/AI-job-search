@@ -1,5 +1,5 @@
 import React from 'react';
-import type { WatcherResult } from './hooks/useFilterWatcher';
+import type { WatcherResult } from './hooks/useFilterWatcher.types';
 import type { FilterConfig } from './hooks/useFilterConfigurations';
 
 interface ConfigurationDropdownProps {
@@ -61,7 +61,10 @@ export function ConfigurationDropdown({
                             onTogglePin(config.name);
                         }}
                         title={config.pinned ? "Unpin configuration" : "Pin configuration"}
-                        onMouseDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
                     >
                         📌
                     </button>
@@ -71,8 +74,11 @@ export function ConfigurationDropdown({
                             e.stopPropagation();
                             onToggleStats(config.name);
                         }}
-                        title={config.statistics !== false ? "Include in Statistics" : "Exclude from Statistics"}
-                        onMouseDown={(e) => e.stopPropagation()}
+                        title={config.statistics == false ? "Include in Statistics" : "Exclude from Statistics"}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
                     >
                         {config.statistics !== false ? '📈' : '📉'}
                     </button>
@@ -83,13 +89,19 @@ export function ConfigurationDropdown({
                             onToggleNotify(config.name);
                         }}
                         title={config.notify ? "Disable notifications" : "Enable notifications"}
-                        onMouseDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
                     >
                         {config.notify ? '🔔' : '🔕'}
                     </button>
                     <button
                         type="button"
-                        onMouseDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
                         onClick={(e) => onDelete(config.name, e)}
                         className="config-delete-btn"
                         title="Delete configuration"
