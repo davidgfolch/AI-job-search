@@ -107,9 +107,6 @@
 .config-name {
     flex: 1;
     color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .config-toggle-btn {
@@ -213,9 +210,6 @@
 
 .pinned-config-name {
     font-weight: 500;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .pinned-config-badges {

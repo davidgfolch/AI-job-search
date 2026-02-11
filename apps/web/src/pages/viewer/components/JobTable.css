@@ -8,6 +8,7 @@
 .job-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .job-table thead {
@@ -50,16 +51,29 @@
   color: var(--text-link);
 }
 
+.checkbox-column {
+  width: 3rem;
+}
+
 .salary-column {
-  /* width: 15rem; */
-  max-width: 13rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  width: 20%;
+}
+
+.title-column {
+  width: 50%;
+}
+
+.company-column {
+  width: 20%;
 }
 
 .status-column {
+  width: 10%;
   padding: 0.75rem 0.5rem !important;
+}
+
+.created-column {
+  width: 10%;
 }
 
 .status-badges {

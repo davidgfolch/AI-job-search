@@ -84,11 +84,11 @@ export default function JobTable({
                                 title="Select All"
                             />
                         </th>
-                        <th className="salary-column">Salary</th>
-                        <th>Title</th>
-                        <th>Company</th>
-                        <th className="status-column">Status</th>
-                        <th>Created</th>
+                        <th className="salary-column text-no-wrap">Salary</th>
+                        <th className="title-column text-no-wrap">Title</th>
+                        <th className="company-column text-no-wrap">Company</th>
+                        <th className="status-column text-no-wrap">Status</th>
+                        <th className="created-column text-no-wrap">Created</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -112,10 +112,10 @@ export default function JobTable({
                                     onClick={(e) => e.stopPropagation()}
                                 />
                             </td>
-                            <td className="salary-column">{job.salary || '-'}</td>
-                            <td>{job.title || '-'}</td>
-                            <td>{job.company || '-'}</td>
-                            <td className="status-column">
+                            <td className="salary-column text-no-wrap">{job.salary || '-'}</td>
+                            <td className="title-column text-no-wrap">{job.title || '-'}</td>
+                            <td className="company-column text-no-wrap">{job.company || '-'}</td>
+                            <td className="status-column text-no-wrap">
                                 <div className="status-badges">
                                     {job.comments && (
                                         <span className="status-badge status-comments"title="Has comments">📝</span>
@@ -130,7 +130,7 @@ export default function JobTable({
                                     ))}
                                 </div>
                             </td>
-                            <td title={calculateLapsedTimeDetail(job.created)}>{calculateLapsedTime(job.created)}</td>
+                            <td className="created-column text-no-wrap" title={calculateLapsedTimeDetail(job.created)}>{calculateLapsedTime(job.created)}</td>
                         </tr>
                         );
                     })}

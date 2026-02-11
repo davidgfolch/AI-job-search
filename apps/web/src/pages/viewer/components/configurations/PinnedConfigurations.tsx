@@ -26,7 +26,7 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
                             onClick={() => onLoad(config)}
                             title={`Load: ${config.name}`}
                         >
-                            <span className="pinned-config-name">
+                            <span className="pinned-config-name text-no-wrap">
                                 {config.name}
                                 {hasNew && <span className="watcher-badge-inline">+{result.newItems}</span>}
                             </span>

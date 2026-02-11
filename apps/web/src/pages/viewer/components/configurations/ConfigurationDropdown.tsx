@@ -50,7 +50,7 @@ export function ConfigurationDropdown({
                     onMouseEnter={() => setHighlightIndex(index)}
                     title={result ? `Total: ${result.total} | New: ${result.newItems} | Last check: ${lastCheckTime?.toLocaleTimeString()}` : undefined}
                 >
-                    <span className="config-name">
+                    <span className="config-name text-no-wrap">
                         {config.name}
                         {hasNew && <span className="watcher-badge-inline">+{result.newItems}</span>}
                     </span>

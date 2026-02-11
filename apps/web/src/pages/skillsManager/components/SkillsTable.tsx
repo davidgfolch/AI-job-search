@@ -77,7 +77,7 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
                 <div className="drag-handle" title="Drag to reorder">⋮⋮</div>
               </td>
               <td>
-                <span className="skill-name">{skill.name}</span>
+                <span className="skill-name text-no-wrap">{skill.name}</span>
                 {skill.category && (
                     <div style={{ fontSize: '0.8em', color: '#888', marginTop: '2px' }}>
                         {skill.category}
@@ -90,7 +90,7 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
               <td>
                 <div className="links-list read-only">
                   {skill.learningPath &&skill.learningPath.map((link, i) => (
-                    <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="link-url">
+                    <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="link-url text-no-wrap">
                       {link}
                     </a>
                   ))}

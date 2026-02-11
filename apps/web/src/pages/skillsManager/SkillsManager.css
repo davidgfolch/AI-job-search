@@ -157,9 +157,6 @@
   font-weight: 500;
   color: var(--text-primary);
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Inputs */
@@ -210,11 +207,8 @@
 }
 
 .link-url {
-  white-space: nowrap;
   color: var(--primary-color);
   text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
   display: block;
 }
 
