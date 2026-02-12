@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useJobsData } from './useJobsData';
 import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
+import { useAppliedModal } from './useAppliedModal';
 import { type Job, jobsApi } from '../api/ViewerApi';
 
 export type { TabType };
@@ -24,7 +25,7 @@ export const useViewer = () => {
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
     const {
-        message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation
+        message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation, bulkUpdateMutation
     } = useJobMutations({
         filters, selectedJob, setSelectedJob, activeTab, autoSelectNext,
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
@@ -50,6 +51,22 @@ export const useViewer = () => {
             }
         },
         activeConfigName,
+    });
+
+    const { // Applied modal integration
+        isModalOpen: isAppliedModalOpen,
+        openModal: openAppliedModal,
+        handleConfirm: handleAppliedConfirm,
+        handleCancel: handleAppliedCancel,
+    } = useAppliedModal({
+        selectedJob,
+        allJobs,
+        onJobUpdate: handleJobUpdate,
+        onBulkUpdate: (ids: number[], update: Partial<Job>) => {
+            bulkUpdateMutation.mutate({ ids, update });
+        },
+        selectedIds,
+        selectionMode,
     });
 
     const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
@@ -120,6 +137,11 @@ export const useViewer = () => {
             activeConfigName,
             creationSessionId,
             duplicatedJob,
+            appliedModal: {
+                isOpen: isAppliedModalOpen,
+                onConfirm: handleAppliedConfirm,
+                onCancel: handleAppliedCancel,
+            },
         },
         status: {
             isLoading: isLoading && (filters.page || 1) === 1,
@@ -136,7 +158,7 @@ export const useViewer = () => {
             updateJob: handleJobUpdate,
             ignoreJob: () => handleJobUpdate({ ignored: true }),
             seenJob: () => handleJobUpdate({ seen: true }),
-            appliedJob: () => handleJobUpdate({ applied: true }),
+            appliedJob: openAppliedModal,
             discardedJob: () => handleJobUpdate({ discarded: true }),
             closedJob: () => handleJobUpdate({ closed: true }),
             deleteJob: deleteSingleJob,

@@ -1,9 +1,10 @@
 import { useViewer } from "./hooks/useViewer";
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef } from "react";
 import JobList from './components/JobList';
 import JobDetail from './components/JobDetail';
 import JobEditForm from './components/JobEditForm';
 import JobActions from './components/JobActions';
+import AppliedModal from './components/AppliedModal';
 import Filters from './components/Filters';
 import MessageContainer from '../common/components/core/MessageContainer';
 import ViewTabs from './components/ViewTabs';
@@ -11,9 +12,11 @@ import ConfirmModal from '../common/components/core/ConfirmModal';
 import './Viewer.css';
 import PageHeader from "../common/components/PageHeader";
 import { BOOLEAN_FILTERS } from './constants';
+import { useDefaultComment } from '../common/hooks/useDefaultComment';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
+    const { comment: defaultComment } = useDefaultComment();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
     const jobListRef = useRef<HTMLDivElement>(null);
 
@@ -21,12 +24,6 @@ export default function Viewer() {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
             BOOLEAN_FILTERS.some(filter => newFilters[filter.key] !== state.filters[filter.key]);
         const newPage = isSearchOrFilterChange ? 1 : state.filters.page;        
-        console.log('isSearchOrFilterChange', isSearchOrFilterChange);
-        console.log('newPage', newPage);
-        console.log('state.filters', state.filters);
-        console.log('newFilters', newFilters);
-        console.log('jobListRef.current', jobListRef.current);
-        console.log('jobListRef.current.scrollTop', jobListRef.current?.scrollTop);
         if (jobListRef.current) {
             jobListRef.current.scrollTop = 0;
         }
@@ -42,11 +39,17 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
             <PageHeader title="Jobs"/>
             <main className="app-main">
                 <div className="viewer">
-                    <ConfirmModal
+<ConfirmModal
                         isOpen={state.confirmModal.isOpen}
                         message={state.confirmModal.message}
                         onConfirm={state.confirmModal.onConfirm}
                         onCancel={actions.closeConfirmModal}
+                    />
+                    <AppliedModal
+                        isOpen={state.appliedModal.isOpen}
+                        defaultComment={defaultComment}
+                        onConfirm={state.appliedModal.onConfirm}
+                        onCancel={state.appliedModal.onCancel}
                     />
                     <div className="viewer-container">
                         <MessageContainer message={state.message} error={status.error}
