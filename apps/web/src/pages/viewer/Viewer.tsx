@@ -1,5 +1,5 @@
 import { useViewer } from "./hooks/useViewer";
-import { useCallback } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import JobList from './components/JobList';
 import JobDetail from './components/JobDetail';
 import JobEditForm from './components/JobEditForm';
@@ -10,16 +10,30 @@ import ViewTabs from './components/ViewTabs';
 import ConfirmModal from '../common/components/core/ConfirmModal';
 import './Viewer.css';
 import PageHeader from "../common/components/PageHeader";
+import { BOOLEAN_FILTERS } from './constants';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
+    const jobListRef = useRef<HTMLDivElement>(null);
 
     const handleFiltersChange = useCallback((newFilters: any) => {
-        actions.setFilters({ ...state.filters, ...newFilters, page: 1 });
+        const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
+            BOOLEAN_FILTERS.some(filter => newFilters[filter.key] !== state.filters[filter.key]);
+        const newPage = isSearchOrFilterChange ? 1 : state.filters.page;        
+        console.log('isSearchOrFilterChange', isSearchOrFilterChange);
+        console.log('newPage', newPage);
+        console.log('state.filters', state.filters);
+        console.log('newFilters', newFilters);
+        console.log('jobListRef.current', jobListRef.current);
+        console.log('jobListRef.current.scrollTop', jobListRef.current?.scrollTop);
+        if (jobListRef.current) {
+            jobListRef.current.scrollTop = 0;
+        }
+        actions.setFilters({ ...state.filters, ...newFilters, page: newPage });
     }, [actions.setFilters, state.filters]);
 
-    const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
+const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
         actions.setMessage({ text, type });
     }, [actions.setMessage]);
 
@@ -97,6 +111,7 @@ export default function Viewer() {
                                                 selectionMode={state.selectionMode}
                                                 onToggleSelectJob={actions.toggleSelectJob}
                                                 onToggleSelectAll={actions.toggleSelectAll}
+                                                containerRef={jobListRef}
                                             />
                                         </div>
                                         <div style={{ display: state.activeTab === 'create' ? 'block' : 'none', height: '100%' }}>

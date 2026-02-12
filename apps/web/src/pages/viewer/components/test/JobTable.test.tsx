@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import JobTable from "../JobTable";
 import { createMockJobs } from "../../test/test-utils";
+import { createRef } from 'react';
 
 const mockJobs = createMockJobs(2, {
     required_technologies: 'React',
@@ -18,7 +19,7 @@ describe('JobTable', () => {
         vi.useRealTimers();
     });
 
-    const defaultProps = {
+const defaultProps = {
         jobs: mockJobs,
         selectedJob: null,
         onJobSelect: vi.fn(),
@@ -26,6 +27,7 @@ describe('JobTable', () => {
         selectionMode: 'none' as const,
         onToggleSelectJob: vi.fn(),
         onToggleSelectAll: vi.fn(),
+        containerRef: createRef<HTMLDivElement>(),
     };
 
     it('renders job list correctly', () => {

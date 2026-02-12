@@ -14,6 +14,7 @@ interface JobListProps {
     selectionMode: 'none' | 'manual' | 'all';
     onToggleSelectJob: (id: number) => void;
     onToggleSelectAll: () => void;
+    containerRef: React.RefObject<HTMLDivElement>;
 }
 
 const JobList: React.FC<JobListProps> = ({
@@ -27,7 +28,8 @@ const JobList: React.FC<JobListProps> = ({
     selectedIds,
     selectionMode,
     onToggleSelectJob,
-    onToggleSelectAll
+    onToggleSelectAll,
+    containerRef,
 }) => {
     if (isLoading) {
         return (
@@ -46,16 +48,17 @@ const JobList: React.FC<JobListProps> = ({
 
     return (
         <JobTable
-            jobs={jobs}
-            selectedJob={selectedJob}
-            onJobSelect={onJobSelect}
-            onLoadMore={onLoadMore}
-            hasMore={hasMore}
-            selectedIds={selectedIds}
-            selectionMode={selectionMode}
-            onToggleSelectJob={onToggleSelectJob}
-            onToggleSelectAll={onToggleSelectAll}
-        />
+                jobs={jobs}
+                selectedJob={selectedJob}
+                onJobSelect={onJobSelect}
+                onLoadMore={onLoadMore}
+                hasMore={hasMore}
+                selectedIds={selectedIds}
+                selectionMode={selectionMode}
+                onToggleSelectJob={onToggleSelectJob}
+                onToggleSelectAll={onToggleSelectAll}
+                containerRef={containerRef}
+            />
     );
 };
 

@@ -14,6 +14,7 @@ interface JobTableProps {
     selectionMode: 'none' | 'manual' | 'all';
     onToggleSelectJob: (id: number) => void;
     onToggleSelectAll: () => void;
+    containerRef: React.RefObject<HTMLDivElement>;
 }
 
 export default function JobTable({ 
@@ -25,10 +26,10 @@ export default function JobTable({
     selectedIds,
     selectionMode,
     onToggleSelectJob,
-    onToggleSelectAll
+    onToggleSelectAll,
+    containerRef,
 }: JobTableProps) {
     const observerTarget = useRef<HTMLTableRowElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
     const isLoadingRef = useRef(false);
 
     const debouncedOnLoadMore = useCallback(() => {
@@ -51,7 +52,6 @@ export default function JobTable({
                     const container = containerRef.current;
                     if (container) {
                         const hasScrollbar = container.scrollHeight > container.clientHeight;
-                        
                         if (hasScrollbar) {
                             debouncedOnLoadMore();
                         }
@@ -60,12 +60,10 @@ export default function JobTable({
             },
             { threshold: 0.1, rootMargin: '50px' }
         );
-        
         const currentTarget = observerTarget.current;
         if (currentTarget) {
             observer.observe(currentTarget);
         }
-        
         return () => {
             if (currentTarget) {
                 observer.unobserve(currentTarget);
@@ -81,24 +79,18 @@ export default function JobTable({
     // Fallback scroll listener as backup for IntersectionObserver
     useEffect(() => {
         if (!onLoadMore || !hasMore || isLoadingRef.current) return;
-        
         const container = containerRef.current;
         if (!container) return;
-        
         const handleScroll = () => {
             if (isLoadingRef.current) return;
-            
             const { scrollTop, scrollHeight, clientHeight } = container;
             const scrollThreshold = 100; // pixels from bottom
             const isNearBottom = scrollTop + clientHeight >= scrollHeight - scrollThreshold;
-            
             if (isNearBottom && scrollHeight > clientHeight) {
                 debouncedOnLoadMore();
             }
         };
-        
         container.addEventListener('scroll', handleScroll, { passive: true });
-        
         return () => {
             container.removeEventListener('scroll', handleScroll);
         };
