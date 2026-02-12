@@ -11,7 +11,7 @@ export const useViewer = () => {
     const {
         filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, hardRefresh
     } = useJobsData();
-    const hasMorePages = allJobs.length < (data?.total || 0);
+    const hasMorePages = allJobs.length < (data?.total || 0) - 1;
     const shouldAutoSelectNextPage = useRef(false);
     const handleLoadMoreWithAutoSelect = () => {
         shouldAutoSelectNextPage.current = true;

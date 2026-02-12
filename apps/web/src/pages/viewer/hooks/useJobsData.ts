@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { jobsApi, type Job, type JobListParams } from '../api/ViewerApi';
@@ -32,6 +32,7 @@ export const useJobsData = () => {
     const [filters, setFilters] = useState<JobListParams>(getInitialFilters);
     const [allJobs, setAllJobs] = useState<Job[]>([]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const requestedPages = useRef(new Set<number>());
 
     const queryClient = useQueryClient();
 
@@ -41,7 +42,15 @@ export const useJobsData = () => {
         placeholderData: keepPreviousData,
     });
 
+    // Reset requested pages when starting a new search (page 1)
+    useEffect(() => {
+        if (filters.page === 1) {
+            requestedPages.current.clear();
+        }
+    }, [filters.page]);
+
     const hardRefresh = useCallback(async () => {
+        requestedPages.current.clear();
         await Promise.all([
             queryClient.resetQueries({ queryKey: ['jobs'] }),
             queryClient.resetQueries({ queryKey: ['jobUpdates'] })
@@ -49,11 +58,13 @@ export const useJobsData = () => {
     }, [queryClient]);
 
     const handleLoadMore = useCallback(() => {
-        if (!isLoadingMore && !isLoading && allJobs.length < (data?.total || 0)) {
+        const nextPage = (filters.page || 1) + 1;
+        if (!isLoadingMore && !isLoading && allJobs.length < (data?.total || 0) && !requestedPages.current.has(nextPage)) {
+            requestedPages.current.add(nextPage);
             setIsLoadingMore(true);
-            setFilters(prev => ({ ...prev, page: (prev.page || 1) + 1 }));
+            setFilters(prev => ({ ...prev, page: nextPage }));
         }
-    }, [isLoadingMore, isLoading, allJobs.length, data?.total]);
+    }, [isLoadingMore, isLoading, allJobs.length, data?.total, filters.page]);
 
     return {
         filters,
