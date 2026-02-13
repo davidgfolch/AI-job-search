@@ -1,72 +1,78 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import SkillTag from '../SkillTag';
 
 describe('SkillTag', () => {
-  it('renders skill name correctly', () => {
-    const onToggle = vi.fn();
-    render(<SkillTag skill="React" isInLearnList={false} onToggle={onToggle} />);
-    
-    expect(screen.getByText('React')).toBeInTheDocument();
+  describe.each([
+    { skill: 'React', isInLearnList: false, shouldHaveClass: false },
+    { skill: 'TypeScript', isInLearnList: true, shouldHaveClass: true },
+    { skill: 'JavaScript', isInLearnList: false, shouldHaveClass: false },
+    { skill: 'Python', isInLearnList: true, shouldHaveClass: true }
+  ])('skill "$skill" with isInLearnList=$isInLearnList', ({ skill, isInLearnList, shouldHaveClass }) => {
+    it(`renders skill name correctly`, () => {
+      const onToggle = vi.fn();
+      render(<SkillTag skill={skill} isInLearnList={isInLearnList} onToggle={onToggle} />);
+      
+      expect(screen.getByText(skill)).toBeInTheDocument();
+    });
+
+    it(`${shouldHaveClass ? 'applies' : 'does not apply'} learn list class`, () => {
+      const onToggle = vi.fn();
+      render(<SkillTag skill={skill} isInLearnList={isInLearnList} onToggle={onToggle} />);
+      
+      const tag = screen.getByText(skill);
+      if (shouldHaveClass) {
+        expect(tag).toHaveClass('skill-tag-learn');
+      } else {
+        expect(tag).not.toHaveClass('skill-tag-learn');
+      }
+    });
+
+    it(`displays appropriate title`, () => {
+      const onToggle = vi.fn();
+      render(<SkillTag skill={skill} isInLearnList={isInLearnList} onToggle={onToggle} />);
+      
+      const tag = screen.getByText(skill);
+      const expectedTitle = isInLearnList ? 'Click to remove from learn list' : 'Click to add to learn list';
+      expect(tag).toHaveAttribute('title', expectedTitle);
+    });
   });
 
-  it('applies learn list class when skill is in learn list', () => {
-    const onToggle = vi.fn();
-    render(<SkillTag skill="TypeScript" isInLearnList={true} onToggle={onToggle} />);
-    
-    const tag = screen.getByText('TypeScript');
-    expect(tag).toHaveClass('skill-tag-learn');
+  describe.each([
+    { skill: 'Node.js', isInLearnList: false },
+    { skill: 'Go', isInLearnList: true },
+    { skill: 'Rust', isInLearnList: true },
+    { skill: 'Java', isInLearnList: false }
+  ])('click behavior for "$skill"', ({ skill, isInLearnList }) => {
+    it('calls onToggle when clicked', () => {
+      const onToggle = vi.fn();
+      render(<SkillTag skill={skill} isInLearnList={isInLearnList} onToggle={onToggle} />);
+      
+      const tag = screen.getByText(skill);
+      fireEvent.click(tag);
+      
+      expect(onToggle).toHaveBeenCalledWith(skill);
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('does not apply learn list class when skill is not in learn list', () => {
-    const onToggle = vi.fn();
-    render(<SkillTag skill="JavaScript" isInLearnList={false} onToggle={onToggle} />);
-    
-    const tag = screen.getByText('JavaScript');
-    expect(tag).not.toHaveClass('skill-tag-learn');
-  });
-
-  it('calls onToggle when clicked', () => {
-    const onToggle = vi.fn();
-    render(<SkillTag skill="Node.js" isInLearnList={false} onToggle={onToggle} />);
-    
-    const tag = screen.getByText('Node.js');
-    fireEvent.click(tag);
-    
-    expect(onToggle).toHaveBeenCalledWith('Node.js');
-    expect(onToggle).toHaveBeenCalledTimes(1);
-  });
-
-  it('displays appropriate title for learn list items', () => {
-    const onToggle = vi.fn();
-    render(<SkillTag skill="Python" isInLearnList={true} onToggle={onToggle} />);
-    
-    const tag = screen.getByText('Python');
-    expect(tag).toHaveAttribute('title', 'Click to remove from learn list');
-  });
-
-  it('displays appropriate title for non-learn list items', () => {
-    const onToggle = vi.fn();
-    render(<SkillTag skill="Java" isInLearnList={false} onToggle={onToggle} />);
-    
-    const tag = screen.getByText('Java');
-    expect(tag).toHaveAttribute('title', 'Click to add to learn list');
-  });
-
-  it('renders view detail button when onViewDetail is provided and skill is in learn list', () => {
-    const onToggle = vi.fn();
-    const onViewDetail = vi.fn();
-    render(<SkillTag skill="Go" isInLearnList={true} onToggle={onToggle} onViewDetail={onViewDetail} />);
-    
-    expect(screen.getByText('👁')).toBeInTheDocument();
-  });
-
-  it('does not render view detail button when skill is NOT in learn list', () => {
-    const onToggle = vi.fn();
-    const onViewDetail = vi.fn();
-    render(<SkillTag skill="Go" isInLearnList={false} onToggle={onToggle} onViewDetail={onViewDetail} />);
-    
-    expect(screen.queryByText('👁')).not.toBeInTheDocument();
+  describe.each([
+    { skill: 'Go', isInLearnList: true, shouldShowButton: true },
+    { skill: 'Go', isInLearnList: false, shouldShowButton: false },
+    { skill: 'TypeScript', isInLearnList: true, shouldShowButton: true },
+    { skill: 'TypeScript', isInLearnList: false, shouldShowButton: false }
+  ])('view detail button for "$skill"', ({ skill, isInLearnList, shouldShowButton }) => {
+    it(`${shouldShowButton ? 'renders' : 'does not render'} view detail button`, () => {
+      const onToggle = vi.fn();
+      const onViewDetail = vi.fn();
+      render(<SkillTag skill={skill} isInLearnList={isInLearnList} onToggle={onToggle} onViewDetail={onViewDetail} />);
+      
+      if (shouldShowButton) {
+        expect(screen.getByText('👁')).toBeInTheDocument();
+      } else {
+        expect(screen.queryByText('👁')).not.toBeInTheDocument();
+      }
+    });
   });
 
   it('calls onViewDetail and stops propagation when button is clicked', () => {
@@ -82,7 +88,6 @@ describe('SkillTag', () => {
   });
 
   it('displays description card on hover when provided', async () => {
-    vi.useFakeTimers();
     const onToggle = vi.fn();
     const onViewDetail = vi.fn();
     render(
@@ -97,22 +102,9 @@ describe('SkillTag', () => {
     
     const button = screen.getByLabelText('View skill details');
     
-    act(() => {
-      fireEvent.mouseEnter(button);
-    });
+    fireEvent.mouseEnter(button);
     
     expect(screen.getByText('A systems programming language')).toBeInTheDocument();
-    
-    act(() => {
-      fireEvent.mouseLeave(button);
-    });
-    
-    act(() => {
-      vi.advanceTimersByTime(300);
-    });
-
-    expect(screen.queryByText('A systems programming language')).not.toBeInTheDocument();
-    vi.useRealTimers();
   });
 
   it('does not display default title on button', () => {

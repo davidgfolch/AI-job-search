@@ -39,6 +39,38 @@ describe('sqlEditorUtils', () => {
             const tokens = tokenizeSql("123", mockKeywords, mockSchema);
             expect(tokens[0].type).toBe('number');
         });
+
+        describe.each([
+            {
+                name: 'decimal numbers',
+                input: '123.45',
+                expectedType: 'number'
+            },
+            {
+                name: 'simple SELECT with WHERE',
+                sql: 'SELECT id FROM users WHERE id = 1',
+            },
+            {
+                name: 'SELECT with function and ORDER BY',
+                sql: 'SELECT COUNT(*) FROM jobs ORDER BY salary',
+            },
+            {
+                name: 'complex WHERE clause',
+                sql: 'WHERE name = "John" AND salary > 50000',
+            }
+        ])('tokenize $name', ({ input, sql, expectedType }) => {
+            if (input) {
+                it(`should tokenize ${expectedType}`, () => {
+                    const tokens = tokenizeSql(input, mockKeywords, mockSchema);
+                    expect(tokens[0].type).toBe(expectedType);
+                });
+            } else if (sql) {
+                it(`should tokenize SQL statement`, () => {
+                    const tokens = tokenizeSql(sql, mockKeywords, mockSchema);
+                    expect(tokens.length).toBeGreaterThan(0);
+                });
+            }
+        });
     });
 
     describe('tokenizeSql edge cases', () => {
@@ -54,7 +86,6 @@ describe('sqlEditorUtils', () => {
 
     describe('getCaretCoordinates', () => {
         it('should return coordinates', () => {
-             // Mock getComputedStyle
              const mockStyle = {
                  getPropertyValue: vi.fn(),
                  length: 0,
@@ -62,7 +93,6 @@ describe('sqlEditorUtils', () => {
              };
              window.getComputedStyle = vi.fn().mockReturnValue(mockStyle);
              
-             // Mock document.createElement
              const mockDiv = {
                  style: { setProperty: vi.fn() },
                  appendChild: vi.fn(),
@@ -74,14 +104,12 @@ describe('sqlEditorUtils', () => {
                  offsetTop: 20
              };
              
-             // Simple mock of createElement to return functional mocks
              vi.spyOn(document, 'createElement').mockImplementation((tag) => {
                  if (tag === 'div') return mockDiv as any;
                  if (tag === 'span') return mockSpan as any;
                  return document.createElement(tag);
              });
              
-             // Mock document.body.appendChild/removeChild
              vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockDiv as any);
              vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockDiv as any);
 
@@ -93,7 +121,7 @@ describe('sqlEditorUtils', () => {
 
              import('../sqlEditorUtils').then(({ getCaretCoordinates }) => {
                  const coords = getCaretCoordinates(mockTextarea, 2);
-                 expect(coords).toEqual({ left: 15, top: 25 }); // 5+10, 5+20
+                 expect(coords).toEqual({ left: 15, top: 25 });
              });
         });
     });

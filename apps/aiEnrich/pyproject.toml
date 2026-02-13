@@ -33,7 +33,7 @@ source = ["src/aiEnrich"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 20
+fail_under = 85
 
 [build-system]
 requires = [

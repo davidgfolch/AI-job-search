@@ -33,7 +33,6 @@ describe('Filters', () => {
                 {ui}
             </QueryClientProvider>
         );
-        // Wait for FilterConfigurations async load to avoid act warnings
         await act(async () => {
             await new Promise(resolve => setTimeout(resolve, 0));
         });
@@ -53,10 +52,10 @@ describe('Filters', () => {
     it('expands and collapses when toggle button is clicked', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
         const toggleButton = screen.getByText(/Filters/);
-        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument(); // Should be expanded by default
-        fireEvent.click(toggleButton); // Click to collapse
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        fireEvent.click(toggleButton);
         expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
-        fireEvent.click(toggleButton); // Click to expand again
+        fireEvent.click(toggleButton);
         expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
     });
 
@@ -71,38 +70,53 @@ describe('Filters', () => {
         expect(screen.getByText('●')).toBeInTheDocument();
     });
 
-    it('handles search input changes', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const searchInput = screen.getByPlaceholderText('Search jobs...');
-        fireEvent.change(searchInput, { target: { value: 'React Developer' } });
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({
-            ...mockFilters,
-            search: 'React Developer',
-            page: 1,
+    describe.each([
+        { 
+            name: 'search input', 
+            selector: 'Search jobs...', 
+            value: 'React Developer', 
+            expectedKey: 'search',
+            expectedValue: 'React Developer',
+            includePage: true
+        },
+        { 
+            name: 'days old filter', 
+            label: /Days old/, 
+            value: '7', 
+            expectedKey: 'days_old',
+            expectedValue: 7
+        },
+        { 
+            name: 'salary regex filter', 
+            label: /Salary/, 
+            value: '\\d{6}', 
+            expectedKey: 'salary',
+            expectedValue: '\\d{6}'
+        },
+        { 
+            name: 'SQL where filter', 
+            placeholder: /e.g. salary/, 
+            value: 'salary > 50000', 
+            expectedKey: 'sql_filter',
+            expectedValue: 'salary > 50000'
+        }
+    ])('handles $name', ({ selector, label, placeholder, value, expectedKey, expectedValue, includePage }) => {
+        it(`should update ${expectedKey} filter correctly`, async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
+            
+            const input = selector 
+                ? screen.getByPlaceholderText(selector)
+                : label 
+                    ? screen.getByLabelText(label)
+                    : screen.getByPlaceholderText(placeholder);
+            
+            fireEvent.change(input, { target: { value } });
+            
+            const expectedCall = includePage
+                ? { ...mockFilters, [expectedKey]: expectedValue, page: 1 }
+                : { [expectedKey]: expectedValue };
+                
+            expect(onFiltersChangeMock).toHaveBeenCalledWith(expectedCall);
         });
     });
-
-    it('handles days old filter', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const daysOldInput = screen.getByLabelText(/Days old/);
-        fireEvent.change(daysOldInput, { target: { value: '7' } });
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ days_old: 7 });
-    });
-
-    it('handles salary regex filter', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const salaryInput = screen.getByLabelText(/Salary/);
-        fireEvent.change(salaryInput, { target: { value: '\\d{6}' } });
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ salary: '\\d{6}' });
-    });
-
-    it('handles SQL where filter', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
-        const sqlInput = screen.getByPlaceholderText(/e.g. salary/);
-        fireEvent.change(sqlInput, { target: { value: 'salary > 50000' } });
-        expect(onFiltersChangeMock).toHaveBeenCalledWith({ sql_filter: 'salary > 50000' });
-    });
-
-
-
 });

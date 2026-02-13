@@ -30,7 +30,7 @@ source = ["commonlib"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 38
+fail_under = 85
 exclude_lines = [
     "pragma: no cover",
     # Exclude Windows-specific blocks from coverage on Linux/macOS

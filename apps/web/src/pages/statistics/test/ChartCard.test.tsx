@@ -16,6 +16,31 @@ describe('ChartCard', () => {
         expect(screen.queryByTitle('Expand to Full Screen')).toBeInTheDocument();
     });
 
+    it('renders with complex children', () => {
+        render(
+            <ChartCard title="Salary Distribution">
+                <div>
+                    <div data-testid="chart-canvas">Chart Canvas</div>
+                    <div data-testid="chart-legend">Chart Legend</div>
+                </div>
+            </ChartCard>
+        );
+
+        expect(screen.getByText('Salary Distribution')).toBeInTheDocument();
+        expect(screen.getByTestId('chart-canvas')).toBeInTheDocument();
+        expect(screen.getByTestId('chart-legend')).toBeInTheDocument();
+    });
+
+    it('renders with special characters in title', () => {
+        render(
+            <ChartCard title="Jobs in 2024 (Q1-Q2)">
+                <div>Content</div>
+            </ChartCard>
+        );
+
+        expect(screen.getByText('Jobs in 2024 (Q1-Q2)')).toBeInTheDocument();
+    });
+
     it('toggles expand state correctly', () => {
         const { container } = render(
             <ChartCard title="Test Chart">
@@ -36,5 +61,27 @@ describe('ChartCard', () => {
         fireEvent.click(screen.getByTitle('Close Full Screen'));
 
         expect(section).not.toHaveClass('expanded');
+    });
+
+    describe('edge cases', () => {
+        it.each([
+            {
+                name: 'empty title',
+                title: '',
+                children: <div>Content</div>
+            },
+            {
+                name: 'very long title',
+                title: 'This is a very long chart title that might wrap or get truncated',
+                children: <div>Content</div>
+            },
+            {
+                name: 'empty children',
+                title: 'Empty Chart',
+                children: null
+            }
+        ])('handles $name', ({ title, children }) => {
+            expect(() => render(<ChartCard title={title}>{children}</ChartCard>)).not.toThrow();
+        });
     });
 });
