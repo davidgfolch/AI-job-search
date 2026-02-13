@@ -1,4 +1,4 @@
-import './FilterConfigurations.css';
+import { useRef, useEffect, useCallback } from 'react';
 import type { JobListParams } from '../api/ViewerApi';
 import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
@@ -56,6 +56,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         toggleWatcherActive,
         savedConfigs,
         savedConfigName,
+        isLoading,
         reorderConfigurations
     } = useFilterConfigurations({ 
         currentFilters, 
@@ -64,7 +65,20 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         additionalDefaults: ADDITIONAL_DEFAULTS 
     });
 
+    const hasLoadedInitialConfigs = useRef(false);
+
     const pinnedConfigs = savedConfigs.filter(c => c.pinned);
+
+    const selectFirstPinnedConfigOnLoad = useCallback(() => {
+        if (!hasLoadedInitialConfigs.current && !isLoading && savedConfigs.length > 0 && !savedConfigName && pinnedConfigs.length > 0) {
+            hasLoadedInitialConfigs.current = true;
+            loadConfiguration(pinnedConfigs[0]);
+        }
+    }, [isLoading, savedConfigs, savedConfigName, pinnedConfigs, loadConfiguration]);
+
+    useEffect(() => {
+        selectFirstPinnedConfigOnLoad();
+    }, [selectFirstPinnedConfigOnLoad]);
 
     return (
         <div className="filter-configurations-wrapper">

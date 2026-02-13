@@ -54,7 +54,7 @@ export function useFilterConfigurations({
         [additionalDefaults]
     );
 
-    const { data: loadedConfigs, error: loadError } = useQuery({
+    const { data: loadedConfigs, error: loadError, isLoading } = useQuery({
         queryKey: ['filterConfigs', allDefaults.length], // Include defaults length as dependency if needed, or just service
         queryFn: () => service.load(allDefaults),
         staleTime: 1000 * 60 * 5, // 5 minutes
@@ -172,6 +172,7 @@ export function useFilterConfigurations({
         },
         savedConfigs,
         savedConfigName,
+        isLoading,
         toggleWatch: toggleConfigWatch,
         toggleStatistics,
         togglePin,
