@@ -12,9 +12,10 @@ interface BooleanFiltersProps {
     onFiltersChange: (filters: Partial<JobListParams>) => void;
     onMessage?: (text: string, type: 'success' | 'error') => void;
     onConfigNameChange?: (name: string) => void;
+    refreshJobs?: () => Promise<void>;
 }
 
-export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange }: BooleanFiltersProps) {
+export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange, refreshJobs }: BooleanFiltersProps) {
     const { isExpanded, setIsExpanded } = useFilterExpanded();
     const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
     const handleSearchChange = (search: string) => {
@@ -36,6 +37,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                         currentFilters={filters}
                         onLoadConfig={(loadedFilters, name) => {
                             onFiltersChange({ ...loadedFilters, page: 1 });
+                            refreshJobs?.();
                             if (onConfigNameChange && name) {
                                 onConfigNameChange(name);
                             }

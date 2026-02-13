@@ -23,7 +23,7 @@ export default function Viewer() {
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
             BOOLEAN_FILTERS.some(filter => newFilters[filter.key] !== state.filters[filter.key]);
-        const newPage = isSearchOrFilterChange ? 1 : state.filters.page;        
+        const newPage = newFilters.page === 1 || isSearchOrFilterChange ? 1 : state.filters.page;        
         if (jobListRef.current) {
             jobListRef.current.scrollTop = 0;
         }
@@ -39,7 +39,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
             <PageHeader title="Jobs"/>
             <main className="app-main">
                 <div className="viewer">
-<ConfirmModal
+                    <ConfirmModal
                         isOpen={state.confirmModal.isOpen}
                         message={state.confirmModal.message}
                         onConfirm={state.confirmModal.onConfirm}
@@ -57,7 +57,8 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                         <Filters filters={state.filters}
                             onFiltersChange={handleFiltersChange}
                             onMessage={handleMessage} 
-                            onConfigNameChange={actions.setActiveConfigName} />
+                            onConfigNameChange={actions.setActiveConfigName}
+                            refreshJobs={actions.refreshJobs} />
                         <div className="viewer-content">
                             <div className="viewer-left" style={{ display: state.duplicatedJob ? 'none' : 'flex' }}>
                                 <div className="tab-group">
@@ -132,7 +133,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                     </div>
                                 </div>
                             </div>
-                                    <div className="viewer-right" style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
+                                <div className="viewer-right" style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
                                 {state.selectedJob ? (
                                     <>
                                         <div style={state.duplicatedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
