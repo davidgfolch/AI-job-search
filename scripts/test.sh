@@ -3,7 +3,7 @@
 
 # Parse arguments
 coverage=0
-target=""
+targets=()
 app_args=""
 
 for arg in "$@"; do
@@ -11,9 +11,9 @@ for arg in "$@"; do
         coverage=1
         echo "Coverage enabled"
     elif [ -d "$arg" ]; then
-        target="$arg"
+        targets+=("$arg")
     elif [ -d "apps/$arg" ]; then
-        target="apps/$arg"
+        targets+=("apps/$arg")
     else
         app_args="$app_args $arg"
     fi
@@ -67,22 +67,31 @@ run_test() {
     return $ret
 }
 
-if [ -n "$target" ]; then
-    if [ "$target" == "apps/e2e" ] || [ "$target" == "apps\e2e" ]; then
-        echo ""
-        echo "────────────────────────────────────────────────────────"
-        echo "Running E2E tests for apps/e2e..."
-        echo "────────────────────────────────────────────────────────"
-        if [ -f "apps/backend/uv.lock" ]; then
-            uv run --project apps/backend python scripts/run_e2e_tests.py $app_args
+if [ ${#targets[@]} -gt 0 ]; then
+    tests_failed=0
+    for target in "${targets[@]}"; do
+        if [ "$target" == "apps/e2e" ] || [ "$target" == "apps\e2e" ]; then
+            echo ""
+            echo "────────────────────────────────────────────────────────"
+            echo "Running E2E tests for apps/e2e..."
+            echo "────────────────────────────────────────────────────────"
+            if [ -f "apps/backend/uv.lock" ]; then
+                uv run --project apps/backend python scripts/run_e2e_tests.py $app_args
+            else
+                python scripts/run_e2e_tests.py $app_args
+            fi
+            if [ $? -ne 0 ]; then
+                tests_failed=1
+            fi
         else
-            python scripts/run_e2e_tests.py $app_args
+            run_test "$target"
+            if [ $? -ne 0 ]; then
+                tests_failed=1
+            fi
         fi
-        if [ $? -ne 0 ]; then
-             exit 1
-        fi
-    else
-        run_test "$target"
+    done
+    if [ $tests_failed -ne 0 ]; then
+        exit 1
     fi
 else
     # Execute commonlib tests first

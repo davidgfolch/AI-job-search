@@ -5,7 +5,6 @@ set VIRTUAL_ENV=
 rem ──────────────────────  Parse command‑line  ─────────────────────
 set coverage=0
 set idx=0
-set "target="
 
 set "app_args="
 
@@ -15,20 +14,27 @@ for %%i in (%*) do (
     if "%%i"=="--coverage" (
         set coverage=1
         echo Coverage enabled
-    ) else if exist "%%i" (
-        set "target=%%i"
-    ) else if exist "apps\%%i" (
-        set "target=apps\%%i"
     ) else (
-        set "app_args=!app_args! %%i"
+        if exist "%%i" (
+            set "targets=!targets! %%i"
+        ) else if exist "apps\%%i" (
+            set "targets=!targets! apps\%%i"
+        ) else (
+            set "app_args=!app_args! %%i"
+        )
     )
 )
 
 rem ──────────────────────  Execute tests  ─────────────────────
-if defined target (
-    if /i "!target!"=="apps\e2e" goto :run_e2e_specific
-    if /i "!target!"=="apps/e2e" goto :run_e2e_specific
-    call :run_test "%CD%\!target!"
+if not "%targets%"=="" (
+    set "tests_failed=0"
+    for %%t in (!targets!) do (
+        if /i "%%~t"=="apps\e2e" goto :run_e2e_specific
+        if /i "%%~t"=="apps/e2e" goto :run_e2e_specific
+        call :run_test "%%~t"
+        if !errorlevel! neq 0 set tests_failed=1
+    )
+    if !tests_failed! neq 0 exit /b 1
 ) else (
     rem Execute commonlib tests first
     if exist "apps\commonlib" (
