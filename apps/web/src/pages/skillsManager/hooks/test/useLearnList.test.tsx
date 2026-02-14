@@ -94,10 +94,12 @@ describe('useLearnList', () => {
     });
 
     it('reorders skills locally', async () => {
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const { result } = await setupHook();
         const newOrder = [mockSkills[1], mockSkills[0], mockSkills[2]];
         await act(async () => await result.current.reorderSkills(newOrder));
         await waitFor(() => expect(result.current.learnList).toEqual(newOrder));
+        consoleSpy.mockRestore();
     });
 
     it('updates skill details via API', async () => {

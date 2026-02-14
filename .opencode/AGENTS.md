@@ -84,6 +84,20 @@ poetry run pytest
 - **Components**: PascalCase for components, camelCase for functions/variables
 - **Hooks**: Custom hooks pattern for state logic separation (see `apps/web/src/pages/viewer/hooks/`)
 - **Testing**: Vitest with Testing Library, tests co-located with source files in `test/` subdirectories
+- **React Act Warnings**: When testing hooks with `renderHook`, always wrap state updates in `act()`:
+  ```typescript
+  import { act } from '@testing-library/react';
+  
+  // ❌ Wrong - causes act(...) warning
+  result.current.setTimeRange('Last week');
+  await waitFor(() => expect(result.current.timeRange).toBe('Last week'));
+  
+  // ✅ Correct - wrapped in act()
+  await act(async () => {
+      result.current.setTimeRange('Last week');
+  });
+  await waitFor(() => expect(result.current.timeRange).toBe('Last week'));
+  ```
 
 ### Architecture Patterns
 
@@ -122,6 +136,19 @@ python apps/commonlib/commonlib/test/architecture_test.py
 
 # Frontend architecture compliance  
 npm test -- apps/web/src/test/architecture.test.ts
+```
+
+## Definition of Done
+
+Before marking any task as complete, always verify:
+1. **No architecture violations**: Run architecture tests to ensure no files exceed 200 lines
+2. **Tests pass**: Ensure all related tests pass after changes
+3. **Lint/TypeScript clean**: Run linting and type checking commands
+
+```bash
+# Quick check for architecture violations (always run before finishing)
+cd apps/web && npx vitest run src/test/architecture.test.ts
+cd apps/commonlib && poetry run pytest test/architecture_test.py
 ```
 
 ## Testing Requirements
