@@ -40,6 +40,7 @@ export const useJobsData = () => {
         queryKey: ['jobs', filters],
         queryFn: () => jobsApi.getJobs(filters),
         placeholderData: keepPreviousData,
+        staleTime: 1000 * 30, // 30 seconds
     });
 
     // Reset requested pages when starting a new search (page 1)

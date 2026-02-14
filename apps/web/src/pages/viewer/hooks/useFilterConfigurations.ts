@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { JobListParams } from '../api/ViewerApi';
 import { persistenceApi } from '../../common/api/CommonPersistenceApi';
 import { BOOLEAN_FILTERS } from '../constants';
@@ -28,9 +28,11 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
     const [isOpen, setIsOpen] = useState(false);
     const [savedConfigName, setSavedConfigName] = useState(''); 
     const confirmModal = useConfirmationModal();
+    const isMounted = useRef(true);
 
     // Load saved configurations
-    useEffect(() => { 
+    useEffect(() => {
+        isMounted.current = true;
         const loadConfigs = async () => {
             const stored = await persistenceApi.getValue<FilterConfig[]>(STORAGE_KEY);
             let configs = stored && Array.isArray(stored) ? stored : [];
@@ -40,10 +42,13 @@ export function useFilterConfigurations({ currentFilters, onLoadConfig, onMessag
             if (defaultsToAdd.length > 0) {
                 configs = [...configs, ...defaultsToAdd];
             }
-            setSavedConfigs(configs);
+            if (isMounted.current) {
+                setSavedConfigs(configs);
+            }
         };
         loadConfigs();
-    }, []);
+        return () => { isMounted.current = false; };
+    }, [additionalDefaults]);
 
     const saveConfiguration = async () => {
         if (!configName.trim()) {

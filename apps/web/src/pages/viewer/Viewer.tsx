@@ -1,5 +1,5 @@
 import { useViewer } from "./hooks/useViewer";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import JobList from './components/JobList';
 import JobDetail from './components/JobDetail';
 import JobEditForm from './components/JobEditForm';
@@ -19,6 +19,7 @@ export default function Viewer() {
     const { comment: defaultComment } = useDefaultComment();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
     const jobListRef = useRef<HTMLDivElement>(null);
+    const [configCount, setConfigCount] = useState<number>(0);
 
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
@@ -58,7 +59,9 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onFiltersChange={handleFiltersChange}
                             onMessage={handleMessage} 
                             onConfigNameChange={actions.setActiveConfigName}
-                            refreshJobs={actions.refreshJobs} />
+                            refreshJobs={actions.refreshJobs}
+                            configCount={configCount}
+                            onConfigsLoaded={setConfigCount} />
                         <div className="viewer-content">
                             <div className="viewer-left" style={{ display: state.duplicatedJob ? 'none' : 'flex' }}>
                                 <div className="tab-group">

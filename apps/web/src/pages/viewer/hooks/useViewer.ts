@@ -24,6 +24,10 @@ export const useViewer = () => {
     } = useJobSelection({ allJobs, filters, setFilters, onLoadMore: handleLoadMoreWithAutoSelect, hasMorePages });
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
+    // Keep a ref to handleJobSelect to avoid recreating effect when it changes
+    const handleJobSelectRef = useRef(handleJobSelect);
+    handleJobSelectRef.current = handleJobSelect;
+
     const {
         message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation, bulkUpdateMutation
     } = useJobMutations({
@@ -100,7 +104,7 @@ export const useViewer = () => {
                     }
                     if (shouldAutoSelectNextPage.current) {
                         setTimeout(() => {
-                            handleJobSelect(newItems[0]);
+                            handleJobSelectRef.current(newItems[0]);
                             shouldAutoSelectNextPage.current = false;
                         }, 0);
                     }
@@ -109,15 +113,15 @@ export const useViewer = () => {
             });
             setIsLoadingMore(false);
         }
-    }, [data, filters.page, setAllJobs, setIsLoadingMore, handleJobSelect]);
+    }, [data, filters.page, setAllJobs, setIsLoadingMore]);
 
     useEffect(() => { // Handle initial selection purely based on flag
         if (shouldSelectFirst && data?.items && data.items.length > 0) {
             // We use a timeout to avoid immediate state clash or loop, though splitting effects should be enough
-            handleJobSelect(data.items[0]);
+            handleJobSelectRef.current(data.items[0]);
             setShouldSelectFirst(false);
         }
-    }, [shouldSelectFirst, data, handleJobSelect]);
+    }, [shouldSelectFirst, data]);
     
     // Calculate navigation state
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;

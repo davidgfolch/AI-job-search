@@ -1,24 +1,33 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { persistenceApi } from '../api/CommonPersistenceApi';
 
 export function useDefaultComment() {
   const [comment, setComment] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    isMounted.current = true;
     const loadDefaultComment = async () => {
       try {
         const stored = await persistenceApi.getValue<string>('default_comment_text');
-        setComment(stored || '- applied by 45k');
+        if (isMounted.current) {
+          setComment(stored || '- applied by 45k');
+        }
       } catch (error) {
         console.error('Failed to load default comment:', error);
-        setComment('- applied by 45k');
+        if (isMounted.current) {
+          setComment('- applied by 45k');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted.current) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadDefaultComment();
+    return () => { isMounted.current = false; };
   }, []);
 
   const saveComment = useCallback(async (newText: string) => {

@@ -13,10 +13,12 @@ interface BooleanFiltersProps {
     onMessage?: (text: string, type: 'success' | 'error') => void;
     onConfigNameChange?: (name: string) => void;
     refreshJobs?: () => Promise<void>;
+    configCount?: number;
+    onConfigsLoaded?: (count: number) => void;
 }
 
-export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange, refreshJobs }: BooleanFiltersProps) {
-    const { isExpanded, setIsExpanded } = useFilterExpanded();
+export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange, refreshJobs, configCount, onConfigsLoaded }: BooleanFiltersProps) {
+    const { isExpanded, setIsExpanded } = useFilterExpanded({ configCount });
     const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
     const handleSearchChange = (search: string) => {
         onFiltersChange({ ...filters, search, page: 1 });
@@ -45,7 +47,8 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                         onMessage={onMessage}
                         isExpanded={isExpanded}
                         onToggleExpand={() => setIsExpanded(!isExpanded)}
-                        hasActiveFilters={hasActiveFilters}/>
+                        hasActiveFilters={hasActiveFilters}
+                        onConfigsLoaded={onConfigsLoaded}/>
                 </div>
                 {isExpanded && (
                     <div className="filters-content">

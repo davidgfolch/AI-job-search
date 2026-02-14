@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useDeferredValue } from 'react';
 import { salaryApi } from '../../api/ViewerSalaryApi';
 import type { SalaryCalculationResponse } from '../../api/salary';
 import type { Job } from '../../api/jobs';
@@ -23,6 +23,13 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
     const [calcDaysPerMonth, setCalcDaysPerMonth] = useState(20);
     const [calcResult, setCalcResult] = useState<SalaryCalculationResponse | null>(null);
 
+    const deferredCalcRate = useDeferredValue(calcRate);
+    const deferredCalcRateType = useDeferredValue(calcRateType);
+    const deferredCalcFreelanceRate = useDeferredValue(calcFreelanceRate);
+    const deferredCalcMode = useDeferredValue(calcMode);
+    const deferredCalcHoursPerWeek = useDeferredValue(calcHoursPerWeek);
+    const deferredCalcDaysPerMonth = useDeferredValue(calcDaysPerMonth);
+
     const handleSave = () => {
         if (calcResult && job && onUpdate) {
             const formattedCalculation = formatCalculationForComments({
@@ -40,27 +47,27 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
         const calculate = async () => {
             try {
                 let hoursPerDay = 8;
-                let rateToUse = calcRate;
-                let rateTypeToUse = calcRateType;
+                let rateToUse = deferredCalcRate;
+                let rateTypeToUse = deferredCalcRateType;
                 // Calculate hours_x_day based on mode
-                if (calcMode === 'hoursPerWeek') {
+                if (deferredCalcMode === 'hoursPerWeek') {
                     // N hours per week / 5 days = hours per day
-                    hoursPerDay = calcHoursPerWeek / 5;
+                    hoursPerDay = deferredCalcHoursPerWeek / 5;
                     rateTypeToUse = 'Hourly';
-                } else if (calcMode === 'daysPerMonth') {
+                } else if (deferredCalcMode === 'daysPerMonth') {
                     // N days per month, use daily rate
                     // Backend expects hours_x_day, but for daily rate it's not used
                     // We need to adjust the calculation: rate * N days * 11 months
                     // Since backend does: rate * 23.3 * 11
                     // We can adjust the rate: (N / 23.3) * rate
-                    rateToUse = (calcDaysPerMonth / 23.3) * calcRate;
+                    rateToUse = (deferredCalcDaysPerMonth / 23.3) * deferredCalcRate;
                     rateTypeToUse = 'Daily';
                 }
                 const result = await salaryApi.calculate({
                     rate: rateToUse,
                     rate_type: rateTypeToUse,
                     hours_x_day: hoursPerDay,
-                    freelance_rate: calcFreelanceRate
+                    freelance_rate: deferredCalcFreelanceRate
                 });
                 setCalcResult(result);
             } catch (error) {
@@ -69,7 +76,7 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
         };
         const debounce = setTimeout(calculate, 500); // 500ms debounce to avoid spamming while typing
         return () => clearTimeout(debounce);
-    }, [calcRate, calcRateType, calcFreelanceRate, calcMode, calcHoursPerWeek, calcDaysPerMonth]);
+    }, [deferredCalcRate, deferredCalcRateType, deferredCalcFreelanceRate, deferredCalcMode, deferredCalcHoursPerWeek, deferredCalcDaysPerMonth]);
 
     return (
         <div className="salary-calculator boolean-filters">

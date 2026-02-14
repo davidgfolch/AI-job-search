@@ -21,15 +21,18 @@ export default function HistoryInput({
     const [isOpen, setIsOpen] = useState(false);
     const [highlightIndex, setHighlightIndex] = useState(-1);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const isMounted = useRef(true);
 
     useEffect(() => {
+        isMounted.current = true;
         const loadHistory = async () => {
              const stored = await persistenceApi.getValue<string[]>(storageKey);
-             if (stored && Array.isArray(stored)) {
+             if (isMounted.current && stored && Array.isArray(stored)) {
                  setHistory(stored);
              }
         };
         loadHistory();
+        return () => { isMounted.current = false; };
     }, [storageKey]);
 
     const addToHistory = async (val: string) => {

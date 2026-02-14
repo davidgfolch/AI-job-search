@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import './FilterConfigurations.css';
 import type { JobListParams } from '../api/ViewerApi';
 import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
@@ -26,11 +26,12 @@ interface FilterConfigurationsProps {
     isExpanded: boolean;
     onToggleExpand: () => void;
     hasActiveFilters: boolean;
+    onConfigsLoaded?: (count: number) => void;
 }
 
 const ADDITIONAL_DEFAULTS = [CLEAN_OLD_JOBS_CONFIG];
 
-export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters }: FilterConfigurationsProps) {
+export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters, onConfigsLoaded }: FilterConfigurationsProps) {
     const {
         configName,
         isOpen,
@@ -56,7 +57,6 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         toggleWatcherActive,
         savedConfigs,
         savedConfigName,
-        isLoading,
         reorderConfigurations
     } = useFilterConfigurations({ 
         currentFilters, 
@@ -65,8 +65,11 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         additionalDefaults: ADDITIONAL_DEFAULTS 
     });
 
-    const hasLoadedInitialConfigs = useRef(false);
+<<<<<<< Updated upstream
+    const pinnedConfigs = savedConfigs.filter(c => c.pinned);
 
+=======
+    const hasLoadedInitialConfigs = useRef(false);
     const pinnedConfigs = savedConfigs.filter(c => c.pinned);
 
     const selectFirstPinnedConfigOnLoad = useCallback(() => {
@@ -80,6 +83,13 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         selectFirstPinnedConfigOnLoad();
     }, [selectFirstPinnedConfigOnLoad]);
 
+    useEffect(() => {
+        if (!isLoading && onConfigsLoaded) {
+            onConfigsLoaded(savedConfigs.length);
+        }
+    }, [isLoading, savedConfigs.length, onConfigsLoaded]);
+
+>>>>>>> Staged changes
     return (
         <div className="filter-configurations-wrapper">
             <ConfirmModal

@@ -1,21 +1,28 @@
-import { useState, useEffect } from 'react';
-import { filterConfigsApi } from '../api/FilterConfigurationsApi';
-export function useFilterExpanded() {
+import { useState, useEffect, useRef } from 'react';
+
+interface UseFilterExpandedProps {
+    configCount?: number;
+}
+
+export function useFilterExpanded({ configCount }: UseFilterExpandedProps = {}) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
+    const isMounted = useRef(true);
+    
     useEffect(() => {
-        const checkConfigurations = async () => {
-            try {
-                const configs = await filterConfigsApi.getAll();
-                setIsExpanded(configs.length === 0);
-            } catch (error) {
-                console.error('Failed to check filter configurations:', error);
-                setIsExpanded(true);
-            } finally {
-                setIsInitialized(true);
-            }
-        };
-        checkConfigurations();
-    }, []);
+        isMounted.current = true;
+        
+        if (configCount !== undefined) {
+            setIsExpanded(configCount === 0);
+            setIsInitialized(true);
+            return () => { isMounted.current = false; };
+        }
+        
+        // Fallback: if no configCount provided, assume expanded (backwards compatibility)
+        setIsExpanded(true);
+        setIsInitialized(true);
+        return () => { isMounted.current = false; };
+    }, [configCount]);
+    
     return { isExpanded, setIsExpanded, isInitialized };
 }
