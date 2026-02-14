@@ -95,8 +95,10 @@ describe('useFilterWatcher - Notifications', () => {
          const { wrapper } = createWrapper();
          renderHook(() => useFilterWatcher({ savedConfigs: [config1] }), { wrapper });
 
-         // Wait a bit to ensure no API calls are made
-         await new Promise(resolve => setTimeout(resolve, 100));
+         // Wait for the effect to run and ensure no API calls are made
+         await act(async () => {
+             await new Promise(resolve => setTimeout(resolve, 200));
+         });
 
          // Should NOT make any API calls since the config is not watched
          expect(jobsApi.getWatcherStats).not.toHaveBeenCalled();

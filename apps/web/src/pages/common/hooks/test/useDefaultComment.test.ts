@@ -11,8 +11,15 @@ vi.mock('../../api/CommonPersistenceApi', () => ({
 }));
 
 describe('useDefaultComment', () => {
+    let consoleSpy: any;
+    
     beforeEach(() => {
         vi.clearAllMocks();
+        consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        consoleSpy?.mockRestore();
     });
 
     it('should load default comment from localStorage on mount', async () => {

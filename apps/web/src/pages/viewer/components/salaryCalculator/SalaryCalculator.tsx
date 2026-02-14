@@ -3,6 +3,8 @@ import { salaryApi } from '../../api/ViewerSalaryApi';
 import type { SalaryCalculationResponse } from '../../api/salary';
 import type { Job } from '../../api/jobs';
 import { formatCalculationForComments, removePreviousSalaryCalculation } from './salaryFormatters';
+import { SalaryCalculatorControls } from './SalaryCalculatorControls';
+import { SalaryCalculatorResults } from './SalaryCalculatorResults';
 import '../Filters.css';
 import './SalaryCalculator.css';
 
@@ -49,17 +51,10 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
                 let hoursPerDay = 8;
                 let rateToUse = deferredCalcRate;
                 let rateTypeToUse = deferredCalcRateType;
-                // Calculate hours_x_day based on mode
                 if (deferredCalcMode === 'hoursPerWeek') {
-                    // N hours per week / 5 days = hours per day
                     hoursPerDay = deferredCalcHoursPerWeek / 5;
                     rateTypeToUse = 'Hourly';
                 } else if (deferredCalcMode === 'daysPerMonth') {
-                    // N days per month, use daily rate
-                    // Backend expects hours_x_day, but for daily rate it's not used
-                    // We need to adjust the calculation: rate * N days * 11 months
-                    // Since backend does: rate * 23.3 * 11
-                    // We can adjust the rate: (N / 23.3) * rate
                     rateToUse = (deferredCalcDaysPerMonth / 23.3) * deferredCalcRate;
                     rateTypeToUse = 'Daily';
                 }
@@ -74,7 +69,7 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
                 console.error('Error calculating salary:', error);
             }
         };
-        const debounce = setTimeout(calculate, 500); // 500ms debounce to avoid spamming while typing
+        const debounce = setTimeout(calculate, 500);
         return () => clearTimeout(debounce);
     }, [deferredCalcRate, deferredCalcRateType, deferredCalcFreelanceRate, deferredCalcMode, deferredCalcHoursPerWeek, deferredCalcDaysPerMonth]);
 
@@ -91,112 +86,25 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
                         ✖</button>
                 )}
             </div>
-            <div className="salary-calculator-controls general-filters salary-calculator-controls-override">
-                <div className="compact-filter">
-                    Mode:
-                    <select
-                        className="compact-select"
-                        value={calcMode}
-                        onChange={(e) => setCalcMode(e.target.value as CalcMode)}>
-                        <option value="classic">Classic</option>
-                        <option value="hoursPerWeek">Hours/Week</option>
-                        <option value="daysPerMonth">Days/Month</option>
-                    </select>
-                </div>
-
-                {calcMode === 'classic' && (
-                    <>
-                        <div className="compact-filter">
-                            Rate:
-                            <input
-                                className="compact-input salary-rate-input"
-                                type="number"
-                                value={calcRate}
-                                onChange={(e) => setCalcRate(Number(e.target.value))}/>
-                        </div>
-                        <div className="compact-filter">
-                            Type:
-                            <select
-                                className="compact-select"
-                                value={calcRateType}
-                                onChange={(e) => setCalcRateType(e.target.value as 'Hourly' | 'Daily')}>
-                                <option value="Hourly">Hourly</option>
-                                <option value="Daily">Daily</option>
-                            </select>
-                        </div>
-                    </>
-                )}
-                {calcMode === 'hoursPerWeek' && (
-                    <>
-                        <div className="compact-filter">
-                            Hourly Rate:
-                            <input
-                                className="compact-input salary-rate-input"
-                                type="number"
-                                value={calcRate}
-                                onChange={(e) => setCalcRate(Number(e.target.value))}
-                            />
-                        </div>
-                        <div className="compact-filter">
-                            Hours/Week:
-                            <input
-                                className="compact-input salary-rate-input"
-                                type="number"
-                                value={calcHoursPerWeek}
-                                onChange={(e) => setCalcHoursPerWeek(Number(e.target.value))}
-                            />
-                        </div>
-                    </>
-                )}
-                {calcMode === 'daysPerMonth' && (
-                    <>
-                        <div className="compact-filter">
-                            Daily Rate:
-                            <input
-                                className="compact-input salary-rate-input"
-                                type="number"
-                                value={calcRate}
-                                onChange={(e) => setCalcRate(Number(e.target.value))}/>
-                        </div>
-                        <div className="compact-filter">
-                            Days/Month:
-                            <input
-                                className="compact-input salary-rate-input"
-                                type="number"
-                                value={calcDaysPerMonth}
-                                onChange={(e) => setCalcDaysPerMonth(Number(e.target.value))}/>
-                        </div>
-                    </>
-                )}
-
-                <div className="compact-filter">
-                    Month Rate (Freelance):
-                    <select
-                        className="compact-select"
-                        value={calcFreelanceRate}
-                        onChange={(e) => setCalcFreelanceRate(Number(e.target.value))}>
-                        <option value="80">80</option>
-                        <option value="300">300</option>
-                    </select>
-                </div>
-            </div>
-            {calcResult && (
-                <div className="salary-calculator-results">
-                    <div>Gr/ year: <span className="salary-value">{calcResult.gross_year}</span> <span className="salary-equation">({calcResult.parsed_equation})</span></div>
-                    <div>Tax year: <span className="salary-value">{calcResult.year_tax}</span> <span className="salary-equation">({calcResult.year_tax_equation})</span></div>
-                    <div>Net year: <span className="salary-value">{calcResult.net_year}</span> <span className="salary-equation">({calcResult.gross_year} - {calcResult.year_tax} - {calcResult.freelance_tax})</span></div>
-                    <div>Net month: <span className="salary-value">{calcResult.net_month}</span></div>
-                    {job && onUpdate && (
-                        <button 
-                            onClick={handleSave}
-                            className="config-btn salary-toggle-btn"
-                            style={{ marginTop: '10px' }}
-                            title="Save calculation to job comments">
-                            💾 Save to Comments
-                        </button>
-                    )}
-                </div>
-            )}
+            <SalaryCalculatorControls
+                calcMode={calcMode}
+                setCalcMode={setCalcMode}
+                calcRate={calcRate}
+                setCalcRate={setCalcRate}
+                calcRateType={calcRateType}
+                setCalcRateType={setCalcRateType}
+                calcFreelanceRate={calcFreelanceRate}
+                setCalcFreelanceRate={setCalcFreelanceRate}
+                calcHoursPerWeek={calcHoursPerWeek}
+                setCalcHoursPerWeek={setCalcHoursPerWeek}
+                calcDaysPerMonth={calcDaysPerMonth}
+                setCalcDaysPerMonth={setCalcDaysPerMonth}
+            />
+            <SalaryCalculatorResults
+                calcResult={calcResult}
+                showSaveButton={!!(job && onUpdate)}
+                onSave={handleSave}
+            />
         </div>
     );
 }
