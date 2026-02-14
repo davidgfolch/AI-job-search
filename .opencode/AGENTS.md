@@ -38,9 +38,11 @@ poetry run pytest path/to/specific_test.py
 # All tests with coverage
 ./scripts/test.sh --coverage
 
-# Specific app tests
+# Specific app tests (single or multiple)
 ./scripts/test.sh web
 ./scripts/test.sh backend
+./scripts/test.sh commonlib web
+./scripts/test.sh commonlib web e2e
 ./scripts/test.sh --coverage backend  # with coverage
 
 # E2E tests only

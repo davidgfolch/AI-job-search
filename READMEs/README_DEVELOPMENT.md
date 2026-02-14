@@ -16,6 +16,11 @@ Run all tests across the monorepo:
 - **Linux**: `./scripts/test.sh` (Optional: `--coverage`)
 - **Windows**: `.\scripts\test.bat` (Optional: `--coverage`)
 
+Run specific app tests (single or multiple):
+
+- **Linux**: `./scripts/test.sh commonlib` or `./scripts/test.sh commonlib web e2e`
+- **Windows**: `.\scripts\test.bat commonlib` or `.\scripts\test.bat commonlib web e2e`
+
 ## Agent Skills
 
 The agent has access to specialized skills located in `.agent/skills`.
