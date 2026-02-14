@@ -31,7 +31,7 @@ interface FilterConfigurationsProps {
 
 const ADDITIONAL_DEFAULTS = [CLEAN_OLD_JOBS_CONFIG];
 
-export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters, onConfigsLoaded }: FilterConfigurationsProps) {
+export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters}: FilterConfigurationsProps) {
     const {
         configName,
         isOpen,
@@ -65,31 +65,8 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         additionalDefaults: ADDITIONAL_DEFAULTS 
     });
 
-<<<<<<< Updated upstream
     const pinnedConfigs = savedConfigs.filter(c => c.pinned);
 
-=======
-    const hasLoadedInitialConfigs = useRef(false);
-    const pinnedConfigs = savedConfigs.filter(c => c.pinned);
-
-    const selectFirstPinnedConfigOnLoad = useCallback(() => {
-        if (!hasLoadedInitialConfigs.current && !isLoading && savedConfigs.length > 0 && !savedConfigName && pinnedConfigs.length > 0) {
-            hasLoadedInitialConfigs.current = true;
-            loadConfiguration(pinnedConfigs[0]);
-        }
-    }, [isLoading, savedConfigs, savedConfigName, pinnedConfigs, loadConfiguration]);
-
-    useEffect(() => {
-        selectFirstPinnedConfigOnLoad();
-    }, [selectFirstPinnedConfigOnLoad]);
-
-    useEffect(() => {
-        if (!isLoading && onConfigsLoaded) {
-            onConfigsLoaded(savedConfigs.length);
-        }
-    }, [isLoading, savedConfigs.length, onConfigsLoaded]);
-
->>>>>>> Staged changes
     return (
         <div className="filter-configurations-wrapper">
             <ConfirmModal
