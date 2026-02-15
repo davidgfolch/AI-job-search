@@ -34,7 +34,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
     return (
         <>
             <div className="boolean-filters">
-            <div className="boolean-filters-header">
+                <div className="boolean-filters-header">
                     <FilterConfigurations
                         currentFilters={filters}
                         onLoadConfig={(loadedFilters, name) => {

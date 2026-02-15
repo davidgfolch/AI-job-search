@@ -113,6 +113,8 @@ export const useViewer = () => {
                 } else {
                     newSelected.add(id);
                     setSelectionMode('manual');
+                    const job = allJobs.find(j => j.id === id);
+                    if (job) setSelectedJob(job);
                 }
                 setSelectedIds(newSelected);
             },

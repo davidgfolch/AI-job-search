@@ -5,6 +5,7 @@ import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import { PinnedConfigurations } from './configurations/PinnedConfigurations';
 import ConfirmModal from '../../common/components/core/ConfirmModal';
+import { useEffect } from 'react';
 
 const CLEAN_OLD_JOBS_CONFIG = {
     "name": "Clean - Delete old jobs",
@@ -31,7 +32,7 @@ interface FilterConfigurationsProps {
 
 const ADDITIONAL_DEFAULTS = [CLEAN_OLD_JOBS_CONFIG];
 
-export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters}: FilterConfigurationsProps) {
+export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters, onConfigsLoaded}: FilterConfigurationsProps) {
     const {
         configName,
         isOpen,
@@ -66,6 +67,10 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
     });
 
     const pinnedConfigs = savedConfigs.filter(c => c.pinned);
+
+    useEffect(() => {
+        onConfigsLoaded?.(pinnedConfigs.length);
+    }, [pinnedConfigs.length, onConfigsLoaded]);
 
     return (
         <div className="filter-configurations-wrapper">

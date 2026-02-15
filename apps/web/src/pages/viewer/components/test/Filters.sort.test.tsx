@@ -74,7 +74,7 @@ describe('Filters - Sort', () => {
                 ? { ...mockFilters, order: initialOrder }
                 : mockFilters;
                 
-            await renderAndWait(<Filters filters={filters} onFiltersChange={onFiltersChangeMock} />);
+            await renderAndWait(<Filters filters={filters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             
             if (changeType === 'field') {
                 const sortFieldSelect = screen.getByLabelText('Sort Field');

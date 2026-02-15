@@ -19,7 +19,7 @@ export default function Viewer() {
     const { comment: defaultComment } = useDefaultComment();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
     const jobListRef = useRef<HTMLDivElement>(null);
-    const [configCount, setConfigCount] = useState<number>(0);
+    const [configCount, setConfigCount] = useState<number>();
 
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 

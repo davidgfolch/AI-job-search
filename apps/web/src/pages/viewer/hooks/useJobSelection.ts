@@ -68,10 +68,13 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
                 const indexToSelect = Math.min(prevIdx, allJobs.length - 1);
                 isAutoSelecting.current = true;
                 lastManualSelectionTime.current = Date.now();
-                setSelectedJob(allJobs[indexToSelect]);
+                const jobToSelect = allJobs[indexToSelect];
+                setSelectedJob(jobToSelect);
+                setSelectedIds(new Set([jobToSelect.id]));
             } else {
                 // No jobs left in list
                 setSelectedJob(null);
+                setSelectedIds(new Set());
             }
         }
         // Reset the flag
@@ -114,6 +117,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
                 const job = allJobs.find(j => j.id === jobId);
                 if (job && selectedJob?.id !== job.id) {
                     setSelectedJob(job);
+                    setSelectedIds(new Set([jobId]));
                 }
                 // Remove jobId from URL after processing to prevent sticking
                 setSearchParams(prev => {

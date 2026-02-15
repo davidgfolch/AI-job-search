@@ -43,6 +43,31 @@ describe('useJobSelection - navigation', () => {
         });
 
         expect(result.current.selectedJob).toEqual(jobs[1]);
+        expect(result.current.selectedIds).toEqual(new Set([2]));
+    });
+
+    it('navigates to next job and syncs selectedIds (checkbox state)', () => {
+        const jobs = [
+            { id: 10, title: 'Job A' },
+            { id: 20, title: 'Job B' },
+            { id: 30, title: 'Job C' }
+        ] as any[];
+        const props = { ...defaultProps, allJobs: jobs };
+        
+        const { result } = renderHook(() => useJobSelection(props), { 
+            wrapper: createWrapper() 
+        });
+
+        act(() => {
+            result.current.handleJobSelect(jobs[0]);
+        });
+
+        act(() => {
+            result.current.navigateJob('next');
+        });
+
+        expect(result.current.selectedJob).toEqual(jobs[1]);
+        expect(result.current.selectedIds).toEqual(new Set([20]));
     });
 
     it('navigates to previous job', () => {

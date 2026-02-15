@@ -42,6 +42,18 @@ describe('Filters', () => {
     it('renders with default collapsed state', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
         expect(screen.getByText(/Filters/)).toBeInTheDocument();
+        // Should not be expanded by default (configCount undefined)
+        expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
+    });
+
+    it('expands when configCount is 0', async () => {
+        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+    });
+
+    it('collapses when configCount is greater than 0', async () => {
+        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={5} />);
+        expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
     });
 
     it('renders FilterConfigurations component', async () => {
@@ -52,11 +64,16 @@ describe('Filters', () => {
     it('expands and collapses when toggle button is clicked', async () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
         const toggleButton = screen.getByText(/Filters/);
+        // Default is collapsed
+        expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
+        
+        // Click to expand
+        fireEvent.click(toggleButton);
         expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        
+        // Click to collapse
         fireEvent.click(toggleButton);
         expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
-        fireEvent.click(toggleButton);
-        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
     });
 
     it('shows active indicator when filters are set', async () => {
@@ -102,7 +119,8 @@ describe('Filters', () => {
         }
     ])('handles $name', ({ selector, label, placeholder, value, expectedKey, expectedValue, includePage }) => {
         it(`should update ${expectedKey} filter correctly`, async () => {
-            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
+             // Pass configCount={0} to force expand so inputs are visible
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             
             const input = selector 
                 ? screen.getByPlaceholderText(selector)

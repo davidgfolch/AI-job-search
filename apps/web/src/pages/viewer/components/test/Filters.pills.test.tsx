@@ -40,7 +40,7 @@ describe('Filters - Pills', () => {
     };
 
     it('renders all boolean filter pills in Include section', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
+        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
         const includeSection = screen.getAllByText(/Include:/)[0].closest('.pills-section');
         expect(includeSection).toBeInTheDocument();
         expect(screen.getAllByText('Flagged').length).toBeGreaterThan(0);
@@ -49,7 +49,7 @@ describe('Filters - Pills', () => {
     });
 
     it('renders all boolean filter pills in Exclude section', async () => {
-        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
+        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
         const excludeSection = screen.getAllByText(/Exclude:/)[0].closest('.pills-section');
         expect(excludeSection).toBeInTheDocument();
     });
@@ -58,7 +58,7 @@ describe('Filters - Pills', () => {
         const filterKey = pillName.toLowerCase() === 'Like' ? 'liked' : pillName.toLowerCase();
         
         it(`toggles ${pillName} include pill correctly`, async () => {
-            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             const pills = screen.getAllByText(pillName);
             const includePill = pills[0];
             fireEvent.click(includePill);
@@ -66,7 +66,7 @@ describe('Filters - Pills', () => {
         });
 
         it(`toggles ${pillName} exclude pill correctly`, async () => {
-            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} />);
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             const pills = screen.getAllByText(pillName);
             const excludePill = pills[1];
             fireEvent.click(excludePill);
@@ -78,7 +78,7 @@ describe('Filters - Pills', () => {
                 ...mockFilters,
                 [filterKey]: true,
             };
-            await renderAndWait(<Filters filters={filtersWithInclude} onFiltersChange={onFiltersChangeMock} />);
+            await renderAndWait(<Filters filters={filtersWithInclude} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             const includePill = screen.getAllByText(pillName)[0];
             expect(includePill).toHaveClass('active-true');
         });
@@ -88,7 +88,7 @@ describe('Filters - Pills', () => {
                 ...mockFilters,
                 [filterKey]: false,
             };
-            await renderAndWait(<Filters filters={filtersWithExclude} onFiltersChange={onFiltersChangeMock} />);
+            await renderAndWait(<Filters filters={filtersWithExclude} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             const excludePill = screen.getAllByText(pillName)[1];
             expect(excludePill).toHaveClass('active-false');
         });
@@ -98,7 +98,7 @@ describe('Filters - Pills', () => {
                 ...mockFilters,
                 [filterKey]: true,
             };
-            await renderAndWait(<Filters filters={filtersWithActive} onFiltersChange={onFiltersChangeMock} />);
+            await renderAndWait(<Filters filters={filtersWithActive} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             const includePill = screen.getAllByText(pillName)[0];
             fireEvent.click(includePill);
             expect(onFiltersChangeMock).toHaveBeenCalledWith({ [filterKey]: undefined });

@@ -65,6 +65,23 @@ describe('useViewer', () => {
         expect(mockJobSelection.setSelectedIds.mock.calls[0][0].has(2)).toBe(true);
     });
 
+    it('should sync selectedJob when toggling checkbox (toggleSelectJob)', () => {
+        const jobs = [
+            { id: 1, title: 'Job A' },
+            { id: 2, title: 'Job B' },
+        ] as any[];
+        
+        (useJobsData as any).mockReturnValue({
+            ...mockJobsData,
+            allJobs: jobs,
+        });
+        
+        const { result } = renderHook(() => useViewer());
+        act(() => { result.current.actions.toggleSelectJob(2); });
+        
+        expect(mockJobSelection.setSelectedJob).toHaveBeenCalledWith(jobs[1]);
+    });
+
     it('should handle onJobsDeleted("all") correctly', () => {
         renderHook(() => useViewer());
         const useJobMutationsMock = useJobMutations as any;
