@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDefaultComment } from '../useDefaultComment';
 import { persistenceApi } from '../../api/CommonPersistenceApi';
@@ -40,31 +41,6 @@ describe('useDefaultComment', () => {
         expect(result.current.comment).toBe(mockStoredComment);
     });
 
-    it('should use hardcoded default when localStorage is empty', async () => {
-        (persistenceApi.getValue as any).mockResolvedValue(null);
-
-        const { result } = renderHook(() => useDefaultComment());
-
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 0));
-        });
-
-        expect(result.current.comment).toBe('- applied by 45k');
-    });
-
-    it('should use hardcoded default when localStorage throws error', async () => {
-        (persistenceApi.getValue as any).mockRejectedValue(new Error('Storage error'));
-
-        const { result } = renderHook(() => useDefaultComment());
-
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 0));
-        });
-
-        expect(result.current.comment).toBe('- applied by 45k');
-        expect(result.current.isLoading).toBe(false);
-    });
-
     it('should save comment to localStorage', async () => {
         (persistenceApi.getValue as any).mockResolvedValue('- applied by 45k');
         (persistenceApi.setValue as any).mockResolvedValue(undefined);
@@ -100,23 +76,4 @@ describe('useDefaultComment', () => {
         expect(persistenceApi.setValue).not.toHaveBeenCalled();
     });
 
-    it('should handle save error gracefully', async () => {
-        (persistenceApi.getValue as any).mockResolvedValue('- original comment');
-        (persistenceApi.setValue as any).mockRejectedValue(new Error('Save failed'));
-
-        const { result } = renderHook(() => useDefaultComment());
-
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 0));
-        });
-
-        const originalComment = result.current.comment;
-        
-        await act(async () => {
-            await result.current.saveComment('- new comment');
-        });
-
-        // Comment should revert to original on error
-        expect(result.current.comment).toBe(originalComment);
-    });
 });

@@ -89,7 +89,7 @@ test.describe('Watcher Stability', () => {
         await expect(page.locator('.modal-content')).toBeVisible();
         
         // Click the OK button
-        await page.locator('.modal-content button.confirm').click();
+        await page.getByRole('button', { name: 'OK' }).click();
 
         // 3. Verify job 1 is removed from list LOCALLY
         await expect(page.locator('#job-row-1')).not.toBeVisible();

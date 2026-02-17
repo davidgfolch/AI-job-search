@@ -30,7 +30,7 @@ export const useViewer = () => {
     const {
         message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation, bulkUpdateMutation
     } = useJobMutations({
-        filters, selectedJob, setSelectedJob, activeTab, autoSelectNext,
+        filters, allJobs, selectedJob, setSelectedJob, activeTab, autoSelectNext,
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
         onJobUpdated: (updatedJob) => {
             setAllJobs(jobs => {

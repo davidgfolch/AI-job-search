@@ -8,15 +8,16 @@ import { useBulkJobMutations } from "./useBulkJobMutations";
 export type TabType = "list" | "edit" | "create";
 export const getDeleteOldJobsMsg = (count: number) => `Going to delete ${count} older jobs (see sql filter)`;
 
-
 interface UseJobMutationsProps {
   filters: JobListParams;
+  allJobs: Job[];
   selectedJob: Job | null;
   setSelectedJob: React.Dispatch<React.SetStateAction<Job | null>>;
   activeTab: TabType;
   autoSelectNext: React.RefObject<{
     shouldSelect: boolean;
     previousJobId: number | null;
+    previousJobIndex?: number;
   }>;
   selectedIds: Set<number>;
   setSelectedIds: React.Dispatch<React.SetStateAction<Set<number>>>;
@@ -31,6 +32,7 @@ interface UseJobMutationsProps {
 
 export const useJobMutations = ({
   filters,
+  allJobs,
   selectedJob,
   setSelectedJob,
   activeTab,
@@ -84,9 +86,11 @@ export const useJobMutations = ({
         // Check if any state field is being updated
         const hasStateChange = STATE_FIELDS.some((field) => field in data);
         if (hasStateChange && activeTab === "list") {
+          const index = allJobs.findIndex(j => j.id === selectedJob.id);
           autoSelectNext.current = {
             shouldSelect: true,
             previousJobId: selectedJob.id,
+            previousJobIndex: index !== -1 ? index : undefined
           };
         }
         updateMutation.mutate({ id: selectedJob.id, data });
@@ -140,9 +144,11 @@ export const useJobMutations = ({
     const msg = `Are you sure you want to delete "${selectedJob.title || 'this job'}"?`;
     confirmModal.confirm(msg, () => {
       if (activeTab === "list") {
+        const index = allJobs.findIndex(j => j.id === selectedJob.id);
         autoSelectNext.current = {
           shouldSelect: true,
           previousJobId: selectedJob.id,
+          previousJobIndex: index !== -1 ? index : undefined
         };
       }
       bulkDeleteMutation.mutate({

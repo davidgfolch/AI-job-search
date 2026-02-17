@@ -17,7 +17,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
     const [selectedIdxs, setSelectedIdxs] = useState<Set<number>>(new Set());
     const [selectionMode, setSelectionMode] = useState<'none' | 'manual' | 'all'>('none');
     // Track when we need to auto-select next job after state change
-    const autoSelectNext = useRef<{ shouldSelect: boolean; previousJobId: number | null }>({
+    const autoSelectNext = useRef<{ shouldSelect: boolean; previousJobId: number | null; previousJobIndex?: number }>({
         shouldSelect: false,
         previousJobId: null,
     });
@@ -60,12 +60,18 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
         }
         // Find the previous job in the new data
         const prevJobIdx = allJobs.findIndex(j => j.id === autoSelectNext.current.previousJobId);
+
         if (prevJobIdx === -1) {
             // Job was filtered out, select next available job
             if (allJobs.length > 0) {
                 // Try to select the job at the same index, or the last job if we're past the end
-                const prevIdx: number = selectedIdxs?.values().next().value || 0;
-                const indexToSelect = Math.min(prevIdx, allJobs.length - 1);
+                // Use stored index if available, fallback to selectedIdxs lookup
+                let prevIdx = autoSelectNext.current.previousJobIndex;
+                if (prevIdx === undefined) {
+                    prevIdx = selectedIdxs?.values().next().value || 0;
+                }
+                
+                const indexToSelect = Math.min(Math.max(0, prevIdx - 1), allJobs.length - 1);
                 isAutoSelecting.current = true;
                 lastManualSelectionTime.current = Date.now();
                 const jobToSelect = allJobs[indexToSelect];
@@ -78,7 +84,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
             }
         }
         // Reset the flag
-        autoSelectNext.current = { shouldSelect: false, previousJobId: null };
+        autoSelectNext.current = { shouldSelect: false, previousJobId: null, previousJobIndex: undefined };
     }, [allJobs, handleJobSelect, selectedIdxs]);
 
     useEffect(() => { // Handle jobId parameter separately

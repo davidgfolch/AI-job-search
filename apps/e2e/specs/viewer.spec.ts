@@ -91,17 +91,29 @@ test.describe('Viewer E2E', () => {
     test('should filter jobs', async ({ page }) => {
         await page.goto('http://127.0.0.1:5173');
 
-        // Ensure filters are expanded
-        const searchInput = page.locator('#filter-search');
-        if (!await searchInput.isVisible()) {
-            await page.locator('#toggle-filters').click();
+        // Wait for the page to be fully loaded
+        await page.waitForLoadState('domcontentloaded');
+        
+        // Wait for filter configurations to load (this determines initial expanded state)
+        await page.waitForResponse(resp => resp.url().includes('api/filter-configurations') && resp.status() === 200);
+        
+        // Check if filters are already expanded
+        const filterContent = page.locator('.filters-content');
+        const isExpanded = await filterContent.count() > 0;
+        
+        // Only click toggle if filters are not expanded
+        if (!isExpanded) {
+            await page.locator('#toggle-filters').click({ force: true });
         }
+        
+        // Wait for search input to be visible
+        await page.locator('#filter-search').waitFor({ state: 'visible', timeout: 10000 });
 
         // Fill search and wait for the response
         const responsePromise = page.waitForResponse(resp => 
             resp.url().includes('search=Backend') && resp.status() === 200
         );
-        await searchInput.fill('Backend');
+        await page.locator('#filter-search').fill('Backend');
         await responsePromise;
 
         // Wait for the list to update
