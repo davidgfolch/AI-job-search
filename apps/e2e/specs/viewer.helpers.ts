@@ -90,6 +90,7 @@ export async function toggleFiltersIfNeeded(page: Page) {
     const isExpanded = await filterContent.count() > 0;
     if (!isExpanded) {
         await page.locator('#toggle-filters').click({ force: true });
+        await filterContent.waitFor({ state: 'visible', timeout: 10000 });
     }
     await page.locator('#filter-search').waitFor({ state: 'visible', timeout: 10000 });
 }
