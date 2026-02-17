@@ -1,113 +1,41 @@
 import { test, expect } from '@playwright/test';
-import { MOCK_JOB_1, MOCK_JOB_2, MOCK_JOBS_LIST } from './viewer.mocks';
+import { 
+    BASE_URL,
+    setupPageLogging,
+    setupFilterConfigurationMock,
+    setupTimezoneMock,
+    setupJobsMocks,
+    setupWatcherStatsMock,
+    markJobAsApplied,
+    verifyNoRefresh
+} from './watcher_refresh.helpers';
 
 test.describe('Watcher Stability', () => {
     test('should NOT refresh list with new watcher items when changing job state', async ({ page }) => {
-        // Log console messages from the browser
-        page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-        
-        let statsRequestCount = 0;
-        let listRequestCount = 0;
-
-        // Mock filter configurations
-        await page.route(/.*\/api\/filter-configurations.*/, async (route) => {
-            await route.fulfill({
-                contentType: 'application/json',
-                json: [
-                    {
-                        id: 101,
-                        name: "Backend Filter",
-                        filters: { search: "Backend" },
-                        pinned: true,
-                        statistics: true
-                    }
-                ]
-            });
-        });
-
-        // Mock system timezone
-        await page.route(/.*\/api\/system\/timezone.*/, async (route) => {
-            await route.fulfill({ json: { offset_minutes: 0 } });
-        });
-
-        // Default handler for jobs list
-        await page.route(/.*\/api\/jobs(\?|$)/, async (route) => {
-            listRequestCount++;
-            await route.fulfill({ json: MOCK_JOBS_LIST });
-        });
-
-        // Mock single job request
-        await page.route(/.*\/api\/jobs\/1$/, async (route) => {
-            if (route.request().method() === 'PATCH') {
-                await route.fulfill({ json: { ...MOCK_JOB_1, applied: true } });
-            } else {
-                await route.fulfill({ json: MOCK_JOB_1 });
-            }
-        });
-        
-        await page.route(/.*\/api\/jobs\/2$/, async (route) => {
-            await route.fulfill({ json: MOCK_JOB_2 });
-        });
-
-        // Mock watcher stats
-        await page.route(/.*\/api\/jobs\/watcher-stats.*/, async (route) => {
-            statsRequestCount++;
-            // Return 2 new items for the filter
-            await route.fulfill({
-                json: {
-                    "101": { total: 10, new_items: 2 }
-                }
-            });
-        });
-
-        await page.goto('http://127.0.0.1:5173');
-
+        const counters = { statsRequestCount: 0, listRequestCount: 0 };
+        setupPageLogging(page);
+        await setupFilterConfigurationMock(page);
+        await setupTimezoneMock(page);
+        await setupJobsMocks(page, counters);
+        await setupWatcherStatsMock(page, counters);
+        await page.goto(BASE_URL);
         // Verify initial list
         await expect(page.locator('#job-row-1')).toBeVisible();
         await expect(page.locator('#job-row-2')).toBeVisible();
-
-        // Wait for watcher badge to appear
-        const badge = page.locator('.watcher-badge-inline', { hasText: '+2' });
-        await expect(badge).toBeVisible();
-        expect(statsRequestCount).toBeGreaterThan(0);
-        
-        // Save initial list call count
-        const initialListCalls = listRequestCount;
-        const initialStatsCalls = statsRequestCount;
-
-        // 1. Select the first job
+        await expect(page.locator('.watcher-badge-inline', { hasText: '+2' })).toBeVisible();
+        expect(counters.statsRequestCount).toBeGreaterThan(0);
+        const initialCounts = { 
+            list: counters.listRequestCount, 
+            stats: counters.statsRequestCount 
+        };
         await page.locator('#job-row-1').click();
-        
-        // Verify job 1 is selected
         await expect(page.locator('#job-detail-title')).toContainText('Frontend Engineer');
-        
-        // 2. Click "Mark as applied"
-        // This will remove it from the list because of the default filters (applied: false)
-        await page.getByTitle('Mark as applied').click();
-        
-        // Wait for modal to be visible and confirm by clicking OK
-        await expect(page.locator('.modal-content')).toBeVisible();
-        
-        // Click the OK button
-        await page.getByRole('button', { name: 'OK' }).click();
-
-        // 3. Verify job 1 is removed from list LOCALLY
+        await markJobAsApplied(page);
         await expect(page.locator('#job-row-1')).not.toBeVisible();
         await expect(page.locator('#job-row-2')).toBeVisible();
-
-        // 4. Selection change - NOTE: This is a known application bug where auto-select doesn't work properly
-        // Skipping this assertion for now as it requires fixing the application code
-
-        // 5. CRITICAL: Verify NO new list requests or stats requests were triggered
-        // A short wait might be needed to ensure no async triggers happen
-        await page.waitForTimeout(1000);
-        
-        expect(listRequestCount, 'Should NOT have refetched the jobs list').toBe(initialListCalls);
-        expect(statsRequestCount, 'Should NOT have re-polled watcher stats').toBe(initialStatsCalls);
-
-        // 6. Verify table still only shows Job 2, and DOES NOT show the "new jobs" (+2) found by the watcher
-        // The watcher found 2 new jobs, but they should only load if we click the configuration.
-        // If they had loaded, the total count would have changed or new rows appeared.
+        await verifyNoRefresh(counters, initialCounts, page);
+        expect(counters.listRequestCount, 'Should NOT have refetched the jobs list').toBe(initialCounts.list);
+        expect(counters.statsRequestCount, 'Should NOT have re-polled watcher stats').toBe(initialCounts.stats);
         await expect(page.locator('tr[id^="job-row-"]')).toHaveCount(1);
     });
 });
