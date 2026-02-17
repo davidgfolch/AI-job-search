@@ -2,7 +2,7 @@ import { useState, useEffect, useDeferredValue } from 'react';
 import { salaryApi } from '../../api/ViewerSalaryApi';
 import type { SalaryCalculationResponse } from '../../api/salary';
 import type { Job } from '../../api/jobs';
-import { formatCalculationForComments, removePreviousSalaryCalculation } from './salaryFormatters';
+import { updateCommentsWithSalaryCalc, type CalcMode, type SalaryCalculatorParams } from './salaryFormatters';
 import { SalaryCalculatorControls } from './SalaryCalculatorControls';
 import { SalaryCalculatorResults } from './SalaryCalculatorResults';
 import '../Filters.css';
@@ -12,18 +12,34 @@ interface SalaryCalculatorProps {
     onClose?: () => void;
     job?: Job;
     onUpdate?: (data: Partial<Job>) => void;
+    initialParams?: SalaryCalculatorParams | null;
+    allSavedParams?: SalaryCalculatorParams[];
 }
 
-type CalcMode = 'classic' | 'hoursPerWeek' | 'daysPerMonth';
+const formatSavedLabel = (params: SalaryCalculatorParams): string => {
+    const rate = params.calcRateType === 'Hourly' ? `${params.calcRate}€/h` : `${params.calcRate}€/d`;
+    return `${params.calcMode} · ${rate}`;
+};
 
-export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalculatorProps) {
-    const [calcMode, setCalcMode] = useState<CalcMode>('classic');
-    const [calcRate, setCalcRate] = useState(40);
-    const [calcRateType, setCalcRateType] = useState<'Hourly' | 'Daily'>('Hourly');
-    const [calcFreelanceRate, setCalcFreelanceRate] = useState(80);
-    const [calcHoursPerWeek, setCalcHoursPerWeek] = useState(40);
-    const [calcDaysPerMonth, setCalcDaysPerMonth] = useState(20);
+export default function SalaryCalculator({ onClose, job, onUpdate, initialParams, allSavedParams = [] }: SalaryCalculatorProps) {
+    const [calcMode, setCalcMode] = useState<CalcMode>(initialParams?.calcMode ?? 'classic');
+    const [calcRate, setCalcRate] = useState(initialParams?.calcRate ?? 40);
+    const [calcRateType, setCalcRateType] = useState<'Hourly' | 'Daily'>(initialParams?.calcRateType ?? 'Hourly');
+    const [calcFreelanceRate, setCalcFreelanceRate] = useState(initialParams?.calcFreelanceRate ?? 80);
+    const [calcHoursPerWeek, setCalcHoursPerWeek] = useState(initialParams?.calcHoursPerWeek ?? 40);
+    const [calcDaysPerMonth, setCalcDaysPerMonth] = useState(initialParams?.calcDaysPerMonth ?? 20);
     const [calcResult, setCalcResult] = useState<SalaryCalculationResponse | null>(null);
+
+    const loadSavedParams = (index: number) => {
+        const params = allSavedParams[index];
+        if (!params) return;
+        setCalcMode(params.calcMode);
+        setCalcRate(params.calcRate);
+        setCalcRateType(params.calcRateType);
+        setCalcFreelanceRate(params.calcFreelanceRate);
+        setCalcHoursPerWeek(params.calcHoursPerWeek);
+        setCalcDaysPerMonth(params.calcDaysPerMonth);
+    };
 
     const deferredCalcRate = useDeferredValue(calcRate);
     const deferredCalcRateType = useDeferredValue(calcRateType);
@@ -33,14 +49,9 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
     const deferredCalcDaysPerMonth = useDeferredValue(calcDaysPerMonth);
 
     const handleSave = () => {
-        if (calcResult && job && onUpdate) {
-            const formattedCalculation = formatCalculationForComments({
-                result: calcResult,
-                calcMode, calcRate, calcRateType, calcFreelanceRate,
-                calcHoursPerWeek, calcDaysPerMonth
-            });
-            let updatedComments = removePreviousSalaryCalculation(job.comments || '');
-            updatedComments += formattedCalculation;
+        if (job && onUpdate) {
+            const newParams = { calcMode, calcRate, calcRateType, calcFreelanceRate, calcHoursPerWeek, calcDaysPerMonth };
+            const updatedComments = updateCommentsWithSalaryCalc(job.comments || '', newParams);
             onUpdate({ comments: updatedComments });
         }
     };
@@ -87,6 +98,19 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
                 )}
             </div>
             <SalaryCalculatorControls
+                savedSelector={allSavedParams.length > 1 ? (
+                    <div className="compact-filter">
+                        <select
+                            className="compact-select"
+                            defaultValue=""
+                            onChange={(e) => { loadSavedParams(Number(e.target.value)); e.target.value = ''; }}>
+                            <option value="" disabled>Saved...</option>
+                            {allSavedParams.map((p, i) => (
+                                <option key={i} value={i}>{formatSavedLabel(p)}</option>
+                            ))}
+                        </select>
+                    </div>
+                ) : undefined}
                 calcMode={calcMode}
                 setCalcMode={setCalcMode}
                 calcRate={calcRate}
@@ -99,12 +123,17 @@ export default function SalaryCalculator({ onClose, job, onUpdate }: SalaryCalcu
                 setCalcHoursPerWeek={setCalcHoursPerWeek}
                 calcDaysPerMonth={calcDaysPerMonth}
                 setCalcDaysPerMonth={setCalcDaysPerMonth}
-            />
-            <SalaryCalculatorResults
-                calcResult={calcResult}
-                showSaveButton={!!(job && onUpdate)}
-                onSave={handleSave}
-            />
+            >
+                {job && onUpdate && (
+                    <button 
+                        onClick={handleSave}
+                        className="config-btn salary-toggle-btn"
+                        title="Save calculation to job comments">
+                        💾 Save
+                    </button>
+                )}
+            </SalaryCalculatorControls>
+            <SalaryCalculatorResults calcResult={calcResult} />
         </div>
     );
 }

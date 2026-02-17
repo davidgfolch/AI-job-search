@@ -1,9 +1,6 @@
-import type { SalaryCalculationResponse } from '../api/salary';
+export type CalcMode = 'classic' | 'hoursPerWeek' | 'daysPerMonth';
 
-type CalcMode = 'classic' | 'hoursPerWeek' | 'daysPerMonth';
-
-interface FormatParams {
-    result: SalaryCalculationResponse;
+export interface SalaryCalculatorParams {
     calcMode: CalcMode;
     calcRate: number;
     calcRateType: 'Hourly' | 'Daily';
@@ -12,24 +9,64 @@ interface FormatParams {
     calcDaysPerMonth: number;
 }
 
-export const formatCalculationForComments = (params: FormatParams): string => {
-    const { result, calcMode, calcRate, calcRateType, calcFreelanceRate, calcHoursPerWeek, calcDaysPerMonth } = params;
-    const timestamp = new Date().toLocaleString();
-    let modeInfo = '';
-    if (calcMode === 'classic') {
-        modeInfo = `Mode: Classic | Rate: **${calcRate}** (${calcRateType})`;
-    } else if (calcMode === 'hoursPerWeek') {
-        modeInfo = `Mode: Hours/Week | Rate: **${calcRate}**/hr | Hours/Week: **${calcHoursPerWeek}**`;
-    } else {
-        modeInfo = `Mode: Days/Month | Rate: **${calcRate}**/day | Days/Month: **${calcDaysPerMonth}**`;
-    }
-    return `\n---\n**Salary Calculation** (${timestamp})\n${modeInfo} | Freelance: ${calcFreelanceRate}\n- Gross/year: ${result.gross_year} (${result.parsed_equation})\n- Tax/year: ${result.year_tax}\n- Net/year: ${result.net_year}\n- Net/month: **${result.net_month}**\n`;
+const SALARY_DATA_MARKER = '<!-- SALARY_CALC_DATA:';
+const SALARY_DATA_END = ' -->';
+
+const paramsEqual = (a: SalaryCalculatorParams, b: SalaryCalculatorParams): boolean => {
+    return a.calcMode === b.calcMode &&
+        a.calcRate === b.calcRate &&
+        a.calcRateType === b.calcRateType &&
+        a.calcFreelanceRate === b.calcFreelanceRate &&
+        a.calcHoursPerWeek === b.calcHoursPerWeek &&
+        a.calcDaysPerMonth === b.calcDaysPerMonth;
 };
 
-export const removePreviousSalaryCalculation = (comments: string): string => {
-    // Remove any existing salary calculation block
-    // Pattern: from "---" + newline + "**Salary Calculation**" through the final newline of the block
-    // The block ends with "- Net/month: XXXXX\n"
-    const salaryCalcRegex = /\n---\n\*\*Salary Calculation\*\*[^\n]*\n(?:.*\n)*?- Net\/month: [^\n]*\n/g;
-    return comments.replace(salaryCalcRegex, '');
+export const updateCommentsWithSalaryCalc = (comments: string, newParams: SalaryCalculatorParams): string => {
+    const newData = `${SALARY_DATA_MARKER}${JSON.stringify(newParams)}${SALARY_DATA_END}`;
+    // Find all existing salary calc data
+    const dataRegex = /<!-- SALARY_CALC_DATA:(.+?) -->/g;
+    const matches = [...comments.matchAll(dataRegex)];
+    if (matches.length === 0) {
+        // No existing data, just append
+        return comments + newData;
+    }
+    // Check if newParams already exists in any match
+    for (const match of matches) {
+        try {
+            const existingParams = JSON.parse(match[1]) as SalaryCalculatorParams;
+            if (paramsEqual(existingParams, newParams)) {
+                // Already exists, no change needed
+                return comments;
+            }
+        } catch {
+            // Skip invalid JSON
+        }
+    }
+    
+    // New params don't exist yet, insert after first occurrence
+    let inserted = false;
+    return comments.replace(dataRegex, (match) => {
+        if (!inserted) {
+            inserted = true;
+            return match + newData;
+        }
+        return match;
+    });
+};
+
+export const parseSalaryCalculationFromComments = (comments: string | null | undefined): SalaryCalculatorParams | null => {
+    const all = parseAllSalaryCalculationsFromComments(comments);
+    return all.length > 0 ? all[0] : null;
+};
+
+export const parseAllSalaryCalculationsFromComments = (comments: string | null | undefined): SalaryCalculatorParams[] => {
+    if (!comments) return [];
+    const dataRegex = /<!-- SALARY_CALC_DATA:(.+?) -->/g;
+    const results: SalaryCalculatorParams[] = [];
+    for (const match of comments.matchAll(dataRegex)) {
+        try {
+            results.push(JSON.parse(match[1]) as SalaryCalculatorParams);
+        } catch { /* skip invalid */ }
+    }
+    return results;
 };

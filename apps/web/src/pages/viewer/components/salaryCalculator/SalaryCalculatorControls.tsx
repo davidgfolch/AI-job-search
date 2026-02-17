@@ -13,6 +13,8 @@ interface SalaryCalculatorControlsProps {
     setCalcHoursPerWeek: (hours: number) => void;
     calcDaysPerMonth: number;
     setCalcDaysPerMonth: (days: number) => void;
+    savedSelector?: React.ReactNode;
+    children?: React.ReactNode;
 }
 
 function ModeSelector({ value, onChange }: { value: CalcMode; onChange: (v: CalcMode) => void }) {
@@ -62,10 +64,11 @@ function FreelanceSelector({ value, onChange }: { value: number; onChange: (v: n
 }
 
 export function SalaryCalculatorControls(props: SalaryCalculatorControlsProps) {
-    const { calcMode, setCalcMode, calcRate, setCalcRate, calcRateType, setCalcRateType, calcFreelanceRate, setCalcFreelanceRate, calcHoursPerWeek, setCalcHoursPerWeek, calcDaysPerMonth, setCalcDaysPerMonth } = props;
+    const { calcMode, setCalcMode, calcRate, setCalcRate, calcRateType, setCalcRateType, calcFreelanceRate, setCalcFreelanceRate, calcHoursPerWeek, setCalcHoursPerWeek, calcDaysPerMonth, setCalcDaysPerMonth, savedSelector, children } = props;
 
     return (
         <div className="salary-calculator-controls general-filters salary-calculator-controls-override">
+            {savedSelector}
             <ModeSelector value={calcMode} onChange={setCalcMode} />
 
             {calcMode === 'classic' && (
@@ -88,6 +91,7 @@ export function SalaryCalculatorControls(props: SalaryCalculatorControlsProps) {
             )}
 
             <FreelanceSelector value={calcFreelanceRate} onChange={setCalcFreelanceRate} />
+            {children}
         </div>
     );
 }

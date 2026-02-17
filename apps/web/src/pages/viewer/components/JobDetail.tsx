@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ReactMarkdownCustom from '../../common/components/core/ReactMarkdownCustom';
 import { jobsApi, type Job } from "../api/ViewerApi";
@@ -6,6 +6,7 @@ import './JobDetail.css';
 import './Filters.css';
 import './FilterConfigurations.css';
 import SalaryCalculator from './salaryCalculator/SalaryCalculator';
+import { parseSalaryCalculationFromComments, parseAllSalaryCalculationsFromComments } from './salaryCalculator/salaryFormatters';
 import CvMatchBar from '../../common/components/core/CvMatchBar';
 import { STATE_FIELDS } from '../constants';
 import JobDetailHeader from './job-detail/JobDetailHeader';
@@ -38,7 +39,14 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
     });
 
     const contentRef = useRef<HTMLDivElement>(null);
+    const savedCalcParams = useMemo(() => parseSalaryCalculationFromComments(job.comments), [job.comments]);
+    const allSavedCalcParams = useMemo(() => parseAllSalaryCalculationsFromComments(job.comments), [job.comments]);
     const [showCalculator, setShowCalculator] = useState(false);
+
+    // Auto-show calculator when switching to a job with saved calc params
+    useEffect(() => {
+        setShowCalculator(!!savedCalcParams);
+    }, [job.id, savedCalcParams]);
     
     const formatDateTime = (d: string | null) => {
         if (!d) return '-';
@@ -158,7 +166,7 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
                         </li>
                     )}
                 </ul>
-                {showCalculator && <SalaryCalculator onClose={() => setShowCalculator(false)} job={job} onUpdate={onUpdate} />}
+                {showCalculator && <SalaryCalculator key={job.id} onClose={() => setShowCalculator(false)} job={job} onUpdate={onUpdate} initialParams={savedCalcParams} allSavedParams={allSavedCalcParams} />}
                 {job.comments && (
                     <div className="job-comments">
                         <h3>Comments</h3>

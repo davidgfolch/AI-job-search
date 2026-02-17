@@ -1,85 +1,120 @@
 import { describe, it, expect } from 'vitest';
-import { formatCalculationForComments } from '../salaryFormatters';
+import { updateCommentsWithSalaryCalc, parseSalaryCalculationFromComments, parseAllSalaryCalculationsFromComments, type SalaryCalculatorParams } from '../salaryFormatters';
 
-describe('salaryFormatters', () => {
-    describe.each([
-        {
-            name: 'classic hourly calculation',
-            input: {
-                result: { gross_year: 10000, year_tax: 2000, net_year: 8000, net_month: 666, parsed_equation: 'eq' } as any,
-                calcMode: 'classic' as const,
-                calcRate: 100,
-                calcRateType: 'Hourly' as const,
-                calcFreelanceRate: 150,
-                calcHoursPerWeek: 40,
-                calcDaysPerMonth: 20
-            },
-            expectedContains: ['Salary Calculation', 'Gross/year: 10000', 'Net/year: 8000', 'Net/month: **666**', 'Tax/year: 2000']
-        },
-        {
-            name: 'classic salary calculation',
-            input: {
-                result: { gross_year: 50000, year_tax: 12500, net_year: 37500, net_month: 3125, parsed_equation: 'eq' } as any,
-                calcMode: 'classic' as const,
-                calcRate: 50000,
-                calcRateType: 'Yearly' as const,
-                calcFreelanceRate: 150,
-                calcHoursPerWeek: 40,
-                calcDaysPerMonth: 20
-            },
-            expectedContains: ['Salary Calculation', 'Gross/year: 50000', 'Net/year: 37500', 'Net/month: **3125**', 'Tax/year: 12500']
-        },
-        {
-            name: 'freelance calculation',
-            input: {
-                result: { gross_year: 312000, year_tax: 78000, net_year: 234000, net_month: 19500, parsed_equation: 'eq' } as any,
-                calcMode: 'freelance' as const,
-                calcRate: 150,
-                calcRateType: 'Hourly' as const,
-                calcFreelanceRate: 150,
-                calcHoursPerWeek: 40,
-                calcDaysPerMonth: 20
-            },
-            expectedContains: ['Salary Calculation', 'Gross/year: 312000', 'Net/year: 234000', 'Net/month: **19500**', 'Tax/year: 78000']
-        }
-    ])('$name', ({ input, expectedContains }) => {
-        it('formats calculation with all expected fields', () => {
-            const result = formatCalculationForComments(input);
-            
-            expectedContains.forEach(expectedText => {
-                expect(result).toContain(expectedText);
-            });
+const baseParams: SalaryCalculatorParams = {
+    calcMode: 'classic',
+    calcRate: 50,
+    calcRateType: 'Hourly',
+    calcFreelanceRate: 80,
+    calcHoursPerWeek: 40,
+    calcDaysPerMonth: 20,
+};
+
+describe('updateCommentsWithSalaryCalc', () => {
+    it('should append params to empty comments', () => {
+        const result = updateCommentsWithSalaryCalc('', baseParams);
+        expect(result).toContain('SALARY_CALC_DATA');
+        expect(result).toContain('"calcRate":50');
+    });
+
+    it('should append params to existing comments without salary data', () => {
+        const result = updateCommentsWithSalaryCalc('Some notes', baseParams);
+        expect(result).toContain('Some notes');
+        expect(result).toContain('SALARY_CALC_DATA');
+    });
+
+    it('should not duplicate when saving same params', () => {
+        const existingData = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+        const result = updateCommentsWithSalaryCalc(existingData, baseParams);
+        const matches = result.match(/SALARY_CALC_DATA/g);
+        expect(matches).toHaveLength(1);
+    });
+
+    it('should append different params after first one', () => {
+        const existingData = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+        const newParams = { ...baseParams, calcRate: 100 };
+        const result = updateCommentsWithSalaryCalc(existingData, newParams);
+        const matches = result.match(/SALARY_CALC_DATA/g);
+        expect(matches).toHaveLength(2);
+        expect(result).toContain('"calcRate":50');
+        expect(result).toContain('"calcRate":100');
+    });
+
+    it('should not add duplicate when params already exist among multiple', () => {
+        const existingData = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} --><!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":100,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+        const newParams = { ...baseParams, calcRate: 100 };
+        const result = updateCommentsWithSalaryCalc(existingData, newParams);
+        const matches = result.match(/SALARY_CALC_DATA/g);
+        expect(matches).toHaveLength(2);
+    });
+
+});
+
+describe('parseSalaryCalculationFromComments', () => {
+    it('should return null for empty comments', () => {
+        expect(parseSalaryCalculationFromComments('')).toBeNull();
+        expect(parseSalaryCalculationFromComments(null)).toBeNull();
+        expect(parseSalaryCalculationFromComments(undefined)).toBeNull();
+    });
+
+    it('should return null for comments without salary data', () => {
+        expect(parseSalaryCalculationFromComments('Some random notes')).toBeNull();
+    });
+
+    it('should parse valid salary data from comments', () => {
+        const comments = 'Notes <!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} --> more';
+        const result = parseSalaryCalculationFromComments(comments);
+        expect(result).toEqual({
+            calcMode: 'classic',
+            calcRate: 50,
+            calcRateType: 'Hourly',
+            calcFreelanceRate: 80,
+            calcHoursPerWeek: 40,
+            calcDaysPerMonth: 20,
         });
     });
 
-    describe('edge cases', () => {
-        it.each([
-            {
-                name: 'zero values',
-                input: {
-                    result: { gross_year: 0, year_tax: 0, net_year: 0, net_month: 0, parsed_equation: 'eq' } as any,
-                    calcMode: 'classic' as const,
-                    calcRate: 0,
-                    calcRateType: 'Hourly' as const,
-                    calcFreelanceRate: 0,
-                    calcHoursPerWeek: 0,
-                    calcDaysPerMonth: 0
-                }
-            },
-            {
-                name: 'very high values',
-                input: {
-                    result: { gross_year: 1000000, year_tax: 300000, net_year: 700000, net_month: 58333, parsed_equation: 'eq' } as any,
-                    calcMode: 'classic' as const,
-                    calcRate: 500,
-                    calcRateType: 'Hourly' as const,
-                    calcFreelanceRate: 500,
-                    calcHoursPerWeek: 40,
-                    calcDaysPerMonth: 20
-                }
-            }
-        ])('handles $name', ({ input }) => {
-            expect(() => formatCalculationForComments(input)).not.toThrow();
-        });
+    it('should return first params when multiple exist', () => {
+        const comments = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} --><!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":100,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+        const result = parseSalaryCalculationFromComments(comments);
+        expect(result?.calcRate).toBe(50);
+    });
+
+    it('should return null for invalid JSON', () => {
+        const comments = '<!-- SALARY_CALC_DATA:invalid json -->';
+        expect(parseSalaryCalculationFromComments(comments)).toBeNull();
+    });
+});
+
+describe('parseAllSalaryCalculationsFromComments', () => {
+    it.each([
+        ['empty string', '', 0],
+        ['null', null, 0],
+        ['undefined', undefined, 0],
+        ['no salary data', 'Some random notes', 0],
+    ])('should return empty array for %s', (_, comments, expected) => {
+        expect(parseAllSalaryCalculationsFromComments(comments as any)).toHaveLength(expected);
+    });
+
+    it('should parse single salary data', () => {
+        const comments = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+        const result = parseAllSalaryCalculationsFromComments(comments);
+        expect(result).toHaveLength(1);
+        expect(result[0].calcRate).toBe(50);
+    });
+
+    it('should parse multiple salary data entries', () => {
+        const comments = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} --><!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":100,"calcRateType":"Daily","calcFreelanceRate":300,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+        const result = parseAllSalaryCalculationsFromComments(comments);
+        expect(result).toHaveLength(2);
+        expect(result[0].calcRate).toBe(50);
+        expect(result[1].calcRate).toBe(100);
+    });
+
+    it('should skip invalid JSON entries', () => {
+        const comments = '<!-- SALARY_CALC_DATA:invalid --><!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":50,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+        const result = parseAllSalaryCalculationsFromComments(comments);
+        expect(result).toHaveLength(1);
+        expect(result[0].calcRate).toBe(50);
     });
 });

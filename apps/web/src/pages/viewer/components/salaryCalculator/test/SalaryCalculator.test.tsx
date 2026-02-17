@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import SalaryCalculator from '../SalaryCalculator';
 import { salaryApi } from '../../../api/ViewerSalaryApi';
+import type { SalaryCalculatorParams } from '../salaryFormatters';
 import { mockSalaryResponse, waitForDebounce, skipInitialCalculation, mockJob } from './SalaryCalculatorTestHelpers';
 
 vi.mock('../../../api/ViewerSalaryApi', () => ({
@@ -105,62 +106,43 @@ describe('SalaryCalculator', () => {
         });
     });
 
-    it('should save calculation to job comments when Save button is clicked', async () => {
+    it('should not show Saved combo when less than 2 saved params', () => {
+        const singleParam: SalaryCalculatorParams = { calcMode: 'classic', calcRate: 50, calcRateType: 'Hourly', calcFreelanceRate: 80, calcHoursPerWeek: 40, calcDaysPerMonth: 20 };
+        render(<SalaryCalculator allSavedParams={[singleParam]} />);
+        expect(screen.queryByDisplayValue('Saved...')).not.toBeInTheDocument();
+    });
+
+    it('should show Saved combo and load params when selecting a saved entry', async () => {
+        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse());
+        const saved: SalaryCalculatorParams[] = [
+            { calcMode: 'classic', calcRate: 50, calcRateType: 'Hourly', calcFreelanceRate: 80, calcHoursPerWeek: 40, calcDaysPerMonth: 20 },
+            { calcMode: 'classic', calcRate: 100, calcRateType: 'Daily', calcFreelanceRate: 300, calcHoursPerWeek: 40, calcDaysPerMonth: 20 },
+        ];
+        render(<SalaryCalculator allSavedParams={saved} initialParams={saved[0]} />);
+
+        const savedSelect = screen.getByDisplayValue('Saved...');
+        expect(savedSelect).toBeInTheDocument();
+        fireEvent.change(savedSelect, { target: { value: '1' } });
+
+        await waitForDebounce();
+        expect(salaryApi.calculate).toHaveBeenCalledWith(expect.objectContaining({ rate: 100, rate_type: 'Daily', freelance_rate: 300 }));
+    });
+
+    it('should save calculation params to job comments when Save button is clicked', async () => {
         const mockOnUpdate = vi.fn();
-        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse({
-            gross_year: '88000.00',
-            parsed_equation: '40 * 8 * 23.3 * 11',
-            year_tax: '15000',
-            net_year: '70000',
-            net_month: '5833',
-        }));
+        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse());
 
         render(<SalaryCalculator job={mockJob as any} onUpdate={mockOnUpdate} />);
         await waitForDebounce();
 
         expect(mockOnUpdate).not.toHaveBeenCalled();
 
-        fireEvent.click(screen.getByText('💾 Save to Comments'));
+        fireEvent.click(screen.getByText('💾 Save'));
 
         expect(mockOnUpdate).toHaveBeenCalledTimes(1);
         const updateCall = mockOnUpdate.mock.calls[0][0];
         expect(updateCall.comments).toContain('Existing comments');
-        expect(updateCall.comments).toContain('**Salary Calculation**');
-        expect(updateCall.comments).toContain('Mode: Classic');
-        expect(updateCall.comments).toContain('Gross/year: 88000.00');
-    });
-
-    it('should replace existing salary calculation when saving new one', async () => {
-        const mockOnUpdate = vi.fn();
-        const jobWithCalc = {
-            ...mockJob,
-            comments: `Some notes
----
-**Salary Calculation** (1/1/2025, 10:00:00 AM)
-Mode: Classic | Rate: 30 (Hourly) | Freelance: 80
-- Gross/year: 60000.00
-- Tax/year: 10000
-- Net/year: 50000
-- Net/month: 4166
-
-More comments`,
-        };
-
-        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse({
-            gross_year: '88000.00',
-            net_month: '5833',
-        }));
-
-        render(<SalaryCalculator job={jobWithCalc as any} onUpdate={mockOnUpdate} />);
-        await waitForDebounce();
-
-        fireEvent.click(screen.getByText('💾 Save to Comments'));
-
-        const updateCall = mockOnUpdate.mock.calls[0][0];
-        expect(updateCall.comments).toContain('Some notes');
-        expect(updateCall.comments).toContain('More comments');
-        expect(updateCall.comments).toContain('Gross/year: 88000.00');
-        expect(updateCall.comments).not.toContain('Gross/year: 60000.00');
-        expect(updateCall.comments).not.toContain('Rate: 30 (Hourly)');
+        expect(updateCall.comments).toContain('SALARY_CALC_DATA');
+        expect(updateCall.comments).toContain('"calcMode":"classic"');
     });
 });
