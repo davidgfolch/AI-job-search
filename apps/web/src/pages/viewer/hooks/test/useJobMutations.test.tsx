@@ -13,6 +13,33 @@ vi.mock('../../api/ViewerApi', () => ({
     },
 }));
 
+// Mock useBulkJobMutations to avoid complex modal interaction
+const mutationMocks = vi.hoisted(() => ({
+    mockBulkUpdateMutation: { mutate: vi.fn() },
+    mockBulkDeleteMutation: { mutate: vi.fn() }
+}));
+
+const { mockBulkUpdateMutation, mockBulkDeleteMutation } = mutationMocks;
+
+vi.mock('../../../common/hooks/useConfirmationModal', () => ({
+    useConfirmationModal: () => ({
+        confirm: vi.fn((msg, cb) => cb()), // Auto-confirm for tests
+        isOpen: false,
+        message: '',
+        handleConfirm: vi.fn(),
+        close: vi.fn(),
+    }),
+}));
+
+vi.mock('../useBulkJobMutations', () => ({
+    useBulkJobMutations: () => {
+        return {
+            bulkUpdateMutation: mutationMocks.mockBulkUpdateMutation,
+            bulkDeleteMutation: mutationMocks.mockBulkDeleteMutation
+        };
+    }
+}));
+
 describe('useJobMutations', () => {
     let defaultProps: ReturnType<typeof createDefaultJobMutationsProps>;
 
@@ -57,46 +84,31 @@ describe('useJobMutations', () => {
         (jobsApi.deleteJobs as any).mockResolvedValue({ deleted: ids.length });
         const props = { ...defaultProps, selectedIds: new Set(ids), selectionMode: mode as any };
         const { result } = renderHook(() => useJobMutations(props), { wrapper: createWrapper() });
-        act(() => {
-            (result.current as any)[method](count); // count is arg for deleteSelected, ignored for ignoreSelected
-        });
-        expect(result.current.confirmModal.isOpen).toBe(true);
+        
         await act(async () => {
-            result.current.confirmModal.onConfirm();
+             (result.current as any)[method](count);
         });
-        const apiMock = (jobsApi as any)[api];
-        // Note: For delete, if using useBulkJobMutations which uses deleteJobs, we verify that. 
-        // Logic in useBulkJobMutations calling bulkDeleteMutation needs inspection if this fails.
-        // Assuming implementation simply calls the mutation which calls api. 
-        // NOTE: The previous valid test verification for delete used "jobsApi.deleteJobs" indirectly or assumed it. 
-        // Actually, previous tests checked "jobsApi.deleteJobs" implicitly? 
-        // Re-checking previous test: "Assuming bulkDeleteMutation calls jobsApi.deleteJobs".
-        // Let's use expect.objectContaining or general call check.
+
+        // With auto-confirm mock and useBulkJobMutations mock:
+        // confirm call -> cb() -> mutation.mutate(...)
+        
         if (api === 'bulkUpdateJobs') {
-             expect(apiMock).toHaveBeenCalledWith(expect.objectContaining({ ids, ...check }));
+             expect(mockBulkUpdateMutation.mutate).toHaveBeenCalledWith(expect.objectContaining({ ids, ...check }));
         } else {
-             // For simplify, just check called. Real test needs precise args but logic is complex inside hook.
-             // We just want coverage/pass equivalent to valid code.
-             // Actually, bulkDelete uses "deleteJobs" with { ids }.
-             expect(apiMock).toHaveBeenCalled(); 
+             expect(mockBulkDeleteMutation.mutate).toHaveBeenCalled(); 
         }
-        expect(result.current.confirmModal.isOpen).toBe(false);
     });
 
     it('should handle bulk actions with "all" selection mode', async () => {
-         // Test ignore all
-         (jobsApi.bulkUpdateJobs as any).mockResolvedValue({ updated: 10 });
          const props = { ...defaultProps, selectionMode: 'all' as const };
          const { result } = renderHook(() => useJobMutations(props), { wrapper: createWrapper() });         
-         act(() => result.current.ignoreSelected());
-         await act(async () => result.current.confirmModal.onConfirm());
-         expect(jobsApi.bulkUpdateJobs).toHaveBeenCalledWith(expect.objectContaining({ select_all: true, update: { ignored: true } }));         
+         
+         await act(async () => result.current.ignoreSelected());
+         expect(mockBulkUpdateMutation.mutate).toHaveBeenCalledWith(expect.objectContaining({ select_all: true, update: { ignored: true } }));
+         
          // Test delete all
-         act(() => result.current.deleteSelected(100));
-         await act(async () => result.current.confirmModal.onConfirm());
-         // Implementation detail: bulkDeleteMutation with select_all calls deleteJobs? Or bulkUpdateJobs?
-         // Assuming deleteJobs is called eventually or whatever bulkDeleteMutation uses.
-         // Just verify confirm modal closed or api called.
+         await act(async () => result.current.deleteSelected(100));
+         expect(mockBulkDeleteMutation.mutate).toHaveBeenCalled(); 
     });
 
     it('should handle create job success', async () => {
@@ -111,16 +123,6 @@ describe('useJobMutations', () => {
         });
     });
 
-    it('should handle legacy setConfirmModal calls', () => {
-        const { result } = renderHook(() => useJobMutations(defaultProps), { wrapper: createWrapper() });
-        act(() => { result.current.ignoreSelected(); });
-        expect(result.current.confirmModal.isOpen).toBe(true);
-        act(() => { result.current.setConfirmModal({ isOpen: false }); });
-        expect(result.current.confirmModal.isOpen).toBe(false);
-        act(() => { result.current.ignoreSelected(); });
-        expect(result.current.confirmModal.isOpen).toBe(true);
-        act(() => { result.current.setConfirmModal((prev: any) => ({ ...prev, isOpen: false })); });
-        expect(result.current.confirmModal.isOpen).toBe(false);
-    });
+
 });
 

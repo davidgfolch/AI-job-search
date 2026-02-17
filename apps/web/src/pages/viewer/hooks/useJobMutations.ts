@@ -96,7 +96,7 @@ export const useJobMutations = ({
         updateMutation.mutate({ id: selectedJob.id, data });
       }
     },
-    [selectedJob, updateMutation, activeTab, autoSelectNext]
+    [selectedJob, updateMutation, activeTab, autoSelectNext, allJobs]
   );
 
   const ignoreSelected = useCallback(() => {

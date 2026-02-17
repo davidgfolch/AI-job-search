@@ -4,6 +4,7 @@ import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
 import { useAppliedModal } from './useAppliedModal';
 import { type Job, jobsApi } from '../api/ViewerApi';
+import { STATE_FIELDS } from '../constants';
 
 export type { TabType };
 
@@ -57,7 +58,21 @@ export const useViewer = () => {
 
     const { isModalOpen: isAppliedModalOpen, openModal: openAppliedModal, handleConfirm: handleAppliedConfirm, handleCancel: handleAppliedCancel } = useAppliedModal({
         selectedJob, allJobs, onJobUpdate: handleJobUpdate,
-        onBulkUpdate: (ids: number[], update: Partial<Job>) => bulkUpdateMutation.mutate({ ids, update }),
+        onBulkUpdate: (ids: number[], update: Partial<Job>) => {
+            // Set autoSelectNext for single job updates (e.g., from modal with selectedIds.size === 1)
+            if (ids.length === 1 && activeTab === 'list') {
+                const hasStateChange = STATE_FIELDS.some((field) => field in update);
+                if (hasStateChange) {
+                    const index = allJobs.findIndex(j => j.id === ids[0]);
+                    autoSelectNext.current = {
+                        shouldSelect: true,
+                        previousJobId: ids[0],
+                        previousJobIndex: index !== -1 ? index : undefined
+                    };
+                }
+            }
+            bulkUpdateMutation.mutate({ ids, update });
+        },
         selectedIds, selectionMode,
     });
 
