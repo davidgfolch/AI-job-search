@@ -17,13 +17,13 @@ export const formatCalculationForComments = (params: FormatParams): string => {
     const timestamp = new Date().toLocaleString();
     let modeInfo = '';
     if (calcMode === 'classic') {
-        modeInfo = `Mode: Classic | Rate: ${calcRate} (${calcRateType})`;
+        modeInfo = `Mode: Classic | Rate: **${calcRate}** (${calcRateType})`;
     } else if (calcMode === 'hoursPerWeek') {
-        modeInfo = `Mode: Hours/Week | Rate: ${calcRate}/hr | Hours/Week: ${calcHoursPerWeek}`;
+        modeInfo = `Mode: Hours/Week | Rate: **${calcRate}**/hr | Hours/Week: **${calcHoursPerWeek}**`;
     } else {
-        modeInfo = `Mode: Days/Month | Rate: ${calcRate}/day | Days/Month: ${calcDaysPerMonth}`;
+        modeInfo = `Mode: Days/Month | Rate: **${calcRate}**/day | Days/Month: **${calcDaysPerMonth}**`;
     }
-    return `\n---\n**Salary Calculation** (${timestamp})\n${modeInfo} | Freelance: ${calcFreelanceRate}\n- Gross/year: ${result.gross_year} (${result.parsed_equation})\n- Tax/year: ${result.year_tax}\n- Net/year: ${result.net_year}\n- Net/month: ${result.net_month}\n`;
+    return `\n---\n**Salary Calculation** (${timestamp})\n${modeInfo} | Freelance: ${calcFreelanceRate}\n- Gross/year: ${result.gross_year} (${result.parsed_equation})\n- Tax/year: ${result.year_tax}\n- Net/year: ${result.net_year}\n- Net/month: **${result.net_month}**\n`;
 };
 
 export const removePreviousSalaryCalculation = (comments: string): string => {

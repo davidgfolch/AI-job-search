@@ -14,7 +14,7 @@ describe('salaryFormatters', () => {
                 calcHoursPerWeek: 40,
                 calcDaysPerMonth: 20
             },
-            expectedContains: ['Salary Calculation', 'Gross/year: 10000', 'Net/year: 8000', 'Net/month: 666', 'Tax/year: 2000']
+            expectedContains: ['Salary Calculation', 'Gross/year: 10000', 'Net/year: 8000', 'Net/month: **666**', 'Tax/year: 2000']
         },
         {
             name: 'classic salary calculation',
@@ -27,7 +27,7 @@ describe('salaryFormatters', () => {
                 calcHoursPerWeek: 40,
                 calcDaysPerMonth: 20
             },
-            expectedContains: ['Salary Calculation', 'Gross/year: 50000', 'Net/year: 37500', 'Net/month: 3125', 'Tax/year: 12500']
+            expectedContains: ['Salary Calculation', 'Gross/year: 50000', 'Net/year: 37500', 'Net/month: **3125**', 'Tax/year: 12500']
         },
         {
             name: 'freelance calculation',
@@ -40,7 +40,7 @@ describe('salaryFormatters', () => {
                 calcHoursPerWeek: 40,
                 calcDaysPerMonth: 20
             },
-            expectedContains: ['Salary Calculation', 'Gross/year: 312000', 'Net/year: 234000', 'Net/month: 19500', 'Tax/year: 78000']
+            expectedContains: ['Salary Calculation', 'Gross/year: 312000', 'Net/year: 234000', 'Net/month: **19500**', 'Tax/year: 78000']
         }
     ])('$name', ({ input, expectedContains }) => {
         it('formats calculation with all expected fields', () => {
