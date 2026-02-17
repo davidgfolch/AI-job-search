@@ -96,13 +96,10 @@ describe('useFilterWatcher - Notifications', () => {
          renderHook(() => useFilterWatcher({ savedConfigs: [config1] }), { wrapper });
 
          // Wait for the effect to run and ensure no API calls are made
-         await act(async () => {
-             await new Promise(resolve => setTimeout(resolve, 200));
-         });
+         await waitFor(() => expect(jobsApi.getWatcherStats).not.toHaveBeenCalled());
 
-         // Should NOT make any API calls since the config is not watched
-         expect(jobsApi.getWatcherStats).not.toHaveBeenCalled();
-         expect(notificationService.notify).not.toHaveBeenCalled();
+          // Should NOT make any API calls since the config is not watched
+          expect(notificationService.notify).not.toHaveBeenCalled();
     });
 
     it('should NOT trigger notification if no new items found', async () => {

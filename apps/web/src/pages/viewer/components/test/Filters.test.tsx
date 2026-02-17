@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Filters from '../Filters';
@@ -33,9 +33,7 @@ describe('Filters', () => {
                 {ui}
             </QueryClientProvider>
         );
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 0));
-        });
+        await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument());
         return result;
     };
 

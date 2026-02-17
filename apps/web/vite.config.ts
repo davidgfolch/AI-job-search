@@ -58,13 +58,12 @@ export default defineConfig(({ mode }) => {
     setupFiles: './src/pages/viewer/test/setup.ts',
     css: true,
     exclude: ['**/node_modules/**', '**/tests/**'],
+    cache: true,
     coverage: {
       reporter: ['text', 'json-summary', 'json'],
       reportOnFailure: true,
       thresholds: {
         lines: 85,
-        // branches: 85,
-        // functions: 85,
         statements: 85,
       },
     }

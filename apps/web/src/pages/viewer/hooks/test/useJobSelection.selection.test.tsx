@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useJobSelection } from '../useJobSelection';
 import { MemoryRouter } from 'react-router-dom';
@@ -77,11 +77,8 @@ describe('useJobSelection - selection', () => {
             wrapper: createWrapper('jobId=5') 
         });
 
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        });
+        await waitFor(() => expect(result.current.selectedJob).toEqual(jobs[0]));
 
-        expect(result.current.selectedJob).toEqual(jobs[0]);
         expect(result.current.selectedIds).toEqual(new Set([5]));
     });
 

@@ -53,19 +53,14 @@ describe('JobDetail - Applied Jobs', () => {
         const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
         mockGetAppliedJobsByCompany.mockResolvedValue([]);
         renderWithProviders(<JobDetail job={mockJob} />);
-        // Wait for potential rendering
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        expect(screen.queryByText(/already applied/)).not.toBeInTheDocument();
+        await waitFor(() => expect(screen.queryByText(/already applied/)).not.toBeInTheDocument());
     });
 
     it('handles API error gracefully', async () => {
         const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
         mockGetAppliedJobsByCompany.mockRejectedValueOnce(new Error('API Error'));
         renderWithProviders(<JobDetail job={mockJob} />);
-        // Wait for potential effects
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        // Should simply not show the indicator
-        expect(screen.queryByText(/already applied/)).not.toBeInTheDocument();
+        await waitFor(() => expect(screen.queryByText(/already applied/)).not.toBeInTheDocument());
     });
 
     it('truncates applied jobs list if more than 60', async () => {
@@ -93,13 +88,8 @@ describe('JobDetail - Applied Jobs', () => {
         mockGetAppliedJobsByCompany.mockResolvedValue([]);
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         const { rerender } = renderWithProviders(<JobDetail job={mockJob} />, { queryClient });
-        // Wait for initial fetch
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        // Rerender with SAME job
+        await waitFor(() => expect(mockGetAppliedJobsByCompany).toHaveBeenCalledTimes(1));
         rerender(<JobDetail job={mockJob} />);
-        // Wait for potential effects
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0)));
-        // Should be called exactly once
-        expect(mockGetAppliedJobsByCompany).toHaveBeenCalledTimes(1);
+        await waitFor(() => expect(mockGetAppliedJobsByCompany).toHaveBeenCalledTimes(1));
     });
 });

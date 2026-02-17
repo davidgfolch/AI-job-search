@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import AppliedModal from '../AppliedModal';
 
 // Mock IntersectionObserver for useAutoResizeTextArea
@@ -111,12 +111,7 @@ describe('AppliedModal', () => {
     it('should focus textarea when modal opens', async () => {
         render(<AppliedModal {...defaultProps} />);
         
-        // Wait for the focus to be applied (addressing timing issue)
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 50));
-        });
-        
         const textarea = screen.getByPlaceholderText('Enter comment...');
-        expect(textarea).toHaveFocus();
+        await waitFor(() => expect(textarea).toHaveFocus());
     });
 });

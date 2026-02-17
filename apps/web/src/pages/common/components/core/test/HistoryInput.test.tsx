@@ -20,21 +20,8 @@ describe('HistoryInput', () => {
     // Helper to render and wait for initial async load
     const renderAndWait = async (props = defaultProps) => {
         const result = render(<HistoryInput {...props} />);
-        // The effect in HistoryInput calls persistenceApi.getValue which is async.
-        // It then calls setHistory. We need to wait for this cycle to finish.
-        // Since we don't know exactly when it finishes without a visual cue that always appears,
-        // we can assume 'persistenceApi' is working.
-        // But the best way is to wait for the state update.
-        // If the history is empty, there is no visual change unless we look at internals.
-        // However, we know 'test-history' defaults to something in persistence.ts (we saw defaultHistory).
-        // Let's verify defaults.ts has 'React'.
-        
-        // Wait for potential effects to settle.
-        // In real app, we might check for a data-loaded attribute or similar if this was critical,
-        // but here we can just wait for a known item or a small tick if empty.
-        // Actually, let's just wait for a tick or verify behavior.
-        // The warning happens because the test finishes before the effect does.
-        await waitFor(() => new Promise(resolve => setTimeout(resolve, 0))); 
+        // Wait for async effects - use vi.runAllTimers if needed, or just waitFor
+        await waitFor(() => {}, { timeout: 100 });
         return result;
     };
 

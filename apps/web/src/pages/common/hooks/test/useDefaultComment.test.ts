@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useDefaultComment } from '../useDefaultComment';
 import { persistenceApi } from '../../api/CommonPersistenceApi';
 
@@ -32,12 +32,9 @@ describe('useDefaultComment', () => {
         expect(result.current.isLoading).toBe(true);
         expect(result.current.comment).toBe('');
 
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 0));
-        });
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         expect(persistenceApi.getValue).toHaveBeenCalledWith('default_comment_text');
-        expect(result.current.isLoading).toBe(false);
         expect(result.current.comment).toBe(mockStoredComment);
     });
 
@@ -47,13 +44,11 @@ describe('useDefaultComment', () => {
 
         const { result } = renderHook(() => useDefaultComment());
 
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 0));
-        });
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         const newComment = '- new custom comment';
-        await act(async () => {
-            await result.current.saveComment(newComment);
+        await waitFor(() => {
+            result.current.saveComment(newComment);
         });
 
         expect(persistenceApi.setValue).toHaveBeenCalledWith('default_comment_text', newComment);
@@ -65,12 +60,10 @@ describe('useDefaultComment', () => {
 
         const { result } = renderHook(() => useDefaultComment());
 
-        await act(async () => {
-            await new Promise(resolve => setTimeout(resolve, 0));
-        });
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-        await act(async () => {
-            await result.current.saveComment('   ');
+        await waitFor(() => {
+            result.current.saveComment('   ');
         });
 
         expect(persistenceApi.setValue).not.toHaveBeenCalled();
