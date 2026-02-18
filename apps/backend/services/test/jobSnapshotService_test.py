@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from services.jobSnapshotService import JobSnapshotService
 from commonlib.jobSnapshotRepository import JobSnapshotRepository
 
@@ -11,8 +11,10 @@ def mock_repo():
 
 @pytest.fixture
 def service(mock_repo):
-    service = JobSnapshotService()
-    service.repo = mock_repo
+    with patch(
+        "services.jobSnapshotService.JobSnapshotRepository", return_value=mock_repo
+    ):
+        service = JobSnapshotService()
     return service
 
 
