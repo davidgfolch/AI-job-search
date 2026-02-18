@@ -92,7 +92,7 @@ def test_get_filter_configuration_stats_removes_boolean_filters(
     mock_db = MagicMock()
     # Mock context manager return value
     mock_jobs_repo.get_db.return_value.__enter__.return_value = mock_db
-    mock_jobs_repo.count_jobs_query.return_value = 10
+    mock_jobs_repo._count_jobs.return_value = 10
 
     # Mock build_where to return something
     mock_jobs_repo.build_where.return_value = (["1=1"], [])
@@ -146,7 +146,7 @@ def test_get_filter_configuration_stats_with_dates(
     ]
     mock_db = MagicMock()
     mock_jobs_repo.get_db.return_value.__enter__.return_value = mock_db
-    mock_jobs_repo.count_jobs_query.return_value = 5
+    mock_jobs_repo._count_jobs.return_value = 5
     mock_jobs_repo.build_where.return_value = (["1=1"], [])
 
     service.get_filter_configuration_stats(

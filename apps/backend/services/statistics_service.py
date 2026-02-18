@@ -77,6 +77,6 @@ class StatisticsService:
                     end_date=end_date,
                 )
                 where_str = " AND ".join(where_clauses)
-                count = self.jobs_repo.count_jobs_query(db, where_str, params)
+                count = self.jobs_repo._count_jobs(db, where_str, params)
                 results.append({"name": config["name"], "count": count})
         return results
