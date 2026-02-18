@@ -26,7 +26,7 @@ create_mock_db = pytest.create_mock_db
     ],
     ids=["valid_company", "empty_result", "with_client_param"],
 )
-@patch("repositories.jobs_repository.JobsRepository.get_db")
+@patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
 def test_get_applied_jobs_by_company(
     mock_get_db, client, url, mock_data, expected_count, expected_ids, expected_dates
 ):
@@ -51,7 +51,7 @@ def test_get_applied_jobs_by_company(
     ],
     ids=["apostrophe", "ampersand", "pipe"],
 )
-@patch("repositories.jobs_repository.JobsRepository.get_db")
+@patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
 def test_get_applied_jobs_by_company_special_characters(
     mock_get_db, client, company_param
 ):
@@ -63,8 +63,8 @@ def test_get_applied_jobs_by_company_special_characters(
     assert response.status_code == 200
 
 
-@patch("repositories.jobs_repository.JobsRepository.get_db")
-@patch("repositories.jobs_repository.JobsRepository.find_applied_jobs_by_regex")
+@patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
+@patch("repositories.jobQueryRepository.JobQueryRepository.find_applied_jobs_by_regex")
 def test_get_applied_jobs_partial_search_exception(
     mock_find_regex, mock_get_db, client
 ):
@@ -88,8 +88,8 @@ def test_get_applied_jobs_partial_search_exception(
     assert response.json() == []
 
 
-@patch("repositories.jobs_repository.JobsRepository.get_db")
-@patch("repositories.jobs_repository.JobsRepository.find_applied_jobs_by_regex")
+@patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
+@patch("repositories.jobQueryRepository.JobQueryRepository.find_applied_jobs_by_regex")
 def test_get_applied_jobs_partial_search_exclusions(
     mock_find_regex, mock_get_db, client
 ):
@@ -97,30 +97,28 @@ def test_get_applied_jobs_partial_search_exclusions(
     Test that partial search excludes common words like 'The'.
     Case: 'The White Team' -> 'The White' (not found) -> 'The' (should be skipped)
     """
-    mock_db = create_mock_db(
-        fetchAll=[]
-    )  # First call (exact match) returns empty
+    mock_db = create_mock_db(fetchAll=[])  # First call (exact match) returns empty
     mock_get_db.return_value = mock_db
-    
+
     # We mock find_applied_jobs_by_regex to track what it's called with
     # First call will be from _search_partial_company for "The White" (since "The White Team" failed exact match via find_applied_by_company)
     # If it were called for "The", we would see it in the mock calls.
-    mock_find_regex.return_value = [] 
-    
+    mock_find_regex.return_value = []
+
     company = "The White Team"
     client.get(f"/api/jobs/applied-by-company?company={company}")
-    
+
     # Check calls to find_applied_jobs_by_regex
-    # Expected: 
+    # Expected:
     # 1. 'The White'
     # 2. Should NOT call with 'The'
-    
+
     calls = [args[0] for args, _ in mock_find_regex.call_args_list]
-    
+
     # Verify we searched for 'the white' (regex format dependent on implementation, but broadly)
     # Backend lowers the company name, so we expect 'the white'
     assert any("the white" in c for c in calls)
-    
+
     # Verify we did NOT search for just 'The' (regex format)
     # The regex for 'The' would be something like '(^| )The($| )' (escaped)
     # We check that no call has a regex that is essentially just "The"
@@ -128,22 +126,27 @@ def test_get_applied_jobs_partial_search_exclusions(
         if "The" in call_arg and "White" not in call_arg and "Team" not in call_arg:
             # Check if this is the "The" search we want to avoid
             # It might look like '(^| )The($| )'
-            if len(call_arg) < 20: # Rough check for short regex
-                 assert False, f"Should not have searched for short generic term: {call_arg}"
+            if len(call_arg) < 20:  # Rough check for short regex
+                assert False, (
+                    f"Should not have searched for short generic term: {call_arg}"
+                )
 
 
-
-@pytest.mark.parametrize("query_params, expected_error", [
-    ("company=Company;%20DROP%20TABLE%20jobs", "semicolon"),
-    ("company=Company%20UNION%20SELECT", "union"),
-    ("company=SELECT%20*%20FROM%20jobs", "select"),
-    ("company=joppy&client=Client;%20DROP%20TABLE", "semicolon"),
-], ids=["semicolon_company", "union", "select", "semicolon_client"])
+@pytest.mark.parametrize(
+    "query_params, expected_error",
+    [
+        ("company=Company;%20DROP%20TABLE%20jobs", "semicolon"),
+        ("company=Company%20UNION%20SELECT", "union"),
+        ("company=SELECT%20*%20FROM%20jobs", "select"),
+        ("company=joppy&client=Client;%20DROP%20TABLE", "semicolon"),
+    ],
+    ids=["semicolon_company", "union", "select", "semicolon_client"],
+)
 def test_get_applied_jobs_sql_injection(client, query_params, expected_error):
     """Test that various SQL injection attempts are blocked"""
     response = client.get(f"/api/jobs/applied-by-company?{query_params}")
     assert response.status_code == 400
-    assert expected_error in response.json()['detail'].lower()
+    assert expected_error in response.json()["detail"].lower()
 
 
 def test_get_applied_jobs_by_company_missing_parameter(client):
@@ -151,8 +154,9 @@ def test_get_applied_jobs_by_company_missing_parameter(client):
     response = client.get("/api/jobs/applied-by-company")
     assert response.status_code == 422
 
+
 def test_get_applied_jobs_by_company_empty_string(client):
     """Test that empty company parameter is rejected"""
     response = client.get("/api/jobs/applied-by-company?company=")
     assert response.status_code == 400
-    assert "must be a non-empty string" in response.json()['detail']
+    assert "must be a non-empty string" in response.json()["detail"]

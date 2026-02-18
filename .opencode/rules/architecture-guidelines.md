@@ -3,7 +3,12 @@ trigger: always_on
 ---
 
 1. Code files including tests should have less than 200 lines (if they have more should be refactorized via SRP, abstraction/composition).
-2. Use the following test to check modified files follow architecture rules:
+2. Use compact style:
+   - Keep parameters on same line when possible, avoid line-per-parameter
+   - Keep closing braces/parens on same line as last content, not on their own line
+   - No extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`
+   - Avoid empty lines inside method bodies
+3. Use the following test to check modified files follow architecture rules:
    - apps\commonlib> poetry run pytest .\test\architecture_test.py
    - apps\web> npx vitest run src\test\architecture.test.ts
 3. Monorepo module's:

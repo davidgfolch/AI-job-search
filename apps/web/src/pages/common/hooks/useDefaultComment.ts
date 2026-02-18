@@ -27,9 +27,9 @@ export function useDefaultComment() {
 
   const saveComment = useCallback(async (newText: string) => {
     if (!newText.trim()) return;
-      setComment(newText);
-      await persistenceApi.setValue('default_comment_text', newText);
-  }, [comment]);
+    setComment(newText);
+    await persistenceApi.setValue('default_comment_text', newText);
+  }, []);
 
   return { 
     comment, 

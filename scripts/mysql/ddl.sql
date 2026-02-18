@@ -107,6 +107,32 @@ ALTER TABLE filter_configurations ADD COLUMN ordering INT DEFAULT 0;
 ALTER TABLE filter_configurations CHANGE COLUMN notify watched TINYINT(1) DEFAULT 0;
 
 
+-- Table structure for table `job_snapshots`
+CREATE TABLE if not exists `job_snapshots` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `job_id` varchar(100) NOT NULL,
+  `platform` varchar(50) DEFAULT NULL,
+  `original_created_at` datetime DEFAULT NULL,
+  `snapshot_at` datetime NOT NULL,
+  `snapshot_reason` enum('DELETED','APPLIED','INTERVIEW','DISCARDED') NOT NULL,
+  `title` varchar(300) DEFAULT NULL,
+  `company` varchar(200) DEFAULT NULL,
+  `location` varchar(200) DEFAULT NULL,
+  `salary` varchar(200) DEFAULT NULL,
+  `applied` tinyint(1) DEFAULT '0',
+  `discarded` tinyint(1) DEFAULT '0',
+  `interview` tinyint(1) DEFAULT '0',
+  `interview_rh` tinyint(1) DEFAULT '0',
+  `interview_tech` tinyint(1) DEFAULT '0',
+  `interview_technical_test` tinyint(1) DEFAULT '0',
+  `web_page` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_snapshot_reason` (`snapshot_reason`),
+  KEY `idx_snapshot_at` (`snapshot_at`),
+  KEY `idx_platform` (`platform`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

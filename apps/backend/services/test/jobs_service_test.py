@@ -30,15 +30,21 @@ def test_bulk_update_jobs(
 ):
     """Test bulk update operations"""
     service = JobsService()
-    with patch.object(service.repo, 'build_where') as mock_build_where, \
-         patch.object(service.repo, 'update_jobs_by_filter') as mock_update_filter, \
-         patch.object(service.repo, 'update_jobs_by_ids') as mock_update_ids:
+    with (
+        patch("services.jobs_service.build_jobs_where_clause") as mock_build_where,
+        patch.object(
+            service.delete_repo, "update_jobs_by_filter"
+        ) as mock_update_filter,
+        patch.object(service.delete_repo, "update_jobs_by_ids") as mock_update_ids,
+    ):
         if select_all:
             mock_build_where.return_value = (expected_where, expected_params)
             mock_update_filter.return_value = expected_count
         else:
             mock_update_ids.return_value = expected_count
-        count = service.bulk_update_jobs(update_data=update_data, ids=ids, filters=filters, select_all=select_all)
+        count = service.bulk_update_jobs(
+            update_data=update_data, ids=ids, filters=filters, select_all=select_all
+        )
         assert count == expected_count
         if select_all:
             mock_build_where.assert_called_once()

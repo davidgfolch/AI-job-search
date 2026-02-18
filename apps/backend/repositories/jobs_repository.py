@@ -1,72 +1,146 @@
 import json
 from typing import List, Optional, Dict, Any
-from commonlib.mysqlUtil import MysqlUtil, getConnection, SELECT_APPLIED_JOB_IDS_BY_COMPANY, SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT, SELECT_APPLIED_JOB_ORDER_BY
+from commonlib.mysqlUtil import (
+    MysqlUtil,
+    getConnection,
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY,
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT,
+    SELECT_APPLIED_JOB_ORDER_BY,
+)
 from commonlib.sqlUtil import scapeRegexChars, avoidInjection
-from repositories.queries.jobs_query_builder import build_jobs_where_clause, parse_job_order
+from repositories.queries.jobs_query_builder import (
+    build_jobs_where_clause,
+    parse_job_order,
+)
+
 
 class JobsRepository:
     def get_db(self):
         return MysqlUtil(getConnection())
 
-    def list_jobs(self, page: int, size: int, search: Optional[str] = None, status: Optional[str] = None,
-        not_status: Optional[str] = None, days_old: Optional[int] = None, salary: Optional[str] = None,
-        order: Optional[str] = "created desc", boolean_filters: Dict[str, Optional[bool]] = None,
-        sql_filter: Optional[str] = None, ids: Optional[List[int]] = None, created_after: Optional[str] = None,
-        start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+    def list_jobs(
+        self,
+        page: int,
+        size: int,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        not_status: Optional[str] = None,
+        days_old: Optional[int] = None,
+        salary: Optional[str] = None,
+        order: Optional[str] = "created desc",
+        boolean_filters: Dict[str, Optional[bool]] = None,
+        sql_filter: Optional[str] = None,
+        ids: Optional[List[int]] = None,
+        created_after: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
         offset = (page - 1) * size
         where_clauses, params = build_jobs_where_clause(
-            search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date)
+            search,
+            status,
+            not_status,
+            days_old,
+            salary,
+            sql_filter,
+            boolean_filters,
+            ids,
+            created_after,
+            start_date,
+            end_date,
+        )
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
-            total = self.count_jobs_query(db, where_str, params)
+            total = self._count_jobs(db, where_str, params)
             items = self._fetch_jobs(db, where_str, params, order, size, offset)
-        return { "items": items, "total": total, "page": page, "size": size }
+        return {"items": items, "total": total, "page": page, "size": size}
 
-    def count_jobs(self, search: Optional[str] = None, status: Optional[str] = None,
-        not_status: Optional[str] = None, days_old: Optional[int] = None, salary: Optional[str] = None,
-        boolean_filters: Dict[str, Optional[bool]] = None,
-        sql_filter: Optional[str] = None, ids: Optional[List[int]] = None, created_after: Optional[str] = None,
-        start_date: Optional[str] = None, end_date: Optional[str] = None) -> int:
+    def count_jobs(
+        self,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        not_status: Optional[str] = None,
+        days_old: Optional[int] = None,
+        salary: Optional[str] = None,
+        boolean_filters: Optional[Dict[str, Optional[bool]]] = None,
+        sql_filter: Optional[str] = None,
+        ids: Optional[List[int]] = None,
+        created_after: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> int:
         where_clauses, params = build_jobs_where_clause(
-            search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date)
+            search,
+            status,
+            not_status,
+            days_old,
+            salary,
+            sql_filter,
+            boolean_filters,
+            ids,
+            created_after,
+            start_date,
+            end_date,
+        )
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
-            return self.count_jobs_query(db, where_str, params)
+            return self._count_jobs(db, where_str, params)
 
-    def build_where(self, search: Optional[str] = None, status: Optional[str] = None,
-                    not_status: Optional[str] = None, days_old: Optional[int] = None, 
-                    salary: Optional[str] = None, sql_filter: Optional[str] = None, 
-                    boolean_filters: Dict[str, Optional[bool]] = None, 
-                    ids: Optional[List[int]] = None, created_after: Optional[str] = None,
-                    start_date: Optional[str] = None, end_date: Optional[str] = None):
-        return build_jobs_where_clause(search, status, not_status, days_old, salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date)
+    def build_where(
+        self,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        not_status: Optional[str] = None,
+        days_old: Optional[int] = None,
+        salary: Optional[str] = None,
+        sql_filter: Optional[str] = None,
+        boolean_filters: Optional[Dict[str, Optional[bool]]] = None,
+        ids: Optional[List[int]] = None,
+        created_after: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ):
+        return build_jobs_where_clause(
+            search,
+            status,
+            not_status,
+            days_old,
+            salary,
+            sql_filter,
+            boolean_filters,
+            ids,
+            created_after,
+            start_date,
+            end_date,
+        )
 
-    def count_jobs_query(self, db: MysqlUtil, where: str, params: list):
+    def _count_jobs(self, db: MysqlUtil, where: str, params: list):
         return db.count(f"SELECT COUNT(*) FROM jobs WHERE {where}", params)
 
-    def _fetch_jobs(self, db: MysqlUtil, where: str, params: list, order: Optional[str], size: int, offset: int):
+    def _fetch_jobs(
+        self,
+        db: MysqlUtil,
+        where: str,
+        params: list,
+        order: Optional[str],
+        size: int,
+        offset: int,
+    ):
         sort_col, sort_dir = parse_job_order(order)
         query = f"SELECT * FROM jobs WHERE {where} ORDER BY {sort_col} {sort_dir}, id DESC LIMIT %s OFFSET %s"
-        params_with_limit = params + [size, offset]
-        rows = db.fetchAll(query, params_with_limit)
+        rows = db.fetchAll(query, params + [size, offset])
         columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
-        items = []
-        for row in rows:
-            item_dict = {col: val for col, val in zip(columns, row)}
-            items.append(item_dict)
-        return items
+        return [dict(zip(columns, row)) for row in rows]
 
     def fetch_job_row(self, db: MysqlUtil, job_id: int) -> Optional[tuple]:
-        query = "SELECT * FROM jobs WHERE id = %s"
-        return db.fetchOne(query, job_id)
+        return db.fetchOne("SELECT * FROM jobs WHERE id = %s", job_id)
 
     def fetch_columns(self, db: MysqlUtil) -> List[str]:
         return [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
 
     def update_job(self, job_id: int, update_data: Dict[str, Any]) -> Optional[int]:
         with self.get_db() as db:
-            check_query = "SELECT id FROM jobs WHERE id = %s"
-            existing = db.fetchOne(check_query, job_id)
+            existing = db.fetchOne("SELECT id FROM jobs WHERE id = %s", job_id)
             if not existing:
                 return None
             if not update_data:
@@ -81,7 +155,9 @@ class JobsRepository:
             db.executeAndCommit(query, params)
         return job_id
 
-    def update_jobs_by_ids(self, job_ids: List[int], update_data: Dict[str, Any]) -> int:
+    def update_jobs_by_ids(
+        self, job_ids: List[int], update_data: Dict[str, Any]
+    ) -> int:
         if not job_ids or not update_data:
             return 0
         with self.get_db() as db:
@@ -90,13 +166,15 @@ class JobsRepository:
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
                 params.append(value)
-            ids = ', '.join(['%s'] * len(job_ids))
+            ids = ", ".join(["%s"] * len(job_ids))
             params.extend(job_ids)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id IN ({ids})"
             db.executeAndCommit(query, params)
             return len(job_ids)
 
-    def update_jobs_by_filter(self, where_clauses: List[str], params: List[Any], update_data: Dict[str, Any]) -> int:
+    def update_jobs_by_filter(
+        self, where_clauses: List[str], params: List[Any], update_data: Dict[str, Any]
+    ) -> int:
         if not update_data:
             return 0
         with self.get_db() as db:
@@ -105,46 +183,11 @@ class JobsRepository:
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
                 update_params.append(value)
-            # Combine update params with where clause params
             full_params = update_params + params
             where_str = " AND ".join(where_clauses)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE {where_str}"
             return db.executeAndCommit(query, full_params)
 
-    def delete_jobs_by_ids(self, job_ids: List[int]) -> int:
-        if not job_ids:
-            return 0
-        with self.get_db() as db:
-            ids = ', '.join(['%s'] * len(job_ids))
-            query = f"DELETE FROM jobs WHERE id IN ({ids})"
-            return db.executeAndCommit(query, job_ids)
-
-    def delete_jobs_by_filter(self, where_clauses: List[str], params: List[Any]) -> int:
-        with self.get_db() as db:
-            where_str = " AND ".join(where_clauses)
-            query = f"DELETE FROM jobs WHERE {where_str}"
-            return db.executeAndCommit(query, params)
-
-    def find_applied_by_company(self, company: str, client: str = None) -> List[tuple]:
-        avoidInjection(company, "company")
-        if client:
-            avoidInjection(client, "client")
-        regex_lookup = scapeRegexChars(company)
-        return self.find_applied_jobs_by_regex(regex_lookup, client)
-
-    def find_applied_jobs_by_regex(self, regex_lookup: str, client_filter: str = None) -> List[tuple]:
-        with self.get_db() as db:
-            if client_filter:
-                qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY
-                qry += SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT
-                qry += SELECT_APPLIED_JOB_ORDER_BY
-                params = {'company': regex_lookup, 'id': '0', 'client': client_filter}
-            else:
-                qry = SELECT_APPLIED_JOB_IDS_BY_COMPANY + SELECT_APPLIED_JOB_ORDER_BY
-                params = {'company': regex_lookup, 'id': '0'}
-            return db.fetchAll(qry.format(**params))
-
     def create_job(self, job_data: Dict[str, Any]) -> int:
         with self.get_db() as db:
             return db.insertJob(job_data)
-

@@ -1,3 +1,15 @@
-from .jobs_repository import JobsRepository
+from .jobReadRepository import JobReadRepository
+from .jobWriteRepository import JobWriteRepository
+from .jobDeleteRepository import JobDeleteRepository
+from .jobQueryRepository import JobQueryRepository
+from .statistics_repository import StatisticsRepository
+from .snapshots_repository import SnapshotsRepository
 
-__all__ = ['JobsRepository']
+__all__ = [
+    "JobReadRepository",
+    "JobWriteRepository",
+    "JobDeleteRepository",
+    "JobQueryRepository",
+    "StatisticsRepository",
+    "SnapshotsRepository",
+]

@@ -47,12 +47,12 @@ describe('useDefaultComment', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         const newComment = '- new custom comment';
-        await waitFor(() => {
-            result.current.saveComment(newComment);
-        });
+        await result.current.saveComment(newComment);
 
         expect(persistenceApi.setValue).toHaveBeenCalledWith('default_comment_text', newComment);
-        expect(result.current.comment).toBe(newComment);
+        await waitFor(() => {
+            expect(result.current.comment).toBe(newComment);
+        });
     });
 
     it('should not save empty comment', async () => {

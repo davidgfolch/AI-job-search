@@ -125,6 +125,15 @@ backend ← web (via REST API)
 - FastAPI REST API serving the web frontend
 - Entry point: `main.py`
 - API docs at `/docs` (Swagger) and `/redoc`
+- **Repositories** (`repositories/`):
+  - `jobs_repository.py`: Facade for backward compatibility
+  - `jobReadRepository.py`: Read operations (list, count, fetch)
+  - `jobWriteRepository.py`: Write operations (create, update)
+  - `jobDeleteRepository.py`: Delete operations with transaction support
+  - `jobQueryRepository.py`: Query operations for applied jobs
+  - `statistics_repository.py`: Statistics queries
+  - `snapshots_repository.py`: Job snapshots for historical data
+  - `combinedStatsRepository.py`: Combined stats (active + archived)
 
 **web** (`apps/web/src/`)
 - React 19 + TypeScript + Vite frontend
@@ -160,6 +169,13 @@ Environment variables are defined in `.env` (copied from `scripts/.env.example`)
 - `JOBS_SEARCH`: Comma-separated job search terms
 - `AI_CV_MATCH=True`: Enable CV matching (requires `apps/aiEnrich/cv/cv.txt`)
 - `USE_UNDETECTED_CHROMEDRIVER=True`: Bypass bot detection
+
+## Code Style
+
+- **Max line length**: 200 characters
+- **Method signatures**: Keep parameters on the same line when possible, avoid line-per-parameter
+- **Closing braces/parens**: Keep on the same line as last content, not on their own line
+- **Method bodies**: Avoid extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`. Avoid empty lines inside method bodies.
 
 ## Skills
 
