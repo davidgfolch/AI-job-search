@@ -147,11 +147,12 @@ def listsToString(result: dict[str, str], fields: list[str]):
             result[f] = ','.join(unique_items) if unique_items else None
 
 
-def footer(total, idx, totalCount, jobErrors:set):
-    print(yellow(f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'),
-          end='\n' if len(jobErrors)==0 else ' ')
-    if jobErrors:
-        print(red(f'Total job errors: {len(jobErrors)}'))
+def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):
+    msg = f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'
+    if elapsed_time is not None and (idx + 1) > 0:
+        media = elapsed_time / (idx + 1)
+        msg += f', Time elapsed: {elapsed_time:.2f} secs. (Media: {media:.2f} s/job)'
+    print(yellow(msg), red(f'  Total job errors: {len(jobErrors)}') if jobErrors else '', end='\n')
 
 
 def combineTaskResults(crewOutput, debug) -> dict:
