@@ -37,7 +37,11 @@ def mock_dependencies():
             'pipeline_instance': mock_pipeline_instance
         }
 
-def test_get_pipeline_initialization(mock_dependencies):
+@patch('aiEnrichNew.llm_client.getEnv')
+def test_get_pipeline_initialization(mock_getEnv, mock_dependencies):
+    # Mock env vars
+    mock_getEnv.side_effect = lambda key, default: default
+    
     # Reset singleton
     llm_client._PIPELINE = None
     
@@ -45,8 +49,8 @@ def test_get_pipeline_initialization(mock_dependencies):
     
     assert pipeline_instance == mock_dependencies['pipeline_instance']
     
-    # Verify tokenizer loading
-    mock_dependencies['tokenizer'].from_pretrained.assert_called_once_with(MODEL_ID)
+    # Verify tokenizer loading with padding_side='left'
+    mock_dependencies['tokenizer'].from_pretrained.assert_called_once_with(MODEL_ID, padding_side='left')
     
     # Verify model loading
     mock_dependencies['model'].from_pretrained.assert_called_once()
@@ -62,8 +66,12 @@ def test_get_pipeline_initialization(mock_dependencies):
     assert kwargs['temperature'] == 0.1
     assert kwargs['top_p'] == 0.9
     assert kwargs['repetition_penalty'] == 1.1
+    assert kwargs['batch_size'] == 10
 
-def test_get_pipeline_singleton(mock_dependencies):
+@patch('aiEnrichNew.llm_client.getEnv')
+def test_get_pipeline_singleton(mock_getEnv, mock_dependencies):
+    mock_getEnv.side_effect = lambda key, default: default
+    
     # Reset singleton
     llm_client._PIPELINE = None
     
