@@ -91,7 +91,7 @@ jobs:
   update-badges:
     needs: test
     runs-on: ubuntu-latest
-    if: success()
+    if: github.ref == 'refs/heads/master' && success()
     steps:
       - uses: actions/checkout@v4
       
