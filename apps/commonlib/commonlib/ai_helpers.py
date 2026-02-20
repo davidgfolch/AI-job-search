@@ -3,7 +3,7 @@ import re
 import traceback
 
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
-from commonlib.dateUtil import getDatetimeNowStr
+from commonlib.dateUtil import getDatetimeNowStr, getTimeUnits
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.terminalColor import green, red, yellow
@@ -153,14 +153,19 @@ def listsToString(result: dict[str, str], fields: list[str]):
             else:
                 items = []
             unique_items = list(dict.fromkeys([x for x in items if x]))
-            result[f] = ",".join(unique_items) if unique_items else None
+            if unique_items:
+                result[f] = ",".join(unique_items)
+                if result[f].lower() in ['none specified', 'null']:
+                    result[f]=None
+            else:
+                result[f] = None
 
 
 def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):
     msg = f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'
     if elapsed_time is not None and (idx + 1) > 0:
         media = elapsed_time / (idx + 1)
-        msg += f', Time elapsed: {elapsed_time:.2f} secs. (Media: {media:.2f} s/job)'
+        msg += f', Time elapsed: {getTimeUnits(elapsed_time)} (Media: {getTimeUnits(media)}/job)'
     print(yellow(msg), red(f'  Total job errors: {len(jobErrors)}') if jobErrors else '', end='\n')
 
 

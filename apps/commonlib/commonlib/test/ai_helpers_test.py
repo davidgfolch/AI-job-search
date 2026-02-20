@@ -35,6 +35,9 @@ def test_fixJsonInvalidAttribute():
     ("JS (React.js, Vue.js, Node-RED)", "JS,React.js,Vue.js,Node-RED"),
     ("C# (.NET Core, ASP.NET)", "C#,.NET Core,ASP.NET"),
     ("C# (.NET Core,, ASP.NET, ,  ASP.NET)", "C#,.NET Core,ASP.NET"),
+    ("None specified", None),
+    ("null", None),
+    ("Null", None),
 ])
 def test_listsToString(value, expected):
     data = {"tech": value}
