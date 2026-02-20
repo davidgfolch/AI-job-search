@@ -3,7 +3,7 @@ import re
 import traceback
 
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
-from commonlib.dateUtil import getDatetimeNowStr
+from commonlib.dateUtil import getDatetimeNowStr, getTimeUnits
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.terminalColor import green, red, yellow
@@ -131,6 +131,14 @@ def validateResult(result: dict[str, str]):
             result.update({'cv_match_percentage': None})
 
 
+def _expand_parenthesized_skills(value: str) -> str:
+    pattern = r"(\w[\w\s\-#+.]*)\s*\(([^)]+)\)"
+    while re.search(pattern, value):
+        value = re.sub(pattern, lambda m: f"{m.group(1).strip()}, {', '.join(x.strip() for x in m.group(2).split(','))}", value)
+        value = re.sub(r", *,", ",", value)
+    return value
+
+
 def listsToString(result: dict[str, str], fields: list[str]):
     for f in fields:
         value = result.get(f, None)
@@ -138,20 +146,26 @@ def listsToString(result: dict[str, str], fields: list[str]):
             result[f] = None
         else:
             if isinstance(value, str):
-                items = [x.strip() for x in value.split(',')]
+                value = _expand_parenthesized_skills(value)
+                items = [x.strip() for x in value.split(",")]
             elif isinstance(value, list):
                 items = [str(x).strip() for x in value if x is not None]
             else:
                 items = []
             unique_items = list(dict.fromkeys([x for x in items if x]))
-            result[f] = ','.join(unique_items) if unique_items else None
+            if unique_items:
+                result[f] = ",".join(unique_items)
+                if result[f].lower() in ['none specified', 'null']:
+                    result[f]=None
+            else:
+                result[f] = None
 
 
 def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):
     msg = f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'
     if elapsed_time is not None and (idx + 1) > 0:
         media = elapsed_time / (idx + 1)
-        msg += f', Time elapsed: {elapsed_time:.2f} secs. (Media: {media:.2f} s/job)'
+        msg += f', Time elapsed: {getTimeUnits(elapsed_time)} (Media: {getTimeUnits(media)}/job)'
     print(yellow(msg), red(f'  Total job errors: {len(jobErrors)}') if jobErrors else '', end='\n')
 
 
