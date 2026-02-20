@@ -5,10 +5,6 @@ from commonlib.terminalColor import green, yellow, printHR
 from commonlib.stringUtil import join
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
-
-
-
-
 from .baseNavigator import BaseNavigator
 
 LOGIN_PAGE = 'https://www.infojobs.net/candidate/candidate-login/candidate-login.xhtml'
@@ -18,10 +14,8 @@ CSS_SEL_SECURITY_FILTER1 = 'body > div > div > div > div > div > div > p:nth-chi
 CSS_SEL_SECURITY_FILTER1 = '#captcha-box span.geetest_radar_tip_content'
 CSS_SEL_SECURITY_FILTER2 = '#captcha-box > div > div.geetest_wait'
 
-
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.ij-TemplateAdsPage-mainContainer div.ij-SearchListingPageContent-heading div.ij-Box.ij-SearchListingPageContent-heading-title h1'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'div.ij-SearchListingPageContent-heading h1'
-
 
 # LIST
 # Note: there are some li with advertisements, they don't have the ij-OfferCardContent-description-title-link class'
@@ -35,8 +29,7 @@ CSS_SEL_COMPANY = '.ij-OfferDetailHeader-companyLogo .ij-OfferDetailHeader-compa
 DETAILS_PREFIX = '.ij-OfferDetailHeader-detailsList'
 CSS_SEL_LOCATION = 'div.ij-OfferDetailHeader-detailsList-column:nth-child(1) > div:nth-child(1) > p:nth-child(2)'  # '#main-wrapper div.heading-addons a.link'
 
-
-CSS_SEL_JOB_DETAIL = '.ij-OfferDetailPage-mainContent-container' # '.ij-OfferDetailPage-mainContent-container > article:not(.no-printable)'
+CSS_SEL_JOB_DETAIL = '.ij-OfferDetailPage-mainContent-container article:not(.no-printable)'
 # No longer accepting applications
 CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'
 
