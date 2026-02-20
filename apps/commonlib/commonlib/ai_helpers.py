@@ -131,6 +131,14 @@ def validateResult(result: dict[str, str]):
             result.update({'cv_match_percentage': None})
 
 
+def _expand_parenthesized_skills(value: str) -> str:
+    pattern = r"(\w[\w\s\-#+.]*)\s*\(([^)]+)\)"
+    while re.search(pattern, value):
+        value = re.sub(pattern, lambda m: f"{m.group(1).strip()}, {', '.join(x.strip() for x in m.group(2).split(','))}", value)
+        value = re.sub(r", *,", ",", value)
+    return value
+
+
 def listsToString(result: dict[str, str], fields: list[str]):
     for f in fields:
         value = result.get(f, None)
@@ -138,13 +146,14 @@ def listsToString(result: dict[str, str], fields: list[str]):
             result[f] = None
         else:
             if isinstance(value, str):
-                items = [x.strip() for x in value.split(',')]
+                value = _expand_parenthesized_skills(value)
+                items = [x.strip() for x in value.split(",")]
             elif isinstance(value, list):
                 items = [str(x).strip() for x in value if x is not None]
             else:
                 items = []
             unique_items = list(dict.fromkeys([x for x in items if x]))
-            result[f] = ','.join(unique_items) if unique_items else None
+            result[f] = ",".join(unique_items) if unique_items else None
 
 
 def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):

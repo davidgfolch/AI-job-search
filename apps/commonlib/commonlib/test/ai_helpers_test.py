@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.ai_helpers import (
     rawToJson, validateResult, listsToString, fixJsonInvalidAttribute, 
-    mapJob, combineTaskResults, footer, LazyDecoder, printJsonException
+    mapJob, combineTaskResults, footer, LazyDecoder, printJsonException,
+    _expand_parenthesized_skills
 )
 import json
 
@@ -26,16 +27,27 @@ def test_fixJsonInvalidAttribute():
     assert ' + ' in fixed
     assert 'val",' in fixed
 
-def test_listsToString():
-    data = {
-        "req": ["a", "b"],
-        "opt": "c, d", 
-        "none": None
-    }
+@pytest.mark.parametrize("value, expected", [
+    ("Java (Spring, Hibernate)", "Java,Spring,Hibernate"),
+    ("React (Hooks, Context), Node.js (Express)", "React,Hooks,Context,Node.js,Express"),
+    ("Cloud (AWS (EC2, S3), Azure)", "Cloud,AWS,EC2,S3,Azure"),
+    ("No parentheses here", "No parentheses here"),
+    ("JS (React.js, Vue.js, Node-RED)", "JS,React.js,Vue.js,Node-RED"),
+    ("C# (.NET Core, ASP.NET)", "C#,.NET Core,ASP.NET"),
+    ("C# (.NET Core,, ASP.NET, ,  ASP.NET)", "C#,.NET Core,ASP.NET"),
+])
+def test_listsToString(value, expected):
+    data = {"tech": value}
+    listsToString(data, ["tech"])
+    assert data["tech"] == expected
+
+def test_listsToString_types():
+    data = {"req": ["a", "b"], "opt": "c, d", "none": None}
     listsToString(data, ["req", "opt", "none"])
     assert data["req"] == "a,b"
     assert data["opt"] == "c,d"
     assert data["none"] is None
+
 
 @pytest.mark.parametrize("input_data, expected_salary", [
     ({"salary": "Competitive String with no numbers"}, None),
@@ -95,3 +107,14 @@ def test_footer(capsys, job_errors, expected_output):
     footer(10, 0, 100, job_errors)
     captured = capsys.readouterr()
     assert expected_output in captured.out
+@pytest.mark.parametrize("value, expected", [
+    ("Java (Spring, Hibernate)", "Java, Spring, Hibernate"),
+    ("React (Hooks, Context), Node.js (Express)", "React, Hooks, Context, Node.js, Express"),
+    ("Cloud (AWS (EC2, S3), Azure)", "Cloud, AWS, EC2, S3, Azure"),
+    ("No parentheses here", "No parentheses here"),
+    ("JS (React.js, Vue.js, Node-RED)", "JS, React.js, Vue.js, Node-RED"),
+    ("C# (.NET Core, ASP.NET)", "C#, .NET Core, ASP.NET"),
+    ("C# (.NET Core,, ASP.NET, ,  ASP.NET)", "C#, .NET Core, ASP.NET, ASP.NET"),
+])
+def test__expand_parenthesized_skills(value, expected):
+    assert _expand_parenthesized_skills(value) == expected

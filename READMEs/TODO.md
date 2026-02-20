@@ -29,6 +29,9 @@ ollama launch claude --config
 
 ## apps/aiEnrichNew
 
+- improvements:
+  - Detect: "Sueldo bruto / año en 30.000b/a - 38.000b/a"
+  - Detect: relocation, on-site, híbrido or hybrid obligation to go to office (and set comments or change tables by adding a new field)
 - aiEnrich* common implementation abstractions to commonlib
 
 ## apps/backend
