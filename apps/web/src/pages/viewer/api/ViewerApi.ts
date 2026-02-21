@@ -55,6 +55,7 @@ export interface Job {
   comments: string | null;
   cv_match_percentage: number | null;
   ai_enrich_error: string | null;
+  modality: string | null;
 }
 
 export interface AppliedCompanyJob {

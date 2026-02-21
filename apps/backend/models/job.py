@@ -17,6 +17,7 @@ class JobBase(BaseModel):
     comments: Optional[str] = None
     ai_enrich_error: Optional[str] = None
     cv_match_percentage: Optional[float] = None
+    modality: Optional[str] = None
     
     # Boolean fields
     flagged: Optional[bool] = None

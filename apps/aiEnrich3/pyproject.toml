@@ -1,0 +1,42 @@
+[project]
+name = "aiEnrich3"
+version = "0.1.0"
+description = "CPU-Optimized Multilingual Job Data Extractor"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "commonlib==0.1.0",
+    "gliner>=0.2.7",
+    "transformers>=4.40.0",
+    "torch>=2.2.0",
+    "price-parser>=0.3.4",
+]
+
+[project.scripts]
+aienrich3 = "aiEnrich3.main:run"
+
+[tool.uv.sources]
+commonlib = { path = "../commonlib", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "genbadge[coverage]>=1.1.0"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/aiEnrich3"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85
+
+[build-system]
+requires = [
+    "hatchling",
+]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aiEnrich3"]

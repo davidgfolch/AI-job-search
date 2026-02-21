@@ -1,0 +1,123 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\TRENDINGPC\projects\AI-job-search\apps\commonlib\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\TRENDINGPC\projects\AI-job-search\apps\commonlib
+configfile: pyproject.toml
+plugins: cov-7.0.0
+collecting ... collected 7 items
+
+commonlib/test/architecture_test.py::test_files_exceed_200_lines PASSED  [ 14%]
+commonlib/test/architecture_test.py::test_backend_layered_architecture[api-required_deps0-forbidden_deps0-ignore_files0] PASSED [ 28%]
+commonlib/test/architecture_test.py::test_backend_layered_architecture[services-required_deps1-forbidden_deps1-None] PASSED [ 42%]
+commonlib/test/architecture_test.py::test_backend_layered_architecture[repositories-required_deps2-forbidden_deps2-None] PASSED [ 57%]
+commonlib/test/architecture_test.py::test_sibling_test_folder_exists FAILED [ 71%]
+commonlib/test/architecture_test.py::test_test_file_naming_conventions PASSED [ 85%]
+commonlib/test/architecture_test.py::test_test_file_location_and_correspondence FAILED [100%]
+
+================================== FAILURES ===================================
+_______________________ test_sibling_test_folder_exists _______________________
+
+    def test_sibling_test_folder_exists():
+        violations = get_files_without_sibling_test()
+        if violations:
+            message = ""
+            # Group by type of violation for cleaner output or just list them
+            # Sorting by path
+            violations.sort(key=lambda x: x[0])
+            message += f"\n{YELLOW}Found files missing sibling tests (or using legacy naming):{RESET}\n"
+            for path, reason in violations:
+                 message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
+            print(message)
+>           pytest.fail(message)
+E           Failed: 
+E           [93mFound files missing sibling tests (or using legacy naming):[0m
+E           [93mapps\aiEnrich3\src\aiEnrich3\config.py[0m: [91mMissing sibling 'test' directory.[0m
+E           [93mapps\aiEnrich3\src\aiEnrich3\dataExtractor.py[0m: [91mMissing sibling 'test' directory.[0m
+E           [93mapps\aiEnrich3\src\aiEnrich3\domain\entities.py[0m: [91mMissing sibling 'test' directory.[0m
+E           [93mapps\aiEnrich3\src\aiEnrich3\pipeline.py[0m: [91mMissing sibling 'test' directory.[0m
+E           [93mapps\aiEnrich3\src\aiEnrich3\services\job_enrichment_service.py[0m: [91mMissing sibling 'test' directory.[0m
+
+message    = ('\n'
+ '\x1b[93mFound files missing sibling tests (or using legacy naming):\x1b[0m\n'
+ '\x1b[93mapps\\aiEnrich3\\src\\aiEnrich3\\config.py\x1b[0m: \x1b[91mMissing '
+ "sibling 'test' directory.\x1b[0m\n"
+ '\x1b[93mapps\\aiEnrich3\\src\\aiEnrich3\\dataExtractor.py\x1b[0m: '
+ "\x1b[91mMissing sibling 'test' directory.\x1b[0m\n"
+ '\x1b[93mapps\\aiEnrich3\\src\\aiEnrich3\\domain\\entities.py\x1b[0m: '
+ "\x1b[91mMissing sibling 'test' directory.\x1b[0m\n"
+ '\x1b[93mapps\\aiEnrich3\\src\\aiEnrich3\\pipeline.py\x1b[0m: \x1b[91mMissing '
+ "sibling 'test' directory.\x1b[0m\n"
+ '\x1b[93mapps\\aiEnrich3\\src\\aiEnrich3\\services\\job_enrichment_service.py\x1b[0m: '
+ "\x1b[91mMissing sibling 'test' directory.\x1b[0m\n")
+path       = 'apps\\aiEnrich3\\src\\aiEnrich3\\services\\job_enrichment_service.py'
+reason     = "Missing sibling 'test' directory."
+violations = [('apps\\aiEnrich3\\src\\aiEnrich3\\config.py',
+  "Missing sibling 'test' directory."),
+ ('apps\\aiEnrich3\\src\\aiEnrich3\\dataExtractor.py',
+  "Missing sibling 'test' directory."),
+ ('apps\\aiEnrich3\\src\\aiEnrich3\\domain\\entities.py',
+  "Missing sibling 'test' directory."),
+ ('apps\\aiEnrich3\\src\\aiEnrich3\\pipeline.py',
+  "Missing sibling 'test' directory."),
+ ('apps\\aiEnrich3\\src\\aiEnrich3\\services\\job_enrichment_service.py',
+  "Missing sibling 'test' directory.")]
+
+commonlib\test\architecture_test.py:67: Failed
+---------------------------- Captured stdout call -----------------------------
+
+[93mFound files missing sibling tests (or using legacy naming):[0m
+[93mapps\aiEnrich3\src\aiEnrich3\config.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\dataExtractor.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\domain\entities.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\pipeline.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\services\job_enrichment_service.py[0m: [91mMissing sibling 'test' directory.[0m
+
+_________________ test_test_file_location_and_correspondence __________________
+
+    def test_test_file_location_and_correspondence():
+        violations = get_test_location_violations()
+        if violations:
+            message = f"\n{YELLOW}Found test file location/correspondence violations:{RESET}\n"
+            for path, reason in violations:
+                 message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
+            print(message)
+>           pytest.fail(message)
+E           Failed: 
+E           [93mFound test file location/correspondence violations:[0m
+E           [93mapps\aiEnrich3\test_reset.py[0m: [91mTest file found in 'aiEnrich3'. Must be in a 'test' directory.[0m
+
+message    = ('\n'
+ '\x1b[93mFound test file location/correspondence violations:\x1b[0m\n'
+ '\x1b[93mapps\\aiEnrich3\\test_reset.py\x1b[0m: \x1b[91mTest file found in '
+ "'aiEnrich3'. Must be in a 'test' directory.\x1b[0m\n")
+path       = 'apps\\aiEnrich3\\test_reset.py'
+reason     = "Test file found in 'aiEnrich3'. Must be in a 'test' directory."
+violations = [('apps\\aiEnrich3\\test_reset.py',
+  "Test file found in 'aiEnrich3'. Must be in a 'test' directory.")]
+
+commonlib\test\architecture_test.py:85: Failed
+---------------------------- Captured stdout call -----------------------------
+
+[93mFound test file location/correspondence violations:[0m
+[93mapps\aiEnrich3\test_reset.py[0m: [91mTest file found in 'aiEnrich3'. Must be in a 'test' directory.[0m
+
+============================== warnings summary ===============================
+commonlib/test/architecture_test.py::test_files_exceed_200_lines
+  C:\Users\TRENDINGPC\projects\AI-job-search\apps\commonlib\commonlib\test\architecture_test.py:26: UserWarning: 
+  Found files with more than 200 lines:
+  [93mapps\aiEnrich3\src\aiEnrich3\services\job_enrichment_service.py: 201 lines[0m
+    warnings.warn(UserWarning(message))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED commonlib/test/architecture_test.py::test_sibling_test_folder_exists - Failed: 
+[93mFound files missing sibling tests (or using legacy naming):[0m
+[93mapps\aiEnrich3\src\aiEnrich3\config.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\dataExtractor.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\domain\entities.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\pipeline.py[0m: [91mMissing sibling 'test' directory.[0m
+[93mapps\aiEnrich3\src\aiEnrich3\services\job_enrichment_service.py[0m: [91mMissing sibling 'test' directory.[0m
+FAILED commonlib/test/architecture_test.py::test_test_file_location_and_correspondence - Failed: 
+[93mFound test file location/correspondence violations:[0m
+[93mapps\aiEnrich3\test_reset.py[0m: [91mTest file found in 'aiEnrich3'. Must be in a 'test' directory.[0m
+=================== 2 failed, 5 passed, 1 warning in 0.43s ====================

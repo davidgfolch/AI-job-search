@@ -49,25 +49,23 @@ class AiEnrichRepository:
             WHERE id=%s"""
         return self.mysql.fetchOne(query, id)
 
-    def update_enrichment(self, id: int, salary, required_tech, optional_tech):
+    def update_enrichment(self, id: int, salary, required_tech, optional_tech, modality=None):
         query = """
             UPDATE jobs SET
                 salary=%s,
                 required_technologies=%s,
                 optional_technologies=%s,
+                modality=%s,
                 ai_enriched=1,
                 ai_enrich_error=NULL
             WHERE id=%s"""
-        # Note: Caller is responsible for maxLen/emptyToNone or we do it here?
-        # Ideally repository handles data preparation if it's purely schema related.
-        # But for now, let's assume caller passes clean data or we apply same utils.
-        # The original code used maxLen(emptyToNone(...))
         params = maxLen(emptyToNone(
                         (salary,
                          required_tech,
                          optional_tech,
+                         modality,
                          id)),
-                        (200, 1000, 1000, None))
+                        (200, 1000, 1000, 20, None))
         self.mysql.updateFromAI(query, params)
 
     def update_enrichment_error(self, id: int, error_msg: str, is_enrichment: bool):

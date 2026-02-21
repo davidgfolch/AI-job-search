@@ -74,6 +74,8 @@ alter table jobs add column duplicated_id int DEFAULT NULL;
 alter table jobs add CONSTRAINT FK_DUPLICATED_ID 
 FOREIGN KEY (duplicated_id) REFERENCES jobs(id) ON DELETE SET NULL;
 
+ALTER TABLE jobs ADD COLUMN modality ENUM('REMOTE', 'HYBRID', 'ON_SITE') DEFAULT NULL;
+
 
 -- DROP TABLE IF EXISTS `job_skills`;
 CREATE TABLE if not exists `job_skills` (

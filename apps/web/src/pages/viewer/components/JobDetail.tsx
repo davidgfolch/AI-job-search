@@ -118,6 +118,7 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
                         </li>
                     )}
                     {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
+                    {job.modality && <li className="info-row">Modality: <span>{job.modality}</span></li>}
                     {job.salary && (
                         <li className="info-row job-salary-row">
                             Salary: <span className="salary-value-text">{job.salary}</span>

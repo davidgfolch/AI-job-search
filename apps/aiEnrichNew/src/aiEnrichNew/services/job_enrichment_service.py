@@ -44,7 +44,7 @@ def enrich_jobs(repo: AiEnrichRepository, pipeline: Any, batch_size: int) -> int
     job_ids = repo.get_pending_enrichment_ids()
     print(yellow(f'{job_ids}'))
     
-    jobs_buffer = _fetch_and_sort_jobs(repo, job_ids)
+    jobs_buffer = _fetch_and_sort_jobs(repo, job_ids, sort_by_length=True)
     
     total_count = 0
     job_errors: Set[Tuple[int, str]] = set()
@@ -96,7 +96,7 @@ def retry_failed_job(repo: AiEnrichRepository, pipeline: Any) -> int:
         return 1
     return 0
 
-def _fetch_and_sort_jobs(repo: AiEnrichRepository, job_ids: List[int]) -> List[Dict[str, Any]]:
+def _fetch_and_sort_jobs(repo: AiEnrichRepository, job_ids: List[int], sort_by_length: bool = True) -> List[Dict[str, Any]]:
     jobs_buffer = []
     for id in job_ids:
         try:
@@ -106,7 +106,8 @@ def _fetch_and_sort_jobs(repo: AiEnrichRepository, job_ids: List[int]) -> List[D
         except Exception as e:
             print(red(f"Error fetching job {id} for sorting: {e}"))
     
-    jobs_buffer.sort(key=lambda x: x['length'])
+    if sort_by_length:
+        jobs_buffer.sort(key=lambda x: x['length'])
     return jobs_buffer
 
 def _process_job_batch_pipeline(

@@ -4,7 +4,7 @@
 ![backend](apps/backend/coverage.svg)
 ![web](apps/web/coverage/badges.svg)
 ![aiEnrich](apps/aiEnrich/coverage.svg)
-![aiEnrichNew](apps/aiEnrichNew/coverage.svg)
+![aiEnrich3](apps/aiEnrich3/coverage.svg)
 ![scrapper](apps/scrapper/coverage.svg)
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
@@ -20,7 +20,7 @@ This is a monorepo containing several applications and packages:
 | **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
 | **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
 | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama (LEGACY)         | Python, CrewAI, uv           |
-| **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using Transformers.           | Python, Transformers, uv     |
+| **AI Enrich 3** | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
 
 ## Features
 
@@ -39,7 +39,7 @@ This is a monorepo containing several applications and packages:
   - MySQL
   - Backend API
   - Web UI
-  - AiEnrichNew
+  - AiEnrich3
 - Run `apps/scrappers/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
 - Run (optional)
@@ -79,7 +79,7 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 
 # 3. AI Enrichment
 # (NEW and quicker)
-./apps/aiEnrichNew/run.sh
+./apps/aiEnrich3/run.sh
 # (OLD legacy and slower)
 ./apps/aiEnrich/run.sh
 
@@ -99,7 +99,7 @@ docker compose up -d
 
 :: 3. AI Enrichment
 :: (NEW and quicker)
-.\apps\aiEnrichNew\run.bat
+.\apps\aiEnrich3\run.bat
 :: (OLD legacy and slower)
 .\apps\aiEnrich\run.bat
 
