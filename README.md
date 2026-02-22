@@ -7,6 +7,7 @@
 ![aiEnrich3](apps/aiEnrich3/coverage.svg)
 ![aiEnrichNew](apps/aiEnrichNew/coverage.svg)
 ![scrapper](apps/scrapper/coverage.svg)
+![aiCvMatcher](apps/aiCvMatcher/coverage.svg)
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 
@@ -29,7 +30,9 @@ This is a monorepo containing several applications and packages:
 
 - Scrapping jobs from multiple platforms
 - UI to manage job offers (& skills)
-- AI enrichment of job offers (& skills)
+- AI enrichment of job offers (salary, skills, work modality)
+- AI enrichment of skills
+- AI CV matching
 
 ## Getting Started
 

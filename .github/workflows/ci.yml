@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [apps/commonlib, apps/scrapper, apps/aiEnrich, apps/aiEnrichNew, apps/backend, apps/web]
+        module: [apps/commonlib, apps/scrapper, apps/aiEnrich, apps/aiEnrichNew, apps/aiEnrich3, apps/aiCvMatcher, apps/backend, apps/web]
     steps:
       - uses: actions/checkout@v4
       
@@ -63,7 +63,7 @@ jobs:
             uv run coverage report -m
             uv run coverage xml
             uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ]; then
+          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ]; then
             uv sync
             uv run coverage run -m pytest
             uv run coverage report -m
@@ -106,7 +106,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           changes=false
-          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/backend apps/web"
+          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/aiEnrich3 apps/aiCvMatcher apps/backend apps/web"
           read -ra MODULE_ARR <<< "${MODULES}"
           
           for MODULE in "${MODULE_ARR[@]}"; do
