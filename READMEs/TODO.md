@@ -1,5 +1,8 @@
 # TODO
 
+# Decouple skill enricher into a new module
+- Move skill enricher to a new module?
+
 ## try claude with ollama run qwen3-coder-next
 
 Didn't install required ollama pre-resease.
