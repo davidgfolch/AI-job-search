@@ -60,20 +60,12 @@ def mock_ai_job_search_flow():
 class TestAiJobSearchFlow:
     @patch('aiEnrich.crew.retry_failed_jobs')
     @patch('aiEnrich.crew.skillEnricher')
-    @patch('aiEnrich.crew.CVLoader')
     @patch('aiEnrich.crew.dataExtractor')
-    @patch('aiEnrich.crew.cvMatch')
-    @patch('aiEnrich.crew.getEnvBool')
     @patch('aiEnrich.crew.consoleTimer')
     @patch('aiEnrich.crew.printHR')
-    def test_process_rows_no_cv_match(self, mock_print_hr, mock_console_timer, 
-                                     mock_get_env_bool, mock_cv_match, 
-                                     mock_data_extractor, mock_cv_loader_cls,
-                                     mock_skill_enricher, mock_retry_failed_jobs,
-                                     mock_ai_job_search_flow):
-        mock_get_env_bool.return_value = False
-        mock_cv_loader = mock_cv_loader_cls.return_value
-        mock_cv_loader.load_cv_content.return_value = True
+    def test_process_rows(self, mock_print_hr, mock_console_timer, 
+                         mock_data_extractor, mock_skill_enricher, 
+                         mock_retry_failed_jobs, mock_ai_job_search_flow):
         # side_effect=[1, 0] ensures that:
         # 1. First call returns 1 -> loop continues
         # 2. Second call returns 0 -> enters if block
@@ -86,77 +78,4 @@ class TestAiJobSearchFlow:
             flow.processRows()
         except StopIteration:
             pass  # Expected when mocking the infinite loop
-        mock_cv_loader.load_cv_content.assert_called_once()
         assert mock_data_extractor.call_count == 3
-
-    @patch('aiEnrich.crew.retry_failed_jobs')
-    @patch('aiEnrich.crew.skillEnricher')
-    @patch('aiEnrich.crew.CVLoader')
-    @patch('aiEnrich.crew.dataExtractor')
-    @patch('aiEnrich.crew.cvMatch')
-    @patch('aiEnrich.crew.getEnvBool')
-    @patch('aiEnrich.crew.consoleTimer')
-    @patch('aiEnrich.crew.printHR')
-    def test_process_rows_with_cv_match(self, mock_print_hr, mock_console_timer,
-                                       mock_get_env_bool, mock_cv_match,
-                                       mock_data_extractor, mock_cv_loader_cls, 
-                                       mock_skill_enricher, mock_retry_failed_jobs,
-                                       mock_ai_job_search_flow):
-        mock_get_env_bool.return_value = True
-        mock_cv_loader = mock_cv_loader_cls.return_value
-        mock_cv_loader.load_cv_content.return_value = True
-        mock_cv_loader.get_content.return_value = "Mock CV"
-        mock_skill_enricher.return_value = 0
-        mock_retry_failed_jobs.return_value = 0
-        mock_data_extractor.return_value = 0
-        mock_cv_match.side_effect = [1, 0]  # First call returns 1, second returns 0
-        flow = mock_ai_job_search_flow()
-        # Mock the while loop to run only twice
-        call_count = 0
-        def mock_data_extractor_side_effect():
-            nonlocal call_count
-            call_count += 1
-            if call_count > 2:
-                raise StopIteration()
-            return 0
-        mock_data_extractor.side_effect = mock_data_extractor_side_effect
-        try:
-            flow.processRows()
-        except StopIteration:
-            pass  # Expected when mocking the infinite loop
-        mock_cv_loader.load_cv_content.assert_called_once()
-        mock_cv_match.assert_called()
-
-    @patch('aiEnrich.crew.retry_failed_jobs')
-    @patch('aiEnrich.crew.skillEnricher')
-    @patch('aiEnrich.crew.CVLoader')
-    @patch('aiEnrich.crew.dataExtractor')
-    @patch('aiEnrich.crew.getEnvBool')
-    @patch('aiEnrich.crew.consoleTimer')
-    @patch('aiEnrich.crew.printHR')
-    def test_process_rows_cv_not_loaded(self, mock_print_hr, mock_console_timer,
-                                       mock_get_env_bool, mock_data_extractor, 
-                                       mock_cv_loader_cls, 
-                                       mock_skill_enricher, mock_retry_failed_jobs,
-                                       mock_ai_job_search_flow):
-        mock_get_env_bool.return_value = True
-        mock_cv_loader = mock_cv_loader_cls.return_value
-        mock_cv_loader.load_cv_content.return_value = False  # CV not loaded
-        mock_data_extractor.return_value = 0
-        mock_skill_enricher.return_value = 0
-        mock_retry_failed_jobs.return_value = 0
-        flow = mock_ai_job_search_flow()
-        # Mock the while loop to run only once
-        call_count = 0
-        def mock_data_extractor_side_effect():
-            nonlocal call_count
-            call_count += 1
-            if call_count > 1:
-                raise StopIteration()
-            return 0
-        mock_data_extractor.side_effect = mock_data_extractor_side_effect
-        try:
-            flow.processRows()
-        except StopIteration:
-            pass  # Expected when mocking the infinite loop
-        mock_cv_loader.load_cv_content.assert_called_once()

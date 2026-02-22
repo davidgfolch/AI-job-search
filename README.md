@@ -5,6 +5,7 @@
 ![web](apps/web/coverage/badges.svg)
 ![aiEnrich](apps/aiEnrich/coverage.svg)
 ![aiEnrich3](apps/aiEnrich3/coverage.svg)
+![aiEnrichNew](apps/aiEnrichNew/coverage.svg)
 ![scrapper](apps/scrapper/coverage.svg)
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
@@ -19,7 +20,8 @@ This is a monorepo containing several applications and packages:
 | **Web UI**      | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.         | React, TypeScript, Vite, npm |
 | **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
 | **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
-| **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama (LEGACY)         | Python, CrewAI, uv           |
+| **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                  | Python, CrewAI, uv           |
+| **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using transformers pipeline   | Python, HuggingFace, uv      |
 | **AI Enrich 3** | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
 
 ## Features
@@ -39,15 +41,15 @@ This is a monorepo containing several applications and packages:
   - MySQL
   - Backend API
   - Web UI
-  - AiEnrich3
+  - AiEnrich
 - Run `apps/scrappers/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
-- Run (optional)
-- ~~LEGACY: Run (optional) AiEnrich~~:
-  - ~~Install Ollama & llama3.2 model~~
-  - ~~Run aiEnrich in separated terminals manually~~.
+- Run (optional) alternative AI Enrichment tools:
+  - Default runs `aiEnrich`. If you want to use the others:
+  - Run `aiEnrich3` (local fast CPU models) with `docker-compose --profile aiEnrich3 up -d`.
+  - Alternatively, `docker-compose --profile aiEnrichNew up -d` for the transformers-based engine.
 
-NOTE: Ollama, scrapper & aiEnrich (LEGACY) are not tested in docker yet, so you need to run them manually.
+NOTE: scrapper is not tested in docker yet, so you need to run it manually.
 
 ### Installation
 
@@ -78,9 +80,11 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 ./apps/scrapper/run.sh
 
 # 3. AI Enrichment
-# (NEW and quicker)
+# (NEW CPU and quicker)
 ./apps/aiEnrich3/run.sh
-# (OLD legacy and slower)
+# (NEW GPU/Transformers pipeline)
+./apps/aiEnrichNew/run.sh
+# (Using CrewAI and Ollama)
 ./apps/aiEnrich/run.sh
 
 # 4. New UI (Backend + Web)
@@ -98,9 +102,11 @@ docker compose up -d
 .\apps\scrapper\run.bat
 
 :: 3. AI Enrichment
-:: (NEW and quicker)
+:: (NEW CPU and quicker)
 .\apps\aiEnrich3\run.bat
-:: (OLD legacy and slower)
+:: (NEW GPU/Transformers pipeline)
+.\apps\aiEnrichNew\run.bat
+:: (Using CrewAI and Ollama)
 .\apps\aiEnrich\run.bat
 
 :: 4. New UI (Backend + Web)

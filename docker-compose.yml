@@ -92,8 +92,6 @@ services:
       retries: 3
     networks:
       - ai-job-search
-    profiles:
-      - aiEnrich # Optional service, enable with --profile ai-services
 
   # AI Enrichment - CrewAI Service
   aienrich:
@@ -119,8 +117,6 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
-    profiles:
-      - aiEnrich # Optional service, enable with --profile aienrich
 
   # AI Enrichment New - Hugging Face Local Models
   aienrichnew:

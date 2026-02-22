@@ -14,16 +14,16 @@ docker-compose down
 
 ## With AI Services (AI Enrichment + Ollama)
 
-**Legacy:** `aienrich` service uses Ollama (profile: `aiEnrichOllama`).
-**New CPU:** `aienrich3` service uses local fast CPU models.
+**CrewAI:** `aienrich` service uses CrewAI & Ollama (runs by default).
+**New CPU:** `aienrich3` service uses local fast CPU models (profile: `aiEnrich3`).
 **New GPU:** `aienrichnew` service uses transformers pipeline (profile: `aiEnrichNew`).
 
 ```bash
-# Start core services (now includes aiEnrich3)
+# Start core services (now includes aiEnrich)
 docker-compose up -d
 
-# If you want to use the legacy Ollama enrichment:
-docker-compose --profile aiEnrichOllama up -d aienrich
+# If you want to use the alternative enrichment engines:
+docker-compose --profile aiEnrich3 up -d aienrich3
 docker-compose --profile aiEnrichNew up -d aienrichnew
 
 # Ollama uses models from your host (defaults to ~/.ollama)

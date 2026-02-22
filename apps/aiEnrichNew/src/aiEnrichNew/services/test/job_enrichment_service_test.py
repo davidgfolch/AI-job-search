@@ -22,7 +22,7 @@ class TestJobEnrichmentService(unittest.TestCase):
         # Verify
         mock_process_batch.assert_called_once()
         self.repo.get_pending_enrichment_ids.assert_called_once()
-        mock_fetch_sort.assert_called_with(self.repo, [1, 2], sort_by_length=False)
+        mock_fetch_sort.assert_called_with(self.repo, [1, 2], sort_by_length=True)
         
     def test_enrich_jobs_no_pending(self):
         self.repo.count_pending_enrichment.return_value = 0

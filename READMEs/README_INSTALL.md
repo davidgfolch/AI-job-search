@@ -12,7 +12,7 @@
 This project uses different package managers for different components:
 
 - **Poetry**: Used by `apps/scrapper`, `apps/commonlib`.
-- **uv**: Used by `apps/backend`, `apps/aiEnrich` and `apps/aiEnrichNew`.
+- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, and `apps/aiEnrichNew`.
 - **npm**: Used by `apps/web`.
 
 ## Installation Steps
@@ -27,7 +27,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 
 ### 2. Install uv (Python)
 
-Required for `apps/aiEnrich`.
+Required for `apps/aiEnrich`, `apps/aiEnrich3`, and `apps/aiEnrichNew`.
 
 ```bash
 # Windows
@@ -42,6 +42,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 Download and install from [nodejs.org](https://nodejs.org/).
 
 ### 4. Install Ollama & llama3.2 model
+
+> **Note**: If you are using Docker, you do not need to install Ollama manually. You can run `aiEnrich` and Ollama via `docker-compose up -d`.
 
 Download and install from [ollama.com/download](https://ollama.com/download).
 
@@ -77,7 +79,7 @@ cd apps/web && npm install && cd ../..
 
 **AI Enrich:**
 
-Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md).
+Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrich3/README.md](../apps/aiEnrich3/README.md), or [apps/aiEnrichNew/README.md](../apps/aiEnrichNew/README.md).
 
 ## Configuration
 

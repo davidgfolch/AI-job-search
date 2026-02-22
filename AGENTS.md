@@ -29,7 +29,7 @@ poetry run pytest
 poetry run coverage run -m pytest && poetry run coverage report -m
 ```
 
-### Python Apps (backend, aiEnrich, aiEnrichNew)
+### Python Apps (backend, aiEnrich, aiEnrich3, aiEnrichNew)
 ```bash
 # Install dependencies
 uv sync
@@ -98,6 +98,8 @@ npm run dev  # from apps/web, runs on localhost:5173
 .\apps\scrapper\run.bat linkedin
 
 # AI Enrichment
+.\apps\aiEnrich\run.bat  # or run.sh
+.\apps\aiEnrich3\run.bat  # or run.sh
 .\apps\aiEnrichNew\run.bat  # or run.sh
 ```
 
@@ -108,6 +110,7 @@ npm run dev  # from apps/web, runs on localhost:5173
 commonlib ← backend
 commonlib ← scrapper  
 commonlib ← aiEnrich
+commonlib ← aiEnrich3
 commonlib ← aiEnrichNew
 backend ← web (via REST API)
 ```
@@ -150,7 +153,13 @@ backend ← web (via REST API)
 **aiEnrichNew** (`apps/aiEnrichNew/`)
 - Local Hugging Face transformers for job data enrichment
 - Model: `Qwen/Qwen2.5-1.5B-Instruct` (configurable in `dataExtractor.py`)
-- Preferred over legacy `aiEnrich` (CrewAI/Ollama)
+- Preferred over `aiEnrich` (CrewAI/Ollama)
+
+**aiEnrich3** (`apps/aiEnrich3/`)
+- CPU-optimized multilingual data extraction service
+- Uses GLiNER, mDeBERTa, and Regex
+- Fast alternative to `aiEnrich` when GPUs are not available
+
 
 **e2e** (`apps/e2e/`)
 - Playwright E2E tests for the web application

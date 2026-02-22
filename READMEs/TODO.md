@@ -27,6 +27,10 @@ ollama launch claude --config
 
 - aiEnrich* common implementation abstractions to commonlib
 
+## apps/aiEnrich3
+
+- aiEnrich* common implementation abstractions to commonlib
+
 ## apps/aiEnrichNew
 
 - improvements:
