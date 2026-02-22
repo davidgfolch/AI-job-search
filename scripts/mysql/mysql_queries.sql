@@ -259,11 +259,11 @@ select * from jobs where jobId like '%handMade%';
 --- SKILL MANAGER
 
 select * from job_skills where ai_enriched = 1 and category is null or category = '' limit 10;
-
-select * from job_skills where job_skills.name like '%Apache Camel%';
-
-update job_skills set ai_enriched = 0, category = null where ai_enriched = 1 limit 10;
-update job_skills set ai_enriched = 0, category = null where ai_enriched = 1 and (category is null or category = '') limit 10;
+select * from job_skills where job_skills.name like '%idempotency%';
+update job_skills set ai_enriched = 0, category = null
+where ai_enriched = 1 limit 1;
+where name like '%idempotency%' limit 1;
+where ai_enriched = 1 and (category is null or category = '') limit 10;
 
 delete from job_skills where job_skills.name = 'Control-M';
 

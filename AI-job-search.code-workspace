@@ -25,7 +25,7 @@
             "path": "apps/commonlib"
         },
         {
-            "name": "aiEnrich (Legacy)",
+            "name": "aiEnrich",
             "path": "apps/aiEnrich"
         },
         {
