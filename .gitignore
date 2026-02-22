@@ -17,14 +17,11 @@ uv.lock
 **/node_modules/**
 **/.next/**
 scripts/mysql/backups/*
-apps/aiEnrich/cv/*
+apps/*/cv/*
 **/**/coverage.xml
 **/**/coverage.txt
 apps/web/coverage/.tmp
 apps/scrapper/scrapper_state.json
-apps/aiEnrichNew/cv/*
-apps/aiEnrich/src/aiEnrich/cv/*
-
 
 !AI-job-search.code-workspace
 .a0proj/

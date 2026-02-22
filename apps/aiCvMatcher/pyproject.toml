@@ -1,19 +1,17 @@
 [project]
-name = "aiEnrichNew"
+name = "aiCvMatcher"
 version = "0.1.0"
-description = "aiEnrichNew with local Hugging Face models"
+description = "Fast CV Matcher extracted from aiEnrichNew"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "commonlib==0.1.0",
-    "pandas==2.3.3",
-    "transformers>=4.40.0",
-    "torch>=2.2.0",
-    "accelerate>=0.29.0",
-    "langchain-huggingface>=0.0.1",
+    "sentence-transformers>=3.0.0",
+    "scikit-learn>=1.4.0",
+    "numpy>=1.26.0,<2.4.0",
 ]
 
 [project.scripts]
-aienrichnew = "aiEnrichNew.main:run"
+aicvmatcher = "aiCvMatcher.main:run"
 
 [tool.uv.sources]
 commonlib = { path = "../commonlib", editable = true }
@@ -27,7 +25,7 @@ dev = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/aiEnrichNew"]
+source = ["src/aiCvMatcher"]
 
 [tool.coverage.report]
 show_missing = true
@@ -40,4 +38,4 @@ requires = [
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/aiEnrichNew"]
+packages = ["src/aiCvMatcher"]

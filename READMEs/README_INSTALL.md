@@ -12,7 +12,7 @@
 This project uses different package managers for different components:
 
 - **Poetry**: Used by `apps/scrapper`, `apps/commonlib`.
-- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, and `apps/aiEnrichNew`.
+- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, and `apps/aiCvMatcher`.
 - **npm**: Used by `apps/web`.
 
 ## Installation Steps
@@ -27,7 +27,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 
 ### 2. Install uv (Python)
 
-Required for `apps/aiEnrich`, `apps/aiEnrich3`, and `apps/aiEnrichNew`.
+Required for `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, and `apps/aiCvMatcher`.
 
 ```bash
 # Windows
@@ -77,9 +77,9 @@ cd apps/backend && uv sync && cd ../..
 cd apps/web && npm install && cd ../..
 ```
 
-**AI Enrich:**
+**AI Enrich and AI CV Matcher:**
 
-Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrich3/README.md](../apps/aiEnrich3/README.md), or [apps/aiEnrichNew/README.md](../apps/aiEnrichNew/README.md).
+Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrich3/README.md](../apps/aiEnrich3/README.md), [apps/aiEnrichNew/README.md](../apps/aiEnrichNew/README.md), or [apps/aiCvMatcher/README.md](../apps/aiCvMatcher/README.md).
 
 ## Configuration
 

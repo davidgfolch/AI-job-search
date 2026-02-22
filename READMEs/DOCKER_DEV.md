@@ -17,6 +17,7 @@ docker-compose down
 **CrewAI:** `aienrich` service uses CrewAI & Ollama (runs by default).
 **New CPU:** `aienrich3` service uses local fast CPU models (profile: `aiEnrich3`).
 **New GPU:** `aienrichnew` service uses transformers pipeline (profile: `aiEnrichNew`).
+**CV Matcher:** `aicvmatcher` service uses sentence transformers to rapidly match your cv (runs by default if configured in .env).
 
 ```bash
 # Start core services (now includes aiEnrich)

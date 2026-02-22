@@ -29,7 +29,7 @@ poetry run pytest
 poetry run coverage run -m pytest && poetry run coverage report -m
 ```
 
-### Python Apps (backend, aiEnrich, aiEnrich3, aiEnrichNew)
+### Python Apps (backend, aiEnrich, aiEnrich3, aiEnrichNew, aiCvMatcher)
 ```bash
 # Install dependencies
 uv sync
@@ -101,6 +101,7 @@ npm run dev  # from apps/web, runs on localhost:5173
 .\apps\aiEnrich\run.bat  # or run.sh
 .\apps\aiEnrich3\run.bat  # or run.sh
 .\apps\aiEnrichNew\run.bat  # or run.sh
+.\apps\aiCvMatcher\run.bat  # or run.sh
 ```
 
 ## Architecture
@@ -112,6 +113,7 @@ commonlib ← scrapper
 commonlib ← aiEnrich
 commonlib ← aiEnrich3
 commonlib ← aiEnrichNew
+commonlib ← aiCvMatcher
 backend ← web (via REST API)
 ```
 
@@ -159,6 +161,11 @@ backend ← web (via REST API)
 - CPU-optimized multilingual data extraction service
 - Uses GLiNER, mDeBERTa, and Regex
 - Fast alternative to `aiEnrich` when GPUs are not available
+
+**aiCvMatcher** (`apps/aiCvMatcher/`)
+- Local fast CV matching service
+- Uses local `SentenceTransformers` from Hugging Face
+- Operates on the pending CV match queue in the database
 
 
 **e2e** (`apps/e2e/`)

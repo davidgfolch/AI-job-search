@@ -6,9 +6,9 @@ from ..cvMatcher import FastCVMatcher
 @pytest.fixture
 def mock_all():
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
     ):
         si = MagicMock()
         st.return_value = si
@@ -29,7 +29,7 @@ def test_init(mock_all):
 def test_process_db(mock_all):
     FastCVMatcher._instance = None
     m = FastCVMatcher.instance()
-    with patch("aiEnrichNew.cvMatcher.MysqlUtil") as mu:
+    with patch("aiCvMatcher.cvMatcher.MysqlUtil") as mu:
         mysql = MagicMock()
         mu.return_value.__enter__.return_value = mysql
         mysql.count.return_value = 1
@@ -50,9 +50,9 @@ def test_match(mock_all):
 def test_match_no_emb():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
     ):
         si = MagicMock()
         st.return_value = si
@@ -68,10 +68,10 @@ def test_match_no_emb():
 def test_match_exc():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
-        patch("aiEnrichNew.cvMatcher.cosine_similarity") as cs,
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.cosine_similarity") as cs,
     ):
         si = MagicMock()
         st.return_value = si
@@ -88,9 +88,9 @@ def test_match_exc():
 def test_save_err():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
     ):
         si = MagicMock()
         st.return_value = si
@@ -105,10 +105,10 @@ def test_save_err():
 def test_footer_err():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
-        patch("aiEnrichNew.cvMatcher.print"),
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.print"),
     ):
         si = MagicMock()
         st.return_value = si
@@ -117,9 +117,9 @@ def test_footer_err():
         m = FastCVMatcher.instance()
         m.jobErrors.add((1, "e1"))
         with (
-            patch("aiEnrichNew.cvMatcher.yellow"),
-            patch("aiEnrichNew.cvMatcher.red"),
-            patch("aiEnrichNew.cvMatcher.green"),
+            patch("aiCvMatcher.cvMatcher.yellow"),
+            patch("aiCvMatcher.cvMatcher.red"),
+            patch("aiCvMatcher.cvMatcher.green"),
         ):
             m._print_footer(10, 5)
 
@@ -127,9 +127,9 @@ def test_footer_err():
 def test_disabled():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer"),
-        patch("aiEnrichNew.cvMatcher.CVLoader"),
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=False),
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer"),
+        patch("aiCvMatcher.cvMatcher.CVLoader"),
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=False),
     ):
         assert FastCVMatcher.instance().process_db_jobs() == 0
 
@@ -137,10 +137,10 @@ def test_disabled():
 def test_no_cv():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
-        patch("aiEnrichNew.cvMatcher.MysqlUtil"),
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.MysqlUtil"),
     ):
         si = MagicMock()
         st.return_value = si
@@ -154,10 +154,10 @@ def test_no_cv():
 def test_no_jobs():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
-        patch("aiEnrichNew.cvMatcher.MysqlUtil") as mu,
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.MysqlUtil") as mu,
     ):
         si = MagicMock()
         st.return_value = si
@@ -174,10 +174,10 @@ def test_no_jobs():
 def test_job_none():
     FastCVMatcher._instance = None
     with (
-        patch("aiEnrichNew.cvMatcher.SentenceTransformer") as st,
-        patch("aiEnrichNew.cvMatcher.CVLoader") as lc,
-        patch("aiEnrichNew.cvMatcher.getEnvBool", return_value=True),
-        patch("aiEnrichNew.cvMatcher.MysqlUtil") as mu,
+        patch("aiCvMatcher.cvMatcher.SentenceTransformer") as st,
+        patch("aiCvMatcher.cvMatcher.CVLoader") as lc,
+        patch("aiCvMatcher.cvMatcher.getEnvBool", return_value=True),
+        patch("aiCvMatcher.cvMatcher.MysqlUtil") as mu,
     ):
         si = MagicMock()
         st.return_value = si

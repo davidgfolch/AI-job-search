@@ -23,6 +23,7 @@ This is a monorepo containing several applications and packages:
 | **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                  | Python, CrewAI, uv           |
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using transformers pipeline   | Python, HuggingFace, uv      |
 | **AI Enrich 3** | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
+| **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)    | Local fast CV matching.                           | Python, SentenceTransformers |
 
 ## Features
 
@@ -48,6 +49,8 @@ This is a monorepo containing several applications and packages:
   - Default runs `aiEnrich`. If you want to use the others:
   - Run `aiEnrich3` (local fast CPU models) with `docker-compose --profile aiEnrich3 up -d`.
   - Alternatively, `docker-compose --profile aiEnrichNew up -d` for the transformers-based engine.
+- Run `aiCvMatcher` (local fast CV matching):
+  - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CV_MATCH=True` is in your `.env`.
 
 NOTE: scrapper is not tested in docker yet, so you need to run it manually.
 
@@ -86,6 +89,8 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 ./apps/aiEnrichNew/run.sh
 # (Using CrewAI and Ollama)
 ./apps/aiEnrich/run.sh
+# (Local Fast CV Matcher)
+./apps/aiCvMatcher/run.sh
 
 # 4. New UI (Backend + Web)
 ./apps/backend/run.sh
@@ -108,6 +113,8 @@ docker compose up -d
 .\apps\aiEnrichNew\run.bat
 :: (Using CrewAI and Ollama)
 .\apps\aiEnrich\run.bat
+:: (Local Fast CV Matcher)
+.\apps\aiCvMatcher\run.bat
 
 :: 4. New UI (Backend + Web)
 .\apps\backend\run.bat
