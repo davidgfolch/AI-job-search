@@ -21,7 +21,7 @@ LLM_CFG = LLM(
     # model="ollama/granite4",
     # model="ollama/nuextract",  # hangs on local ollama
     # model="ollama/deepseek-r1:8b",  # no GPU inference
-    base_url="http://localhost:11434",
+    base_url=getEnv('OLLAMA_BASE_URL', "http://localhost:11434"),
     temperature=0)
 
 
@@ -37,8 +37,8 @@ def dataExtractor() -> int:
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         total = repo.count_pending_enrichment()
-        if total == 0:
-            return total
+        if total is None or total == 0:
+            return 0
         crew = DataExtractor().crew()
         if total > 0:
             print(f'{total} jobs to be ai_enriched...')

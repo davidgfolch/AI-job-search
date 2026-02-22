@@ -27,14 +27,14 @@ share/python-wheels/
 MANIFEST
 
 # Virtual Environments
-venv/
-.venv/
-**/venv/
-**/.venv/
-env/
-ENV/
-env.bak/
-venv.bak/
+venv
+.venv
+**/venv
+**/.venv
+custom-venv
+**/custom-venv
+env
+ENV
 
 # Testing/Coverage
 .coverage
@@ -44,15 +44,18 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-.pytest_cache/
-.mypy_cache/
+.pytest_cache
+**/.pytest_cache
+.mypy_cache
+**/.mypy_cache
 
 # Node/JS
-node_modules/
+node_modules
+**/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.npm/
+.npm
 
 # IDEs
 .vscode/

@@ -86,14 +86,14 @@ services:
     volumes:
       - ${OLLAMA_MODELS_PATH:-~/.ollama}:/root/.ollama # Ollama models from host (set OLLAMA_MODELS_PATH in .env for Windows)
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:11434/api/tags" ]
+      test: [ "CMD", "ollama", "list" ]
       interval: 1m30s
       timeout: 10s
       retries: 3
     networks:
       - ai-job-search
     profiles:
-      - ai-services # Optional service, enable with --profile ai-services
+      - aiEnrich # Optional service, enable with --profile ai-services
 
   # AI Enrichment - CrewAI Service
   aienrich:
@@ -103,11 +103,14 @@ services:
     container_name: ai-job-search-aienrich
     volumes:
       - ./apps/aiEnrich:/app/apps/aiEnrich
+      - /app/apps/aiEnrich/.venv # Anonymous volume to isolate container venv from host
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
     environment:
       - PYTHONUNBUFFERED=1
+      - DB_HOST=mysql_db
       - TZ=${TZ}
+      - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -117,7 +120,7 @@ services:
     networks:
       - ai-job-search
     profiles:
-      - aiEnrichOllama # Optional service, enable with --profile aiEnrichOllama
+      - aiEnrich # Optional service, enable with --profile aienrich
 
   # AI Enrichment New - Hugging Face Local Models
   aienrichnew:
@@ -152,6 +155,7 @@ services:
     container_name: ai-job-search-aienrich3
     volumes:
       - ./apps/aiEnrich3:/app/apps/aiEnrich3
+      - /app/apps/aiEnrich3/.venv # Anonymous volume to isolate container venv from host
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
@@ -165,6 +169,8 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    profiles:
+      - aiEnrich3
 
   # Scrapper - Job Scraping Service
   scrapper:

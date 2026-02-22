@@ -105,6 +105,7 @@ class TestAiJobSearchFlow:
         mock_get_env_bool.return_value = True
         mock_cv_loader = mock_cv_loader_cls.return_value
         mock_cv_loader.load_cv_content.return_value = True
+        mock_cv_loader.get_content.return_value = "Mock CV"
         mock_skill_enricher.return_value = 0
         mock_retry_failed_jobs.return_value = 0
         mock_data_extractor.return_value = 0

@@ -8,7 +8,6 @@ from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import cyan, printHR, yellow, red
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.ai_helpers import combineTaskResults, footer, mapJob, printJob, validateResult
-from commonlib.cv_loader import CVLoader
 from commonlib.aiEnrichRepository import AiEnrichRepository
 import traceback
 
@@ -22,7 +21,7 @@ LLM_CFG = LLM(
     # model="ollama/granite4",
     # model="ollama/nuextract",  # hangs on local ollama
     # model="ollama/deepseek-r1:8b",  # no GPU inference
-    base_url="http://localhost:11434",
+    base_url=getEnv('OLLAMA_BASE_URL', "http://localhost:11434"),
     temperature=0)
 
 
@@ -34,17 +33,15 @@ total = 0
 jobErrors = set[tuple[int, str]]()
 
 
-def cvMatch() -> int:
+def cvMatch(cvContent: str) -> int:
     global totalCount, jobErrors
-    cv_loader = CVLoader(cv_location=getEnv('CV_LOCATION', './cv/cv.txt'), enabled=getEnvBool('AI_CV_MATCH'))
-    if not cv_loader.load_cv_content():
+    if not cvContent:
         return 0
-    cvContent = cv_loader.get_content()
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         total = repo.count_pending_cv_match()
-        if total == 0:
-            return total
+        if total is None or total == 0:
+            return 0
         crew: Crew = CVMatcher().crew()
         limit = int(getEnv('AI_CV_MATCH_LIMIT', '10'))
         jobIds = repo.get_pending_cv_match_ids(limit)

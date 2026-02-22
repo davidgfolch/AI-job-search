@@ -5,7 +5,6 @@ from ..cvMatcher import cvMatch, _save, CVMatcher
 @pytest.fixture
 def mock_deps():
     with patch('aiEnrich.cvMatcher.getEnvBool') as env, \
-         patch('aiEnrich.cvMatcher.CVLoader') as cv_loader_cls, \
          patch('aiEnrich.cvMatcher.MysqlUtil') as mysql_util, \
          patch('aiEnrich.cvMatcher._save') as save_chk, \
          patch('aiEnrich.cvMatcher.printJob'), patch('aiEnrich.cvMatcher.printHR'), \
@@ -14,25 +13,19 @@ def mock_deps():
          patch('aiEnrich.cvMatcher.AiEnrichRepository') as repo_cls:
         
         env.return_value = True
-        
-        cv_loader_instance = MagicMock()
-        cv_loader_cls.return_value = cv_loader_instance
-        cv_loader_instance.load_cv_content.return_value = True
-        cv_loader_instance.get_content.return_value = "Mock CV"
-        
+
         mysql = MagicMock()
         mysql_util.return_value.__enter__.return_value = mysql
         
         repo = MagicMock()
         repo_cls.return_value = repo
         
-        yield {'env': env, 'cv_loader': cv_loader_instance, 'mysql': mysql, 'save': save_chk, 'repo': repo}
+        yield {'env': env, 'mysql': mysql, 'save': save_chk, 'repo': repo}
 
 class TestCVMatcher:
     def test_cv_match_early_exits_loader_false(self, mock_deps):
-        """Test early exit if loader returns False"""
-        mock_deps['cv_loader'].load_cv_content.return_value = False
-        assert cvMatch() == 0
+        """Test early exit if cvContent is empty"""
+        assert cvMatch("") == 0
 
     @patch('aiEnrich.cvMatcher.CVMatcher')
     def test_cv_match_success(self, mock_cls, mock_deps):
@@ -46,7 +39,7 @@ class TestCVMatcher:
         
         with patch('aiEnrich.cvMatcher.combineTaskResults', return_value={'cv_match_percentage': 85}), \
              patch('aiEnrich.cvMatcher.mapJob', return_value=('Job', 'Comp', 'Desc')):
-            assert cvMatch() == 1
+            assert cvMatch("Mock CV") == 1
             mock_deps['save'].assert_called()
 
     def test_save(self, mock_deps):

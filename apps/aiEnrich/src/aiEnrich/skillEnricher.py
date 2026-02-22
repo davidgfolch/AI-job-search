@@ -1,10 +1,15 @@
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process, LLM
 from commonlib.mysqlUtil import MysqlUtil
 from commonlib.skill_enricher_service import process_skill_enrichment, parse_skill_llm_output
 from commonlib.environmentUtil import getEnvBool, getEnv
 import os
 
 SKILL_CATEGORIES = getEnv("SKILL_CATEGORIES", required=True)
+
+LLM_CFG = LLM(
+    model="ollama/llama3.2",
+    base_url=getEnv('OLLAMA_BASE_URL', "http://localhost:11434"),
+    temperature=0)
 
 SYSTEM_PROMPT = f"""You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
@@ -27,7 +32,8 @@ def generate_skill_description(skill_name, context="") -> tuple[str, str]:
         goal='Generate precise descriptions for technical skills',
         backstory='You are an expert at defining technical skills for job matching.',
         verbose=False,
-        allow_delegation=False
+        allow_delegation=False,
+        llm=LLM_CFG
     )
     
     task = Task(
