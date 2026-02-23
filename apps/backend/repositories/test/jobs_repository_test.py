@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from repositories.jobWriteRepository import JobWriteRepository
-from commonlib.db_mock_util import create_mock_db
+from commonlib.test.db_mock_util import create_mock_db
 
 
 @patch("repositories.jobWriteRepository.MysqlUtil")

@@ -17,7 +17,7 @@ def client():
     return TestClient(app)
 
 
-from commonlib.db_mock_util import create_mock_db
+from commonlib.test.db_mock_util import create_mock_db
 
 
 JOB_COLUMNS = [
