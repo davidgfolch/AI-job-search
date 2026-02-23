@@ -1,31 +1,12 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.ai_helpers import (
-    rawToJson, validateResult, listsToString, fixJsonInvalidAttribute, 
-    mapJob, combineTaskResults, footer, LazyDecoder, printJsonException,
+    validateResult, listsToString, mapJob, combineTaskResults, footer,
     _expand_parenthesized_skills, _normalizeModality, VALID_MODALITIES
 )
 import json
 
-@pytest.mark.parametrize("json_str, expected", [
-    ('{"key": "value"}', {"key": "value"}),
-    ('```json\n{"key": "value"}\n```', {"key": "value"}),
-    ('Here is the json:\n```{"key": "value"}```', {"key": "value"}),
-    ('Thought: thinking...\njson object\n{"key": "value"}', {"key": "value"}),
-    (r'{"path": "C:\Windows\System32"}', {"path": r"C:\Windows\System32"}),
-])
-def test_rawToJson_valid_cases(json_str, expected):
-    assert rawToJson(json_str) == expected
 
-def test_rawToJson_exception():
-    with pytest.raises(json.JSONDecodeError):
-        rawToJson("{invalid json}")
-
-def test_fixJsonInvalidAttribute():
-    malformed = '{"salary": "100" + "k", "test": "val",",}'
-    fixed = fixJsonInvalidAttribute(malformed)
-    assert ' + ' in fixed
-    assert 'val",' in fixed
 
 @pytest.mark.parametrize("value, expected", [
     ("Java (Spring, Hibernate)", "Java,Spring,Hibernate"),
