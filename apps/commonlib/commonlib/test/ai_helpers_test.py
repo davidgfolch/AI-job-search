@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from commonlib.ai_helpers import (
     rawToJson, validateResult, listsToString, fixJsonInvalidAttribute, 
     mapJob, combineTaskResults, footer, LazyDecoder, printJsonException,
-    _expand_parenthesized_skills
+    _expand_parenthesized_skills, _normalizeModality, VALID_MODALITIES
 )
 import json
 
@@ -85,22 +85,52 @@ def test_mapJob(markdown, expected_markdown):
     assert markdown == expected_markdown
 
 def test_combineTaskResults():
-    # Mock crewOutput
     mock_output = MagicMock()
     mock_output.raw = '{"main": "result"}'
     mock_output.tasks_output = []
-    
-    res = combineTaskResults(mock_output, debug=False)
-    assert res["main"] == "result"
+    assert combineTaskResults(mock_output, debug=False)["main"] == "result"
 
-    # With tasks
     task1 = MagicMock()
     task1.raw = '{"salary": "100k"}'
     mock_output.tasks_output = [task1]
-    
-    res = combineTaskResults(mock_output, debug=True) # cover debug print
+    res = combineTaskResults(mock_output, debug=True)  # cover debug print
     assert res["salary"] == "100k"
     assert res["main"] == "result"
+
+def test_combineTaskResults_task_overrides_null_modality():
+    """Task result should override None values from main output (the modality bug fix)."""
+    mock_output = MagicMock()
+    mock_output.raw = '{"salary": null, "modality": null}'
+    task = MagicMock()
+    task.raw = '{"modality": "REMOTE", "salary": "50k"}'
+    mock_output.tasks_output = [task]
+    res = combineTaskResults(mock_output, debug=False)
+    assert res["modality"] == "REMOTE"
+    assert res["salary"] == "50k"
+
+@pytest.mark.parametrize("input_modality, expected", [
+    ("REMOTE", "REMOTE"),
+    ("remote", "REMOTE"),
+    ("Hybrid", "HYBRID"),
+    ("ON_SITE", "ON_SITE"),
+    ("invalid", None),
+    (None, None),
+    ("", None),
+])
+def test_normalizeModality(input_modality, expected):
+    result = {"modality": input_modality}
+    _normalizeModality(result)
+    assert result["modality"] == expected
+
+def test_validateResult_normalizes_modality():
+    result = {"modality": "remote"}
+    validateResult(result)
+    assert result["modality"] == "REMOTE"
+
+def test_validateResult_clears_invalid_modality():
+    result = {"modality": "ONSITE"}  # missing underscore - invalid
+    validateResult(result)
+    assert result["modality"] is None
 
 @pytest.mark.parametrize("job_errors, expected_output", [
     (set(), "Processed jobs this run: 1/10"),

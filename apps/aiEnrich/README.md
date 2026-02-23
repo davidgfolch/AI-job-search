@@ -4,7 +4,7 @@ Welcome to the AiJobSearch Crew project, powered by [crewAI](https://crewai.com)
 
 ## Overview
 
-This application uses a multi-agent AI system to enrich job data (e.g., extracting salary, technologies) using LLMs (Ollama/OpenAI).
+This application uses a multi-agent AI system to enrich job data (e.g., extracting salary, technologies, modality) using LLMs (Ollama/OpenAI).
 
 ## Installation
 

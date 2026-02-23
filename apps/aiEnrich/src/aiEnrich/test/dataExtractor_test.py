@@ -40,5 +40,5 @@ class TestDataExtractor:
         """Test save"""
         repo = MagicMock()
         with patch('aiEnrich.dataExtractor.validateResult'):
-            _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O'})
-            repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O')
+            _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': 'REMOTE'})
+            repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', 'REMOTE')

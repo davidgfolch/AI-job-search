@@ -8,16 +8,22 @@ select count(*) from jobs;
 
 select count(*) from jobs;
 
-select * from jobs WHERE not ai_enriched and not ignored;
+select * from jobs WHERE
+ -- not ai_enriched and not ignored AND
+  id in (506547)
 
 select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
 -- update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
 
-update jobs set ai_enriched=0, salary=NULL, required_technologies=NULL, optional_technologies=NULL
-WHERE ai_enriched -- and required_technologies like 'Jms%'
-AND DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 8 HOUR)
-LIMIT 20
--- where id=XXXXXXXX
+update jobs set ai_enriched=0, salary=NULL, required_technologies=NULL, optional_technologies=NULL, modality=null
+WHERE modality is null
+LIMIT 20;
+/* and required_technologies like 'Jms%'
+ AND DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 8 HOUR)
+ */
+
+/* and id=506471 */
+/* where id=XXXXXXXX */
 
 
 

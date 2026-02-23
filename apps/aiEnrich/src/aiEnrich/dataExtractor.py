@@ -100,7 +100,8 @@ def _save(repo: AiEnrichRepository, id, result: dict):
     repo.update_enrichment(id, 
                            result.get('salary', None), 
                            result.get('required_technologies', None),
-                           result.get('optional_technologies', None))
+                           result.get('optional_technologies', None),
+                           result.get('modality', None))
 
 
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):

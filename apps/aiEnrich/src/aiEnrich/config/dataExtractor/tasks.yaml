@@ -9,6 +9,7 @@ extractor_task:
     - Required technologies (comma-separated list)
     - Optional technologies (comma-separated list)
     - Salary information (if available)
+    - Modality (must be exactly REMOTE, HYBRID, or ON_SITE)
 
     
   expected_output: >
@@ -18,6 +19,7 @@ extractor_task:
       "required_technologies": "..., ..., ...",
       "optional_technologies": "..., ..., ...",
       "salary": "...",
+      "modality": "..."
     }
   agent: extractor_agent
 

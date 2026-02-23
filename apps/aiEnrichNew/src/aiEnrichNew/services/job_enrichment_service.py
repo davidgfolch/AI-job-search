@@ -21,7 +21,8 @@ def _save_job_result(repo: AiEnrichRepository, id: int, company: str, result: Di
         id, 
         result.get('salary', None), 
         result.get('required_technologies', None),
-        result.get('optional_technologies', None)
+        result.get('optional_technologies', None),
+        result.get('modality', None)
     )
 
 def _update_error_state(repo: AiEnrichRepository, id: int, error_msg: str, is_retry: bool):

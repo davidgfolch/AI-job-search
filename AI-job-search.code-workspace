@@ -13,10 +13,6 @@
             "path": "apps/scrapper"
         },
         {
-            "name": "aiEnrichNew",
-            "path": "apps/aiEnrichNew"
-        },
-        {
             "name": "web",
             "path": "apps/web"
         },
@@ -27,6 +23,18 @@
         {
             "name": "aiEnrich",
             "path": "apps/aiEnrich"
+        },
+        {
+            "name": "aiEnrichNew",
+            "path": "apps/aiEnrichNew"
+        },
+        {
+            "name": "aiCvEnrich3",
+            "path": "apps/aiEnrich3"
+        },
+        {
+            "name": "aiCvMatcher",
+            "path": "apps/aiCvMatcher"
         },
         {
             "name": "e2e",

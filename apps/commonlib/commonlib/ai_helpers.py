@@ -96,6 +96,16 @@ def fixJsonStartCurlyBraces(raw):
     return raw
 
 
+VALID_MODALITIES = {'REMOTE', 'HYBRID', 'ON_SITE'}
+
+def _normalizeModality(result: dict) -> None:
+    modality = result.get('modality')
+    if not modality:
+        result['modality'] = None
+        return
+    normalized = str(modality).upper().strip()
+    result['modality'] = normalized if normalized in VALID_MODALITIES else None
+
 def validateResult(result: dict[str, str]):
     salary = result.get('salary')
     if salary:  # infojobs
@@ -118,6 +128,7 @@ def validateResult(result: dict[str, str]):
             if hasLen(re.finditer(regex, salary, flags=re.I)):
                 result.update({'salary': re.sub(regex, r'\2', salary, flags=re.I)})
     listsToString(result, ['required_technologies', 'optional_technologies'])
+    _normalizeModality(result)
     # Validate cv_match_percentage
     cv_match = result.get('cv_match_percentage')
     if cv_match:
@@ -191,6 +202,7 @@ def combineTaskResults(crewOutput, debug) -> dict:
                 if debug:
                     print(yellow(f'Task {task_idx} result: {json.dumps(taskResult, indent=2)}'))
                 for key, value in taskResult.items():
-                    if key not in result and key in ["required_technologies", "optional_technologies", "salary", "experience_level", "responsibilities", "cv_match_percentage"]:
+                    allowed = ["required_technologies", "optional_technologies", "salary", "modality", "experience_level", "responsibilities", "cv_match_percentage"]
+                    if key in allowed and (key not in result or result[key] is None) and value is not None:
                         result[key] = value
     return result

@@ -49,7 +49,7 @@ class AiEnrichRepository:
             WHERE id=%s"""
         return self.mysql.fetchOne(query, id)
 
-    def update_enrichment(self, id: int, salary, required_tech, optional_tech, modality=None):
+    def update_enrichment(self, id: int, salary, required_tech, optional_tech, modality):
         query = """
             UPDATE jobs SET
                 salary=%s,

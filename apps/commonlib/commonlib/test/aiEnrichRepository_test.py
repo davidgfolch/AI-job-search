@@ -68,9 +68,9 @@ def test_get_job_to_retry():
 
 def test_update_enrichment():
     mock_mysql, repo = mockRepo()
-    repo.update_enrichment(1, "100k", "python", "java")
+    repo.update_enrichment(1, "100k", "python", "java", "REMOTE")
     assert mock_mysql.update_called
-    # Check params structure if needed, but basic call verification is good
+    assert mock_mysql.last_params[-2] == "REMOTE"  # modality is 4th param (before id)
 
 def test_update_enrichment_error():
     mock_mysql, repo = mockRepo()
