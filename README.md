@@ -26,9 +26,6 @@ This is a monorepo containing several applications and packages:
 | **AI Enrich 3** | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
 | **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)    | Local fast CV matching.                           | Python, SentenceTransformers |
 
-### Note on Root `pyproject.toml`
-The root `pyproject.toml` is **not required** for deploying or running the applications, as each module (in `apps/`) has its own dependencies and configuration for Docker and CI/CD. However, it is **highly necessary for the local Developer Experience (DX)**. It configures the virtual environment used by the VS Code Workspace (`.venv`), providing global linting/formatting tools (like `black`, `ruff`, and `mypy`), and ensures the IDE can correctly resolve cross-module imports like `commonlib`.
-
 ## Features
 
 - Scrapping jobs from multiple platforms

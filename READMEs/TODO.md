@@ -3,6 +3,9 @@
 # Decouple skill enricher into a new module
 - Move skill enricher to a new module?
 
+# UI: create configuration page
+Containing: scrapper_state.json, .env editor, ...
+
 ## try claude with ollama run qwen3-coder-next
 
 Didn't install required ollama pre-resease.
