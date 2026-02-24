@@ -37,6 +37,25 @@ The root `pyproject.toml` is **not required** for deploying or running the appli
 - AI enrichment of skills
 - AI CV matching
 
+## Screenshots
+### UI Management
+![UIScreenShot](READMEs/assets/UIScreenShot.png)
+### AI daemons & fullstack app logs
+![DockerCompose](READMEs/assets/DockerCompose.png)
+### Scrapper
+![Scrapper](READMEs/assets/Scrappers.png)
+### Filters Configurations
+![UIFiltersConfigurations](READMEs/assets/UIFiltersConfigurations.png)
+### Skills Manager
+![UISkillsManager](READMEs/assets/UISkillsManager.png)
+### Skills Edit
+![UISkillsEdit](READMEs/assets/UISkillsEdit.png)
+### Stats
+![UIStats](READMEs/assets/UIStats.png)
+### Stats Filter Configurations
+![UIStatsFilterConfigurations](READMEs/assets/UIStatsFilterConfigurations.png)
+
+
 ## Getting Started
 
 ### Quick Start
