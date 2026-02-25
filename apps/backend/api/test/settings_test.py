@@ -4,7 +4,7 @@ from unittest.mock import patch
 ENV_DATA = {"KEY_A": "val_a", "KEY_B": "val_b"}
 STATE_DATA = {"last_execution": "2024-01-01T00:00:00", "running": False}
 
-SERVICE = "api.settings.settings_service"
+SERVICE = "api.settings.service"
 
 
 def test_get_env_settings(client):

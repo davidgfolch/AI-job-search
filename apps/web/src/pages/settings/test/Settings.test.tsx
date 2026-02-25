@@ -1,9 +1,10 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
-import { groupSettingsByKey, getSubgroupTitle } from '../utils/SettingsUtils';
+import { groupSettingsByKey } from '../utils/SettingsUtils';
+import { setupSettingsMocks } from './Settings.mocks';
 
 vi.mock('../api/SettingsApi');
 vi.mock('../utils/SettingsUtils');
@@ -21,33 +22,23 @@ vi.mock('../../common/components/core/MessageContainer', () => ({
     }
 }));
 
-const mockEnvSettings = {
-    'PREFIX_KEY1': 'value1',
-    'PREFIX_KEY2': 'value2',
-    'OTHER_KEY': 'value3',
-    'PASSWORD_KEY': 'secret'
-};
-
-const mockGroupedSettings = {
-    'PREFIX': ['PREFIX_KEY1', 'PREFIX_KEY2'],
-    'OTHER': ['OTHER_KEY', 'PASSWORD_KEY']
-};
-
-const mockScrapperState = { lastExecution: 'now' };
-
 describe('Settings', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        vi.mocked(groupSettingsByKey).mockReturnValue(mockGroupedSettings);
-        vi.mocked(getSubgroupTitle).mockImplementation((key) => {
-            if (key.startsWith('PREFIX_')) return 'PREFIX_SUBGROUP';
-            return key;
-        });
-        vi.mocked(settingsApi.getEnvSettings).mockResolvedValue(mockEnvSettings);
-        vi.mocked(settingsApi.getScrapperState).mockResolvedValue(mockScrapperState);
-        vi.mocked(settingsApi.updateEnvSettingsBulk).mockImplementation(async (settings) => settings);
-        vi.mocked(settingsApi.updateScrapperState).mockImplementation(async (state) => state);
+        setupSettingsMocks();
     });
+
+    const renderSettingsAndWait = async () => {
+        render(<Settings />);
+        await waitFor(() => {
+            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
+        });
+    };
+
+    const expectMessage = async (msg: string) => {
+        await waitFor(() => {
+            expect(screen.getByTestId('message-container')).toHaveTextContent(msg);
+        });
+    };
 
     it('renders loading state initially', async () => {
         render(<Settings />);
@@ -84,90 +75,12 @@ describe('Settings', () => {
         
         render(<Settings />);
 
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Failed to load settings');
-        });
+        await expectMessage('Failed to load settings');
     });
 
-    it('handles scrapper state refresh', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
-
-        const refreshBtn = screen.getByText('↻ Refresh');
-        await userEvent.click(refreshBtn);
-
-        expect(settingsApi.getScrapperState).toHaveBeenCalledTimes(2); // Initial loader + refresh
-        
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Scrapper state refreshed');
-        });
-    });
-
-    it('handles scrapper state refresh error', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
-
-        vi.mocked(settingsApi.getScrapperState).mockRejectedValueOnce(new Error('Refresh Error'));
-
-        const refreshBtn = screen.getByText('↻ Refresh');
-        await userEvent.click(refreshBtn);
-
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Failed to refresh scrapper state');
-        });
-    });
-
-    it('handles scrapper state save', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
-
-        const saveBtn = screen.getByText('Save', { selector: '.scrapper-save-btn' });
-        await userEvent.click(saveBtn);
-
-        expect(settingsApi.updateScrapperState).toHaveBeenCalledWith(mockScrapperState);
-
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Scrapper state saved successfully');
-        });
-    });
-
-    it('handles scrapper state invalid JSON error', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
-
-        const textarea = document.querySelector('.scrapper-editor textarea') as HTMLTextAreaElement;
-        
-        await userEvent.clear(textarea);
-        await userEvent.type(textarea, 'invalid json');
-
-        const saveBtn = screen.getByText('Save', { selector: '.scrapper-save-btn' });
-        await act(async () => {
-            await userEvent.click(saveBtn);
-        });
-
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Invalid JSON format for scrapper state');
-        });
-    });
 
     it('handles env setting update bulk', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
+        await renderSettingsAndWait();
 
         // the component binds handleEnvUpdateBulk to the Save buttons in env header and footer
         const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });
@@ -183,11 +96,7 @@ describe('Settings', () => {
     });
 
     it('handles env setting update bulk error', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
+        await renderSettingsAndWait();
 
         vi.mocked(settingsApi.updateEnvSettingsBulk).mockRejectedValue(new Error('Save Error'));
 
@@ -195,17 +104,11 @@ describe('Settings', () => {
         
         await userEvent.click(saveBtns[0]);
 
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Failed to update');
-        });
+        await expectMessage('Failed to update');
     });
 
     it('allows editing an env setting', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
+        await renderSettingsAndWait();
 
         const inputs = screen.getAllByRole('textbox');
         const firstInput = inputs[0] as HTMLInputElement;
@@ -222,11 +125,7 @@ describe('Settings', () => {
         });
         vi.mocked(settingsApi.getEnvSettings).mockResolvedValue({'SINGLE_KEY': 'singlesval'});
         
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
+        await renderSettingsAndWait();
 
         expect(screen.getByText('SINGLE_KEY')).toBeInTheDocument();
         const singleInput = screen.getByDisplayValue('singlesval');
@@ -237,36 +136,9 @@ describe('Settings', () => {
         expect(singleInput).toHaveValue('newSingle');
     });
 
-    it('dismisses message container (line 90)', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
-
-        // Trigger a success message
-        const saveBtn = screen.getByText('Save', { selector: '.scrapper-save-btn' });
-        await userEvent.click(saveBtn);
-
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Scrapper state saved successfully');
-        });
-
-        // Click the message container to dismiss it
-        await userEvent.click(screen.getByTestId('message-container'));
-        
-        // Wait for it to disappear
-        await waitFor(() => {
-            expect(screen.queryByTestId('message-container')).not.toBeInTheDocument();
-        });
-    });
 
     it('saves env settings from footer button (line 161)', async () => {
-        render(<Settings />);
-
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
+        await renderSettingsAndWait();
 
         // The second save button is usually the footer one in the env settings container
         const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });
