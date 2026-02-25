@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import PageHeader from '../common/components/PageHeader';
 import { settingsApi } from './api/SettingsApi';
 import MessageContainer from '../common/components/core/MessageContainer';
@@ -10,8 +10,13 @@ export default function Settings() {
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const effectRan = useRef(false);
+
     useEffect(() => {
-        loadData();
+        if (!effectRan.current) {
+            loadData();
+            effectRan.current = true;
+        }
     }, []);
 
     const loadScrapperState = async () => {
