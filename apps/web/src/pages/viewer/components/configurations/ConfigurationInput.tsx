@@ -29,6 +29,7 @@ export function ConfigurationInput({
         <>
             <input
                 id="filter-config-input"
+                name="filter-config-input"
                 type="text"
                 placeholder="Type to load or enter name to save..."
                 value={configName}

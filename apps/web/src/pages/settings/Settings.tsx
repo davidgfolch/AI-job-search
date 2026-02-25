@@ -7,6 +7,7 @@ import PageHeader from '../common/components/PageHeader';
 import { settingsApi } from './api/SettingsApi';
 import { groupSettingsByKey, getSubgroupTitle } from './utils/SettingsUtils';
 import MessageContainer from '../common/components/core/MessageContainer';
+import { FormField } from '../common/components/core/FormField';
 import './Settings.css';
 
 export default function Settings() {
@@ -124,15 +125,16 @@ export default function Settings() {
                                                 if (subKeys.length === 1) {
                                                     const key = subKeys[0];
                                                     return (
-                                                        <div key={key} className="env-item inline-item">
-                                                            <span className="env-key-label">{key}</span>
+                                                        <FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item">
                                                             <input
+                                                                id={`env-${key}`}
+                                                                name={key}
                                                                 className="env-input compact-input"
                                                                 type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
                                                                 value={envSettings[key] || ''}
                                                                 onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
                                                             />
-                                                        </div>
+                                                        </FormField>
                                                     );
                                                 }
                                                 return (
@@ -140,15 +142,16 @@ export default function Settings() {
                                                         <h4 className="env-subgroup-title">{subTitle}</h4>
                                                         <div className="env-items">
                                                             {subKeys.map(key => (
-                                                                <div key={key} className="env-item inline-item">
-                                                                    <span className="env-key-label">{key}</span>
+                                                                <FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item">
                                                                     <input
+                                                                        id={`env-${key}`}
+                                                                        name={key}
                                                                         className="env-input compact-input"
                                                                         type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
                                                                         value={envSettings[key] || ''}
                                                                         onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
                                                                     />
-                                                                </div>
+                                                                </FormField>
                                                             ))}
                                                         </div>
                                                     </div>

@@ -1,4 +1,5 @@
 type CalcMode = 'classic' | 'hoursPerWeek' | 'daysPerMonth';
+import { FormField } from '../../../common/components/core/FormField';
 
 interface SalaryCalculatorControlsProps {
     calcMode: CalcMode;
@@ -19,47 +20,43 @@ interface SalaryCalculatorControlsProps {
 
 function ModeSelector({ value, onChange }: { value: CalcMode; onChange: (v: CalcMode) => void }) {
     return (
-        <div className="compact-filter">
-            Mode:
-            <select className="compact-select" value={value} onChange={(e) => onChange(e.target.value as CalcMode)}>
+        <FormField id="calc-mode" label="Mode:" className="compact-filter">
+            <select id="calc-mode" name="calc-mode" className="compact-select" value={value} onChange={(e) => onChange(e.target.value as CalcMode)}>
                 <option value="classic">Classic</option>
                 <option value="hoursPerWeek">Hours/Week</option>
                 <option value="daysPerMonth">Days/Month</option>
             </select>
-        </div>
+        </FormField>
     );
 }
 
-function RateInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+function RateInput({ label, id, name, value, onChange }: { label: string; id: string; name: string; value: number; onChange: (v: number) => void }) {
     return (
-        <div className="compact-filter">
-            {label}:
-            <input className="compact-input salary-rate-input" type="number" value={value} onChange={(e) => onChange(Number(e.target.value))} />
-        </div>
+        <FormField id={id} label={`${label}:`} className="compact-filter">
+            <input id={id} name={name} className="compact-input salary-rate-input" type="number" value={value} onChange={(e) => onChange(Number(e.target.value))} />
+        </FormField>
     );
 }
 
 function RateTypeSelector({ value, onChange }: { value: 'Hourly' | 'Daily'; onChange: (v: 'Hourly' | 'Daily') => void }) {
     return (
-        <div className="compact-filter">
-            Type:
-            <select className="compact-select" value={value} onChange={(e) => onChange(e.target.value as 'Hourly' | 'Daily')}>
+        <FormField id="calc-rate-type" label="Type:" className="compact-filter">
+            <select id="calc-rate-type" name="calc-rate-type" className="compact-select" value={value} onChange={(e) => onChange(e.target.value as 'Hourly' | 'Daily')}>
                 <option value="Hourly">Hourly</option>
                 <option value="Daily">Daily</option>
             </select>
-        </div>
+        </FormField>
     );
 }
 
 function FreelanceSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
     return (
-        <div className="compact-filter">
-            Month Rate (Freelance):
-            <select className="compact-select" value={value} onChange={(e) => onChange(Number(e.target.value))}>
+        <FormField id="calc-freelance-rate" label="Month Rate (Freelance):" className="compact-filter">
+            <select id="calc-freelance-rate" name="calc-freelance-rate" className="compact-select" value={value} onChange={(e) => onChange(Number(e.target.value))}>
                 <option value="80">80</option>
                 <option value="300">300</option>
             </select>
-        </div>
+        </FormField>
     );
 }
 
@@ -73,20 +70,20 @@ export function SalaryCalculatorControls(props: SalaryCalculatorControlsProps) {
 
             {calcMode === 'classic' && (
                 <>
-                    <RateInput label="Rate" value={calcRate} onChange={setCalcRate} />
+                    <RateInput id="calc-rate-classic" name="calc-rate-classic" label="Rate" value={calcRate} onChange={setCalcRate} />
                     <RateTypeSelector value={calcRateType} onChange={setCalcRateType} />
                 </>
             )}
             {calcMode === 'hoursPerWeek' && (
                 <>
-                    <RateInput label="Hourly Rate" value={calcRate} onChange={setCalcRate} />
-                    <RateInput label="Hours/Week" value={calcHoursPerWeek} onChange={setCalcHoursPerWeek} />
+                    <RateInput id="calc-hourly-rate" name="calc-hourly-rate" label="Hourly Rate" value={calcRate} onChange={setCalcRate} />
+                    <RateInput id="calc-hours-week" name="calc-hours-week" label="Hours/Week" value={calcHoursPerWeek} onChange={setCalcHoursPerWeek} />
                 </>
             )}
             {calcMode === 'daysPerMonth' && (
                 <>
-                    <RateInput label="Daily Rate" value={calcRate} onChange={setCalcRate} />
-                    <RateInput label="Days/Month" value={calcDaysPerMonth} onChange={setCalcDaysPerMonth} />
+                    <RateInput id="calc-daily-rate" name="calc-daily-rate" label="Daily Rate" value={calcRate} onChange={setCalcRate} />
+                    <RateInput id="calc-days-month" name="calc-days-month" label="Days/Month" value={calcDaysPerMonth} onChange={setCalcDaysPerMonth} />
                 </>
             )}
 

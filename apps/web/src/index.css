@@ -139,3 +139,15 @@ html {
   display: flex;
   flex-direction: column;
 }
+
+.form-field-horizontal {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-field-horizontal label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}

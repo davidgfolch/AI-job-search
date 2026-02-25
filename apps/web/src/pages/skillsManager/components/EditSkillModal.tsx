@@ -1,8 +1,9 @@
 import React from 'react';
-import type { Skill } from './useLearnList';
+import type { Skill } from '../hooks/useLearnList';
 import { useEditSkillForm } from '../hooks/useEditSkillForm';
 import { SkillDescriptionField } from './SkillDescriptionField';
 import { SkillLearningPathField } from './SkillLearningPathField';
+import { FormField } from '../../common/components/core/FormField';
 
 declare const __AI_ENRICH_SKILL_ENABLED__: boolean;
 
@@ -114,9 +115,10 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
         </div>
         <div className="modal-body">
           {isNewSkill && (
-              <div className="form-group">
-                  <label>Skill Name</label>
+              <FormField id="skill-name-input" label="Skill Name" className="form-group">
                   <input
+                      id="skill-name-input"
+                      name="skill-name"
                       type="text"
                       className="skill-input"
                       value={name}
@@ -124,15 +126,16 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
                       placeholder="e.g. React, Python, ..."
                       autoFocus
                   />
-              </div>
+              </FormField>
           )}
           
-          <div className="form-group">
-            <label>Category</label>
+          <FormField id="skill-category-input" label="Category" className="form-group">
             {isViewMode ? (
                 <div style={{ padding: '8px 0', fontSize: '1rem' }}>{category || 'No category'}</div>
             ) : (
                 <input
+                    id="skill-category-input"
+                    name="skill-category"
                     type="text"
                     className="skill-input"
                     value={category}
@@ -140,7 +143,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
                     placeholder="e.g. Frameworks, Languages, Tools..."
                 />
             )}
-          </div>
+          </FormField>
 
           <SkillDescriptionField
              description={description}

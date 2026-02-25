@@ -5,6 +5,7 @@ import './Filters.css';
 import HistoryInput from "../../common/components/core/HistoryInput";
 import FilterConfigurations from './FilterConfigurations';
 import SqlEditor from "../../common/components/core/SqlEditor";
+import { FormField } from "../../common/components/core/FormField";
 import { useFilterExpanded } from '../hooks/useFilterExpanded';
 
 interface BooleanFiltersProps {
@@ -53,52 +54,53 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                 {isExpanded && (
                     <div className="filters-content">
                         <div className="general-filters">
-                            <div className="compact-filter">
-                                <label htmlFor="filter-search">Search:</label>
+                            <FormField id="filter-search" label="Search:" className="compact-filter">
                                 <HistoryInput
                                     id="filter-search"
+                                    name="filter-search"
                                     storageKey="history_search"
                                     type="text"
                                     placeholder="Search jobs..."
                                     value={filters.search || ''}
                                     onValueChange={handleSearchChange}
                                     className="compact-input"/>
-                            </div>
-                            <label className="compact-filter">
-                                Days old:
-                                <input name="days_old" type="number" value={filters.days_old || ''}
+                            </FormField>
+                            <FormField id="days_old" label="Days old:" className="compact-filter">
+                                <input id="days_old" name="days_old" type="number" value={filters.days_old || ''}
                                     onChange={(e) => onFiltersChange({ days_old: parseInt(e.target.value) || undefined })}
                                     className="compact-input"/>
-                            </label>
-                            <div className="compact-filter">
-                                <label htmlFor="filter-salary">Salary (Regex):</label>
-                                <HistoryInput id="filter-salary"
+                            </FormField>
+                            <FormField id="filter-salary" label="Salary (Regex):" className="compact-filter">
+                                <HistoryInput id="filter-salary" name="filter-salary"
                                     storageKey="history_salary"
                                     type="text"
                                     value={filters.salary || ''}
                                     onValueChange={(val) => onFiltersChange({ salary: val })}
                                     className="compact-input"/>
-                            </div>
-                            <div className="compact-filter sql-filter">
-                                <div style={{ alignItems: 'center', justifyContent: 'normal', gap: '1rem' }}>
-                                    <label htmlFor="filter-sql">SQL Where Filter:</label>
-                                    <button type="button" 
-                                        onClick={() => setIsSqlEditorOpen(true)}
-                                        style={{ marginLeft: '1rem' }}
-                                        className="btn btn-primary">
-                                        SQL Editor
-                                    </button>
-                                </div>
-                                <HistoryInput id="filter-sql"
+                            </FormField>
+                            <FormField id="filter-sql" 
+                                label={
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'normal', gap: '1rem' }}>
+                                        <span>SQL Where Filter:</span>
+                                        <button type="button" 
+                                            onClick={() => setIsSqlEditorOpen(true)}
+                                            style={{ marginLeft: '1rem' }}
+                                            className="btn btn-primary">
+                                            SQL Editor
+                                        </button>
+                                    </div>
+                                }
+                                className="compact-filter sql-filter"
+                            >
+                                <HistoryInput id="filter-sql" name="filter-sql"
                                     storageKey="history_sql"
                                     type="text"
                                     value={filters.sql_filter || ''}
                                     onValueChange={(val) => onFiltersChange({ sql_filter: val })}
                                     placeholder="e.g. salary > 50000 AND title LIKE '%Senior%'"
                                     className="sql-input"/>
-                            </div>
-                            <div className="compact-filter sort-filter">
-                                <label htmlFor="sort_field">Sort:</label>
+                            </FormField>
+                            <FormField id="sort_field" label="Sort:" className="compact-filter sort-filter">
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                     <select id="sort_field" name="sort_field"
                                         value={filters.order?.split(' ')[0] || 'created'}
@@ -114,7 +116,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                         <option value="salary">Salary</option>
                                         <option value="cv_match_percentage">Match %</option>
                                     </select>
-                                    <select name="sort_dir" value={filters.order?.split(' ')[1] || 'desc'}
+                                    <select id="sort_dir" name="sort_dir" value={filters.order?.split(' ')[1] || 'desc'}
                                         onChange={(e) => {
                                             const newDir = e.target.value;
                                             const currentField = filters.order?.split(' ')[0] || 'created';
@@ -127,7 +129,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                         <option value="asc">Asc</option>
                                     </select>
                                 </div>
-                            </div>
+                            </FormField>
                         </div>
                         <div className="boolean-filter-groups">
                             <div className="filter-group">

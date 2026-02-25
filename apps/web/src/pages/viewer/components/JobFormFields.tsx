@@ -1,5 +1,6 @@
 import { useRef, type Dispatch, type SetStateAction } from 'react';
 import { useAutoResizeTextArea } from '../../common/hooks/useAutoResizeTextArea';
+import { FormField } from '../../common/components/core/FormField';
 
 // Define explicit types for formState and setters extracted from useJobEditForm output structure
 // This assumes formState and setters structure from useJobEditForm.ts
@@ -65,87 +66,79 @@ export default function JobFormFields({
     return (
         <div className="form-fields">
             {(mode === 'create' || showAllFields) && (
-                <div className="form-field">
-                    <label htmlFor={`${formIdPrefix}-title`}>Title *</label>
+                <FormField id={`${formIdPrefix}-title`} label="Title *">
                     <input type="text" 
                         id={`${formIdPrefix}-title`} name="title"
                         value={title} onChange={handleChange(setTitle, 'title')} 
                         placeholder="Job Title"
                         autoComplete="organization-title"
                     />
-                </div>
+                </FormField>
             )}
             
             <div className="form-row">
                 {(mode === 'create' || showAllFields) && (
-                    <div className="form-field">
-                        <label htmlFor={`${formIdPrefix}-company`}>Company *</label>
+                    <FormField id={`${formIdPrefix}-company`} label="Company *">
                         <input type="text" 
                             id={`${formIdPrefix}-company`} name="company"
                             value={company} onChange={handleChange(setCompany, 'company')} 
                             placeholder="Company Name"
                             autoComplete="organization"
                         />
-                    </div>
+                    </FormField>
                 )}
-                <div className="form-field">
-                    <label htmlFor={`${formIdPrefix}-client`}>Client</label>
+                <FormField id={`${formIdPrefix}-client`} label="Client">
                     <input type="text" 
                         id={`${formIdPrefix}-client`} name="client"
                         value={client} onChange={handleChange(setClient, 'client')} 
                         placeholder="Client (if applicable)"
                         autoComplete="off"
                     />
-                </div>
+                </FormField>
                 {(mode === 'create' || showAllFields) && (
-                    <div className="form-field">
-                        <label htmlFor={`${formIdPrefix}-location`}>Location</label>
+                    <FormField id={`${formIdPrefix}-location`} label="Location">
                         <input type="text" 
                             id={`${formIdPrefix}-location`} name="location"
                             value={location} onChange={handleChange(setLocation, 'location')} 
                             placeholder="Location"
                             autoComplete="address-level2"
                         />
-                    </div>
+                    </FormField>
                 )}
             </div>
 
-            <div className="form-field">
-                <label htmlFor={`${formIdPrefix}-salary`}>Salary</label>
+            <FormField id={`${formIdPrefix}-salary`} label="Salary">
                 <input type="text" 
                     id={`${formIdPrefix}-salary`} name="salary"
                     value={salary} onChange={handleChange(setSalary, 'salary')} 
                     placeholder="Salary range"
                     autoComplete="off"
                 />
-            </div>
+            </FormField>
 
             {(mode === 'create' || showAllFields) && (
                 <div className="form-row">
-                    <div className="form-field">
-                        <label htmlFor={`${formIdPrefix}-url`}>URL</label>
+                    <FormField id={`${formIdPrefix}-url`} label="URL">
                         <input type="text" 
                             id={`${formIdPrefix}-url`} name="url"
                             value={url} onChange={handleChange(setUrl, 'url')} 
                             placeholder="Job Link"
                             autoComplete="url"
                         />
-                    </div>
-                    <div className="form-field form-field-small">
-                        <label htmlFor={`${formIdPrefix}-webPage`}>Source</label>
+                    </FormField>
+                    <FormField id={`${formIdPrefix}-webPage`} label="Source" className="form-field form-field-small">
                         <input type="text" 
                             id={`${formIdPrefix}-webPage`} name="webPage"
                             value={webPage} onChange={handleChange(setWebPage, 'web_page')} 
                             placeholder="Source (e.g. LinkedIn, Manual)"
                             autoComplete="off"
                         />
-                    </div>
+                    </FormField>
                 </div>
             )}
             {(showAllFields) && (
                 <>
-                <div className="form-field">
-                    <label htmlFor={`${formIdPrefix}-requiredTechnologies`}>Required Skills</label>
+                <FormField id={`${formIdPrefix}-requiredTechnologies`} label="Required Skills">
                     <textarea ref={requiredTechnologiesRef} 
                         id={`${formIdPrefix}-requiredTechnologies`} name="requiredTechnologies"
                         value={requiredTechnologies} onChange={handleChange(setRequiredTechnologies, 'required_technologies')} 
@@ -153,9 +146,8 @@ export default function JobFormFields({
                         placeholder="Required Technologies (comma separated)"
                         autoComplete="off"
                     />
-                </div>
-                <div className="form-field">
-                    <label htmlFor={`${formIdPrefix}-optionalTechnologies`}>Optional Skills</label>
+                </FormField>
+                <FormField id={`${formIdPrefix}-optionalTechnologies`} label="Optional Skills">
                     <textarea ref={optionalTechnologiesRef} 
                         id={`${formIdPrefix}-optionalTechnologies`} name="optionalTechnologies"
                         value={optionalTechnologies} onChange={handleChange(setOptionalTechnologies, 'optional_technologies')} 
@@ -163,11 +155,10 @@ export default function JobFormFields({
                         placeholder="Optional Technologies (comma separated)"
                         autoComplete="off"
                     />
-                </div>
+                </FormField>
                 </>
             )}
-            <div className="form-field">
-                <label htmlFor={`${formIdPrefix}-comments`}>Comments</label>
+            <FormField id={`${formIdPrefix}-comments`} label="Comments">
                 <textarea ref={commentsRef} 
                     id={`${formIdPrefix}-comments`} name="comments"
                     value={comments} onChange={handleChange(setComments, 'comments')} 
@@ -175,10 +166,9 @@ export default function JobFormFields({
                     placeholder="Add your comments here..." 
                     autoComplete="off"
                 />
-            </div>
+            </FormField>
             {(mode === 'create' || showAllFields) && (
-                <div className="form-field">
-                    <label htmlFor={`${formIdPrefix}-markdown`}>Description</label>
+                <FormField id={`${formIdPrefix}-markdown`} label="Description">
                     <textarea ref={markdownRef}
                         id={`${formIdPrefix}-markdown`} name="markdown"
                         value={markdown} onChange={handleChange(setMarkdown, 'markdown')} 
@@ -186,7 +176,7 @@ export default function JobFormFields({
                         placeholder="Job Description (Markdown supported)"
                         autoComplete="off"
                     />
-                </div>
+                </FormField>
             )}
             {mode === 'create' && (
                 <div className="form-actions">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { FormField } from '../../common/components/core/FormField';
 
 
 interface SkillLearningPathFieldProps {
@@ -23,8 +24,7 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
   handleLinkInputKeyDown
 }) => {
   return (
-    <div className="form-group">
-      <label>Learning Path</label>
+    <FormField id="learning-path-input" label="Learning Path" className="form-group">
       {isViewMode ? (
         <div className="links-list">
           {(skillLearningPath && skillLearningPath.length > 0) ? skillLearningPath.map((link, i) => (
@@ -51,6 +51,8 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
           ))}
           <div className="link-input-group">
             <input
+              id="learning-path-input"
+              name="learning-path"
               type="url"
               className="skill-input"
               placeholder="Add URL (https://...)"
@@ -69,6 +71,6 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </FormField>
   );
 };

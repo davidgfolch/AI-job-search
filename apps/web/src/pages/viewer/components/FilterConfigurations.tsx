@@ -5,6 +5,7 @@ import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import { PinnedConfigurations } from './configurations/PinnedConfigurations';
 import ConfirmModal from '../../common/components/core/ConfirmModal';
+import { FormField } from '../../common/components/core/FormField';
 import { useEffect } from 'react';
 
 const CLEAN_OLD_JOBS_CONFIG = {
@@ -89,36 +90,37 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                 >
                     Filters {hasActiveFilters && <span className="color-green">●</span>} {isExpanded ? '▼' : '▶'}
                 </button>
-                <label htmlFor="filter-config-input">Filter Configurations:</label>
-                <div className="config-controls" ref={wrapperRef}>
-                    <ConfigurationInput
-                        configName={configName}
-                        onChange={handleChange}
-                        onKeyDown={handleKeyDown}
-                        onFocus={handleFocus}
-                        onClick={handleFocus}
-                        onBlur={handleBlur}
-                        onSave={saveConfiguration}
-                        onExport={exportToDefaults}
-                        onWatch={toggleWatcherActive}
-                        isWatching={isWatching}
-                    />
-                    <ConfigurationDropdown
-                        isOpen={isOpen}
-                        filteredConfigs={filteredConfigs}
-                        highlightIndex={highlightIndex}
-                        onLoad={loadConfiguration}
-                        onDelete={deleteConfiguration}
-                        setHighlightIndex={setHighlightIndex}
-                        onToggleWatch={toggleWatch}
-                        onToggleStats={toggleStatistics}
-                        onTogglePin={togglePin}
-                        results={watcherResults}
-                        lastCheckTime={lastCheckTime}
-                        onReorder={reorderConfigurations}
-                        allowReorder={!configName}
-                    />
-                </div>
+                <FormField id="filter-config-input" label="Filter Configurations:" className="config-controls-container" layout="horizontal">
+                    <div className="config-controls" ref={wrapperRef}>
+                        <ConfigurationInput
+                            configName={configName}
+                            onChange={handleChange}
+                            onKeyDown={handleKeyDown}
+                            onFocus={handleFocus}
+                            onClick={handleFocus}
+                            onBlur={handleBlur}
+                            onSave={saveConfiguration}
+                            onExport={exportToDefaults}
+                            onWatch={toggleWatcherActive}
+                            isWatching={isWatching}
+                        />
+                        <ConfigurationDropdown
+                            isOpen={isOpen}
+                            filteredConfigs={filteredConfigs}
+                            highlightIndex={highlightIndex}
+                            onLoad={loadConfiguration}
+                            onDelete={deleteConfiguration}
+                            setHighlightIndex={setHighlightIndex}
+                            onToggleWatch={toggleWatch}
+                            onToggleStats={toggleStatistics}
+                            onTogglePin={togglePin}
+                            results={watcherResults}
+                            lastCheckTime={lastCheckTime}
+                            onReorder={reorderConfigurations}
+                            allowReorder={!configName}
+                        />
+                    </div>
+                </FormField>
             </div>
             <PinnedConfigurations
                 pinnedConfigs={pinnedConfigs}

@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import { FormField } from '../../common/components/core/FormField';
 
 interface SkillDescriptionFieldProps {
   description: string;
@@ -13,8 +14,7 @@ export const SkillDescriptionField: React.FC<SkillDescriptionFieldProps> = ({
   isViewMode
 }) => {
   return (
-    <div className="form-group flex-grow">
-      <label>Description</label>
+    <FormField id="skill-description-textarea" label="Description" className="form-group flex-grow">
       {isViewMode ? (
         <div className="description-preview" style={{ height: '100%', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '8px', backgroundColor: 'var(--bg-secondary)', overflowY: 'auto' }}>
           {description ? <ReactMarkdown>{description}</ReactMarkdown> : <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No description</span>}
@@ -22,6 +22,8 @@ export const SkillDescriptionField: React.FC<SkillDescriptionFieldProps> = ({
       ) : (
         <div className="description-editor-container">
           <textarea
+            id="skill-description-textarea"
+            name="skill-description"
             className="skill-textarea"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -33,6 +35,6 @@ export const SkillDescriptionField: React.FC<SkillDescriptionFieldProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </FormField>
   );
 };
