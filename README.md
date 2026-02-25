@@ -33,6 +33,7 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of job offers (salary, skills, work modality)
 - AI enrichment of skills
 - AI CV matching
+- **Settings UI** to manage `.env` variables and scrapper state directly from the browser
 
 ## Screenshots
 ### UI Management
@@ -51,6 +52,10 @@ This is a monorepo containing several applications and packages:
 ![UIStats](READMEs/assets/UIStats.png)
 ### Stats Filter Configurations
 ![UIStatsFilterConfigurations](READMEs/assets/UIStatsFilterConfigurations.png)
+### Settings — Environment Variables
+![UISettings](READMEs/assets/UISettings.png)
+### Settings — Scrapper State
+![UISettingsScrapperState](READMEs/assets/UISettingsScrapperState.png)
 
 
 ## Getting Started
