@@ -36,6 +36,8 @@ services:
     volumes:
       - ./apps/backend:/app/apps/backend
       - ./apps/commonlib:/app/apps/commonlib
+      - ./apps/scrapper:/app/apps/scrapper
+      - ./scripts:/app/scripts
       - ./.env:/app/.env
     ports:
       - "8000:8000"

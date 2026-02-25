@@ -1,0 +1,217 @@
+.settings-main {
+    padding: 24px;
+    max-width: 100%;
+    font-family: inherit;
+    overflow-y: auto;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.settings-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+}
+
+.settings-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    align-items: flex-start;
+}
+
+.settings-section {
+    flex: 1 1 500px;
+    background: var(--bg-secondary, #1e1e1e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 8px;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.settings-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color, #333);
+    padding-bottom: 12px;
+}
+
+.env-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--border-color, #333);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+}
+
+.env-section-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Grid Layout Styles */
+.env-groups-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+}
+
+.env-group {
+    background: var(--bg-tertiary, #2a2a2a);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.env-group-header {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color, #333);
+    margin-bottom: 4px;
+}
+
+.env-group-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--accent-color, #3b82f6);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.env-items-scrollable {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.env-subgroup {
+    background: var(--bg-primary, #121212);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.env-subgroup-title {
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.env-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.env-item.inline-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.env-key-label {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    min-width: 150px;
+    max-width: 200px;
+    word-break: break-all;
+}
+
+.env-input {
+    flex: 1;
+    padding: 6px 10px;
+    background: var(--bg-tertiary, #2a2a2a);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: monospace;
+    font-size: 0.85rem;
+    min-width: 0;
+}
+
+.env-section-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 16px;
+}
+
+.env-input:focus {
+    outline: none;
+    border-color: var(--accent-color, #3b82f6);
+}
+
+/* Button styles */
+.env-save-btn, .scrapper-save-btn {
+    padding: 8px 16px;
+    background: var(--accent-color, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.env-save-btn:hover, .scrapper-save-btn:hover {
+    background: var(--accent-hover-color, #2563eb);
+}
+
+.scrapper-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.scrapper-refresh-btn {
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--text-secondary, #aaa);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s, color 0.2s;
+}
+
+.scrapper-refresh-btn:hover {
+    background: var(--bg-tertiary, #2a2a2a);
+    color: var(--text-primary, #fff);
+}
+
+/* Textarea styles */
+.scrapper-textarea {
+    width: 100%;
+    min-height: 400px;
+    padding: 12px;
+    background: var(--bg-primary, #121212);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: monospace;
+    resize: vertical;
+    margin-bottom: 16px;
+}
+
+.scrapper-textarea:focus {
+    outline: none;
+    border-color: var(--accent-color, #3b82f6);
+}

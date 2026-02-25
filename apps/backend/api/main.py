@@ -8,6 +8,7 @@ from api import statistics
 from api import statistics_archived
 from api import skills
 from api import filter_configurations
+from api import settings
 
 app = FastAPI(title="AI Job Search API")
 
@@ -34,6 +35,7 @@ app.include_router(
     prefix="/api/filter-configurations",
     tags=["filter-configurations"],
 )
+app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 
 
 @app.get("/health")

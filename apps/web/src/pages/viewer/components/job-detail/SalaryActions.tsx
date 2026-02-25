@@ -1,11 +1,24 @@
-import type { Job } from '../../api/jobs';
+import type { Job } from '../../../viewer/api/ViewerApi';
 
 interface SalaryActionsProps {
     onToggleCalculator: () => void;
     onUpdate?: (data: Partial<Job>) => void;
 }
 
+import { settingsApi } from '../../../settings/api/SettingsApi';
+
 export default function SalaryActions({ onToggleCalculator, onUpdate }: SalaryActionsProps) {
+    const handleGrossYearClick = async () => {
+        try {
+            const envSettings = await settingsApi.getEnvSettings();
+            const url = envSettings.GROSS_YEAR_URL || 'https://tecalculo.com/calculadora-de-sueldo-neto';
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Failed to get GROSS_YEAR_URL', error);
+            window.open('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank');
+        }
+    };
+
     return (
         <>
             <button 
@@ -14,7 +27,7 @@ export default function SalaryActions({ onToggleCalculator, onUpdate }: SalaryAc
                 🧮 Freelance</button>
             <button 
                 className="config-btn salary-toggle-btn"
-                onClick={() => window.open('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank')}>
+                onClick={handleGrossYearClick}>
                 🧮 Gross year</button>
             {onUpdate && (
                 <button

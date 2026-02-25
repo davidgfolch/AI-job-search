@@ -10,7 +10,7 @@ globalThis.IntersectionObserver = vi.fn(function(this: any) {
 describe('AppliedModal', () => {
     const defaultProps = {
         isOpen: true,
-        defaultComment: '- applied by 45k',
+        defaultComment: '',
         onConfirm: vi.fn(),
         onCancel: vi.fn(),
     };
@@ -35,7 +35,7 @@ describe('AppliedModal', () => {
     it('should display default comment in textarea', () => {
         render(<AppliedModal {...defaultProps} />);
         const textarea = screen.getByPlaceholderText('Enter comment...');
-        expect(textarea).toHaveValue('- applied by 45k');
+        expect(textarea).toHaveValue('');
     });
 
     it('should call onConfirm with comment when OK button is clicked', () => {
@@ -45,7 +45,7 @@ describe('AppliedModal', () => {
         const okButton = screen.getByText('OK');
         fireEvent.click(okButton);
         
-        expect(mockConfirm).toHaveBeenCalledWith(true, '- applied by 45k');
+        expect(mockConfirm).toHaveBeenCalledWith(true, '');
     });
 
     it('should call onConfirm without comment when "Don\'t set" button is clicked', () => {
@@ -87,7 +87,7 @@ describe('AppliedModal', () => {
         
         fireEvent.keyDown(document, { key: 'Enter' });
         
-        expect(mockConfirm).toHaveBeenCalledWith(true, '- applied by 45k');
+        expect(mockConfirm).toHaveBeenCalledWith(true, '');
     });
 
     it('should confirm without comment with Escape key', () => {

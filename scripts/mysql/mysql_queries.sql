@@ -34,7 +34,8 @@ select * from jobs where jobs.company='Michael Page' and applied order by create
 
 select * from jobs where jobs.web_page='Indeed' order by created DESC;
 
-delete from jobs where jobs.web_page='Indeed' and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) and not (ignored or applied or closed or discarded or seen) ;
+delete 
+from jobs where jobs.web_page='Infojobs' and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 8 HOUR) and not (ignored or applied or closed or discarded or seen) ;
 
 update jobs set web_page='Linkedin' where url like '%linkedin%';
 
@@ -108,7 +109,7 @@ order by r.counter desc
 
 delete from jobs where id in (445342)
 
-select title, company from jobs where id in (445342)
+select title, company, markdown from jobs where id in (508990)
 
 select * from jobs where id = 69103
 

@@ -1,7 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SalaryActions from '../SalaryActions';
+import { settingsApi } from '../../../../settings/api/SettingsApi';
+
+vi.mock('../../../../settings/api/SettingsApi', () => ({
+  settingsApi: {
+    getEnvSettings: vi.fn()
+  }
+}));
 
 describe('SalaryActions', () => {
   it('renders freelance calculator button', () => {
@@ -22,15 +29,19 @@ describe('SalaryActions', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('opens external link when gross year button clicked', async () => {
+  it('opens external link dynamically from settings when gross year button clicked', async () => {
     const user = userEvent.setup();
+    const mockUrl = 'https://custom.url/gross-year';
+    (settingsApi.getEnvSettings as any).mockResolvedValue({ GROSS_YEAR_URL: mockUrl });
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    
     render(<SalaryActions onToggleCalculator={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: /Gross year/ }));
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://tecalculo.com/calculadora-de-sueldo-neto',
-      '_blank'
-    );
+    
+    await waitFor(() => {
+      expect(openSpy).toHaveBeenCalledWith(mockUrl, '_blank');
+    });
+    
     openSpy.mockRestore();
   });
 

@@ -2,7 +2,7 @@ import defaultFilterConfigurations from '../../../resources/defaultFilterConfigu
 
 const persistenceDefaults: Record<string, any> = {
     'filter_configurations': defaultFilterConfigurations,
-    'default_comment_text': '- applied by 45k',
+    'default_comment_text': '',
 };
 
 export const persistenceApi = {

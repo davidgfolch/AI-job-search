@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useDefaultComment } from '../useDefaultComment';
-import { persistenceApi } from '../../api/CommonPersistenceApi';
+import { settingsApi } from '../../../settings/api/SettingsApi';
 
-// Mock the persistenceApi
-vi.mock('../../api/CommonPersistenceApi', () => ({
-    persistenceApi: {
-        getValue: vi.fn(),
-        setValue: vi.fn(),
+// Mock settingsApi
+vi.mock('../../../settings/api/SettingsApi', () => ({
+    settingsApi: {
+        getEnvSettings: vi.fn(),
+        updateEnvSetting: vi.fn(),
     },
 }));
 
@@ -23,9 +23,11 @@ describe('useDefaultComment', () => {
         consoleSpy?.mockRestore();
     });
 
-    it('should load default comment from localStorage on mount', async () => {
+    it('should load default comment from settingsApi on mount', async () => {
         const mockStoredComment = '- custom applied text';
-        (persistenceApi.getValue as any).mockResolvedValue(mockStoredComment);
+        (settingsApi.getEnvSettings as any).mockResolvedValue({
+            APPLY_MODAL_DEFAULT_TEXT: mockStoredComment
+        });
 
         const { result } = renderHook(() => useDefaultComment());
 
@@ -34,13 +36,15 @@ describe('useDefaultComment', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-        expect(persistenceApi.getValue).toHaveBeenCalledWith('default_comment_text');
+        expect(settingsApi.getEnvSettings).toHaveBeenCalled();
         expect(result.current.comment).toBe(mockStoredComment);
     });
 
-    it('should save comment to localStorage', async () => {
-        (persistenceApi.getValue as any).mockResolvedValue('- applied by 45k');
-        (persistenceApi.setValue as any).mockResolvedValue(undefined);
+    it('should save comment to settingsApi', async () => {
+        (settingsApi.getEnvSettings as any).mockResolvedValue({
+            APPLY_MODAL_DEFAULT_TEXT: ''
+        });
+        (settingsApi.updateEnvSetting as any).mockResolvedValue(undefined);
 
         const { result } = renderHook(() => useDefaultComment());
 
@@ -49,14 +53,16 @@ describe('useDefaultComment', () => {
         const newComment = '- new custom comment';
         await result.current.saveComment(newComment);
 
-        expect(persistenceApi.setValue).toHaveBeenCalledWith('default_comment_text', newComment);
+        expect(settingsApi.updateEnvSetting).toHaveBeenCalledWith('APPLY_MODAL_DEFAULT_TEXT', newComment);
         await waitFor(() => {
             expect(result.current.comment).toBe(newComment);
         });
     });
 
     it('should not save empty comment', async () => {
-        (persistenceApi.getValue as any).mockResolvedValue('- applied by 45k');
+        (settingsApi.getEnvSettings as any).mockResolvedValue({
+            APPLY_MODAL_DEFAULT_TEXT: ''
+        });
 
         const { result } = renderHook(() => useDefaultComment());
 
@@ -66,7 +72,7 @@ describe('useDefaultComment', () => {
             result.current.saveComment('   ');
         });
 
-        expect(persistenceApi.setValue).not.toHaveBeenCalled();
+        expect(settingsApi.updateEnvSetting).not.toHaveBeenCalled();
     });
 
 });

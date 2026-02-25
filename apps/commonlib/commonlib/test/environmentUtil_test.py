@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 import os
 from commonlib.environmentUtil import (
     getEnv, 
@@ -7,7 +7,9 @@ from commonlib.environmentUtil import (
     getEnvModified, 
     checkEnvReload, 
     getEnvMultiline,
-    getEnvByPrefix
+    getEnvByPrefix,
+    getEnvAll,
+    setEnv
 )
 import commonlib.environmentUtil as envUtil
 
@@ -83,3 +85,62 @@ class TestEnvironmentUtil:
         with patch.dict(os.environ, {}, clear=True):
              with pytest.raises(ValueError, match="Required environment variables"):
                  getEnvByPrefix('MISSING_', required=True)
+
+    @patch('commonlib.environmentUtil.dotenv_values')
+    def test_getEnvAll(self, mock_dotenv_values):
+        def mock_dotenv(path):
+            if str(path).endswith('.env.example'):
+                return {'KEY1': 'default1', 'KEY2': 'default2', 'KEY3': 'default3'}
+            if str(path).endswith('.env'):
+                return {'KEY1': 'actual1', 'KEY3': ''}
+            return {}
+        
+        mock_dotenv_values.side_effect = mock_dotenv
+        
+        with patch('commonlib.environmentUtil.ENV_EXAMPLE_PATH') as mock_eg_path, \
+             patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path:
+            mock_eg_path.exists.return_value = True
+            mock_eg_path.__str__.return_value = '/fake/.env.example'
+            mock_env_path.exists.return_value = True
+            mock_env_path.__str__.return_value = '/fake/.env'
+            
+            result = getEnvAll()
+            
+            assert result['KEY1'] == 'actual1'
+            assert result['KEY2'] == 'default2'
+            assert result['KEY3'] == '' # Values can be empty string
+
+    @patch('commonlib.environmentUtil.set_key')
+    @patch('commonlib.environmentUtil.load_dotenv')
+    @patch('commonlib.environmentUtil.getEnvModified')
+    def test_setEnv_existing_file(self, mock_get_mod, mock_load, mock_set_key):
+        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path:
+            mock_env_path.exists.return_value = True
+            mock_env_path.__str__.return_value = '/fake/.env'
+            
+            mock_get_mod.return_value = 300
+            
+            setEnv('NEW_KEY', 'NEW_VALUE')
+            
+            mock_set_key.assert_called_once_with(mock_env_path.__str__(), 'NEW_KEY', 'NEW_VALUE')
+            mock_load.assert_called_once_with(dotenv_path=mock_env_path, override=True)
+            assert envUtil.envLastModified == 300
+
+    @patch('commonlib.environmentUtil.set_key')
+    @patch('commonlib.environmentUtil.load_dotenv')
+    @patch('commonlib.environmentUtil.getEnvModified')
+    def test_setEnv_new_file(self, mock_get_mod, mock_load, mock_set_key):
+        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path:
+            mock_env_path.exists.return_value = False
+            
+            mock_get_mod.return_value = 400
+            
+            m_open = mock_open()
+            with patch('builtins.open', m_open):
+                setEnv('NEW_KEY', 'NEW_VALUE')
+                
+            m_open.assert_called_once_with(mock_env_path, 'w', encoding='utf-8')
+            m_open().write.assert_called_once_with('NEW_KEY=NEW_VALUE\n')
+            mock_set_key.assert_not_called()
+            mock_load.assert_called_once_with(dotenv_path=mock_env_path, override=True)
+            assert envUtil.envLastModified == 400

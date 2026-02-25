@@ -18,7 +18,7 @@ Format your response as a single valid JSON object strictly complying with this 
 Strictly JSON. No conversational text. No markdown blocks."""
 
 def get_skill_system_prompt() -> str:
-    categories = getEnv("SKILL_CATEGORIES", required=True)
+    categories = getEnv("AI_SKILL_CATEGORIES", required=True)
     return f"""You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
 The structure MUST be:

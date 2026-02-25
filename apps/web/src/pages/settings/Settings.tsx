@@ -1,0 +1,198 @@
+import { useEffect, useState } from 'react';
+import PageHeader from '../common/components/PageHeader';
+import { settingsApi } from './api/SettingsApi';
+import MessageContainer from '../common/components/core/MessageContainer';
+import './Settings.css';
+
+export default function Settings() {
+    const [envSettings, setEnvSettings] = useState<Record<string, string>>({});
+    const [scrapperState, setScrapperState] = useState<string>('');
+    const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadScrapperState = async () => {
+        const scrapper = await settingsApi.getScrapperState();
+        setScrapperState(JSON.stringify(scrapper, null, 2));
+    };
+
+    const loadData = async () => {
+        try {
+            setIsLoading(true);
+            const [env] = await Promise.all([
+                settingsApi.getEnvSettings(),
+                loadScrapperState()
+            ]);
+            setEnvSettings(env);
+        } catch (error) {
+            setMessage({ text: 'Failed to load settings', type: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleScrapperStateRefresh = async () => {
+        try {
+            await loadScrapperState();
+            setMessage({ text: 'Scrapper state refreshed', type: 'success' });
+            setTimeout(() => setMessage(null), 3000);
+        } catch (error) {
+            setMessage({ text: 'Failed to refresh scrapper state', type: 'error' });
+        }
+    };
+
+    const handleEnvUpdateBulk = async (groupName: string, keys: string[]) => {
+        try {
+            const updates: Record<string, string> = {};
+            keys.forEach(k => updates[k] = envSettings[k]);
+            const updated = await settingsApi.updateEnvSettingsBulk(updates);
+            setEnvSettings(updated);
+            setMessage({ text: `${groupName} settings saved successfully`, type: 'success' });
+            
+            setTimeout(() => setMessage(null), 3000);
+        } catch (error) {
+            setMessage({ text: `Failed to update ${groupName} settings`, type: 'error' });
+        }
+    };
+
+    const handleScrapperStateSave = async () => {
+        try {
+            const parsed = JSON.parse(scrapperState);
+            const updated = await settingsApi.updateScrapperState(parsed);
+            setScrapperState(JSON.stringify(updated, null, 2));
+            setMessage({ text: 'Scrapper state saved successfully', type: 'success' });
+            
+            setTimeout(() => setMessage(null), 3000);
+        } catch (error) {
+            setMessage({ text: 'Invalid JSON format for scrapper state', type: 'error' });
+        }
+    };
+
+    const groupedSettings = Object.keys(envSettings).reduce((acc, key) => {
+        const k = key.toUpperCase();
+        let group = 'System & Base';
+        
+        if (/^(INFOJOBS|LINKEDIN|GLASSDOOR|TECNOEMPLEO|INDEED|SHAKERS)/.test(k)) {
+            group = 'Scrapper';
+        } else if (/^(AI|CLEAN|WHERE|SALARY|SKILL)/.test(k)) {
+            group = 'AI Enrichment';
+        } else if (/^(APPLY|GROSS|VITE)/.test(k)) {
+            group = 'UI Frontend';
+        }
+
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(key);
+        return acc;
+    }, {} as Record<string, string[]>);
+
+    // Helper to extract subgroup prefix
+    const getSubgroupTitle = (key: string) => {
+        return key.includes('_') ? key.split('_')[0] : 'General';
+    };
+
+    if (isLoading) {
+        return <div className="settings-loading">Loading settings...</div>;
+    }
+
+    return (
+        <>
+            <PageHeader title="Settings" />
+            <main className="settings-main">
+                <MessageContainer message={message} error={null} onDismissMessage={() => setMessage(null)} />
+                
+                <div className="settings-container">
+                    <div className="settings-section env-variables-section">
+                        <div className="env-section-header">
+                            <h2>Environment Variables (.env)</h2>
+                            <button
+                                className="env-save-btn"
+                                onClick={() => Object.entries(groupedSettings).forEach(([g, k]) => handleEnvUpdateBulk(g, k))}
+                            >
+                                Save
+                            </button>
+                        </div>
+                        <div className="env-groups-container">
+                            {Object.entries(groupedSettings).map(([groupName, keys]) => {
+                                // Group keys by internal prefix
+                                const subGroups = keys.reduce((acc, key) => {
+                                    const sub = getSubgroupTitle(key);
+                                    if (!acc[sub]) acc[sub] = [];
+                                    acc[sub].push(key);
+                                    return acc;
+                                }, {} as Record<string, string[]>);
+
+                                return (
+                                    <div key={groupName} className="env-group">
+                                        <div className="env-group-header">
+                                            <h3>{groupName}</h3>
+                                        </div>
+                                        <div className="env-items-scrollable">
+                                            {Object.entries(subGroups).sort().map(([subTitle, subKeys]) => {
+                                                if (subKeys.length === 1) {
+                                                    const key = subKeys[0];
+                                                    return (
+                                                        <div key={key} className="env-item inline-item">
+                                                            <span className="env-key-label">{key}</span>
+                                                            <input
+                                                                className="env-input compact-input"
+                                                                type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
+                                                                value={envSettings[key] || ''}
+                                                                onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    );
+                                                }
+                                                return (
+                                                    <div key={subTitle} className="env-subgroup">
+                                                        <h4 className="env-subgroup-title">{subTitle}</h4>
+                                                        <div className="env-items">
+                                                            {subKeys.map(key => (
+                                                                <div key={key} className="env-item inline-item">
+                                                                    <span className="env-key-label">{key}</span>
+                                                                    <input
+                                                                        className="env-input compact-input"
+                                                                        type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
+                                                                        value={envSettings[key] || ''}
+                                                                        onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
+                                                                    />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="env-section-footer">
+                            <button
+                                className="env-save-btn"
+                                onClick={() => Object.entries(groupedSettings).forEach(([g, k]) => handleEnvUpdateBulk(g, k))}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="settings-section">
+                        <h2>Scrapper State (scrapper_state.json)</h2>
+                        <textarea 
+                            className="scrapper-textarea"
+                            value={scrapperState}
+                            onChange={(e) => setScrapperState(e.target.value)}
+                        />
+                        <div className="scrapper-actions">
+                            <button className="scrapper-refresh-btn" onClick={handleScrapperStateRefresh}>↻ Refresh</button>
+                            <button className="scrapper-save-btn" onClick={handleScrapperStateSave}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </>
+    );
+}

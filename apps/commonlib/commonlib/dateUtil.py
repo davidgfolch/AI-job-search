@@ -1,4 +1,18 @@
+import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv(usecwd=True))
+
+def get_tz() -> ZoneInfo | None:
+    tz_str = os.getenv("TZ")
+    if tz_str:
+        try:
+            return ZoneInfo(tz_str)
+        except Exception:
+            pass
+    return None
 
 def getSeconds(timeUnit: str):
     """timeUnit: 30s|8m|2h|1h 30m"""
@@ -32,10 +46,20 @@ def getTimeUnits(seconds: int) -> str:
     return ' '.join(time_units)
 
 def getDatetimeNow() -> float:
+    tz = get_tz()
+    if tz:
+        return datetime.now(tz).timestamp()
     return datetime.now().timestamp()
 
 def parseDatetime(timestamp: str) -> float:
-    return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").timestamp()
+    dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+    tz = get_tz()
+    if tz:
+        dt = dt.replace(tzinfo=tz)
+    return dt.timestamp()
 
 def getDatetimeNowStr() -> str:
+    tz = get_tz()
+    if tz:
+        return datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

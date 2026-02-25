@@ -22,7 +22,7 @@ class TestConfig(unittest.TestCase):
         mock_get_env.return_value = "Language, Framework"
         prompt = get_skill_system_prompt()
         self.assertIn("Language, Framework", prompt)
-        mock_get_env.assert_called_with("SKILL_CATEGORIES", required=True)
+        mock_get_env.assert_called_with("AI_SKILL_CATEGORIES", required=True)
 
     @patch("aiEnrichNew.config.getEnv")
     def test_get_batch_size_default(self, mock_get_env):

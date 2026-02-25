@@ -21,6 +21,12 @@ vi.mock('../../../skillsManager/api/SkillsManagerApi', () => ({
     }
 }));
 
+vi.mock('../../../settings/api/SettingsApi', () => ({
+  settingsApi: {
+    getEnvSettings: vi.fn(() => Promise.resolve({ GROSS_YEAR_URL: 'https://custom.url' })),
+  }
+}));
+
 const mockJob = createMockJob({
     markdown: 'Job Description Content',
     required_technologies: 'React, TypeScript',
@@ -82,7 +88,9 @@ describe('JobDetail', () => {
             expect(screen.queryByText('Salary Calculator')).not.toBeInTheDocument();
 
             fireEvent.click(screen.getByText('🧮 Gross year'));
-            expect(windowOpenSpy).toHaveBeenCalledWith('https://tecalculo.com/calculadora-de-sueldo-neto', '_blank');
+            await waitFor(() => {
+                expect(windowOpenSpy).toHaveBeenCalledWith('https://custom.url', '_blank');
+            });
             windowOpenSpy.mockRestore();
         });
 
