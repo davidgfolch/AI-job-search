@@ -48,4 +48,6 @@ class InfojobsService(BaseService):
         txt = removeLinks(md)
         patterns = r'\s+'.join(map(re.escape, REMOVE_IN_MARKDOWN))
         txt = re.sub(patterns, "", txt)
+        if idx := txt.find('Nuestro consejo:'):
+            txt = txt[:idx]
         return txt

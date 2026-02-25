@@ -29,8 +29,8 @@ CSS_SEL_COMPANY = '.ij-OfferDetailHeader-companyLogo .ij-OfferDetailHeader-compa
 DETAILS_PREFIX = '.ij-OfferDetailHeader-detailsList'
 CSS_SEL_LOCATION = 'div.ij-OfferDetailHeader-detailsList-column:nth-child(1) > div:nth-child(1) > p:nth-child(2)'  # '#main-wrapper div.heading-addons a.link'
 
-CSS_SEL_JOB_DETAIL = '.ij-OfferDetailPage-mainContent-container > article:not(.ij-OfferDetailFooter)' # ij-OfferDetailFooter '.ij-OfferDetailPage-mainContent-container article:not(.no-printable)'
-# No longer accepting applications
+CSS_SEL_JOB_DETAIL = '.ij-OfferDetailPage-mainContent-container'
+# DONT WORK '.ij-OfferDetailPage-mainContent-container > article:not(.ij-OfferDetailFooter)'
 CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'
 
 class InfojobsNavigator(BaseNavigator):
@@ -151,6 +151,3 @@ class InfojobsNavigator(BaseNavigator):
         html = self.selenium.getHtml(CSS_SEL_JOB_DETAIL)
         url = self.selenium.getUrl()
         return title, company, location, url, html
-        
-
-
