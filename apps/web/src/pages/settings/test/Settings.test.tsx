@@ -147,7 +147,7 @@ describe('Settings', () => {
             expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
         });
 
-        const textarea = document.querySelector('.scrapper-textarea') as HTMLTextAreaElement;
+        const textarea = document.querySelector('.scrapper-editor textarea') as HTMLTextAreaElement;
         
         await userEvent.clear(textarea);
         await userEvent.type(textarea, 'invalid json');

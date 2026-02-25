@@ -197,21 +197,30 @@
     color: var(--text-primary, #fff);
 }
 
-/* Textarea styles */
-.scrapper-textarea {
+/* Editor styles */
+.scrapper-editor-wrapper {
     width: 100%;
     min-height: 400px;
-    padding: 12px;
     background: var(--bg-primary, #121212);
     border: 1px solid var(--border-color, #333);
     border-radius: 4px;
-    color: var(--text-primary);
-    font-family: monospace;
-    resize: vertical;
     margin-bottom: 16px;
+    overflow-y: auto;
+    position: relative;
 }
 
-.scrapper-textarea:focus {
-    outline: none;
+.scrapper-editor-wrapper:focus-within {
     border-color: var(--accent-color, #3b82f6);
+}
+
+.scrapper-editor {
+    font-family: monospace;
+    color: var(--text-primary);
+    min-height: 100%;
+    display: block; /* to ensure it takes the height of wrapper */
+    font-size: 14px;
+}
+
+.scrapper-editor textarea {
+    outline: none !important;
 }

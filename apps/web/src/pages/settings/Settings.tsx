@@ -1,4 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
+import Editor from 'react-simple-code-editor';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-json';
+import 'prismjs/themes/prism-tomorrow.css';
 import PageHeader from '../common/components/PageHeader';
 import { settingsApi } from './api/SettingsApi';
 import { groupSettingsByKey, getSubgroupTitle } from './utils/SettingsUtils';
@@ -167,11 +171,15 @@ export default function Settings() {
 
                     <div className="settings-section">
                         <h2>Scrapper State (scrapper_state.json)</h2>
-                        <textarea 
-                            className="scrapper-textarea"
-                            value={scrapperState}
-                            onChange={(e) => setScrapperState(e.target.value)}
-                        />
+                        <div className="scrapper-editor-wrapper">
+                            <Editor
+                                value={scrapperState}
+                                onValueChange={code => setScrapperState(code)}
+                                highlight={code => Prism.highlight(code, Prism.languages.json, 'json')}
+                                padding={12}
+                                className="scrapper-editor"
+                            />
+                        </div>
                         <div className="scrapper-actions">
                             <button className="scrapper-refresh-btn" onClick={handleScrapperStateRefresh}>↻ Refresh</button>
                             <button className="scrapper-save-btn" onClick={handleScrapperStateSave}>Save</button>
