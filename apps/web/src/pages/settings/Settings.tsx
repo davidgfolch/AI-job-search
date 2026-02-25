@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import PageHeader from '../common/components/PageHeader';
 import { settingsApi } from './api/SettingsApi';
+import { groupSettingsByKey, getSubgroupTitle } from './utils/SettingsUtils';
 import MessageContainer from '../common/components/core/MessageContainer';
 import './Settings.css';
 
@@ -76,27 +77,7 @@ export default function Settings() {
         }
     };
 
-    const groupedSettings = Object.keys(envSettings).reduce((acc, key) => {
-        const k = key.toUpperCase();
-        let group = 'System & Base';
-        
-        if (/^(INFOJOBS|LINKEDIN|GLASSDOOR|TECNOEMPLEO|INDEED|SHAKERS)/.test(k)) {
-            group = 'Scrapper';
-        } else if (/^(AI|CLEAN|WHERE|SALARY|SKILL)/.test(k)) {
-            group = 'AI Enrichment';
-        } else if (/^(APPLY|GROSS|VITE)/.test(k)) {
-            group = 'UI Frontend';
-        }
-
-        if (!acc[group]) acc[group] = [];
-        acc[group].push(key);
-        return acc;
-    }, {} as Record<string, string[]>);
-
-    // Helper to extract subgroup prefix
-    const getSubgroupTitle = (key: string) => {
-        return key.includes('_') ? key.split('_')[0] : 'General';
-    };
+    const groupedSettings = groupSettingsByKey(envSettings);
 
     if (isLoading) {
         return <div className="settings-loading">Loading settings...</div>;
