@@ -11,7 +11,7 @@ The scrapper now supports `undetected-chromedriver` to bypass Cloudflare and oth
 Add to your `.env` file:
 
 ```env
-USE_UNDETECTED_CHROMEDRIVER=true
+SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true
 ```
 
 ### Option 2: Programmatic
@@ -34,12 +34,12 @@ selenium = SeleniumService(useUndetected=False)
 
 ## How It Works
 
-When `USE_UNDETECTED_CHROMEDRIVER=true`:
+When `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`:
 - Uses `undetected-chromedriver` instead of standard Selenium
 - Automatically patches ChromeDriver to avoid detection
 - Removes automation indicators that trigger bot detection
 
-When `USE_UNDETECTED_CHROMEDRIVER=false` (default):
+When `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=false` (default):
 - Uses standard Selenium with stealth techniques
 - Applies manual anti-detection measures
 

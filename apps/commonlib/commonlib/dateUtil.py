@@ -6,7 +6,7 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(usecwd=True))
 
 def get_tz() -> ZoneInfo | None:
-    tz_str = os.getenv("TZ")
+    tz_str = os.getenv("GLOBAL_TZ")
     if tz_str:
         try:
             return ZoneInfo(tz_str)

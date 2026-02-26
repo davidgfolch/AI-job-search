@@ -46,7 +46,7 @@ See `scripts/.env.example`.
 
 ## Key Environment Variables
 
-- `USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
+- `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
 - `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed).
 - `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed).
 
@@ -138,6 +138,6 @@ poetry run pytest
 ## Troubleshooting
 
 - **Rate Limits**: If you get 429 errors or captchas, increase delays or stop scraping for a while.
-- **ARSF (Anti Robot Security Filters)**: If Chrome opens but gets blocked, try `USE_UNDETECTED_CHROMEDRIVER=true` or use a VPN.
+- **ARSF (Anti Robot Security Filters)**: If Chrome opens but gets blocked, try `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true` or use a VPN.
 - **Gmail Issues**: Ensure app password is correctly generated and 2FA is enabled.
 - **2FA Timeout**: Increase timeout in GmailService if verification emails are slow to arrive.

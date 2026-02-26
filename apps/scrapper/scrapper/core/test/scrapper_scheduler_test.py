@@ -74,7 +74,7 @@ class TestRunScrappers:
         mock_parse.side_effect = side_effect_parse
         # mock_now doesn't need side_effect as it has return_value=12000
         mocks['pm'].get_last_execution.side_effect = lambda name: f"last_run_{name.lower()}" if name in ['Infojobs', 'Linkedin'] else None
-        with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+        with patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False):
              # Only 1 loop to test one pass
             scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=False, startingAt=None, loops=1)
             # Infojobs should run because it's expired
@@ -105,7 +105,7 @@ class TestRunScrappers:
         # Even though 1000s lapsed < 3600s timer, it should run because of 'starting'.
         # Infojobs (7200s timer) should NOT run (skipped).
         mock_parse.return_value = 9000
-        with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+        with patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False):
              scheduler.runAllScrappers(waitBeforeFirstRuns=False, starting=True, startingAt='Linkedin', loops=1)
              run_mocks['linkedin'].execute.assert_called()
              assert not run_mocks['infojobs'].execute.called
@@ -116,7 +116,7 @@ class TestRunScrappers:
         (['infojobs', 'LINKEDIN'], {'infojobs': 2, 'linkedin': 2}),
     ])
     def test_specified(self, scheduler, scrapers, calls, mocks, run_mocks):
-        with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+        with patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False):
             scheduler.runSpecifiedScrappers(scrapers)
             # Count both execute_preload and execute as 2 total calls
             for name, expected_count in calls.items(): 
@@ -134,7 +134,7 @@ class TestSchedulerHelpers:
              {'name': 'Infojobs', 'properties': {TIMER: 7200}, 'seconds_remaining': 0},
              {'name': 'Linkedin', 'properties': {TIMER: 3600}, 'seconds_remaining': 100}
          ]
-         with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+         with patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False):
              should_cont, executed_start = scheduler._execute_scrappers(status, False, None)
              assert should_cont is True
              assert executed_start is False
@@ -157,7 +157,7 @@ class TestSchedulerHelpers:
         }]
         # Execute
         with patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False):
-            with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+            with patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False):
                 scheduler._execute_scrappers(scrappers_status, False, None)
         # Verify
         mock_executor.execute_preload.assert_called_once()
@@ -181,7 +181,7 @@ class TestSchedulerHelpers:
         }]
         # Execute
         with patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False):
-             with patch('scrapper.core.scrapper_scheduler.RUN_IN_TABS', False):
+             with patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False):
                 scheduler._execute_scrappers(scrappers_status, False, None)
         # Verify
         mock_executor.execute_preload.assert_called_once()

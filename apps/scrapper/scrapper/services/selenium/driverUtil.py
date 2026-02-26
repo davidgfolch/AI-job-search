@@ -36,7 +36,7 @@ class DriverUtil:
     driver: webdriver.Chrome
 
     def __init__(self):
-        self.useUndetected = getEnvBool('USE_UNDETECTED_CHROMEDRIVER', False)
+        self.useUndetected = getEnvBool('SCRAPPER_USE_UNDETECTED_CHROMEDRIVER', False)
         print(f'seleniumUtil init (undetected={self.useUndetected})')
         if self.useUndetected:
             chromePath = self._findChrome()

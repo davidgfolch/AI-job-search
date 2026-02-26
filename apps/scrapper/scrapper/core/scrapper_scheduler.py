@@ -3,7 +3,7 @@ from datetime import datetime
 
 from commonlib.terminalUtil import consoleTimer
 from commonlib.terminalColor import cyan, red, yellow
-from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, IGNORE_AUTORUN, RUN_IN_TABS, get_debug)
+from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, IGNORE_AUTORUN, SCRAPPER_RUN_IN_TABS, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
@@ -66,9 +66,9 @@ class ScrapperScheduler:
                 debug = get_debug(name)
                 print(f'{name} DEBUG: {debug}')
                 self.seleniumUtil.debug = debug
-                if RUN_IN_TABS:
+                if SCRAPPER_RUN_IN_TABS:
                     self.seleniumUtil.tab(name)
-                if runPreload(properties, run_in_tabs=RUN_IN_TABS):
+                if runPreload(properties, run_in_tabs=SCRAPPER_RUN_IN_TABS):
                     executor = create_executor(name, self.seleniumUtil, self.persistenceManager)
                     if not executor.execute_preload(properties):
                         return False, executed_startingAt
@@ -104,7 +104,7 @@ class ScrapperScheduler:
         for arg in scrappersList:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
-                if runPreload(properties, run_in_tabs=RUN_IN_TABS):
+                if runPreload(properties, run_in_tabs=SCRAPPER_RUN_IN_TABS):
                     executor = create_executor(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
                     if not executor.execute_preload(properties):
                         return

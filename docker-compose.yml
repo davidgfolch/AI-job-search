@@ -16,7 +16,7 @@ services:
       MYSQL_DATABASE: jobs
       MYSQL_USER: user
       MYSQL_PASSWORD: userPass
-      TZ: ${TZ}
+      TZ: ${GLOBAL_TZ}
     ports:
       - "3306:3306"
     healthcheck:
@@ -44,7 +44,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DB_HOST=mysql_db # MySQL service name for Docker networking
-      - TZ=${TZ}
+      - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
-      - TZ=${TZ}
+      - TZ=${GLOBAL_TZ}
     depends_on:
       - backend
     restart: unless-stopped
@@ -109,7 +109,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DB_HOST=mysql_db
-      - TZ=${TZ}
+      - TZ=${GLOBAL_TZ}
       - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mysql_db:
@@ -135,7 +135,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DB_HOST=mysql_db # MySQL service name for Docker networking
-      - TZ=${TZ}
+      - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -160,7 +160,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DB_HOST=mysql_db
-      - TZ=${TZ}
+      - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -183,7 +183,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DB_HOST=mysql_db
-      - TZ=${TZ}
+      - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -206,7 +206,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DISPLAY=:99 # For headless Chrome
-      - TZ=${TZ}
+      - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
         condition: service_healthy

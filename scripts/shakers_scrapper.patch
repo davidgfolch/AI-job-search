@@ -11,7 +11,7 @@ index d6c5f02..5710d9a 100644
 +SHAKERS_RUN_CADENCY=3h
 +
  # Scrapper options
- RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
+ SCRAPPER_RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
 diff --git a/apps/scrapper/scrapper/scrapper_config.py b/apps/scrapper/scrapper/scrapper_config.py
 index 4eb1b24..8cf35d9 100644
 --- a/apps/scrapper/scrapper/scrapper_config.py
@@ -26,7 +26,7 @@ index 4eb1b24..8cf35d9 100644
 +    },
  }
  
- RUN_IN_TABS = getEnvBool('RUN_IN_TABS', False)
+ SCRAPPER_RUN_IN_TABS = getEnvBool('SCRAPPER_RUN_IN_TABS', False)
 diff --git a/apps/scrapper/scrapper/scrapper_execution.py b/apps/scrapper/scrapper/scrapper_execution.py
 index 8d9de49..cb3cb7f 100644
 --- a/apps/scrapper/scrapper/scrapper_execution.py
@@ -255,7 +255,7 @@ index 0000000..5d42af1
 +from .services.job_services.shakers_job_service import ShakersJobService
 +
 +# Note: These need to be added to your .env or .venv file
-+USER_EMAIL, USER_PWD, JOBS_SEARCH = getAndCheckEnvVars("SHAKERS")
++USER_EMAIL, USER_PWD, SCRAPPER_JOBS_SEARCH = getAndCheckEnvVars("SHAKERS")
 +
 +DEBUG = True
 +WEB_PAGE = 'Shakers'

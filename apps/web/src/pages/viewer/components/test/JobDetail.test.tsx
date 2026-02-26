@@ -23,7 +23,7 @@ vi.mock('../../../skillsManager/api/SkillsManagerApi', () => ({
 
 vi.mock('../../../settings/api/SettingsApi', () => ({
   settingsApi: {
-    getEnvSettings: vi.fn(() => Promise.resolve({ GROSS_YEAR_URL: 'https://custom.url' })),
+    getEnvSettings: vi.fn(() => Promise.resolve({ UI_GROSS_YEAR_URL: 'https://custom.url' })),
   }
 }));
 

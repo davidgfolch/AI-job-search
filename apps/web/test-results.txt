@@ -1,0 +1,127 @@
+­ƒöì __dirname: C:\Users\TRENDINGPC\projects\AI-job-search\apps\web
+­ƒöì Vite env directory: C:\Users\TRENDINGPC\projects\AI-job-search
+­ƒöì Mode: test
+­ƒöì AI_ENRICHNEW_SKILL from loadEnv: True
+­ƒöì aiEnrichSkillEnabled: true
+
+[1m[46m RUN [49m[22m [36mv4.0.14 [39m[90mC:/Users/TRENDINGPC/projects/AI-job-search/apps/web[39m
+
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useBulkJobMutations.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 312[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useJobsData.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 313[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/JobTable.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 235[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/JobEditForm.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[32m 275[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/hooks/test/useLearnList.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 502[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/job-detail/test/SalaryActions.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 448[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/hooks/test/useSqlEditor.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 551[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/statistics/test/useStatistics.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 452[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterWatcher.polling.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 544[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/statistics/test/Statistics.extended.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 297[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/Filters.sort.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 198[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterConfigurations.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 399[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/salaryCalculator/test/SalaryCalculator.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 552[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/statistics/test/Statistics.behavior.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 468[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/test/SkillsManager.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 450[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/Filters.pills.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 420[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/JobDetail.appliedJobs.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 248[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/test/FilterConfigurations.interactions.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[33m 811[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterWatcher.notifications.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 1371[2mms[22m[39m
+     [33m[2mÔ£ô[22m[39m should trigger aggregated notification for enabled configs [33m 806[2mms[22m[39m
+     [33m[2mÔ£ô[22m[39m should NOT trigger notification if no new items found [33m 514[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/JobDetail.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 544[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/test/Viewer.interactions.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 891[2mms[22m[39m
+     [33m[2mÔ£ô[22m[39m handles user interactions: select, verify details, partial filter [33m 511[2mms[22m[39m
+     [33m[2mÔ£ô[22m[39m handles tab switching and edit interactions [33m 314[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/settings/test/Settings.scrapper.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1359[2mms[22m[39m
+     [33m[2mÔ£ô[22m[39m handles scrapper state invalid JSON error [33m 454[2mms[22m[39m
+     [33m[2mÔ£ô[22m[39m dismisses message container [33m 314[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/settings/test/Settings.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[33m 1433[2mms[22m[39m
+     [33m[2mÔ£ô[22m[39m allows editing an env setting [33m 477[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/hooks/test/useDefaultComment.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 357[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/test/SqlEditor.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 273[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterWatcher.basic.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 300[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/test/CvMatchBar.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 290[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/test/ConfirmModal.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 220[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/components/test/SkillLearningPathField.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 284[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/Filters.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 321[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/test/Messages.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 219[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/job-detail/test/AppliedJobsWarning.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 240[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/test/FilterConfigurations.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 233[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/AppliedModal.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[32m 171[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/components/test/SkillDescriptionField.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 261[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/job-detail/test/JobDetailHeader.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 228[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/test/HistoryInput.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 281[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/test/HeaderMenu.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterWatcher.persistence.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 118[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/test/ReactMarkdownCustom.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 451[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/test/Viewer.state.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 176[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/statistics/test/Statistics.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 97[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/components/test/EditSkillModal.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 661[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/components/test/SkillTag.test.tsx [2m([22m[2m23 tests[22m[2m)[22m[32m 102[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/job-detail/test/SkillsList.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useJobMutations.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 113[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useFilterConfigurations.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfigOperations.export.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/JobActions.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/test/Dropdown.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 76[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/hooks/test/useEditSkillForm.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useAppliedModal.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/components/test/SkillsTable.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/ViewTabs.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterDropdown.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/statistics/test/ChartCard.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/test/ConfigurationDropdown.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/test/PageHeader.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useJobSelection.selection.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32mÔ£ô[39m src/test/App.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useViewer.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useFilterDropdown.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/test/ConfigurationInput.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/hooks/test/useAutoResizeTextArea.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/test/JobList.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useJobSelection.navigation.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfigOperations.delete.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfigOperations.save.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/test/MessageContainer.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useJobSelection.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/hooks/test/useConfirmationModal.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfigOperations.reorder.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfigDropdownState.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/useJobMutations.integration.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfirmationModal.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfigOperations.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterDropdown.sorting.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useFilterDropdown.ordering.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/hooks/test/useConfigOperations.load.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/utils/test/fileUtils.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/utils/test/dateUtils.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/utils/test/skillUtils.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/utils/test/sqlEditorUtils.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32mÔ£ô[39m src/test/architecture.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/api/test/FilterConfigurationsApi.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/components/core/utils/test/sqlEditorUtils.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/statistics/utils/test/chartUtils.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/api/test/ViewerApi.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/hooks/test/FilterConfigService.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/statistics/api/test/StatisticsApi.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/api/test/defaultFilterConfigurations.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/api/test/CommonPersistenceApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/salaryCalculator/test/salaryFormatters.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/settings/api/test/SettingsApi.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32mÔ£ô[39m src/common/services/test/NotificationService.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/api/test/ViewerSalaryApi.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/common/api/test/DdlApi.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/api/test/SkillsManagerApi.bulkCreateSkills.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/api/test/SkillsManagerApi.createSkill.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/api/test/SkillsManagerApi.updateSkill.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/api/test/SkillsManagerApi.transform.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/api/test/SkillsManagerApi.getSkills.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/settings/test/SettingsUtils.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/api/test/SkillsManagerApi.getSkill.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/skillsManager/api/test/SkillsManagerApi.deleteSkill.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/viewer/components/configurations/utils/test/filterNormalization.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m106 passed[39m[22m[90m (106)[39m
+[2m      Tests [22m [1m[32m646 passed[39m[22m[90m (646)[39m
+[2m   Start at [22m 13:17:06
+[2m   Duration [22m 10.47s[2m (transform 8.95s, setup 13.71s, import 33.35s, tests 20.11s, environment 130.63s)[22m
+

@@ -40,7 +40,7 @@ index e05d756..952e7da 100644
  
  You can modify parameters in `scrapper/*.py` (e.g., `linkedin.py`):
 @@ -141,3 +151,4 @@ poetry run pytest
- - **ARSF (Anti Robot Security Filters)**: If Chrome opens but gets blocked, try `USE_UNDETECTED_CHROMEDRIVER=true` or use a VPN.
+ - **ARSF (Anti Robot Security Filters)**: If Chrome opens but gets blocked, try `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true` or use a VPN.
  - **Gmail Issues**: Ensure app password is correctly generated and 2FA is enabled.
  - **2FA Timeout**: Increase timeout in GmailService if verification emails are slow to arrive.
 +- **LLM Extraction Errors**: Ensure your API keys are correct and that models are pulled locally (if using Ollama). If a model fails to extract, the scraper will retry based on standard mechanisms.
@@ -369,5 +369,5 @@ index a8eaf68..4247787 100644
 +HF_TOKEN=your-huggingface-token # Get at https://huggingface.co/settings/tokens
 +
  # Scrapper options
- RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
- USE_UNDETECTED_CHROMEDRIVER=True  # Use undetected-chromedriver to bypass Cloudflare/bot detection (requires Chrome installed) (recommended for Infojobs, Glassdoor)
+ SCRAPPER_RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
+ SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=True  # Use undetected-chromedriver to bypass Cloudflare/bot detection (requires Chrome installed) (recommended for Infojobs, Glassdoor)

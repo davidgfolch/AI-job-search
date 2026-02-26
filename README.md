@@ -64,7 +64,7 @@ This is a monorepo containing several applications and packages:
 
 - Copy `scripts/.env.example` to `.env`:
   - set your creadentials.
-  - set your options (e.g., JOBS_SEARCH, CV_MATCH flag, etc.)
+  - set your options (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications `docker-compose up -d`, by default should run only:
   - MySQL
   - Backend API

@@ -1,6 +1,6 @@
 # AI CV Matcher
 
-This module handles fast CV matching against job descriptions using local Hugging Face embedding models (`sentence-transformers`). It acts as a dedicated microservice that continuously polls the database for pending CV matches if `AI_CV_MATCH` is enabled in the environment.
+This module handles fast CV matching against job descriptions using local Hugging Face embedding models (`sentence-transformers`). It acts as a dedicated microservice that continuously polls the database for pending CV matches if `AI_CVMATCHER_CVMATCHER_CV_MATCH` is enabled in the environment.
 
 ## Requirements
 
@@ -12,8 +12,8 @@ This module handles fast CV matching against job descriptions using local Huggin
 
 Configure `.env` with:
 ```env
-AI_CV_MATCH=True
-AI_CV_MATCH_NEW_LIMIT=100
+AI_CVMATCHER_CVMATCHER_CV_MATCH=True
+AI_CVMATCHER_CVMATCHER_CV_MATCH_NEW_LIMIT=100
 ```
 Then run via Docker:
 ```bash

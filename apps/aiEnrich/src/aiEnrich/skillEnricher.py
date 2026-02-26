@@ -4,7 +4,7 @@ from commonlib.skill_enricher_service import process_skill_enrichment, parse_ski
 from commonlib.environmentUtil import getEnvBool, getEnv
 import os
 
-AI_SKILL_CATEGORIES = getEnv("AI_SKILL_CATEGORIES", required=True)
+AI_ENRICH_SKILL_CATEGORIES = getEnv("AI_ENRICH_SKILL_CATEGORIES", required=True)
 
 LLM_CFG = LLM(
     model="ollama/llama3.2",
@@ -20,7 +20,7 @@ The structure MUST be:
    - Usage Types (library, framework, etc.)
    - Key Modules/Components
    - Integration with co-occurring technologies
-3. **Category**: One or more of [{AI_SKILL_CATEGORIES}] (comma separated).
+3. **Category**: One or more of [{AI_ENRICH_SKILL_CATEGORIES}] (comma separated).
 Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
 
 def generate_skill_description(skill_name, context="") -> tuple[str, str]:

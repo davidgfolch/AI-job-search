@@ -32,7 +32,7 @@ describe('SalaryActions', () => {
   it('opens external link dynamically from settings when gross year button clicked', async () => {
     const user = userEvent.setup();
     const mockUrl = 'https://custom.url/gross-year';
-    (settingsApi.getEnvSettings as any).mockResolvedValue({ GROSS_YEAR_URL: mockUrl });
+    (settingsApi.getEnvSettings as any).mockResolvedValue({ UI_GROSS_YEAR_URL: mockUrl });
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     
     render(<SalaryActions onToggleCalculator={vi.fn()} />);

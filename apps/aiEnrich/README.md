@@ -59,7 +59,7 @@ uv run crewai run
 
 - **Agents**: Define your agents in `src/ai_job_search/config/agents.yaml`.
 - **Tasks**: Define your tasks in `src/ai_job_search/config/tasks.yaml`.
-- **CV Matching**: Enable by setting `AI_CV_MATCH=True` in `.env` and placing your CV in `apps/aiEnrich/cv/cv.txt`.
+- **CV Matching**: Enable by setting `AI_ENRICH_CV_MATCH=True` in `.env` and placing your CV in `apps/aiEnrich/cv/cv.txt`.
 
 ## Support
 

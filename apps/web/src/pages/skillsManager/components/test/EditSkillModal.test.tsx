@@ -85,7 +85,7 @@ describe('EditSkillModal', () => {
     });
 
     it('handles AI auto-fill button visibility and state', () => {
-        vi.stubGlobal('__AI_ENRICH_SKILL_ENABLED__', true);
+        vi.stubGlobal('__AI_ENRICHNEW_SKILL_ENABLED__', true);
         const { rerender } = renderWithClient(<EditSkillModal skill={mockSkill} onSave={vi.fn()} onClose={vi.fn()} />);
         expect(screen.getByRole('button', { name: /Auto-fill with AI/i })).not.toBeDisabled();
 
@@ -95,7 +95,7 @@ describe('EditSkillModal', () => {
             </QueryClientProvider>
         );
         expect(screen.getByRole('button', { name: /Auto-fill with AI/i })).toBeDisabled();
-        vi.stubGlobal('__AI_ENRICH_SKILL_ENABLED__', false);
+        vi.stubGlobal('__AI_ENRICHNEW_SKILL_ENABLED__', false);
     });
 });
 

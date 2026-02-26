@@ -39,11 +39,11 @@ def enrich_skills(mysql: MysqlUtil, pipeline: Any) -> int:
     """
     Main entry point for enriching skills using a functional pipeline.
     """
-    if not getEnvBool("AI_ENRICH_SKILL", True):
+    if not getEnvBool("AI_ENRICHNEW_SKILL", True):
         return 0
         
     batch_size = get_batch_size()
-    limit = int(getEnv('AI_SKILL_ENRICH_LIMIT', str(batch_size)))
+    limit = int(getEnv('AI_ENRICHNEW_SKILL_ENRICH_LIMIT', str(batch_size)))
     
     # 1. Fetch
     skills = _fetch_pending_skills(mysql, limit)

@@ -11,7 +11,7 @@ def skillEnricher() -> int:
         # We can pass pipeline loosely.
         
         # Optimization: check env before loading pipeline
-        if not getEnvBool("AI_ENRICH_SKILL", True):
+        if not getEnvBool("AI_ENRICHNEW_SKILL", True):
             return 0
             
         pipe = get_pipeline()

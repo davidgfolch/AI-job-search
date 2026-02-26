@@ -3,7 +3,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from commonlib.environmentUtil import getEnv
 from commonlib.terminalColor import cyan
 
-MODEL_ID = getEnv('AI_MODEL_ID', "Qwen/Qwen2.5-1.5B-Instruct")
+MODEL_ID = getEnv('AI_ENRICHNEW_MODEL_ID', "Qwen/Qwen2.5-1.5B-Instruct")
 _PIPELINE = None
 
 def get_pipeline():
@@ -23,12 +23,12 @@ def get_pipeline():
             "text-generation", 
             model=model, 
             tokenizer=tokenizer, 
-            max_new_tokens=int(getEnv('AI_MAX_NEW_TOKENS', '2048')), 
-            temperature=float(getEnv('AI_TEMPERATURE', '0.1')), 
-            top_p=float(getEnv('AI_TOP_P', '0.9')),
-            repetition_penalty=float(getEnv('AI_REPETITION_PENALTY', '1.1')),
+            max_new_tokens=int(getEnv('AI_ENRICHNEW_MAX_NEW_TOKENS', '2048')), 
+            temperature=float(getEnv('AI_ENRICHNEW_TEMPERATURE', '0.1')), 
+            top_p=float(getEnv('AI_ENRICHNEW_TOP_P', '0.9')),
+            repetition_penalty=float(getEnv('AI_ENRICHNEW_REPETITION_PENALTY', '1.1')),
             return_full_text=False,
-            batch_size=int(getEnv('AI_BATCH_SIZE', '10')) # Explicitly pass batch_size to pipeline init if needed, though usually handled at call time
+            batch_size=int(getEnv('AI_ENRICHNEW_BATCH_SIZE', '10')) # Explicitly pass batch_size to pipeline init if needed, though usually handled at call time
         )
         print(cyan("Local model loaded."))
     return _PIPELINE

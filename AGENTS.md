@@ -150,7 +150,7 @@ backend ← web (via REST API)
 - `navigator/`: Selenium browser automation per site (e.g., `linkedinNavigator.py`)
 - `services/`: Business logic per site (e.g., `LinkedinService.py`)
 - Coordinator scripts: `linkedin.py`, `infojobs.py`, etc.
-- Supports `USE_UNDETECTED_CHROMEDRIVER=true` for bot detection bypass
+- Supports `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true` for bot detection bypass
 
 **aiEnrichNew** (`apps/aiEnrichNew/`)
 - Local Hugging Face transformers for job data enrichment
@@ -179,12 +179,12 @@ backend ← web (via REST API)
 ## Configuration
 
 Environment variables are defined in `.env` (copied from `scripts/.env.example`):
-- `*_EMAIL`, `*_PWD`: Credentials per job platform
-- `*_RUN_CADENCY`: Scraping frequency (e.g., `2h`, `40m`)
-- `*_RUN_CADENCY_7-19=40m`: Time-based cadency override for specific hours
-- `JOBS_SEARCH`: Comma-separated job search terms
+- `SCRAPPER_*_EMAIL`, `SCRAPPER_*_PWD`: Credentials per job platform
+- `SCRAPPER_*_RUN_CADENCY`: Scraping frequency (e.g., `2h`, `40m`)
+- `SCRAPPER_*_RUN_CADENCY_7-19=40m`: Time-based cadency override for specific hours
+- `SCRAPPER_JOBS_SEARCH`: Comma-separated job search terms
 - `AI_CV_MATCH=True`: Enable CV matching (requires `apps/aiEnrich/cv/cv.txt`)
-- `USE_UNDETECTED_CHROMEDRIVER=True`: Bypass bot detection
+- `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=True`: Bypass bot detection
 
 ## Code Style
 

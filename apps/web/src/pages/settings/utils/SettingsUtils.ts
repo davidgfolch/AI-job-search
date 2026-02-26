@@ -1,17 +1,23 @@
 export const getSubgroupTitle = (key: string) => {
-    return key.includes('_') ? key.split('_')[0] : 'General';
+    const parts = key.split('_');
+    if (parts.length >= 2) {
+        return parts.slice(0, 2).join('_');
+    }
+    return 'General';
 };
 
 export const groupSettingsByKey = (envSettings: Record<string, string>) => {
     return Object.keys(envSettings).reduce((acc, key) => {
         const k = key.toUpperCase();
-        let group = 'System & Base';
+        let group = 'Other';
         
-        if (/^(INFOJOBS|LINKEDIN|GLASSDOOR|TECNOEMPLEO|INDEED|SHAKERS)/.test(k)) {
+        if (k.startsWith('SCRAPPER_')) {
             group = 'Scrapper';
+        } else if (k === 'GLOBAL_TZ' || k.startsWith('GMAIL_')) {
+            group = 'System & Base';
         } else if (/^(AI|CLEAN|WHERE|SALARY|SKILL)/.test(k)) {
             group = 'AI Enrichment';
-        } else if (/^(APPLY|GROSS|VITE)/.test(k)) {
+        } else if (/^(APPLY|GROSS|VITE|UI_)/.test(k)) {
             group = 'UI Frontend';
         }
 

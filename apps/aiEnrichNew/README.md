@@ -31,4 +31,4 @@ uv run aienrichnew
 
 - **Model**: Defaults to `Qwen/Qwen2.5-1.5B-Instruct` (defined in `src/aiEnrichNew/dataExtractor.py`).
 - **Environment Variables**:
-    - `AI_ENRICH_EXTRACT_TIMEOUT_SECONDS`: (Optional) Timeout for extraction.
+    - `AI_ENRICHNEW_EXTRACT_TIMEOUT_SECONDS`: (Optional) Timeout for extraction.

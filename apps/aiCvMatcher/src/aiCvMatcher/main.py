@@ -12,10 +12,10 @@ import time
 from .cvMatcher import FastCVMatcher
 
 def run():
-    if getEnvBool('AI_CV_MATCH'):
+    if getEnvBool('AI_CVMATCHER'):
         cvMatcher = FastCVMatcher.instance()
     else:
-        print(yellow("AI_CV_MATCH is not enabled. Exiting CV Matcher loop."))
+        print(yellow("AI_CVMATCHER is not enabled. Exiting CV Matcher loop."))
         sys.exit(0)
 
     while True:

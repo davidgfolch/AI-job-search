@@ -21,10 +21,10 @@ Variables are grouped into four logical sections:
 
 | Group | Env Prefix(es) | Description |
 |---|---|---|
-| **Scrapper** | `INFOJOBS_`, `LINKEDIN_`, `GLASSDOOR_`, `TECNOEMPLEO_`, `INDEED_`, `SHAKERS_` | Credentials, cadency, and search options for each scrapper platform. |
+| **Scrapper** | `SCRAPPER_INFOJOBS_`, `SCRAPPER_LINKEDIN_`, `SCRAPPER_GLASSDOOR_`, `SCRAPPER_TECNOEMPLEO_`, `SCRAPPER_INDEED_` | Credentials, cadency, and search options for each scrapper platform. |
 | **AI Enrichment** | `AI_`, `CLEAN_`, `WHERE_`, `SALARY_`, `SKILL_` | Model settings, timeouts, batch sizes, and enrichment flags. |
 | **UI Frontend** | `APPLY_`, `GROSS_`, `VITE_` | UI behaviour like the apply modal default text and gross salary calculator URL. |
-| **System & Base** | Everything else (e.g. `TZ`, `GMAIL_*`) | Timezone, Gmail 2FA credentials, and other system-level settings. |
+| **System & Base** | Everything else (e.g. `GLOBAL_TZ`, `GMAIL_*`) | Timezone, Gmail 2FA credentials, and other system-level settings. |
 
 - Fields containing `PWD`, `PASSWORD`, or `EMAIL` are rendered as **password inputs**.
 - Each group has a dedicated **Save** button in the group header. A global **Save** button is also available in the section header and footer to save all groups at once.

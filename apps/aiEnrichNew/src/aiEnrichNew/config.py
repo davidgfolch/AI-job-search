@@ -18,7 +18,7 @@ Format your response as a single valid JSON object strictly complying with this 
 Strictly JSON. No conversational text. No markdown blocks."""
 
 def get_skill_system_prompt() -> str:
-    categories = getEnv("AI_SKILL_CATEGORIES", required=True)
+    categories = getEnv("AI_ENRICHNEW_SKILL_CATEGORIES", required=True)
     return f"""You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
 The structure MUST be:
@@ -32,16 +32,16 @@ The structure MUST be:
 Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
 
 def get_batch_size() -> int:
-    return int(getEnv('AI_BATCH_SIZE', '10'))
+    return int(getEnv('AI_ENRICHNEW_BATCH_SIZE', '10'))
 
 def get_input_max_len() -> int:
-    return int(getEnv('AI_INPUT_MAX_LEN', '12000'))
+    return int(getEnv('AI_ENRICHNEW_INPUT_MAX_LEN', '12000'))
 
 def get_enrich_timeout_job() -> float:
-    return float(getEnv('AI_ENRICH_TIMEOUT_JOB', 90))
+    return float(getEnv('AI_ENRICHNEW_TIMEOUT_JOB', 90))
 
 def get_enrich_timeout_skill() -> float:
-    return float(getEnv('AI_ENRICH_TIMEOUT_SKILL', 90))
+    return float(getEnv('AI_ENRICHNEW_TIMEOUT_SKILL', 90))
 
 def should_cleanup_gpu() -> bool:
-    return getEnv('AI_ENRICH_GPU_CLEANUP', 'True') == 'True'
+    return getEnv('AI_ENRICHNEW_GPU_CLEANUP', 'True') == 'True'

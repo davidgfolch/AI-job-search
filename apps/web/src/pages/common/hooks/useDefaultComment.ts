@@ -12,8 +12,8 @@ export function useDefaultComment() {
       if (isMounted.current) {
         try {
           const envSettings = await settingsApi.getEnvSettings();
-          if (isMounted.current && envSettings.APPLY_MODAL_DEFAULT_TEXT) {
-            setComment(envSettings.APPLY_MODAL_DEFAULT_TEXT);
+          if (isMounted.current && envSettings.UI_APPLY_MODAL_DEFAULT_TEXT) {
+            setComment(envSettings.UI_APPLY_MODAL_DEFAULT_TEXT);
           }
         } catch (e) {
             console.error(e);
@@ -30,7 +30,7 @@ export function useDefaultComment() {
   const saveComment = useCallback(async (newText: string) => {
     if (!newText.trim()) return;
     setComment(newText);
-    await settingsApi.updateEnvSetting('APPLY_MODAL_DEFAULT_TEXT', newText);
+    await settingsApi.updateEnvSetting('UI_APPLY_MODAL_DEFAULT_TEXT', newText);
   }, []);
 
   return { 

@@ -118,7 +118,17 @@ export default function Settings() {
                                             <h3>{groupName}</h3>
                                         </div>
                                         <div className="env-items-scrollable">
-                                            {Object.entries(subGroups).sort().map(([subTitle, subKeys]) => {
+                                            {Object.entries(subGroups).sort(([a], [b]) => {
+                                                if (groupName === 'Scrapper') {
+                                                    const top = ['SCRAPPER_JOBS', 'SCRAPPER_RUN', 'SCRAPPER_USE'];
+                                                    const aIdx = top.findIndex(t => a.startsWith(t));
+                                                    const bIdx = top.findIndex(t => b.startsWith(t));
+                                                    if (aIdx !== -1 && bIdx !== -1 && aIdx !== bIdx) return aIdx - bIdx;
+                                                    if (aIdx !== -1 && bIdx === -1) return -1;
+                                                    if (bIdx !== -1 && aIdx === -1) return 1;
+                                                }
+                                                return a.localeCompare(b);
+                                            }).map(([subTitle, subKeys]) => {
                                                 if (subKeys.length === 1) {
                                                     const key = subKeys[0];
                                                     return (
@@ -154,6 +164,24 @@ export default function Settings() {
                                                     </div>
                                                 );
                                             })}
+                                            {groupName === 'Scrapper' && (
+                                                <div className="env-subgroup">
+                                                    <h4 className="env-subgroup-title">scrapper_state.json</h4>
+                                                    <div className="scrapper-editor-wrapper">
+                                                        <Editor
+                                                            value={scrapperState}
+                                                            onValueChange={code => setScrapperState(code)}
+                                                            highlight={code => Prism.highlight(code, Prism.languages.json, 'json')}
+                                                            padding={12}
+                                                            className="scrapper-editor"
+                                                        />
+                                                    </div>
+                                                    <div className="scrapper-actions">
+                                                        <button className="scrapper-refresh-btn" onClick={handleScrapperStateRefresh}>↻ Refresh</button>
+                                                        <button className="scrapper-save-btn" onClick={handleScrapperStateSave}>Save</button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -166,23 +194,6 @@ export default function Settings() {
                             >
                                 Save
                             </button>
-                        </div>
-                    </div>
-
-                    <div className="settings-section">
-                        <h2>Scrapper State (scrapper_state.json)</h2>
-                        <div className="scrapper-editor-wrapper">
-                            <Editor
-                                value={scrapperState}
-                                onValueChange={code => setScrapperState(code)}
-                                highlight={code => Prism.highlight(code, Prism.languages.json, 'json')}
-                                padding={12}
-                                className="scrapper-editor"
-                            />
-                        </div>
-                        <div className="scrapper-actions">
-                            <button className="scrapper-refresh-btn" onClick={handleScrapperStateRefresh}>↻ Refresh</button>
-                            <button className="scrapper-save-btn" onClick={handleScrapperStateSave}>Save</button>
                         </div>
                     </div>
                 </div>

@@ -13,16 +13,16 @@ from ..services.selenium.browser_service import sleep
 
 
 def getAndCheckEnvVars(site: str):
-    mail = getEnv(f'{site}_EMAIL')
-    pwd = getEnv(f'{site}_PWD')
-    search = getEnv(f'{site}_JOBS_SEARCH')
+    mail = getEnv(f'SCRAPPER_{site}_EMAIL')
+    pwd = getEnv(f'SCRAPPER_{site}_PWD')
+    search = getEnv(f'SCRAPPER_{site}_JOBS_SEARCH')
     if not search:
-        search = getEnv('JOBS_SEARCH')
+        search = getEnv('SCRAPPER_JOBS_SEARCH')
     if not mail or not pwd or not search:
         print(yellow('Set up .venv file with the following keys:'))
-        print(yellow(f'{site}_EMAIL' if not mail else '',
-                     f'{site}_PWD' if not pwd else '',
-                     f'{site}_JOBS_SEARCH' if not search else ''))
+        print(yellow(f'SCRAPPER_{site}_EMAIL' if not mail else '',
+                     f'SCRAPPER_{site}_PWD' if not pwd else '',
+                     f'SCRAPPER_{site}_JOBS_SEARCH' if not search else ''))
         print(yellow('Please read README.md for more info'))
         exit()
     return mail, pwd, search

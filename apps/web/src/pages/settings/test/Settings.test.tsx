@@ -59,7 +59,7 @@ describe('Settings', () => {
         expect(settingsApi.getScrapperState).toHaveBeenCalled();
 
         expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
-        expect(screen.getByText('Scrapper State (scrapper_state.json)')).toBeInTheDocument();
+        expect(screen.getByText('scrapper_state.json')).toBeInTheDocument();
         expect(screen.getByText('PREFIX')).toBeInTheDocument();
         expect(screen.getByText('OTHER')).toBeInTheDocument();
 
@@ -87,8 +87,8 @@ describe('Settings', () => {
         
         await userEvent.click(saveBtns[0]);
 
-        // called twice because groupedSettings has 2 groups
-        expect(settingsApi.updateEnvSettingsBulk).toHaveBeenCalledTimes(2);
+        // called globally for all envs
+        expect(settingsApi.updateEnvSettingsBulk).toHaveBeenCalledTimes(1);
         
         await waitFor(() => {
             expect(screen.getByTestId('message-container')).toHaveTextContent('saved successfully');

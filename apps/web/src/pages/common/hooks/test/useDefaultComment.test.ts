@@ -26,7 +26,7 @@ describe('useDefaultComment', () => {
     it('should load default comment from settingsApi on mount', async () => {
         const mockStoredComment = '- custom applied text';
         (settingsApi.getEnvSettings as any).mockResolvedValue({
-            APPLY_MODAL_DEFAULT_TEXT: mockStoredComment
+            UI_APPLY_MODAL_DEFAULT_TEXT: mockStoredComment
         });
 
         const { result } = renderHook(() => useDefaultComment());
@@ -42,7 +42,7 @@ describe('useDefaultComment', () => {
 
     it('should save comment to settingsApi', async () => {
         (settingsApi.getEnvSettings as any).mockResolvedValue({
-            APPLY_MODAL_DEFAULT_TEXT: ''
+            UI_APPLY_MODAL_DEFAULT_TEXT: ''
         });
         (settingsApi.updateEnvSetting as any).mockResolvedValue(undefined);
 
@@ -53,7 +53,7 @@ describe('useDefaultComment', () => {
         const newComment = '- new custom comment';
         await result.current.saveComment(newComment);
 
-        expect(settingsApi.updateEnvSetting).toHaveBeenCalledWith('APPLY_MODAL_DEFAULT_TEXT', newComment);
+        expect(settingsApi.updateEnvSetting).toHaveBeenCalledWith('UI_APPLY_MODAL_DEFAULT_TEXT', newComment);
         await waitFor(() => {
             expect(result.current.comment).toBe(newComment);
         });
@@ -61,7 +61,7 @@ describe('useDefaultComment', () => {
 
     it('should not save empty comment', async () => {
         (settingsApi.getEnvSettings as any).mockResolvedValue({
-            APPLY_MODAL_DEFAULT_TEXT: ''
+            UI_APPLY_MODAL_DEFAULT_TEXT: ''
         });
 
         const { result } = renderHook(() => useDefaultComment());
