@@ -72,18 +72,116 @@ export default function Settings() {
             const updated = await settingsApi.updateScrapperState(parsed);
             setScrapperState(JSON.stringify(updated, null, 2));
             setMessage({ text: 'Scrapper state saved successfully', type: 'success' });
-            
             setTimeout(() => setMessage(null), 3000);
         } catch (error) {
             setMessage({ text: 'Invalid JSON format for scrapper state', type: 'error' });
         }
     };
 
-    const groupedSettings = groupSettingsByKey(envSettings);
-
     if (isLoading) {
         return <div className="settings-loading">Loading settings...</div>;
     }
+
+    const groupedSettings = groupSettingsByKey(envSettings);
+
+    const groupOrder = ['System & Base', 'UI Frontend', 'Scrapper', 'AI Enrichment', 'Other'];
+    const sortedGroupNames = Object.keys(groupedSettings).sort((a, b) => {
+        const aIdx = groupOrder.indexOf(a);
+        const bIdx = groupOrder.indexOf(b);
+        const aValid = aIdx === -1 ? groupOrder.length : aIdx;
+        const bValid = bIdx === -1 ? groupOrder.length : bIdx;
+        return aValid - bValid;
+    });
+
+    const leftGroups = sortedGroupNames.filter(g => g === 'System & Base' || g === 'UI Frontend');
+    const middleGroups = sortedGroupNames.filter(g => g === 'Scrapper');
+    const rightGroups = sortedGroupNames.filter(g => g === 'AI Enrichment' || g === 'Other');
+
+    const renderGroup = (groupName: string) => {
+        if (!groupedSettings[groupName]) return null;
+        const keys = groupedSettings[groupName];
+
+        const subGroups = keys.reduce((acc, key) => {
+            const sub = getSubgroupTitle(key);
+            if (!acc[sub]) acc[sub] = [];
+            acc[sub].push(key);
+            return acc;
+        }, {} as Record<string, string[]>);
+
+        return (
+            <div key={groupName} className="env-group">
+                <div className="env-group-header">
+                    <h3>{groupName}</h3>
+                </div>
+                <div className="env-items-scrollable">
+                    {Object.entries(subGroups).sort(([a], [b]) => {
+                        if (groupName === 'Scrapper') {
+                            const top = ['SCRAPPER_JOBS', 'SCRAPPER_RUN', 'SCRAPPER_USE'];
+                            const aIdx = top.findIndex(t => a.startsWith(t));
+                            const bIdx = top.findIndex(t => b.startsWith(t));
+                            if (aIdx !== -1 && bIdx !== -1 && aIdx !== bIdx) return aIdx - bIdx;
+                            if (aIdx !== -1 && bIdx === -1) return -1;
+                            if (bIdx !== -1 && aIdx === -1) return 1;
+                        }
+                        return a.localeCompare(b);
+                    }).map(([subTitle, subKeys]) => {
+                        if (subKeys.length === 1) {
+                            const key = subKeys[0];
+                            return (
+                                <FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item">
+                                    <input
+                                        id={`env-${key}`}
+                                        name={key}
+                                        className="env-input compact-input"
+                                        type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
+                                        value={envSettings[key] || ''}
+                                        onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
+                                    />
+                                </FormField>
+                            );
+                        }
+                        return (
+                            <div key={subTitle} className="env-subgroup">
+                                <h4 className="env-subgroup-title">{subTitle}</h4>
+                                <div className="env-items">
+                                    {subKeys.map(key => (
+                                        <FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item">
+                                            <input
+                                                id={`env-${key}`}
+                                                name={key}
+                                                className="env-input compact-input"
+                                                type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
+                                                value={envSettings[key] || ''}
+                                                onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
+                                            />
+                                        </FormField>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {groupName === 'Scrapper' && (
+                        <div className="env-subgroup">
+                            <h4 className="env-subgroup-title">scrapper_state.json</h4>
+                            <div className="scrapper-editor-wrapper">
+                                <Editor
+                                    value={scrapperState}
+                                    onValueChange={code => setScrapperState(code)}
+                                    highlight={code => Prism.highlight(code, Prism.languages.json, 'json')}
+                                    padding={12}
+                                    className="scrapper-editor"
+                                />
+                            </div>
+                            <div className="scrapper-actions">
+                                <button className="scrapper-refresh-btn" onClick={handleScrapperStateRefresh}>↻ Refresh</button>
+                                <button className="scrapper-save-btn" onClick={handleScrapperStateSave}>Save</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <>
@@ -103,89 +201,15 @@ export default function Settings() {
                             </button>
                         </div>
                         <div className="env-groups-container">
-                            {Object.entries(groupedSettings).map(([groupName, keys]) => {
-                                // Group keys by internal prefix
-                                const subGroups = keys.reduce((acc, key) => {
-                                    const sub = getSubgroupTitle(key);
-                                    if (!acc[sub]) acc[sub] = [];
-                                    acc[sub].push(key);
-                                    return acc;
-                                }, {} as Record<string, string[]>);
-
-                                return (
-                                    <div key={groupName} className="env-group">
-                                        <div className="env-group-header">
-                                            <h3>{groupName}</h3>
-                                        </div>
-                                        <div className="env-items-scrollable">
-                                            {Object.entries(subGroups).sort(([a], [b]) => {
-                                                if (groupName === 'Scrapper') {
-                                                    const top = ['SCRAPPER_JOBS', 'SCRAPPER_RUN', 'SCRAPPER_USE'];
-                                                    const aIdx = top.findIndex(t => a.startsWith(t));
-                                                    const bIdx = top.findIndex(t => b.startsWith(t));
-                                                    if (aIdx !== -1 && bIdx !== -1 && aIdx !== bIdx) return aIdx - bIdx;
-                                                    if (aIdx !== -1 && bIdx === -1) return -1;
-                                                    if (bIdx !== -1 && aIdx === -1) return 1;
-                                                }
-                                                return a.localeCompare(b);
-                                            }).map(([subTitle, subKeys]) => {
-                                                if (subKeys.length === 1) {
-                                                    const key = subKeys[0];
-                                                    return (
-                                                        <FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item">
-                                                            <input
-                                                                id={`env-${key}`}
-                                                                name={key}
-                                                                className="env-input compact-input"
-                                                                type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
-                                                                value={envSettings[key] || ''}
-                                                                onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
-                                                            />
-                                                        </FormField>
-                                                    );
-                                                }
-                                                return (
-                                                    <div key={subTitle} className="env-subgroup">
-                                                        <h4 className="env-subgroup-title">{subTitle}</h4>
-                                                        <div className="env-items">
-                                                            {subKeys.map(key => (
-                                                                <FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item">
-                                                                    <input
-                                                                        id={`env-${key}`}
-                                                                        name={key}
-                                                                        className="env-input compact-input"
-                                                                        type={key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') ? "password" : "text"}
-                                                                        value={envSettings[key] || ''}
-                                                                        onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })}
-                                                                    />
-                                                                </FormField>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                            {groupName === 'Scrapper' && (
-                                                <div className="env-subgroup">
-                                                    <h4 className="env-subgroup-title">scrapper_state.json</h4>
-                                                    <div className="scrapper-editor-wrapper">
-                                                        <Editor
-                                                            value={scrapperState}
-                                                            onValueChange={code => setScrapperState(code)}
-                                                            highlight={code => Prism.highlight(code, Prism.languages.json, 'json')}
-                                                            padding={12}
-                                                            className="scrapper-editor"
-                                                        />
-                                                    </div>
-                                                    <div className="scrapper-actions">
-                                                        <button className="scrapper-refresh-btn" onClick={handleScrapperStateRefresh}>↻ Refresh</button>
-                                                        <button className="scrapper-save-btn" onClick={handleScrapperStateSave}>Save</button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                            <div className="env-groups-column">
+                                {leftGroups.map(groupName => renderGroup(groupName))}
+                            </div>
+                            <div className="env-groups-column">
+                                {middleGroups.map(groupName => renderGroup(groupName))}
+                            </div>
+                            <div className="env-groups-column">
+                                {rightGroups.map(groupName => renderGroup(groupName))}
+                            </div>
                         </div>
                         <div className="env-section-footer">
                             <button
