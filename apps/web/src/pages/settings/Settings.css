@@ -62,8 +62,26 @@
 /* Grid Layout Styles */
 .env-groups-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+}
+
+.env-groups-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+@media (max-width: 1200px) {
+    .env-groups-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .env-groups-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 .env-group {
