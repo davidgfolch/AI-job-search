@@ -55,17 +55,14 @@ export default function Settings() {
         }
     };
 
-    const handleEnvUpdateBulk = async (groupName: string, keys: string[]) => {
+    const handleEnvUpdateAll = async () => {
         try {
-            const updates: Record<string, string> = {};
-            keys.forEach(k => updates[k] = envSettings[k]);
-            const updated = await settingsApi.updateEnvSettingsBulk(updates);
+            const updated = await settingsApi.updateEnvSettingsBulk(envSettings);
             setEnvSettings(updated);
-            setMessage({ text: `${groupName} settings saved successfully`, type: 'success' });
-            
+            setMessage({ text: `Settings saved successfully`, type: 'success' });
             setTimeout(() => setMessage(null), 3000);
         } catch (error) {
-            setMessage({ text: `Failed to update ${groupName} settings`, type: 'error' });
+            setMessage({ text: `Failed to update settings`, type: 'error' });
         }
     };
 
@@ -100,7 +97,7 @@ export default function Settings() {
                             <h2>Environment Variables (.env)</h2>
                             <button
                                 className="env-save-btn"
-                                onClick={() => Object.entries(groupedSettings).forEach(([g, k]) => handleEnvUpdateBulk(g, k))}
+                                onClick={handleEnvUpdateAll}
                             >
                                 Save
                             </button>
@@ -165,7 +162,7 @@ export default function Settings() {
                         <div className="env-section-footer">
                             <button
                                 className="env-save-btn"
-                                onClick={() => Object.entries(groupedSettings).forEach(([g, k]) => handleEnvUpdateBulk(g, k))}
+                                onClick={handleEnvUpdateAll}
                             >
                                 Save
                             </button>

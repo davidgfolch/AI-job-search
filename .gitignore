@@ -1,6 +1,6 @@
 test/__pycache__
 test_export_output/**
-.env
+.env*
 .venv*
 .history
 .letta
