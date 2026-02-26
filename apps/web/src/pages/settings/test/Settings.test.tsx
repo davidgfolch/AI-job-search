@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
-import { groupSettingsByKey } from '../utils/SettingsUtils';
+import { groupSettingsByKey, getSubgroupTitle } from '../utils/SettingsUtils';
 import { setupSettingsMocks } from './Settings.mocks';
 
 vi.mock('../api/SettingsApi');
@@ -60,8 +60,8 @@ describe('Settings', () => {
 
         expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
         expect(screen.getByText('scrapper_state.json')).toBeInTheDocument();
-        expect(screen.getByText('PREFIX')).toBeInTheDocument();
-        expect(screen.getByText('OTHER')).toBeInTheDocument();
+        expect(screen.getByText('System & Base')).toBeInTheDocument();
+        expect(screen.getByText('AI Enrichment')).toBeInTheDocument();
 
         // Values are rendered
         expect(screen.getByDisplayValue('value1')).toBeInTheDocument();
@@ -121,8 +121,9 @@ describe('Settings', () => {
     
     it('groups 1 item by its key as subgroup and renders inline-item', async () => {
          vi.mocked(groupSettingsByKey).mockReturnValue({
-            'SINGLE': ['SINGLE_KEY']
+            'Other': ['SINGLE_KEY']
         });
+        vi.mocked(getSubgroupTitle).mockReturnValue('SINGLE_SUBGROUP');
         vi.mocked(settingsApi.getEnvSettings).mockResolvedValue({'SINGLE_KEY': 'singlesval'});
         
         await renderSettingsAndWait();
