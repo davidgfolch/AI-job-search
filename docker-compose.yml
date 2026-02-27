@@ -43,7 +43,7 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql_db # MySQL service name for Docker networking
+      - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
       - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
@@ -108,9 +108,9 @@ services:
       - ./.env:/app/.env
     environment:
       - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql_db
+      - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - AI_ENRICH_OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -134,7 +134,7 @@ services:
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models (set HF_HOME in .env if needed)
     environment:
       - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql_db # MySQL service name for Docker networking
+      - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
       - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
@@ -142,8 +142,6 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
-    profiles:
-      - aiEnrichNew
 
   # AI CV Matcher - Local CV Matching extracted from AiEnrichNew
   aicvmatcher:
@@ -159,7 +157,7 @@ services:
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
     environment:
       - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql_db
+      - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
@@ -182,7 +180,7 @@ services:
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
     environment:
       - PYTHONUNBUFFERED=1
-      - DB_HOST=mysql_db
+      - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
@@ -190,8 +188,6 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
-    profiles:
-      - aiEnrich3
 
   # Scrapper - Job Scraping Service
   scrapper:

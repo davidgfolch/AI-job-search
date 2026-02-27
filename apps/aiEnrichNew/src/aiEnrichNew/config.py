@@ -1,4 +1,13 @@
-from commonlib.environmentUtil import getEnv
+from commonlib.environmentUtil import getEnv, getEnvBool
+
+
+def get_job_enabled() -> bool:
+    return getEnvBool("AI_ENRICHNEW_JOB", True)
+
+
+def get_skill_enabled() -> bool:
+    return getEnvBool("AI_ENRICHNEW_SKILL", True)
+
 
 def get_job_system_prompt() -> str:
     return """You are an expert at analyzing job offers.
@@ -17,6 +26,7 @@ Format your response as a single valid JSON object strictly complying with this 
 }
 Strictly JSON. No conversational text. No markdown blocks."""
 
+
 def get_skill_system_prompt() -> str:
     categories = getEnv("AI_ENRICHNEW_SKILL_CATEGORIES", required=True)
     return f"""You are an expert technical recruiter and software engineer.
@@ -31,17 +41,22 @@ The structure MUST be:
 3. **Category**: One or more of [{categories}] (comma separated).
 Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
 
+
 def get_batch_size() -> int:
-    return int(getEnv('AI_ENRICHNEW_BATCH_SIZE', '10'))
+    return int(getEnv("AI_ENRICHNEW_BATCH_SIZE", "10"))
+
 
 def get_input_max_len() -> int:
-    return int(getEnv('AI_ENRICHNEW_INPUT_MAX_LEN', '12000'))
+    return int(getEnv("AI_ENRICHNEW_INPUT_MAX_LEN", "12000"))
+
 
 def get_enrich_timeout_job() -> float:
-    return float(getEnv('AI_ENRICHNEW_TIMEOUT_JOB', 90))
+    return float(getEnv("AI_ENRICHNEW_TIMEOUT_JOB", 90))
+
 
 def get_enrich_timeout_skill() -> float:
-    return float(getEnv('AI_ENRICHNEW_TIMEOUT_SKILL', 90))
+    return float(getEnv("AI_ENRICHNEW_TIMEOUT_SKILL", 90))
+
 
 def should_cleanup_gpu() -> bool:
-    return getEnv('AI_ENRICHNEW_GPU_CLEANUP', 'True') == 'True'
+    return getEnv("AI_ENRICHNEW_GPU_CLEANUP", "True") == "True"

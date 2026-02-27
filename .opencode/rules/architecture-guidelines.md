@@ -3,7 +3,8 @@ trigger: always_on
 ---
 
 1. Code files including tests should have less than 200 lines (if they have more should be refactorized via SRP, abstraction/composition).
-2. Use compact style:
+2. **Preserve existing code**: When editing files, only make changes necessary for the task at hand. Do NOT reformat, reword, or restyle code that isn't being intentionally modified.
+3. Use compact style for new code you write:
    - Keep parameters on same line when possible, avoid line-per-parameter
    - Keep closing braces/parens on same line as last content, not on their own line
    - No extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`

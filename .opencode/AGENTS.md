@@ -120,7 +120,13 @@ models/       - Pydantic models
 
 ## Key Conventions
 
-1. **File Length**: Warn if files exceed 200 lines, fail at 300+ lines
+1. **Preserve Existing Code**: When editing files, only make changes necessary for the task at hand. Do NOT reformat, reword, or restyle code that isn't being intentionally modified. Preserve:
+   - Original quote style (single vs double)
+   - Original line breaks and spacing
+   - Original variable/function naming
+   - Original code structure unless refactoring is the explicit goal
+
+2. **File Length**: Warn if files exceed 200 lines, fail at 300+ lines
 2. **Test Location**: Tests must be in `test/` subdirectories parallel to source files
 3. **Test Naming**: Test files should be `[ModuleName].test.ts` or `[module_name]_test.py`
 4. **Polling**: Watcher patterns use 5-minute intervals with aggressive debouncing

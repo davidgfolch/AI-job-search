@@ -1,3 +1,4 @@
+import os
 import unittest
 from unittest.mock import patch
 from ..config import (
@@ -7,10 +8,44 @@ from ..config import (
     get_input_max_len,
     get_enrich_timeout_job,
     get_enrich_timeout_skill,
-    should_cleanup_gpu
+    should_cleanup_gpu,
+    get_job_enabled,
+    get_skill_enabled,
 )
 
+
 class TestConfig(unittest.TestCase):
+    def test_get_job_enabled_default_true(self):
+        os.environ.pop("AI_ENRICHNEW_JOB", None)
+        self.assertTrue(get_job_enabled())
+
+    @patch("aiEnrichNew.config.getEnvBool")
+    def test_get_job_enabled_true(self, mock_env):
+        mock_env.return_value = True
+        os.environ["AI_ENRICHNEW_JOB"] = "true"
+        self.assertTrue(get_job_enabled())
+
+    @patch("aiEnrichNew.config.getEnvBool")
+    def test_get_job_enabled_false(self, mock_env):
+        mock_env.return_value = False
+        os.environ["AI_ENRICHNEW_JOB"] = "false"
+        self.assertFalse(get_job_enabled())
+
+    def test_get_skill_enabled_default_true(self):
+        os.environ.pop("AI_ENRICHNEW_SKILL", None)
+        self.assertTrue(get_skill_enabled())
+
+    @patch("aiEnrichNew.config.getEnvBool")
+    def test_get_skill_enabled_true(self, mock_env):
+        mock_env.return_value = True
+        os.environ["AI_ENRICHNEW_SKILL"] = "true"
+        self.assertTrue(get_skill_enabled())
+
+    @patch("aiEnrichNew.config.getEnvBool")
+    def test_get_skill_enabled_false(self, mock_env):
+        mock_env.return_value = False
+        os.environ["AI_ENRICHNEW_SKILL"] = "false"
+        self.assertFalse(get_skill_enabled())
 
     def test_get_job_system_prompt(self):
         prompt = get_job_system_prompt()

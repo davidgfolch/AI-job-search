@@ -9,7 +9,7 @@ from .terminalColor import green, red, yellow
 
 DEBUG = False
 
-DB_NAME = os.getenv('DB_NAME', 'jobs')
+DB_NAME = os.getenv('COMMONLIB_DB_NAME', 'jobs')
 QRY_FIND_JOB_BY_JOB_ID = """
 SELECT id,jobId FROM jobs WHERE jobId = %s"""
 QRY_INSERT = """
@@ -47,7 +47,7 @@ def getConnection(e2eTests=False) -> mysqlConnector.MySQLConnection:
     import os
     global conn
     if conn is None:
-        db_host = os.getenv('DB_HOST', '127.0.0.1')  # Docker: mysql_db, Local: 127.0.0.1
+        db_host = os.getenv('COMMONLIB_DB_HOST', '127.0.0.1')  # Docker: mysql_db, Local: 127.0.0.1
         conn = mysqlConnector.connect(
             host=db_host,
             user='root', password='rootPass',

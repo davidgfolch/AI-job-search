@@ -38,7 +38,7 @@ class FastCVMatcher:
         print("Loading embedding model (this may take a while significantly on first run)...")
         self._model = SentenceTransformer('all-MiniLM-L6-v2') 
         print(cyan("Embedding model loaded."))
-        self._cv_loader = CVLoader(cv_location=CV_LOCATION, enabled=getEnvBool('AI_CVMATCHER'))
+        self._cv_loader = CVLoader(cv_location=CV_LOCATION, enabled=getEnvBool('AI_CVMATCHER_ENABLED'))
 
     @classmethod
     def instance(cls):
@@ -47,7 +47,7 @@ class FastCVMatcher:
         return cls._instance
 
     def process_db_jobs(self) -> int:
-        if not getEnvBool('AI_CVMATCHER'):
+        if not getEnvBool('AI_CVMATCHER_ENABLED'):
             return 0
         if not self._load_cv_content():
             return 0
@@ -57,7 +57,7 @@ class FastCVMatcher:
             if total == 0:
                 return total
             print()
-            limit = int(getEnv('AI_CVMATCHER_NEW_LIMIT', '100'))
+            limit = int(getEnv('AI_CVMATCHER_LIMIT', '100'))
             job_ids = repo.get_pending_cv_match_ids(limit)
             print(yellow(f'{job_ids}'))
             for idx, id in enumerate(job_ids):
