@@ -3,6 +3,7 @@
     flex-direction: column;
     height: 100%;
     padding: 0.5rem;
+    overflow: visible;
 }
 
 .job-detail-header {
@@ -17,6 +18,7 @@
 
 .job-detail-content {
     overflow-y: auto;
+    overflow-x: visible;
     flex: 1;
     min-height: 0;
     scrollbar-gutter: stable;
@@ -29,6 +31,7 @@
     flex: 1;
     min-height: 0;
     position: relative;
+    overflow: visible;
 }
 
 .job-detail-header h2 {
@@ -400,5 +403,88 @@
 .duplicated-link-btn:hover {
     background-color: #533f03;
     color: white;
+}
+
+.job-detail-compact-header {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: var(--bg-secondary);
+    padding: 0.5rem;
+    padding-right: 5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.compact-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.compact-company {
+    color: var(--color-green-light);
+    font-weight: 500;
+}
+
+.compact-modality {
+    color: var(--text-secondary);
+}
+
+.compact-salary {
+    color: var(--text-secondary);
+}
+
+.compact-separator {
+    color: var(--border-color-light);
+    margin: 0 0.25rem;
+}
+
+.compact-skills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    overflow: visible;
+}
+
+.compact-skills .skill-tag {
+    padding: 2px 6px;
+    margin: 1px 2px;
+    font-size: 0.75rem;
+    overflow: visible;
+}
+
+.compact-skills .skill-detail-container {
+    position: relative;
+    overflow: visible;
+}
+
+.compact-skills .skill-detail-btn {
+    width: 14px;
+    height: 14px;
+    font-size: 10px;
+}
+
+.compact-cv-match {
+    display: inline-flex;
+    align-items: center;
+    min-width: 60px;
+}
+
+.compact-cv-match .cv-match-bar-container {
+    width: 80px;
+    min-width: 60px;
+    height: 1rem;
+    flex: none;
+}
+
+.compact-cv-match .cv-match-bar-container .cv-match-text {
+    font-size: 0.7rem;
 }
 

@@ -77,7 +77,7 @@
   max-height: 60vh;
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
-  z-index: 10000;
+  z-index: 99999;
   line-height: 1.5;
   text-align: left;
   pointer-events: auto;
