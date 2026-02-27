@@ -29,7 +29,7 @@ describe('AppliedModal', () => {
         expect(screen.getByText('Mark as Applied')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Enter comment...')).toBeInTheDocument();
         expect(screen.getByText('OK')).toBeInTheDocument();
-        expect(screen.getByText("Don't set (Esc)")).toBeInTheDocument();
+        expect(screen.getByText("Cancel")).toBeInTheDocument();
     });
 
     it('should display default comment in textarea', () => {
@@ -48,12 +48,12 @@ describe('AppliedModal', () => {
         expect(mockConfirm).toHaveBeenCalledWith(true, '');
     });
 
-    it('should call onConfirm without comment when "Don\'t set" button is clicked', () => {
+    it('should call onConfirm with false when Cancel button is clicked', () => {
         const mockConfirm = vi.fn();
         render(<AppliedModal {...defaultProps} onConfirm={mockConfirm} />);
         
-        const dontSetButton = screen.getByText("Don't set (Esc)");
-        fireEvent.click(dontSetButton);
+        const cancelButton = screen.getByText("Cancel");
+        fireEvent.click(cancelButton);
         
         expect(mockConfirm).toHaveBeenCalledWith(false, '');
     });
@@ -90,13 +90,13 @@ describe('AppliedModal', () => {
         expect(mockConfirm).toHaveBeenCalledWith(true, '');
     });
 
-    it('should confirm without comment with Escape key', () => {
+    it('should apply job without comment with Escape key', () => {
         const mockConfirm = vi.fn();
         render(<AppliedModal {...defaultProps} onConfirm={mockConfirm} />);
         
         fireEvent.keyDown(document, { key: 'Escape' });
         
-        expect(mockConfirm).toHaveBeenCalledWith(false, '');
+        expect(mockConfirm).toHaveBeenCalledWith(true, '');
     });
 
     it('should not confirm with Enter key when Shift+Enter is pressed', () => {

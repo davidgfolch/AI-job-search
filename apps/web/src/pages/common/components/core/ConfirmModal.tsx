@@ -1,5 +1,6 @@
-import React from 'react';
-import './ConfirmModal.css';
+import { useEffect } from 'react';
+import { Modal } from './Modal';
+import './Modal.css';
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -16,9 +17,11 @@ export default function ConfirmModal({
     onConfirm, 
     onCancel 
 }: ConfirmModalProps) {
-    React.useEffect(() => {
+    useEffect(() => {
+        if (!isOpen) return;
+
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (isOpen && (e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
                 onConfirm();
             }
@@ -28,18 +31,13 @@ export default function ConfirmModal({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onConfirm]);
 
-    if (!isOpen) return null;
-
     return (
-        <div className="modal-overlay" onClick={onCancel}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">{title}</div>
-                <div className="modal-body">{message}</div>
-                <div className="modal-footer">
-                    <button className="modal-button cancel" onClick={onCancel}>Cancel</button>
-                    <button className="modal-button confirm" onClick={onConfirm}>Confirm</button>
-                </div>
+        <Modal isOpen={isOpen} onClose={onCancel} title={title} closeOnEscape>
+            {message}
+            <div className="modal-footer">
+                <button className="modal-button cancel" onClick={onCancel}>Cancel</button>
+                <button className="modal-button confirm" onClick={onConfirm}>Confirm</button>
             </div>
-        </div>
+        </Modal>
     );
 }
