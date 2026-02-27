@@ -1,11 +1,5 @@
 # TODO
 
-# Decouple skill enricher into a new module
-- Move skill enricher to a new module?
-
-# UI: create configuration page
-Containing: scrapper_state.json, .env editor, ...
-
 ## try claude with ollama run qwen3-coder-next
 
 Didn't install required ollama pre-resease.
@@ -35,14 +29,10 @@ ollama launch claude --config
 
 ## apps/aiEnrich3
 
-- aiEnrich* common implementation abstractions to commonlib
-
 ## apps/aiEnrichNew
 
 - improvements:
   - Detect: "Sueldo bruto / año en 30.000b/a - 38.000b/a"
-  - Detect: relocation, on-site, híbrido or hybrid obligation to go to office (and set comments or change tables by adding a new field)
-- aiEnrich* common implementation abstractions to commonlib
 
 ## apps/backend
 
@@ -51,6 +41,5 @@ ollama launch claude --config
 ## apps/scrapper
 
 ## apps/web
-- in apps/web, solve duplicated ids for edit/create fields: client, comments & salary
 - In list, when selected all, it don't un select when click on selected row.  It unselects all, and select the row. The problem is even bigger because is an api bulk operation LLM decided to pass all form filters, so if you change a filter (eg. ignored) the bulk reques doesn't work.
 - "Clean - Ignore jobs by title" dont update job list when all ignored & there is pagination scrolled down.
