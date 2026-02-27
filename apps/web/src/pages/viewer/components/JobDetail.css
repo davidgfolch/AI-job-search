@@ -23,6 +23,14 @@
     position: relative;
 }
 
+.job-detail-scroll-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
 .job-detail-header h2 {
     margin: 0;
     color: var(--text-color);
@@ -159,16 +167,15 @@
 }
 
 .job-status-floating {
-    float: right;
-    margin-top: 1rem;
-    margin-right: 1.5rem;
-    margin-left: 1rem;
+    position: absolute;
+    top: 0;
+    right: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     align-items: flex-end;
-    position: relative;
     z-index: 20;
+    padding-top: 1rem;
 }
 
 .status-tag {

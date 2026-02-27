@@ -84,7 +84,7 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
                 onCloseDuplicated={onClose} 
                 onOpenDuplicated={hideDuplicatedButton ? undefined : onOpenDuplicated}
             />
-            <div className="job-detail-content" ref={contentRef}>
+            <div className="job-detail-scroll-wrapper">
                 <div className="job-status-floating">
                     {STATE_FIELDS.filter(field => job[field as keyof Job] === true).map(status => (
                         <span key={status} className={`status-tag status-${status}`}>
@@ -92,7 +92,8 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
                         </span>
                     ))}
                 </div>
-                <ul className="job-info">
+                <div className="job-detail-content" ref={contentRef}>
+                    <ul className="job-info">
                     {job.ai_enrich_error && (
                         <li className="info-row" style={{ color: 'red' }}>
                             Enrich Error: <span 
@@ -183,6 +184,7 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </div>
     );
