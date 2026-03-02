@@ -33,7 +33,7 @@ def rawToJson(raw: str) -> dict[str, str]:
         # repl \& or \. (...) by & or .
         res = re.sub(r'\\([&.*-+#])', r'\1', res, re.I | re.M)
         parsed_dict = dict(json.loads(f'{res}', cls=LazyDecoder))
-        
+
         decode_unicode_escapes(parsed_dict)
         return parsed_dict
     except Exception as ex:
@@ -66,12 +66,16 @@ def fixJsonInvalidAttribute(raw):
     """Fixes LLM invalid json value, f.ex.:
     "salary": "xx" + "yy",
     "salary": "xx",",
+    "salary": "50,000€, modality": "REMOTE" -> "salary": "50,000€", "modality": "REMOTE"
     """
     raw = re.sub(r'" \+ "', ' + ', raw)
     # {"salary":
     # "$\text{Salary determined by the market and your experience} \\\$",
-    raw = re.sub(r'"[$]\\text\{([^\}]+)\} \\\\\\\$"', r'\1', raw)
-    return re.sub(r'(.+)",",', r'\1",', raw)
+    raw = re.sub(r'"[$]\\text\{([^\}]+)\} \\\\\\\$"', r"\1", raw)
+    raw = re.sub(r'(.+)",",', r'\1",', raw)
+    # Fix merged fields: "key": "value, next_key": "next_value" -> "key": "value", "next_key": "next_value"
+    raw = re.sub(r'("[\w\s]+), (\w+)": (")', r'\1", "\2": \3', raw)
+    return raw
 
 
 def fixJsonEndCurlyBraces(raw):

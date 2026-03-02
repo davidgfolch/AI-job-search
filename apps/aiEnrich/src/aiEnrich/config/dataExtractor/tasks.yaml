@@ -11,13 +11,13 @@ extractor_task:
     - Salary information (if available)
     - Modality (must be exactly REMOTE, HYBRID, or ON_SITE)
 
-    
   expected_output: >
     A valid JSON object with the extracted information. Include all fields even if empty.
+    IMPORTANT: Use JSON ARRAYS for technology lists (e.g., ["C++", "Java"]). Do NOT use comma-separated strings inside quotes.
     The json output must have the following fields and structure:
     {
-      "required_technologies": "..., ..., ...",
-      "optional_technologies": "..., ..., ...",
+      "required_technologies": ["C++", "Java"],
+      "optional_technologies": ["Qt", "AWS"],
       "salary": "...",
       "modality": "..."
     }
