@@ -8,26 +8,36 @@ import { settingsApi } from './api/SettingsApi';
 import { groupSettingsByKey, getSubgroupTitle } from './utils/SettingsUtils';
 import MessageContainer from '../common/components/core/MessageContainer';
 import { FormField } from '../common/components/core/FormField';
+import { useEnvSettings } from '../common/hooks/useEnvSettings';
 import './Settings.css';
 
 type SetStateAction<T> = React.Dispatch<React.SetStateAction<T>>;
 
 export default function Settings() {
+    const { data: envSettingsData, isLoading: isEnvLoading, isError: isEnvError } = useEnvSettings();
     const [envSettings, setEnvSettings] = useState<Record<string, string>>({});
     const [scrapperState, setScrapperState] = useState<string>('');
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const effectRan = useRef(false);
 
-    useEffect(() => { if (!effectRan.current) { loadData(); effectRan.current = true; } }, []);
+    useEffect(() => {
+        if (isEnvError) {
+            setMessage({ text: 'Failed to load settings', type: 'error' });
+            setIsLoading(false);
+        } else if (envSettingsData && !effectRan.current) {
+            setEnvSettings(envSettingsData);
+            loadData();
+            effectRan.current = true;
+        }
+    }, [envSettingsData, isEnvError]);
 
     const loadScrapperState = async () => setScrapperState(JSON.stringify(await settingsApi.getScrapperState(), null, 2));
 
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const [env] = await Promise.all([settingsApi.getEnvSettings(), loadScrapperState()]);
-            setEnvSettings(env);
+            await loadScrapperState();
         } catch { setMessage({ text: 'Failed to load settings', type: 'error' }); }
         finally { setIsLoading(false); }
     };

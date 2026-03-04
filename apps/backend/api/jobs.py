@@ -1,6 +1,13 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends, Request
-from models.job import Job, JobUpdate, JobListResponse, AppliedCompanyJob, JobCreate, WatcherStatsResponse
+from models.job import (
+    Job,
+    JobUpdate,
+    JobListResponse,
+    AppliedCompanyJob,
+    JobCreate,
+    WatcherStatsResponse,
+)
 from services.jobs_service import JobsService
 from services.watcher_service import WatcherService
 from pydantic import BaseModel
@@ -9,22 +16,27 @@ from api.jobs_applied import router as jobs_applied_router
 router = APIRouter()
 router.include_router(jobs_applied_router)
 
+
 class BulkJobUpdate(BaseModel):
     ids: Optional[List[int]] = None
     filters: Optional[dict] = None
     update: JobUpdate
     select_all: bool = False
 
+
 class BulkJobDelete(BaseModel):
     ids: Optional[List[int]] = None
     filters: Optional[dict] = None
     select_all: bool = False
 
+
 def get_service():
     return JobsService()
 
+
 def get_watcher_service():
     return WatcherService()
+
 
 @router.post("", response_model=Job)
 def create_job(job_create: JobCreate, service: JobsService = Depends(get_service)):
@@ -33,6 +45,7 @@ def create_job(job_create: JobCreate, service: JobsService = Depends(get_service
     if not job:
         raise HTTPException(status_code=500, detail="Failed to create job")
     return job
+
 
 @router.get("", response_model=JobListResponse)
 def list_jobs(
@@ -63,26 +76,29 @@ def list_jobs(
     sql_filter: Optional[str] = None,
     ids: Optional[List[int]] = Query(None),
     created_after: Optional[str] = None,
-    service: JobsService = Depends(get_service)
+    modality: Optional[List[str]] = Query(None),
+    service: JobsService = Depends(get_service),
 ):
     boolean_filters = {
-        key: value for key, value in [
-            ('flagged', flagged),
-            ('like', like),
-            ('ignored', ignored),
-            ('seen', seen),
-            ('applied', applied),
-            ('discarded', discarded),
-            ('closed', closed),
-            ('interview_rh', interview_rh),
-            ('interview', interview),
-            ('interview_tech', interview_tech),
-            ('interview_technical_test', interview_technical_test),
-            ('interview_technical_test_done', interview_technical_test_done),
-            ('ai_enriched', ai_enriched),
-            ('easy_apply', easy_apply),
-            ('duplicated', duplicated),
-        ] if value is not None
+        key: value
+        for key, value in [
+            ("flagged", flagged),
+            ("like", like),
+            ("ignored", ignored),
+            ("seen", seen),
+            ("applied", applied),
+            ("discarded", discarded),
+            ("closed", closed),
+            ("interview_rh", interview_rh),
+            ("interview", interview),
+            ("interview_tech", interview_tech),
+            ("interview_technical_test", interview_technical_test),
+            ("interview_technical_test_done", interview_technical_test_done),
+            ("ai_enriched", ai_enriched),
+            ("easy_apply", easy_apply),
+            ("duplicated", duplicated),
+        ]
+        if value is not None
     }
     return service.list_jobs(
         page=page,
@@ -96,21 +112,27 @@ def list_jobs(
         boolean_filters=boolean_filters,
         sql_filter=sql_filter,
         ids=ids,
-        created_after=created_after)
+        created_after=created_after,
+        modality=modality,
+    )
+
 
 @router.get("/watcher-stats")
 def get_watcher_stats(
     request: Request,
-    config_ids: str = Query(..., description="Comma-separated list of filter configuration IDs"),
-    service: WatcherService = Depends(get_watcher_service)
+    config_ids: str = Query(
+        ..., description="Comma-separated list of filter configuration IDs"
+    ),
+    service: WatcherService = Depends(get_watcher_service),
 ):
-    ids = [int(id.strip()) for id in config_ids.split(',') if id.strip()]
+    ids = [int(id.strip()) for id in config_ids.split(",") if id.strip()]
     cutoff_map = {}
     for config_id in ids:
         param_name = f"from_{config_id}"
         if param_name in request.query_params:
             cutoff_map[config_id] = request.query_params[param_name]
     return service.get_watcher_stats(config_ids=ids, cutoff_map=cutoff_map)
+
 
 @router.get("/{job_id}", response_model=Job)
 def get_job(job_id: int, service: JobsService = Depends(get_service)):
@@ -119,29 +141,40 @@ def get_job(job_id: int, service: JobsService = Depends(get_service)):
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
+
 @router.patch("/{job_id}", response_model=Job)
-def update_job(job_id: int, job_update: JobUpdate, service: JobsService = Depends(get_service)):
+def update_job(
+    job_id: int, job_update: JobUpdate, service: JobsService = Depends(get_service)
+):
     update_data = job_update.model_dump(exclude_unset=True)
     job = service.update_job(job_id, update_data)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
+
 @router.post("/bulk", response_model=dict)
-def bulk_update_jobs(bulk_update: BulkJobUpdate, service: JobsService = Depends(get_service)):
+def bulk_update_jobs(
+    bulk_update: BulkJobUpdate, service: JobsService = Depends(get_service)
+):
     update_data = bulk_update.update.model_dump(exclude_unset=True)
     count = service.bulk_update_jobs(
         update_data=update_data,
         ids=bulk_update.ids,
         filters=bulk_update.filters,
-        select_all=bulk_update.select_all)
+        select_all=bulk_update.select_all,
+    )
     return {"updated": count}
 
+
 @router.post("/bulk/delete", response_model=dict)
-def bulk_delete_jobs(bulk_delete: BulkJobDelete, service: JobsService = Depends(get_service)):
+def bulk_delete_jobs(
+    bulk_delete: BulkJobDelete, service: JobsService = Depends(get_service)
+):
     # Using BulkJobDelete which doesn't require 'update' field
     count = service.delete_jobs(
         ids=bulk_delete.ids,
         filters=bulk_delete.filters,
-        select_all=bulk_delete.select_all)
+        select_all=bulk_delete.select_all,
+    )
     return {"deleted": count}

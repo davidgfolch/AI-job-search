@@ -61,7 +61,8 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onConfigNameChange={actions.setActiveConfigName}
                             refreshJobs={actions.refreshJobs}
                             configCount={configCount}
-                            onConfigsLoaded={setConfigCount} />
+                            onConfigsLoaded={setConfigCount}
+                            modalityValues={state.modalityValues} />
                         <div className="viewer-content">
                             <div className="viewer-left" style={{ display: state.duplicatedJob ? 'none' : 'flex' }}>
                                 <div className="tab-group">

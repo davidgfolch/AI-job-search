@@ -26,6 +26,7 @@ class JobReadRepository:
         created_after: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        modality: Optional[list] = None,
     ) -> dict:
         offset = (page - 1) * size
         where_clauses, params = build_jobs_where_clause(
@@ -40,6 +41,7 @@ class JobReadRepository:
             created_after,
             start_date,
             end_date,
+            modality,
         )
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
@@ -60,6 +62,7 @@ class JobReadRepository:
         created_after: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        modality: Optional[list] = None,
     ) -> int:
         where_clauses, params = build_jobs_where_clause(
             search,
@@ -73,6 +76,7 @@ class JobReadRepository:
             created_after,
             start_date,
             end_date,
+            modality,
         )
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:

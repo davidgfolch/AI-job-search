@@ -1,10 +1,10 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
 import { mockScrapperState } from './Settings.fixtures';
-import { setupSettingsMocks } from './Settings.mocks';
+import { setupSettingsMocks, renderWithClient } from './Settings.mocks';
 
 vi.mock('../api/SettingsApi');
 vi.mock('../utils/SettingsUtils');
@@ -28,7 +28,7 @@ describe('Settings Scrapper State', () => {
     });
 
     const renderSettingsAndWait = async () => {
-        render(<Settings />);
+        renderWithClient(<Settings />);
         await waitFor(() => {
             expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
         });

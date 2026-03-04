@@ -79,6 +79,7 @@ export interface JobListParams {
   days_old?: number;
   salary?: string;
   order?: string;
+  modality?: string[];
   // Boolean field filters
   flagged?: boolean;
   like?: boolean;
@@ -185,5 +186,10 @@ export const jobsApi = {
         'Error getting system timezone');
     }
     return timezonePromise;
+  },
+
+  getModalityValues: async (): Promise<string[]> => {
+    return handleRequest(apiClient.get<string[]>('/ddl/schema/enum-values/jobs/modality'),
+      'Error getting modality values');
   },
 };

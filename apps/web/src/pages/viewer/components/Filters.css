@@ -16,22 +16,24 @@
 }
 
 .filters-content {
-    padding: 1rem;
-    border: 2px solid var(--border-color-light);
+    background-color: var(--bg-primary);
     border-radius: 0.5rem;
+    padding: 0.2rem;
     margin: 0rem 1rem 1rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 0.2rem;
 }
 
 .general-filters {
+    background-color: var(--bg-tertiary);
+    border: 0.1rem solid var(--border-color-light);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
     display: flex;
     gap: 1.5rem;
     flex-wrap: wrap;
     align-items: flex-end;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color-light);
 }
 
 .compact-filter {
@@ -58,6 +60,10 @@
     min-width: 300px;
 }
 
+.modality-filter {
+    flex-basis: 100%;
+}
+
 .sql-input {
     width: 100%;
     padding: 0.4rem 0.6rem;
@@ -71,9 +77,13 @@
 }
 
 .boolean-filter-groups {
+    background-color: var(--bg-tertiary);
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
+    border: 0.1rem solid var(--border-color-light);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
 }
 
 .filter-group {
@@ -99,8 +109,8 @@
 .pills-section {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    gap: 0.2rem;
+    /* flex-wrap: wrap; */
 }
 
 .section-label {
@@ -137,4 +147,35 @@
     background: rgba(var(--error-color-rgb), 0.1);
     border-color: var(--error-color);
     color: var(--error-color);
+}
+
+.filters-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.filters-row .boolean-filter-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.modality-filter-group {
+    background-color: var(--bg-tertiary);
+    border: 0.1rem solid var(--border-color-light);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    flex: 0 1 auto;
+    max-width: 100%;
+}
+
+.modality-filter-group .pills-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }

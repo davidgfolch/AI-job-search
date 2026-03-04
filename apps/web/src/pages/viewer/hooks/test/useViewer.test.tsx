@@ -16,6 +16,11 @@ vi.mock('../useJobSelection', () => ({
 vi.mock('../useJobMutations', () => ({
     useJobMutations: vi.fn(),
 }));
+vi.mock('../../../common/hooks/useModalityValues', () => ({
+    useModalityValues: vi.fn(),
+}));
+
+import { useModalityValues } from '../../../common/hooks/useModalityValues';
 
 describe('useViewer', () => {
     beforeEach(() => {
@@ -23,6 +28,7 @@ describe('useViewer', () => {
         (useJobsData as any).mockReturnValue(mockJobsData);
         (useJobSelection as any).mockReturnValue(mockJobSelection);
         (useJobMutations as any).mockReturnValue(mockJobMutations);
+        (useModalityValues as any).mockReturnValue({ data: [] });
     });
 
     it('should aggregate state correctly', () => {

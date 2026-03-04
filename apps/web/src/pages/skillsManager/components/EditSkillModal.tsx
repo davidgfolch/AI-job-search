@@ -50,7 +50,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
             : `Edit Skill: ${skill.name}`
         }
       </h3>
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginLeft: '1rem' }}>
         {__AI_ENRICHNEW_SKILL_ENABLED__ && (
           <button
             className="btn-secondary"

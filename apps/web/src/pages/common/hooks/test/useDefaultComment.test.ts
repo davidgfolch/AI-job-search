@@ -3,13 +3,18 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useDefaultComment } from '../useDefaultComment';
 import { settingsApi } from '../../../settings/api/SettingsApi';
 
-// Mock settingsApi
 vi.mock('../../../settings/api/SettingsApi', () => ({
     settingsApi: {
         getEnvSettings: vi.fn(),
         updateEnvSetting: vi.fn(),
     },
 }));
+
+vi.mock('../useEnvSettings', () => ({
+    useEnvSettings: vi.fn(),
+}));
+
+import { useEnvSettings } from '../useEnvSettings';
 
 describe('useDefaultComment', () => {
     let consoleSpy: any;
@@ -25,30 +30,27 @@ describe('useDefaultComment', () => {
 
     it('should load default comment from settingsApi on mount', async () => {
         const mockStoredComment = '- custom applied text';
-        (settingsApi.getEnvSettings as any).mockResolvedValue({
-            UI_APPLY_MODAL_DEFAULT_TEXT: mockStoredComment
+        (useEnvSettings as any).mockReturnValue({
+            data: { UI_APPLY_MODAL_DEFAULT_TEXT: mockStoredComment },
+            isLoading: false,
         });
 
         const { result } = renderHook(() => useDefaultComment());
 
-        expect(result.current.isLoading).toBe(true);
-        expect(result.current.comment).toBe('');
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-        expect(settingsApi.getEnvSettings).toHaveBeenCalled();
+        expect(result.current.isLoading).toBe(false);
         expect(result.current.comment).toBe(mockStoredComment);
     });
 
     it('should save comment to settingsApi', async () => {
-        (settingsApi.getEnvSettings as any).mockResolvedValue({
-            UI_APPLY_MODAL_DEFAULT_TEXT: ''
+        (useEnvSettings as any).mockReturnValue({
+            data: { UI_APPLY_MODAL_DEFAULT_TEXT: '' },
+            isLoading: false,
         });
         (settingsApi.updateEnvSetting as any).mockResolvedValue(undefined);
 
         const { result } = renderHook(() => useDefaultComment());
 
-        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        expect(result.current.isLoading).toBe(false);
 
         const newComment = '- new custom comment';
         await result.current.saveComment(newComment);
@@ -60,13 +62,14 @@ describe('useDefaultComment', () => {
     });
 
     it('should not save empty comment', async () => {
-        (settingsApi.getEnvSettings as any).mockResolvedValue({
-            UI_APPLY_MODAL_DEFAULT_TEXT: ''
+        (useEnvSettings as any).mockReturnValue({
+            data: { UI_APPLY_MODAL_DEFAULT_TEXT: '' },
+            isLoading: false,
         });
 
         const { result } = renderHook(() => useDefaultComment());
 
-        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        expect(result.current.isLoading).toBe(false);
 
         await waitFor(() => {
             result.current.saveComment('   ');

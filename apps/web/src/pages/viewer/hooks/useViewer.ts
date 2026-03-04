@@ -3,6 +3,7 @@ import { useJobsData } from './useJobsData';
 import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
 import { useAppliedModal } from './useAppliedModal';
+import { useModalityValues } from '../../common/hooks/useModalityValues';
 import { type Job, jobsApi } from '../api/ViewerApi';
 import { STATE_FIELDS } from '../constants';
 
@@ -10,6 +11,7 @@ export type { TabType };
 
 export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
+    const { data: modalityValues = [] } = useModalityValues();
     const {
         filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, hardRefresh
     } = useJobsData();
@@ -112,7 +114,7 @@ export const useViewer = () => {
     const hasPrevious = selectedIndex > 0;
 
     return {
-        state: { filters, allJobs, selectedJob, activeTab, message, data, selectedIds, selectionMode, confirmModal, activeConfigName, creationSessionId, duplicatedJob,
+        state: { filters, allJobs, selectedJob, activeTab, message, data, selectedIds, selectionMode, confirmModal, activeConfigName, creationSessionId, duplicatedJob, modalityValues,
             appliedModal: { isOpen: isAppliedModalOpen, onConfirm: handleAppliedConfirm, onCancel: handleAppliedCancel } },
         status: { isLoading: isLoading && (filters.page || 1) === 1, isLoadingMore, error, hasNext, hasPrevious },
         actions: {

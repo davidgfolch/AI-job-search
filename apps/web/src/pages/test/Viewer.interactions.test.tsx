@@ -14,6 +14,7 @@ vi.mock('../viewer/api/ViewerApi', () => ({
         getJob: vi.fn(),
         updateJob: vi.fn(),
         getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
+        getModalityValues: vi.fn().mockResolvedValue(['REMOTE', 'HYBRID', 'ON_SITE']),
     },
 }));
 vi.mock('../../hooks/viewer/useJobUpdates', () => ({

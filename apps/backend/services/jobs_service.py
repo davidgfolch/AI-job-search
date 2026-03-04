@@ -37,6 +37,7 @@ class JobsService:
         sql_filter: Optional[str] = None,
         ids: Optional[List[int]] = None,
         created_after: Optional[str] = None,
+        modality: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         return self.repo.list_jobs(
             page=page,
@@ -51,6 +52,7 @@ class JobsService:
             sql_filter=sql_filter,
             ids=ids,
             created_after=created_after,
+            modality=modality,
         )
 
     def count_jobs(
@@ -64,6 +66,7 @@ class JobsService:
         sql_filter: Optional[str] = None,
         ids: Optional[List[int]] = None,
         created_after: Optional[str] = None,
+        modality: Optional[List[str]] = None,
     ) -> int:
         return self.repo.count_jobs(
             search=search,
@@ -75,6 +78,7 @@ class JobsService:
             sql_filter=sql_filter,
             ids=ids,
             created_after=created_after,
+            modality=modality,
         )
 
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:

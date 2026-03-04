@@ -1,10 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
 import { groupSettingsByKey, getSubgroupTitle } from '../utils/SettingsUtils';
-import { setupSettingsMocks } from './Settings.mocks';
+import { setupSettingsMocks, renderWithClient } from './Settings.mocks';
 
 vi.mock('../api/SettingsApi');
 vi.mock('../utils/SettingsUtils');
@@ -28,7 +28,7 @@ describe('Settings', () => {
     });
 
     const renderSettingsAndWait = async () => {
-        render(<Settings />);
+        renderWithClient(<Settings />);
         await waitFor(() => {
             expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
         });
@@ -41,7 +41,7 @@ describe('Settings', () => {
     };
 
     it('renders loading state initially', async () => {
-        render(<Settings />);
+        renderWithClient(<Settings />);
         expect(screen.getByText('Loading settings...')).toBeInTheDocument();
         await waitFor(() => {
             expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('Settings', () => {
     });
 
     it('loads and renders settings properly', async () => {
-        render(<Settings />);
+        renderWithClient(<Settings />);
 
         await waitFor(() => {
             expect(screen.getByTestId('page-header')).toHaveTextContent('Settings');
@@ -73,7 +73,7 @@ describe('Settings', () => {
     it('handles load errors gracefully', async () => {
         vi.mocked(settingsApi.getEnvSettings).mockRejectedValueOnce(new Error('Load Error'));
         
-        render(<Settings />);
+        renderWithClient(<Settings />);
 
         await expectMessage('Failed to load settings');
     });
