@@ -34,7 +34,6 @@
     gap: 10px;
 }
 
-/* Fallback for btn-secondary if not globally defined */
 .btn-secondary {
     background-color: var(--btn-secondary-bg);
     color: var(--btn-secondary-text);

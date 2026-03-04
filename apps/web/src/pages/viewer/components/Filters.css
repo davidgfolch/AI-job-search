@@ -57,7 +57,6 @@
 
 .sql-filter {
     flex: 1;
-    min-width: 300px;
 }
 
 .modality-filter {
@@ -178,4 +177,26 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+.btn-secondary {
+    background-color: var(--primary-color);
+    color: var(--text-primary);
+    border: 1px solid var(--primary-color);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--btn-secondary-bg-hover);
+    border-color: var(--btn-secondary-border-hover);
+}
+
+.btn-secondary:disabled {
+    background-color: var(--btn-secondary-bg-disabled);
+    color: var(--btn-secondary-text-disabled);
+    border-color: var(--btn-secondary-border-disabled);
+    cursor: not-allowed;
 }

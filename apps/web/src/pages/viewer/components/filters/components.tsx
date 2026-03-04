@@ -44,10 +44,7 @@ export function GeneralFilters({ filters, onFiltersChange, onOpenSqlEditor }: Ge
                 label={
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'normal', gap: '1rem' }}>
                         <span>SQL Where Filter:</span>
-                        <button type="button" 
-                            onClick={onOpenSqlEditor}
-                            style={{ marginLeft: '1rem' }}
-                            className="btn btn-primary">
+                        <button onClick={onOpenSqlEditor} className="btn-secondary">
                             SQL Editor
                         </button>
                     </div>
