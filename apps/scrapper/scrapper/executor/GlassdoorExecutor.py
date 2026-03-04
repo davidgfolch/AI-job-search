@@ -14,7 +14,7 @@ class GlassdoorExecutor(BaseExecutor):
         self.site_name = "GLASSDOOR"
         self.jobs_x_page = 30
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
-        self.jobs_search_base_url = getEnv(f'{self.site_name}_JOBS_SEARCH_BASE_URL')
+        self.jobs_search_base_url = getEnv(f'SCRAPPER_{self.site_name}_JOBS_SEARCH_BASE_URL')
         self.navigator = GlassdoorNavigator(self.selenium_service, self.debug)
 
     def _preload_action(self):

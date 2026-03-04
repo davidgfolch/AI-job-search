@@ -27,8 +27,8 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
     },
     'Glassdoor': {
         TIMER: getSeconds(getEnv('SCRAPPER_GLASSDOOR_RUN_CADENCY')),
-        IGNORE_AUTORUN: getEnvBool('SCRAPPER_GLASSDOOR_IGNORE_AUTORUN', False),
-        DEBUG: False,
+        IGNORE_AUTORUN: getEnvBool('SCRAPPER_GLASSDOOR_IGNORE_AUTORUN', True),
+        DEBUG: True,
     },
     'Indeed': {
         TIMER: getSeconds(getEnv('SCRAPPER_INDEED_RUN_CADENCY')),
