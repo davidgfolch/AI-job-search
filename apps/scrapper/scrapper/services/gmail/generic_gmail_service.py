@@ -48,15 +48,11 @@ class GmailService:
         except Exception as e:
             raise GmailConnectionError(f"Error getting verification code: {e}")
 
-    def extract_code_from_email(self, email_subject: str) -> str:
+    def extract_code_from_email(self, subject: str) -> str:
         try:
-            return self.email_reader.extract_verification_code_from_subject(
-                email_subject
-            )
+            return self.email_reader.extract_verification_code_from_subject(subject)
         except:
-            raise VerificationCodeExtractionError(
-                "No verification code found in email subject"
-            )
+            raise VerificationCodeExtractionError("No verification code found in email subject")
 
     def is_connected(self) -> bool:
         """Check if Gmail service is connected"""

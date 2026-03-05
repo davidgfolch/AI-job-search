@@ -192,3 +192,48 @@
 .green {
   color: var(--color-green-light);
 }
+
+@media (max-width: 768px) {
+  .viewer-container {
+    padding: 0.5rem;
+  }
+  
+  .viewer-content {
+    flex-direction: column;
+  }
+
+  .viewer-left {
+    padding-right: 0;
+  }
+
+  .viewer-right {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    margin-top: 1rem;
+  }
+
+  .viewer-left.mobile-hidden,
+  .viewer-right.mobile-hidden {
+    display: none !important;
+  }
+
+  /* Hide job action buttons from list header toolbar on mobile */
+  .list-header-actions {
+    display: none !important;
+  }
+
+  /* Shrink tab buttons row to fit mobile width */
+  .tab-buttons {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.3rem;
+  }
+
+  .tab-button {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+    flex: 0 1 auto;
+  }
+}

@@ -11,6 +11,8 @@ import { STATE_FIELDS } from '../constants';
 import JobDetailHeader from './job-detail/JobDetailHeader';
 import JobDetailInfo from './job-detail/JobDetailInfo';
 import JobDetailCompactHeader from './job-detail/JobDetailCompactHeader';
+import type { AppliedCompanyJob } from '../api/ViewerApi';
+import JobActions from './JobActions';
 
 interface JobDetailProps {
     job: Job;
@@ -18,10 +20,21 @@ interface JobDetailProps {
     onOpenDuplicated?: (id: number) => void;
     onClose?: () => void;
     hideDuplicatedButton?: boolean;
+    onCloseMobile?: () => void;
+    onNext?: () => void;
+    onPrevious?: () => void;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
+    filters?: import('../api/ViewerApi').JobListParams;
+    onSeen?: () => void;
+    onApplied?: () => void;
+    onDiscarded?: () => void;
+    onClosed?: () => void;
+    onIgnore?: () => void;
 }
 
-export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hideDuplicatedButton }: JobDetailProps) {
-    const { data: appliedCompanyJobs = [], isLoading: loadingApplied } = useQuery({
+    export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hideDuplicatedButton, onCloseMobile, onNext, onPrevious, hasNext, hasPrevious, filters, onSeen, onApplied, onDiscarded, onClosed, onIgnore }: JobDetailProps) {
+    const { data: appliedCompanyJobs, isLoading: loadingApplied } = useQuery<AppliedCompanyJob[]>({
         queryKey: ['appliedCompanyJobs', job.company, job.client],
         queryFn: async () => {
             if (!job.company) return [];
@@ -55,6 +68,28 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
     return (
         <div className="job-detail">
             <JobDetailHeader job={job} onCloseDuplicated={onClose} onOpenDuplicated={hideDuplicatedButton ? undefined : onOpenDuplicated} />
+            {(onSeen || onApplied || onIgnore) && (
+                <div className="mobile-job-actions">
+                    <JobActions
+                        job={job}
+                        filters={filters || {}}
+                        onSeen={onSeen || (() => {})}
+                        onApplied={onApplied || (() => {})}
+                        onDiscarded={onDiscarded || (() => {})}
+                        onClosed={onClosed || (() => {})}
+                        onIgnore={onIgnore || (() => {})}
+                        onNext={onNext || (() => {})}
+                        onPrevious={onPrevious || (() => {})}
+                        hasNext={hasNext || false}
+                        hasPrevious={hasPrevious || false}
+                    />
+                    {onCloseMobile && (
+                        <button className="mobile-back-btn create-job-btn" onClick={onCloseMobile} title="Close detail">
+                            ✕
+                        </button>
+                    )}
+                </div>
+            )}
             <div className="job-detail-scroll-wrapper">
                 <div className="job-status-floating">
                     {STATE_FIELDS.filter(field => job[field as keyof Job] === true).map(status => (
@@ -63,7 +98,7 @@ export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hi
                 </div>
                 <div className="job-detail-content" ref={contentRef}>
                     {isScrolled && <JobDetailCompactHeader job={job} />}
-                    <JobDetailInfo job={job} appliedCompanyJobs={appliedCompanyJobs} loadingApplied={loadingApplied} onUpdate={onUpdate} showCalculator={showCalculator} onToggleCalculator={() => setShowCalculator(!showCalculator)} />
+                    <JobDetailInfo job={job} appliedCompanyJobs={appliedCompanyJobs || []} loadingApplied={loadingApplied} onUpdate={onUpdate} showCalculator={showCalculator} onToggleCalculator={() => setShowCalculator(!showCalculator)} />
                     {showCalculator && <SalaryCalculator key={job.id} onClose={() => setShowCalculator(false)} job={job} onUpdate={onUpdate} initialParams={savedCalcParams} allSavedParams={allSavedCalcParams} />}
                     {job.comments && (
                         <div className="job-comments"><h3>Comments</h3><div className="markdown-content"><ReactMarkdownCustom>{job.comments}</ReactMarkdownCustom></div></div>

@@ -33,3 +33,10 @@
   background-color: var(--header-menu-hover);
   color: var(--text-primary);
 }
+
+
+@media (max-width: 768px) {
+    .menu-button {
+        font-size: 1rem !important;
+    }
+}

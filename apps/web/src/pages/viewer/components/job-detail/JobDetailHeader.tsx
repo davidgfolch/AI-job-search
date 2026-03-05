@@ -19,7 +19,7 @@ export default function JobDetailHeader({ job, onCloseDuplicated, onOpenDuplicat
                 {String(job.duplicated_id).split(',').map(id => (
                     <button 
                         key={id}
-                        className="create-job-btn" 
+                        className="create-job-btn open-duplicated-btn" 
                         onClick={() => onOpenDuplicated(Number(id.trim()))} 
                         title={`Open Duplicated Job (${id.trim()})`}
                     >

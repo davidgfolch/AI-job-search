@@ -7,6 +7,7 @@
 
 .filter-configurations {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.25rem;
     color: var(--text-secondary);
     min-width: 300px;
@@ -250,4 +251,54 @@
 
 .toggle-button .color-green {
     color: var(--success-color);
+}
+
+.pinned-collapse-btn {
+    display: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+    background: none;
+}
+
+.pinned-collapse-btn:hover {
+    background: var(--bg-hover);
+}
+
+@media (max-width: 768px) {
+    /* Hide filter controls: only show pinned/watched configs */
+    .filter-configurations {
+        display: none !important;
+    }
+    /* Also hide the full filter expand area on mobile */
+    .filters-content {
+        display: none !important;
+    }
+    /* Keep pinned configurations visible */
+    .pinned-configurations {
+        display: flex !important;
+    }
+    .pinned-collapse-btn {
+        display: block;
+    }
+    /* Only show watched pinned configs */
+    .pinned-config-item:not(.is-watched) {
+        display: none !important;
+    }
+}
+
+
+@media (max-width: 768px) {
+    .pinned-configurations {
+        gap: 0rem;
+    }
+    .pinned-config-item {
+        padding: 0.2rem 0.4rem;
+        margin: 0.1rem 0.1rem;
+        border-radius: 0.5rem;
+    }
 }

@@ -16,6 +16,95 @@
     flex-shrink: 0;
 }
 
+.mobile-job-actions {
+    display: none;
+    padding-bottom: 0.5rem;
+    
+}
+
+@media (max-width: 768px) {
+    .mobile-job-actions {
+        display: flex;
+    }
+}
+
+.mobile-back-btn {
+    display: none;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    padding: 4px 10px;
+}
+
+.mobile-nav-row {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.mobile-nav-btns {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.mobile-nav-btn {
+    font-size: 1.2rem;
+    padding: 2px 10px;
+    line-height: 1;
+}
+
+.mobile-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .mobile-nav-row {
+        display: flex;
+    }
+    .mobile-back-btn {
+        display: inline-flex;
+        align-items: center;
+    }
+    .job-detail-compact-header {
+        display: none !important;
+    }
+    .job-detail-header {
+        padding-bottom: 0.5rem;
+        border: 0px;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .job-detail-header h2 {
+        font-size: 1.2rem !important;
+        font-weight: normal;
+        width: 100%;
+    }
+    .job-detail {
+        padding: 0.25rem;
+    }
+    /* Compact action buttons on mobile */
+    .mobile-job-actions .header-actions {
+        gap: 0.2rem;
+        margin-left: 0;
+    }
+    .mobile-job-actions .header-button {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+    .mobile-job-actions .button-separator {
+        margin: 0 0.1rem;
+    }
+    .open-duplicated-btn {
+        display: none !important;
+    }
+    .salary-toggle-btn {
+        display: none !important;
+    }
+}
+
 .job-detail-content {
     overflow-y: auto;
     overflow-x: visible;

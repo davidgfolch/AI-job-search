@@ -1,5 +1,6 @@
 import type { FilterConfig } from './hooks/useFilterConfigurations';
 import type { WatcherResult } from './hooks/useFilterWatcher';
+import { useState } from 'react';
 
 interface PinnedConfigurationsProps {
     pinnedConfigs: FilterConfig[];
@@ -10,17 +11,27 @@ interface PinnedConfigurationsProps {
 }
 
 export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results = {}, selectedConfigName }: PinnedConfigurationsProps) {
+    const [collapsed, setCollapsed] = useState(false);
     if (pinnedConfigs.length === 0) {
         return null;
     }
+    const watchedConfigs = pinnedConfigs.filter(c => c.watched);
+    const hasWatched = watchedConfigs.length > 0;
     return (
         <div className="pinned-configurations">
-            {pinnedConfigs.map((config) => {
+            <button
+                className="pinned-collapse-btn"
+                onClick={() => setCollapsed(c => !c)}
+                title={collapsed ? "Expand watched filters" : "Collapse watched filters"}
+            >
+                {collapsed ? '▶' : '▼'} Watched {hasWatched && `(${watchedConfigs.length})`}
+            </button>
+            {!collapsed && pinnedConfigs.map((config) => {
                 const result = results[config.name];
                 const hasNew = result && result.newItems > 0;
                 const isSelected = config.name === selectedConfigName;
                 return (
-                    <div key={config.name} className={`pinned-config-item ${isSelected ? 'selected' : ''}`}>
+                    <div key={config.name} className={`pinned-config-item ${isSelected ? 'selected' : ''} ${config.watched ? 'is-watched' : ''}`}>
                         <button
                             className="pinned-config-load"
                             onClick={() => onLoad(config)}

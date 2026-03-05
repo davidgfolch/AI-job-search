@@ -64,7 +64,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onConfigsLoaded={setConfigCount}
                             modalityValues={state.modalityValues} />
                         <div className="viewer-content">
-                            <div className="viewer-left" style={{ display: state.duplicatedJob ? 'none' : 'flex' }}>
+                            <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: state.duplicatedJob ? 'none' : 'flex' }}>
                                 <div className="tab-group">
                                     <div className="tab-buttons">
                                         <ViewTabs 
@@ -89,20 +89,22 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                             </div>
                                         )}
                                         {(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0) && (
-                                            <JobActions
-                                                job={state.selectedJob}
-                                                filters={state.filters}
-                                                onSeen={actions.seenJob}
-                                                onApplied={actions.appliedJob}
-                                                onDiscarded={actions.discardedJob}
-                                                onClosed={actions.closedJob}
-                                                onIgnore={isBulk ? actions.ignoreSelected : actions.ignoreJob}
-                                                onNext={actions.nextJob}
-                                                onPrevious={actions.previousJob}
-                                                hasNext={status.hasNext}
-                                                hasPrevious={status.hasPrevious}
-                                                isBulk={isBulk}
-                                            />
+                                            <div className="list-header-actions">
+                                                <JobActions
+                                                    job={state.selectedJob}
+                                                    filters={state.filters}
+                                                    onSeen={actions.seenJob}
+                                                    onApplied={actions.appliedJob}
+                                                    onDiscarded={actions.discardedJob}
+                                                    onClosed={actions.closedJob}
+                                                    onIgnore={isBulk ? actions.ignoreSelected : actions.ignoreJob}
+                                                    onNext={actions.nextJob}
+                                                    onPrevious={actions.previousJob}
+                                                    hasNext={status.hasNext}
+                                                    hasPrevious={status.hasPrevious}
+                                                    isBulk={isBulk}
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                     <div className="tab-content">
@@ -137,7 +139,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                     </div>
                                 </div>
                             </div>
-                                <div className="viewer-right" style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
+                                <div className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
                                 {state.selectedJob ? (
                                     <>
                                         <div style={state.duplicatedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -147,6 +149,17 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                                 onUpdate={actions.updateJob} 
                                                 onOpenDuplicated={actions.openDuplicatedJob}
                                                 hideDuplicatedButton={!!state.duplicatedJob}
+                                                onCloseMobile={actions.closeSelectedJob}
+                                                onNext={actions.nextJob}
+                                                onPrevious={actions.previousJob}
+                                                hasNext={status.hasNext}
+                                                hasPrevious={status.hasPrevious}
+                                                filters={state.filters}
+                                                onSeen={actions.seenJob}
+                                                onApplied={actions.appliedJob}
+                                                onDiscarded={actions.discardedJob}
+                                                onClosed={actions.closedJob}
+                                                onIgnore={actions.ignoreJob}
                                             />
                                         </div>
                                         {state.duplicatedJob && (

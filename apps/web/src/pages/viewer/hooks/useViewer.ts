@@ -142,7 +142,7 @@ export const useViewer = () => {
                 setActiveTab('list'); setFilters(f => ({ ...f, page: 1 })); setCreationSessionId(p => p + 1);
             },
             refreshJobs: async () => filters.page !== 1 ? (setShouldSelectFirst(true), setFilters(f => ({ ...f, page: 1 }))) : (setShouldSelectFirst(true), await hardRefresh()),
-            openDuplicatedJob, closeDuplicatedJob: () => setDuplicatedJob(null),
+            openDuplicatedJob, closeDuplicatedJob: () => setDuplicatedJob(null), closeSelectedJob: () => { setSelectedJob(null); setSelectionMode('none'); setSelectedIds(new Set()); },
         },
     };
 };

@@ -132,3 +132,20 @@
 .status-badge.status-comments {
   background-color: var(--status-comments-bg);
 }
+
+@media (max-width: 768px) {
+  .checkbox-column {
+    display: none;
+  }
+  .job-table th,
+  .job-table td {
+    padding: 0.4rem 0.5rem;
+  }
+  .status-column {
+    width: 6%;
+    padding: 0.4rem 0.25rem !important;
+  }
+  .created-column {
+    width: 12%;
+  }
+}
