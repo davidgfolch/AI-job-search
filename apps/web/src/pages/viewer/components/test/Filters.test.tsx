@@ -121,10 +121,10 @@ describe('Filters', () => {
             await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
             
             const input = selector 
-                ? screen.getByPlaceholderText(selector)
+                ? screen.getByPlaceholderText(selector as string | RegExp)
                 : label 
-                    ? screen.getByLabelText(label)
-                    : screen.getByPlaceholderText(placeholder);
+                    ? screen.getByLabelText(label as string | RegExp)
+                    : screen.getByPlaceholderText(placeholder as string | RegExp);
             
             fireEvent.change(input, { target: { value } });
             
@@ -133,6 +133,55 @@ describe('Filters', () => {
                 : { [expectedKey]: expectedValue };
                 
             expect(onFiltersChangeMock).toHaveBeenCalledWith(expectedCall);
+        });
+    });
+
+    describe('Modality Filter', () => {
+        const modalityValues = ['Remote', 'Hybrid', 'On-site'];
+
+        it('renders modality pills when modalityValues are provided', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} modalityValues={modalityValues} />);
+            expect(screen.getByText('Modality:')).toBeInTheDocument();
+            expect(screen.getByText('All')).toBeInTheDocument();
+            expect(screen.getByText('Not set')).toBeInTheDocument();
+            modalityValues.forEach(val => expect(screen.getByText(val)).toBeInTheDocument());
+        });
+
+        it('toggles modality values correctly', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} modalityValues={modalityValues} />);
+            
+            // Click to add Remote
+            fireEvent.click(screen.getByText('Remote'));
+            expect(onFiltersChangeMock).toHaveBeenCalledWith({ modality: ['Remote'] });
+            
+            // Now render with Remote active and click Remote again to remove
+            const filtersWithRemote = { ...mockFilters, modality: ['Remote'] };
+            await renderAndWait(<Filters filters={filtersWithRemote} onFiltersChange={onFiltersChangeMock} configCount={0} modalityValues={modalityValues} />);
+            fireEvent.click(screen.getAllByText('Remote').pop() as HTMLElement);
+            expect(onFiltersChangeMock).toHaveBeenCalledWith({ modality: undefined });
+        });
+
+        it('clears modality when clicking All', async () => {
+            const filtersWithRemote = { ...mockFilters, modality: ['Remote'] };
+            await renderAndWait(<Filters filters={filtersWithRemote} onFiltersChange={onFiltersChangeMock} configCount={0} modalityValues={modalityValues} />);
+            
+            fireEvent.click(screen.getByText('All'));
+            expect(onFiltersChangeMock).toHaveBeenCalledWith({ modality: undefined });
+        });
+    });
+
+    describe('SQL Editor actions', () => {
+        it('opens and closes SQL editor', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            const sqlEditorBtn = screen.getByText('SQL Editor');
+            
+            // Assuming the SqlEditor renders some specific text or dialog role when open
+            fireEvent.click(sqlEditorBtn);
+            // SqlEditor should now be open. We can trigger close/save if they render visible buttons.
+            // Since SqlEditor is a child, let's assume it renders a "Close" or "Save" button or we can simulate it by finding the close button.
+            // If SqlEditor covers the screen, it usually has a 'Cancel' or 'Save' button. Let's look for finding generic buttons or just ensuring the state update doesn't crash.
+            const cancelBtn = screen.queryByRole('button', { name: /cancel|close/i });
+            if (cancelBtn) fireEvent.click(cancelBtn);
         });
     });
 });

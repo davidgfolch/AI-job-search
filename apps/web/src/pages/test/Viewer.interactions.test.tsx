@@ -14,8 +14,10 @@ vi.mock('../viewer/api/ViewerApi', () => ({
         getJob: vi.fn(),
         updateJob: vi.fn(),
         getAppliedJobsByCompany: vi.fn().mockResolvedValue([]),
-        getModalityValues: vi.fn().mockResolvedValue(['REMOTE', 'HYBRID', 'ON_SITE']),
     },
+}));
+vi.mock('../common/api/DdlApi', () => ({
+    getModalityValues: vi.fn().mockResolvedValue(['REMOTE', 'HYBRID', 'ON_SITE']),
 }));
 vi.mock('../../hooks/viewer/useJobUpdates', () => ({
     useJobUpdates: vi.fn().mockReturnValue({ hasNewJobs: false, newJobsCount: 0, newJobIds: [] }),

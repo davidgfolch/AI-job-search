@@ -187,9 +187,4 @@ export const jobsApi = {
     }
     return timezonePromise;
   },
-
-  getModalityValues: async (): Promise<string[]> => {
-    return handleRequest(apiClient.get<string[]>('/ddl/schema/enum-values/jobs/modality'),
-      'Error getting modality values');
-  },
 };

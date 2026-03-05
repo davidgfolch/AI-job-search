@@ -55,7 +55,7 @@ export function Modal({
         aria-labelledby={title ? 'modal-title' : undefined}
       >
         {(title || header) && (
-          <div className={`modal-header ${title && fullWidthHeader ? 'header-actions' : ''}`}>
+          <div className={`modal-header`}>
             {title ? <h3 id="modal-title">{title}</h3> : header}
           </div>
         )}

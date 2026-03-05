@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { jobsApi } from '../../viewer/api/ViewerApi';
+import { getModalityValues } from '../api/DdlApi';
 
 export const useModalityValues = () => {
   return useQuery({
     queryKey: ['modalityValues'],
-    queryFn: () => jobsApi.getModalityValues(),
+    queryFn: () => getModalityValues(),
     staleTime: Infinity,
   });
 };
