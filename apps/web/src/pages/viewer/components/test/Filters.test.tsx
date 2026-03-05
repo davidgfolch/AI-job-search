@@ -180,7 +180,7 @@ describe('Filters', () => {
             // SqlEditor should now be open. We can trigger close/save if they render visible buttons.
             // Since SqlEditor is a child, let's assume it renders a "Close" or "Save" button or we can simulate it by finding the close button.
             // If SqlEditor covers the screen, it usually has a 'Cancel' or 'Save' button. Let's look for finding generic buttons or just ensuring the state update doesn't crash.
-            const cancelBtn = screen.queryByRole('button', { name: /cancel|close/i });
+            const cancelBtn = screen.queryByRole('button', { name: /cancel/i });
             if (cancelBtn) fireEvent.click(cancelBtn);
         });
     });
