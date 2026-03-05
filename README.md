@@ -34,6 +34,7 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of skills
 - AI CV matching
 - **Settings UI** to manage `.env` variables and scrapper state directly from the browser
+- **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
 ## Screenshots
 ### UI Management

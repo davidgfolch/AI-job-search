@@ -1,7 +1,4 @@
-import axios from 'axios';
 import apiClient from './ApiClient';
-
-const API_URL = 'http://localhost:8000/api';
 
 export interface DdlSchemaResponse {
     tables: Record<string, string[]>;
@@ -9,7 +6,7 @@ export interface DdlSchemaResponse {
 }
 
 export const fetchDdlSchema = async (): Promise<DdlSchemaResponse> => {
-    const response = await axios.get(`${API_URL}/ddl/schema`);
+    const response = await apiClient.get('/ddl/schema');
     return response.data;
 };
 

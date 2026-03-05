@@ -29,6 +29,9 @@ export default defineConfig(({ mode }) => {
   console.log('🔍 aiEnrichSkillEnabled:', aiEnrichSkillEnabled)
 
 
+  const isDocker = fs.existsSync('/workspace/.env');
+  const apiTarget = isDocker ? 'http://backend:8000' : 'http://localhost:8000';
+
   return {
     define: {
       __AI_ENRICHNEW_SKILL_ENABLED__: aiEnrichSkillEnabled ? 'true' : 'false',
@@ -46,6 +49,12 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       port: 5173,
     },
+    proxy: {
+      '/api': {
+        target: apiTarget,
+        changeOrigin: true,
+      }
+    }
   },
   test: {
     globals: true,

@@ -1,6 +1,6 @@
-import axios from 'axios';
+import apiClient from '../../common/api/ApiClient';
 
-const API_Base = 'http://localhost:8000/api/statistics';
+const API_Base = '/statistics';
 
 export interface HistoryStat {
     dateCreated: string;
@@ -27,7 +27,7 @@ export const getHistoryStats = async (startDate?: string, endDate?: string): Pro
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    const response = await axios.get(`${API_Base}/history`, { params });
+    const response = await apiClient.get(`${API_Base}/history`, { params });
     return response.data;
 };
 
@@ -35,7 +35,7 @@ export const getSourcesByDate = async (startDate?: string, endDate?: string): Pr
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    const response = await axios.get(`${API_Base}/sources-date`, { params });
+    const response = await apiClient.get(`${API_Base}/sources-date`, { params });
     return response.data;
 };
 
@@ -43,7 +43,7 @@ export const getSourcesByHour = async (startDate?: string, endDate?: string): Pr
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    const response = await axios.get(`${API_Base}/sources-hour`, { params });
+    const response = await apiClient.get(`${API_Base}/sources-hour`, { params });
     return response.data;
 };
 
@@ -57,7 +57,7 @@ export const getSourcesByWeekday = async (startDate?: string, endDate?: string):
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    const response = await axios.get(`${API_Base}/sources-weekday`, { params });
+    const response = await apiClient.get(`${API_Base}/sources-weekday`, { params });
     return response.data;
 };
 
@@ -70,6 +70,6 @@ export const getFilterConfigStats = async (startDate?: string, endDate?: string)
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    const response = await axios.get(`${API_Base}/filter-configs`, { params });
+    const response = await apiClient.get(`${API_Base}/filter-configs`, { params });
     return response.data;
 };

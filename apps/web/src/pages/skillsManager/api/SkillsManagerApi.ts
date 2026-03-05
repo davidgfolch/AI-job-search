@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '../../common/api/ApiClient';
 
 export interface Skill {
   name: string;
@@ -8,15 +8,6 @@ export interface Skill {
   ai_enriched?: boolean;
   category?: string;
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
 
 export const skillsApi = {
   getSkills: async (): Promise<Skill[]> => {

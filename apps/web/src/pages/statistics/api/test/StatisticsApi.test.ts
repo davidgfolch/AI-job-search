@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday } from '../StatisticsApi';
 import type { HistoryStat, SourceDateStat, SourceHourStat, SourceWeekdayStat } from '../StatisticsApi';
 
-const mockAxios = vi.hoisted(() => ({
+const mockApiClient = vi.hoisted(() => ({
   get: vi.fn(),
 }));
 
-vi.mock('axios', () => ({
-  default: mockAxios,
+vi.mock('../../../common/api/ApiClient', () => ({
+  default: mockApiClient,
 }));
 
 describe('StatisticsApi', () => {
@@ -25,14 +25,14 @@ describe('StatisticsApi', () => {
         discarded_cumulative: 10,
         interview_cumulative: 4,
       }];
-      mockAxios.get.mockResolvedValue({ data: mockData });
+      mockApiClient.get.mockResolvedValue({ data: mockData });
       const result = await getHistoryStats();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/history', { params: expect.any(URLSearchParams) });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/history', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
 
     it('propagates errors', async () => {
-      mockAxios.get.mockRejectedValue(new Error('API error'));
+      mockApiClient.get.mockRejectedValue(new Error('API error'));
       await expect(getHistoryStats()).rejects.toThrow('API error');
     });
   });
@@ -44,9 +44,9 @@ describe('StatisticsApi', () => {
         total: 10,
         source: 'LinkedIn',
       }];
-      mockAxios.get.mockResolvedValue({ data: mockData });
+      mockApiClient.get.mockResolvedValue({ data: mockData });
       const result = await getSourcesByDate();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-date', { params: expect.any(URLSearchParams) });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/sources-date', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
   });
@@ -58,9 +58,9 @@ describe('StatisticsApi', () => {
         total: 15,
         source: 'Indeed',
       }];
-      mockAxios.get.mockResolvedValue({ data: mockData });
+      mockApiClient.get.mockResolvedValue({ data: mockData });
       const result = await getSourcesByHour();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-hour', { params: expect.any(URLSearchParams) });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/sources-hour', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
   });
@@ -72,9 +72,9 @@ describe('StatisticsApi', () => {
         total: 20,
         source: 'Monster',
       }];
-      mockAxios.get.mockResolvedValue({ data: mockData });
+      mockApiClient.get.mockResolvedValue({ data: mockData });
       const result = await getSourcesByWeekday();
-      expect(mockAxios.get).toHaveBeenCalledWith('http://localhost:8000/api/statistics/sources-weekday', { params: expect.any(URLSearchParams) });
+      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/sources-weekday', { params: expect.any(URLSearchParams) });
       expect(result).toEqual(mockData);
     });
   });
