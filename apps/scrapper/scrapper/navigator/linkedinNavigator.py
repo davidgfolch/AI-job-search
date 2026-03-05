@@ -52,6 +52,8 @@ class LinkedinNavigator(BaseNavigator):
         self.selenium.waitUntilPageIsLoaded()
         if self.selenium.getUrl().find('linkedin.com/feed/') > -1:
             return
+        sleep(1, 1)
+        self.selenium.waitUntil_presenceLocatedElement('#username')
         self.selenium.sendKeys('#username', user_email)
         self.selenium.sendKeys('#password', user_pwd)
         try:
