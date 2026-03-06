@@ -105,7 +105,7 @@ poetry run pytest
 ```
 api/          - Route handlers (FastAPI endpoints)
 services/     - Business logic layer
-repositories/ - Data access layer (use commonlib.mysqlUtil.MysqlUtil)
+repositories/ - Data access layer (use commonlib.sql.mysqlUtil.MysqlUtil)
 models/       - Pydantic models
 ```
 - API → Services → Repositories (no skipping layers)

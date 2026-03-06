@@ -5,7 +5,8 @@
       "Bash(uv run pytest:*)",
       "Bash(poetry run pytest:*)",
       "Bash(wc:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(find apps:*)"
     ]
   }
 }
