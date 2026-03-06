@@ -95,6 +95,11 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
+Then run the scrappers in a separate terminal:
+```bash
+./apps/scrapper/run.sh # or .bat
+```
+
 See [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
 
 ## Run Manually (Using Helper Scripts)
