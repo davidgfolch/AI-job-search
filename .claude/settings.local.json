@@ -3,7 +3,9 @@
     "allow": [
       "Bash(dir:*)",
       "Bash(uv run pytest:*)",
-      "Bash(poetry run pytest:*)"
+      "Bash(poetry run pytest:*)",
+      "Bash(wc:*)",
+      "Bash(xargs:*)"
     ]
   }
 }
