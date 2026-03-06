@@ -4,36 +4,42 @@ from mysql.connector import MySQLConnection
 
 DEBUG = False
 
-_conn: MySQLConnection = None
+_pool_initialized = False
+
+
+def _init_pool(e2e_tests: bool = False):
+    """Initialize the connection pool once."""
+    global _pool_initialized
+    if _pool_initialized:
+        return
+    db_host = os.getenv('COMMONLIB_DB_HOST', '127.0.0.1')
+    mysqlConnector.connect(
+        host=db_host,
+        user='root',
+        password='rootPass',
+        database=None if e2e_tests else 'jobs',
+        pool_name='jobsPool',
+        pool_size=20,
+    )
+    _pool_initialized = True
 
 
 def get_connection(e2e_tests: bool = False) -> MySQLConnection:
     """
-    Get MySQL connection from pool.
+    Get a MySQL connection from the pool.
+    Caller MUST close the connection to return it to the pool.
 
     Args:
-        e2e_tests: If True, connects without database (for E2E test setup)
+        e2e_tests: If True, initializes pool without database (for E2E test setup)
 
     Returns:
-        MySQL connection instance
+        MySQL connection instance from pool
     """
-    global _conn
-
-    if _conn is None:
-        db_host = os.getenv('COMMONLIB_DB_HOST', '127.0.0.1')
-        _conn = mysqlConnector.connect(
-            host=db_host,
-            user='root',
-            password='rootPass',
-            database=None if e2e_tests else 'jobs',
-            pool_name='jobsPool',
-            pool_size=20,
-        )
-
+    _init_pool(e2e_tests)
+    conn = mysqlConnector.connect(pool_name='jobsPool')
     if DEBUG:
-        print(_conn.__repr__())
-
-    return mysqlConnector.connect(pool_name='jobsPool')
+        print(conn.__repr__())
+    return conn
 
 
 def getConnection(e2eTests: bool = False) -> MySQLConnection:

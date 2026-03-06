@@ -1,6 +1,6 @@
 """Tests for connection_manager module."""
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from commonlib.sql import connection_manager
 
 
@@ -8,18 +8,12 @@ from commonlib.sql import connection_manager
 def mock_mysql_connect():
     """Mock the mysqlConnector.connect to avoid real DB connection."""
     with patch('commonlib.sql.connection_manager.mysqlConnector.connect') as mock_connect:
-        def connect_side_effect(*args, **kwargs):
-            mock_instance = MagicMock()
-            mock_instance.pool_name = kwargs.get('pool_name')
-            return mock_instance
-            
-        mock_connect.side_effect = connect_side_effect
-        
-        # Reset the global connection state before each test
-        connection_manager._conn = None
+        mock_connect.return_value = MagicMock()
+
+        # Reset the pool state before each test
+        connection_manager._pool_initialized = False
         yield mock_connect
-        # Clean up after test
-        connection_manager._conn = None
+        connection_manager._pool_initialized = False
 
 
 class TestGetConnection:
@@ -29,14 +23,25 @@ class TestGetConnection:
         """Should return a MySQL connection object."""
         conn = connection_manager.get_connection()
         assert conn is not None
-        assert hasattr(conn, 'is_connected')
 
-    def test_get_connection_uses_pool(self):
-        """Should use connection pooling."""
-        conn1 = connection_manager.get_connection()
-        conn2 = connection_manager.get_connection()
-        # Both should come from same pool
-        assert conn1.pool_name == conn2.pool_name == 'jobsPool'
+    def test_pool_initialized_once(self, mock_mysql_connect):
+        """Pool should only be created once across multiple calls."""
+        connection_manager.get_connection()
+        connection_manager.get_connection()
+        # First call: pool init + get from pool. Second call: only get from pool.
+        assert mock_mysql_connect.call_count == 3
+
+    def test_get_connection_gets_from_pool(self, mock_mysql_connect):
+        """Second call should get from pool without host/user params."""
+        connection_manager.get_connection()
+        second_call_kwargs = mock_mysql_connect.call_args_list[1][1]
+        assert second_call_kwargs == {'pool_name': 'jobsPool'}
+
+    def test_e2e_tests_connects_without_database(self, mock_mysql_connect):
+        """E2E mode should not pass database parameter."""
+        connection_manager.get_connection(e2e_tests=True)
+        init_call_kwargs = mock_mysql_connect.call_args_list[0][1]
+        assert init_call_kwargs.get('database') is None
 
 
 class TestGetConnectionLegacy:
@@ -47,7 +52,8 @@ class TestGetConnectionLegacy:
         conn = connection_manager.getConnection()
         assert conn is not None
 
-    def test_getConnection_uses_pool(self):
-        """Should use connection pooling."""
-        conn = connection_manager.getConnection()
-        assert conn.pool_name == 'jobsPool'
+    def test_getConnection_delegates_to_get_connection(self, mock_mysql_connect):
+        """Should call through to get_connection."""
+        connection_manager.getConnection(e2eTests=True)
+        init_call_kwargs = mock_mysql_connect.call_args_list[0][1]
+        assert init_call_kwargs.get('database') is None

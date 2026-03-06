@@ -101,25 +101,25 @@ class QueryExecutor:
     def _execute_query(self, callback: callable):
         """Execute a query callback with cursor management."""
         try:
-            with self._get_cursor() as cursor:
+            with self._get_cursor() as (_, cursor):
                 return callback(cursor)
         except Exception:
             return None
 
     def _execute_transaction(self, callback: callable):
         """Execute a callback within a transaction."""
-        try:
-            with self._get_cursor() as cursor:
+        with self._get_cursor() as (conn, cursor):
+            try:
                 result = callback(cursor)
-                self._get_connection().commit()
+                conn.commit()
                 return result
-        except Exception as ex:
-            self._get_connection().rollback()
-            raise ex
+            except Exception as ex:
+                conn.rollback()
+                raise ex
 
     @contextmanager
     def _get_cursor(self):
-        """Get cursor from connection, reconnecting if necessary."""
+        """Get cursor from pool connection, close connection (return to pool) when done."""
         conn = self._get_connection()
         if not conn.is_connected():
             print(f'Reconnecting to DB conn: {conn}', flush=True)
@@ -127,6 +127,7 @@ class QueryExecutor:
         cursor = conn.cursor()
         cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
         try:
-            yield cursor
+            yield conn, cursor
         finally:
             cursor.close()
+            conn.close()

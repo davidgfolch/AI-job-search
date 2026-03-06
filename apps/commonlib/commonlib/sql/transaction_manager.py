@@ -15,34 +15,21 @@ class TransactionManager:
 
     def execute_transaction(self, callback: Callable) -> Any:
         """
-        Execute a callback within a transaction.
-
-        Args:
-            callback: Function that receives a cursor and returns result
-
-        Returns:
-            Result from callback, or None on error
+        Execute a callback within a transaction, committing on success or
+        rolling back on error — all on the same connection before it's returned to pool.
         """
-        try:
-            with self._get_cursor() as cursor:
+        with self._get_cursor() as (conn, cursor):
+            try:
                 result = callback(cursor)
-                self._get_connection().commit()
+                conn.commit()
                 return result
-        except mysqlConnector.Error as ex:
-            self._rollback(ex)
+            except mysqlConnector.Error as ex:
+                self._rollback(conn, cursor, ex)
 
     def execute_query(self, callback: Callable) -> Any:
-        """
-        Execute a query callback without transaction commit.
-
-        Args:
-            callback: Function that receives a cursor and returns result
-
-        Returns:
-            Result from callback, or None on error
-        """
+        """Execute a query callback without transaction commit."""
         try:
-            with self._get_cursor() as cursor:
+            with self._get_cursor() as (_, cursor):
                 return callback(cursor)
         except mysqlConnector.Error as ex:
             error(ex)
@@ -53,15 +40,7 @@ class TransactionManager:
         return self.execute_transaction(lambda c: (c.execute(query, params), c.rowcount)[1])
 
     def execute_all_and_commit(self, queries: list[dict[str, Any]]) -> list[int]:
-        """
-        Execute multiple queries in a single transaction.
-
-        Args:
-            queries: List of dicts with 'query' and optional 'params' keys
-
-        Returns:
-            List of row counts for each query
-        """
+        """Execute multiple queries in a single transaction, returning row counts."""
         def op(cursor):
             row_counts = []
             for query in queries:
@@ -70,25 +49,21 @@ class TransactionManager:
             return row_counts
         return self.execute_transaction(op)
 
-    def _rollback(self, ex: mysqlConnector.Error):
-        """Rollback transaction on error."""
+    def _rollback(self, conn: MySQLConnection, cursor, ex: mysqlConnector.Error):
+        """Rollback on the given connection and re-raise."""
         try:
-            conn = self._get_connection()
-            if conn.is_connected() and conn.in_transaction:
+            if conn.in_transaction:
                 print(red(f'Rolling back transaction due to error: {ex}'))
-                print(yellow(self._fetch_one('SHOW ENGINE INNODB STATUS\\G;')['status']), flush=True)
+                cursor.execute('SHOW ENGINE INNODB STATUS\\G;')
+                print(yellow(str(cursor.fetchone())), flush=True)
                 conn.rollback()
         except mysqlConnector.Error as rollback_ex:
             print(red(f'Rollback error: {rollback_ex}'))
         raise ex
 
-    def _fetch_one(self, query: str, id: int | str = None) -> dict:
-        """Fetch a single row - used for rollback status."""
-        return self.execute_query(lambda c: (c.execute(query, [id] if id else []), c.fetchone())[1])
-
     @contextmanager
     def _get_cursor(self):
-        """Get cursor from connection, reconnecting if necessary."""
+        """Get cursor from pool connection, close connection (return to pool) when done."""
         conn = self._get_connection()
         if not conn.is_connected():
             print(f'Reconnecting to DB conn: {conn}', flush=True)
@@ -96,6 +71,7 @@ class TransactionManager:
         cursor = conn.cursor()
         cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
         try:
-            yield cursor
+            yield conn, cursor
         finally:
             cursor.close()
+            conn.close()

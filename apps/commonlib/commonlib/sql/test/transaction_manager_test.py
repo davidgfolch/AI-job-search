@@ -26,11 +26,12 @@ class TestTransactionManager:
     def test_execute_transaction_commits_on_success(self, transaction_manager, mock_get_connection):
         """execute_transaction should commit on success."""
         mock_conn = MagicMock()
+        mock_cursor = MagicMock()
         mock_get_connection.return_value = mock_conn
 
-        with patch.object(transaction_manager, '_get_cursor') as mock_cursor:
-            mock_cursor.return_value.__enter__ = MagicMock()
-            mock_cursor.return_value.__exit__ = MagicMock()
+        with patch.object(transaction_manager, '_get_cursor') as mock_get_cursor:
+            mock_get_cursor.return_value.__enter__ = MagicMock(return_value=(mock_conn, mock_cursor))
+            mock_get_cursor.return_value.__exit__ = MagicMock(return_value=False)
 
             transaction_manager.execute_transaction(lambda c: 'result')
 
@@ -39,22 +40,29 @@ class TestTransactionManager:
     def test_execute_transaction_rollback_on_error(self, transaction_manager, mock_get_connection):
         """execute_transaction should rollback on error."""
         mock_conn = MagicMock()
+        mock_cursor = MagicMock()
         mock_get_connection.return_value = mock_conn
 
         with patch.object(transaction_manager, '_rollback') as mock_rollback:
-            with patch.object(transaction_manager, '_get_cursor') as mock_cursor:
-                mock_cursor.return_value.__enter__.side_effect = mysqlConnector.Error('DB error')
+            with patch.object(transaction_manager, '_get_cursor') as mock_get_cursor:
+                db_error = mysqlConnector.Error('DB error')
+                mock_get_cursor.return_value.__enter__ = MagicMock(return_value=(mock_conn, mock_cursor))
+                mock_get_cursor.return_value.__exit__ = MagicMock(return_value=False)
+                mock_conn.commit.side_effect = db_error
 
                 transaction_manager.execute_transaction(lambda c: 'result')
 
-                mock_rollback.assert_called_once()
+                mock_rollback.assert_called_once_with(mock_conn, mock_cursor, db_error)
 
     def test_execute_query_does_not_commit(self, transaction_manager, mock_get_connection):
         """execute_query should not commit (read-only)."""
         mock_conn = MagicMock()
+        mock_cursor = MagicMock()
         mock_get_connection.return_value = mock_conn
 
-        with patch.object(transaction_manager, '_get_cursor'):
+        with patch.object(transaction_manager, '_get_cursor') as mock_get_cursor:
+            mock_get_cursor.return_value.__enter__ = MagicMock(return_value=(mock_conn, mock_cursor))
+            mock_get_cursor.return_value.__exit__ = MagicMock(return_value=False)
             transaction_manager.execute_query(lambda c: 'result')
 
             mock_conn.commit.assert_not_called()
@@ -80,14 +88,14 @@ class TestTransactionManager:
     def test_rollback_raises_exception(self, transaction_manager, mock_get_connection):
         """_rollback should re-raise the exception after rollback."""
         mock_conn = MagicMock()
-        mock_conn.is_connected.return_value = True
         mock_conn.in_transaction = True
-        mock_get_connection.return_value = mock_conn
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = ('status data',)
 
-        test_exception = Exception('Original error')
+        test_exception = mysqlConnector.Error('Original error')
 
-        with patch.object(transaction_manager, '_fetch_one', return_value={'status': 'Test status'}):
-            with pytest.raises(Exception) as exc_info:
-                transaction_manager._rollback(test_exception)
+        with pytest.raises(mysqlConnector.Error) as exc_info:
+            transaction_manager._rollback(mock_conn, mock_cursor, test_exception)
 
         assert exc_info.value == test_exception
+        mock_conn.rollback.assert_called_once()
