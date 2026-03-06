@@ -1,4 +1,4 @@
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
 from commonlib.environmentUtil import getEnv
 from commonlib.ai_helpers import MAX_AI_ENRICH_ERROR_LEN, RETRY_ERROR_PREFIX

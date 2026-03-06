@@ -1,4 +1,4 @@
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from .llm_client import get_pipeline
 from .config import get_batch_size, get_job_enabled

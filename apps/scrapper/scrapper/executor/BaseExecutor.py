@@ -2,7 +2,7 @@ import math
 from abc import ABC, abstractmethod
 
 from commonlib.terminalColor import yellow, cyan
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.keep_system_awake import KeepSystemAwake
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.exceptionUtil import cleanUnresolvedTrace

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.TecnoempleoService import TecnoempleoService
 

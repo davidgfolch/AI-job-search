@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Tuple, Dict, Any, List
 
-from commonlib.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 
 
 class JobSnapshotRepository:

@@ -5,7 +5,7 @@ from scrapper.navigator.infojobsNavigator import InfojobsNavigator
 from scrapper.services.InfojobsService import InfojobsService
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mock_selenium():

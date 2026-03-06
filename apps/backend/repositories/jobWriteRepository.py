@@ -1,5 +1,5 @@
 from typing import Optional
-from commonlib.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 
 
 class JobWriteRepository:

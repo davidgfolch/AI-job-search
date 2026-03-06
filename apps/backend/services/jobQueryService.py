@@ -27,5 +27,5 @@ class JobQueryService:
                     rows = []
         return [
             {"id": row[0], "created": row[1].isoformat() if row[1] else None}
-            for row in rows
+            for row in (rows or [])
         ]

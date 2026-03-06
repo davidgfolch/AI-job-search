@@ -131,7 +131,7 @@ class LinkedinExecutor(BaseExecutor):
     def process_specific_url(cls, url: str):
         # Helper logic to transform standard job url to search url
         url = cls._transform_to_search_url(url)
-        from commonlib.mysqlUtil import MysqlUtil
+        from commonlib.sql.mysqlUtil import MysqlUtil
         from ..services.selenium.seleniumService import SeleniumService
         from ..util.persistence_manager import PersistenceManager
         

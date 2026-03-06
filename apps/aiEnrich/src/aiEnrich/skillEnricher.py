@@ -1,5 +1,5 @@
 from crewai import Agent, Task, Crew, Process, LLM
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.skill_enricher_service import (
     process_skill_enrichment,
     parse_skill_llm_output,

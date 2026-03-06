@@ -10,7 +10,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent.parent
 sys.path.append(str(root))
 sys.path.append(str(root / 'apps' / 'commonlib'))
-from commonlib.mysqlUtil import getConnection
+from commonlib.sql.mysqlUtil import getConnection
 
 DEBUG = False
 DB_NAME_PREFIX = 'jobs_e2e'

@@ -1,7 +1,7 @@
 import re
 import ast
 from typing import Set
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 
 def get_skill_context(mysql: MysqlUtil, skill_name: str) -> str:
     """

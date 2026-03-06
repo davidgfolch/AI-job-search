@@ -3,7 +3,7 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.crews.crew_output import CrewOutput
 
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import magenta, printHR, yellow, red
 from commonlib.environmentUtil import getEnv, getEnvBool

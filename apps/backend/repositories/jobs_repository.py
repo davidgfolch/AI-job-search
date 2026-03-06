@@ -1,6 +1,6 @@
 import json
 from typing import List, Optional, Dict, Any
-from commonlib.mysqlUtil import (
+from commonlib.sql.mysqlUtil import (
     MysqlUtil,
     getConnection,
     SELECT_APPLIED_JOB_IDS_BY_COMPANY,

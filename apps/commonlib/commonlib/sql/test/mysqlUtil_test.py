@@ -2,7 +2,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import mysql.connector
 
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 
 
 class TestMysqlUtil:
@@ -39,9 +39,9 @@ class TestMysqlUtil:
     def test_execute_query_success(self):
         mock_connection, mock_cursor = self._create_mock_connection()
         
-        with patch('commonlib.mysqlUtil.getConnection', return_value=mock_connection):
-            mysql_util = MysqlUtil()
-            mysql_util.executeAndCommit("UPDATE test SET x=1", (1, 2))
+        with patch('commonlib.sql.mysqlUtil.getConnection', return_value=mock_connection):
+            mysql_util = MysqlUtil(mock_connection)
+            mysql_util.executeAndCommit("UPDATE test SET x=%s", (1,))
             
             assert mock_cursor.execute.called
             assert mock_connection.commit.called
@@ -83,8 +83,8 @@ class TestMysqlUtil:
         mock_cursor.lastrowid = 123
         mock_cursor.fetchone.return_value = None  # No existing job
         
-        with patch('commonlib.mysqlUtil.getConnection', return_value=mock_connection):
-            mysql_util = MysqlUtil()
+        with patch('commonlib.sql.mysqlUtil.getConnection', return_value=mock_connection):
+            mysql_util = MysqlUtil(mock_connection)
             job_data = {
                 'job_id': 'test123',
                 'title': 'Test Job',
@@ -119,8 +119,8 @@ class TestMysqlUtil:
         mock_cursor.rowcount = 1
         mock_connection.in_transaction = False
         
-        with patch('commonlib.mysqlUtil.getConnection', return_value=mock_connection):
-            mysql_util = MysqlUtil()
+        with patch('commonlib.sql.mysqlUtil.getConnection', return_value=mock_connection):
+            mysql_util = MysqlUtil(mock_connection)
             mysql_util.updateFromAI("UPDATE jobs SET salary=%s WHERE id=%s", ('50000', 1))
             
             assert mock_cursor.execute.called
@@ -148,7 +148,7 @@ class TestMysqlUtil:
         
         mysql_util = MysqlUtil(mock_connection)
         
-        with patch('commonlib.mysqlUtil.getColumnTranslated', side_effect=lambda x: x.upper()):
+        with patch('commonlib.sql.query_executor.getColumnTranslated', side_effect=lambda x: x.upper()):
             cols = mysql_util.getTableDdlColumnNames('jobs')
             assert cols == ['ID', 'JOBID']
             assert "SHOW COLUMNS FROM `jobs`" in mock_cursor.execute.call_args[0][0]

@@ -1,7 +1,7 @@
 
 import unittest
 from unittest.mock import MagicMock
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.skill_context import get_skill_context
 
 class TestSkillContext(unittest.TestCase):

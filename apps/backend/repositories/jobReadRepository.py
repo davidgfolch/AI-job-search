@@ -1,5 +1,5 @@
 from typing import Optional
-from commonlib.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from repositories.queries.jobs_query_builder import (
     build_jobs_where_clause,
     parse_job_order,

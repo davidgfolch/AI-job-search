@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Tuple
-from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from ..util.persistence_manager import PersistenceManager
 
 class BaseService(ABC):

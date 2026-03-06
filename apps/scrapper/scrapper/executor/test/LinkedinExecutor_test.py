@@ -5,13 +5,13 @@ from scrapper.navigator.linkedinNavigator import LinkedinNavigator
 from scrapper.services.LinkedinService import LinkedinService
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mocks():
     with patch('scrapper.executor.LinkedinExecutor.LinkedinNavigator') as nav_cls, \
          patch('scrapper.executor.LinkedinExecutor.LinkedinService') as svc_cls, \
-         patch('commonlib.mysqlUtil.MysqlUtil'), \
+         patch('commonlib.sql.mysqlUtil.MysqlUtil'), \
          patch('scrapper.util.persistence_manager.PersistenceManager'), \
          patch('scrapper.services.selenium.seleniumService.SeleniumService'), \
          patch('scrapper.executor.LinkedinExecutor.getAndCheckEnvVars', return_value=('u', 'p', 'k')), \

@@ -5,7 +5,7 @@ from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator
 from scrapper.services.TecnoempleoService import TecnoempleoService
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 
 @pytest.fixture
 def mock_selenium():

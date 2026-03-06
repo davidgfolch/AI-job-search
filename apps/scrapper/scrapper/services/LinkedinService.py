@@ -1,6 +1,6 @@
 import re
 from typing import Tuple
-from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
+from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.terminalColor import green, magenta, yellow, cyan
 from ..core import baseScrapper

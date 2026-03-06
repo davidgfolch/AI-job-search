@@ -1,6 +1,6 @@
 from typing import Dict, List, Any
 import re
-from commonlib.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 
 
 class DdlRepository:

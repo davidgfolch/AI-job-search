@@ -178,7 +178,7 @@ index 0000000..645a6c3
 +++ b/apps/scrapper/scrapper/services/job_services/shakers_job_service.py
 @@ -0,0 +1,59 @@
 +from typing import Tuple
-+from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
++from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 +from commonlib.mergeDuplicates import mergeDuplicatedJobs
 +from commonlib.terminalColor import green, yellow
 +from ...baseScrapper import htmlToMarkdown, validate, debug as baseDebug
@@ -245,7 +245,7 @@ index 0000000..5d42af1
 +import math
 +from urllib.parse import quote
 +from commonlib.terminalColor import green, yellow
-+from commonlib.mysqlUtil import MysqlUtil
++from commonlib.sql.mysqlUtil import MysqlUtil
 +from commonlib.dateUtil import getDatetimeNowStr
 +from . import baseScrapper
 +from .baseScrapper import getAndCheckEnvVars, printScrapperTitle, join, printPage

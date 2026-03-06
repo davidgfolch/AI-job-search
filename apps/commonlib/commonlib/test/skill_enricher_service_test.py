@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.skill_enricher_service import process_skill_enrichment
 
-@patch("commonlib.mysqlUtil.MysqlUtil")
+@patch("commonlib.sql.mysqlUtil.MysqlUtil")
 @patch("commonlib.skill_enricher_service.get_skill_context")
 def test_process_skill_enrichment_no_skills(mock_context, mock_mysql_cls):
     mysql = MagicMock()

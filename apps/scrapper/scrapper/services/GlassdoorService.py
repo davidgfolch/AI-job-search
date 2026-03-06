@@ -1,5 +1,5 @@
 import re
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.terminalColor import green, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug

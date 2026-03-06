@@ -3,7 +3,7 @@ import re
 
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr, getTimeUnits
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.terminalColor import green, red, yellow
 

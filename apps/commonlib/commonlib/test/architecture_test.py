@@ -33,7 +33,7 @@ def test_files_exceed_200_lines():
     ('services',
         [],
         [('api', "Imports API layer (circular dependency risk)."),
-         ('commonlib.mysqlUtil', "Direct Database Access (should use Repository).")],
+         ('commonlib.sql.mysqlUtil', "Direct Database Access (should use Repository).")],
         None),
     ('repositories',
         [],

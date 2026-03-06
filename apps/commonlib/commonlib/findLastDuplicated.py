@@ -1,4 +1,4 @@
-from .mysqlUtil import MysqlUtil
+from .sql.mysqlUtil import MysqlUtil
 from .stringUtil import removeNewLines
 
 

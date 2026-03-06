@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.services.IndeedService import IndeedService
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
 
 @pytest.fixture

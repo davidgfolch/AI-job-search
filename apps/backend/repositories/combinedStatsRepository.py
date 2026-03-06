@@ -1,6 +1,6 @@
 from typing import Optional
 import pandas as pd
-from commonlib.mysqlUtil import getConnection
+from commonlib.sql.mysqlUtil import getConnection
 
 
 class CombinedStatsRepository:

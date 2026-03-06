@@ -1,5 +1,5 @@
 from typing import Optional, Tuple
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from aiEnrich3.pipeline import ExtractionPipeline
 from aiEnrich3.config import get_batch_size, get_job_enabled

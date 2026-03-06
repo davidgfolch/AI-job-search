@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.services.InfojobsService import InfojobsService, REMOVE_IN_MARKDOWN
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
 
 class TestInfojobsService:

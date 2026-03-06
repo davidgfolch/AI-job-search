@@ -1,5 +1,5 @@
 from typing import Tuple
-from commonlib.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.terminalColor import green, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug

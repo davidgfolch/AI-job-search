@@ -1,6 +1,6 @@
 """Librería común para el monorepo"""
 
-from . import mysqlUtil
+from .sql import mysqlUtil
 from . import sqlUtil
 from . import stopWatch
 from . import terminalColor

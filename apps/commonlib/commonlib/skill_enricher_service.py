@@ -1,6 +1,6 @@
 import traceback
 from typing import Callable
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.terminalColor import green
 from commonlib.skill_context import get_skill_context

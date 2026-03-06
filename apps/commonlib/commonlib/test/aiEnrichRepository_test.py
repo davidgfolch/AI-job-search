@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from commonlib.aiEnrichRepository import AiEnrichRepository
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 
 # We mock MysqlUtil for unit testing
 class MockMysqlUtil:

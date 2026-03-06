@@ -3,7 +3,7 @@ import json
 import traceback
 from typing import List, Dict, Any, Callable
 
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.skill_context import get_skill_context
 from commonlib.terminalColor import yellow, magenta, cyan, red, green
 from commonlib.environmentUtil import getEnvBool, getEnv

@@ -3,7 +3,7 @@ import json
 import traceback
 from typing import List, Dict, Any, Tuple, Optional, Set
 
-from commonlib.mysqlUtil import MysqlUtil
+from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX
 from commonlib.terminalColor import yellow, magenta, cyan, red, printHR
