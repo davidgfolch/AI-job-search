@@ -65,9 +65,9 @@ export default function Settings() {
         const getIdx = (k: string) => (i => i === -1 ? order.length : i)(order.indexOf(k));
         return getIdx(a) - getIdx(b);
     });
-    const leftGroups = sortedGroupNames.filter(g => g === 'System & Base' || g === 'UI Frontend');
+    const leftGroups = sortedGroupNames.filter(g => g === 'System & Base' || g === 'UI Frontend' || g === 'Other');
     const middleGroups = sortedGroupNames.filter(g => g === 'Scrapper');
-    const rightGroups = sortedGroupNames.filter(g => g === 'AI Enrichment' || g === 'Other');
+    const rightGroups = sortedGroupNames.filter(g => g === 'AI Enrichment');
 
     return (
         <>

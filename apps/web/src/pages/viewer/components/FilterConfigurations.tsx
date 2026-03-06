@@ -73,6 +73,35 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         onConfigsLoaded?.(pinnedConfigs.length);
     }, [pinnedConfigs.length, onConfigsLoaded]);
 
+    useEffect(() => {
+        if (savedConfigs.length > 0) {
+            const hasByCompany = savedConfigs.some(c => c.name === 'By company');
+            if (!hasByCompany) {
+                console.error('No "By company" filter configuration exists');
+            }
+        }
+    }, [savedConfigs]);
+
+    const handleLoadConfiguration = (config: any) => {
+        loadConfiguration(config);
+        if (config.name === 'By company') {
+            if (!isExpanded) {
+                onToggleExpand();
+            }
+            setTimeout(() => {
+                const sqlInput = document.getElementById('filter-sql') as HTMLInputElement | null;
+                if (sqlInput) {
+                    sqlInput.focus();
+                    const targetStr = "initi8|primeit|Acid tango|Kairos|Romeu|Tenth Revolution|mesalvo|impala search|HCLTech|si?ngular|intellecteu|ntasys|knowmad|amaris|Infortec";
+                    const idx = sqlInput.value.indexOf(targetStr);
+                    if (idx !== -1) {
+                        sqlInput.setSelectionRange(idx, idx + targetStr.length);
+                    }
+                }
+            }, 100);
+        }
+    };
+
     return (
         <div className="filter-configurations-wrapper">
             <ConfirmModal
@@ -108,7 +137,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                             isOpen={isOpen}
                             filteredConfigs={filteredConfigs}
                             highlightIndex={highlightIndex}
-                            onLoad={loadConfiguration}
+                            onLoad={handleLoadConfiguration}
                             onDelete={deleteConfiguration}
                             setHighlightIndex={setHighlightIndex}
                             onToggleWatch={toggleWatch}
@@ -124,7 +153,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
             </div>
             <PinnedConfigurations
                 pinnedConfigs={pinnedConfigs}
-                onLoad={loadConfiguration}
+                onLoad={handleLoadConfiguration}
                 onUnpin={togglePin}
                 results={watcherResults}
                 selectedConfigName={savedConfigName}

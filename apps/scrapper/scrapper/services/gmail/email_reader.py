@@ -86,6 +86,7 @@ class EmailReader:
         """Extract 6-digit verification code from email subject"""
         try:
             # Standard 6+ digit code
+            print(f"subject: \"{subject}\"")
             match = re.search(r"\b(\d{6,})\b", subject, re.IGNORECASE | re.MULTILINE)
             if match and match.groups():
                 return match.group(1)
@@ -157,8 +158,12 @@ class EmailReader:
         """Close the IMAP connection"""
         try:
             if self.imap:
-                self.imap.close()
-                self.imap.logout()
-                self.imap = None
+                try:
+                    self.imap.close()
+                finally:
+                    try:
+                        self.imap.logout()
+                    finally:
+                        self.imap = None
         except:
             pass

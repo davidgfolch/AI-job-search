@@ -54,7 +54,7 @@ export async function setupWatcherStatsMock(page: Page, counters: { statsRequest
 }
 
 export async function markJobAsApplied(page: Page) {
-    await page.getByTitle('Mark as applied').click();
+    await page.locator('.list-header-actions').getByTitle('Mark as applied').click();
     await page.locator('.modal-content').waitFor({ state: 'visible' });
     await page.getByRole('button', { name: 'OK' }).click();
 }

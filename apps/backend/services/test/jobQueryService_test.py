@@ -28,3 +28,12 @@ def test_get_applied_jobs_by_company_name(service, mock_repo):
 def test_get_applied_jobs_by_company_name_empty_company(service):
     with pytest.raises(ValueError):
         service.get_applied_jobs_by_company_name("")
+
+
+def test_get_applied_jobs_by_company_name_none_repo_result(service, mock_repo):
+    mock_repo.find_applied_by_company.return_value = None
+    mock_repo.find_applied_jobs_by_regex.return_value = None
+    
+    result = service.get_applied_jobs_by_company_name("unknown-company")
+    
+    assert result == []

@@ -59,7 +59,7 @@ test.describe('Viewer E2E', () => {
         await page.goto(BASE_URL);
         await page.locator('#job-row-1').click();
         await expect(page.locator('#job-detail-title')).toContainText('Frontend Engineer');
-        await page.getByTitle('Mark as applied').click();
+        await page.locator('.list-header-actions').getByTitle('Mark as applied').click();
         await expect(page.locator('.modal-content')).toBeVisible();
         await page.getByRole('button', { name: 'OK' }).click();
         await page.waitForTimeout(1000);

@@ -95,7 +95,8 @@ def binaryColumnIgnoreCase(col: str) -> str:
 
 def scapeRegexChars(txt: str) -> str:
     """Escape regex special characters for use in SQL RLIKE queries"""
-    return re.sub(r'([\[\]\(\)\|\*\+\?])', r'\\\\\1', txt)
+    txt = txt.replace('(', '').replace(')', '')
+    return re.sub(r'([\[\]\|\*\+\?])', r'\\\\\1', txt)
 
 
 def avoidInjection(value: str, param_name: str = "parameter") -> str:
