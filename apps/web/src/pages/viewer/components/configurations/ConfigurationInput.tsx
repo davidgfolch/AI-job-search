@@ -52,10 +52,10 @@ export function ConfigurationInput({
             <button
                 type="button"
                 onClick={onWatch}
-                className="config-btn config-watch-btn"
+                className={`config-btn ${isWatching ? "config-watch-btn-active" : "config-watch-btn"}`}
                 title={(isWatching ? "Unwatch" : "Watch filter configurations for new jobs (every 5 min)")}
             >
-                {isWatching ? "🔕" : "🔔"}
+                {isWatching ? "🔔" : "🔕"}
             </button>
             <button
                 type="button"

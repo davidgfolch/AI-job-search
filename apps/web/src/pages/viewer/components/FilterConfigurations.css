@@ -59,6 +59,12 @@
     border-color: var(--primary-color);
 }
 
+.config-btn.config-watch-btn-active {
+    background: var(--primary-color);
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+}
+
 .config-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
