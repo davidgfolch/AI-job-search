@@ -9,25 +9,25 @@ class TestTransactionManager:
     """Tests for TransactionManager class."""
 
     @pytest.fixture
-    def mock_get_connection(self):
-        """Mock get_connection function."""
+    def mock_get_connection_ctx(self):
+        """Mock get_connection_ctx function."""
         return MagicMock()
 
     @pytest.fixture
-    def transaction_manager(self, mock_get_connection):
+    def transaction_manager(self, mock_get_connection_ctx):
         """Create TransactionManager instance with mock."""
-        return TransactionManager(mock_get_connection)
+        return TransactionManager(mock_get_connection_ctx)
 
-    def test_init(self, mock_get_connection):
-        """Should initialize with get_connection function."""
-        manager = TransactionManager(mock_get_connection)
-        assert manager._get_connection == mock_get_connection
+    def test_init(self, mock_get_connection_ctx):
+        """Should initialize with get_connection_ctx function."""
+        manager = TransactionManager(mock_get_connection_ctx)
+        assert manager._get_connection_ctx == mock_get_connection_ctx
 
-    def test_execute_transaction_commits_on_success(self, transaction_manager, mock_get_connection):
+    def test_execute_transaction_commits_on_success(self, transaction_manager, mock_get_connection_ctx):
         """execute_transaction should commit on success."""
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_connection.return_value = mock_conn
+        mock_get_connection_ctx.return_value = mock_conn
 
         with patch.object(transaction_manager, '_get_cursor') as mock_get_cursor:
             mock_get_cursor.return_value.__enter__ = MagicMock(return_value=(mock_conn, mock_cursor))
@@ -37,11 +37,11 @@ class TestTransactionManager:
 
             mock_conn.commit.assert_called_once()
 
-    def test_execute_transaction_rollback_on_error(self, transaction_manager, mock_get_connection):
+    def test_execute_transaction_rollback_on_error(self, transaction_manager, mock_get_connection_ctx):
         """execute_transaction should rollback on error."""
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_connection.return_value = mock_conn
+        mock_get_connection_ctx.return_value = mock_conn
 
         with patch.object(transaction_manager, '_rollback') as mock_rollback:
             with patch.object(transaction_manager, '_get_cursor') as mock_get_cursor:
@@ -54,11 +54,11 @@ class TestTransactionManager:
 
                 mock_rollback.assert_called_once_with(mock_conn, mock_cursor, db_error)
 
-    def test_execute_query_does_not_commit(self, transaction_manager, mock_get_connection):
+    def test_execute_query_does_not_commit(self, transaction_manager, mock_get_connection_ctx):
         """execute_query should not commit (read-only)."""
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
-        mock_get_connection.return_value = mock_conn
+        mock_get_connection_ctx.return_value = mock_conn
 
         with patch.object(transaction_manager, '_get_cursor') as mock_get_cursor:
             mock_get_cursor.return_value.__enter__ = MagicMock(return_value=(mock_conn, mock_cursor))
@@ -85,7 +85,7 @@ class TestTransactionManager:
             result = transaction_manager.execute_all_and_commit(queries)
             assert result == [1, 2]
 
-    def test_rollback_raises_exception(self, transaction_manager, mock_get_connection):
+    def test_rollback_raises_exception(self, transaction_manager, mock_get_connection_ctx):
         """_rollback should re-raise the exception after rollback."""
         mock_conn = MagicMock()
         mock_conn.in_transaction = True

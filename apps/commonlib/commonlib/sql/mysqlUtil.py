@@ -38,8 +38,8 @@ class MysqlUtil:
 
     def __init__(self, connection: MySQLConnection = None):
         self._connection = connection
-        self._transaction_manager = TransactionManager(self.getConnection)
-        self._query_executor = QueryExecutor(self.getConnection)
+        self._transaction_manager = TransactionManager(self.connection_ctx)
+        self._query_executor = QueryExecutor(self.connection_ctx)
         self._job_repository = JobRepository(
             self._transaction_manager.execute_transaction,
             self._transaction_manager.execute_query
@@ -55,8 +55,8 @@ class MysqlUtil:
         """Setter for backward compatibility."""
         self._connection = value
         # Reinitialize dependent managers with new connection
-        self._transaction_manager = TransactionManager(self.getConnection)
-        self._query_executor = QueryExecutor(self.getConnection)
+        self._transaction_manager = TransactionManager(self.connection_ctx)
+        self._query_executor = QueryExecutor(self.connection_ctx)
         self._job_repository = JobRepository(
             self._transaction_manager.execute_transaction,
             self._transaction_manager.execute_query
@@ -139,3 +139,20 @@ class MysqlUtil:
     def getConnection(self) -> MySQLConnection:
         """Get the MySQL connection."""
         return self._connection if self._connection else get_connection()
+
+    @contextmanager
+    def connection_ctx(self):
+        """Context manager for providing a connection.
+        Closes it only if it was created locally (i.e. not injected)."""
+        should_close = False
+        if self._connection:
+            conn = self._connection
+        else:
+            conn = get_connection()
+            should_close = True
+
+        try:
+            yield conn
+        finally:
+            if should_close:
+                conn.close()

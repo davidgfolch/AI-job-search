@@ -8,19 +8,19 @@ class TestQueryExecutor:
     """Tests for QueryExecutor class."""
 
     @pytest.fixture
-    def mock_get_connection(self):
-        """Mock get_connection function."""
+    def mock_get_connection_ctx(self):
+        """Mock get_connection_ctx function."""
         return MagicMock()
 
     @pytest.fixture
-    def query_executor(self, mock_get_connection):
+    def query_executor(self, mock_get_connection_ctx):
         """Create QueryExecutor instance with mock."""
-        return QueryExecutor(mock_get_connection)
+        return QueryExecutor(mock_get_connection_ctx)
 
-    def test_init(self, mock_get_connection):
-        """Should initialize with get_connection function."""
-        executor = QueryExecutor(mock_get_connection)
-        assert executor._get_connection == mock_get_connection
+    def test_init(self, mock_get_connection_ctx):
+        """Should initialize with get_connection_ctx function."""
+        executor = QueryExecutor(mock_get_connection_ctx)
+        assert executor._get_connection_ctx == mock_get_connection_ctx
 
     def test_count_returns_result(self, query_executor):
         """count should return the count value."""

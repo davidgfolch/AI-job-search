@@ -10,8 +10,8 @@ from ..terminalColor import red, yellow
 class TransactionManager:
     """Handles database transactions including rollback and commit operations."""
 
-    def __init__(self, get_connection: Callable[[], MySQLConnection]):
-        self._get_connection = get_connection
+    def __init__(self, get_connection_ctx: Callable):
+        self._get_connection_ctx = get_connection_ctx
 
     def execute_transaction(self, callback: Callable) -> Any:
         """
@@ -63,15 +63,14 @@ class TransactionManager:
 
     @contextmanager
     def _get_cursor(self):
-        """Get cursor from pool connection, close connection (return to pool) when done."""
-        conn = self._get_connection()
-        if not conn.is_connected():
-            print(f'Reconnecting to DB conn: {conn}', flush=True)
-            conn.reconnect()
-        cursor = conn.cursor()
-        cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
-        try:
-            yield conn, cursor
-        finally:
-            cursor.close()
-            conn.close()
+        """Get cursor from pool connection context."""
+        with self._get_connection_ctx() as conn:
+            if not conn.is_connected():
+                print(f'Reconnecting to DB conn: {conn}', flush=True)
+                conn.reconnect()
+            cursor = conn.cursor()
+            cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
+            try:
+                yield conn, cursor
+            finally:
+                cursor.close()

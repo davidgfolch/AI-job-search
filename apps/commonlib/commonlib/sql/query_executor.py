@@ -14,8 +14,8 @@ T = TypeVar("T")
 class QueryExecutor:
     """Executes database queries including fetch and count operations."""
 
-    def __init__(self, get_connection: callable):
-        self._get_connection = get_connection
+    def __init__(self, get_connection_ctx: callable):
+        self._get_connection_ctx = get_connection_ctx
 
     def count(self, query: str, params: Union[Sequence[T], Dict[str, T]] = ()) -> int:
         """
@@ -119,15 +119,14 @@ class QueryExecutor:
 
     @contextmanager
     def _get_cursor(self):
-        """Get cursor from pool connection, close connection (return to pool) when done."""
-        conn = self._get_connection()
-        if not conn.is_connected():
-            print(f'Reconnecting to DB conn: {conn}', flush=True)
-            conn.reconnect()
-        cursor = conn.cursor()
-        cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
-        try:
-            yield conn, cursor
-        finally:
-            cursor.close()
-            conn.close()
+        """Get cursor from pool connection, closing is handled by connection context."""
+        with self._get_connection_ctx() as conn:
+            if not conn.is_connected():
+                print(f'Reconnecting to DB conn: {conn}', flush=True)
+                conn.reconnect()
+            cursor = conn.cursor()
+            cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')
+            try:
+                yield conn, cursor
+            finally:
+                cursor.close()
