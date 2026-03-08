@@ -19,7 +19,7 @@ class GlassdoorService(BaseService):
             job_id = self.get_job_id(url)
             md = htmlToMarkdown(html)
             
-            print(f'{job_id}, {title}, {company}, {location}, easy_apply={easy_apply} - ', end='')
+            print(f'{job_id}, {title}, {cyan(company)}, {location}, easy_apply={easy_apply} - ', end='')
             
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)

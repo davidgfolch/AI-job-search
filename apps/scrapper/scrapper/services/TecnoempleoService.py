@@ -20,7 +20,7 @@ class TecnoempleoService(BaseService):
             md = htmlToMarkdown(html)
             easyApply = False
             
-            print(f'{job_id}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='')
+            print(f'{job_id}, {title}, {cyan(company)}, {location}, easy_apply={easyApply} - ', end='')
             
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)

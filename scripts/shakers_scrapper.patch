@@ -209,7 +209,7 @@ index 0000000..645a6c3
 +            md = htmlToMarkdown(html)
 +            easyApply = False # Shakers usually requires platform apply
 +            
-+            print(f'{job_id}, {title}, {company}, {location}, easy_apply={easyApply} - ', end='')
++            print(f'{job_id}, {title}, {cyan(company)}, {location}, easy_apply={easyApply} - ', end='')
 +            
 +            if validate(title, url, company, md, self.debug):
 +                if id := self.mysql.insert((job_id, title, company, location, url, md, easyApply, self.web_page)):

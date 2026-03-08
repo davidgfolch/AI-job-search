@@ -26,7 +26,7 @@ class InfojobsService(BaseService):
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
             
-            print(f'{job_id}, {title}, {company}, {location} - ', end='')
+            print(f'{job_id}, {title}, {cyan(company)}, {location} - ', end='')
             
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)

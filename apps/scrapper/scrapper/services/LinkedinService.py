@@ -28,7 +28,7 @@ class LinkedinService(BaseService):
             url_short = self.get_job_url_short(url)
             jobId = self.get_job_id(url_short)
             md = baseScrapper.htmlToMarkdown(html)
-            print(f'{jobId}, {title}, {company}, {location}, easy_apply={easy_apply} - ', end='', flush=True)
+            print(f'{jobId}, {title}, {cyan(company)}, {location}, easy_apply={easy_apply} - ', end='', flush=True)
             if baseScrapper.validate(title, url_short, company, md, self.debug):
                 if is_direct_url_scrapping and self.mysql.jobExists(str(jobId)):
                     self.update_job(jobId, title, company, location, url_short, html, md, easy_apply)
@@ -48,7 +48,7 @@ class LinkedinService(BaseService):
     def print_job(self, title, company, location, url, jobId, html, md):
         print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
         print(yellow(f'TITLE={title}'))
-        print(yellow(f'COMPANY={company}'))
+        print(yellow('COMPANY=') + cyan(company))
         print(yellow(f'LOCATION={location}'))
         print(yellow(f'URL={url}'))
         print(yellow(f'HTML:\n', magenta(html)))
