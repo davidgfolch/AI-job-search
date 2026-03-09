@@ -78,9 +78,9 @@ export default function Settings() {
                     <div className="settings-section env-variables-section">
                         <div className="env-section-header"><h2>Environment Variables (.env)</h2><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
                         <div className="env-groups-container">
-                            <div className="env-groups-column">{leftGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings, scrapperState, setScrapperState, handleScrapperStateRefresh, handleScrapperStateSave))}</div>
-                            <div className="env-groups-column">{middleGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings, scrapperState, setScrapperState, handleScrapperStateRefresh, handleScrapperStateSave))}</div>
-                            <div className="env-groups-column">{rightGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings, scrapperState, setScrapperState, handleScrapperStateRefresh, handleScrapperStateSave))}</div>
+                            <div className="env-groups-column">{leftGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings))}{renderScrapperEditor(scrapperState, setScrapperState, handleScrapperStateRefresh, handleScrapperStateSave)}</div>
+                            <div className="env-groups-column">{middleGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings))}</div>
+                            <div className="env-groups-column">{rightGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings))}</div>
                         </div>
                         <div className="env-section-footer"><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
                     </div>
@@ -90,7 +90,7 @@ export default function Settings() {
     );
 }
 
-function renderGroup(groupName: string, groupedSettings: Record<string, string[]>, envSettings: Record<string, string>, setEnvSettings: SetStateAction<Record<string, string>>, scrapperState: string, setScrapperState: SetStateAction<string>, handleRefresh: () => void, handleSave: () => void) {
+function renderGroup(groupName: string, groupedSettings: Record<string, string[]>, envSettings: Record<string, string>, setEnvSettings: SetStateAction<Record<string, string>>) {
     if (!groupedSettings[groupName]) return null;
     const keys = groupedSettings[groupName];
     const subGroups = keys.reduce((acc, key) => { const sub = getSubgroupTitle(key); (acc[sub] ??= []).push(key); return acc; }, {} as Record<string, string[]>);
@@ -99,7 +99,6 @@ function renderGroup(groupName: string, groupedSettings: Record<string, string[]
             <div className="env-group-header"><h3>{groupName}</h3></div>
             <div className="env-items-scrollable">
                 {Object.entries(subGroups).sort(([a], [b]) => sortSubGroups(a, b, groupName)).map(([subTitle, subKeys]) => subKeys.length === 1 ? renderInlineItem(subKeys[0], envSettings, setEnvSettings) : renderSubgroup(subTitle, subKeys, envSettings, setEnvSettings))}
-                {groupName === 'Scrapper' && renderScrapperEditor(scrapperState, setScrapperState, handleRefresh, handleSave)}
             </div>
         </div>
     );
@@ -121,9 +120,23 @@ function renderInlineItem(key: string, envSettings: Record<string, string>, setE
 }
 
 function renderSubgroup(subTitle: string, subKeys: string[], envSettings: Record<string, string>, setEnvSettings: SetStateAction<Record<string, string>>) {
-    return (<div key={subTitle} className="env-subgroup"><h4 className="env-subgroup-title">{subTitle}</h4><div className="env-items">{subKeys.map(key => renderInlineItem(key, envSettings, setEnvSettings))}</div></div>);
+    return (<div key={subTitle} className="env-subgroup">
+        <h4 className="env-subgroup-title">{subTitle}</h4>
+        <div className="env-items">{subKeys.map(key => renderInlineItem(key, envSettings, setEnvSettings))}
+        </div>
+    </div>);
 }
 
 function renderScrapperEditor(scrapperState: string, setScrapperState: SetStateAction<string>, handleRefresh: () => void, handleSave: () => void) {
-    return (<div className="env-subgroup"><h4 className="env-subgroup-title">scrapper_state.json</h4><div className="scrapper-editor-wrapper"><Editor value={scrapperState} onValueChange={code => setScrapperState(code)} highlight={code => Prism.highlight(code, Prism.languages.json, 'json')} padding={12} className="scrapper-editor" /></div><div className="scrapper-actions"><button className="scrapper-refresh-btn" onClick={handleRefresh}>↻ Refresh</button><button className="scrapper-save-btn" onClick={handleSave}>Save</button></div></div>);
+    return (
+    <div className="env-subgroup"><h4 className="env-subgroup-title">scrapper_state.json</h4>
+        <div className="scrapper-editor-wrapper">
+            <Editor value={scrapperState} onValueChange={code => setScrapperState(code)}
+                highlight={code => Prism.highlight(code, Prism.languages.json, 'json')} padding={12} className="scrapper-editor" />
+        </div>
+        <div className="scrapper-actions">
+            <button className="scrapper-refresh-btn" onClick={handleRefresh}>↻ Refresh</button>
+            <button className="scrapper-save-btn" onClick={handleSave}>Save</button>
+        </div>
+    </div>);
 }

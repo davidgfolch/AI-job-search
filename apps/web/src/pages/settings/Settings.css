@@ -19,16 +19,15 @@
 .settings-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 32px;
+    gap: 1rem;
     align-items: flex-start;
 }
 
 .settings-section {
-    flex: 1 1 500px;
     background: var(--bg-secondary, #1e1e1e);
     border: 1px solid var(--border-color, #333);
     border-radius: 8px;
-    padding: 24px;
+    padding: 1rem;
     box-sizing: border-box;
 }
 
@@ -45,10 +44,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    border-bottom: 1px solid var(--border-color, #333);
-    padding-bottom: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 0.5rem;
 }
 
 .env-section-header h2 {
@@ -63,13 +59,13 @@
 .env-groups-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    gap: 1rem;
 }
 
 .env-groups-column {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 1rem;
 }
 
 @media (max-width: 1200px) {
@@ -216,7 +212,7 @@
 /* Editor styles */
 .scrapper-editor-wrapper {
     width: 100%;
-    min-height: 400px;
+    height: auto;
     background: var(--bg-primary, #121212);
     border: 1px solid var(--border-color, #333);
     border-radius: 4px;
@@ -234,7 +230,7 @@
     color: var(--text-primary);
     min-height: 100%;
     display: block; /* to ensure it takes the height of wrapper */
-    font-size: 14px;
+    font-size: 11px;
 }
 
 .scrapper-editor textarea {
