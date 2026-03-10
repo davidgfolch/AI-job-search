@@ -1,0 +1,57 @@
+---
+name: scrapling-implementer
+description: Use this skill to implement new scrappers using the Scrapling framework (https://github.com/D4Vinci/Scrapling). 
+---
+
+# Scrapling Implementer Instructions
+
+https://scrapling.readthedocs.io/en/latest/index.html
+
+Follow these steps to implement a new scrapper using Scrapling.
+
+1.  **Understand the Target**: Identify the target website, the data to be extracted, and the expected output format.
+
+2.  **Environment Setup**:
+    - Ensure `scrapling` is installed in the appropriate module environment (`pip install scrapling` or via Poetry).
+    - Verify that Python 3.10+ is being used.
+
+3.  **Implementation**:
+    - Create the scrapper logic following clean architecture principles in `apps/scrapper`.
+    - Utilize Scrapling's adaptive parsing and anti-bot bypass features if needed. Especially for Cloudflare Turnstile, prefer `StealthySession` over standard `Fetcher`.
+    - **Proxy Rotation**: Highly protected sites often IP ban. Always provide configuration for `ProxyRotator`.
+    - Example of a stealthy request using Scrapling to bypass protections:
+      ```python
+      from scrapling.engines._browsers._stealth import StealthySession
+      from scrapling.fetchers import ProxyRotator
+
+      def scrape_target(url, proxies=None):
+          kwargs = {"solve_cloudflare": True, "hide_canvas": True, "google_search": True}
+          if proxies:
+             kwargs["proxy"] = ProxyRotator(proxies)
+             
+          with StealthySession(**kwargs) as session:
+              page = session.fetch(url)
+              
+              # Use Scrapling's API similar to BeautifulSoup or Scrapy
+              items = []
+              for el in page.css('.item-class'):
+                  items.append({
+                      'title': el.css_first('.title').text,
+                      'link': el.css_first('a').attributes.get('href')
+                  })
+              return items
+      ```
+
+4.  **Integration**:
+    - Ensure the new scrapper follows the existing application architecture (e.g., using a repository pattern or service layer).
+    - Map the extracted fields to the expected DTOs or models representing jobs or candidates.
+    - **Feature Flag**: A feature flag MUST be implemented and set up for each implemented scrapper to toggle its execution (e.g., ``). Add this flag to `.env` and `scripts\.env.example`.
+    - **Isolation**: Strictly decouple `scrapling` implementations from any existing `selenium` ones. They should not share execution paths or services that assume a specific browser driver. For example, `IndeedScraplingExecutor` vs `IndeedExecutor`.
+
+5.  **Testing**:
+    - Write parameterized unit tests for the scrapper using `pytest`.
+    - Ensure the test mocks the `Fetcher` or HTTP requests to avoid hitting live servers during CI.
+    - Check architecture by running `apps\commonlib> poetry run pytest .\test\architecture_test.py` if needed.
+
+## Usage
+Use this skill when the user requests to "create a new scrapper", "implement a scraper", or to specifically pull data using the `Scrapling` framework.

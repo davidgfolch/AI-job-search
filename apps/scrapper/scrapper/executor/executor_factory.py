@@ -5,6 +5,7 @@ from ..services.selenium.seleniumService import SeleniumService
 
 def create_executor(name: str, selenium_service: SeleniumService, persistence_manager: PersistenceManager):
     """Factory method to create executor instances by name."""
+    from commonlib.environmentUtil import getEnvBool
     from ..executor.InfojobsExecutor import InfojobsExecutor
     from ..executor.TecnoempleoExecutor import TecnoempleoExecutor
     from ..executor.LinkedinExecutor import LinkedinExecutor
@@ -21,7 +22,11 @@ def create_executor(name: str, selenium_service: SeleniumService, persistence_ma
         case 'glassdoor':
             return GlassdoorExecutor(selenium_service, persistence_manager, debug_val)
         case 'indeed':
-            return IndeedExecutor(selenium_service, persistence_manager, debug_val)
+            if getEnvBool('SCRAPPER_INDEED_SCRAPLING', False):
+                from ..executor.IndeedScraplingExecutor import IndeedScraplingExecutor
+                return IndeedScraplingExecutor(selenium_service, persistence_manager, debug_val)
+            else:
+                return IndeedExecutor(selenium_service, persistence_manager, debug_val)
     raise ValueError(f"Unknown scrapper: {name}")
 
 def process_page_url(url: str):

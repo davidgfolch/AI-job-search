@@ -4,12 +4,13 @@ from commonlib.decorator.retry import retry
 from ..core import baseScrapper
 from ..core.utils import debug
 from ..core.baseScrapper import getAndCheckEnvVars
-from ..services.selenium.browser_service import sleep
-from ..navigator.indeedNavigator import IndeedNavigator
+from commonlib.environmentUtil import getEnv
+from ..navigator.indeedScraplingNavigator import IndeedScraplingNavigator
 from ..services.IndeedService import IndeedService
 from .BaseExecutor import BaseExecutor
 
-class IndeedExecutor(BaseExecutor):
+class IndeedScraplingExecutor(BaseExecutor):
+    """Execution logic for Indeed using Scrapling framework to bypass Cloudflare"""
 
     def _init_scrapper(self):
         self.site_name = "INDEED"
@@ -18,46 +19,68 @@ class IndeedExecutor(BaseExecutor):
         self.remote = True
         self.days_old = 3
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
-        self.navigator = IndeedNavigator(self.selenium_service, self.debug)
+        proxies_str = getEnv('SCRAPPER_INDEED_PROXIES')
+        proxies_list = [p.strip() for p in proxies_str.split(',')] if proxies_str and proxies_str.strip() else None
+        print(f"Using scrapling implementation (proxies={proxies_list})")
+        self.navigator = IndeedScraplingNavigator(proxies_list, self.debug)
 
     def _preload_action(self):
-        self.navigator.login()
+        # No login needed for scrapling - it handles Cloudflare automatically
+        pass
 
     def _create_service(self, mysql):
+        # We reuse the same DB Service logic as Selenium
         return IndeedService(mysql, self.persistence_manager, self.debug)
 
     def _checkNoResults(self, keyword):
-        self.navigator.wait_until_page_is_loaded()
-        sleep(2,2)
         if self.navigator.checkNoResults():
             print(yellow(f"No results for search={keyword}"))
             return False
         return True
 
+    def _execute_scrapping(self):
+        try:
+            super()._execute_scrapping()
+        finally:
+            self.navigator.shutdown()
+
     def _process_keyword(self, keyword: str, start_page: int):
-        sleep(3,4)
-        print(f"Search keyword={keyword}")
+        import time, random
+        time.sleep(random.uniform(5, 10))
+        print(f"Search keyword={keyword} using Scrapling")
+        
+        # Ensure our session gets this search running
         self.navigator.search(keyword, self.location, self.remote, self.days_old, start_page)
+        
         if not self._checkNoResults(keyword):
             return
-        self.navigator.selectFilters(self.remote, self.days_old)
-        if not self._checkNoResults(keyword):
-            return
+            
         self.navigator.clickSortByDate()
-        sleep(3,4)
-        self.navigator.wait_until_page_is_loaded()
+        time.sleep(3)
+            
         totalResults = self.navigator.get_total_results(keyword)
+        job_links = self.navigator.get_page_job_links()
+        
+        if totalResults == 0:
+            if not job_links:
+                print(yellow(f"No results found for {keyword}"))
+                return
+            else:
+                print(yellow(f"Total results count not found, but {len(job_links)} links discovered. Proceeding..."))
+                totalResults = len(job_links) # fallback estimate
+            
         page = self.navigator.fast_forward_page(start_page, totalResults, self.jobs_x_page) - 1
-        totalPages = math.ceil(totalResults/self.jobs_x_page)
-        currentItem = (page - 1) * self.jobs_x_page
+        totalPages = math.ceil(totalResults/self.jobs_x_page) if totalResults > 0 else 1
+        currentItem = max(0, page * self.jobs_x_page)
         while True:
             page += 1
             baseScrapper.printPage('Indeed', page, totalPages, keyword)
             idx = 0
             foundNewJobInPage = False
-            while idx < self.jobs_x_page:
+            job_links = self.navigator.get_page_job_links()
+            while idx < min(len(job_links), self.jobs_x_page):
                 print(green(f"pg {page} job {idx + 1} - "), end="")
-                if self._load_and_process_row(idx):
+                if self._load_and_process_row(job_links[idx]):
                     foundNewJobInPage = True
                 currentItem += 1
                 print()
@@ -66,42 +89,29 @@ class IndeedExecutor(BaseExecutor):
                 print(yellow("No new jobs found in this page, stopping keyword processing."))
                 break
             if self.navigator.click_next_page():
-                self.navigator.wait_until_page_is_loaded()
-                sleep(5, 6)
                 self.service.update_state(keyword, page + 1)
             else:
-                break
+                break    
         baseScrapper.summarize(keyword, totalResults, currentItem)
 
-    def _load_and_process_row(self, idx) -> bool:
+    def _load_and_process_row(self, initial_url) -> bool:
         """Return true if job was inserted"""
         ignore = True
-        jobExists = False
-        url = ""
         try:
-            self.navigator.close_modal()
-            if not self.navigator.scroll_jobs_list(idx):
-                return False
-            sleep(0.5, 1)
-            jobLinkElm = self.navigator.get_job_link_element(idx)
-            initial_url = self.navigator.get_job_url(jobLinkElm)
             jobId, jobExists = self.service.job_exists_in_db(initial_url)
             if jobExists:
                 print(yellow(f"Job id={jobId} already exists in DB, IGNORED."), end="", flush=True)
                 return False
-            self.navigator.load_job_detail(jobLinkElm)
-            sleep(2, 2)
-            url = self.navigator.selenium.getUrl()
+            self.navigator.load_job_detail(initial_url)
+            url = self.navigator.get_current_job_url()
             ignore = False
-        except IndexError as ex:
-            print(yellow(f"WARNING: could not get all items per page, that's expected because not always has {self.jobs_x_page} pages: {ex}"), end='')
         except Exception:
             debug(self.debug)
+            
         if not ignore:
             if not self._process_row(url):
                 print(red("Validation failed"))
-                return self._load_and_process_row(idx)
-            sleep(1, 2)
+                return False
             return True
         return False
 

@@ -68,15 +68,18 @@ class ScrapperScheduler:
                 self.seleniumUtil.debug = debug
                 if SCRAPPER_RUN_IN_TABS:
                     self.seleniumUtil.tab(name)
+                executor = create_executor(name, self.seleniumUtil, self.persistenceManager)
                 if runPreload(properties, run_in_tabs=SCRAPPER_RUN_IN_TABS):
-                    executor = create_executor(name, self.seleniumUtil, self.persistenceManager)
                     if not executor.execute_preload(properties):
                         return False, executed_startingAt
                     if not properties.get('preloaded', True): 
                         print(red(f"Skipping execution for {name} due to preload failure."))
+                        # Close navigator if it was opened
+                        if hasattr(executor, 'navigator') and executor.navigator:
+                            executor.navigator.close()
                         continue
-                executor = create_executor(name, self.seleniumUtil, self.persistenceManager)
                 if not executor.execute(properties):
+                    return False, executed_startingAt
                     return False, executed_startingAt
                 if starting and startingAt == name.capitalize():
                     executed_startingAt = True
@@ -104,11 +107,13 @@ class ScrapperScheduler:
         for arg in scrappersList:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
-                if runPreload(properties, run_in_tabs=SCRAPPER_RUN_IN_TABS):
-                    executor = create_executor(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
-                    if not executor.execute_preload(properties):
-                        return
                 executor = create_executor(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
+                if runPreload(properties, run_in_tabs=SCRAPPER_RUN_IN_TABS):
+                    if not executor.execute_preload(properties):
+                        if hasattr(executor, 'navigator') and executor.navigator:
+                            executor.navigator.close()
+                        return
                 if not executor.execute(properties):
+                    return
                     return
         print_failed_info_table(self.persistenceManager)

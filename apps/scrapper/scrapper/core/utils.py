@@ -16,7 +16,11 @@ def debug(debugFlag: bool, msg: str = '', exception: Optional[bool]=None):
         msg = f" (debug active) {msg}, press a key"
         if exception:
             print(yellow(msg))
-            input(red(traceback.format_exc()))
+            exc_str = traceback.format_exc()
+            if exc_str and "NoneType: None" not in exc_str:
+                input(red(exc_str))
+            else:
+                input(red("No traceback available."))
         else:
             input(red(msg))
     else:

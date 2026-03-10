@@ -7,14 +7,25 @@ from ..executor_factory import create_executor
 def _get_executor_names():
     executor_dir = os.path.dirname(os.path.dirname(__file__))
     files = glob.glob(os.path.join(executor_dir, "*Executor.py"))
-    return [os.path.basename(f).replace("Executor.py", "") for f in files if "BaseExecutor" not in f]
+    return [os.path.basename(f).replace("Executor.py", "") for f in files if "BaseExecutor" not in f and "IndeedScrapling" not in f]
 
 @pytest.mark.parametrize("name", _get_executor_names())
 def test_create_executor(name):
-    selenium_service = MagicMock()
-    persistence_manager = MagicMock()
-    executor = create_executor(name, selenium_service, persistence_manager)
-    assert executor.__class__.__name__ == f"{name}Executor"
+    with patch('commonlib.environmentUtil.getEnvBool', return_value=False):
+        selenium_service = MagicMock()
+        persistence_manager = MagicMock()
+        executor = create_executor(name, selenium_service, persistence_manager)
+        assert executor.__class__.__name__ == f"{name}Executor"
+
+def test_create_indeed_scrapling_executor():
+    with patch('commonlib.environmentUtil.getEnvBool', return_value=True) as mock_env:
+        mock_env.side_effect = lambda key, default=False: True if key == 'SCRAPPER_INDEED_SCRAPLING' else default
+        with patch('scrapper.executor.IndeedScraplingExecutor.IndeedScraplingExecutor', autospec=True) as mock_class:
+            mock_class.return_value = MagicMock()
+            selenium_service = MagicMock()
+            persistence_manager = MagicMock()
+            executor = create_executor('indeed', selenium_service, persistence_manager)
+            assert executor.__class__.__name__ == "MagicMock"
 
 def test_create_executor_invalid():
     selenium_service = MagicMock()

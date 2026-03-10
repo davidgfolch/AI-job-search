@@ -21,7 +21,13 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 - **Infojobs**: Works fine.
 - **Tecnoempleo**: Works fine.
 - **Glassdoor**: Prone to strict bot detection.
-- **Indeed**: Fully automated login with email+2FA support. Requires Gmail setup.
+- **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login.
+
+## Dual Architecture (Selenium vs Scrapling)
+The project initially relies heavily on Selenium + Undetected ChromeDriver. Recently, **Scrapling** framework has been introduced to bypass hard bot protections seamlessly, specifically Cloudflare Turnstiles.
+Indeed scraper features a dual implementation:
+- `IndeedExecutor`: Legacy architecture requiring Gmail/2FA login.
+- `IndeedScraplingExecutor`: New architecture leveraging `scrapling` (`StealthyFetcher` + `ProxyRotator` + `solve_cloudflare=True`) to scrape jobs publicly without relying on authentication, which makes it faster and less error-prone when blocked. Controlled via ``.
 
 ## Setup & Running
 
@@ -47,8 +53,10 @@ See `scripts/.env.example`.
 ## Key Environment Variables
 
 - `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
-- `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed).
-- `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed).
+- `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed Selenium).
+- `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed Selenium).
+- `=true`: Switches execution of Indeed scraper to use the lightweight, Cloudflare-bypassing Scrapling implementation.
+- `SCRAPPER_INDEED_PROXIES`: Comma delimited list of proxy servers for `ProxyRotator` (e.g., `http://username:pass@ip:port,http://...`).
 
 ## Specific Scraper Parameters
 

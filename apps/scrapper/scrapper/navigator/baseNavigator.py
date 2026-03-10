@@ -1,14 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Any, Tuple, Optional
 from commonlib.terminalColor import yellow
 from ..services.selenium.browser_service import sleep
 from ..core.utils import pageExists
 from ..services.selenium.seleniumService import SeleniumService
 
 class BaseNavigator(ABC):
-    def __init__(self, selenium: SeleniumService, debug: bool):
-        self.selenium = selenium
+    def __init__(self, browser_service: Any, debug: bool):
+        self.selenium = browser_service
         self.debug = debug
+        self.current_page: Optional[Any] = None
 
     def wait_until_page_is_loaded(self):
         self.selenium.waitUntilPageIsLoaded()
@@ -55,4 +56,6 @@ class BaseNavigator(ABC):
         pass
 
     def get_url(self) -> str:
-        return self.selenium.getUrl()
+        if hasattr(self.selenium, 'getUrl'):
+            return self.selenium.getUrl()
+        return ""
