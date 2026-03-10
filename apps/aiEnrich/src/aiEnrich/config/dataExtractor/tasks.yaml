@@ -13,11 +13,11 @@ extractor_task:
 
   expected_output: >
     A valid JSON object with the extracted information. Include all fields even if empty.
-    IMPORTANT: Use JSON ARRAYS for technology lists (e.g., ["C++", "Java"]). Do NOT use comma-separated strings inside quotes.
+    IMPORTANT: Use JSON ARRAYS for technology lists (e.g., ["technology1", "technology2"]). Do NOT use comma-separated strings inside quotes.
     The json output must have the following fields and structure:
     {
-      "required_technologies": ["C++", "Java"],
-      "optional_technologies": ["Qt", "AWS"],
+      "required_technologies": ["technology1", "technology2"],
+      "optional_technologies": ["technology3", "technology4"],
       "salary": "...",
       "modality": "..."
     }
