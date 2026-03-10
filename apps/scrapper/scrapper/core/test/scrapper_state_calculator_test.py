@@ -60,6 +60,23 @@ class TestScrapperStateCalculator:
                 result = calculator.calculate(False, None)
                 assert result == expected_state
 
+    def test_calculate_with_failed_keywords_retry(self, mocks):
+        name = 'Infojobs'
+        timer = 7200
+        now = 10000
+        lapsed = 8000  # Large enough to make seconds_remaining = 0 (900-8000=0)
+        
+        with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=now):
+            with patch('scrapper.core.scrapper_state_calculator.parseDatetime', return_value=now-lapsed):
+                mocks['pm'].get_last_execution.return_value = "last_exec"
+                mocks['pm'].get_failed_keywords.return_value = ["keyword1", "keyword2"]
+                mocks['pm'].get_state.return_value = {}  # No error, only failed keywords
+                props = {TIMER: timer}
+                calculator = ScrapperStateCalculator(name, props, mocks['pm'])
+                result = calculator.calculate(False, None)
+                # When seconds_remaining is 0, status becomes "Ready", but timer_details shows Retry
+                assert result == (0, "Ready", "NOW", "Retry(2)", "15m")
+
     # Merged from scrapper_cadency_test.py
     def get_timestamp_for_hour(self, hour):
         dt = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)

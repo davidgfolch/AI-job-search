@@ -71,6 +71,31 @@ class TestGmailService:
         with pytest.raises(Exception):  # Should raise VerificationCodeExtractionError
             service.extract_code_from_email("This email has no verification code")
 
+    def test_is_connected(self):
+        """Test is_connected method"""
+        service = GmailService()
+        assert service.is_connected() is False
+        service._is_connected = True
+        assert service.is_connected() is True
+
+    def test_close(self):
+        """Test close method"""
+        service = GmailService()
+        service.email_reader = Mock()
+        service.close()
+        service.email_reader.close.assert_called_once()
+        assert service._is_connected is False
+
+    def test_wait_for_verification_code_not_connected(self):
+        """Test wait_for_verification_code when not connected"""
+        service = GmailService()
+        service._is_connected = False
+        with patch.object(service, 'connect', return_value=True):
+            service.email_reader = Mock()
+            service.email_reader.get_latest_verification_code.return_value = "123456"
+            result = service.wait_for_verification_code("test@example.com")
+            assert result == "123456"
+
     def test_context_manager(self):
         """Test GmailService as context manager"""
         with patch(

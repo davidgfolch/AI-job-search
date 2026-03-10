@@ -39,9 +39,17 @@ class TestBaseNavigator:
         mock_selenium.loadPage.assert_called_once_with(url)
         mock_selenium.waitUntilPageIsLoaded.assert_called_once()
     
-    def test_get_url(self, navigator, mock_selenium):
-        mock_selenium.getUrl.return_value = "https://example.com"
-        assert navigator.get_url() == "https://example.com"
+    @pytest.mark.parametrize("get_url_value,expected", [
+        ("https://example.com", "https://example.com"),
+    ])
+    def test_get_url(self, navigator, mock_selenium, get_url_value, expected):
+        mock_selenium.getUrl.return_value = get_url_value
+        assert navigator.get_url() == expected
+    
+    def test_get_url_attribute_not_exists(self, mock_selenium):
+        del mock_selenium.getUrl
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
+        assert navigator.get_url() == ""
     
     def test_fast_forward_page_logic(self, mock_selenium):
         navigator = ConcreteNavigator(mock_selenium, debug=False)

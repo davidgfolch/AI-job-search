@@ -44,3 +44,10 @@ def test_print_failed_info_table_no_failures(mock_pm, capsys):
     print_failed_info_table(mock_pm)
     captured = capsys.readouterr()
     assert captured.out == ""
+
+def test_print_failed_info_table_with_failures(mock_pm, capsys):
+    mock_pm.state = {"Site1": {"failed_keywords": ["kw1"], "last_error": "Error", "last_error_time": "2026-01-01"}}
+    print_failed_info_table(mock_pm)
+    captured = capsys.readouterr()
+    assert "FAILED INFORMATION SUMMARY" in captured.out
+    assert "Site1" in captured.out
