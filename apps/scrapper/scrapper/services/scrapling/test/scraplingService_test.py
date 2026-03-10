@@ -37,5 +37,5 @@ class TestScraplingService:
             mock_session_cls.return_value = mock_session
             from scrapper.services.scrapling.scraplingService import ScraplingService
             service = ScraplingService(proxies=[], debug=False)
-            service.shutdown()
+            service.close()
             mock_session.close.assert_called_once()

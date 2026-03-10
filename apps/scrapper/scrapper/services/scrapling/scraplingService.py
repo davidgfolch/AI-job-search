@@ -79,7 +79,4 @@ class ScraplingService:
         if self.session:
             self._run_in_thread(self.session.close)
             self.session = None
-
-    def shutdown(self):
-        self.close()
         self._thread_pool.shutdown(wait=False)

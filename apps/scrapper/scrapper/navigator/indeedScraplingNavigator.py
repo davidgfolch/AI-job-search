@@ -158,5 +158,5 @@ class IndeedScraplingNavigator(BaseNavigator):
     def check_easy_apply(self) -> bool:
         return any(self.current_page.css(sel) for sel in CSS_SEL_JOB_EASY_APPLY)
 
-    def shutdown(self):
-        self.scrapling_service.shutdown()
+    def close(self):
+        self.scrapling_service.close()
