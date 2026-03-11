@@ -42,7 +42,7 @@ class IndeedScraplingExecutor(BaseExecutor):
         try:
             super()._execute_scrapping()
         finally:
-            self.navigator.shutdown()
+            self.navigator.close()
 
     def _process_keyword(self, keyword: str, start_page: int):
         import time, random

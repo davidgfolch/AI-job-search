@@ -10,7 +10,8 @@ from ..services.selenium.browser_service import sleep
 from .baseNavigator import BaseNavigator
 
 
-
+CSS_SEL_LOGIN_USER = '#username, #session_key'
+CSS_SEL_LOGIN_PWD = '#password, #session_password'
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
 CSS_SEL_MESSAGES_HIDE = 'aside[id="msg-overlay"] header > div.msg-overlay-bubble-header__controls > button'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'div.artdeco-global-alert section.artdeco-global-alert__body button.artdeco-global-alert__dismiss'
@@ -53,9 +54,9 @@ class LinkedinNavigator(BaseNavigator):
         if self.selenium.getUrl().find('linkedin.com/feed/') > -1:
             return
         sleep(1, 1)
-        self.selenium.waitUntil_presenceLocatedElement('#username')
-        self.selenium.sendKeys('#username', user_email)
-        self.selenium.sendKeys('#password', user_pwd)
+        self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_USER)
+        self.selenium.sendKeys(CSS_SEL_LOGIN_USER, user_email)
+        self.selenium.sendKeys(CSS_SEL_LOGIN_PWD, user_pwd)
         try:
             self.selenium.checkboxUnselect('div.remember_me__opt_in input')
         except Exception:

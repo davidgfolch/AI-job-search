@@ -116,9 +116,13 @@ class InfojobsNavigator(BaseNavigator):
             printHR()
             print()
             return False
-        self.selenium.waitAndClick('.ij-SidebarFilter #check-teleworking--2', scrollIntoView=True)
-        sleep(1, 2)
+        self.filterByRemote()
         return True
+
+    def filterByRemote(self):
+        if len(self.selenium.getElms('.ij-SidebarFilter #check-teleworking--2')) > 0:
+            self.selenium.waitAndClick('.ij-SidebarFilter #check-teleworking--2', scrollIntoView=True)
+            sleep(1, 2)        
 
     @retry(retries=3, delay=1, exceptionFnc=lambda self, *args, **kwargs: self.scroll_to_bottom())
     def scroll_jobs_list(self, idx):

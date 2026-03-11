@@ -4,9 +4,10 @@ from commonlib.terminalColor import yellow
 from ..services.selenium.browser_service import sleep
 from ..core.utils import pageExists
 from ..services.selenium.seleniumService import SeleniumService
+from ..services.scrapling.scraplingService import ScraplingService
 
 class BaseNavigator(ABC):
-    def __init__(self, browser_service: Any, debug: bool):
+    def __init__(self, browser_service: SeleniumService | ScraplingService, debug: bool):
         self.selenium = browser_service
         self.debug = debug
         self.current_page: Optional[Any] = None
@@ -59,3 +60,9 @@ class BaseNavigator(ABC):
         if hasattr(self.selenium, 'getUrl'):
             return self.selenium.getUrl()
         return ""
+
+    def close(self):
+        if hasattr(self.selenium, 'exit'):
+            self.selenium.exit()
+        elif hasattr(self.selenium, 'close'):
+            self.selenium.close()

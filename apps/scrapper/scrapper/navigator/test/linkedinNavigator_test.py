@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, call, patch
-from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
+from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
 from selenium.common.exceptions import NoSuchElementException
 
 class TestLinkedinNavigator:
@@ -46,8 +46,8 @@ class TestLinkedinNavigator:
         mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
         with patch('scrapper.navigator.linkedinNavigator.sleep'):
             navigator.login("user", "pass")
-            mock_selenium.sendKeys.assert_any_call('#username', 'user')
-            mock_selenium.sendKeys.assert_any_call('#password', 'pass')
+            mock_selenium.sendKeys.assert_any_call(CSS_SEL_LOGIN_USER, 'user')
+            mock_selenium.sendKeys.assert_any_call(CSS_SEL_LOGIN_PWD, 'pass')
             mock_selenium.checkboxUnselect.assert_called_with('div.remember_me__opt_in input')
             mock_selenium.waitAndClick.assert_called_with('form button[type=submit]')
 
