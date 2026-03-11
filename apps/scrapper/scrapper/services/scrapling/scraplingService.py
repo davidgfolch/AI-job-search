@@ -9,10 +9,15 @@ class ScraplingService:
         self.debug = debug
         self.proxies = proxies
         self.session: Optional[StealthySession] = None
-        self._thread_pool = ThreadPoolExecutor(max_workers=1)
+        self._thread_pool: Optional[ThreadPoolExecutor] = None
         self._init_session()
 
+    def _is_thread_pool_alive(self) -> bool:
+        return self._thread_pool is not None and not self._thread_pool._shutdown
+
     def _run_in_thread(self, fn, *args, **kwargs):
+        if not self._is_thread_pool_alive():
+            self._thread_pool = ThreadPoolExecutor(max_workers=1)
         return self._thread_pool.submit(fn, *args, **kwargs).result()
 
     def _build_kwargs(self) -> dict:
@@ -79,4 +84,3 @@ class ScraplingService:
         if self.session:
             self._run_in_thread(self.session.close)
             self.session = None
-        self._thread_pool.shutdown(wait=False)
