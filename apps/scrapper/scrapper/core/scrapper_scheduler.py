@@ -3,7 +3,7 @@ from datetime import datetime
 
 from commonlib.terminalUtil import consoleTimer
 from commonlib.terminalColor import cyan, red, yellow
-from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, IGNORE_AUTORUN, SCRAPPER_RUN_IN_TABS, get_debug)
+from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, SCRAPPER_RUN_IN_TABS, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
@@ -37,7 +37,7 @@ class ScrapperScheduler:
         print("-" * 95)
         runnable_wait_times = []
         for name, properties in SCRAPPERS.items():
-            if properties.get(IGNORE_AUTORUN, False):
+            if not properties.get(AUTORUN):
                 continue
             calculator = ScrapperStateCalculator(name, properties, self.persistenceManager)
             seconds, status, next_exec, time_range, cadency = calculator.calculate(starting, startingAt)

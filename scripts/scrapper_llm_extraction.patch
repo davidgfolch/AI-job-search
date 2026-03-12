@@ -50,7 +50,7 @@ index aea9d46..7a556f9 100644
 +++ b/apps/scrapper/scrapper/core/scrapper_config.py
 @@ -7,6 +7,9 @@ TIMER = 'timer'
  CLOSE_TAB = 'closeTab'
- IGNORE_AUTORUN = 'ignoreAutoRun'
+ AUTORUN = 'autoRun'
  DEBUG = 'debug'
 +USE_LLM = 'use_llm'
 +LLM_PROVIDER = 'llm_provider'
@@ -59,7 +59,7 @@ index aea9d46..7a556f9 100644
  SCRAPPERS: Dict[str, Dict[str, Any]] = {
      'Infojobs': {  # first to solve security filter
 @@ -24,6 +27,9 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
-         IGNORE_AUTORUN: getEnvBool('LINKEDIN_IGNORE_AUTORUN', False),
+         AUTORUN: getEnvBool('LINKEDIN_AUTORUN', False),
          CLOSE_TAB: True,
          DEBUG: False,
 +        USE_LLM: getEnvBool('LINKEDIN_USE_LLM', False),

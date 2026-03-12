@@ -18,11 +18,11 @@ index 4eb1b24..8cf35d9 100644
 +++ b/apps/scrapper/scrapper/scrapper_config.py
 @@ -26,6 +26,10 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
          TIMER: getSeconds(getEnv('INDEED_RUN_CADENCY')),
-         IGNORE_AUTORUN: True
+         AUTORUN: True
      },
 +    'Shakers': {
 +        TIMER: getSeconds(getEnv('SHAKERS_RUN_CADENCY', '1h')),
-+        IGNORE_AUTORUN: True
++        AUTORUN: True
 +    },
  }
  

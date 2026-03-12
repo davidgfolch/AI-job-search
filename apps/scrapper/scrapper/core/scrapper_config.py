@@ -5,40 +5,30 @@ from commonlib.dateUtil import getSeconds
 
 TIMER = 'timer'
 CLOSE_TAB = 'closeTab'
-IGNORE_AUTORUN = 'ignoreAutoRun'
+AUTORUN = 'autoRun'
 DEBUG = 'debug'
 
+
+def _base_config(name: str, autorun: bool = True, debug: bool = False) -> Dict[str, Any]:
+    prefix = f'SCRAPPER_{name.upper()}'
+    return {
+        TIMER: getSeconds(getEnv(f'{prefix}_RUN_CADENCY')),
+        AUTORUN: getEnvBool(f'{prefix}_AUTORUN', autorun),
+        DEBUG: getEnvBool(f'{prefix}_DEBUG', debug),
+    }
+
+
 SCRAPPERS: Dict[str, Dict[str, Any]] = {
-    'Infojobs': {  # first to solve security filter
-        TIMER: getSeconds(getEnv('SCRAPPER_INFOJOBS_RUN_CADENCY')),
-        IGNORE_AUTORUN: getEnvBool('SCRAPPER_INFOJOBS_IGNORE_AUTORUN', False),
-        DEBUG: getEnvBool('SCRAPPER_INFOJOBS_DEBUG', False),
-    },
-    'Tecnoempleo': {  # first to solve security filter
-        TIMER: getSeconds(getEnv('SCRAPPER_TECNOEMPLEO_RUN_CADENCY')),
-        IGNORE_AUTORUN: getEnvBool('SCRAPPER_TECNOEMPLEO_IGNORE_AUTORUN', False),
-        DEBUG: getEnvBool('SCRAPPER_TECNOEMPLEO_DEBUG', False),
-    },
-    'Linkedin': {
-        TIMER: getSeconds(getEnv('SCRAPPER_LINKEDIN_RUN_CADENCY')),
-        IGNORE_AUTORUN: getEnvBool('SCRAPPER_LINKEDIN_IGNORE_AUTORUN', False),
-        CLOSE_TAB: True,
-        DEBUG: getEnvBool('SCRAPPER_LINKEDIN_DEBUG', False),
-    },
-    'Glassdoor': {
-        TIMER: getSeconds(getEnv('SCRAPPER_GLASSDOOR_RUN_CADENCY')),
-        IGNORE_AUTORUN: getEnvBool('SCRAPPER_GLASSDOOR_IGNORE_AUTORUN', True),
-        DEBUG: getEnvBool('SCRAPPER_GLASSDOOR_DEBUG', False),
-    },
-    'Indeed': {
-        TIMER: getSeconds(getEnv('SCRAPPER_INDEED_RUN_CADENCY')),
-        IGNORE_AUTORUN: getEnvBool('SCRAPPER_INDEED_IGNORE_AUTORUN', False),
-        DEBUG: getEnvBool('SCRAPPER_INDEED_DEBUG', False),
-    },
+    'Infojobs': _base_config('Infojobs'),    # first to solve security filter
+    'Tecnoempleo': _base_config('Tecnoempleo'),  # first to solve security filter
+    'Linkedin': {**_base_config('Linkedin'), CLOSE_TAB: True},
+    'Glassdoor': _base_config('Glassdoor'),
+    'Indeed': _base_config('Indeed'),
 }
 
-SCRAPPER_RUN_IN_TABS = getEnvBool('SCRAPPER_RUN_IN_TABS', False)
+print(SCRAPPERS)
 
+SCRAPPER_RUN_IN_TABS = getEnvBool('SCRAPPER_RUN_IN_TABS', False)
 
 
 def get_debug(name):

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from scrapper.core.scrapper_config import (
-    CLOSE_TAB, IGNORE_AUTORUN, SCRAPPERS, TIMER, DEBUG
+    CLOSE_TAB, AUTORUN, SCRAPPERS, TIMER, DEBUG
 )
 from scrapper.core.scrapper_scheduler import ScrapperScheduler
 
@@ -42,9 +42,11 @@ def run_mocks():
 @pytest.fixture(autouse=True)
 def setup_scrappers():
     val = {
-        'Infojobs': {TIMER: 7200, DEBUG: False}, 'Linkedin': {TIMER: 3600, CLOSE_TAB: True, DEBUG: False},
-        'Glassdoor': {TIMER: 10800, DEBUG: False}, 'Tecnoempleo': {TIMER: 7200, DEBUG: False},
-        'Indeed': {TIMER: 10800, IGNORE_AUTORUN: True, DEBUG: False},
+        'Infojobs': {TIMER: 7200, AUTORUN: True, DEBUG: False},
+        'Linkedin': {TIMER: 3600, AUTORUN: True, CLOSE_TAB: True, DEBUG: False},
+        'Glassdoor': {TIMER: 10800, AUTORUN: True, DEBUG: False},
+        'Tecnoempleo': {TIMER: 7200, AUTORUN: True, DEBUG: False},
+        'Indeed': {TIMER: 10800, AUTORUN: False, DEBUG: False},
     }
     with patch.dict(SCRAPPERS, val, clear=True): 
         yield
