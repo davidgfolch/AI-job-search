@@ -23,53 +23,43 @@ export interface SourceHourStat {
     source: string;
 }
 
-export const getHistoryStats = async (startDate?: string, endDate?: string): Promise<HistoryStat[]> => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    const response = await apiClient.get(`${API_Base}/history`, { params });
-    return response.data;
-};
-
-export const getSourcesByDate = async (startDate?: string, endDate?: string): Promise<SourceDateStat[]> => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    const response = await apiClient.get(`${API_Base}/sources-date`, { params });
-    return response.data;
-};
-
-export const getSourcesByHour = async (startDate?: string, endDate?: string): Promise<SourceHourStat[]> => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    const response = await apiClient.get(`${API_Base}/sources-hour`, { params });
-    return response.data;
-};
-
 export interface SourceWeekdayStat {
     weekday: number;
     total: number;
     source: string;
 }
 
-export const getSourcesByWeekday = async (startDate?: string, endDate?: string): Promise<SourceWeekdayStat[]> => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    const response = await apiClient.get(`${API_Base}/sources-weekday`, { params });
-    return response.data;
-};
-
 export interface FilterConfigStat {
     name: string;
     count: number;
 }
 
+const buildDateParams = (startDate?: string, endDate?: string) => ({
+    ...(startDate && { start_date: startDate }),
+    ...(endDate && { end_date: endDate }),
+});
+
+export const getHistoryStats = async (startDate?: string, endDate?: string): Promise<HistoryStat[]> => {
+    const response = await apiClient.get(`${API_Base}/history`, { params: buildDateParams(startDate, endDate) });
+    return response.data;
+};
+
+export const getSourcesByDate = async (startDate?: string, endDate?: string): Promise<SourceDateStat[]> => {
+    const response = await apiClient.get(`${API_Base}/sources-date`, { params: buildDateParams(startDate, endDate) });
+    return response.data;
+};
+
+export const getSourcesByHour = async (startDate?: string, endDate?: string): Promise<SourceHourStat[]> => {
+    const response = await apiClient.get(`${API_Base}/sources-hour`, { params: buildDateParams(startDate, endDate) });
+    return response.data;
+};
+
+export const getSourcesByWeekday = async (startDate?: string, endDate?: string): Promise<SourceWeekdayStat[]> => {
+    const response = await apiClient.get(`${API_Base}/sources-weekday`, { params: buildDateParams(startDate, endDate) });
+    return response.data;
+};
+
 export const getFilterConfigStats = async (startDate?: string, endDate?: string): Promise<FilterConfigStat[]> => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    const response = await apiClient.get(`${API_Base}/filter-configs`, { params });
+    const response = await apiClient.get(`${API_Base}/filter-configs`, { params: buildDateParams(startDate, endDate) });
     return response.data;
 };

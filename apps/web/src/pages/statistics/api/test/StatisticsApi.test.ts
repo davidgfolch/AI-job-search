@@ -1,81 +1,43 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday } from '../StatisticsApi';
-import type { HistoryStat, SourceDateStat, SourceHourStat, SourceWeekdayStat } from '../StatisticsApi';
+import {
+    getHistoryStats, getSourcesByDate, getSourcesByHour,
+    getSourcesByWeekday, getFilterConfigStats
+} from '../StatisticsApi';
 
-const mockApiClient = vi.hoisted(() => ({
-  get: vi.fn(),
-}));
+const mockApiClient = vi.hoisted(() => ({ get: vi.fn() }));
 
-vi.mock('../../../common/api/ApiClient', () => ({
-  default: mockApiClient,
-}));
+vi.mock('../../../common/api/ApiClient', () => ({ default: mockApiClient }));
+
+const START = '2024-01-01';
+const END = '2024-12-31';
 
 describe('StatisticsApi', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    beforeEach(() => vi.clearAllMocks());
 
-  describe('getHistoryStats', () => {
-    it('fetches history statistics successfully', async () => {
-      const mockData: HistoryStat[] = [{
-        dateCreated: '2024-01-01',
-        applied: 5,
-        discarded: 3,
-        interview: 2,
-        discarded_cumulative: 10,
-        interview_cumulative: 4,
-      }];
-      mockApiClient.get.mockResolvedValue({ data: mockData });
-      const result = await getHistoryStats();
-      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/history', { params: expect.any(URLSearchParams) });
-      expect(result).toEqual(mockData);
+    const call_cases = [
+        { fn: getHistoryStats,      endpoint: '/statistics/history',        name: 'getHistoryStats' },
+        { fn: getSourcesByDate,     endpoint: '/statistics/sources-date',    name: 'getSourcesByDate' },
+        { fn: getSourcesByHour,     endpoint: '/statistics/sources-hour',    name: 'getSourcesByHour' },
+        { fn: getSourcesByWeekday,  endpoint: '/statistics/sources-weekday', name: 'getSourcesByWeekday' },
+        { fn: getFilterConfigStats, endpoint: '/statistics/filter-configs',  name: 'getFilterConfigStats' },
+    ] as const;
+
+    it.each(call_cases)('$name calls correct endpoint without date params', async ({ fn, endpoint }) => {
+        mockApiClient.get.mockResolvedValue({ data: [] });
+        await fn();
+        expect(mockApiClient.get).toHaveBeenCalledWith(endpoint, { params: {} });
     });
 
-    it('propagates errors', async () => {
-      mockApiClient.get.mockRejectedValue(new Error('API error'));
-      await expect(getHistoryStats()).rejects.toThrow('API error');
+    it.each(call_cases)('$name passes date params as plain object', async ({ fn, endpoint }) => {
+        mockApiClient.get.mockResolvedValue({ data: [] });
+        await fn(START, END);
+        expect(mockApiClient.get).toHaveBeenCalledWith(endpoint, {
+            params: { start_date: START, end_date: END },
+        });
     });
-  });
 
-  describe('getSourcesByDate', () => {
-    it('fetches sources by date successfully', async () => {
-      const mockData: SourceDateStat[] = [{
-        dateCreated: '2024-01-01',
-        total: 10,
-        source: 'LinkedIn',
-      }];
-      mockApiClient.get.mockResolvedValue({ data: mockData });
-      const result = await getSourcesByDate();
-      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/sources-date', { params: expect.any(URLSearchParams) });
-      expect(result).toEqual(mockData);
+    it.each(call_cases)('$name propagates errors', async ({ fn }) => {
+        mockApiClient.get.mockRejectedValue(new Error('API error'));
+        await expect(fn()).rejects.toThrow('API error');
     });
-  });
-
-  describe('getSourcesByHour', () => {
-    it('fetches sources by hour successfully', async () => {
-      const mockData: SourceHourStat[] = [{
-        hour: 9,
-        total: 15,
-        source: 'Indeed',
-      }];
-      mockApiClient.get.mockResolvedValue({ data: mockData });
-      const result = await getSourcesByHour();
-      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/sources-hour', { params: expect.any(URLSearchParams) });
-      expect(result).toEqual(mockData);
-    });
-  });
-
-  describe('getSourcesByWeekday', () => {
-    it('fetches sources by weekday successfully', async () => {
-      const mockData: SourceWeekdayStat[] = [{
-        weekday: 1,
-        total: 20,
-        source: 'Monster',
-      }];
-      mockApiClient.get.mockResolvedValue({ data: mockData });
-      const result = await getSourcesByWeekday();
-      expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/sources-weekday', { params: expect.any(URLSearchParams) });
-      expect(result).toEqual(mockData);
-    });
-  });
 });
