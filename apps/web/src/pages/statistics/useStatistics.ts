@@ -4,7 +4,7 @@ import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekda
 import { processChartData } from './utils/chartUtils';
 
 export const useStatistics = () => {
-    const [timeRange, setTimeRange] = React.useState('All');
+    const [timeRange, setTimeRange] = React.useState('Last 3 months');
     const [includeOldJobs, setIncludeOldJobs] = React.useState(true);
 
     const { startDate, endDate } = React.useMemo(() => {
@@ -15,6 +15,8 @@ export const useStatistics = () => {
             start.setFullYear(start.getFullYear() - 1);
         } else if (timeRange === 'Last 6 months') {
             start.setMonth(start.getMonth() - 6);
+        } else if (timeRange === 'Last 3 months') {
+            start.setMonth(start.getMonth() - 3);
         } else if (timeRange === 'Last month') {
             start.setMonth(start.getMonth() - 1);
         } else if (timeRange === 'Last week') {
