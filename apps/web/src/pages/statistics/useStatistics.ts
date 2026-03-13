@@ -5,6 +5,7 @@ import { processChartData } from './utils/chartUtils';
 
 export const useStatistics = () => {
     const [timeRange, setTimeRange] = React.useState('All');
+    const [includeOldJobs, setIncludeOldJobs] = React.useState(true);
 
     const { startDate, endDate } = React.useMemo(() => {
         if (timeRange === 'All') return { startDate: undefined, endDate: undefined };
@@ -24,11 +25,11 @@ export const useStatistics = () => {
         return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
     }, [timeRange]);
 
-    const { data: historyData } = useQuery({ queryKey: ['statistics', 'history', startDate, endDate], queryFn: () => getHistoryStats(startDate, endDate) });
-    const { data: sourcesDateData } = useQuery({ queryKey: ['statistics', 'sourcesDate', startDate, endDate], queryFn: () => getSourcesByDate(startDate, endDate) });
-    const { data: sourcesHourData } = useQuery({ queryKey: ['statistics', 'sourcesHour', startDate, endDate], queryFn: () => getSourcesByHour(startDate, endDate) });
-    const { data: sourcesWeekdayData } = useQuery({ queryKey: ['statistics', 'sourcesWeekday', startDate, endDate], queryFn: () => getSourcesByWeekday(startDate, endDate) });
-    const { data: filterConfigData } = useQuery({ queryKey: ['statistics', 'filterConfigs', startDate, endDate], queryFn: () => getFilterConfigStats(startDate, endDate) });
+    const { data: historyData } = useQuery({ queryKey: ['statistics', 'history', startDate, endDate, includeOldJobs], queryFn: () => getHistoryStats(startDate, endDate, includeOldJobs) });
+    const { data: sourcesDateData } = useQuery({ queryKey: ['statistics', 'sourcesDate', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByDate(startDate, endDate, includeOldJobs) });
+    const { data: sourcesHourData } = useQuery({ queryKey: ['statistics', 'sourcesHour', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByHour(startDate, endDate, includeOldJobs) });
+    const { data: sourcesWeekdayData } = useQuery({ queryKey: ['statistics', 'sourcesWeekday', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByWeekday(startDate, endDate, includeOldJobs) });
+    const { data: filterConfigData } = useQuery({ queryKey: ['statistics', 'filterConfigs', startDate, endDate, includeOldJobs], queryFn: () => getFilterConfigStats(startDate, endDate, includeOldJobs) });
     
     // Process data to unify sources and handle colors
     const { processedData: sourcesDateWide, keys: sourcesDateKeys } = React.useMemo(
@@ -54,6 +55,8 @@ export const useStatistics = () => {
     return {
         timeRange,
         setTimeRange,
+        includeOldJobs,
+        setIncludeOldJobs,
         historyData,
         sourcesDateWide,
         sourcesDateKeys,

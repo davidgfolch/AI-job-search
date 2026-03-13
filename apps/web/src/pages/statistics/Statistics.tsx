@@ -37,6 +37,8 @@ const Statistics = () => {
     const {
         timeRange,
         setTimeRange,
+        includeOldJobs,
+        setIncludeOldJobs,
         historyData,
         sourcesDateWide,
         sourcesDateKeys,
@@ -67,6 +69,17 @@ const Statistics = () => {
                         <option value="Last week">Last week</option>
                         <option value="Last day">Last day</option>
                     </select>
+
+                    <label style={{ marginRight: '20px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                           title="Include old job's snapshots">
+                        <input
+                            type="checkbox"
+                            checked={includeOldJobs}
+                            onChange={(e) => setIncludeOldJobs(e.target.checked)}
+                            style={{ marginRight: '8px', cursor: 'pointer' }}
+                        />
+                        Include old jobs
+                    </label>
 
                     <span className="layout-label">Layout:</span>
                     <div className="layout-buttons">

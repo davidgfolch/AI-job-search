@@ -43,6 +43,8 @@ def test_get_sources_by_date_df(mock_read_sql, mock_get_conn):
     query_arg = mock_read_sql.call_args[0][0]
     assert "SELECT" in query_arg
     assert "web_page as source" in query_arg
+    assert "FROM jobs" in query_arg
+    assert "GROUP BY dateCreated, web_page" in query_arg
 
 @patch('repositories.statistics_repository.getConnection')
 @patch('repositories.statistics_repository.pd.read_sql')
@@ -59,6 +61,8 @@ def test_get_sources_by_hour_df(mock_read_sql, mock_get_conn):
     query_arg = mock_read_sql.call_args[0][0]
     assert "SELECT" in query_arg
     assert "HOUR(created)" in query_arg
+    assert "FROM jobs" in query_arg
+    assert "GROUP BY HOUR(created), web_page" in query_arg
 
 @patch('repositories.statistics_repository.getConnection')
 @patch('repositories.statistics_repository.pd.read_sql')

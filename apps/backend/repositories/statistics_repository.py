@@ -4,9 +4,7 @@ from commonlib.sql.mysqlUtil import getConnection
 
 
 class StatisticsRepository:
-    def _apply_date_filter(
-        self, query: str, start_date: str = None, end_date: str = None
-    ) -> tuple[str, list]:
+    def _apply_date_filter(self, query: str, start_date: str = None, end_date: str = None) -> tuple[str, list]:
         conditions = []
         params = []
         if start_date:
@@ -29,9 +27,7 @@ class StatisticsRepository:
 
         return query, params
 
-    def get_history_stats_df(
-        self, start_date: str = None, end_date: str = None
-    ) -> pd.DataFrame:
+    def get_history_stats_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
         query = """
             SELECT
                 CONVERT(created, DATE) as dateCreated,
@@ -49,9 +45,7 @@ class StatisticsRepository:
         finally:
             cnx.close()
 
-    def get_sources_by_date_df(
-        self, start_date: str = None, end_date: str = None
-    ) -> pd.DataFrame:
+    def get_sources_by_date_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
         query = """
             SELECT
                 date(created) as dateCreated,
@@ -68,17 +62,15 @@ class StatisticsRepository:
         finally:
             cnx.close()
 
-    def get_sources_by_hour_df(
-        self, start_date: str = None, end_date: str = None
-    ) -> pd.DataFrame:
+    def get_sources_by_hour_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
         query = """
             SELECT
                 HOUR(created) AS hour,
-                max(web_page) as source,
+                web_page as source,
                 COUNT(*) AS total
             FROM jobs
             GROUP BY HOUR(created), web_page
-            ORDER BY web_page, hour
+            ORDER BY source, hour
         """
         query, params = self._apply_date_filter(query, start_date, end_date)
         cnx = getConnection()
@@ -87,9 +79,7 @@ class StatisticsRepository:
         finally:
             cnx.close()
 
-    def get_sources_by_weekday_df(
-        self, start_date: str = None, end_date: str = None
-    ) -> pd.DataFrame:
+    def get_sources_by_weekday_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
         query = """
             SELECT
                 DAYOFWEEK(created) AS weekday,
@@ -97,7 +87,7 @@ class StatisticsRepository:
                 COUNT(*) AS total
             FROM jobs
             GROUP BY weekday, web_page
-            ORDER BY weekday, web_page;
+            ORDER BY weekday, source
         """
         query, params = self._apply_date_filter(query, start_date, end_date)
         cnx = getConnection()

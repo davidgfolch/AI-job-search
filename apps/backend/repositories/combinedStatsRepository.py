@@ -23,7 +23,7 @@ class CombinedStatsRepository:
                 GROUP BY dateCreated
                 UNION ALL
                 SELECT
-                    CONVERT(snapshot_at, DATE) as dateCreated,
+                    CONVERT(original_created_at, DATE) as dateCreated,
                     SUM(applied) as applied,
                     SUM(discarded) as discarded,
                     SUM(interview + interview_rh + interview_tech + interview_technical_test) as interview
@@ -68,11 +68,11 @@ class CombinedStatsRepository:
                 GROUP BY dateCreated, web_page
                 UNION ALL
                 SELECT
-                    date(snapshot_at) as dateCreated,
+                    date(original_created_at) as dateCreated,
                     count(*) as total,
-                    web_page as source
+                    platform as source
                 FROM job_snapshots
-                GROUP BY dateCreated, web_page
+                GROUP BY dateCreated, platform
             ) combined
             GROUP BY dateCreated, source
             ORDER BY dateCreated
@@ -112,11 +112,11 @@ class CombinedStatsRepository:
                 GROUP BY HOUR(created), web_page
                 UNION ALL
                 SELECT
-                    HOUR(snapshot_at) AS hour,
-                    web_page as source,
+                    HOUR(original_created_at) AS hour,
+                    platform as source,
                     COUNT(*) AS total
                 FROM job_snapshots
-                GROUP BY HOUR(snapshot_at), web_page
+                GROUP BY HOUR(original_created_at), platform
             ) combined
             GROUP BY hour, source
             ORDER BY source, hour
@@ -154,11 +154,11 @@ class CombinedStatsRepository:
                 GROUP BY weekday, web_page
                 UNION ALL
                 SELECT
-                    DAYOFWEEK(snapshot_at) AS weekday,
-                    web_page AS source,
+                    DAYOFWEEK(original_created_at) AS weekday,
+                    platform AS source,
                     COUNT(*) AS total
                 FROM job_snapshots
-                GROUP BY weekday, web_page
+                GROUP BY weekday, platform
             ) combined
             GROUP BY weekday, source
             ORDER BY weekday, source
