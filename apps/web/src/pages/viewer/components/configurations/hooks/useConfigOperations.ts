@@ -38,6 +38,7 @@ export const useConfigOperations = ({
       return;
     }
     const existingConfig = savedConfigs.find(c => c.name === configName.trim());
+    const existingIndex = savedConfigs.findIndex(c => c.name === configName.trim());
     const newConfig: FilterConfig = {
       name: configName.trim(),
       filters: currentFilters,
@@ -50,7 +51,8 @@ export const useConfigOperations = ({
       }),
     };
     const filtered = savedConfigs.filter(c => c.name !== newConfig.name);
-    const updated = [newConfig, ...filtered];
+    const insertIndex = existingIndex >= 0 ? existingIndex : 0;
+    const updated = [...filtered.slice(0, insertIndex), newConfig, ...filtered.slice(insertIndex)];
     try {
       await service.save(updated);
       setSavedConfigs(updated);

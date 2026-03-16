@@ -98,6 +98,42 @@ describe('useConfigOperations - saveConfiguration', () => {
         expect(savedConfigs[0].ordering).toBe(2);
     });
 
+    it('preserves original position when updating existing config', async () => {
+        const existingConfigs: FilterConfig[] = [
+            { id: 1, name: 'Config A', filters: {}, ordering: 0 },
+            { id: 2, name: 'Config B', filters: {}, ordering: 1 },
+            { id: 3, name: 'Config C', filters: {}, ordering: 2 },
+        ];
+        const props = createProps({}, { savedConfigs: existingConfigs, configName: 'Config B', currentFilters: { search: 'updated' } });
+        const { result } = renderHook(() => useConfigOperations(props));
+
+        await act(async () => {
+            await result.current.saveConfiguration();
+        });
+
+        const savedConfigs = props.setSavedConfigs.mock.calls[0][0];
+        expect(savedConfigs[0].name).toBe('Config A');
+        expect(savedConfigs[1].name).toBe('Config B');
+        expect(savedConfigs[1].filters.search).toBe('updated');
+        expect(savedConfigs[2].name).toBe('Config C');
+    });
+
+    it('adds new config at first position when creating new config', async () => {
+        const existingConfigs: FilterConfig[] = [
+            { id: 1, name: 'Existing Config', filters: {}, ordering: 0 },
+        ];
+        const props = createProps({}, { savedConfigs: existingConfigs, configName: 'New Config', currentFilters: { search: 'new' } });
+        const { result } = renderHook(() => useConfigOperations(props));
+
+        await act(async () => {
+            await result.current.saveConfiguration();
+        });
+
+        const savedConfigs = props.setSavedConfigs.mock.calls[0][0];
+        expect(savedConfigs[0].name).toBe('New Config');
+        expect(savedConfigs[1].name).toBe('Existing Config');
+    });
+
     it('notifies on save failure', async () => {
         const mockSave = vi.fn().mockRejectedValue(new Error('Save failed'));
         const props = createProps({ save: mockSave });
