@@ -37,9 +37,17 @@ export const useConfigOperations = ({
       notify('Please enter a name for the configuration', 'error');
       return;
     }
+    const existingConfig = savedConfigs.find(c => c.name === configName.trim());
     const newConfig: FilterConfig = {
       name: configName.trim(),
       filters: currentFilters,
+      ...(existingConfig && {
+        pinned: existingConfig.pinned,
+        statistics: existingConfig.statistics,
+        watched: existingConfig.watched,
+        ordering: existingConfig.ordering,
+        id: existingConfig.id,
+      }),
     };
     const filtered = savedConfigs.filter(c => c.name !== newConfig.name);
     const updated = [newConfig, ...filtered];

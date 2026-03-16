@@ -79,6 +79,25 @@ describe('useConfigOperations - saveConfiguration', () => {
         expect(savedConfigs[0].filters.search).toBe('new');
     });
 
+    it('preserves pinned, statistics and watched flags when updating existing config', async () => {
+        const existingConfigs: FilterConfig[] = [
+            { id: 1, name: 'Test Config', filters: { search: 'old' }, watched: true, statistics: true, pinned: true, ordering: 2, created: '', modified: null },
+        ];
+        const props = createProps({}, { savedConfigs: existingConfigs, currentFilters: { search: 'new' } });
+        const { result } = renderHook(() => useConfigOperations(props));
+
+        await act(async () => {
+            await result.current.saveConfiguration();
+        });
+
+        const savedConfigs = props.setSavedConfigs.mock.calls[0][0];
+        expect(savedConfigs[0].pinned).toBe(true);
+        expect(savedConfigs[0].statistics).toBe(true);
+        expect(savedConfigs[0].watched).toBe(true);
+        expect(savedConfigs[0].id).toBe(1);
+        expect(savedConfigs[0].ordering).toBe(2);
+    });
+
     it('notifies on save failure', async () => {
         const mockSave = vi.fn().mockRejectedValue(new Error('Save failed'));
         const props = createProps({ save: mockSave });
