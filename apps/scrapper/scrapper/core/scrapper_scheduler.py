@@ -80,7 +80,6 @@ class ScrapperScheduler:
                         continue
                 if not executor.execute(properties):
                     return False, executed_startingAt
-                    return False, executed_startingAt
                 if starting and startingAt == name.capitalize():
                     executed_startingAt = True
         return True, executed_startingAt

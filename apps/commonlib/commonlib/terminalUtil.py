@@ -1,7 +1,7 @@
 import random
 from datetime import timedelta
 from .wake_timer import WakeableTimer
-from .terminalColor import yellow
+from .terminalColor import yellow, cyan
 from .systemUtil import isDocker
 from .dateUtil import getSeconds
 
@@ -33,10 +33,12 @@ def _consoleTimerLocal(message: str, timeUnit: str, end='\r'):
     seconds = getSeconds(timeUnit)
     spinner = Spinner()
     blankLine = True if end == '\r' else False
+    timeLeft = str(timedelta(seconds=seconds))
+    print(cyan(f"{message} {timeLeft}"))
     for left in range(seconds*spinner.tickXSec, 0, -1):
         spinnerStr = spinner.generate()
         timeLeft = str(timedelta(seconds=int(left/spinner.tickXSec)))
-        print(yellow(message, f"{spinnerStr} I'll retry in {timeLeft} {spinnerStr}{' '*10}"), end=end)
+        print(yellow(message, f" {spinnerStr} I'll retry in {timeLeft} {spinnerStr}{' '*10}"), end=end)
         end='\r'
         spinner.nextTick()
         WakeableTimer().wait(1/spinner.tickXSec)
