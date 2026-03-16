@@ -64,14 +64,17 @@ export async function setup(
         },
     });
 
+    const onToggleExpand = props.onToggleExpand || vi.fn();
+    const isExpanded = props.isExpanded !== undefined ? props.isExpanded : true;
+
     const result = render(
         <QueryClientProvider client={queryClient}>
             <FilterConfigurations 
                 currentFilters={curFilters} 
                 onLoadConfig={onLoad} 
                 onMessage={onMsg} 
-                isExpanded={true}
-                onToggleExpand={vi.fn()}
+                isExpanded={isExpanded}
+                onToggleExpand={onToggleExpand}
                 hasActiveFilters={false}
             />
         </QueryClientProvider>
@@ -82,7 +85,8 @@ export async function setup(
     return { 
         ...result, 
         input: screen.getByPlaceholderText(/Type to load or enter name to save/i) as HTMLInputElement, 
-        onLoad 
+        onLoad,
+        onToggleExpand
     };
 }
 

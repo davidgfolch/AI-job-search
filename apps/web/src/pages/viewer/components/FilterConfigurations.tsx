@@ -92,10 +92,13 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
                 const sqlInput = document.getElementById('filter-sql') as HTMLInputElement | null;
                 if (sqlInput) {
                     sqlInput.focus();
-                    const targetStr = "initi8|primeit|Acid tango|Kairos|Romeu|Tenth Revolution|mesalvo|impala search|HCLTech|si?ngular|intellecteu|ntasys|knowmad|amaris|Infortec";
-                    const idx = sqlInput.value.indexOf(targetStr);
-                    if (idx !== -1) {
-                        sqlInput.setSelectionRange(idx, idx + targetStr.length);
+                    const match = sqlInput.value.match(/rlike\s+'([^']*)'/);
+                    const targetStr = match ? match[1] : '';
+                    if (targetStr) {
+                        const idx = sqlInput.value.indexOf(targetStr);
+                        if (idx !== -1) {
+                            sqlInput.setSelectionRange(idx, idx + targetStr.length);
+                        }
                     }
                 }
             }, 100);
