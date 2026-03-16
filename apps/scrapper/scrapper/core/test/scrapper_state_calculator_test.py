@@ -110,3 +110,15 @@ class TestScrapperStateCalculator:
             with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=100000): # Any time
                 with pytest.raises(ValueError):
                     calculator.resolve_timer(3600)
+
+    @pytest.mark.parametrize("name, expected_prefix", [
+        ('Infojobs', 'SCRAPPER_INFOJOBS_RUN_CADENCY_'),
+        ('Linkedin', 'SCRAPPER_LINKEDIN_RUN_CADENCY_'),
+        ('Glassdoor', 'SCRAPPER_GLASSDOOR_RUN_CADENCY_'),
+    ])
+    def test_resolve_timer_uses_correct_prefix(self, mocks, name, expected_prefix):
+        calculator = ScrapperStateCalculator(name, {}, mocks['pm'])
+        with patch('scrapper.core.scrapper_state_calculator.getEnvByPrefix', return_value={}) as mock_get_env:
+            with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=100000):
+                calculator.resolve_timer(3600)
+                mock_get_env.assert_called_once_with(expected_prefix)

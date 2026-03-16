@@ -25,6 +25,7 @@ apps/scrapper/scrapper_state.json
 
 !AI-job-search.code-workspace
 .a0proj/
+*.log
 
 # Playwright
 playwright-report

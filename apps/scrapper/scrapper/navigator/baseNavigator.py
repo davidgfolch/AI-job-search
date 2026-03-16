@@ -62,7 +62,5 @@ class BaseNavigator(ABC):
         return ""
 
     def close(self):
-        if hasattr(self.selenium, 'exit'):
-            self.selenium.exit()
-        elif hasattr(self.selenium, 'close'):
+        if hasattr(self.selenium, 'close'):
             self.selenium.close()

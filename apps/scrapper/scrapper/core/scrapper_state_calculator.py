@@ -12,7 +12,7 @@ class ScrapperStateCalculator:
         self.persistence_manager = persistence_manager
 
     def resolve_timer(self, default_timer: int) -> tuple[int, str]:
-        prefix = f"{self.name.upper()}_RUN_CADENCY_"
+        prefix = f"SCRAPPER_{self.name.upper()}_RUN_CADENCY_"
         current_ts = getDatetimeNow()
         current_hour = datetime.fromtimestamp(current_ts).hour
         env_vars = getEnvByPrefix(prefix)

@@ -78,3 +78,15 @@ class TestBaseNavigator:
         reached_page = navigator.fast_forward_page(start_page=5, total_results=20, jobs_x_page=10)
         assert reached_page == 1
         navigator.click_next_page.assert_not_called()
+
+    def test_close_calls_close_method(self, mock_selenium):
+        mock_selenium.close = MagicMock()
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
+        navigator.close()
+        mock_selenium.close.assert_called_once()
+
+    def test_close_does_not_call_exit_method(self, mock_selenium):
+        mock_selenium.exit = MagicMock()
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
+        navigator.close()
+        mock_selenium.exit.assert_not_called()

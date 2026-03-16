@@ -29,13 +29,13 @@ describe('useStatistics', () => {
 
     it('returns default time range', async () => {
         const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
-        await waitFor(() => expect(result.current.timeRange).toBe('All'));
-        expect(result.current.timeRange).toBe('All');
+        await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
+        expect(result.current.timeRange).toBe('Last 3 months');
     });
 
     it('updates time range', async () => {
         const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
-        await waitFor(() => expect(result.current.timeRange).toBe('All'));
+        await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
             result.current.setTimeRange('Last week');
@@ -46,7 +46,7 @@ describe('useStatistics', () => {
 
     it('updates time range to Last year', async () => {
         const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
-        await waitFor(() => expect(result.current.timeRange).toBe('All'));
+        await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
             result.current.setTimeRange('Last year');
@@ -57,7 +57,7 @@ describe('useStatistics', () => {
 
     it('updates time range to Last 6 months', async () => {
         const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
-        await waitFor(() => expect(result.current.timeRange).toBe('All'));
+        await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
             result.current.setTimeRange('Last 6 months');
@@ -68,7 +68,7 @@ describe('useStatistics', () => {
 
     it('updates time range to Last month', async () => {
         const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
-        await waitFor(() => expect(result.current.timeRange).toBe('All'));
+        await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
             result.current.setTimeRange('Last month');
@@ -79,7 +79,7 @@ describe('useStatistics', () => {
 
     it('updates time range to Last day', async () => {
         const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
-        await waitFor(() => expect(result.current.timeRange).toBe('All'));
+        await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
             result.current.setTimeRange('Last day');
