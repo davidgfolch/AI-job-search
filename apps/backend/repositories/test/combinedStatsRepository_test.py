@@ -63,9 +63,8 @@ def test_get_combined_sources_by_date_df_with_dates():
             call_args = mock_read_sql.call_args
             sql_query = call_args[0][0]
             assert "FROM jobs" in sql_query
-            assert "WHERE created >=" in sql_query
+            assert "CAST(%s AS DATE)" in sql_query
             assert "FROM job_snapshots" in sql_query
-            assert "WHERE original_created_at >=" in sql_query
 
 
 def test_get_combined_sources_by_hour_df_with_dates():

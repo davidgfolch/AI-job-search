@@ -19,9 +19,9 @@ def _base_config(name: str, autorun: bool = True, debug: bool = False) -> Dict[s
 
 
 SCRAPPERS: Dict[str, Dict[str, Any]] = {
+    'Linkedin': {**_base_config('Linkedin'), CLOSE_TAB: True},
     'Infojobs': _base_config('Infojobs'),    # first to solve security filter
     'Tecnoempleo': _base_config('Tecnoempleo'),  # first to solve security filter
-    'Linkedin': {**_base_config('Linkedin'), CLOSE_TAB: True},
     'Glassdoor': _base_config('Glassdoor'),
     'Indeed': _base_config('Indeed'),
 }

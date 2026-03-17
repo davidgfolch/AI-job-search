@@ -64,7 +64,12 @@ const Statistics = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={sourcesDateWide}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="dateCreated" />
+                                <XAxis 
+                                    dataKey="dateCreated" 
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={80}
+                                />
                                 <YAxis />
                                 <RechartsTooltip content={<CustomTooltip />} />
                                 <Legend />

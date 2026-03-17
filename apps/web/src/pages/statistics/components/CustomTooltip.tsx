@@ -4,11 +4,18 @@ interface CustomTooltipProps {
     label?: string;
 }
 
+const formatDate = (dateStr: string | number | undefined): string => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return String(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="custom-tooltip" style={{ backgroundColor: 'white', padding: '10px', border: '1px solid #ccc' }}>
-                <p className="label">{`${label}`}</p>
+            <div style={{ backgroundColor: 'white', padding: '10px', border: '1px solid #ccc', color: "gray" }}>
+                <p style={{ fontWeight: "bold" }}>{formatDate(label)}</p>
                 {payload.map((entry, index) => (
                     <div key={index} style={{ color: entry.color }}>
                         {entry.name}: {entry.value}

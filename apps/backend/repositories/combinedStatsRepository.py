@@ -69,7 +69,51 @@ class CombinedStatsRepository:
         return self._execute(query, jobs_params + snaps_params)
 
     def get_combined_sources_by_date_df(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
-        query, params = self._build_union_query("dateCreated", "date(created)", "dateCreated", "dateCreated", start_date, end_date)
+        if not start_date or not end_date:
+            query = """
+                SELECT dateCreated, source, SUM(total) as total
+                FROM (
+                    SELECT date(created) as dateCreated, web_page as source, COUNT(*) as total FROM jobs GROUP BY dateCreated, source
+                    UNION ALL
+                    SELECT date(original_created_at) as dateCreated, platform as source, COUNT(*) as total FROM job_snapshots GROUP BY dateCreated, source
+                ) combined
+                GROUP BY dateCreated, source
+                ORDER BY dateCreated
+            """
+            params = []
+        else:
+            query = """
+                WITH RECURSIVE date_range AS (
+                    SELECT CAST(%s AS DATE) as dateCreated
+                    UNION ALL
+                    SELECT DATE_ADD(dateCreated, INTERVAL 1 DAY) FROM date_range WHERE dateCreated < CAST(%s AS DATE)
+                ),
+                job_counts AS (
+                    SELECT date(created) as dateCreated, web_page as source, COUNT(*) as total
+                    FROM jobs
+                    WHERE DATE(created) >= CAST(%s AS DATE) AND DATE(created) <= CAST(%s AS DATE)
+                    GROUP BY dateCreated, web_page
+                ),
+                snapshot_counts AS (
+                    SELECT date(original_created_at) as dateCreated, platform as source, COUNT(*) as total
+                    FROM job_snapshots
+                    WHERE DATE(original_created_at) >= CAST(%s AS DATE) AND DATE(original_created_at) <= CAST(%s AS DATE)
+                    GROUP BY dateCreated, platform
+                ),
+                combined_counts AS (
+                    SELECT dateCreated, source, total FROM job_counts
+                    UNION ALL
+                    SELECT dateCreated, source, total FROM snapshot_counts
+                )
+                SELECT
+                    d.dateCreated,
+                    COALESCE(c.source, 'Other') as source,
+                    COALESCE(c.total, 0) as total
+                FROM date_range d
+                LEFT JOIN combined_counts c ON d.dateCreated = c.dateCreated
+                ORDER BY d.dateCreated
+            """
+            params = [start_date, end_date, start_date, end_date, start_date, end_date]
         return self._execute(query, params)
 
     def get_combined_sources_by_hour_df(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:

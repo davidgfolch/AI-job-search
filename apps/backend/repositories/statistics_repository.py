@@ -46,16 +46,39 @@ class StatisticsRepository:
             cnx.close()
 
     def get_sources_by_date_df(self, start_date: str = None, end_date: str = None) -> pd.DataFrame:
-        query = """
-            SELECT
-                date(created) as dateCreated,
-                count(*) as total,
-                web_page as source
-            FROM jobs
-            GROUP BY dateCreated, web_page
-            ORDER BY dateCreated
-        """
-        query, params = self._apply_date_filter(query, start_date, end_date)
+        if not start_date or not end_date:
+            query = """
+                SELECT
+                    date(created) as dateCreated,
+                    count(*) as total,
+                    web_page as source
+                FROM jobs
+                GROUP BY dateCreated, web_page
+                ORDER BY dateCreated
+            """
+            params = []
+        else:
+            query = """
+                WITH RECURSIVE date_range AS (
+                    SELECT %s as dateCreated
+                    UNION ALL
+                    SELECT dateCreated + 1 FROM date_range WHERE dateCreated < %s
+                ),
+                job_counts AS (
+                    SELECT date(created) as dateCreated, web_page as source, COUNT(*) as total
+                    FROM jobs
+                    WHERE created >= %s AND created <= %s
+                    GROUP BY dateCreated, web_page
+                )
+                SELECT
+                    d.dateCreated,
+                    COALESCE(j.source, 'Other') as source,
+                    COALESCE(j.total, 0) as total
+                FROM date_range d
+                LEFT JOIN job_counts j ON d.dateCreated = j.dateCreated
+                ORDER BY d.dateCreated
+            """
+            params = [start_date, end_date, start_date, end_date + " 23:59:59"]
         cnx = getConnection()
         try:
             return pd.read_sql(query, cnx, params=params)
