@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 import { mockFilters, setup, configureMockServiceBehavior } from '../../../test/FilterConfigurationsTestUtils.tsx';
 
 describe('FilterConfigurations Saving', () => {
     const isLoadedRef = { value: false };
 
-    beforeEach(() => {
-        configureMockServiceBehavior(isLoadedRef);
-    });
+    beforeAll(() => vi.stubGlobal('console', { ...console, error: vi.fn() }));
+    beforeEach(() => configureMockServiceBehavior(isLoadedRef));
 
     afterEach(() => {
         vi.restoreAllMocks();

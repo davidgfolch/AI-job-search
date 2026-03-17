@@ -1,16 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { fetchDdlSchema, getModalityValues } from '../DdlApi';
 import type { DdlSchemaResponse } from '../DdlApi';
-
-const mockApiClient = vi.hoisted(() => ({
-  get: vi.fn(),
-}));
 
 vi.mock('../ApiClient', () => ({
   default: mockApiClient,
 }));
 
+const mockApiClient = vi.hoisted(() => ({
+  get: vi.fn(),
+}));
+
 describe('DdlApi', () => {
+  beforeAll(() => vi.stubGlobal('console', { ...console, error: vi.fn() }));
   beforeEach(() => {
     vi.clearAllMocks();
   });

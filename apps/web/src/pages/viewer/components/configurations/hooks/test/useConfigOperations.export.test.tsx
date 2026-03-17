@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useConfigOperations } from '../useConfigOperations';
 import type { FilterConfig } from '../useFilterConfigurations';
 
 describe('useConfigOperations - exportToDefaults', () => {
+    beforeAll(() => vi.stubGlobal('console', { ...console, error: vi.fn() }));
     const createMockService = (overrides = {}) => ({
         save: vi.fn().mockResolvedValue(undefined),
         export: vi.fn().mockResolvedValue([]),

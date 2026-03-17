@@ -1,20 +1,19 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import Filters from '../Filters';
 import type { JobListParams } from '../../api/ViewerApi';
 import { createMockFilters } from '../../test/test-utils';
 
-vi.mock('../../hooks/FilterConfigService', () => {
-    return {
-        FilterConfigService: class {
-            load = vi.fn().mockResolvedValue([]);
-            save = vi.fn().mockResolvedValue(undefined);
-        }
+vi.mock('../../hooks/FilterConfigService', () => ({
+    FilterConfigService: class {
+        load = vi.fn().mockResolvedValue([]);
+        save = vi.fn().mockResolvedValue(undefined);
     }
-});
+}));
 
 describe('Filters', () => {
+    beforeAll(() => vi.stubGlobal('console', { ...console, error: vi.fn() }));
     const mockFilters = createMockFilters();
 
     let onFiltersChangeMock: (filters: Partial<JobListParams>) => void;

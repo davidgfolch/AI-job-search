@@ -26,6 +26,7 @@ const byCompanyConfigs = {
 describe('FilterConfigurations Interactions', () => {
     const isLoadedRef = { value: false };
 
+    beforeAll(() => vi.stubGlobal('console', { ...console, error: vi.fn() }));
     beforeEach(() => configureMockServiceBehavior(isLoadedRef));
     afterEach(() => vi.restoreAllMocks());
 

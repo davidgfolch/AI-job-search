@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { useSqlEditor } from '../useSqlEditor';
 import * as ddlApi from '../../../../api/DdlApi';
 
@@ -12,6 +12,7 @@ vi.mock('../../../../utils/sqlEditorUtils', async () => {
 });
 
 describe('useSqlEditor', () => {
+    beforeAll(() => vi.stubGlobal('console', { ...console, error: vi.fn() }));
     const mockSchema = { tables: { users: ['id', 'name'], jobs: ['title'] }, keywords: ['SELECT', 'FROM'] };
     const textareaRef = { current: { value: '', selectionStart: 0, focus: vi.fn(), setSelectionRange: vi.fn() } as unknown as HTMLTextAreaElement };
 
