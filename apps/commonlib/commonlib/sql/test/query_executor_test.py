@@ -61,9 +61,9 @@ class TestQueryExecutor:
                 result = query_executor.get_table_ddl_column_names('jobs')
                 assert result == ['id', 'title', 'company']
 
-    def test_execute_query_returns_none_on_exception(self, query_executor):
-        """_execute_query should return None on exception."""
+    def test_execute_query_raises_exception(self, query_executor):
+        """_execute_query should propagate exception."""
         with patch.object(query_executor, '_get_cursor') as mock_cursor:
             mock_cursor.side_effect = Exception('DB error')
-            result = query_executor._execute_query(lambda c: c.execute('SELECT 1'))
-            assert result is None
+            with pytest.raises(Exception, match='DB error'):
+                query_executor._execute_query(lambda c: c.execute('SELECT 1'))

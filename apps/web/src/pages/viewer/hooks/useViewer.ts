@@ -13,8 +13,11 @@ export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
     const { data: modalityValues = [] } = useModalityValues();
     const {
-        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error, handleLoadMore, setIsLoadingMore, hardRefresh
+        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error: queryError, handleLoadMore, setIsLoadingMore, hardRefresh
     } = useJobsData();
+    const apiError = data?.error; // Error returned from API (e.g., database errors)
+    const [dismissedApiErrors, setDismissedApiErrors] = useState<Set<string>>(new Set());
+    const displayedApiError = apiError && !dismissedApiErrors.has(apiError) ? apiError : null;
     const hasMorePages = allJobs.length < (data?.total || 0) - 1;
     const shouldAutoSelectNextPage = useRef(false);
     const handleLoadMoreWithAutoSelect = () => {
@@ -57,6 +60,18 @@ export const useViewer = () => {
         },
         activeConfigName,
     });
+
+    const handleDismissMessage = () => {
+        setMessage(null);
+        if (displayedApiError) {
+            setDismissedApiErrors(prev => new Set(prev).add(displayedApiError));
+        }
+    };
+
+    // Clear dismissed API errors when filters change
+    useEffect(() => {
+        setDismissedApiErrors(new Set());
+    }, [filters]);
 
     const { isModalOpen: isAppliedModalOpen, openModal: openAppliedModal, handleConfirm: handleAppliedConfirm, handleCancel: handleAppliedCancel } = useAppliedModal({
         selectedJob, allJobs, onJobUpdate: handleJobUpdate,
@@ -116,7 +131,7 @@ export const useViewer = () => {
     return {
         state: { filters, allJobs, selectedJob, activeTab, message, data, selectedIds, selectionMode, confirmModal, activeConfigName, creationSessionId, duplicatedJob, modalityValues,
             appliedModal: { isOpen: isAppliedModalOpen, onConfirm: handleAppliedConfirm, onCancel: handleAppliedCancel } },
-        status: { isLoading: isLoading && (filters.page || 1) === 1, isLoadingMore, error, hasNext, hasPrevious },
+        status: { isLoading: isLoading && (filters.page || 1) === 1, isLoadingMore, error: queryError, apiError: displayedApiError, hasNext, hasPrevious },
         actions: {
             setFilters, setActiveTab, setMessage, selectJob: handleJobSelect, updateJob: handleJobUpdate,
             ignoreJob: () => handleJobUpdate({ ignored: true }), seenJob: () => handleJobUpdate({ seen: true }),
@@ -136,7 +151,7 @@ export const useViewer = () => {
                 setSelectedIds(newSelected);
             },
             toggleSelectAll: () => selectionMode === 'all' ? (setSelectionMode('none'), setSelectedIds(new Set())) : setSelectionMode('all'),
-            ignoreSelected, deleteSelected, setActiveConfigName, closeConfirmModal: () => confirmModal.close(),
+            ignoreSelected, deleteSelected, setActiveConfigName, closeConfirmModal: () => confirmModal.close(), dismissMessage: handleDismissMessage,
             createJob: async (data: Partial<Job>) => {
                 await createMutation.mutateAsync(data);
                 setActiveTab('list'); setFilters(f => ({ ...f, page: 1 })); setCreationSessionId(p => p + 1);

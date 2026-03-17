@@ -30,4 +30,7 @@
     background: var(--error-color);
     color: var(--text-primary);
     border: 1px solid var(--error-color-dark);
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-word;
 }

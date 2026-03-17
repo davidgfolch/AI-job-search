@@ -57,6 +57,7 @@ class JobListResponse(BaseModel):
     total: int
     page: int
     size: int
+    error: Optional[str] = None
 
 class AppliedCompanyJob(BaseModel):
     id: int

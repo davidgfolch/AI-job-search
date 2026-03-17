@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import Messages from '../Messages';
 
 interface MessageContainerProps {
@@ -8,9 +9,11 @@ interface MessageContainerProps {
 }
 
 export default function MessageContainer({ message, error, onDismissMessage }: MessageContainerProps) {
+    const [expanded, setExpanded] = useState(false);
     if (!message && !error) return null;
 
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const isLongError = error && errorMessage.length > 200;
 
     return (
         <>
@@ -18,7 +21,9 @@ export default function MessageContainer({ message, error, onDismissMessage }: M
                 <Messages message={message.text} type={message.type} onDismiss={onDismissMessage} />
             )}
             {error && (
-                <Messages message={errorMessage} type="error" onDismiss={onDismissMessage} />
+                <div onClick={() => isLongError && setExpanded(!expanded)} style={{ maxHeight: expanded ? 'none' : '5rem', overflow: 'hidden' }}>
+                    <Messages message={errorMessage} type="error" onDismiss={onDismissMessage} />
+                </div>
             )}
         </>
     );

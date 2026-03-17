@@ -53,8 +53,8 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                         onCancel={state.appliedModal.onCancel}
                     />
                     <div className="viewer-container">
-                        <MessageContainer message={state.message} error={status.error}
-                            onDismissMessage={() => actions.setMessage(null)} />
+                        <MessageContainer message={state.message} error={status.apiError || status.error}
+                            onDismissMessage={actions.dismissMessage} />
                         <Filters filters={state.filters}
                             onFiltersChange={handleFiltersChange}
                             onMessage={handleMessage} 
@@ -111,7 +111,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                         <div style={{ display: state.activeTab === 'list' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                                             <JobList
                                                 isLoading={status.isLoading}
-                                                error={status.error}
+                                                error={status.apiError || status.error}
                                                 jobs={state.allJobs}
                                                 selectedJob={state.selectedJob}
                                                 onJobSelect={actions.selectJob}

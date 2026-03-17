@@ -100,11 +100,8 @@ class QueryExecutor:
 
     def _execute_query(self, callback: callable):
         """Execute a query callback with cursor management."""
-        try:
-            with self._get_cursor() as (_, cursor):
-                return callback(cursor)
-        except Exception:
-            return None
+        with self._get_cursor() as (_, cursor):
+            return callback(cursor)
 
     def _execute_transaction(self, callback: callable):
         """Execute a callback within a transaction."""

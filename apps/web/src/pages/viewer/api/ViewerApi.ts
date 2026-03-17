@@ -46,6 +46,7 @@ export interface JobListResponse {
   total: number;
   page: number;
   size: number;
+  error?: string;
 }
 
 export interface JobListParams {
