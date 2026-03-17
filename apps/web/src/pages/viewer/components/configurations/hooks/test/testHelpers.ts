@@ -2,18 +2,24 @@ import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
+export const createTestQueryClient = () => new QueryClient({
+    defaultOptions: {
+        queries: { retry: false },
+    },
+});
+
+export const testQueryClient = createTestQueryClient();
+
+export const resetTestQueryClient = () => {
+    testQueryClient.clear();
+};
+
 export const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-            },
-        },
-    });
+    resetTestQueryClient();
     const wrapper = ({ children }: { children: React.ReactNode }) => (
-        React.createElement(QueryClientProvider, { client: queryClient }, children)
+        React.createElement(QueryClientProvider, { client: testQueryClient }, children)
     );
-    return { wrapper, queryClient };
+    return { wrapper, queryClient: testQueryClient };
 };
 
 export const mockSavedConfigs = [
@@ -39,4 +45,5 @@ export const setupMocks = () => {
 export const cleanupMocks = () => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    resetTestQueryClient();
 };

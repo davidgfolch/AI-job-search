@@ -18,20 +18,20 @@ vi.mock('recharts', () => ({
     Bar: () => null,
 }));
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
+const testQueryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+        queries: { retry: false },
     },
-  });
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
+});
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
+);
 
 describe('Statistics - Extended', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        testQueryClient.clear();
         vi.mocked(StatisticsApi.getHistoryStats).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
@@ -40,12 +40,12 @@ describe('Statistics - Extended', () => {
     });
 
     it('renders with all default values', () => {
-        render(<Statistics />, { wrapper: createWrapper() });
+        render(<Statistics />, { wrapper: wrapper });
         expect(screen.getByText('AI Job Search - Statistics')).toBeInTheDocument();
     });
 
     it('renders date range selector with all options', () => {
-        render(<Statistics />, { wrapper: createWrapper() });
+        render(<Statistics />, { wrapper: wrapper });
         const select = screen.getByRole('combobox');
         
         expect(screen.getByText('Last year')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('Statistics - Extended', () => {
     });
 
     it('renders three chart sections', () => {
-        render(<Statistics />, { wrapper: createWrapper() });
+        render(<Statistics />, { wrapper: wrapper });
         
         expect(screen.getByText('Job Postings by Source & Day of Week')).toBeInTheDocument();
         expect(screen.getByText('Job Postings by Source & Created Date')).toBeInTheDocument();
@@ -64,17 +64,17 @@ describe('Statistics - Extended', () => {
     });
 
     it('renders filter config chart section', () => {
-        render(<Statistics />, { wrapper: createWrapper() });
+        render(<Statistics />, { wrapper: wrapper });
         expect(screen.getByText('Filter Configurations & Job Counts')).toBeInTheDocument();
     });
 
     it('renders history chart section', () => {
-        render(<Statistics />, { wrapper: createWrapper() });
+        render(<Statistics />, { wrapper: wrapper });
         expect(screen.getByText('Applied vs Discarded Jobs (History)')).toBeInTheDocument();
     });
 
     it('renders all layout buttons', () => {
-        render(<Statistics />, { wrapper: createWrapper() });
+        render(<Statistics />, { wrapper: wrapper });
         
         expect(screen.getByTitle('Single Column')).toBeInTheDocument();
         expect(screen.getByTitle('Two Columns')).toBeInTheDocument();

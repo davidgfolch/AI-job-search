@@ -12,6 +12,10 @@ vi.mock('../../hooks/FilterConfigService', () => ({
     }
 }));
 
+const testQueryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+});
+
 describe('Filters', () => {
     beforeAll(() => vi.stubGlobal('console', { ...console, error: vi.fn() }));
     const mockFilters = createMockFilters();
@@ -20,15 +24,12 @@ describe('Filters', () => {
 
     beforeEach(() => {
         onFiltersChangeMock = vi.fn();
+        testQueryClient.clear();
     });
 
     const renderAndWait = async (ui: React.ReactElement) => {
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        });
-
         const result = render(
-            <QueryClientProvider client={queryClient}>
+            <QueryClientProvider client={testQueryClient}>
                 {ui}
             </QueryClientProvider>
         );

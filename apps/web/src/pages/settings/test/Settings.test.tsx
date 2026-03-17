@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
 import { groupSettingsByKey, getSubgroupTitle } from '../utils/SettingsUtils';
-import { setupSettingsMocks, resetTestQueryClient, renderWithClient } from './Settings.mocks';
+import { setupSettingsMocks, renderWithClient } from './Settings.mocks';
 
 vi.mock('../api/SettingsApi');
 vi.mock('../utils/SettingsUtils');
@@ -24,7 +24,7 @@ vi.mock('../../common/components/core/MessageContainer', () => ({
 
 describe('Settings', () => {
     beforeEach(() => {
-        resetTestQueryClient();
+        setupSettingsMocks();
     });
 
     const expectMessage = async (msg: string) => {

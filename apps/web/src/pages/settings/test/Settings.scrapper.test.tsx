@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
 import { mockScrapperState } from './Settings.fixtures';
-import { setupSettingsMocks, resetTestQueryClient, renderWithClient } from './Settings.mocks';
+import { setupSettingsMocks, renderWithClient } from './Settings.mocks';
 
 vi.mock('prismjs/components/prism-json', () => ({}));
 vi.mock('prismjs', () => ({
@@ -32,7 +32,7 @@ vi.mock('../../common/components/core/MessageContainer', () => ({
 
 describe('Settings Scrapper State', () => {
     beforeEach(() => {
-        resetTestQueryClient();
+        setupSettingsMocks();
     });
 
     const expectMessage = async (msg: string) => {

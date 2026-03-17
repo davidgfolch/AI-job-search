@@ -5,6 +5,8 @@ import Viewer from "../viewer/Viewer";
 import type { Job } from '../viewer/api/ViewerApi';
 import React from 'react';
 
+const testQueryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
 // --- Constants ---
 export const mockJobs: Job[] = [
     {
@@ -56,10 +58,10 @@ export const mockJobs: Job[] = [
 
 // --- Helpers ---
 export const renderViewer = (initialEntries = ['/']) => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    testQueryClient.clear();
     return render(
         <MemoryRouter initialEntries={initialEntries}>
-            <QueryClientProvider client={client}><Viewer /></QueryClientProvider>
+            <QueryClientProvider client={testQueryClient}><Viewer /></QueryClientProvider>
         </MemoryRouter>
     );
 };
@@ -69,15 +71,8 @@ export const waitForAsync = async () => await act(async () => { await new Promis
 import { vi } from 'vitest';
 
 export const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-            },
-        },
-    });
     return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
     );
 };
 

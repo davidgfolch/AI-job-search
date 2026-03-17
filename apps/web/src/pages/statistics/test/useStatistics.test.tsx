@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStatistics } from '../useStatistics';
@@ -6,20 +6,20 @@ import * as StatisticsApi from '../api/StatisticsApi';
 
 vi.mock('../api/StatisticsApi');
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: { retry: false },
-        },
-    });
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
+const testQueryClient = new QueryClient({
+    defaultOptions: {
+        queries: { retry: false },
+    },
+});
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
+);
 
 describe('useStatistics', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        testQueryClient.clear();
         vi.mocked(StatisticsApi.getHistoryStats).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
@@ -28,13 +28,13 @@ describe('useStatistics', () => {
     });
 
     it('returns default time range', async () => {
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         expect(result.current.timeRange).toBe('Last 3 months');
     });
 
     it('updates time range', async () => {
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
@@ -45,7 +45,7 @@ describe('useStatistics', () => {
     });
 
     it('updates time range to Last year', async () => {
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
@@ -56,7 +56,7 @@ describe('useStatistics', () => {
     });
 
     it('updates time range to Last 6 months', async () => {
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
@@ -67,7 +67,7 @@ describe('useStatistics', () => {
     });
 
     it('updates time range to Last month', async () => {
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
@@ -78,7 +78,7 @@ describe('useStatistics', () => {
     });
 
     it('updates time range to Last day', async () => {
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         await waitFor(() => expect(result.current.timeRange).toBe('Last 3 months'));
         
         await act(async () => {
@@ -89,7 +89,7 @@ describe('useStatistics', () => {
     });
 
     it('returns empty data arrays initially', async () => {
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         await waitFor(() => expect(result.current.historyData).toBeDefined());
         expect(result.current.historyData).toEqual([]);
         expect(result.current.sourcesDateWide).toEqual([]);
@@ -113,7 +113,7 @@ describe('useStatistics', () => {
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue(mockSourcesHourData);
         vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue(mockSourcesWeekdayData);
 
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         
         await waitFor(() => expect(result.current.sourcesDateWide.length).toBeGreaterThan(0));
         expect(result.current.sourcesDateKeys).toContain('LinkedIn');
@@ -124,7 +124,7 @@ describe('useStatistics', () => {
         const mockFilterConfigData = [{ name: 'Config1', count: 10 }];
         vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue(mockFilterConfigData as any);
 
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         
         await waitFor(() => expect(result.current.filterConfigData).toEqual(mockFilterConfigData));
     });
@@ -138,7 +138,7 @@ describe('useStatistics', () => {
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue(mockSourcesHourData);
         vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue(mockSourcesWeekdayData);
 
-        const { result } = renderHook(() => useStatistics(), { wrapper: createWrapper() });
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         
         await waitFor(() => expect(result.current.allSources.length).toBe(3));
         expect(result.current.allSources).toContain('LinkedIn');

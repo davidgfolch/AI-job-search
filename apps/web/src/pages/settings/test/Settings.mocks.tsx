@@ -6,18 +6,11 @@ import { settingsApi } from '../api/SettingsApi';
 import { groupSettingsByKey, getSubgroupTitle } from '../utils/SettingsUtils';
 import { mockGroupedSettings, mockEnvSettings, mockScrapperState } from './Settings.fixtures';
 
-const createTestQueryClient = () => new QueryClient({
+export const createTestQueryClient = () => new QueryClient({
     defaultOptions: {
         queries: { retry: false },
     },
 });
-
-export const testQueryClient = createTestQueryClient();
-
-export const resetTestQueryClient = () => {
-    testQueryClient.clear();
-    setupSettingsMocks();
-};
 
 export const setupSettingsMocks = () => {
     vi.clearAllMocks();
@@ -33,6 +26,7 @@ export const setupSettingsMocks = () => {
 };
 
 export const renderWithClient = (ui: React.ReactElement) => {
+    const testQueryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={testQueryClient}>
             {ui}

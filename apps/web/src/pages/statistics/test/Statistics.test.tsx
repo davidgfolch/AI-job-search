@@ -18,33 +18,34 @@ vi.mock('recharts', () => ({
     Bar: () => null,
 }));
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
+const testQueryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+        queries: { retry: false },
     },
-  });
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
+});
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
+);
 
 describe('Statistics', () => {
-  beforeEach(() => {
-    vi.mocked(StatisticsApi.getHistoryStats).mockResolvedValue([]);
-    vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([]);
-    vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
-    vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
-    vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
-  });
+    beforeEach(() => {
+        vi.clearAllMocks();
+        testQueryClient.clear();
+        vi.mocked(StatisticsApi.getHistoryStats).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
+    });
 
   it('renders statistics page title', () => {
-    render(<Statistics />, { wrapper: createWrapper() });
+    render(<Statistics />, { wrapper: wrapper });
     expect(screen.getByText('AI Job Search - Statistics')).toBeInTheDocument();
   });
 
   it('renders all chart sections', () => {
-    render(<Statistics />, { wrapper: createWrapper() });
+    render(<Statistics />, { wrapper: wrapper });
     expect(screen.getByText('Applied vs Discarded Jobs (History)')).toBeInTheDocument();
     expect(screen.getByText('Job Postings by Source & Created Date')).toBeInTheDocument();
     expect(screen.getByText('Job Postings by Source & Day Time')).toBeInTheDocument();
