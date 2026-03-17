@@ -1,12 +1,19 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EditSkillModal } from '../EditSkillModal';
 
-const queryClient = new QueryClient();
+const testQueryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+});
+
 const renderWithClient = (ui: React.ReactElement) => render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
 );
+
+beforeEach(() => {
+    testQueryClient.clear();
+});
 
 describe('EditSkillModal', () => {
     const mockSkill = { name: 'React', description: 'Lib', learningPath: [] };
@@ -90,7 +97,7 @@ describe('EditSkillModal', () => {
         expect(screen.getByRole('button', { name: /Auto-fill with AI/i })).not.toBeDisabled();
 
         rerender(
-            <QueryClientProvider client={queryClient}>
+            <QueryClientProvider client={testQueryClient}>
                 <EditSkillModal skill={{ ...mockSkill, name: '' }} onSave={vi.fn()} onClose={vi.fn()} />
             </QueryClientProvider>
         );

@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
 import { groupSettingsByKey, getSubgroupTitle } from '../utils/SettingsUtils';
-import { setupSettingsMocks, renderWithClient } from './Settings.mocks';
+import { setupSettingsMocks, resetTestQueryClient, renderWithClient } from './Settings.mocks';
 
 vi.mock('../api/SettingsApi');
 vi.mock('../utils/SettingsUtils');
@@ -24,15 +24,8 @@ vi.mock('../../common/components/core/MessageContainer', () => ({
 
 describe('Settings', () => {
     beforeEach(() => {
-        setupSettingsMocks();
+        resetTestQueryClient();
     });
-
-    const renderSettingsAndWait = async () => {
-        renderWithClient(<Settings />);
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
-    };
 
     const expectMessage = async (msg: string) => {
         await waitFor(() => {
@@ -63,7 +56,6 @@ describe('Settings', () => {
         expect(screen.getByText('System & Base')).toBeInTheDocument();
         expect(screen.getByText('AI Enrichment')).toBeInTheDocument();
 
-        // Values are rendered
         expect(screen.getByDisplayValue('value1')).toBeInTheDocument();
         expect(screen.getByDisplayValue('value2')).toBeInTheDocument();
         expect(screen.getByDisplayValue('value3')).toBeInTheDocument();
@@ -80,25 +72,29 @@ describe('Settings', () => {
 
 
     it('handles env setting update bulk', async () => {
-        await renderSettingsAndWait();
+        renderWithClient(<Settings />);
 
-        // the component binds handleEnvUpdateBulk to the Save buttons in env header and footer
+        await waitFor(() => {
+            expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
+        });
+
         const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });
         
         await userEvent.click(saveBtns[0]);
 
-        // called globally for all envs
         expect(settingsApi.updateEnvSettingsBulk).toHaveBeenCalledTimes(1);
         
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('saved successfully');
-        });
+        await expectMessage('saved successfully');
     });
 
     it('handles env setting update bulk error', async () => {
-        await renderSettingsAndWait();
-
         vi.mocked(settingsApi.updateEnvSettingsBulk).mockRejectedValue(new Error('Save Error'));
+
+        renderWithClient(<Settings />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
+        });
 
         const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });
         
@@ -108,7 +104,12 @@ describe('Settings', () => {
     });
 
     it('allows editing an env setting', async () => {
-        await renderSettingsAndWait();
+        renderWithClient(<Settings />);
+
+        await waitFor(() => {
+            const inputs = screen.getAllByRole('textbox');
+            expect(inputs.length).toBeGreaterThan(0);
+        });
 
         const inputs = screen.getAllByRole('textbox');
         const firstInput = inputs[0] as HTMLInputElement;
@@ -124,14 +125,16 @@ describe('Settings', () => {
             'Other': ['SINGLE_KEY']
         });
         vi.mocked(getSubgroupTitle).mockReturnValue('SINGLE_SUBGROUP');
-        vi.mocked(settingsApi.getEnvSettings).mockResolvedValue({'SINGLE_KEY': 'singlesval'});
-        
-        await renderSettingsAndWait();
+         vi.mocked(settingsApi.getEnvSettings).mockResolvedValue({'SINGLE_KEY': 'singlesval'});
+         
+        renderWithClient(<Settings />);
 
-        expect(screen.getByText('SINGLE_KEY')).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText('SINGLE_KEY')).toBeInTheDocument();
+        });
+
         const singleInput = screen.getByDisplayValue('singlesval');
         
-        // Target single inline item (line 129)
         await userEvent.clear(singleInput);
         await userEvent.type(singleInput, 'newSingle');
         expect(singleInput).toHaveValue('newSingle');
@@ -139,18 +142,18 @@ describe('Settings', () => {
 
 
     it('saves env settings from footer button (line 161)', async () => {
-        await renderSettingsAndWait();
+        renderWithClient(<Settings />);
 
-        // The second save button is usually the footer one in the env settings container
+        await waitFor(() => {
+            const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });
+            expect(saveBtns.length).toBeGreaterThan(1);
+        });
+
         const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });
-        expect(saveBtns.length).toBeGreaterThan(1);
-        
         await userEvent.click(saveBtns[1]);
 
         expect(settingsApi.updateEnvSettingsBulk).toHaveBeenCalled();
         
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('saved successfully');
-        });
+        await expectMessage('saved successfully');
     });
 });

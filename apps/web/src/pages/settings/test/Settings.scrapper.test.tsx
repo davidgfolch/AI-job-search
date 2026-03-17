@@ -1,10 +1,18 @@
-import { screen, waitFor, act } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
 import { mockScrapperState } from './Settings.fixtures';
-import { setupSettingsMocks, renderWithClient } from './Settings.mocks';
+import { setupSettingsMocks, resetTestQueryClient, renderWithClient } from './Settings.mocks';
+
+vi.mock('prismjs/components/prism-json', () => ({}));
+vi.mock('prismjs', () => ({
+    default: {
+        highlight: vi.fn((code) => code),
+        languages: { json: {} },
+    },
+}));
 
 vi.mock('../api/SettingsApi');
 vi.mock('../utils/SettingsUtils');
@@ -24,15 +32,8 @@ vi.mock('../../common/components/core/MessageContainer', () => ({
 
 describe('Settings Scrapper State', () => {
     beforeEach(() => {
-        setupSettingsMocks();
+        resetTestQueryClient();
     });
-
-    const renderSettingsAndWait = async () => {
-        renderWithClient(<Settings />);
-        await waitFor(() => {
-            expect(screen.queryByText('Loading settings...')).not.toBeInTheDocument();
-        });
-    };
 
     const expectMessage = async (msg: string) => {
         await waitFor(() => {
@@ -41,7 +42,12 @@ describe('Settings Scrapper State', () => {
     };
 
     it('handles scrapper state refresh', async () => {
-        await renderSettingsAndWait();
+        renderWithClient(<Settings />);
+
+        await waitFor(() => {
+            expect(screen.getByText('↻ Refresh')).toBeInTheDocument();
+        });
+
         const refreshBtn = screen.getByText('↻ Refresh');
         await userEvent.click(refreshBtn);
         expect(settingsApi.getScrapperState).toHaveBeenCalledTimes(2);
@@ -49,42 +55,57 @@ describe('Settings Scrapper State', () => {
     });
 
     it('handles scrapper state refresh error', async () => {
-        await renderSettingsAndWait();
-        vi.mocked(settingsApi.getScrapperState).mockRejectedValueOnce(new Error('Refresh Error'));
+        vi.mocked(settingsApi.getScrapperState).mockImplementation(() => Promise.reject(new Error('Refresh Error')));
+
+        renderWithClient(<Settings />);
+
+        await waitFor(() => {
+            expect(screen.getByText('↻ Refresh')).toBeInTheDocument();
+        });
+
         const refreshBtn = screen.getByText('↻ Refresh');
         await userEvent.click(refreshBtn);
         await expectMessage('Failed to refresh scrapper state');
     });
 
     it('handles scrapper state save', async () => {
-        await renderSettingsAndWait();
+        renderWithClient(<Settings />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Save', { selector: '.scrapper-save-btn' })).toBeInTheDocument();
+        });
+
         const saveBtn = screen.getByText('Save', { selector: '.scrapper-save-btn' });
         await userEvent.click(saveBtn);
         expect(settingsApi.updateScrapperState).toHaveBeenCalledWith(mockScrapperState);
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Scrapper state saved successfully');
-        });
+        await expectMessage('Scrapper state saved successfully');
     });
 
     it('handles scrapper state invalid JSON error', async () => {
-        await renderSettingsAndWait();
+        renderWithClient(<Settings />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Save', { selector: '.scrapper-save-btn' })).toBeInTheDocument();
+        });
+
         const textarea = document.querySelector('.scrapper-editor textarea') as HTMLTextAreaElement;
         await userEvent.clear(textarea);
         await userEvent.type(textarea, 'invalid json');
         const saveBtn = screen.getByText('Save', { selector: '.scrapper-save-btn' });
-        await act(async () => {
-            await userEvent.click(saveBtn);
-        });
+        await userEvent.click(saveBtn);
         await expectMessage('Invalid JSON format for scrapper state');
     });
 
     it('dismisses message container', async () => {
-        await renderSettingsAndWait();
+        renderWithClient(<Settings />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Save', { selector: '.scrapper-save-btn' })).toBeInTheDocument();
+        });
+
         const saveBtn = screen.getByText('Save', { selector: '.scrapper-save-btn' });
         await userEvent.click(saveBtn);
-        await waitFor(() => {
-            expect(screen.getByTestId('message-container')).toHaveTextContent('Scrapper state saved successfully');
-        });
+        await expectMessage('Scrapper state saved successfully');
         await userEvent.click(screen.getByTestId('message-container'));
         await waitFor(() => {
             expect(screen.queryByTestId('message-container')).not.toBeInTheDocument();
