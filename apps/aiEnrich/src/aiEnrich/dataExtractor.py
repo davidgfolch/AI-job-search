@@ -35,16 +35,10 @@ def get_timeout_job() -> int:
 VERBOSE = False
 DEBUG = False
 LLM_CFG = LLM(
-    # model="ollama/gemma3",
-    model="ollama/llama3.2",
-    # model="ollama/glm4",
-    # model="ollama/granite4",
-    # model="ollama/nuextract",  # hangs on local ollama
-    # model="ollama/deepseek-r1:8b",  # no GPU inference
+    model=getEnv("AI_ENRICH_OLLAMA_MODEL", "ollama/qwen2.5:3b"),
     base_url=get_ollama_base_url(),
     temperature=0,
 )
-
 
 stopWatch = StopWatch()
 # global counter for total processed jobs across runs

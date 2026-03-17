@@ -16,11 +16,11 @@ select title, company, location, url, markdown , salary, required_technologies, 
 -- update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
 
 update jobs set ai_enriched=0, salary=NULL, required_technologies=NULL, optional_technologies=NULL, modality=null
-WHERE modality is null
-LIMIT 20;
-/* and required_technologies like 'Jms%'
- AND DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 8 HOUR)
- */
+-- WHERE modality is null
+-- LIMIT 20;
+
+ AND DATE(created) >= '2026-03-18 15:50:00'
+ -- AND DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 8 HOUR)
 
 /* and id=506471 */
 /* where id=XXXXXXXX */

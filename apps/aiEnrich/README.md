@@ -61,6 +61,29 @@ uv run crewai run
 - **Tasks**: Define your tasks in `src/ai_job_search/config/tasks.yaml`.
 - **CV Matching**: Enable by setting `AI_ENRICH_CV_MATCH=True` in `.env` and placing your CV in `apps/aiEnrich/cv/cv.txt`.
 
+### LLM Model Selection
+
+The default model is `ollama/qwen2.5:3b` (optimized for CPU inference). To change the model, set the `AI_ENRICH_OLLAMA_MODEL` environment variable in your `.env` file:
+
+```bash
+AI_ENRICH_OLLAMA_MODEL=ollama/phi3.5:3b
+```
+
+> or change it in http://localhost:5173/settings (docker with web/backend must be running, see [DOCKER_DEV.md](../READMEs/DOCKER_DEV.md))
+
+**Recommended models for CPU-only inference:**
+
+| Model | Speed | Accuracy |
+|-------|-------|----------|
+| `ollama/qwen2.5:3b` | Fast | Good |
+| `ollama/phi3.5:3b` | Very Fast | Moderate |
+| `ollama/llama3.2:1b` | Fastest | Lower |
+
+Make sure the model is pulled in Ollama:
+```bash
+ollama pull qwen2.5:3b
+```
+
 ## Support
 
 - [crewAI Documentation](https://docs.crewai.com)
