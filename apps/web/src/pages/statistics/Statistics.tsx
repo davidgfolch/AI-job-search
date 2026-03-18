@@ -1,18 +1,19 @@
-import React from 'react';
-import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
-    BarChart, Bar
-} from 'recharts';
+import React, { useState, useRef } from 'react';
 import ChartCard from './components/ChartCard';
-import CustomTooltip from './components/CustomTooltip';
 import StatisticsControls from './components/StatisticsControls';
-import { getColorForSource } from './utils/chartUtils';
+import {
+    renderWeekdayChart, renderDateChart, renderHourChart, renderFilterConfigChart, renderHistoryChart
+} from './utils/statisticsChartRenderers';
 import './Statistics.css';
 import { useStatistics } from './useStatistics';
 import PageHeader from '../common/components/PageHeader';
 
 const Statistics = () => {
-    const [columns, setColumns] = React.useState(3);
+    const [columns, setColumns] = useState(3);
+    const [expandedChart, setExpandedChart] = useState<string | null>(null);
+    const [fullScreenFilters, setFullScreenFilters] = useState<{ timeRange: string; includeOldJobs: boolean } | null>(null);
+    const prevFiltersRef = useRef<{ timeRange: string; includeOldJobs: boolean }>({ timeRange: '', includeOldJobs: false });
+
     const {
         timeRange,
         setTimeRange,
@@ -29,6 +30,33 @@ const Statistics = () => {
         allSources
     } = useStatistics();
 
+    React.useEffect(() => {
+        prevFiltersRef.current = { timeRange, includeOldJobs };
+    }, [timeRange, includeOldJobs]);
+
+    const handleExpandChange = (chartTitle: string | null) => {
+        if (chartTitle) {
+            prevFiltersRef.current = { timeRange, includeOldJobs };
+            setExpandedChart(chartTitle);
+        } else {
+            const prevFilters = prevFiltersRef.current;
+            const filterChanged = fullScreenFilters &&
+                (fullScreenFilters.timeRange !== prevFilters.timeRange ||
+                 fullScreenFilters.includeOldJobs !== prevFilters.includeOldJobs);
+
+            if (filterChanged) {
+                setTimeRange(fullScreenFilters.timeRange);
+                setIncludeOldJobs(fullScreenFilters.includeOldJobs);
+            }
+            setExpandedChart(null);
+            setFullScreenFilters(null);
+        }
+    };
+
+    const handleFilterChange = (newTimeRange: string, newIncludeOldJobs: boolean) => {
+        setFullScreenFilters({ timeRange: newTimeRange, includeOldJobs: newIncludeOldJobs });
+    };
+
     return (
         <div className="statistics-page">
             <PageHeader title="Statistics" />
@@ -42,91 +70,64 @@ const Statistics = () => {
             />
             <main className="statistics-content">
                 <div className="charts-grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` } as React.CSSProperties}>
-                    <ChartCard title="Job Postings by Source & Day of Week">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={sourcesWeekdayWide}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="weekday" 
-                                    tickFormatter={(tick) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][tick - 1] || tick}
-                                />
-                                <YAxis />
-                                <RechartsTooltip content={<CustomTooltip showDateLabel={false} />} />
-                                <Legend />
-                                {sourcesWeekdayKeys.map((key) => (
-                                    <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
-                                ))}
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <ChartCard
+                        title="Job Postings by Source & Day of Week"
+                        chartType="weekday"
+                        parentTimeRange={timeRange}
+                        parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange}
+                        onFilterChange={handleFilterChange}
+                        expandedChart={expandedChart}
+                    >
+                        {(data: any) => renderWeekdayChart(data || sourcesWeekdayWide, sourcesWeekdayKeys, allSources)}
                     </ChartCard>
 
-                    <ChartCard title="Job Postings by Source & Created Date">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={sourcesDateWide}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="dateCreated" 
-                                    angle={-45}
-                                    textAnchor="end"
-                                    height={80}
-                                />
-                                <YAxis />
-                                <RechartsTooltip content={<CustomTooltip />} />
-                                <Legend />
-                                {sourcesDateKeys.map((key) => (
-                                    <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
-                                ))}
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <ChartCard
+                        title="Job Postings by Source & Created Date"
+                        chartType="date"
+                        parentTimeRange={timeRange}
+                        parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange}
+                        onFilterChange={handleFilterChange}
+                        expandedChart={expandedChart}
+                    >
+                        {(data: any) => renderDateChart(data || sourcesDateWide, sourcesDateKeys, allSources)}
                     </ChartCard>
 
-                    <ChartCard title="Job Postings by Source & Day Time">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={sourcesHourWide}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="hour" />
-                                <YAxis />
-                                <RechartsTooltip content={<CustomTooltip showDateLabel={false} />} />
-                                <Legend />
-                                {sourcesHourKeys.map((key) => (
-                                    <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
-                                ))}
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <ChartCard
+                        title="Job Postings by Source & Day Time"
+                        chartType="hour"
+                        parentTimeRange={timeRange}
+                        parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange}
+                        onFilterChange={handleFilterChange}
+                        expandedChart={expandedChart}
+                    >
+                        {(data: any) => renderHourChart(data || sourcesHourWide, sourcesHourKeys, allSources)}
                     </ChartCard>
 
-                    <ChartCard title="Filter Configurations & Job Counts">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={filterConfigData || []}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="name" 
-                                    angle={-45}
-                                    textAnchor="end"
-                                    height={100}
-                                />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Bar dataKey="count" fill="#8884d8" name="Job Count" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <ChartCard
+                        title="Filter Configurations & Job Counts"
+                        chartType="filterConfig"
+                        parentTimeRange={timeRange}
+                        parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange}
+                        onFilterChange={handleFilterChange}
+                        expandedChart={expandedChart}
+                    >
+                        {(data: any) => renderFilterConfigChart(data || filterConfigData || [])}
                     </ChartCard>
 
-                    <ChartCard title="Applied vs Discarded Jobs (History)">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={historyData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="dateCreated" />
-                                <YAxis />
-                                <RechartsTooltip content={<CustomTooltip showDateLabel={true} />} />
-                                <Legend />
-                                <Line type="monotone" dataKey="applied" stroke="#0000ff" name="Applied" />
-                                <Line type="monotone" dataKey="discarded" stroke="#ff0000" name="Discarded" />
-                                <Line type="monotone" dataKey="interview" stroke="#00ff00" name="Interview" />
-                                <Line type="monotone" dataKey="discarded_cumulative" stroke="#ff0000" strokeDasharray="5 5" name="Discarded (Σ)" />
-                                <Line type="monotone" dataKey="interview_cumulative" stroke="#00ff00" strokeDasharray="5 5" name="Interview (Σ)" />
-                            </LineChart>
-                        </ResponsiveContainer>
+                    <ChartCard
+                        title="Applied vs Discarded Jobs (History)"
+                        chartType="history"
+                        parentTimeRange={timeRange}
+                        parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange}
+                        onFilterChange={handleFilterChange}
+                        expandedChart={expandedChart}
+                    >
+                        {(data: any) => renderHistoryChart(data || historyData)}
                     </ChartCard>
 
                 </div>

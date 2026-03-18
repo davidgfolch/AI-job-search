@@ -136,3 +136,17 @@
     min-height: 300px; /* Reduced min-height for grid density */
     flex: 1; /* Allow to grow in flex container */
 }
+
+.fullscreen-controls {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.fullscreen-controls label {
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+}
