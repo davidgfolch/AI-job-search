@@ -23,7 +23,8 @@ Use this skill when you need to implement or run tests. Follow these strict guid
 - **Exceptions**: E2E tests (Playwright) are handled by the `e2e-implementer` skill and live in `apps/e2e`. They use `.spec.ts`.
 
 ## 3. Coding Best Practices
-- **Abstraction**: Avoid duplicated code. Extract common setup, teardown, and helper logic into specialized test files (see Structure above).
+- **Abstraction**: Avoid duplicated code. Extract common setup, teardown and helper logic. If shared between tests or test file is too large, extract into specialized test files.
+- **Parameterized tests**: use parameterized tests when possible.
 - **Constants**: Reuse production code constants. Do NOT duplicate string literals or magic numbers in tests; import them from the production code.
 - **SOLID/KISS**: Keep tests simple and focused.
 - **Performance**: Unit tests MUST execute quickly (under 500ms each).
