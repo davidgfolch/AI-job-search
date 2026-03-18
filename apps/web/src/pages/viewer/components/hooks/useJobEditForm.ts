@@ -117,12 +117,18 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
 
     const handleCreate = () => {
         if (onCreate) {
+            // Build explicit boolean fields object with all keys set to false by default
+            const booleanFields: Record<string, boolean> = {};
+            BOOLEAN_FILTER_KEYS.forEach(key => {
+                booleanFields[key] = statusState[key] ?? false;
+            });
+
             onCreate({
                 title, company, location, salary, url, web_page: webPage,
-                markdown, comments, client, 
-                required_technologies: requiredTechnologies, 
+                markdown, comments, client,
+                required_technologies: requiredTechnologies,
                 optional_technologies: optionalTechnologies,
-                ...statusState
+                ...booleanFields
             });
         }
     };

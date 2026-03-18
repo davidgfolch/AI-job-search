@@ -6,7 +6,8 @@
       "Bash(poetry run pytest:*)",
       "Bash(wc:*)",
       "Bash(xargs:*)",
-      "Bash(find apps:*)"
+      "Bash(find apps:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }
