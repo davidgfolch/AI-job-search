@@ -60,9 +60,9 @@ class StatisticsRepository:
         else:
             query = """
                 WITH RECURSIVE date_range AS (
-                    SELECT %s as dateCreated
+                    SELECT CAST(%s AS DATE) as dateCreated
                     UNION ALL
-                    SELECT dateCreated + 1 FROM date_range WHERE dateCreated < %s
+                    SELECT DATE_ADD(dateCreated, INTERVAL 1 DAY) FROM date_range WHERE dateCreated < CAST(%s AS DATE)
                 ),
                 job_counts AS (
                     SELECT date(created) as dateCreated, web_page as source, COUNT(*) as total
