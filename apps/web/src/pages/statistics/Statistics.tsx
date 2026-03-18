@@ -51,7 +51,7 @@ const Statistics = () => {
                                     tickFormatter={(tick) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][tick - 1] || tick}
                                 />
                                 <YAxis />
-                                <RechartsTooltip content={<CustomTooltip />} />
+                                <RechartsTooltip content={<CustomTooltip showDateLabel={false} />} />
                                 <Legend />
                                 {sourcesWeekdayKeys.map((key) => (
                                     <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
@@ -86,7 +86,7 @@ const Statistics = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="hour" />
                                 <YAxis />
-                                <RechartsTooltip content={<CustomTooltip />} />
+                                <RechartsTooltip content={<CustomTooltip showDateLabel={false} />} />
                                 <Legend />
                                 {sourcesHourKeys.map((key) => (
                                     <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
@@ -118,7 +118,7 @@ const Statistics = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="dateCreated" />
                                 <YAxis />
-                                <RechartsTooltip />
+                                <RechartsTooltip content={<CustomTooltip showDateLabel={true} />} />
                                 <Legend />
                                 <Line type="monotone" dataKey="applied" stroke="#0000ff" name="Applied" />
                                 <Line type="monotone" dataKey="discarded" stroke="#ff0000" name="Discarded" />

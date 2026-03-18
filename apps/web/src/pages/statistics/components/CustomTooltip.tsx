@@ -2,6 +2,7 @@ interface CustomTooltipProps {
     active?: boolean;
     payload?: Array<{ color: string; name: string; value: number; payload: { otherDetails?: Record<string, number> } }>;
     label?: string;
+    showDateLabel?: boolean;
 }
 
 const formatDate = (dateStr: string | number | undefined): string => {
@@ -11,11 +12,11 @@ const formatDate = (dateStr: string | number | undefined): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
+const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, showDateLabel = true }) => {
     if (active && payload && payload.length) {
         return (
             <div style={{ backgroundColor: 'white', padding: '10px', border: '1px solid #ccc', color: "gray" }}>
-                <p style={{ fontWeight: "bold" }}>{formatDate(label)}</p>
+                {showDateLabel && <p style={{ fontWeight: "bold" }}>{formatDate(label)}</p>}
                 {payload.map((entry, index) => (
                     <div key={index} style={{ color: entry.color }}>
                         {entry.name}: {entry.value}
