@@ -20,7 +20,7 @@ CSS_SEL_GLOBAL_ALERT_HIDE = 'div.ij-SearchListingPageContent-heading h1'
 # LIST
 # Note: there are some li with advertisements, they don't have the ij-OfferCardContent-description-title-link class'
 CSS_SEL_JOB_LI = 'div.ij-SearchListingPageContent-list ul li.ij-List-item'
-CSS_SEL_JOB_LINK = CSS_SEL_JOB_LI + ' div.sui-AtomCard-info h2 > a'
+CSS_SEL_JOB_LINK = CSS_SEL_JOB_LI + ' div.ij-OfferCardContent h2 > a'
 CSS_SEL_NEXT_PAGE_BUTTON = 'div.ij-Box.ij-SearchListingPageContent-main div.ij-Box.ij-TemplateAdsPage-row.ij-SearchListingPageContent-list div.ij-Box.ij-TemplateAdsPage-row div.ij-ComponentPagination ul.sui-MoleculePagination li.sui-MoleculePagination-item:last-child button.sui-AtomButton.sui-AtomButton--primary.sui-AtomButton--flat.sui-AtomButton--center'
 
 # JOB DETAIL (IN LIST CLICK)
