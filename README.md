@@ -15,16 +15,16 @@ A comprehensive system to search, aggregate, and manage job offers from multiple
 
 This is a monorepo containing several applications and packages:
 
-| Component       | Path                                                 | Description                                       | Tech Stack                   |
-| --------------- | ---------------------------------------------------- | ------------------------------------------------- | ---------------------------- |
-| **Common Lib**  | [`apps/commonlib`](apps/commonlib/README.md)         | Shared Python utilities and database logic.       | Python, Poetry               |
-| **Web UI**      | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.         | React, TypeScript, Vite, npm |
-| **Backend API** | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.               | Python, FastAPI, Poetry      |
-| **Scrapper**    | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                      | Python, Selenium, Poetry     |
-| **AI Enrich**   | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                  | Python, CrewAI, uv           |
-| **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)    | Local AI enrichment using transformers pipeline   | Python, HuggingFace, uv      |
-| **AI Enrich 3** | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
-| **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)    | Local fast CV matching.                           | Python, SentenceTransformers |
+| Component        | Path                                                 | Description                                               | Tech Stack                   |
+| ---------------- | ---------------------------------------------------- | --------------------------------------------------------- | ---------------------------- |
+| **Common Lib**   | [`apps/commonlib`](apps/commonlib/README.md)         | Shared Python utilities and database logic.               | Python, Poetry               |
+| **Web UI**       | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.                 | React, TypeScript, Vite, npm |
+| **Backend API**  | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.                       | Python, FastAPI, Poetry      |
+| **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                              | Python, Selenium, Poetry     |
+| **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                          | Python, CrewAI, uv           |
+| **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)     | Local AI enrichment using transformers pipeline           | Python, HuggingFace, uv      |
+| **AI Enrich 3**  | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
+| **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)     | Local fast CV matching.                                   | Python, SentenceTransformers |
 
 ## Features
 
@@ -37,34 +37,53 @@ This is a monorepo containing several applications and packages:
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
 ## Screenshots
-### UI Management
-![UIScreenShot](READMEs/assets/UIScreenShot.png)
-### AI daemons & fullstack app logs
-![DockerCompose](READMEs/assets/DockerCompose.png)
-### Scrapper
-![Scrapper](READMEs/assets/Scrappers.png)
-### Filters Configurations
-![UIFiltersConfigurations](READMEs/assets/UIFiltersConfigurations.png)
-### Skills Manager
-![UISkillsManager](READMEs/assets/UISkillsManager.png)
-### Skills Edit
-![UISkillsEdit](READMEs/assets/UISkillsEdit.png)
-### Stats
-![UIStats](READMEs/assets/UIStats.png)
-### Stats Filter Configurations
-![UIStatsFilterConfigurations](READMEs/assets/UIStatsFilterConfigurations.png)
-### Settings — Environment Variables
-![UISettings](READMEs/assets/UISettings.png)
-### Settings — Scrapper State
-![UISettingsScrapperState](READMEs/assets/UISettingsScrapperState.png)
 
+### UI Management
+
+![UIScreenShot](READMEs/assets/UIScreenShot.png)
+
+### AI daemons & fullstack app logs
+
+![DockerCompose](READMEs/assets/DockerCompose.png)
+
+### Scrapper
+
+![Scrapper](READMEs/assets/Scrappers.png)
+
+### Filters Configurations
+
+![UIFiltersConfigurations](READMEs/assets/UIFiltersConfigurations.png)
+
+### Skills Manager
+
+![UISkillsManager](READMEs/assets/UISkillsManager.png)
+
+### Skills Edit
+
+![UISkillsEdit](READMEs/assets/UISkillsEdit.png)
+
+### Stats
+
+![UIStats](READMEs/assets/UIStats.png)
+
+### Stats Filter Configurations
+
+![UIStatsFilterConfigurations](READMEs/assets/UIStatsFilterConfigurations.png)
+
+### Settings — Environment Variables
+
+![UISettings](READMEs/assets/UISettings.png)
+
+### Settings — Scrapper State
+
+![UISettingsScrapperState](READMEs/assets/UISettingsScrapperState.png)
 
 ## Getting Started
 
 ### Quick Start
 
 - Copy `scripts/.env.example` to `.env`:
-  - set your creadentials.
+  - set your credentials.
   - set your options (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications `docker-compose up -d`, by default should run only:
   - MySQL
@@ -96,6 +115,7 @@ docker-compose logs -f
 ```
 
 Then run the scrappers in a separate terminal:
+
 ```bash
 ./apps/scrapper/run.sh # or .bat
 ```
@@ -153,8 +173,6 @@ docker compose up -d
 .\apps\backend\run.bat
 .\apps\web\run.bat
 ```
-
-
 
 ## Documentation
 
