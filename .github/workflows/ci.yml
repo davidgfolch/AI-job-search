@@ -56,8 +56,8 @@ jobs:
             mkdir -p coverage_artifacts
             cp coverage/badges.svg coverage_artifacts/coverage.svg
           elif [ "${MODULE}" == "apps/aiEnrich" ]; then
-            uv tool update-shell
-            uv tool install crewai
+            uv sync
+            uv tool install crewai-cli
             crewai install
             uv run coverage run -m pytest
             uv run coverage report -m
