@@ -10,8 +10,9 @@ from ..services.selenium.browser_service import sleep
 from .baseNavigator import BaseNavigator
 
 
-CSS_SEL_LOGIN_USER = '#username, #session_key'
-CSS_SEL_LOGIN_PWD = '#password, #session_password'
+CSS_SEL_LOGIN_USER = 'input[type=email]'
+CSS_SEL_LOGIN_PWD = 'input[type=password]'
+CSS_SEL_LOGIN_BUTTON = 'button[type=button]'
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
 CSS_SEL_MESSAGES_HIDE = 'aside[id="msg-overlay"] header > div.msg-overlay-bubble-header__controls > button'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'div.artdeco-global-alert section.artdeco-global-alert__body button.artdeco-global-alert__dismiss'
@@ -55,13 +56,13 @@ class LinkedinNavigator(BaseNavigator):
             return
         sleep(1, 1)
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_USER)
-        self.selenium.sendKeys(CSS_SEL_LOGIN_USER, user_email)
-        self.selenium.sendKeys(CSS_SEL_LOGIN_PWD, user_pwd)
+        self.selenium.sendKeys(self.selenium.getElms(CSS_SEL_LOGIN_USER).pop(), user_email)
+        self.selenium.sendKeys(self.selenium.getElms(CSS_SEL_LOGIN_PWD).pop(), user_pwd)
         try:
             self.selenium.checkboxUnselect('div.remember_me__opt_in input')
         except Exception:
             print(yellow('Could not click on "remember me" checkbox'))
-        self.selenium.waitAndClick('form button[type=submit]')
+        self.selenium.waitAndClick(self.selenium.getElms(CSS_SEL_LOGIN_BUTTON).pop())
 
     def check_results(self, keywords: str, url: str, remote, location, f_TPR) -> bool:
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)

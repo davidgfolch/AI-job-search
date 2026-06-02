@@ -23,7 +23,7 @@ CSS_SEL_JOB_DETAIL = '#wrapper > section.m-0.pt-5 > div:nth-child(1) > div > div
 CSS_JOB_DETAIL_HEADER = f'{CSS_SEL_JOB_DETAIL} > div.row > div:nth-child(2)'
 CSS_SEL_JOB_TITLE = f'{CSS_JOB_DETAIL_HEADER} > div > h1'
 CSS_SEL_COMPANY = f'{CSS_JOB_DETAIL_HEADER} > a > span[itemprop=name]'
-CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div[itemprop=description] p'
+CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div[itemprop=description] > div'
 # Datos principales de la oferta
 CSS_SEL_JOB_DATA = '#wrapper > section.m-0.pt-5 > div:nth-child(1) > div > div.col-12.col-md-5.col-lg-4.mb-5 > div > ul > li > span:nth-child(1)'
 # CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content button.jobs-apply-button svg[data-test-icon="linkedin-bug-xxsmall"]'
