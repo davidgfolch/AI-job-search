@@ -3,6 +3,9 @@ from unittest.mock import MagicMock, call, patch
 from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
 from selenium.common.exceptions import NoSuchElementException
 
+TEST_URL = "http://url"
+
+
 class TestLinkedinNavigator:
 
     @pytest.fixture
@@ -17,24 +20,20 @@ class TestLinkedinNavigator:
         assert navigator.selenium == mock_selenium
 
     def test_load_page(self, navigator, mock_selenium):
-        navigator.load_page("http://url")
-        mock_selenium.loadPage.assert_called_with("http://url")
+        navigator.load_page(TEST_URL)
+        mock_selenium.loadPage.assert_called_with(TEST_URL)
         mock_selenium.waitUntilPageIsLoaded.assert_called()
 
-    def test_check_login_popup_present(self, navigator, mock_selenium):
-        mock_selenium.waitAndClick_noError.return_value = True
+    @patch('scrapper.navigator.linkedinNavigator.sleep')
+    @pytest.mark.parametrize("popup_present", [True, False])
+    def test_check_login_popup(self, mock_sleep, navigator, mock_selenium, popup_present):
+        mock_selenium.waitAndClick_noError.return_value = popup_present
         callback = MagicMock()
-        with patch('scrapper.navigator.linkedinNavigator.sleep'):
-            result = navigator.check_login_popup(callback)
-            assert result is True
+        result = navigator.check_login_popup(callback)
+        assert result is popup_present
+        if popup_present:
             callback.assert_called_once()
-
-    def test_check_login_popup_not_present(self, navigator, mock_selenium):
-        mock_selenium.waitAndClick_noError.return_value = False
-        callback = MagicMock()
-        with patch('scrapper.navigator.linkedinNavigator.sleep'):
-            result = navigator.check_login_popup(callback)
-            assert result is False
+        else:
             callback.assert_not_called()
 
     def test_login_already_logged_in(self, navigator, mock_selenium):
@@ -42,31 +41,31 @@ class TestLinkedinNavigator:
         navigator.login("user", "pass")
         mock_selenium.sendKeys.assert_not_called()
 
-    def test_login_success(self, navigator, mock_selenium):
+    @patch('scrapper.navigator.linkedinNavigator.sleep')
+    @pytest.mark.parametrize("checkbox_raises_error", [False, True])
+    def test_login(self, mock_sleep, navigator, mock_selenium, checkbox_raises_error):
         mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
-        with patch('scrapper.navigator.linkedinNavigator.sleep'):
-            navigator.login("user", "pass")
-            mock_selenium.sendKeys.assert_any_call(CSS_SEL_LOGIN_USER, 'user')
-            mock_selenium.sendKeys.assert_any_call(CSS_SEL_LOGIN_PWD, 'pass')
+        if checkbox_raises_error:
+            mock_selenium.checkboxUnselect.side_effect = Exception("error")
+        user_elm = MagicMock()
+        pwd_elm = MagicMock()
+        btn_elm = MagicMock()
+        mock_selenium.getElms.side_effect = [[user_elm], [pwd_elm], [btn_elm]]
+        navigator.login("user", "pass")
+        if not checkbox_raises_error:
+            mock_selenium.sendKeys.assert_any_call(user_elm, 'user')
+            mock_selenium.sendKeys.assert_any_call(pwd_elm, 'pass')
             mock_selenium.checkboxUnselect.assert_called_with('div.remember_me__opt_in input')
-            mock_selenium.waitAndClick.assert_called_with('form button[type=submit]')
+        mock_selenium.waitAndClick.assert_called_with(btn_elm)
 
-    def test_login_checkbox_fail_handled(self, navigator, mock_selenium):
-        mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
-        mock_selenium.checkboxUnselect.side_effect = Exception("error")
-        with patch('scrapper.navigator.linkedinNavigator.sleep'):
-            navigator.login("user", "pass") # Should not crash
-            mock_selenium.waitAndClick.assert_called_with('form button[type=submit]')
-
-    def test_check_results_found(self, navigator, mock_selenium):
-        mock_selenium.getElms.return_value = []
+    @pytest.mark.parametrize("getElms_return, expected", [
+        ([], True),
+        (['element'], False),
+    ])
+    def test_check_results(self, navigator, mock_selenium, getElms_return, expected):
+        mock_selenium.getElms.return_value = getElms_return
         result = navigator.check_results("key", "url", False, "loc", "tpr")
-        assert result is True
-
-    def test_check_results_not_found(self, navigator, mock_selenium):
-        mock_selenium.getElms.return_value = ['element']
-        result = navigator.check_results("key", "url", False, "loc", "tpr")
-        assert result is False
+        assert result is expected
 
     def test_get_total_results(self, navigator, mock_selenium):
         mock_selenium.getText.return_value = "100+ results"
@@ -98,17 +97,17 @@ class TestLinkedinNavigator:
         assert result is True
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
 
-    def test_load_job_detail_already_exists(self, navigator, mock_selenium):
-        navigator.load_job_detail(True, 1, "css")
-        mock_selenium.waitAndClick.assert_not_called()
-
-    def test_load_job_detail_idx_1(self, navigator, mock_selenium):
-        navigator.load_job_detail(False, 1, "css")
-        mock_selenium.waitAndClick.assert_not_called()
-
-    def test_load_job_detail_loading(self, navigator, mock_selenium):
-        navigator.load_job_detail(False, 2, "css")
-        mock_selenium.waitAndClick.assert_called_with("css")
+    @pytest.mark.parametrize("already_exists, idx, should_click", [
+        (True, 1, False),
+        (False, 1, False),
+        (False, 2, True),
+    ])
+    def test_load_job_detail(self, navigator, mock_selenium, already_exists, idx, should_click):
+        navigator.load_job_detail(already_exists, idx, "css")
+        if should_click:
+            mock_selenium.waitAndClick.assert_called_with("css")
+        else:
+            mock_selenium.waitAndClick.assert_not_called()
 
 
 
@@ -119,7 +118,7 @@ class TestLinkedinNavigator:
         # We need to provide enough side effects or valid return values.
         # calls: getText(title_sel) -> "Title", getText(company_sel) -> "Company", getText(location_sel) -> "Location", getText(button) -> "Preference"
         mock_selenium.getText.side_effect = ["Title", "Company", "Location", "Preference"]
-        mock_selenium.getAttr.return_value = "http://url"
+        mock_selenium.getAttr.return_value = TEST_URL
         mock_selenium.getHtml.return_value = "job_html"
         
         t, c, l, u, h = navigator.getJobInList(0)
@@ -128,7 +127,7 @@ class TestLinkedinNavigator:
 
     def test_getJobInList(self, navigator, mock_selenium):
         mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
-        mock_selenium.getAttr.return_value = "http://url"
+        mock_selenium.getAttr.return_value = TEST_URL
         mock_selenium.getHtml.return_value = "html"
         
         t, c, l, u, h = navigator.getJobInList(0)
@@ -136,17 +135,17 @@ class TestLinkedinNavigator:
         assert t == "Title"
         assert c == "Company"
         assert l == "Location"
-        assert u == "http://url"
+        assert u == TEST_URL
         assert h == "html"
         mock_selenium.getAttr.assert_called()
 
-    def test_check_easy_apply_true(self, navigator, mock_selenium):
-        mock_selenium.getElms.return_value = ["yes"]
-        assert navigator.check_easy_apply() is True
-
-    def test_check_easy_apply_false(self, navigator, mock_selenium):
-        mock_selenium.getElms.return_value = []
-        assert navigator.check_easy_apply() is False
+    @pytest.mark.parametrize("getElms_return, expected", [
+        (["yes"], True),
+        ([], False),
+    ])
+    def test_check_easy_apply(self, navigator, mock_selenium, getElms_return, expected):
+        mock_selenium.getElms.return_value = getElms_return
+        assert navigator.check_easy_apply() is expected
 
     def test_collapse_messages(self, navigator, mock_selenium):
         navigator.collapse_messages()
@@ -154,7 +153,7 @@ class TestLinkedinNavigator:
 
     def test_getJobInList_directUrl(self, navigator, mock_selenium):
         mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
-        mock_selenium.getAttr.return_value = "http://url"
+        mock_selenium.getAttr.return_value = TEST_URL
         mock_selenium.getHtml.return_value = "html"
         
         t, c, l, u, h = navigator.getJobInList_directUrl()
@@ -162,7 +161,7 @@ class TestLinkedinNavigator:
         assert t == "Title"
         assert c == "Company"
         assert l == "Location"
-        assert u == "http://url"
+        assert u == TEST_URL
         assert h == "html"
         mock_selenium.getAttr.assert_called()
 
