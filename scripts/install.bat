@@ -18,7 +18,6 @@ for /d %%a in (apps\*) do (
         ) else if "%%~nxa" == "aiEnrich" (
             pushd "%%~fa"
             call uv sync
-            call uv tool install --force crewai
             popd
         ) else if "%%~nxa" == "aiEnrichNew" (
             pushd "%%~fa"
