@@ -80,16 +80,39 @@ This is a monorepo containing several applications and packages:
 
 ## Getting Started
 
+### Docker Compose Profiles
+
+The `docker-compose.yml` defines several service profiles to control which containers start:
+
+| Profile        | Services                          | Description                      |
+| -------------- | --------------------------------- | -------------------------------- |
+| _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher` | Unprofiled core services (always start) |
+| `aienrich`     | `aienrich`                        | CrewAI AI enrichment (started via `COMPOSE_PROFILES=aienrich` in `.env`) |
+| `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
+| `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
+| `aiformfiller` | `aiformfiller`                    | AI form filler backend           |
+| `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
+
+**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`.
+**Default AI enrich** is `aienrich` via `COMPOSE_PROFILES=aienrich` in `.env`. This ensures only one AI enrichment service runs at a time — switch by passing a different `--profile`:
+
+```bash
+docker-compose --profile aiEnrich3 up -d   # aienrich will NOT start
+docker-compose --profile aiEnrichNew up -d # aienrich will NOT start
+docker-compose --profile aiformfiller up -d
+```
+
+The **scrapper** runs as a batch job (not long-running). Start it manually:
+```bash
+docker-compose --profile scrapper run scrapper
+```
+
 ### Quick Start
 
 - Copy `scripts/.env.example` to `.env`:
   - set your credentials.
   - set your options (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
-- Run dockerized applications `docker-compose up -d`, by default should run only:
-  - MySQL
-  - Backend API
-  - Web UI
-  - AiEnrich
+- Run dockerized applications `docker-compose up -d` (starts default services).
 - Run `apps/scrappers/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
 - Run (optional) alternative AI Enrichment tools:
@@ -99,7 +122,7 @@ This is a monorepo containing several applications and packages:
 - Run `aiCvMatcher` (local fast CV matching):
   - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CV_MATCH=True` is in your `.env`.
 
-NOTE: scrapper is not tested in docker yet, so you need to run it manually.
+NOTE: scrapper is not tested in docker yet, so you usually need to run it manually.
 
 ### Installation
 
@@ -179,4 +202,4 @@ docker compose up -d
 - **Installation**: [README_INSTALL.md](READMEs/README_INSTALL.md)
 - **Development**: [README_DEVELOPMENT.md](READMEs/README_DEVELOPMENT.md)
 - **Contributing**: [README_CONTRIBUTE.md](READMEs/README_CONTRIBUTE.md)
-- **Docker**: [DOCKER_DEV.md](DOCKER_DEV.md)
+- **Docker**: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md)

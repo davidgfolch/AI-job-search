@@ -101,6 +101,8 @@ services:
       context: .
       dockerfile: apps/aiEnrich/Dockerfile
     container_name: ai-job-search-aienrich
+    profiles:
+      - aienrich
     volumes:
       - ./apps/aiEnrich:/app/apps/aiEnrich
       - /app/apps/aiEnrich/.venv # Anonymous volume to isolate container venv from host

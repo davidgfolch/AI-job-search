@@ -28,6 +28,14 @@ for /d %%a in (apps\*) do (
             pushd "%%~fa"
             call uv sync
             popd
+        ) else if "%%~nxa" == "aiCvMatcher" (
+            pushd "%%~fa"
+            call uv sync
+            popd
+        ) else if "%%~nxa" == "aiEnrich3" (
+            pushd "%%~fa"
+            call uv sync
+            popd
         ) else (
             pushd "%%~fa"
             call poetry lock
