@@ -89,19 +89,18 @@ The `docker-compose.yml` defines several service profiles to control which conta
 
 | Profile        | Services                          | Description                      |
 | -------------- | --------------------------------- | -------------------------------- |
-| _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher` | Unprofiled core services (always start) |
-| `aienrich`     | `aienrich`                        | CrewAI AI enrichment (started via `COMPOSE_PROFILES=aienrich` in `.env`) |
+| _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller` | Unprofiled core services (always start) |
+| `aienrich`     | `aienrich`                        | CrewAI AI enrichment             |
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
-| `aiformfiller` | `aiformfiller`                    | AI form filler backend (auto-start via `AI_FORM_FILLER_ENABLED=true`) |
 | `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
 
-**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`.
-**Default AI enrich** is `aienrich` via `COMPOSE_PROFILES=aienrich` in `.env`. **`aiformfiller`** auto-starts when `AI_FORM_FILLER_ENABLED=true` (set in `.env`). This ensures only one AI enrichment service runs at a time — switch by passing a different `--profile`:
+**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`.
+Use `--profile` to run alternative AI enrichment services:
 
 ```bash
-docker-compose --profile aiEnrich3 up -d   # aienrich will NOT start
-docker-compose --profile aiEnrichNew up -d # aienrich will NOT start
+docker-compose --profile aiEnrich3 up -d
+docker-compose --profile aiEnrichNew up -d
 ```
 
 The **scrapper** runs as a batch job (not long-running). Start it manually:
@@ -124,7 +123,7 @@ docker-compose --profile scrapper run scrapper
 - Run `aiCvMatcher` (local fast CV matching):
   - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CV_MATCH=True` is in your `.env`.
 - Run `aiFormFiller` (AI-powered form question answerer):
-  - Auto-starts with Docker if `AI_FORM_FILLER_ENABLED=true` in `.env`. Alternatively start manually with `docker-compose --profile aiformfiller up -d` or `.\apps\aiFormFiller\run.bat`
+  - Auto-starts with Docker by default. Alternatively run manually with `.\apps\aiFormFiller\run.bat`.
   - Load the `apps/aiFormFiller/extension/` folder as an unpacked extension in Chrome.
   - Right-click any form field → "Answer with AI".
 

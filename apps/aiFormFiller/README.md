@@ -60,9 +60,9 @@ Or use the run script:
 ./apps/aiFormFiller/run.sh
 ```
 
-### Docker auto-start
+### Docker
 
-Set `AI_FORM_FILLER_ENABLED=true` in `.env` — the service auto-starts with `docker-compose up -d` via the `aiformfiller` profile. Set it to empty to disable.
+The service starts by default with `docker-compose up -d`.
 
 The backend starts on `http://127.0.0.1:8080`. API docs at `/docs`.
 
@@ -94,7 +94,6 @@ Configure via `.env`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AI_FORM_FILLER_ENABLED` | `true` | Set to non-empty to auto-start in Docker via `COMPOSE_PROFILES` |
 | `AI_FORM_PROVIDER` | `local` | `local`, `openai`, `openrouter`, or `auto` |
 | `AI_FORM_HF_MODEL` | `Qwen/Qwen2.5-1.5B-Instruct` | Local HuggingFace model |
 | `OPENAI_API_KEY` | — | OpenAI API key |

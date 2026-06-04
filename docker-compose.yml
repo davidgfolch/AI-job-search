@@ -207,8 +207,6 @@ services:
       context: .
       dockerfile: apps/aiFormFiller/Dockerfile
     container_name: ai-job-search-aiformfiller
-    profiles:
-      - aiformfiller
     volumes:
       - ./apps/aiFormFiller:/app/apps/aiFormFiller
       - /app/apps/aiFormFiller/.venv
