@@ -15,6 +15,10 @@ for /d %%a in (apps\*) do (
             pushd "%%~fa"
             call npm install
             popd
+        ) else if "%%~nxa" == "aiFormFiller" (
+            pushd "%%~fa"
+            call uv sync
+            popd
         ) else if "%%~nxa" == "aiEnrich" (
             pushd "%%~fa"
             call uv sync

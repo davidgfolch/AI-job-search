@@ -195,6 +195,34 @@ services:
     networks:
       - ai-job-search
 
+  # AI Form Filler - AI-powered job application form answerer
+  aiformfiller:
+    build:
+      context: .
+      dockerfile: apps/aiFormFiller/Dockerfile
+    container_name: ai-job-search-aiformfiller
+    profiles:
+      - aiformfiller
+    volumes:
+      - ./apps/aiFormFiller:/app/apps/aiFormFiller
+      - /app/apps/aiFormFiller/.venv
+      - ./apps/commonlib:/app/apps/commonlib
+      - ./.env:/app/.env
+      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=${GLOBAL_TZ}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+
   # Scrapper - Job Scraping Service
   scrapper:
     build:

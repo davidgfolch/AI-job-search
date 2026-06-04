@@ -19,6 +19,8 @@ for dir in apps/*; do
             (cd "$dir" && uv sync)
         elif [ "$(basename "$dir")" == "backend" ]; then
             (cd "$dir" && uv sync)
+        elif [ "$(basename "$dir")" == "aiFormFiller" ]; then
+            (cd "$dir" && uv sync)
         else
             (cd "$dir" && poetry lock && poetry install)
         fi

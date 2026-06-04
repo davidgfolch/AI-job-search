@@ -8,6 +8,7 @@
 ![aiEnrichNew](apps/aiEnrichNew/coverage.svg)
 ![scrapper](apps/scrapper/coverage.svg)
 ![aiCvMatcher](apps/aiCvMatcher/coverage.svg)
+![aiFormFiller](apps/aiFormFiller/coverage.svg)
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 
@@ -25,6 +26,7 @@ This is a monorepo containing several applications and packages:
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)     | Local AI enrichment using transformers pipeline           | Python, HuggingFace, uv      |
 | **AI Enrich 3**  | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
 | **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)     | Local fast CV matching.                                   | Python, SentenceTransformers |
+| **AI Form Filler**| [`apps/aiFormFiller`](apps/aiFormFiller/README.md) | AI-powered form question answerer using CV + preferences. | Python, FastAPI, HuggingFace |
 
 ## Features
 
@@ -33,6 +35,7 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of job offers (salary, skills, work modality)
 - AI enrichment of skills
 - AI CV matching
+- AI Form Filler (browser extension + backend) to answer job application questions using your CV
 - **Settings UI** to manage `.env` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
@@ -90,16 +93,15 @@ The `docker-compose.yml` defines several service profiles to control which conta
 | `aienrich`     | `aienrich`                        | CrewAI AI enrichment (started via `COMPOSE_PROFILES=aienrich` in `.env`) |
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
-| `aiformfiller` | `aiformfiller`                    | AI form filler backend           |
+| `aiformfiller` | `aiformfiller`                    | AI form filler backend (auto-start via `AI_FORM_FILLER_ENABLED=true`) |
 | `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
 
 **Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`.
-**Default AI enrich** is `aienrich` via `COMPOSE_PROFILES=aienrich` in `.env`. This ensures only one AI enrichment service runs at a time — switch by passing a different `--profile`:
+**Default AI enrich** is `aienrich` via `COMPOSE_PROFILES=aienrich` in `.env`. **`aiformfiller`** auto-starts when `AI_FORM_FILLER_ENABLED=true` (set in `.env`). This ensures only one AI enrichment service runs at a time — switch by passing a different `--profile`:
 
 ```bash
 docker-compose --profile aiEnrich3 up -d   # aienrich will NOT start
 docker-compose --profile aiEnrichNew up -d # aienrich will NOT start
-docker-compose --profile aiformfiller up -d
 ```
 
 The **scrapper** runs as a batch job (not long-running). Start it manually:
@@ -121,6 +123,10 @@ docker-compose --profile scrapper run scrapper
   - Alternatively, `docker-compose --profile aiEnrichNew up -d` for the transformers-based engine.
 - Run `aiCvMatcher` (local fast CV matching):
   - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CV_MATCH=True` is in your `.env`.
+- Run `aiFormFiller` (AI-powered form question answerer):
+  - Auto-starts with Docker if `AI_FORM_FILLER_ENABLED=true` in `.env`. Alternatively start manually with `docker-compose --profile aiformfiller up -d` or `.\apps\aiFormFiller\run.bat`
+  - Load the `apps/aiFormFiller/extension/` folder as an unpacked extension in Chrome.
+  - Right-click any form field → "Answer with AI".
 
 NOTE: scrapper is not tested in docker yet, so you usually need to run it manually.
 
@@ -167,6 +173,8 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 ./apps/aiEnrich/run.sh
 # (Local Fast CV Matcher)
 ./apps/aiCvMatcher/run.sh
+# (AI Form Filler backend)
+./apps/aiFormFiller/run.sh
 
 # 4. New UI (Backend + Web)
 ./apps/backend/run.sh
@@ -191,6 +199,8 @@ docker compose up -d
 .\apps\aiEnrich\run.bat
 :: (Local Fast CV Matcher)
 .\apps\aiCvMatcher\run.bat
+:: (AI Form Filler backend)
+.\apps\aiFormFiller\run.bat
 
 :: 4. New UI (Backend + Web)
 .\apps\backend\run.bat

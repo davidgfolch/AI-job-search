@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Form Filler</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>AI Form Filler</h1>
+      <span id="status" class="status-dot disconnected"></span>
+    </header>
+
+    <div class="toolbar">
+      <button id="answer-all-btn" disabled>Answer All</button>
+      <button id="fill-all-btn" disabled>Fill All</button>
+    </div>
+
+    <div id="questions-container"></div>
+
+    <div id="error-section" class="hidden">
+      <div id="error-text" class="error-box"></div>
+    </div>
+
+    <footer>
+      <span id="provider-info"></span>
+    </footer>
+  </div>
+  <script src="panel.js"></script>
+</body>
+</html>
