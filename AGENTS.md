@@ -12,6 +12,7 @@ AI Job Search is a monorepo for scraping, managing, and AI-enriching job offers 
 ```bash
 # Copy environment config (never execute this, I have my credentials in .env)
 cp scripts/.env.example .env
+cp scripts/.env.secrets.example .env.secrets
 
 # Start services with Docker
 docker-compose up -d
@@ -178,8 +179,9 @@ backend ← web (via REST API)
 
 ## Configuration
 
-Environment variables are defined in `.env` (copied from `scripts/.env.example`):
-- `SCRAPPER_*_EMAIL`, `SCRAPPER_*_PWD`: Credentials per job platform
+Environment variables are split across two files:
+- `.env` (config, copied from `scripts/.env.example`): non-sensitive settings (cadencies, flags, URLs, model config)
+- `.env.secrets` (credentials, copied from `scripts/.env.secrets.example`): emails, passwords, API keys
 - `SCRAPPER_*_RUN_CADENCY`: Scraping frequency (e.g., `2h`, `40m`)
 - `SCRAPPER_*_RUN_CADENCY_7-19=40m`: Time-based cadency override for specific hours
 - `SCRAPPER_JOBS_SEARCH`: Comma-separated job search terms

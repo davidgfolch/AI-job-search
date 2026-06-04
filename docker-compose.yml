@@ -39,6 +39,7 @@ services:
       - ./apps/scrapper:/app/apps/scrapper
       - ./scripts:/app/scripts
       - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
     ports:
       - "8000:8000"
     environment:
@@ -67,6 +68,7 @@ services:
       - ./apps/web:/app
       - /app/node_modules # Anonymous volume for node_modules
       - ./.env:/workspace/.env # Mount .env at workspace level
+      - ./.env.secrets:/workspace/.env.secrets
     ports:
       - "5173:5173"
     environment:
@@ -108,6 +110,7 @@ services:
       - /app/apps/aiEnrich/.venv # Anonymous volume to isolate container venv from host
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
     environment:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db
@@ -135,6 +138,7 @@ services:
       - /app/apps/aiEnrichNew/.venv # Anonymous volume to isolate container venv from host
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models (set HF_HOME in .env if needed)
     environment:
       - PYTHONUNBUFFERED=1
@@ -158,6 +162,7 @@ services:
       - /app/apps/aiCvMatcher/.venv # Anonymous volume to isolate container venv from host
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
     environment:
       - PYTHONUNBUFFERED=1
@@ -183,6 +188,7 @@ services:
       - /app/apps/aiEnrich3/.venv # Anonymous volume to isolate container venv from host
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
     environment:
       - PYTHONUNBUFFERED=1
@@ -208,6 +214,7 @@ services:
       - /app/apps/aiFormFiller/.venv
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
     environment:
       - PYTHONUNBUFFERED=1
@@ -233,6 +240,7 @@ services:
       - ./apps/scrapper:/app/apps/scrapper
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
     environment:
       - PYTHONUNBUFFERED=1
       - DISPLAY=:99 # For headless Chrome

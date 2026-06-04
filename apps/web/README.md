@@ -15,7 +15,7 @@ The modern frontend for the AI Job Search application, built with **React**, **T
 
 The Settings page (`/settings`) allows you to manage application configuration without restarting services.
 
-### Environment Variables (`.env`)
+### Environment Variables (`.env` & `.env.secrets`)
 
 Variables are grouped into four logical sections:
 

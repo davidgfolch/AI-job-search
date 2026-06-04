@@ -7,18 +7,25 @@ import threading
 
 env_lock = threading.Lock()
 
-# Resolve .env path relative to this file: 
+# Resolve .env paths relative to this file: 
 # apps/commonlib/commonlib/environmentUtil.py -> ../../../.env (Root)
 ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+ENV_SECRETS_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env.secrets'
 ENV_EXAMPLE_PATH = Path(__file__).resolve().parent.parent.parent.parent / 'scripts' / '.env.example'
+ENV_SECRETS_EXAMPLE_PATH = Path(__file__).resolve().parent.parent.parent.parent / 'scripts' / '.env.secrets.example'
+
+def _get_mtime(path: Path) -> float:
+    return path.stat().st_mtime if path.exists() else 0
 
 def getEnvModified() -> float | None:
-    if not ENV_PATH.exists():
-        return None
-    return ENV_PATH.stat().st_ctime
+    mtime = max(_get_mtime(ENV_PATH), _get_mtime(ENV_SECRETS_PATH))
+    return mtime if mtime > 0 else None
 
 # Initialize module-level state
+print(yellow(f'Loading env from {ENV_PATH}'))
 load_dotenv(dotenv_path=ENV_PATH)
+print(yellow(f'Loading env from {ENV_SECRETS_PATH}'))
+load_dotenv(dotenv_path=ENV_SECRETS_PATH)
 envLastModified = getEnvModified()
 
 def checkEnvReload():
@@ -26,8 +33,9 @@ def checkEnvReload():
     modified = envLastModified == getEnvModified()
     if modified:
         return
-    print(yellow('Reloading .env'))
-    load_dotenv(override=True)
+    print(yellow('Reloading .env and .env.secrets'))
+    load_dotenv(dotenv_path=ENV_PATH, override=True)
+    load_dotenv(dotenv_path=ENV_SECRETS_PATH, override=True)
     envLastModified = getEnvModified()
 
 def getEnv(key: str, default: str = None, required: bool = False) -> str:
@@ -65,15 +73,18 @@ def getEnvByPrefix(prefix: str, required: bool = False) -> dict[str, str]:
     return result
 
 def getEnvAll() -> dict[str, str]:
-    """Returns a dictionary containing all keys from .env.example with their current values from .env (or default from .env.example)"""
-    example_values = dotenv_values(ENV_EXAMPLE_PATH) if ENV_EXAMPLE_PATH.exists() else {}
-    actual_values = dotenv_values(ENV_PATH) if ENV_PATH.exists() else {}
+    """Returns all env vars from both .env.example and .env.secrets.example, overlayed with actual values from .env and .env.secrets"""
+    example_main = dotenv_values(ENV_EXAMPLE_PATH) if ENV_EXAMPLE_PATH.exists() else {}
+    example_secrets = dotenv_values(ENV_SECRETS_EXAMPLE_PATH) if ENV_SECRETS_EXAMPLE_PATH.exists() else {}
+    actual_main = dotenv_values(ENV_PATH) if ENV_PATH.exists() else {}
+    actual_secrets = dotenv_values(ENV_SECRETS_PATH) if ENV_SECRETS_PATH.exists() else {}
+    example_values = {**example_secrets, **example_main}
+    actual_values = {**actual_secrets, **actual_main}
     if not example_values:
         return actual_values
     result = {}
     for k, v in example_values.items():
         result[k] = actual_values.get(k, v) if actual_values.get(k) is not None else v
-    # Inject variables only in .env (if any)
     for k, v in actual_values.items():
         if k not in result:
             result[k] = v

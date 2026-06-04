@@ -36,7 +36,7 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of skills
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
-- **Settings UI** to manage `.env` variables and scrapper state directly from the browser
+- **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
 ## Screenshots
@@ -111,9 +111,9 @@ docker-compose --profile scrapper run scrapper
 
 ### Quick Start
 
-- Copy `scripts/.env.example` to `.env`:
-  - set your credentials.
-  - set your options (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
+- Copy `scripts/.env.example` to `.env` and `scripts/.env.secrets.example` to `.env.secrets`:
+  - set your credentials in `.env.secrets`.
+  - set your options in `.env` (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications `docker-compose up -d` (starts default services).
 - Run `apps/scrappers/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)

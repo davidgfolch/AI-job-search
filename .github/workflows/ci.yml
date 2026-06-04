@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [apps/commonlib, apps/scrapper, apps/aiEnrich, apps/aiEnrichNew, apps/aiEnrich3, apps/aiCvMatcher, apps/aiformfiller, apps/backend, apps/web]
+        module: [apps/commonlib, apps/scrapper, apps/aiEnrich, apps/aiEnrichNew, apps/aiEnrich3, apps/aiCvMatcher, apps/aiFormFiller, apps/backend, apps/web]
     steps:
       - uses: actions/checkout@v4
       
@@ -37,6 +37,7 @@ jobs:
       - name: Install global tools
         run: |
           cp 'scripts/.env.example' .env
+          cp 'scripts/.env.secrets.example' .env.secrets
           curl -LsSf https://astral.sh/uv/install.sh | sh
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -63,7 +64,7 @@ jobs:
             uv run coverage report -m
             uv run coverage xml
             uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ] || [ "${MODULE}" == "apps/aiformfiller" ]; then
+          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ] || [ "${MODULE}" == "apps/aiFormFiller" ]; then
             uv sync
             uv run coverage run -m pytest
             uv run coverage report -m
@@ -106,7 +107,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           changes=false
-          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/aiEnrich3 apps/aiCvMatcher apps/aiformfiller apps/backend apps/web"
+          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/aiEnrich3 apps/aiCvMatcher apps/aiFormFiller apps/backend apps/web"
           read -ra MODULE_ARR <<< "${MODULES}"
           
           for MODULE in "${MODULE_ARR[@]}"; do

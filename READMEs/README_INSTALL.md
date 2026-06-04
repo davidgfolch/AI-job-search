@@ -83,11 +83,12 @@ Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [a
 
 ## Configuration
 
-1. Copy the example environment file:
+1. Copy the example environment files:
    ```bash
    cp scripts/.env.example .env
+   cp scripts/.env.secrets.example .env.secrets
    ```
-2. Edit `.env` with your credentials and configuration.
+2. Edit `.env.secrets` with your credentials and `.env` with your configuration.
 
 ## Database Setup
 

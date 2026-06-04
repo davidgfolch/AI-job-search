@@ -354,20 +354,28 @@ index 0000000..67f10a0
 +        content = data["choices"][0]["message"]["content"]
 +        return json.loads(content)
 diff --git a/scripts/.env.example b/scripts/.env.example
-index a8eaf68..4247787 100644
 --- a/scripts/.env.example
 +++ b/scripts/.env.example
-@@ -40,6 +40,13 @@ INDEED_RUN_CADENCY=3h
- GMAIL_EMAIL=your-gmail@gmail.com
- GMAIL_APP_PASSWORD=your-16-digit-app-password
- 
-+# LLM Scraping Configuration (LinkedIn hybrid approach)
+@@ -72,6 +72,10 @@ SHAKERS_RUN_CADENCY=3h
+ # LLM Scraping Configuration (LinkedIn hybrid approach)
 +LINKEDIN_USE_LLM=False
 +LLM_PROVIDER=zhipu # Options: zhipu, ollama, huggingface
 +LLM_MODEL=glm-4-flash # Zhipu: glm-4-flash | Ollama: qwen2.5-coder:7b | HF: Qwen/Qwen2.5-72B-Instruct
-+ZHIPU_API_KEY=your-zhipu-api-key # Get at https://open.bigmodel.cn/ (GLM-4-Flash is free)
-+HF_TOKEN=your-huggingface-token # Get at https://huggingface.co/settings/tokens
 +
- # Scrapper options
- SCRAPPER_RUN_IN_TABS=False  # Run each scrapper in different tabs and keeps browser open (to avoid solve security filters by hand)
- SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=True  # Use undetected-chromedriver to bypass Cloudflare/bot detection (requires Chrome installed) (recommended for Infojobs, Glassdoor)
+ # =============================================================================
+ # aiEnrich (CrewAI + Ollama)
+ # =============================================================================
+ 
+diff --git a/scripts/.env.secrets.example b/scripts/.env.secrets.example
+--- a/scripts/.env.secrets.example
++++ b/scripts/.env.secrets.example
+@@ -23,6 +23,9 @@ SHAKERS_PWD=yyyyy
+ # =============================================================================
+ # AI Provider API Keys (optional, commented by default)
+ # =============================================================================
+ # OPENAI_API_KEY=sk-...
+ # OPENROUTER_API_KEY=sk-...
++
++# LLM Scraping API Keys (LinkedIn hybrid approach)
++ZHIPU_API_KEY=your-zhipu-api-key       # Get at https://open.bigmodel.cn/ (GLM-4-Flash is free)
++HF_TOKEN=your-huggingface-token         # Get at https://huggingface.co/settings/tokens
