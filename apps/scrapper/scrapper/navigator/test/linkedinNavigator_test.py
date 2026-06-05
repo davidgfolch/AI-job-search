@@ -148,6 +148,7 @@ class TestLinkedinNavigator:
         assert navigator.check_easy_apply() is expected
 
     def test_collapse_messages(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = [MagicMock()]
         navigator.collapse_messages()
         mock_selenium.waitAndClick_noError.assert_called()
 
