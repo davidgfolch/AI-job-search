@@ -110,3 +110,103 @@ class TestGmailService:
                 with GmailService() as service:
                     assert service.email == "test@gmail.com"
                     assert service.app_password == "test_password"
+
+    def test_connect_without_credentials(self):
+        """Test connect fails when credentials missing"""
+        service = GmailService()
+        service.email = None
+        service.app_password = None
+        result = service.connect()
+        assert result is False
+        assert service._is_connected is False
+
+    def test_connect_exception(self):
+        """Test connect handles exception gracefully"""
+        service = GmailService(email="test@gmail.com", app_password="pass")
+        with patch('scrapper.services.gmail.generic_gmail_service.EmailReader') as mock_reader:
+            mock_reader.side_effect = Exception("Connection failed")
+            result = service.connect()
+            assert result is False
+            assert service._is_connected is False
+
+    def test_connect_success(self):
+        """Test connect succeeds"""
+        service = GmailService(email="test@gmail.com", app_password="pass")
+        with patch('scrapper.services.gmail.generic_gmail_service.EmailReader') as mock_reader:
+            mock_reader_instance = Mock()
+            mock_reader.return_value = mock_reader_instance
+            result = service.connect()
+            assert result is True
+            assert service._is_connected is True
+            mock_reader_instance.connect.assert_called_once()
+
+    def test_wait_for_verification_code_already_connected(self):
+        """Test wait for verification code when already connected"""
+        service = GmailService(email="test@gmail.com", app_password="pass")
+        service._is_connected = True
+        service.email_reader = Mock()
+        service.email_reader.get_latest_verification_code.return_value = "654321"
+        result = service.wait_for_verification_code("sender@example.com", timeout=60)
+        assert result == "654321"
+        service.email_reader.get_latest_verification_code.assert_called_with("sender@example.com", 60)
+
+    def test_wait_for_verification_code_connect_fails(self):
+        """Test wait for verification code raises when connect fails"""
+        service = GmailService(email="test@gmail.com", app_password="pass")
+        service._is_connected = False
+        with patch.object(service, 'connect', return_value=False):
+            with pytest.raises(GmailConnectionError):
+                service.wait_for_verification_code("sender@example.com")
+
+    def test_wait_for_verification_code_re_raises_gmail_error(self):
+        """Test GmailConnectionError is re-raised"""
+        service = GmailService(email="test@gmail.com", app_password="pass")
+        service._is_connected = True
+        service.email_reader = Mock()
+        service.email_reader.get_latest_verification_code.side_effect = GmailConnectionError("conn err")
+        with pytest.raises(GmailConnectionError):
+            service.wait_for_verification_code("sender@example.com")
+
+    def test_extract_code_from_email_raises_verification_error(self):
+        """Test extract_code_from_email raises VerificationCodeExtractionError"""
+        service = GmailService()
+        service.email_reader = Mock()
+        service.email_reader.extract_verification_code_from_subject.side_effect = Exception("no code")
+        with pytest.raises(Exception):
+            service.extract_code_from_email("subject")
+
+    def test_close_without_email_reader(self):
+        """Test close when email_reader is None"""
+        service = GmailService(email="test@gmail.com", app_password="pass")
+        service.email_reader = None
+        service.close()
+        assert service._is_connected is False
+
+    def test_close_exception(self):
+        """Test close handles exception"""
+        service = GmailService(email="test@gmail.com", app_password="pass")
+        service._is_connected = True
+        service.email_reader = Mock()
+        service.email_reader.close.side_effect = Exception("close error")
+        service.close()
+
+    def test_context_manager_enter_failure(self):
+        """Test context manager raises when connect fails"""
+        with patch("scrapper.services.gmail.generic_gmail_service.getEnv") as mock_getEnv:
+            mock_getEnv.return_value = None
+            with pytest.raises(GmailConnectionError):
+                with GmailService():
+                    pass
+
+    def test_context_manager_exit(self):
+        """Test context manager exit calls close"""
+        with patch("scrapper.services.gmail.generic_gmail_service.getEnv") as mock_getEnv:
+            mock_getEnv.side_effect = lambda key, default=None: {
+                "GMAIL_EMAIL": "test@gmail.com",
+                "GMAIL_APP_PASSWORD": "test_password",
+            }.get(key, default)
+            with patch.object(GmailService, "connect", return_value=True):
+                with patch.object(GmailService, "close") as mock_close:
+                    with GmailService() as service:
+                        pass
+                    mock_close.assert_called_once()
