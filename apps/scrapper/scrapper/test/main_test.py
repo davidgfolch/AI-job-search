@@ -6,6 +6,8 @@ from scrapper.main import main, hasArgument
 def mocks():
     with patch('scrapper.main.SeleniumService') as mock_selenium_cls, \
          patch('scrapper.main.PersistenceManager') as mock_pm_cls, \
+         patch('scrapper.main.MysqlUtil') as mock_mysql_cls, \
+         patch('scrapper.main.getConnection') as mock_conn, \
          patch('scrapper.main.process_page_url') as mock_process_url, \
          patch('scrapper.main.ScrapperScheduler') as mock_scheduler_cls, \
          patch('scrapper.main.getSrcPath', return_value='/src/path'):
