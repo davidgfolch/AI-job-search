@@ -136,6 +136,18 @@ CREATE TABLE if not exists `job_snapshots` (
 
 
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `scrapper_state`
+--
+CREATE TABLE IF NOT EXISTS `scrapper_state` (
+  `site` varchar(100) NOT NULL,
+  `state` JSON NOT NULL,
+  `created` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `modified` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`site`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

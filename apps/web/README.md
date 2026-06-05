@@ -29,11 +29,11 @@ Variables are grouped into four logical sections:
 - Fields containing `PWD`, `PASSWORD`, or `EMAIL` are rendered as **password inputs**.
 - Each group has a dedicated **Save** button in the group header. A global **Save** button is also available in the section header and footer to save all groups at once.
 
-### Scrapper State (`scrapper_state.json`)
+### Scrapper State
 
 - Displays the current scrapper state as editable JSON in a textarea.
-- **Refresh** button (↻) reloads the file from the backend without saving.
-- **Save** button persists your edits back to `scrapper_state.json`.
+- **Refresh** button (↻) reloads the state from the backend via `GET /settings/scrapper-state`.
+- **Save** button persists your edits to the shared MySQL database via `POST /settings/scrapper-state`.
 
 ## Tech Stack
 

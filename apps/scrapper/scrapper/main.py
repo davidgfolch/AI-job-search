@@ -3,6 +3,7 @@ from typing import Callable, Union, Optional
 
 from commonlib.fileSystemUtil import getSrcPath
 from commonlib.terminalColor import cyan, red, yellow
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.executor.executor_factory import process_page_url
@@ -47,7 +48,9 @@ def main(args):
         startingAt = None
 
     with SeleniumService(debug=False) as seleniumUtil:
-        persistenceManager = PersistenceManager()
+        persistenceManager = PersistenceManager(
+            repository=MysqlUtil(getConnection())._scrapper_state_repository
+        )
         seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
         scheduler = ScrapperScheduler(persistenceManager, seleniumUtil)
         if len(args) == 1 or starting or wait:

@@ -1,6 +1,5 @@
-import json
 import pytest
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, MagicMock
 import services.settings_service as settings_service
 
 ENV_DATA = {"KEY_A": "val_a", "KEY_B": "val_b"}
@@ -34,33 +33,23 @@ def test_update_env_settings_bulk(mock_get_all):
         assert result == ENV_DATA
 
 
-@patch("services.settings_service.SCRAPPER_STATE_PATH")
-def test_get_scrapper_state_returns_empty_when_missing(mock_path):
-    mock_path.exists.return_value = False
-    result = settings_service.get_scrapper_state()
-    assert result == {}
-
-
-@patch("builtins.open", mock_open(read_data=json.dumps(STATE_DATA)))
-@patch("services.settings_service.SCRAPPER_STATE_PATH")
-def test_get_scrapper_state_returns_parsed_json(mock_path):
-    mock_path.exists.return_value = True
+@patch("services.settings_service._repo")
+def test_get_scrapper_state_returns_state(mock_repo):
+    mock_repo.get_all.return_value = STATE_DATA
     result = settings_service.get_scrapper_state()
     assert result == STATE_DATA
 
 
-@patch("services.settings_service.SCRAPPER_STATE_PATH")
-def test_get_scrapper_state_returns_empty_on_error(mock_path):
-    mock_path.exists.return_value = True
-    with patch("builtins.open", side_effect=OSError("read error")):
-        result = settings_service.get_scrapper_state()
+@patch("services.settings_service._repo")
+def test_get_scrapper_state_returns_empty_on_error(mock_repo):
+    mock_repo.get_all.side_effect = Exception("DB error")
+    result = settings_service.get_scrapper_state()
     assert result == {}
 
 
-@patch("builtins.open", mock_open())
-@patch("services.settings_service.SCRAPPER_STATE_PATH")
-def test_update_scrapper_state(mock_path):
-    mock_path.parent.mkdir = MagicMock()
+@patch("services.settings_service._repo")
+def test_update_scrapper_state(mock_repo):
+    mock_repo.replace_all.return_value = STATE_DATA
     result = settings_service.update_scrapper_state(STATE_DATA)
     assert result == STATE_DATA
-    mock_path.parent.mkdir.assert_called_once_with(parents=True, exist_ok=True)
+    mock_repo.replace_all.assert_called_once_with(STATE_DATA)

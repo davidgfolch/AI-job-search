@@ -39,6 +39,13 @@ This is a monorepo containing several applications and packages:
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
+## Distributed execution
+
+You can have specific mysql host server setting the `.env` ->  `COMMONLIB_DB_HOST` to your mysql database host IP.
+You can run scrapper in a (linux recommended) & connect to another mysql host pc.
+(Only tested, scrapper pc connecting to another LAN PC executing all other services including db)
+TODO: running in several machines AI services, Ollama, backend, etc.
+
 ## Screenshots
 
 ### UI Management

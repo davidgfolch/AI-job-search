@@ -21,7 +21,6 @@ apps/*/cv/*
 **/**/coverage.xml
 **/**/coverage.txt
 apps/web/coverage/.tmp
-apps/scrapper/scrapper_state.json
 
 !AI-job-search.code-workspace
 .a0proj/

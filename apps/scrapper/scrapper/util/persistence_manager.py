@@ -1,25 +1,24 @@
 import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from commonlib.dateUtil import getDatetimeNowStr
+from commonlib.sql.scrapper_state_repository import ScrapperStateRepository
 
 class PersistenceManager:
-    def __init__(self, filepath: str = 'scrapper_state.json'):
-        self.filepath = filepath
+    def __init__(self, repository: Optional[ScrapperStateRepository] = None):
+        self._repository = repository
         self.state = self.load()
 
     def load(self) -> Dict[str, Any]:
-        if os.path.exists(self.filepath):
-            try:
-                with open(self.filepath, 'r') as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                return {}
-        return {}
+        try:
+            return self._repository.get_all()
+        except Exception:
+            return {}
 
     def save(self):
-        with open(self.filepath, 'w') as f:
-            json.dump(self.state, f, indent=2)
+        for site, site_state in self.state.items():
+            self._repository.upsert(site, site_state)
+        return
 
     def get_state(self, site: str) -> Dict[str, Any]:
         return self.state.get(site, {})

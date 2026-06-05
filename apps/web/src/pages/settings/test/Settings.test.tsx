@@ -52,7 +52,7 @@ describe('Settings', () => {
         expect(settingsApi.getScrapperState).toHaveBeenCalled();
 
         expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
-        expect(screen.getByText('scrapper_state.json')).toBeInTheDocument();
+        expect(screen.getByText('Scrapper State')).toBeInTheDocument();
         expect(screen.getByText('System & Base')).toBeInTheDocument();
         expect(screen.getByText('AI Enrichment')).toBeInTheDocument();
 

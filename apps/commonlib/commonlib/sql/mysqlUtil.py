@@ -14,6 +14,7 @@ from .connection_manager import get_connection, getConnection
 from .transaction_manager import TransactionManager
 from .query_executor import QueryExecutor
 from .job_repository import JobRepository
+from .scrapper_state_repository import ScrapperStateRepository
 from .job_queries import (
     QRY_FIND_JOB_BY_JOB_ID,
     QRY_INSERT,
@@ -44,6 +45,10 @@ class MysqlUtil:
             self._transaction_manager.execute_transaction,
             self._transaction_manager.execute_query
         )
+        self._scrapper_state_repository = ScrapperStateRepository(
+            self._transaction_manager.execute_transaction,
+            self._transaction_manager.execute_query
+        )
 
     @property
     def conn(self) -> MySQLConnection:
@@ -58,6 +63,10 @@ class MysqlUtil:
         self._transaction_manager = TransactionManager(self.connection_ctx)
         self._query_executor = QueryExecutor(self.connection_ctx)
         self._job_repository = JobRepository(
+            self._transaction_manager.execute_transaction,
+            self._transaction_manager.execute_query
+        )
+        self._scrapper_state_repository = ScrapperStateRepository(
             self._transaction_manager.execute_transaction,
             self._transaction_manager.execute_query
         )
@@ -105,6 +114,15 @@ class MysqlUtil:
     def insertJob(self, job_data: dict) -> int | None:
         """Insert job from dict data."""
         return self._job_repository.insert_job(job_data)
+
+    # Scrapper State Repository methods
+    def get_scrapper_state(self) -> dict:
+        """Get all scrapper state as {site: state_dict}."""
+        return self._scrapper_state_repository.get_all()
+
+    def update_scrapper_state(self, state: dict):
+        """Replace all scrapper state entries."""
+        self._scrapper_state_repository.replace_all(state)
 
     # Query Executor methods
     def count(self, query: str, params: tuple = ()) -> int:

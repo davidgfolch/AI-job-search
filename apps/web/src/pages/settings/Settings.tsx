@@ -129,7 +129,7 @@ function renderSubgroup(subTitle: string, subKeys: string[], envSettings: Record
 
 function renderScrapperEditor(scrapperState: string, setScrapperState: SetStateAction<string>, handleRefresh: () => void, handleSave: () => void) {
     return (
-    <div className="env-subgroup"><h4 className="env-subgroup-title">scrapper_state.json</h4>
+    <div className="env-subgroup"><h4 className="env-subgroup-title">Scrapper State</h4>
         <div className="scrapper-editor-wrapper">
             <Editor value={scrapperState} onValueChange={code => setScrapperState(code)}
                 highlight={code => Prism.highlight(code, Prism.languages.json, 'json')} padding={12} className="scrapper-editor" />
