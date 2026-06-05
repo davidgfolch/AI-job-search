@@ -1,4 +1,5 @@
 from .generic_gmail_service import GmailService
+from .email_exceptions import GmailConnectionError
 from commonlib.terminalColor import green
 
 
