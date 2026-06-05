@@ -1,6 +1,5 @@
 # Development Dockerfile for FastAPI Backend
-# Use Python 3.10 to match project requirements
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
