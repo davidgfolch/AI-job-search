@@ -42,6 +42,7 @@ class LinkedinExecutor(BaseExecutor):
         url = f'https://www.linkedin.com/jobs/search/?keywords={quote(keywords)}&f_WT={self.remote}' + \
             f'&geoId={self.location}&f_TPR={self.f_TPR}&sortBy={self.sortBy}'
         self.navigator.load_page(url)
+        self.navigator.close_cookies_banner()
         return url
 
     def _search_jobs_loop(self, keywords: str, startPage: int):

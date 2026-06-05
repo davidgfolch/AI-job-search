@@ -14,8 +14,8 @@ CSS_SEL_LOGIN_USER = 'input[type=email]'
 CSS_SEL_LOGIN_PWD = 'input[type=password]'
 CSS_SEL_LOGIN_BUTTON = 'button[type=button]'
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
-CSS_SEL_MESSAGES_HIDE = 'aside[id="msg-overlay"] header > div.msg-overlay-bubble-header__controls > button'
-CSS_SEL_GLOBAL_ALERT_HIDE = 'div.artdeco-global-alert section.artdeco-global-alert__body button.artdeco-global-alert__dismiss'
+CSS_SEL_MESSAGES_HIDE = 'aside#msg-overlay div.msg-overlay-bubble-header__controls button:last-child'
+CSS_SEL_GLOBAL_ALERT_HIDE = 'section.artdeco-global-alert__body button:first-child'
 # LIST
 CSS_SEL_NO_RESULTS = 'div.jobs-search-no-results-banner'
 CSS_SEL_JOB_LI = 'div.scaffold-layout__list > div > ul > li'
@@ -63,6 +63,9 @@ class LinkedinNavigator(BaseNavigator):
         except Exception:
             print(yellow('Could not click on "remember me" checkbox'))
         self.selenium.waitAndClick(self.selenium.getElms(CSS_SEL_LOGIN_BUTTON).pop())
+
+    def close_cookies_banner(self):
+        self.selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE, 'Could not close cookies banner')
 
     def check_results(self, keywords: str, url: str, remote, location, f_TPR) -> bool:
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
@@ -153,7 +156,11 @@ class LinkedinNavigator(BaseNavigator):
         return len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
     
     def collapse_messages(self):
-        self.selenium.waitAndClick_noError(CSS_SEL_MESSAGES_HIDE, 'Could not collapse messages')
+        elms = self.selenium.getElms(CSS_SEL_MESSAGES_HIDE)
+        if len(elms) > 0:
+            self.selenium.waitAndClick_noError(elms[-1], 'Could not collapse messages')
+        else:
+            print(yellow('No messages found to collapse'))
 
     def wait_until_page_url_contains(self, url, timeout):
         self.selenium.waitUntilPageUrlContains(url, timeout)
