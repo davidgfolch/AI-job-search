@@ -1,10 +1,117 @@
+import ipaddress
+import logging
 import os
 import mysql.connector as mysqlConnector
 from mysql.connector import MySQLConnection
 
+logger = logging.getLogger(__name__)
 DEBUG = False
 
+DEFAULT_MYSQL_PORT = 3306
+SMALL_RANGE_THRESHOLD = 10
+
 _pool_initialized = False
+
+
+def _parse_ip_range(range_str: str) -> list[str]:
+    """Parse an IP range (start-end) into a list of IPs.
+    Supports: 192.168.0.10-192.168.0.250, 192.168.0.10-250."""
+    start_str, end_str = (x.strip() for x in range_str.split('-', 1))
+    start_ip = ipaddress.IPv4Address(start_str)
+    end_parts = end_str.split('.')
+    if len(end_parts) < 4:
+        start_parts = start_str.split('.')
+        if len(end_parts) == 1:
+            padded = start_parts[:3] + end_parts
+        elif len(end_parts) == 2:
+            padded = start_parts[:2] + end_parts
+        elif len(end_parts) == 3:
+            if end_parts[:2] == start_parts[:2]:
+                padded = start_parts[:3] + [end_parts[2]]
+            else:
+                padded = [start_parts[0]] + end_parts
+        end_str = '.'.join(padded)
+    end_ip = ipaddress.IPv4Address(end_str)
+    start_int = int(start_ip)
+    end_int = int(end_ip)
+    if end_int < start_int:
+        raise ValueError(f"Range end {end_str} < start {start_str}")
+    return [str(ipaddress.IPv4Address(i)) for i in range(start_int, end_int + 1)]
+
+
+def _parse_host_targets(raw: str) -> list[str]:
+    """Parse COMMONLIB_DB_HOST into a list of IPs.
+    Supports: single IP, CIDR (192.168.1.0/24), range (10-250),
+    comma-separated combinations."""
+    targets = []
+    for part in raw.split(','):
+        part = part.strip()
+        if not part:
+            continue
+        if '/' in part:
+            try:
+                network = ipaddress.IPv4Network(part, strict=False)
+                targets.extend(str(ip) for ip in network.hosts())
+            except ValueError:
+                try:
+                    targets.extend(_parse_ip_range(part.replace('/', '-', 1)))
+                except Exception:
+                    targets.append(part)
+        elif '-' in part:
+            try:
+                targets.extend(_parse_ip_range(part))
+            except Exception as e:
+                logger.warning("Invalid range '%s': %s", part, e)
+                targets.append(part)
+        else:
+            targets.append(part)
+    return targets
+
+
+def _probe_mysql(host: str, e2e_tests: bool = False, timeout: int = 3):
+    """Test if MySQL is reachable at host. Raises on failure."""
+    conn = mysqlConnector.connect(
+        host=host, user='root', password='rootPass',
+        database=None if e2e_tests else 'jobs',
+        connect_timeout=timeout,
+    )
+    conn.close()
+
+
+def _resolve_db_host(e2e_tests: bool = False) -> str:
+    """Resolve MySQL host — try configured targets, fall back to LAN discovery."""
+    raw = os.getenv('COMMONLIB_DB_HOST', '').strip()
+    targets = _parse_host_targets(raw) if raw else ['127.0.0.1']
+
+    if len(targets) <= SMALL_RANGE_THRESHOLD:
+        for host in targets:
+            try:
+                _probe_mysql(host, e2e_tests)
+                logger.info("Connected to MySQL at %s", host)
+                return host
+            except Exception as e:
+                logger.warning("Failed to connect to MySQL at %s: %s", host, e)
+    else:
+        logger.info("Scanning %d target IPs for MySQL on port %d...", len(targets), DEFAULT_MYSQL_PORT)
+        from commonlib.network.mysql_discovery import discover_mysql_hosts, verify_mysql
+        open_hosts = discover_mysql_hosts(targets=targets)
+        if open_hosts:
+            open_set = set(open_hosts)
+            for host in targets:
+                if host in open_set and verify_mysql(host):
+                    logger.info("Connected to MySQL at %s (range scan)", host)
+                    return host
+
+    logger.info("Configured MySQL hosts unreachable, scanning LAN...")
+    from commonlib.network.mysql_discovery import auto_discover_host
+    discovered = auto_discover_host()
+    if discovered:
+        logger.info("Connected to MySQL at %s (LAN discovery)", discovered)
+        return discovered
+
+    raise ConnectionError(
+        "Could not connect to MySQL via configured hosts or LAN discovery"
+    )
 
 
 def _init_pool(e2e_tests: bool = False):
@@ -12,7 +119,7 @@ def _init_pool(e2e_tests: bool = False):
     global _pool_initialized
     if _pool_initialized:
         return
-    db_host = os.getenv('COMMONLIB_DB_HOST', '127.0.0.1')
+    db_host = _resolve_db_host(e2e_tests)
     mysqlConnector.connect(
         host=db_host,
         user='root',
