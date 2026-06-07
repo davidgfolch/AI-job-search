@@ -1,9 +1,6 @@
 import ipaddress
-import logging
 import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-logger = logging.getLogger(__name__)
 
 DEFAULT_MYSQL_PORT = 3306
 SCAN_TIMEOUT = 0.5
@@ -20,17 +17,15 @@ def get_local_subnets():
     s.settimeout(2)
     try:
         s.connect(('8.8.8.8', 80))
-        ip = s.getsockname()[0]
-        parts = ip.split('.')
+        parts = s.getsockname()[0].split('.')
         subnets.append(f"{parts[0]}.{parts[1]}.{parts[2]}.0/24")
         third = int(parts[2])
         for offset in [-1, 1]:
             adj = third + offset
             if 0 <= adj <= 255:
                 subnets.append(f"{parts[0]}.{parts[1]}.{adj}.0/24")
-        logger.info("Local IP %s, scanning subnets: %s", ip, subnets)
-    except Exception as e:
-        logger.warning("Could not detect local subnets: %s", e)
+    except Exception:
+        pass
     finally:
         s.close()
     return subnets
@@ -50,6 +45,7 @@ def _scan_port(ip, port, timeout):
 def _scan_hosts(hosts, port, timeout):
     """Scan a list of hosts on the given port. Returns list of responsive IPs."""
     found = []
+    print(f"Scanning {len(hosts)} hosts for MySQL on port {port}...", flush=True)
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
         fut_map = {ex.submit(_scan_port, h, port, timeout): h for h in hosts}
         for f in as_completed(fut_map):
@@ -72,21 +68,20 @@ def discover_mysql_hosts(subnets=None, targets=None, port=None, timeout=None):
     timeout = timeout or SCAN_TIMEOUT
 
     if targets is not None:
-        logger.info("Scanning %d IPs on port %d...", len(targets), port)
+        print(f"Scanning targets: {', '.join(targets)} for MySQL on port {port}", flush=True)
         return _scan_hosts(targets, port, timeout)
 
     if subnets is None:
         subnets = get_local_subnets()
 
     found = []
+    print(f"Scanning subnets: {', '.join(subnets)}", flush=True)
     for subnet_str in subnets:
         try:
             network = ipaddress.IPv4Network(subnet_str, strict=False)
-        except Exception as e:
-            logger.warning("Invalid subnet %s: %s", subnet_str, e)
+        except Exception:
             continue
         hosts = [str(ip) for ip in network.hosts()]
-        logger.info("Scanning %s (%d hosts) on port %d...", subnet_str, len(hosts), port)
         found.extend(_scan_hosts(hosts, port, timeout))
     return found
 
@@ -111,13 +106,8 @@ def verify_mysql(host, port=None, user=None, password=None, database=None):
         exists = cursor.fetchone()[0] > 0
         cursor.close()
         conn.close()
-        if exists:
-            logger.info("Verified MySQL host %s with database '%s'", host, database)
-        else:
-            logger.debug("MySQL at %s has no database '%s'", host, database)
         return exists
-    except Exception as e:
-        logger.debug("MySQL verification failed for %s: %s", host, e)
+    except Exception:
         return False
 
 
@@ -126,14 +116,10 @@ def auto_discover_host():
     try:
         candidates = discover_mysql_hosts()
         if not candidates:
-            logger.warning("No hosts found with open MySQL port %d", DEFAULT_MYSQL_PORT)
             return None
-        logger.info("Found %d candidate(s) with open port %d, verifying...", len(candidates), DEFAULT_MYSQL_PORT)
         for host in candidates:
             if verify_mysql(host):
                 return host
-        logger.warning("No verified MySQL database found among candidates")
         return None
-    except Exception as e:
-        logger.error("Auto-discovery error: %s", e)
+    except Exception:
         return None
