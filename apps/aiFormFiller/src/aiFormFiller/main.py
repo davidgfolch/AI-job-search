@@ -1,3 +1,4 @@
+from importlib.metadata import version as _v
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from commonlib.terminalColor import cyan
@@ -7,7 +8,7 @@ from . import config as cfg
 
 
 def create_app(context_loader: ContextLoader | None = None) -> FastAPI:
-    app = FastAPI(title="AI Form Filler", version="0.1.0")
+    app = FastAPI(title="AI Form Filler", version=_v("aiFormFiller"))
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -28,7 +29,8 @@ def create_app(context_loader: ContextLoader | None = None) -> FastAPI:
 def run():
     import uvicorn
     port = cfg.get_port()
-    print(cyan(f"Starting AI Form Filler on http://127.0.0.1:{port}"))
+    print(cyan(f"AI Form Filler v{_v('aiFormFiller')}"))
+    print(cyan(f"Starting on http://127.0.0.1:{port}"))
     uvicorn.run("aiFormFiller.main:app", host="0.0.0.0", port=port, reload=False)
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import warnings
+from importlib.metadata import version as _v
 
 # Validated lazy imports
 
@@ -14,6 +15,7 @@ from .skillEnricher import skillEnricher
 from .config import get_job_enabled, get_skill_enabled
 
 def run():
+    print(cyan(f"AI Enrich New v{_v('aiEnrichNew')}"))
 
     while True:
         if get_job_enabled() and dataExtractor() > 0:

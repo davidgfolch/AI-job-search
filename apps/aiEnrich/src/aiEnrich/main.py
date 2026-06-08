@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import sys
 import warnings
+from importlib.metadata import version as _v
 
 from commonlib.environmentUtil import getEnvBool
+from commonlib.terminalColor import cyan
 from .dataExtractor import DataExtractor
 from .crew import AiJobSearchFlow
 from .skillEnricher import skillEnricher
@@ -25,9 +27,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 
 def run():
-    """
-    Run the crew.
-    """
+    print(cyan(f"AI Enrich v{_v('aiEnrich')}"))
     if get_job_enabled():
         AiJobSearchFlow().kickoff()
     if get_skill_enabled():

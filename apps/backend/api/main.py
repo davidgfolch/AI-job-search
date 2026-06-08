@@ -1,3 +1,4 @@
+from importlib.metadata import version as _v
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -9,8 +10,10 @@ from api import statistics_archived
 from api import skills
 from api import filter_configurations
 from api import settings
+from commonlib.terminalColor import cyan
 
 app = FastAPI(title="AI Job Search API")
+print(cyan(f"Backend API v{_v('api')}"))
 
 app.add_middleware(
     CORSMiddleware,

@@ -2,8 +2,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { version } from '../package.json';
 import './index.css';
 import App from './App.tsx';
+
+console.log(`web v${version}`);
 
 const queryClient = new QueryClient({
   defaultOptions: {

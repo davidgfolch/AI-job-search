@@ -1,6 +1,7 @@
 import sys
 import io
 import time
+from importlib.metadata import version as _v
 from typing import Optional
 
 from aiEnrich3.dataExtractor import dataExtractor
@@ -10,6 +11,7 @@ from commonlib.terminalColor import cyan
 
 
 def run():
+    print(cyan(f"AI Enrich3 v{_v('aiEnrich3')}"))
     pipeline: Optional[ExtractionPipeline] = None
     while True:
         if get_job_enabled():

@@ -1,4 +1,5 @@
 import sys
+from importlib.metadata import version as _v
 from typing import Callable, Union, Optional
 
 from commonlib.fileSystemUtil import getSrcPath
@@ -26,6 +27,7 @@ def hasArgument(args: list, name: str, info: Callable[[], str] = lambda: "", exp
 
 
 def main(args):
+    print(cyan(f"Scrapper v{_v('scrapper')}"))
     print(cyan('Scrapper init'))
     print(cyan('Usage: scrapper.py wait starting scrapperName'))
     print(cyan('wait -> waits for scrapper timeout before executing'))

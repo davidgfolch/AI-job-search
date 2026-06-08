@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import warnings
+from importlib.metadata import version as _v
 
 # Validated lazy imports
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
@@ -12,6 +13,7 @@ import time
 from .cvMatcher import FastCVMatcher
 
 def run():
+    print(cyan(f"AI CV Matcher v{_v('aiCvMatcher')}"))
     if getEnvBool('AI_CVMATCHER_ENABLED'):
         cvMatcher = FastCVMatcher.instance()
     else:
