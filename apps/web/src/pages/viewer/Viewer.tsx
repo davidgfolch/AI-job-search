@@ -8,6 +8,7 @@ import AppliedModal from './components/AppliedModal';
 import Filters from './components/Filters';
 import MessageContainer from '../common/components/core/MessageContainer';
 import ViewTabs from './components/ViewTabs';
+import PanelDivider from './components/PanelDivider';
 import ConfirmModal from '../common/components/core/ConfirmModal';
 import './Viewer.css';
 import PageHeader from "../common/components/PageHeader";
@@ -20,6 +21,7 @@ export default function Viewer() {
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
     const jobListRef = useRef<HTMLDivElement>(null);
     const [configCount, setConfigCount] = useState<number>();
+    const [collapsedPanel, setCollapsedPanel] = useState<'none' | 'left' | 'right'>('none');
 
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
@@ -64,7 +66,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onConfigsLoaded={setConfigCount}
                             modalityValues={state.modalityValues} />
                         <div className="viewer-content">
-                            <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: state.duplicatedJob ? 'none' : 'flex' }}>
+                            <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: state.duplicatedJob ? 'none' : collapsedPanel === 'left' ? 'none' : 'flex' }}>
                                 <div className="tab-group">
                                     <div className="tab-buttons">
                                         <ViewTabs 
@@ -139,7 +141,8 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                     </div>
                                 </div>
                             </div>
-                                <div className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : undefined}>
+                            <PanelDivider collapsedPanel={collapsedPanel} onCollapse={setCollapsedPanel} onReset={() => setCollapsedPanel('none')} />
+                                <div className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : collapsedPanel === 'right' ? { display: 'none' } : undefined}>
                                 {state.selectedJob ? (
                                     <>
                                         <div style={state.duplicatedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
