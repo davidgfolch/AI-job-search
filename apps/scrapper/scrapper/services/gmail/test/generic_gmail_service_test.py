@@ -6,34 +6,27 @@ from scrapper.services.gmail.email_exceptions import (
     GmailTimeoutError,
 )
 
+ENV_VARS = {"GMAIL_EMAIL": "test@gmail.com", "GMAIL_APP_PASSWORD": "test_password"}
+
 
 class TestGmailService:
     """Test Gmail service functionality"""
 
-    def test_init_with_env_vars(self):
-        """Test GmailService initialization with environment variables"""
+    @pytest.mark.parametrize("env,expected_email,expected_pass", [
+        (ENV_VARS, "test@gmail.com", "test_password"),
+        (None, None, None),
+    ])
+    def test_init(self, env, expected_email, expected_pass):
         with patch(
             "scrapper.services.gmail.generic_gmail_service.getEnv"
         ) as mock_getEnv:
-            mock_getEnv.side_effect = lambda key, default=None: {
-                "GMAIL_EMAIL": "test@gmail.com",
-                "GMAIL_APP_PASSWORD": "test_password",
-            }.get(key, default)
-
+            if env is None:
+                mock_getEnv.return_value = None
+            else:
+                mock_getEnv.side_effect = lambda key, default=None: env.get(key, default)
             service = GmailService()
-            assert service.email == "test@gmail.com"
-            assert service.app_password == "test_password"
-
-    def test_init_without_env_vars(self):
-        """Test GmailService initialization without environment variables"""
-        with patch(
-            "scrapper.services.gmail.generic_gmail_service.getEnv"
-        ) as mock_getEnv:
-            mock_getEnv.return_value = None
-
-            service = GmailService()
-            assert service.email is None
-            assert service.app_password is None
+            assert service.email == expected_email
+            assert service.app_password == expected_pass
 
     def test_extract_verification_code(self):
         """Test verification code extraction from email body"""
@@ -101,10 +94,7 @@ class TestGmailService:
         with patch(
             "scrapper.services.gmail.generic_gmail_service.getEnv"
         ) as mock_getEnv:
-            mock_getEnv.side_effect = lambda key, default=None: {
-                "GMAIL_EMAIL": "test@gmail.com",
-                "GMAIL_APP_PASSWORD": "test_password",
-            }.get(key, default)
+            mock_getEnv.side_effect = lambda key, default=None: ENV_VARS.get(key, default)
 
             with patch.object(GmailService, "connect") as mock_connect:
                 with GmailService() as service:
@@ -201,10 +191,7 @@ class TestGmailService:
     def test_context_manager_exit(self):
         """Test context manager exit calls close"""
         with patch("scrapper.services.gmail.generic_gmail_service.getEnv") as mock_getEnv:
-            mock_getEnv.side_effect = lambda key, default=None: {
-                "GMAIL_EMAIL": "test@gmail.com",
-                "GMAIL_APP_PASSWORD": "test_password",
-            }.get(key, default)
+            mock_getEnv.side_effect = lambda key, default=None: ENV_VARS.get(key, default)
             with patch.object(GmailService, "connect", return_value=True):
                 with patch.object(GmailService, "close") as mock_close:
                     with GmailService() as service:

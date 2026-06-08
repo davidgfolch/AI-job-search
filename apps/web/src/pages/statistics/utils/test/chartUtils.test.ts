@@ -3,16 +3,12 @@ import { getColorForSource, pivotData, getSeriesKeys, processChartData, getDateR
 
 describe('chartUtils', () => {
     describe('getColorForSource', () => {
-        it('returns consistent color for same source', () => {
+        it('returns consistent and distinct colors per source', () => {
             const color1 = getColorForSource('LinkedIn', ['LinkedIn', 'Indeed']);
             const color2 = getColorForSource('LinkedIn', ['LinkedIn', 'Indeed']);
+            const color3 = getColorForSource('Indeed', ['LinkedIn', 'Indeed']);
             expect(color1).toBe(color2);
-        });
-
-        it('returns different colors for different sources', () => {
-            const color1 = getColorForSource('LinkedIn', ['LinkedIn', 'Indeed']);
-            const color2 = getColorForSource('Indeed', ['LinkedIn', 'Indeed']);
-            expect(color1).not.toBe(color2);
+            expect(color1).not.toBe(color3);
         });
 
         it('handles empty source string', () => {
@@ -28,14 +24,8 @@ describe('chartUtils', () => {
     });
 
     describe('pivotData', () => {
-        it('returns empty array for undefined data', () => {
-            const result = pivotData(undefined, 'date', 'source', 'count');
-            expect(result).toEqual([]);
-        });
-
-        it('returns empty array for empty array', () => {
-            const result = pivotData([], 'date', 'source', 'count');
-            expect(result).toEqual([]);
+        it.each([undefined, []])('returns empty array for %s data', (data) => {
+            expect(pivotData(data, 'date', 'source', 'count')).toEqual([]);
         });
 
         it('pivots data correctly', () => {
@@ -72,14 +62,8 @@ describe('chartUtils', () => {
     });
 
     describe('getSeriesKeys', () => {
-        it('returns empty array for undefined data', () => {
-            const keys = getSeriesKeys(undefined);
-            expect(keys).toEqual([]);
-        });
-
-        it('returns empty array for empty array', () => {
-            const keys = getSeriesKeys([]);
-            expect(keys).toEqual([]);
+        it.each([undefined, []])('returns empty array for %s data', (data) => {
+            expect(getSeriesKeys(data)).toEqual([]);
         });
 
         it('extracts series keys excluding ignored keys', () => {
@@ -111,14 +95,19 @@ describe('chartUtils', () => {
     });
 
     describe('processChartData', () => {
-        it('returns empty for undefined data', () => {
-            const result = processChartData(undefined, 'date', 'source', 'count');
-            expect(result.processedData).toEqual([]);
-            expect(result.keys).toEqual([]);
-        });
+        const multiSourceData = [
+            { date: '2024-01-01', source: 'Source1', count: 100 },
+            { date: '2024-01-01', source: 'Source2', count: 90 },
+            { date: '2024-01-01', source: 'Source3', count: 80 },
+            { date: '2024-01-01', source: 'Source4', count: 70 },
+            { date: '2024-01-01', source: 'Source5', count: 60 },
+            { date: '2024-01-01', source: 'Source6', count: 50 },
+            { date: '2024-01-01', source: 'Source7', count: 40 },
+            { date: '2024-01-01', source: 'Source8', count: 30 },
+        ];
 
-        it('returns empty for empty array', () => {
-            const result = processChartData([], 'date', 'source', 'count');
+        it.each([undefined, []])('returns empty for %s data', (data) => {
+            const result = processChartData(data, 'date', 'source', 'count');
             expect(result.processedData).toEqual([]);
             expect(result.keys).toEqual([]);
         });
@@ -136,17 +125,7 @@ describe('chartUtils', () => {
         });
 
         it('limits to maxSources and groups others as Other', () => {
-            const data = [
-                { date: '2024-01-01', source: 'Source1', count: 100 },
-                { date: '2024-01-01', source: 'Source2', count: 90 },
-                { date: '2024-01-01', source: 'Source3', count: 80 },
-                { date: '2024-01-01', source: 'Source4', count: 70 },
-                { date: '2024-01-01', source: 'Source5', count: 60 },
-                { date: '2024-01-01', source: 'Source6', count: 50 },
-                { date: '2024-01-01', source: 'Source7', count: 40 },
-                { date: '2024-01-01', source: 'Source8', count: 30 },
-            ];
-            const result = processChartData(data, 'date', 'source', 'count', 7);
+            const result = processChartData(multiSourceData, 'date', 'source', 'count', 7);
             expect(result.keys).toContain('Other');
             expect(result.keys).not.toContain('Source8');
         });
@@ -181,17 +160,7 @@ describe('chartUtils', () => {
         });
 
         it('adds otherDetails when Other exists', () => {
-            const data = [
-                { date: '2024-01-01', source: 'Source1', count: 100 },
-                { date: '2024-01-01', source: 'Source2', count: 90 },
-                { date: '2024-01-01', source: 'Source3', count: 80 },
-                { date: '2024-01-01', source: 'Source4', count: 70 },
-                { date: '2024-01-01', source: 'Source5', count: 60 },
-                { date: '2024-01-01', source: 'Source6', count: 50 },
-                { date: '2024-01-01', source: 'Source7', count: 40 },
-                { date: '2024-01-01', source: 'Source8', count: 30 },
-            ];
-            const result = processChartData(data, 'date', 'source', 'count', 7);
+            const result = processChartData(multiSourceData, 'date', 'source', 'count', 7);
             expect(result.processedData[0]).toHaveProperty('otherDetails');
         });
     });
