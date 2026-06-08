@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getColorForSource, pivotData, getSeriesKeys, processChartData } from '../chartUtils';
+import { getColorForSource, pivotData, getSeriesKeys, processChartData, getDateRange } from '../chartUtils';
 
 describe('chartUtils', () => {
     describe('getColorForSource', () => {
@@ -193,6 +193,29 @@ describe('chartUtils', () => {
             ];
             const result = processChartData(data, 'date', 'source', 'count', 7);
             expect(result.processedData[0]).toHaveProperty('otherDetails');
+        });
+    });
+
+    describe('getDateRange', () => {
+        it('returns undefined dates for "All"', () => {
+            const result = getDateRange('All');
+            expect(result.startDate).toBeUndefined();
+            expect(result.endDate).toBeUndefined();
+        });
+
+        it.each([
+            'Last year', 'Last 6 months', 'Last 3 months', 'Last month', 'Last week', 'Last day'
+        ])('returns valid date range for "%s"', (timeRange) => {
+            const { startDate, endDate } = getDateRange(timeRange);
+            expect(startDate).toBeDefined();
+            expect(endDate).toBeDefined();
+            expect(new Date(startDate!).getTime()).toBeLessThan(new Date(endDate!).getTime());
+        });
+
+        it('returns ISO date strings', () => {
+            const { startDate, endDate } = getDateRange('Last day');
+            expect(startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+            expect(endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
         });
     });
 });

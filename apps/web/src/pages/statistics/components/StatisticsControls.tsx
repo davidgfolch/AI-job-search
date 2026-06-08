@@ -1,3 +1,5 @@
+import StatisticsFilters from './StatisticsFilters';
+
 interface StatisticsControlsProps {
     timeRange: string;
     setTimeRange: (value: string) => void;
@@ -12,33 +14,12 @@ const StatisticsControls: React.FC<StatisticsControlsProps> = ({
 }) => (
     <div className="statistics-controls">
         <div className="layout-controls">
-            <span className="layout-label">Date Range:</span>
-            <select 
-                className="date-range-select"
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                style={{ marginRight: '20px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
-            >
-                <option value="All">All</option>
-                <option value="Last year">Last year</option>
-                <option value="Last 6 months">Last 6 months</option>
-                <option value="Last 3 months">Last 3 months</option>
-                <option value="Last month">Last month</option>
-                <option value="Last week">Last week</option>
-                <option value="Last day">Last day</option>
-            </select>
-
-            <label style={{ marginRight: '20px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                   title="Include old job's snapshots">
-                <input
-                    type="checkbox"
-                    checked={includeOldJobs}
-                    onChange={(e) => setIncludeOldJobs(e.target.checked)}
-                    style={{ marginRight: '8px', cursor: 'pointer' }}
-                />
-                Include old jobs
-            </label>
-
+            <StatisticsFilters
+                timeRange={timeRange}
+                onTimeRangeChange={setTimeRange}
+                includeOldJobs={includeOldJobs}
+                onIncludeOldJobsChange={setIncludeOldJobs}
+            />
             <span className="layout-label">Layout:</span>
             <div className="layout-buttons">
                 <button 

@@ -1,31 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats } from './api/StatisticsApi';
-import { processChartData } from './utils/chartUtils';
+import { processChartData, getDateRange } from './utils/chartUtils';
 
 export const useStatistics = () => {
     const [timeRange, setTimeRange] = React.useState('Last 3 months');
     const [includeOldJobs, setIncludeOldJobs] = React.useState(true);
 
-    const { startDate, endDate } = React.useMemo(() => {
-        if (timeRange === 'All') return { startDate: undefined, endDate: undefined };
-        const end = new Date();
-        const start = new Date();
-        if (timeRange === 'Last year') {
-            start.setFullYear(start.getFullYear() - 1);
-        } else if (timeRange === 'Last 6 months') {
-            start.setMonth(start.getMonth() - 6);
-        } else if (timeRange === 'Last 3 months') {
-            start.setMonth(start.getMonth() - 3);
-        } else if (timeRange === 'Last month') {
-            start.setMonth(start.getMonth() - 1);
-        } else if (timeRange === 'Last week') {
-            start.setDate(start.getDate() - 7);
-        } else if (timeRange === 'Last day') {
-            start.setDate(start.getDate() - 1);
-        }
-        return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
-    }, [timeRange]);
+    const { startDate, endDate } = React.useMemo(() => getDateRange(timeRange), [timeRange]);
 
     const { data: historyData } = useQuery({ queryKey: ['statistics', 'history', startDate, endDate, includeOldJobs], queryFn: () => getHistoryStats(startDate, endDate, includeOldJobs) });
     const { data: sourcesDateData } = useQuery({ queryKey: ['statistics', 'sourcesDate', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByDate(startDate, endDate, includeOldJobs) });

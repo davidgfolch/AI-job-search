@@ -53,14 +53,26 @@ export function getSeriesKeys(data: Record<string, any>[], ignoreKeys: string[] 
     return Array.from(keys).sort();
 }
 
-/**
- * Processes data to unify small sources into "Other"
- * @param data Raw data array
- * @param xKey Key to group by on X axis
- * @param seriesKey Key that determines the series (source)
- * @param valueKey Key for the numeric value
- * @param maxSources Maximum number of distinct sources to show individually
- */
+export function getDateRange(timeRange: string): { startDate: string | undefined; endDate: string | undefined } {
+    if (timeRange === 'All') return { startDate: undefined, endDate: undefined };
+    const end = new Date();
+    const start = new Date();
+    if (timeRange === 'Last year') {
+        start.setFullYear(start.getFullYear() - 1);
+    } else if (timeRange === 'Last 6 months') {
+        start.setMonth(start.getMonth() - 6);
+    } else if (timeRange === 'Last 3 months') {
+        start.setMonth(start.getMonth() - 3);
+    } else if (timeRange === 'Last month') {
+        start.setMonth(start.getMonth() - 1);
+    } else if (timeRange === 'Last week') {
+        start.setDate(start.getDate() - 7);
+    } else if (timeRange === 'Last day') {
+        start.setDate(start.getDate() - 1);
+    }
+    return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
+}
+
 export function processChartData<T>(
     data: T[] | undefined, 
     xKey: keyof T, 

@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import {
     getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats
 } from '../api/StatisticsApi';
-import { processChartData } from '../utils/chartUtils';
+import { processChartData, getDateRange } from '../utils/chartUtils';
+import StatisticsFilters from './StatisticsFilters';
 
 interface ChartCardProps {
     title: string;
@@ -26,25 +27,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
     // We only fetch if the user changes filters in the expanded view
     const hasLocalFiltersChanged = localTimeRange !== parentTimeRange || localIncludeOldJobs !== parentIncludeOldJobs;
 
-    const { startDate, endDate } = React.useMemo(() => {
-        if (localTimeRange === 'All') return { startDate: undefined, endDate: undefined };
-        const end = new Date();
-        const start = new Date();
-        if (localTimeRange === 'Last year') {
-            start.setFullYear(start.getFullYear() - 1);
-        } else if (localTimeRange === 'Last 6 months') {
-            start.setMonth(start.getMonth() - 6);
-        } else if (localTimeRange === 'Last 3 months') {
-            start.setMonth(start.getMonth() - 3);
-        } else if (localTimeRange === 'Last month') {
-            start.setMonth(start.getMonth() - 1);
-        } else if (localTimeRange === 'Last week') {
-            start.setDate(start.getDate() - 7);
-        } else if (localTimeRange === 'Last day') {
-            start.setDate(start.getDate() - 1);
-        }
-        return { startDate: start.toISOString().split('T')[0], endDate: end.toISOString().split('T')[0] };
-    }, [localTimeRange]);
+    const { startDate, endDate } = React.useMemo(() => getDateRange(localTimeRange), [localTimeRange]);
 
     const fetchData = useCallback(() => {
         switch (chartType) {
@@ -138,31 +121,12 @@ const ChartCard: React.FC<ChartCardProps> = ({
             </div>
             {isThisChartExpanded && (
                 <div className="fullscreen-controls">
-                    <label>
-                        Date Range:
-                        <select
-                            value={localTimeRange}
-                            onChange={(e) => handleTimeRangeChange(e.target.value)}
-                            style={{ marginLeft: '8px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
-                        >
-                            <option value="All">All</option>
-                            <option value="Last year">Last year</option>
-                            <option value="Last 6 months">Last 6 months</option>
-                            <option value="Last 3 months">Last 3 months</option>
-                            <option value="Last month">Last month</option>
-                            <option value="Last week">Last week</option>
-                            <option value="Last day">Last day</option>
-                        </select>
-                    </label>
-                    <label style={{ marginLeft: '20px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                        <input
-                            type="checkbox"
-                            checked={localIncludeOldJobs}
-                            onChange={(e) => handleIncludeOldJobsChange(e.target.checked)}
-                            style={{ marginRight: '8px', cursor: 'pointer' }}
-                        />
-                        Include old jobs
-                    </label>
+                    <StatisticsFilters
+                        timeRange={localTimeRange}
+                        onTimeRangeChange={handleTimeRangeChange}
+                        includeOldJobs={localIncludeOldJobs}
+                        onIncludeOldJobsChange={handleIncludeOldJobsChange}
+                    />
                 </div>
             )}
             <div className="chart-container">
