@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ChartCard from './components/ChartCard';
 import StatisticsControls from './components/StatisticsControls';
 import {
@@ -9,7 +9,26 @@ import { useStatistics } from './useStatistics';
 import PageHeader from '../common/components/PageHeader';
 
 const Statistics = () => {
-    const [columns, setColumns] = useState(3);
+    const [columns, setColumns] = useState(2);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const [rowHeight, setRowHeight] = useState(400);
+
+    useEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+        const calc = () => {
+            const h = el.clientHeight;
+            const margin = 150;
+            if (columns === 1) {
+                setRowHeight(Math.max(h - margin, 200));
+            } else {
+                setRowHeight(Math.max((h - 20) / 2 - margin / 2, 200));
+            }
+        };
+        calc();
+        window.addEventListener('resize', calc);
+        return () => window.removeEventListener('resize', calc);
+    }, [columns]);
     const [expandedChart, setExpandedChart] = useState<string | null>(null);
     const [fullScreenFilters, setFullScreenFilters] = useState<{ timeRange: string; includeOldJobs: boolean } | null>(null);
     const prevFiltersRef = useRef<{ timeRange: string; includeOldJobs: boolean }>({ timeRange: '', includeOldJobs: false });
@@ -68,8 +87,8 @@ const Statistics = () => {
                 columns={columns}
                 setColumns={setColumns}
             />
-            <main className="statistics-content">
-                <div className="charts-grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` } as React.CSSProperties}>
+            <main className="statistics-content" ref={contentRef}>
+                <div className="charts-grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridAutoRows: `${rowHeight}px` } as React.CSSProperties}>
                     <ChartCard
                         title="Job Postings by Source & Day of Week"
                         chartType="weekday"

@@ -73,9 +73,10 @@ describe('Statistics', () => {
     expect(twoColumnsBtn.className).toContain('active');
   });
 
-  it('changes layout to three columns (default)', () => {
+  it('changes layout to three columns', () => {
     render(<Statistics />, { wrapper: wrapper });
     const threeColumnsBtn = screen.getByTitle('Three Columns');
+    fireEvent.click(threeColumnsBtn);
     expect(threeColumnsBtn.className).toContain('active');
   });
 
