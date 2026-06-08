@@ -46,6 +46,10 @@ You can run scrapper in a (linux recommended) & connect to another mysql host pc
 (Only tested, scrapper pc connecting to another LAN PC executing all other services including db)
 TODO: running in several machines AI services, Ollama, backend, etc.
 
+### MySQL host auto-discovery
+
+`COMMONLIB_DB_HOST` supports single IPs, CIDR, ranges, and comma-separated combinations, with automatic LAN fallback. See [commonlib docs](apps/commonlib/README.md#mysql-connection) for details.
+
 ## Screenshots
 
 ### UI Management
