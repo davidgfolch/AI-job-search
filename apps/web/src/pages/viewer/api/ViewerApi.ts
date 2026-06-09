@@ -85,6 +85,16 @@ export interface WatcherStats {
   new_items: number;
 }
 
+export interface SalaryHistoryEntry {
+  job_id: number;
+  company_raw: string;
+  company_normalized: string;
+  title: string;
+  salary: string;
+  recorded_at: string;
+  source: string;
+}
+
 const handleRequest = async <T>(request: Promise<{ data: T }>, errorMessage: string): Promise<T> => {
   try {
     const response = await request;
@@ -159,6 +169,16 @@ export const jobsApi = {
       'Error deleting jobs');
   },
   
+  getJobHistory: async (id: number): Promise<SalaryHistoryEntry[]> => {
+    return handleRequest(apiClient.get<SalaryHistoryEntry[]>(`/jobs/${id}/history`),
+      'Error loading salary history');
+  },
+
+  getCompanyHistory: async (company: string): Promise<SalaryHistoryEntry[]> => {
+    return handleRequest(apiClient.get<SalaryHistoryEntry[]>('/jobs/history/by-company', { params: { company } }),
+      'Error loading company salary history');
+  },
+
   getSystemTimezone: async (): Promise<{ offset_minutes: number }> => {
     if (!timezonePromise) {
       timezonePromise = handleRequest(apiClient.get<{ offset_minutes: number }>('/system/timezone'),

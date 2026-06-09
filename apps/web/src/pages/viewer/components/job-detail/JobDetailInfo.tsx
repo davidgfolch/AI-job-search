@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { type Job } from '../../api/ViewerApi';
 import AppliedJobsWarning from './AppliedJobsWarning';
 import SalaryActions from './SalaryActions';
 import SkillsList from './SkillsList';
+import SalaryHistoryModal from './SalaryHistoryModal';
+import SalaryHistoryIndicator from './SalaryHistoryIndicator';
 import CvMatchBar from '../../../common/components/core/CvMatchBar';
 
 interface JobDetailInfoProps {
@@ -28,6 +31,7 @@ const isModified = (created: string | undefined | null, modified: string | undef
 };
 
 export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied, onUpdate, showCalculator, onToggleCalculator }: JobDetailInfoProps) {
+    const [showHistory, setShowHistory] = useState(false);
     const allJobSkills = [job.required_technologies, job.optional_technologies].filter(Boolean).join(', ');
 
     return (
@@ -43,9 +47,13 @@ export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied,
             )}
             {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
             {job.modality && <li className="info-row">Modality: <span>{job.modality}</span></li>}
-            {job.salary && (
-                <li className="info-row job-salary-row">Salary: <span className="salary-value-text">{job.salary}</span><SalaryActions onToggleCalculator={onToggleCalculator} onUpdate={onUpdate} /></li>
-            )}
+            {job.salary ? (
+                <li className="info-row job-salary-row">Salary: <span className="salary-value-text">{job.salary}</span>
+                    <button className="config-btn salary-toggle-btn" onClick={() => setShowHistory(true)} title="View salary history">📊 History</button>
+                    <SalaryActions onToggleCalculator={onToggleCalculator} onUpdate={onUpdate} />
+                    <SalaryHistoryModal job={job} isOpen={showHistory} onClose={() => setShowHistory(false)} />
+                </li>
+            ) : job.company && <SalaryHistoryIndicator job={job} />}
             {(job.required_technologies || job.optional_technologies) && (
                 <li className="info-row">Skills:<ul>
                     {job.required_technologies && <li>Required: <SkillsList skills={job.required_technologies} allJobSkills={allJobSkills} /></li>}

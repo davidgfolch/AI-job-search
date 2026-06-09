@@ -10,6 +10,7 @@ from api import statistics_archived
 from api import skills
 from api import filter_configurations
 from api import settings
+from api import jobs_history
 from commonlib.terminalColor import cyan
 
 app = FastAPI(title="AI Job Search API")
@@ -39,6 +40,7 @@ app.include_router(
     tags=["filter-configurations"],
 )
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
+app.include_router(jobs_history.router, prefix="/api/jobs", tags=["jobs-history"])
 
 
 @app.get("/health")

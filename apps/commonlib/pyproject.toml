@@ -15,6 +15,7 @@ dependencies = [
     "mathparse (>=0.2.7,<0.3.0)",
     "pdfplumber>=0.11.8",
     "pandas>=2.2.3",
+    "pymongo>=4.10.0",
 ]
 
 [dependency-groups]
