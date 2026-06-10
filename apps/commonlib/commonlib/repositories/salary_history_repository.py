@@ -1,5 +1,7 @@
+import re
 from datetime import datetime
 from commonlib.mongodb_provider import MongoDbProvider
+from commonlib.company_matcher import get_best_candidate
 
 
 class SalaryHistoryRepository:
@@ -12,8 +14,24 @@ class SalaryHistoryRepository:
 
     def get_company_history(self, company_normalized: str) -> list[dict]:
         col = self._db.get_database(write=False)["company_salary_history"]
-        first_word = company_normalized.split()[0] if company_normalized.split() else company_normalized
-        return list(col.find({"company_normalized": {"$regex": f"^{first_word}"}}, {"_id": 0}).sort("recorded_at", -1).limit(200))
+
+        results = list(col.find(
+            {"company_normalized": {"$regex": f"^{re.escape(company_normalized)}$"}},
+            {"_id": 0}
+        ).sort("recorded_at", -1).limit(200))
+        if results:
+            return results
+
+        candidate = get_best_candidate(company_normalized)
+        if candidate:
+            results = list(col.find(
+                {"company_normalized": {"$regex": f"^{re.escape(candidate)}"}},
+                {"_id": 0}
+            ).sort("recorded_at", -1).limit(200))
+            if results:
+                return results
+
+        return []
 
     def get_last_record(self, job_id: int) -> dict | None:
         col = self._db.get_database(write=False)["company_salary_history"]
