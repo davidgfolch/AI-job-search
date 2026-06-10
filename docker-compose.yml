@@ -45,9 +45,12 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
+      - MONGO_URI=mongodb://${MONGO_USERNAME:-root}:${MONGO_PASSWORD:-rootPass}@mongo_db:27017/
       - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
+        condition: service_healthy
+      mongo_db:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -228,6 +231,55 @@ services:
     networks:
       - ai-job-search
 
+  # MongoDB - Salary History & future concerns
+  mongo_db:
+    image: mongo:7
+    container_name: ai-job-search-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-rootPass}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-jobs}
+      TZ: ${GLOBAL_TZ}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./scripts/mongo:/docker-entrypoint-initdb.d
+    networks:
+      - ai-job-search
+    healthcheck:
+      test: echo 'db.runCommand("ping.ok").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cron - Scheduled background jobs (always running)
+  cron:
+    build:
+      context: .
+      dockerfile: apps/cron/Dockerfile
+    container_name: ai-job-search-cron
+    volumes:
+      - ./apps/cron:/app/apps/cron
+      - /app/apps/cron/.venv # Anonymous volume to isolate container venv from host
+      - ./apps/commonlib:/app/apps/commonlib
+      - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
+    environment:
+      - PYTHONUNBUFFERED=1
+      - COMMONLIB_DB_HOST=mysql_db
+      - MONGO_URI=mongodb://${MONGO_USERNAME:-root}:${MONGO_PASSWORD:-rootPass}@mongo_db:27017/
+      - TZ=${GLOBAL_TZ}
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+      mongo_db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+
   # Scrapper - Job Scraping Service
   scrapper:
     build:
@@ -260,4 +312,6 @@ networks:
 
 volumes:
   mysql_data:
+    driver: local
+  mongo_data:
     driver: local

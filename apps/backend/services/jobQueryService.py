@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any, List
 from repositories.jobQueryRepository import JobQueryRepository
-from utils.job_utils import search_partial_company
+from commonlib.company_matcher import search_partial_company
 
 
 class JobQueryService:

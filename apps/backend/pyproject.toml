@@ -11,6 +11,7 @@ dependencies = [
     "mysql-connector-python>=9.0.0",
     "pydantic>=2.0.0",
     "pandas>=2.0.0",
+    "pymongo>=4.10.0",
 ]
 
 [tool.poetry.dependencies]
