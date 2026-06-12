@@ -12,7 +12,7 @@ from .baseNavigator import BaseNavigator
 
 CSS_SEL_LOGIN_USER = 'input[type=email]'
 CSS_SEL_LOGIN_PWD = 'input[type=password]'
-CSS_SEL_LOGIN_BUTTON = 'button[type=button]'
+CSS_SEL_LOGIN_BUTTON = 'button[type=submit]'
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
 CSS_SEL_MESSAGES_HIDE = 'aside#msg-overlay div.msg-overlay-bubble-header__controls button:last-child'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'section.artdeco-global-alert__body button:first-child'
@@ -62,7 +62,7 @@ class LinkedinNavigator(BaseNavigator):
             self.selenium.checkboxUnselect('div.remember_me__opt_in input')
         except Exception:
             print(yellow('Could not click on "remember me" checkbox'))
-        self.selenium.waitAndClick(self.selenium.getElms(CSS_SEL_LOGIN_BUTTON).pop())
+        self.selenium.waitAndClick(CSS_SEL_LOGIN_BUTTON)
 
     def close_cookies_banner(self):
         self.selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE, 'Could not close cookies banner')

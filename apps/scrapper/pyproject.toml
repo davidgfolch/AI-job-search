@@ -19,9 +19,6 @@ dependencies = [
     "msgspec (>=0.20.0,<0.21.0)",
 ]
 
-[tool.poetry]
-package-mode = false
-
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
 commonlib = { path = "../../apps/commonlib/", develop = true }

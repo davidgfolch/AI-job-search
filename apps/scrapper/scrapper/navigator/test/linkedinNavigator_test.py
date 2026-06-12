@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, call, patch
-from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
+from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
 from selenium.common.exceptions import NoSuchElementException
 
 TEST_URL = "http://url"
@@ -49,14 +49,13 @@ class TestLinkedinNavigator:
             mock_selenium.checkboxUnselect.side_effect = Exception("error")
         user_elm = MagicMock()
         pwd_elm = MagicMock()
-        btn_elm = MagicMock()
-        mock_selenium.getElms.side_effect = [[user_elm], [pwd_elm], [btn_elm]]
+        mock_selenium.getElms.side_effect = [[user_elm], [pwd_elm]]
         navigator.login("user", "pass")
         if not checkbox_raises_error:
             mock_selenium.sendKeys.assert_any_call(user_elm, 'user')
             mock_selenium.sendKeys.assert_any_call(pwd_elm, 'pass')
             mock_selenium.checkboxUnselect.assert_called_with('div.remember_me__opt_in input')
-        mock_selenium.waitAndClick.assert_called_with(btn_elm)
+        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_LOGIN_BUTTON)
 
     @pytest.mark.parametrize("getElms_return, expected", [
         ([], True),
