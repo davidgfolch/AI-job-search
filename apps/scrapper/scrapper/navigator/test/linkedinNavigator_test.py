@@ -57,6 +57,16 @@ class TestLinkedinNavigator:
             mock_selenium.checkboxUnselect.assert_called_with('div.remember_me__opt_in input')
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_LOGIN_BUTTON)
 
+    def test_loginSubmit(self, navigator, mock_selenium):
+        navigator.loginSubmit()
+        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_LOGIN_BUTTON)
+
+    @patch('scrapper.navigator.linkedinNavigator.sleep')
+    def test_loginSubmit_fallback(self, mock_sleep, navigator, mock_selenium):
+        mock_selenium.waitAndClick.side_effect = [Exception("err"), None]
+        navigator.loginSubmit()
+        assert mock_selenium.waitAndClick.call_count == 2
+
     @pytest.mark.parametrize("getElms_return, expected", [
         ([], True),
         (['element'], False),
@@ -123,6 +133,16 @@ class TestLinkedinNavigator:
         t, c, l, u, h = navigator.getJobInList(0)
         # fit html will be "Preference", job html is "job_html"
         assert h == "Preferencejob_html"
+
+    @pytest.mark.parametrize("current_idx, expected_method", [
+        (1, 'getJobInList'),
+        (None, 'getJobInList_directUrl'),
+    ])
+    def test_get_job_data(self, navigator, mock_selenium, current_idx, expected_method):
+        navigator.current_idx = current_idx
+        with patch.object(navigator, expected_method) as mock_method:
+            navigator.get_job_data()
+            mock_method.assert_called_once()
 
     def test_getJobInList(self, navigator, mock_selenium):
         mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
