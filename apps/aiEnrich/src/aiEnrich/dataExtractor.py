@@ -1,16 +1,13 @@
 import json
 import time
 import traceback
-from crewai import LLM, Agent, Crew, Process, Task
-from crewai.project import CrewBase, agent, crew, task
-from crewai.crews.crew_output import CrewOutput
 
+from commonlib.json_helpers import rawToJson
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.terminalColor import magenta, printHR, yellow, red
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.ai_helpers import (
-    combineTaskResults,
     footer,
     mapJob,
     printJob,
@@ -21,9 +18,31 @@ from commonlib.ai_helpers import (
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
+from .ollama_client import query_ollama
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
+
+PROMPT_TEMPLATE = """Analyze the following job offer and extract structured information.
+
+Job Offer:
+{markdown}
+
+Extract the following information:
+- Required technologies (comma-separated list)
+- Optional technologies (comma-separated list)
+- Salary information (if available)
+- Modality (must be exactly REMOTE, HYBRID, or ON_SITE)
+
+A valid JSON object with the extracted information. Include all fields even if empty.
+IMPORTANT: Use JSON ARRAYS for technology lists (e.g., ["technology1", "technology2"]). Do NOT use comma-separated strings inside quotes.
+The json output must have the following fields and structure:
+{{
+  "required_technologies": ["technology1", "technology2"],
+  "optional_technologies": ["technology3", "technology4"],
+  "salary": "...",
+  "modality": "..."
+}}"""
 
 
 def get_job_enabled() -> bool:
@@ -38,13 +57,11 @@ def get_timeout_job() -> int:
     return int(getEnv("AI_ENRICH_TIMEOUT_JOB", "90"))
 
 
-VERBOSE = False
+def get_model() -> str:
+    return getEnv("AI_ENRICH_OLLAMA_MODEL", "ollama/qwen2.5:3b")
+
+
 DEBUG = False
-LLM_CFG = LLM(
-    model=getEnv("AI_ENRICH_OLLAMA_MODEL", "ollama/qwen2.5:3b"),
-    base_url=get_ollama_base_url(),
-    temperature=0,
-)
 
 stopWatch = StopWatch()
 totalCount = 0
@@ -61,13 +78,12 @@ def dataExtractor() -> int:
         total = repo.count_pending_enrichment()
         if total is None or total == 0:
             return 0
-        crew = DataExtractor().crew()
         logger.info("jobs.found", total=total, module="aiEnrich")
         collector.set_pending("aiEnrich", total)
         if total > 0:
             stopWatch.start()
             for idx, id in enumerate(_getJobIdsList(repo)):
-                _process_job_safe(repo, crew, id, total, idx, "enrich")
+                _process_job_safe(repo, id, total, idx, "enrich")
         return total
 
 
@@ -81,16 +97,14 @@ def retry_failed_jobs() -> int:
         error_id = repo.get_enrichment_error_id_retry()
         if error_id is None:
             return 0
-        crew = DataExtractor().crew()
         logger.info("job.retry", job_id=error_id)
         stopWatch.start()
-        _process_job_safe(repo, crew, error_id, 1, 0, "retry")
+        _process_job_safe(repo, error_id, 1, 0, "retry")
         return 1
 
 
 def _process_job_safe(
     repo: AiEnrichRepository,
-    crew: Crew,
     id: int,
     total: int,
     idx: int,
@@ -112,9 +126,17 @@ def _process_job_safe(
         title, company, markdown = mapJob(job)
         try:
             logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx)
-            inputs = {"markdown": f"# {title} \n {markdown}"}
-            crewOutput: CrewOutput = crew.kickoff(inputs=inputs)
-            result = combineTaskResults(crewOutput, DEBUG)
+            prompt = PROMPT_TEMPLATE.format(markdown=f"# {title} \n {markdown}")
+            raw = query_ollama(
+                prompt=prompt,
+                model=get_model(),
+                base_url=get_ollama_base_url(),
+                timeout=get_timeout_job(),
+                json_mode=True,
+            )
+            if raw is None:
+                raise Exception("Ollama returned no response")
+            result = rawToJson(raw)
             logger.info("job.result", job_id=id, result=result)
             if result is not None:
                 _save(repo, id, result)
@@ -156,35 +178,3 @@ def _getJobIdsList(repo: AiEnrichRepository) -> list[int]:
     jobIds = repo.get_pending_enrichment_ids()
     logger.debug("job.pending_ids", ids=jobIds)
     return jobIds
-
-
-@CrewBase
-class DataExtractor:
-    agents_config = "config/dataExtractor/agents.yaml"
-    tasks_config = "config/dataExtractor/tasks.yaml"
-
-    @agent
-    def extractor_agent(self) -> Agent:
-        config = self.agents_config["extractor_agent"]
-        result = Agent(
-            llm=LLM_CFG,
-            config=config,
-            result_as_answer=True,
-            verbose=VERBOSE,
-            max_iter=1,
-            max_execution_time=get_timeout_job(),
-        )
-        return result
-
-    @task
-    def extractor_task(self) -> Task:
-        config = self.tasks_config["extractor_task"]
-        return Task(config=config, verbose=VERBOSE)
-
-    @crew
-    def crew(self) -> Crew:
-        agents = [self.extractor_agent()]
-        tasks = [self.extractor_task()]
-        return Crew(
-            agents=agents, tasks=tasks, process=Process.sequential, verbose=VERBOSE
-        )

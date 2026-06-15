@@ -5,8 +5,10 @@ from importlib.metadata import version as _v
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
-from commonlib.observability import get_logger
+from commonlib.observability import configure_logging, get_logger
 from commonlib.terminalColor import cyan
+
+configure_logging("aiEnrichNew")
 from commonlib.terminalUtil import consoleTimer
 import time
 from .dataExtractor import dataExtractor, retry_failed_jobs

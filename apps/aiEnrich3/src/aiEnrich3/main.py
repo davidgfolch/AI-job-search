@@ -7,8 +7,10 @@ from typing import Optional
 from aiEnrich3.dataExtractor import dataExtractor
 from aiEnrich3.pipeline import ExtractionPipeline
 from aiEnrich3.config import get_job_enabled, get_skill_enabled
-from commonlib.observability import get_logger
+from commonlib.observability import configure_logging, get_logger
 from commonlib.services.metrics_collector import MetricsCollector
+
+configure_logging("aiEnrich3")
 from commonlib.terminalColor import cyan
 
 logger = get_logger("aiEnrich3.main")

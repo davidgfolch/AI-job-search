@@ -1,4 +1,3 @@
-from crewai import Agent, Task, Crew, Process, LLM
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.skill_enricher_service import (
     process_skill_enrichment,
@@ -6,17 +5,11 @@ from commonlib.skill_enricher_service import (
 )
 from commonlib.environmentUtil import getEnvBool, getEnv
 from commonlib.observability import get_logger
-import os
+from .ollama_client import query_ollama
 
 logger = get_logger("aiEnrich.skillEnricher")
 
 AI_ENRICH_SKILL_CATEGORIES = getEnv("AI_ENRICH_SKILL_CATEGORIES", required=True)
-
-LLM_CFG = LLM(
-    model="ollama/llama3.2",
-    base_url=getEnv("AI_ENRICH_OLLAMA_BASE_URL", "http://localhost:11434"),
-    temperature=0,
-)
 
 SYSTEM_PROMPT = f"""You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
@@ -38,24 +31,19 @@ def generate_skill_description(skill_name, context="") -> tuple[str, str]:
 
     logger.info("skill.started", skill=skill_name, has_context=bool(context))
 
-    agent = Agent(
-        role="Skill Describer",
-        goal="Generate precise descriptions for technical skills",
-        backstory="You are an expert at defining technical skills for job matching.",
-        verbose=False,
-        allow_delegation=False,
-        llm=LLM_CFG,
+    prompt = f"Generate a deep technical description for the skill: {skill_name}. {context_str}\n{SYSTEM_PROMPT}"
+    raw = query_ollama(
+        prompt=prompt,
+        model="ollama/llama3.2",
+        base_url=getEnv("AI_ENRICH_OLLAMA_BASE_URL", "http://localhost:11434"),
+        timeout=90,
+        json_mode=False,
     )
+    if raw is None:
+        logger.error("skill.failed", skill=skill_name)
+        return ("", "Other")
 
-    task = Task(
-        description=f"Generate a deep technical description for the skill: {skill_name}. {context_str}\n{SYSTEM_PROMPT}",
-        expected_output="A plain text string with sections for Summary, Deep Technical Details, and Category.",
-        agent=agent,
-    )
-
-    crew = Crew(agents=[agent], tasks=[task], verbose=False, process=Process.sequential)
-
-    result = str(crew.kickoff()).strip().strip('"').strip("'")
+    result = raw.strip().strip('"').strip("'")
     parsed = parse_skill_llm_output(result)
     logger.info("skill.completed", skill=skill_name, has_description=bool(parsed[0]))
     return parsed

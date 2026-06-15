@@ -20,6 +20,7 @@ scripts/mysql/backups/*
 apps/*/cv/*
 **/**/coverage.xml
 **/**/coverage.txt
+**/logs/**
 apps/web/coverage/.tmp
 
 !AI-job-search.code-workspace
