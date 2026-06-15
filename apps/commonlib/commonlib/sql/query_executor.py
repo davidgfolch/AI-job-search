@@ -5,8 +5,10 @@ import mysql.connector as mysqlConnector
 from contextlib import contextmanager
 
 from commonlib.sqlUtil import getColumnTranslated
-from ..terminalColor import green
+from ..observability import get_logger
 from .connection_manager import get_connection
+
+logger = get_logger("query_executor")
 
 T = TypeVar("T")
 
@@ -74,7 +76,7 @@ class QueryExecutor:
             def op(cursor):
                 cursor.execute(query, params)
                 if cursor.rowcount > 0:
-                    print(green(f'Updated database: {params}'), flush=True)
+                    logger.info("db.updated", params=params)
                 else:
                     from commonlib.sqlUtil import error
                     error(Exception('No rows affected'))

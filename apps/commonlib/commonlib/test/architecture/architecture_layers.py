@@ -22,7 +22,7 @@ def _validate_dependencies(deps, imports, should_exist):
     invalid = []
     for layer, msg in deps:
         has_dep = any(
-            imp.startswith(layer) or imp.startswith(f'apps.backend.{layer}') 
+            imp.startswith(layer) or imp.startswith(f'apps.backend.{layer}') or imp.startswith(f'commonlib.{layer}')
             for imp in imports
         )
         if should_exist and not has_dep:

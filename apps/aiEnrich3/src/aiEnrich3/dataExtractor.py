@@ -1,10 +1,15 @@
+import time
 from typing import Optional, Tuple
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.observability import get_logger
+from commonlib.services.metrics_collector import MetricsCollector
 from aiEnrich3.pipeline import ExtractionPipeline
 from aiEnrich3.config import get_batch_size, get_job_enabled
 from aiEnrich3.services.job_enrichment_service import enrich_jobs, retry_failed_job
-from commonlib.terminalColor import yellow
+
+logger = get_logger("aiEnrich3.dataExtractor")
+collector = MetricsCollector()
 
 
 def dataExtractor(
@@ -14,23 +19,17 @@ def dataExtractor(
         return 0, None
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
-
-        # Check pending first to avoid loading models into RAM/VRAM if not needed
         total_pending = repo.count_pending_enrichment()
         error_id = repo.get_enrichment_error_id_retry()
 
         if total_pending == 0 and error_id is None:
-            print("No jobs pending enrichment and no errors to retry.")
-            # Unload pipeline if no jobs pending to save memory
             return 0, None
 
         if pipeline is None:
-            print(
-                yellow(
-                    f"Loading Local CPU Pipeline (GLiNER & mDeBERTa) as there are {total_pending} jobs to process..."
-                )
-            )
+            logger.info("pipeline.loading", total_pending=total_pending)
             pipeline = ExtractionPipeline()
+
+        collector.set_pending("aiEnrich3", total_pending)
 
         processed = 0
         if error_id is not None:

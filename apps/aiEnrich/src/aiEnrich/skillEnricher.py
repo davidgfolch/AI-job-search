@@ -5,7 +5,10 @@ from commonlib.skill_enricher_service import (
     parse_skill_llm_output,
 )
 from commonlib.environmentUtil import getEnvBool, getEnv
+from commonlib.observability import get_logger
 import os
+
+logger = get_logger("aiEnrich.skillEnricher")
 
 AI_ENRICH_SKILL_CATEGORIES = getEnv("AI_ENRICH_SKILL_CATEGORIES", required=True)
 
@@ -33,6 +36,8 @@ def generate_skill_description(skill_name, context="") -> tuple[str, str]:
         f"\nContext (related technologies found in jobs): {context}" if context else ""
     )
 
+    logger.info("skill.started", skill=skill_name, has_context=bool(context))
+
     agent = Agent(
         role="Skill Describer",
         goal="Generate precise descriptions for technical skills",
@@ -51,7 +56,9 @@ def generate_skill_description(skill_name, context="") -> tuple[str, str]:
     crew = Crew(agents=[agent], tasks=[task], verbose=False, process=Process.sequential)
 
     result = str(crew.kickoff()).strip().strip('"').strip("'")
-    return parse_skill_llm_output(result)
+    parsed = parse_skill_llm_output(result)
+    logger.info("skill.completed", skill=skill_name, has_description=bool(parsed[0]))
+    return parsed
 
 
 def skillEnricher() -> int:

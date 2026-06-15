@@ -26,6 +26,9 @@ apps/web/coverage/.tmp
 .a0proj/
 *.log
 
+# Runtime metrics data
+apps/**/data/metrics/
+
 # Playwright
 playwright-report
 test-results

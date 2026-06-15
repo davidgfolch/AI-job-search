@@ -8,14 +8,12 @@ class TestMain(unittest.TestCase):
     @patch("aiEnrichNew.main.skillEnricher")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
-    @patch("aiEnrichNew.main.printHR")
     @patch("aiEnrichNew.main.cyan", side_effect=lambda x: x)
     @patch("time.sleep")
     def test_run_cv_match_enabled(
         self,
         mock_sleep,
         mock_cyan,
-        mock_printHR,
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_skillEnricher,
@@ -37,12 +35,10 @@ class TestMain(unittest.TestCase):
     @patch("aiEnrichNew.main.skillEnricher")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
-    @patch("aiEnrichNew.main.printHR")
     @patch("aiEnrichNew.main.cyan", side_effect=lambda x: x)
     def test_run_cv_match_disabled(
         self,
         mock_cyan,
-        mock_printHR,
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_skillEnricher,
@@ -64,12 +60,10 @@ class TestMain(unittest.TestCase):
     @patch("aiEnrichNew.main.skillEnricher")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
-    @patch("aiEnrichNew.main.printHR")
     @patch("aiEnrichNew.main.cyan", side_effect=lambda x: x)
     def test_run_data_extractor_nonzero(
         self,
         mock_cyan,
-        mock_printHR,
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_skillEnricher,
@@ -89,14 +83,12 @@ class TestMain(unittest.TestCase):
     @patch("aiEnrichNew.main.skillEnricher")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
-    @patch("aiEnrichNew.main.printHR")
     @patch("aiEnrichNew.main.cyan", side_effect=lambda x: x)
     @patch("time.sleep")
     def test_run_skill_enricher_nonzero(
         self,
         mock_sleep,
         mock_cyan,
-        mock_printHR,
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_skillEnricher,
@@ -117,14 +109,12 @@ class TestMain(unittest.TestCase):
     @patch("aiEnrichNew.main.skillEnricher")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
-    @patch("aiEnrichNew.main.printHR")
     @patch("aiEnrichNew.main.cyan", side_effect=lambda x: x)
     @patch("time.sleep")
     def test_run_retry_failed_jobs_nonzero(
         self,
         mock_sleep,
         mock_cyan,
-        mock_printHR,
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_skillEnricher,

@@ -54,6 +54,12 @@ uv run pytest
 - `models/settings.py`: Pydantic models for settings request/response.
 - `services/settings_service.py`: Business logic for reading/writing `.env` / `.env.secrets` and scrapper state (MySQL via `ScrapperStateRepository`).
 
+## Metrics API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/enrichment/metrics` | Returns per-module enrichment metrics from `commonlib`'s `MetricsCollector` (jobs, durations p50/p90/p99, errors, cache stats). See [`commonlib`](../commonlib/README.md#observability). |
+
 ## Settings API
 
 | Method | Endpoint | Description |
