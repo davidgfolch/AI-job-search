@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 
 from cron import config
@@ -30,7 +30,7 @@ class Scheduler:
         self._is_first_tick = True
 
     def tick(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         for job in self._jobs:
             state = self._cron_state.get_state(job.name) or {}
             last_run = state.get("last_run_at")
@@ -39,7 +39,8 @@ class Scheduler:
                 should_run = True
             else:
                 if isinstance(last_run, str):
-                    last_run = datetime.fromisoformat(last_run.replace("Z", "+00:00"))
+                    last_run = last_run.replace("Z", "+00:00")
+                    last_run = datetime.fromisoformat(last_run if "+" in last_run else last_run + "+00:00")
                 cadency_seconds = _parse_cadency(job.cadency)
                 should_run = (now - last_run).total_seconds() >= cadency_seconds
 
