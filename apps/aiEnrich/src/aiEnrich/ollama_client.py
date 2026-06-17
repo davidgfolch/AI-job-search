@@ -1,9 +1,14 @@
+import os
 import time
 import requests
 
 from commonlib.observability import get_logger
 
 logger = get_logger("aiEnrich.ollama_client")
+
+
+def _get_num_predict() -> int:
+    return int(os.getenv("AI_ENRICH_MAX_NEW_TOKENS", "2048"))
 
 
 def _strip_provider_prefix(model: str) -> str:
@@ -23,7 +28,7 @@ def query_ollama(
         "model": _strip_provider_prefix(model),
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": 0, "num_predict": 256},
+        "options": {"temperature": 0, "num_predict": _get_num_predict()},
     }
     if json_mode:
         payload["format"] = "json"

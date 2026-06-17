@@ -80,7 +80,7 @@ class TestQueryOllama:
         assert call_kwargs["json"]["model"] == "custom-model"
         assert call_kwargs["timeout"] == 30
         assert call_kwargs["json"]["options"]["temperature"] == 0
-        assert call_kwargs["json"]["options"]["num_predict"] == 256
+        assert call_kwargs["json"]["options"]["num_predict"] == 2048
 
     @patch("aiEnrich.ollama_client.requests.post")
     def test_base_url_trailing_slash_stripped(self, mock_post):
