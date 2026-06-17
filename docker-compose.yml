@@ -40,6 +40,10 @@ services:
       - ./scripts:/app/scripts
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
+      - ./data/metrics:/app/data/metrics
+      - ./apps/aiEnrich/data/logs:/logs/aienrich:ro
+      - ./apps/aiEnrich3/data/logs:/logs/aienrich3:ro
+      - ./apps/aiEnrichNew/data/logs:/logs/aienrichnew:ro
     ports:
       - "8000:8000"
     environment:
@@ -47,6 +51,7 @@ services:
       - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
       - MONGO_URI=mongodb://${MONGO_USERNAME:-root}:${MONGO_PASSWORD:-rootPass}@mongo_db:27017/
       - TZ=${GLOBAL_TZ}
+      - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -114,11 +119,13 @@ services:
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
+      - ./data/metrics:/app/data/metrics
     environment:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
       - AI_ENRICH_OLLAMA_BASE_URL=http://ollama:11434
+      - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -143,10 +150,12 @@ services:
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models (set HF_HOME in .env if needed)
+      - ./data/metrics:/app/data/metrics
     environment:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
       - TZ=${GLOBAL_TZ}
+      - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -193,10 +202,12 @@ services:
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
+      - ./data/metrics:/app/data/metrics
     environment:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
+      - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
     depends_on:
       mysql_db:
         condition: service_healthy
@@ -234,6 +245,7 @@ services:
   # MongoDB - Salary History & future concerns
   mongo_db:
     image: mongo:7
+    command: ['--quiet']
     container_name: ai-job-search-mongo
     restart: unless-stopped
     environment:
@@ -306,6 +318,41 @@ services:
     # Note: Scrapper runs as a batch job, not a long-running service
     # Use: docker-compose run scrapper to execute manually
 
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ai-job-search-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Grafana - Metrics Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ai-job-search-grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+
 networks:
   ai-job-search:
     driver: bridge
@@ -314,4 +361,8 @@ volumes:
   mysql_data:
     driver: local
   mongo_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
     driver: local

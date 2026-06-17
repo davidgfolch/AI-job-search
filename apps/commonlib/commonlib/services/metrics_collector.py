@@ -98,8 +98,14 @@ class MetricsCollector:
 
     def persist(self):
         os.makedirs(os.path.dirname(METRICS_FILE), exist_ok=True)
+        raw = {"modules": {name: dict(m) for name, m in self._modules.items()}}
         with open(METRICS_FILE, "w") as f:
-            json.dump(self.get_snapshot(), f, indent=2)
+            json.dump(raw, f, indent=2, default=str)
+
+    def reload(self):
+        with self._lock:
+            self._modules.clear()
+            self._load()
 
     def _load(self):
         if os.path.exists(METRICS_FILE):
@@ -111,5 +117,9 @@ class MetricsCollector:
                         for k, v in mdata.items():
                             if k not in ("p50", "p90", "p99", "avg"):
                                 m[k] = v
+                        if not m.get("durations"):
+                            for k in ("p50", "p90", "p99", "avg"):
+                                if k in mdata:
+                                    m[k] = mdata[k]
             except (json.JSONDecodeError, IOError):
                 pass

@@ -166,7 +166,7 @@ def _process_job_batch_local(
         success = False
         try:
             result = pipeline.process_job(text)
-            logger.info("job.result", job_id=job_id, result=result)
+            logger.info("job.result", job_id=job_id, result=result, duration=round(time.time() - job_start, 3))
             _save_job_result(repo, job_id, company, result)
             success = True
 

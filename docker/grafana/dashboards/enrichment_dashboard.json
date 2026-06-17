@@ -1,0 +1,253 @@
+{
+  "title": "AI Enrichment Performance",
+  "uid": "ai-enrichment-performance",
+  "schemaVersion": 37,
+  "version": 1,
+  "timezone": "browser",
+  "panels": [
+    {
+      "datasource": {
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "Per-job enrichment duration in seconds, sourced from JSONL log files\n\n**Type:** *gauge*\n\n",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 9,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 10,
+      "maxDataPoints": 500,
+      "options": {
+        "annotations": {
+          "multiLane": true
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.1",
+      "targets": [
+        {
+          "expr": "avg(ai_enrich_job_duration_seconds{ })",
+          "fromExploreMetrics": false,
+          "legendFormat": "avg",
+          "refId": "ai_enrich_job_duration_seconds-avg"
+        }
+      ],
+      "title": "ai_enrich_job_duration_seconds",
+      "type": "timeseries"
+    },    
+    {
+      "title": "Total Jobs Processed",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "ai_enrich_total_jobs",
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Total Errors",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 0 },
+      "targets": [
+        {
+          "expr": "ai_enrich_total_errors",
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }] }
+        }
+      }
+    },
+    {
+      "title": "Active Modules",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "expr": "ai_enrich_modules_count",
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue" }] }
+        }
+      }
+    },
+    {
+      "title": "Pending Jobs by Module",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "ai_enrich_pending_jobs",
+          "legendFormat": "{{module}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Jobs Processed by Module",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 6 },
+      "targets": [
+        {
+          "expr": "ai_enrich_jobs_processed_total",
+          "legendFormat": "{{module}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Success vs Failed by Module",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "ai_enrich_jobs_succeeded_total",
+          "legendFormat": "{{module}} succeeded"
+        },
+        {
+          "expr": "ai_enrich_jobs_failed_total",
+          "legendFormat": "{{module}} failed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Duration p50 by Module (seconds)",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 14 },
+      "targets": [
+        {
+          "expr": "ai_enrich_duration_seconds_p50",
+          "legendFormat": "{{module}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Duration Percentiles (seconds)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "expr": "ai_enrich_duration_seconds_p50",
+          "legendFormat": "{{module}} p50"
+        },
+        {
+          "expr": "ai_enrich_duration_seconds_p90",
+          "legendFormat": "{{module}} p90"
+        },
+        {
+          "expr": "ai_enrich_duration_seconds_p99",
+          "legendFormat": "{{module}} p99"
+        },
+        {
+          "expr": "ai_enrich_duration_seconds_avg",
+          "legendFormat": "{{module}} avg"
+        }
+      ]
+    }
+  ]
+}

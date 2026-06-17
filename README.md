@@ -38,7 +38,7 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of skills
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
-- **Observability**: Structured logging + runtime metrics via `commonlib` (`MetricsCollector`); used by `aiEnrich`, `aiEnrichNew`, `aiEnrich3`; exposed at `GET /api/enrichment/metrics`
+- **Observability**: Structured logging + Prometheus metrics via `commonlib`; scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
@@ -103,7 +103,7 @@ The `docker-compose.yml` defines several service profiles to control which conta
 
 | Profile        | Services                          | Description                      |
 | -------------- | --------------------------------- | -------------------------------- |
-| _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller` | Unprofiled core services (always start) |
+| _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
 | `aienrich`     | `aienrich`                        | CrewAI AI enrichment             |
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |

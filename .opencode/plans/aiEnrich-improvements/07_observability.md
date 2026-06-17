@@ -247,13 +247,48 @@ Keep one terminal line per job for progress feedback (e.g., `print(f"[{idx+1}/{t
 8. Register router in `backend/api/main.py`
 9. Test: run enrichment, verify JSON file at `data/metrics/enrichment_metrics.json`, verify `GET /api/enrichment/metrics` returns data
 
-## Prometheus Migration Path (Future Iteration)
+## Prometheus + Grafana (Phase 2 — Implemented)
 
 ```
 Phase 1 (now):    print() → structlog + MetricsCollector → JSON file → backend API
-Phase 2 (future): MetricsCollector → prometheus_client.Histogram/Counter/Gauge
-                  JSON file → direct /metrics endpoint via prometheus_client
-                  Grafana dashboard
+Phase 2 (done):   commonlib/prometheus_exporter.py converts snapshot → Prometheus format
+                  backend /metrics endpoint → served as text/plain via prometheus_client
+                  Prometheus scrapes backend:8000/metrics
+                  Grafana dashboards via provisioned datasource
+                  docker-compose includes prometheus + grafana services
 ```
 
-The data model (counters, histograms with p50/p90/p99, labels by module) is already Prometheus-compatible. When ready, replace file-based storage with `prometheus_client` and expose `/metrics` on the backend port.
+### Architecture
+
+```
+aiEnrich* apps → MetricsCollector → JSON file
+                    ↓ (read by backend)
+Backend /api/enrichment/metrics  (JSON, kept for backward compat)
+Backend /metrics                 (Prometheus text format via prometheus_client)
+                    ↓ (scraped)
+Prometheus (port 9090)
+    ↓ (queried)
+Grafana (port 3000, admin/admin)
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `apps/commonlib/commonlib/prometheus_exporter.py` | Converts MetricsCollector snapshot → Prometheus format |
+| `apps/backend/api/metrics.py` | Exposes `/enrichment/metrics` (JSON) and `/metrics` (Prometheus) |
+| `docker/prometheus/prometheus.yml` | Prometheus scrape config |
+| `docker/grafana/datasources/prometheus.yml` | Grafana Prometheus datasource |
+| `docker/grafana/dashboards/enrichment_dashboard.json` | Pre-built Grafana dashboard |
+| `docker/grafana/dashboards/dashboard.yml` | Dashboard provisioning config |
+
+### Usage
+
+```bash
+docker-compose up -d prometheus grafana
+# Prometheus: http://localhost:9090
+# Grafana:    http://localhost:3000 (admin/admin)
+# Dashboard: "AI Enrichment Performance" (auto-provisioned)
+```
+
+The data model uses `Gauge` metrics (not `Counter`/`Histogram`) because the backend reads absolute values from the shared JSON file, not live process counters. This avoids per-process scrape targets while still providing full Prometheus compatibility.

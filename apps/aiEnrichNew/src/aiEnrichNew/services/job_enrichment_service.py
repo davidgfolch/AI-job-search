@@ -128,12 +128,17 @@ def _process_job_batch_pipeline(
     def apply_template(tokenizer, messages):
         return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
+    _timing = {"last": time.time()}
+
     def on_success(item: Dict[str, Any], generated_text: str):
         job_id = item['id']
         company = item['company']
+        now = time.time()
+        job_duration = now - _timing["last"]
+        _timing["last"] = now
 
         result = parse_job_enrichment_result(generated_text)
-        logger.info("job.result", job_id=job_id, result=result)
+        logger.info("job.result", job_id=job_id, result=result, duration=round(job_duration, 3))
 
         if result is not None:
             _save_job_result(repo, job_id, company, result)

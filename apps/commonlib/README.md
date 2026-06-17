@@ -11,7 +11,7 @@ This package provides utility modules for:
 - **Utilities**: General purpose helpers (`util.py`, `decorator/`, `stopWatch.py`).
 - **System**: Power management utilities (`keep_system_awake.py`, `wake_timer.py`) to keep the system running during long scrap jobs.
 - **Terminal**: Console output coloring (`terminalColor.py`).
-- **Observability**: Structured logging via `structlog` (`observability.py`), runtime metrics collection (`services/metrics_collector.py` — singleton tracking job counts, durations, error rates, persisted to `data/metrics/enrichment_metrics.json`).
+- **Observability**: Structured logging via `structlog` (`observability.py`), runtime metrics collection (`services/metrics_collector.py`), and Prometheus text-format export (`prometheus_exporter.py` — converts the in-memory snapshot to `prometheus_client` format for the backend's `/metrics` endpoint).
 
 ## MySQL connection
 

@@ -137,10 +137,10 @@ def _process_job_safe(
             if raw is None:
                 raise Exception("Ollama returned no response")
             result = rawToJson(raw)
-            logger.info("job.result", job_id=id, result=result)
             if result is not None:
                 _save(repo, id, result)
                 success = True
+            logger.info("job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3))
         except (Exception, KeyboardInterrupt) as ex:
             _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:

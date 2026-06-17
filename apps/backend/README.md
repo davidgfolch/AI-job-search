@@ -58,7 +58,7 @@ uv run pytest
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/enrichment/metrics` | Returns per-module enrichment metrics from `commonlib`'s `MetricsCollector` (jobs, durations p50/p90/p99, errors, cache stats). See [`commonlib`](../commonlib/README.md#observability). |
+| `GET` | `/metrics` | Prometheus text-format endpoint scraped by Prometheus (`docker-compose` service on `:9090`). Includes per-module gauges for all collector metrics. Grafana dashboard at `:3000` (admin/admin). |
 
 ## Settings API
 
