@@ -18,7 +18,7 @@ from commonlib.ai_helpers import (
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
-from .ollama_client import query_ollama
+from .ollama_client import query_ollama, ping_ollama
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
@@ -72,6 +72,9 @@ jobErrors = set[tuple[int, str]]()
 def dataExtractor() -> int:
     if not get_job_enabled():
         return 0
+    if not ping_ollama(base_url=get_ollama_base_url()):
+        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich")
+        return 0
     global totalCount, jobErrors
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
@@ -89,6 +92,9 @@ def dataExtractor() -> int:
 
 def retry_failed_jobs() -> int:
     if not get_job_enabled():
+        return 0
+    if not ping_ollama(base_url=get_ollama_base_url()):
+        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich")
         return 0
     global totalCount, jobErrors
 
@@ -135,12 +141,13 @@ def _process_job_safe(
                 json_mode=True,
             )
             if raw is None:
-                raise Exception("Ollama returned no response")
-            result = rawToJson(raw)
-            if result is not None:
-                _save(repo, id, result)
-                success = True
-            logger.info("job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3))
+                logger.warning("job.skipped_ollama_unreachable", job_id=id, title=title, company=company)
+            else:
+                result = rawToJson(raw)
+                if result is not None:
+                    _save(repo, id, result)
+                    success = True
+                logger.info("job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3))
         except (Exception, KeyboardInterrupt) as ex:
             _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:

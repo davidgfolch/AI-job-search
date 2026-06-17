@@ -11,6 +11,16 @@ def _get_num_predict() -> int:
     return int(os.getenv("AI_ENRICH_MAX_NEW_TOKENS", "2048"))
 
 
+def ping_ollama(base_url: str = "http://localhost:11434", timeout: int = 5) -> bool:
+    try:
+        resp = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=timeout)
+        resp.raise_for_status()
+        return True
+    except Exception as e:
+        logger.error("ollama.ping_failed", error=str(e), base_url=base_url)
+        return False
+
+
 def _strip_provider_prefix(model: str) -> str:
     if "/" in model:
         return model.split("/", 1)[1]
