@@ -71,6 +71,22 @@ def test_scheduler_re_runs_errored_jobs():
     sut.tick()
     assert job.run_count == 2
 
+def test_scheduler_handles_naive_datetime_from_mongo():
+    naive_dt = datetime(2020, 1, 1, 0, 0, 0)
+    assert naive_dt.tzinfo is None
+    cron_state = MagicMock()
+    cron_state.get_state.return_value = {
+        "last_run_at": naive_dt,
+        "status": "ok",
+    }
+    job = _MockJob(cadency="1s")
+    sut = Scheduler(cron_state, [job])
+
+    sut.tick()
+    sut.tick()
+
+    assert job.run_count == 2
+
 def test_scheduler_parses_string_last_run_at():
     cron_state = MagicMock()
     cron_state.get_state.return_value = {

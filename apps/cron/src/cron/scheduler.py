@@ -41,6 +41,8 @@ class Scheduler:
                 if isinstance(last_run, str):
                     last_run = last_run.replace("Z", "+00:00")
                     last_run = datetime.fromisoformat(last_run if "+" in last_run else last_run + "+00:00")
+                if isinstance(last_run, datetime) and last_run.tzinfo is None:
+                    last_run = last_run.replace(tzinfo=timezone.utc)
                 cadency_seconds = _parse_cadency(job.cadency)
                 should_run = (now - last_run).total_seconds() >= cadency_seconds
 
