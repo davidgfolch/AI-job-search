@@ -110,8 +110,10 @@ def parse_skill_llm_output(result: str) -> tuple[str, str]:
         category = category_part.replace('*', '').replace('`', '').strip()
         
         # Split description to be everything BEFORE the category line
-        # This is a bit heuristic; if Category is at the end, we take everything before it.
-        # Find the start index of the match in the original string
+        # If Category is at the start, take everything AFTER it instead
         start_index = match.start()
-        description = result[:start_index].strip()
+        if start_index == 0:
+            description = result[match.end():].strip()
+        else:
+            description = result[:start_index].strip()
     return description, category

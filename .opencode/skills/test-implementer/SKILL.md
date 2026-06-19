@@ -26,6 +26,7 @@ Use this skill when you need to implement or run tests. Follow these strict guid
 - **Abstraction**: Avoid duplicated code. Extract common setup, teardown, and helper logic into specialized test files (see Structure above).
 - **Constants**: Reuse production code constants. Do NOT duplicate string literals or magic numbers in tests; import them from the production code.
 - **SOLID/KISS**: Keep tests simple and focused.
+- **Parameterized Tests**: Use `@pytest.mark.parametrize` (Python) or `test.each` (Vitest) to avoid duplicate test code when testing the same function with multiple inputs/outputs. Each case must have a descriptive `id=` or name.
 - **Performance**: Unit tests MUST execute quickly (under 500ms each).
 - **Mocking**: To achieve the performance goal, all external layers (database, network, file system, etc.) and dependencies MUST be properly mocked. Do not rely on real I/O operations in unit tests.
 - **Handling State Updates (`act`)**: Always wrap code that triggers React state updates in `act(...)`.

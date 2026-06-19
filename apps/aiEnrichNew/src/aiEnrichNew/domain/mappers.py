@@ -1,6 +1,6 @@
 from typing import Tuple, Dict, Any, Optional
 from commonlib.ai_helpers import mapJob
-from ..config import get_job_system_prompt, get_skill_system_prompt, get_input_max_len
+from ..config import get_job_system_prompt, get_input_max_len
 
 def map_db_job_to_domain(job_row: Any) -> Dict[str, Any]:
     """
@@ -36,13 +36,4 @@ def build_job_prompt_messages(job: Dict[str, Any]) -> list[dict]:
         {"role": "user", "content": user_message}
     ]
 
-def build_skill_prompt_messages(skill_name: str, context: str) -> list[dict]:
-    """
-    Pure function to build chat messages for skill enrichment.
-    """
-    context_str = f"\nContext (related technologies found in jobs): {context}" if context else ""
-    user_message = f"Skill: {skill_name}{context_str}\n\nProvide a deep technical description."
-    return [
-        {"role": "system", "content": get_skill_system_prompt()},
-        {"role": "user", "content": user_message}
-    ]
+

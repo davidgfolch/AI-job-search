@@ -6,6 +6,7 @@
 ![aiEnrich](apps/aiEnrich/coverage.svg)
 ![aiEnrich3](apps/aiEnrich3/coverage.svg)
 ![aiEnrichNew](apps/aiEnrichNew/coverage.svg)
+![aiEnrichSkill](apps/aiEnrichSkill/coverage.svg)
 ![scrapper](apps/scrapper/coverage.svg)
 ![aiCvMatcher](apps/aiCvMatcher/coverage.svg)
 ![aiFormFiller](apps/aiFormFiller/coverage.svg)
@@ -27,6 +28,7 @@ This is a monorepo containing several applications and packages:
 | **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                          | Python, CrewAI, uv           |
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)     | Local AI enrichment using transformers pipeline           | Python, HuggingFace, uv      |
 | **AI Enrich 3**  | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
+| **AI Enrich Skill**| [`apps/aiEnrichSkill`](apps/aiEnrichSkill/README.md) | Local AI skill enrichment (Ollama & HuggingFace).        | Python, Transformers, uv     |
 | **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)     | Local fast CV matching.                                   | Python, SentenceTransformers |
 | **AI Form Filler**| [`apps/aiFormFiller`](apps/aiFormFiller/README.md) | AI-powered form question answerer using CV + preferences. | Python, FastAPI, HuggingFace |
 
@@ -106,6 +108,7 @@ The `docker-compose.yml` defines several service profiles to control which conta
 | _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
 | `aienrich`     | `aienrich`                        | CrewAI AI enrichment             |
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
+| `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
 | `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
 

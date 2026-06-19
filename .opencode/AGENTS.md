@@ -13,7 +13,10 @@ AI-powered job search monorepo with multi-platform scraping, AI enrichment, and 
 | **commonlib** | `apps/commonlib/` | Python utilities | Poetry |
 | **scrapper** | `apps/scrapper/` | Python, Selenium | Poetry |
 | **backend** | `apps/backend/` | Python, FastAPI | uv |
+| **aiEnrich** | `apps/aiEnrich/` | Python, CrewAI, Ollama | uv |
 | **aiEnrichNew** | `apps/aiEnrichNew/` | Python, Hugging Face | uv |
+| **aiEnrichSkill** | `apps/aiEnrichSkill/` | Python, Ollama & HuggingFace | uv |
+| **aiCvMatcher** | `apps/aiCvMatcher/` | Python, SentenceTransformers | uv |
 | **web** | `apps/web/` | React, TypeScript, Vite | npm |
 
 ## Build & Test Commands
@@ -76,7 +79,7 @@ poetry run pytest
 - **Naming**: snake_case for variables/functions, PascalCase for classes
 - **Error Handling**: Use specific exceptions, avoid bare except clauses
 - **Dependencies**: uv for new projects, Poetry for legacy (commonlib, scrapper)
-- **Testing**: pytest with `test_` prefix, use fixtures for setup/teardown
+- **Testing**: pytest with `test_` prefix, use fixtures for setup/teardown. Use `@pytest.mark.parametrize` with descriptive `id=` for repetitive test cases.
 
 ### TypeScript/React (Web Frontend)
 - **Imports**: External libs first, then internal modules, avoid relative import hell

@@ -5,10 +5,6 @@ def get_job_enabled() -> bool:
     return getEnvBool("AI_ENRICHNEW_JOB", True)
 
 
-def get_skill_enabled() -> bool:
-    return getEnvBool("AI_ENRICHNEW_SKILL", True)
-
-
 def get_job_system_prompt() -> str:
     return """You are an expert at analyzing job offers.
 Extract the following information from the job offer below and return it as a valid JSON object:
@@ -27,21 +23,6 @@ Format your response as a single valid JSON object strictly complying with this 
 Strictly JSON. No conversational text. No markdown blocks."""
 
 
-def get_skill_system_prompt() -> str:
-    categories = getEnv("AI_ENRICHNEW_SKILL_CATEGORIES", required=True)
-    return f"""You are an expert technical recruiter and software engineer.
-Your task is to provide a structured description for a given technical skill.
-The structure MUST be:
-1. **Summary**: A concise 1-2 sentence overview of what the skill is.
-2. **Deep Technical Details**: A detailed explanation including:
-   - Core Functionality
-   - Usage Types (library, framework, etc.)
-   - Key Modules/Components
-   - Integration with co-occurring technologies
-3. **Category**: One or more of [{categories}] (comma separated).
-Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
-
-
 def get_batch_size() -> int:
     return int(getEnv("AI_ENRICHNEW_BATCH_SIZE", "10"))
 
@@ -52,10 +33,6 @@ def get_input_max_len() -> int:
 
 def get_enrich_timeout_job() -> float:
     return float(getEnv("AI_ENRICHNEW_TIMEOUT_JOB", 90))
-
-
-def get_enrich_timeout_skill() -> float:
-    return float(getEnv("AI_ENRICHNEW_TIMEOUT_SKILL", 90))
 
 
 def should_cleanup_gpu() -> bool:

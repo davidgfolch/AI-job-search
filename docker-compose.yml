@@ -163,6 +163,35 @@ services:
     networks:
       - ai-job-search
 
+  # AI Skill Enrichment - Decoupled skill enrichment (Ollama / HuggingFace)
+  aienrichskill:
+    build:
+      context: .
+      dockerfile: apps/aiEnrichSkill/Dockerfile
+    container_name: ai-job-search-aienrichskill
+    profiles:
+      - aiEnrichSkill
+    volumes:
+      - ./apps/aiEnrichSkill:/app/apps/aiEnrichSkill
+      - /app/apps/aiEnrichSkill/.venv
+      - ./apps/commonlib:/app/apps/commonlib
+      - ./.env:/app/.env
+      - ./.env.secrets:/app/.env.secrets
+      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+      - COMMONLIB_DB_HOST=mysql_db
+      - TZ=${GLOBAL_TZ}
+      - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ai-job-search
+
   # AI CV Matcher - Local CV Matching extracted from AiEnrichNew
   aicvmatcher:
     build:
@@ -305,12 +334,15 @@ services:
       - ./.env.secrets:/app/.env.secrets
     environment:
       - PYTHONUNBUFFERED=1
-      - DISPLAY=:99 # For headless Chrome
+      - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
+      - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mysql_db:
         condition: service_healthy
-    restart: "no" # Manual start for scrapper
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - ai-job-search
     profiles:

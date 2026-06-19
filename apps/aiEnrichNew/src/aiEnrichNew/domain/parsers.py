@@ -1,7 +1,6 @@
 import json
 from typing import Dict, Any, Optional, Tuple
 from commonlib.ai_helpers import rawToJson, validateResult
-from commonlib.skill_enricher_service import parse_skill_llm_output as parse_skill_output_helper
 
 def parse_job_enrichment_result(llm_output: str) -> Optional[Dict[str, Any]]:
     """
@@ -23,10 +22,4 @@ def parse_job_enrichment_result(llm_output: str) -> Optional[Dict[str, Any]]:
         # to keep it pure. For now, letting exceptions bubble or returning None is pragmatic.
         raise
 
-def parse_skill_enrichment_result(llm_output: str) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Pure function to parse skill enrichment LLM output.
-    Returns (description, category).
-    """
-    result_str = llm_output.strip().strip('"').strip("'")
-    return parse_skill_output_helper(result_str)
+

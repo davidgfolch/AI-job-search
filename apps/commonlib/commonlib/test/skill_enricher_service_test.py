@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from commonlib.skill_enricher_service import process_skill_enrichment
+from commonlib.skill_enricher_service import process_skill_enrichment, parse_skill_llm_output
 
 @patch("commonlib.sql.mysqlUtil.MysqlUtil")
 @patch("commonlib.skill_enricher_service.get_skill_context")
@@ -40,3 +40,18 @@ def test_process_skill_enrichment_gen_fail():
         
         assert count == 0
         mysql.executeAndCommit.assert_not_called()
+
+
+@pytest.mark.parametrize("input_text, expected_desc_contains, expected_category", [
+    ("**Summary**: Python is a language.\n**Deep Technical Details**: Core features.\n**Category**: Programming Language",
+     "Python is a language", "Programming Language"),
+    ("Category: Cloud Platform\n\n**Summary**: GCP is a cloud platform.\n**Deep Technical Details**: Compute, storage.",
+     "GCP is a cloud platform", "Cloud Platform"),
+    ("Just a description without category",
+     "Just a description without category", "Other"),
+    ("", "", "Other"),
+])
+def test_parse_skill_llm_output(input_text, expected_desc_contains, expected_category):
+    desc, cat = parse_skill_llm_output(input_text)
+    assert expected_desc_contains in desc
+    assert cat == expected_category

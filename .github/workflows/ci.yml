@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [apps/commonlib, apps/scrapper, apps/aiEnrich, apps/aiEnrichNew, apps/aiEnrich3, apps/aiCvMatcher, apps/aiFormFiller, apps/backend, apps/web, apps/cron]
+        module: [apps/commonlib, apps/scrapper, apps/aiEnrich, apps/aiEnrichNew, apps/aiEnrichSkill, apps/aiEnrich3, apps/aiCvMatcher, apps/aiFormFiller, apps/backend, apps/web, apps/cron]
     steps:
       - uses: actions/checkout@v4
       
@@ -107,7 +107,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           changes=false
-          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/aiEnrich3 apps/aiCvMatcher apps/aiFormFiller apps/backend apps/web apps/cron"
+          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/aiEnrichSkill apps/aiEnrich3 apps/aiCvMatcher apps/aiFormFiller apps/backend apps/web apps/cron"
           read -ra MODULE_ARR <<< "${MODULES}"
           
           for MODULE in "${MODULE_ARR[@]}"; do

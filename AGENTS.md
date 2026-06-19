@@ -30,7 +30,7 @@ poetry run pytest
 poetry run coverage run -m pytest && poetry run coverage report -m
 ```
 
-### Python Apps (backend, aiEnrich, aiEnrich3, aiEnrichNew, aiCvMatcher)
+### Python Apps (backend, aiEnrich, aiEnrich3, aiEnrichNew, aiEnrichSkill, aiCvMatcher)
 ```bash
 # Install dependencies
 uv sync
@@ -102,6 +102,7 @@ npm run dev  # from apps/web, runs on localhost:5173
 .\apps\aiEnrich\run.bat  # or run.sh
 .\apps\aiEnrich3\run.bat  # or run.sh
 .\apps\aiEnrichNew\run.bat  # or run.sh
+.\apps\aiEnrichSkill\run.bat  # or run.sh
 .\apps\aiCvMatcher\run.bat  # or run.sh
 ```
 
@@ -114,6 +115,7 @@ commonlib ← scrapper
 commonlib ← aiEnrich
 commonlib ← aiEnrich3
 commonlib ← aiEnrichNew
+commonlib ← aiEnrichSkill
 commonlib ← aiCvMatcher
 backend ← web (via REST API)
 ```
@@ -157,6 +159,11 @@ backend ← web (via REST API)
 - Local Hugging Face transformers for job data enrichment
 - Model: `Qwen/Qwen2.5-1.5B-Instruct` (configurable in `dataExtractor.py`)
 - Preferred over `aiEnrich` (CrewAI/Ollama)
+
+**aiEnrichSkill** (`apps/aiEnrichSkill/`)
+- Skill enrichment module supporting Ollama and HuggingFace backends
+- Extracted from `aiEnrich` (Ollama) and `aiEnrichNew` (HuggingFace)
+- See `apps/aiEnrichSkill/README.md` for configuration
 
 **aiEnrich3** (`apps/aiEnrich3/`)
 - CPU-optimized multilingual data extraction service

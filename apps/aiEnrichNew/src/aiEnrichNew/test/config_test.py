@@ -1,96 +1,63 @@
 import os
-import unittest
+import pytest
 from unittest.mock import patch
 from ..config import (
     get_job_system_prompt,
-    get_skill_system_prompt,
     get_batch_size,
     get_input_max_len,
     get_enrich_timeout_job,
-    get_enrich_timeout_skill,
     should_cleanup_gpu,
     get_job_enabled,
-    get_skill_enabled,
 )
 
 
-class TestConfig(unittest.TestCase):
-    def test_get_job_enabled_default_true(self):
+def test_get_job_system_prompt():
+    prompt = get_job_system_prompt()
+    assert "You are an expert at analyzing job offers" in prompt
+    assert "required_technologies" in prompt
+
+
+@pytest.mark.parametrize("env_val, expected", [
+    pytest.param(None, True, id="default_true"),
+    pytest.param("true", True, id="explicit_true"),
+    pytest.param("false", False, id="explicit_false"),
+])
+def test_get_job_enabled(env_val, expected):
+    if env_val is None:
         os.environ.pop("AI_ENRICHNEW_JOB", None)
-        self.assertTrue(get_job_enabled())
+    else:
+        os.environ["AI_ENRICHNEW_JOB"] = env_val
+    from aiEnrichNew.config import get_job_enabled as fn
+    assert fn() is expected
 
-    @patch("aiEnrichNew.config.getEnvBool")
-    def test_get_job_enabled_true(self, mock_env):
-        mock_env.return_value = True
-        os.environ["AI_ENRICHNEW_JOB"] = "true"
-        self.assertTrue(get_job_enabled())
 
-    @patch("aiEnrichNew.config.getEnvBool")
-    def test_get_job_enabled_false(self, mock_env):
-        mock_env.return_value = False
-        os.environ["AI_ENRICHNEW_JOB"] = "false"
-        self.assertFalse(get_job_enabled())
+@pytest.mark.parametrize("return_val, expected", [
+    pytest.param("10", 10, id="default"),
+    pytest.param("50", 50, id="custom"),
+])
+@patch("aiEnrichNew.config.getEnv")
+def test_get_batch_size(mock_get_env, return_val, expected):
+    mock_get_env.return_value = return_val
+    assert get_batch_size() == expected
 
-    def test_get_skill_enabled_default_true(self):
-        os.environ.pop("AI_ENRICHNEW_SKILL", None)
-        self.assertTrue(get_skill_enabled())
 
-    @patch("aiEnrichNew.config.getEnvBool")
-    def test_get_skill_enabled_true(self, mock_env):
-        mock_env.return_value = True
-        os.environ["AI_ENRICHNEW_SKILL"] = "true"
-        self.assertTrue(get_skill_enabled())
+@patch("aiEnrichNew.config.getEnv")
+def test_get_input_max_len(mock_get_env):
+    mock_get_env.return_value = "5000"
+    assert get_input_max_len() == 5000
 
-    @patch("aiEnrichNew.config.getEnvBool")
-    def test_get_skill_enabled_false(self, mock_env):
-        mock_env.return_value = False
-        os.environ["AI_ENRICHNEW_SKILL"] = "false"
-        self.assertFalse(get_skill_enabled())
 
-    def test_get_job_system_prompt(self):
-        prompt = get_job_system_prompt()
-        self.assertIn("You are an expert at analyzing job offers", prompt)
-        self.assertIn("required_technologies", prompt)
+@patch("aiEnrichNew.config.getEnv")
+def test_get_enrich_timeout_job(mock_get_env):
+    mock_get_env.return_value = "120.5"
+    assert get_enrich_timeout_job() == 120.5
 
-    @patch("aiEnrichNew.config.getEnv")
-    def test_get_skill_system_prompt(self, mock_get_env):
-        mock_get_env.return_value = "Language, Framework"
-        prompt = get_skill_system_prompt()
-        self.assertIn("Language, Framework", prompt)
-        mock_get_env.assert_called_with("AI_ENRICHNEW_SKILL_CATEGORIES", required=True)
 
-    @patch("aiEnrichNew.config.getEnv")
-    def test_get_batch_size_default(self, mock_get_env):
-        mock_get_env.return_value = "10"
-        self.assertEqual(get_batch_size(), 10)
-        mock_get_env.assert_called_with("AI_ENRICHNEW_BATCH_SIZE", "10")
-
-    @patch("aiEnrichNew.config.getEnv")
-    def test_get_batch_size_custom(self, mock_get_env):
-        mock_get_env.return_value = "50"
-        self.assertEqual(get_batch_size(), 50)
-
-    @patch("aiEnrichNew.config.getEnv")
-    def test_get_input_max_len(self, mock_get_env):
-        mock_get_env.return_value = "5000"
-        self.assertEqual(get_input_max_len(), 5000)
-
-    @patch("aiEnrichNew.config.getEnv")
-    def test_get_enrich_timeout_job(self, mock_get_env):
-        mock_get_env.return_value = "120.5"
-        self.assertEqual(get_enrich_timeout_job(), 120.5)
-
-    @patch("aiEnrichNew.config.getEnv")
-    def test_get_enrich_timeout_skill(self, mock_get_env):
-        mock_get_env.return_value = "60"
-        self.assertEqual(get_enrich_timeout_skill(), 60.0)
-
-    @patch("aiEnrichNew.config.getEnv")
-    def test_should_cleanup_gpu_true(self, mock_get_env):
-        mock_get_env.return_value = "True"
-        self.assertTrue(should_cleanup_gpu())
-
-    @patch("aiEnrichNew.config.getEnv")
-    def test_should_cleanup_gpu_false(self, mock_get_env):
-        mock_get_env.return_value = "False"
-        self.assertFalse(should_cleanup_gpu())
+@pytest.mark.parametrize("return_val, expected", [
+    pytest.param("True", True, id="true"),
+    pytest.param("False", False, id="false"),
+])
+@patch("aiEnrichNew.config.getEnv")
+def test_should_cleanup_gpu(mock_get_env, return_val, expected):
+    mock_get_env.return_value = return_val
+    assert should_cleanup_gpu() is expected
