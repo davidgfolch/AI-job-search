@@ -10,6 +10,7 @@ from commonlib.terminalColor import yellow, magenta, cyan, red, green
 from commonlib.stopWatch import StopWatch
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.observability import get_logger
+from commonlib.services.metrics_collector import MetricsCollector
 
 from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_batch_size, get_enrich_limit, get_gpu_cleanup
 from ..ollama_client import query_ollama
@@ -17,6 +18,7 @@ from ..domain.mappers import build_skill_prompt_messages
 from ..domain.parsers import parse_skill_enrichment_result
 
 logger = get_logger("aiEnrichSkill.enrichment")
+collector = MetricsCollector()
 
 
 def generate_skill_description_ollama(skill_name, context="") -> tuple[str, str]:
@@ -44,9 +46,24 @@ def generate_skill_description_ollama(skill_name, context="") -> tuple[str, str]
 
 
 def _enrich_ollama(mysql: MysqlUtil) -> int:
+    def timed_generate(name, context):
+        start = time.time()
+        try:
+            result = generate_skill_description_ollama(name, context)
+            duration = time.time() - start
+            description = result[0] if isinstance(result, tuple) and len(result) == 2 else (result if isinstance(result, str) else "")
+            success = bool(description) and "Error" not in description
+            collector.record_job("aiEnrichSkill", duration, success)
+            logger.info("job.result", duration=duration, skill=name, success=success)
+            return result
+        except Exception as e:
+            duration = time.time() - start
+            collector.record_job("aiEnrichSkill", duration, False)
+            collector.record_error("aiEnrichSkill", str(e))
+            return ("", "Other")
     return process_skill_enrichment(
         mysql,
-        generate_skill_description_ollama,
+        timed_generate,
         limit=get_enrich_limit(),
         check_empty_description_only=True,
     )
@@ -82,6 +99,7 @@ def _enrich_huggingface(mysql: MysqlUtil) -> int:
     if not skills:
         return 0
 
+    collector.set_pending("aiEnrichSkill", len(skills))
     logger.info("skills.found", total=len(skills), batch_size=batch_size)
 
     pipe = get_pipeline()
@@ -126,12 +144,19 @@ def _process_skill_batch(
         logger.info("skill.started", skill=name, index=current_idx, total=total)
         return build_skill_prompt_messages(name, context)
 
+    _timing = {"last": time.time()}
+
     def on_success(item: Dict[str, str], generated_text: str):
         nonlocal success_count
         name = item['name']
+        now = time.time()
+        duration = now - _timing["last"]
+        _timing["last"] = now
         description, category = parse_skill_enrichment_result(generated_text)
-        if description and "Error" not in description:
-            logger.info("skill.completed", skill=name, has_description=True, category=category)
+        success = bool(description) and "Error" not in description
+        collector.record_job("aiEnrichSkill", duration, success)
+        logger.info("job.result", duration=duration, skill=name, success=success)
+        if success:
             _save_skill_result(mysql, name, description, category)
             success_count += 1
         else:
@@ -139,6 +164,12 @@ def _process_skill_batch(
 
     def on_error(item: Dict[str, str], ex: Exception):
         name = item['name']
+        now = time.time()
+        duration = now - _timing["last"]
+        _timing["last"] = now
+        collector.record_job("aiEnrichSkill", duration, False)
+        collector.record_error("aiEnrichSkill", str(ex))
+        logger.info("job.result", duration=duration, skill=name, success=False)
         logger.error("skill.failed", skill=name, error=str(ex), traceback=traceback.format_exc())
 
     process_batch(

@@ -44,6 +44,7 @@ services:
       - ./apps/aiEnrich/data/logs:/logs/aienrich:ro
       - ./apps/aiEnrich3/data/logs:/logs/aienrich3:ro
       - ./apps/aiEnrichNew/data/logs:/logs/aienrichnew:ro
+      - ./apps/aiEnrichSkill/data/logs:/logs/aienrichskill:ro
     ports:
       - "8000:8000"
     environment:
@@ -178,11 +179,13 @@ services:
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
+      - ./data/metrics:/app/data/metrics
     environment:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
       - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
+      - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
     depends_on:
       mysql_db:
         condition: service_healthy

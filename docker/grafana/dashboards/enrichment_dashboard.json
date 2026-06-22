@@ -98,6 +98,12 @@
           "fromExploreMetrics": false,
           "legendFormat": "avg",
           "refId": "ai_enrich_job_duration_seconds-avg"
+        },
+        {
+          "expr": "avg(ai_enrich_job_duration_seconds{module=\"aiEnrichSkill\"})",
+          "fromExploreMetrics": false,
+          "legendFormat": "aiEnrichSkill",
+          "refId": "ai_enrich_job_duration_seconds-aienrichskill"
         }
       ],
       "title": "ai_enrich_job_duration_seconds",

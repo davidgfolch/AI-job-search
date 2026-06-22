@@ -10,12 +10,14 @@ from commonlib.observability import configure_logging, get_logger
 from commonlib.terminalColor import cyan
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.terminalUtil import consoleTimer
+from commonlib.services.metrics_collector import MetricsCollector
 from .config import get_enabled
 from .services.enrichment_service import enrich_skills
 
 configure_logging("aiEnrichSkill")
 
 logger = get_logger("aiEnrichSkill.main")
+collector = MetricsCollector()
 
 
 def run():
@@ -30,5 +32,7 @@ def run():
         with MysqlUtil() as mysql:
             count = enrich_skills(mysql)
             if count > 0:
+                collector.persist()
                 continue
+        collector.persist()
         consoleTimer(cyan('All skills enriched. '), '10s', end='\r')

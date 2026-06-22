@@ -9,6 +9,7 @@ LOG_SOURCES = {
     "aiEnrich": "/logs/aienrich/app.jsonl",
     "aiEnrich3": "/logs/aienrich3/app.jsonl",
     "aiEnrichNew": "/logs/aienrichnew/app.jsonl",
+    "aiEnrichSkill": "/logs/aienrichskill/aiEnrichSkill.jsonl",
 }
 MAX_LOG_ENTRIES = 50
 

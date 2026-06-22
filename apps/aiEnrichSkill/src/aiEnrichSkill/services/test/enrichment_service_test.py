@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from ..enrichment_service import enrich_skills, generate_skill_description_ollama
+from .enrichment_service_fixtures import make_ollama_mocks, run_process_skill_batch
 
 
 @pytest.mark.parametrize("backend, expected, called_mock", [
@@ -36,12 +37,7 @@ def test_enrich_skills(mock_hf, mock_ollama, mock_backend, backend, expected, ca
 @patch("aiEnrichSkill.services.enrichment_service.query_ollama")
 @patch("aiEnrichSkill.services.enrichment_service.parse_skill_enrichment_result")
 def test_generate_skill_description_ollama_success(mock_parse, mock_query, mock_build):
-    mock_build.return_value = [
-        {"role": "system", "content": "system prompt"},
-        {"role": "user", "content": "user prompt"}
-    ]
-    mock_query.return_value = "**Summary**: Python is a language. **Category**: Language"
-    mock_parse.return_value = ("Python is a language", "Language")
+    make_ollama_mocks(mock_build, mock_query, mock_parse, "**Summary**: Python is a language. **Category**: Language", ("Python is a language", "Language"))
 
     result = generate_skill_description_ollama("Python", "Django")
     assert result == ("Python is a language", "Language")
@@ -98,3 +94,131 @@ def test_enrich_huggingface_no_skills(mock_fetch, mock_backend):
 
     result = enrich_skills(mysql)
     assert result == 0
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.parse_skill_enrichment_result")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama")
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
+def test_enrich_ollama_records_metric_on_success(mock_process, mock_build, mock_query, mock_parse, mock_collector):
+    make_ollama_mocks(mock_build, mock_query, mock_parse, "**Summary**: Python is a language. **Category**: Language", ("Python is a language", "Language"))
+
+    generator_called = []
+
+    def side_effect(mysql, generate_fn, limit, check_empty_description_only):
+        result = generate_fn("Python", "context")
+        generator_called.append(result)
+        return 1
+
+    mock_process.side_effect = side_effect
+    mysql = MagicMock()
+
+    from ..enrichment_service import _enrich_ollama
+    result = _enrich_ollama(mysql)
+
+    assert result == 1
+    assert generator_called == [("Python is a language", "Language")]
+    mock_collector.record_job.assert_called_once_with("aiEnrichSkill", mock_collector.record_job.call_args[0][1], True)
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama")
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
+def test_enrich_ollama_records_metric_on_failure(mock_process, mock_build, mock_query, mock_collector):
+    make_ollama_mocks(mock_build, mock_query, query_result=None)
+
+    def side_effect(mysql, generate_fn, limit, check_empty_description_only):
+        generate_fn("Unknown", "")
+        return 1
+
+    mock_process.side_effect = side_effect
+    mysql = MagicMock()
+
+    from ..enrichment_service import _enrich_ollama
+    _enrich_ollama(mysql)
+
+    mock_collector.record_job.assert_called_once()
+    args = mock_collector.record_job.call_args[0]
+    assert args[0] == "aiEnrichSkill"
+    assert args[2] is False
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama")
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
+def test_enrich_ollama_records_metric_on_exception(mock_process, mock_build, mock_query, mock_collector):
+    mock_build.return_value = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"}
+    ]
+    mock_query.side_effect = RuntimeError("connection refused")
+
+    def side_effect(mysql, generate_fn, limit, check_empty_description_only):
+        generate_fn("Python", "context")
+        return 1
+
+    mock_process.side_effect = side_effect
+    mysql = MagicMock()
+
+    from ..enrichment_service import _enrich_ollama
+    _enrich_ollama(mysql)
+
+    mock_collector.record_job.assert_called_once()
+    args = mock_collector.record_job.call_args[0]
+    assert args[0] == "aiEnrichSkill"
+    assert args[2] is False
+    mock_collector.record_error.assert_called_once_with("aiEnrichSkill", "connection refused")
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.get_backend")
+@patch("aiEnrichSkill.services.enrichment_service._fetch_pending_skills")
+@patch("aiEnrichSkill.services.enrichment_service._process_skill_batch")
+def test_enrich_huggingface_sets_pending(mock_process_batch, mock_fetch, mock_backend, mock_collector):
+    mock_backend.return_value = "huggingface"
+    mysql = MagicMock()
+    mock_fetch.return_value = [{"name": "Python"}, {"name": "Docker"}]
+    mock_process_batch.return_value = 2
+
+    enrich_skills(mysql)
+
+    mock_collector.set_pending.assert_called_once_with("aiEnrichSkill", 2)
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.llm_utils.process_batch")
+def test_process_skill_batch_on_success_records_metric_failure(mock_process_batch, mock_collector):
+    captured = run_process_skill_batch(mock_process_batch)
+    captured["on_success"]({"name": "Python"}, "")
+
+    mock_collector.record_job.assert_called_once()
+    args = mock_collector.record_job.call_args[0]
+    assert args[0] == "aiEnrichSkill"
+    assert isinstance(args[1], float)
+    assert args[2] is False
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.llm_utils.process_batch")
+def test_process_skill_batch_on_success_with_valid_result(mock_process_batch, mock_collector):
+    captured = run_process_skill_batch(mock_process_batch)
+    captured["on_success"]({"name": "Python"}, "**Summary**: Language. **Category**: Programming")
+
+    assert mock_collector.record_job.call_args[0][2] is True
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.llm_utils.process_batch")
+def test_process_skill_batch_on_error_records_metric(mock_process_batch, mock_collector):
+    captured = run_process_skill_batch(mock_process_batch)
+    captured["on_error"]({"name": "Python"}, Exception("timeout"))
+
+    mock_collector.record_job.assert_called_once()
+    args = mock_collector.record_job.call_args[0]
+    assert args[0] == "aiEnrichSkill"
+    assert isinstance(args[1], float)
+    assert args[2] is False
+    mock_collector.record_error.assert_called_once_with("aiEnrichSkill", "timeout")
