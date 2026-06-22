@@ -33,3 +33,4 @@ apps/**/data/metrics/
 # Playwright
 playwright-report
 test-results
+scripts/mysql/*_backup.*
