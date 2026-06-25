@@ -6,7 +6,7 @@ from ..dataExtractor import dataExtractor, _save, _getJobIdsList
 def mock_deps():
     with patch('aiEnrich.dataExtractor.MysqlUtil') as mysql_util, \
          patch('aiEnrich.dataExtractor._save') as save_chk, \
-         patch('aiEnrich.dataExtractor.printJob'), patch('aiEnrich.dataExtractor.printHR'), \
+         patch('aiEnrich.dataExtractor.printJob'), \
          patch('aiEnrich.dataExtractor.footer'), patch('aiEnrich.dataExtractor.StopWatch'), \
          patch('aiEnrich.dataExtractor.rawToJson'), patch('aiEnrich.dataExtractor.mapJob'), \
          patch('aiEnrich.dataExtractor.AiEnrichRepository') as repo_cls, \

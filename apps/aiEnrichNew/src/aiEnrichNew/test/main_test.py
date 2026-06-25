@@ -4,6 +4,7 @@ from ..main import run
 
 
 class TestMain(unittest.TestCase):
+    @patch("aiEnrichNew.main.get_job_enabled", return_value=True)
     @patch("aiEnrichNew.main.dataExtractor")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
@@ -16,6 +17,7 @@ class TestMain(unittest.TestCase):
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_dataExtractor,
+        mock_get_job_enabled,
     ):
         mock_retry_failed_jobs.return_value = 0
         mock_dataExtractor.side_effect = [0, Exception("BreakLoop")]
@@ -27,16 +29,20 @@ class TestMain(unittest.TestCase):
         mock_retry_failed_jobs.assert_called_once()
         mock_consoleTimer.assert_any_call("All jobs enriched. ", "10s", end="\r")
 
+    @patch("aiEnrichNew.main.get_job_enabled", return_value=True)
     @patch("aiEnrichNew.main.dataExtractor")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
     @patch("aiEnrichNew.main.cyan", side_effect=lambda x: x)
+    @patch("time.sleep")
     def test_run_cv_match_disabled(
         self,
+        mock_sleep,
         mock_cyan,
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_dataExtractor,
+        mock_get_job_enabled,
     ):
         mock_retry_failed_jobs.return_value = 0
         mock_dataExtractor.side_effect = [0, Exception("BreakLoop")]
@@ -48,16 +54,20 @@ class TestMain(unittest.TestCase):
         mock_retry_failed_jobs.assert_called_once()
         mock_consoleTimer.assert_any_call("All jobs enriched. ", "10s", end="\r")
 
+    @patch("aiEnrichNew.main.get_job_enabled", return_value=True)
     @patch("aiEnrichNew.main.dataExtractor")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
     @patch("aiEnrichNew.main.cyan", side_effect=lambda x: x)
+    @patch("time.sleep")
     def test_run_data_extractor_nonzero(
         self,
+        mock_sleep,
         mock_cyan,
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_dataExtractor,
+        mock_get_job_enabled,
     ):
         mock_dataExtractor.side_effect = [1, Exception("BreakLoop")]
         try:
@@ -68,6 +78,7 @@ class TestMain(unittest.TestCase):
         mock_retry_failed_jobs.assert_not_called()
         mock_consoleTimer.assert_not_called()
 
+    @patch("aiEnrichNew.main.get_job_enabled", return_value=True)
     @patch("aiEnrichNew.main.dataExtractor")
     @patch("aiEnrichNew.main.retry_failed_jobs")
     @patch("aiEnrichNew.main.consoleTimer")
@@ -80,6 +91,7 @@ class TestMain(unittest.TestCase):
         mock_consoleTimer,
         mock_retry_failed_jobs,
         mock_dataExtractor,
+        mock_get_job_enabled,
     ):
         mock_dataExtractor.return_value = 0
         mock_retry_failed_jobs.return_value = 1

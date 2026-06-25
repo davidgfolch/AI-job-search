@@ -7,7 +7,7 @@ from importlib.metadata import version as _v
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.environmentUtil import getEnvBool
-from commonlib.terminalColor import yellow, printHR, cyan
+from commonlib.terminalColor import yellow, cyan
 from commonlib.terminalUtil import consoleTimer
 import time
 from .cvMatcher import FastCVMatcher

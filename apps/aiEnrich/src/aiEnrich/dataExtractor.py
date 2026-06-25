@@ -5,7 +5,7 @@ import traceback
 from commonlib.json_helpers import rawToJson
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
-from commonlib.terminalColor import magenta, printHR, yellow, red
+from commonlib.terminalColor import magenta, yellow, red
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.ai_helpers import (
     footer,

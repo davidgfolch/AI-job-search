@@ -7,8 +7,7 @@ class TestPipeline:
     @patch('aiEnrich.pipeline.retry_failed_jobs')
     @patch('aiEnrich.pipeline.dataExtractor')
     @patch('aiEnrich.pipeline.consoleTimer')
-    @patch('aiEnrich.pipeline.printHR')
-    def test_run_pipeline(self, mock_print_hr, mock_console_timer,
+    def test_run_pipeline(self, mock_console_timer,
                           mock_data_extractor,
                           mock_retry_failed_jobs):
         from ..pipeline import run_pipeline
