@@ -64,7 +64,7 @@ jobs:
             uv run coverage report -m
             uv run coverage xml
             uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ] || [ "${MODULE}" == "apps/aiFormFiller" ] || [ "${MODULE}" == "apps/cron" ]; then
+          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrichSkill" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ] || [ "${MODULE}" == "apps/aiFormFiller" ] || [ "${MODULE}" == "apps/cron" ]; then
             uv sync
             uv run coverage run -m pytest
             uv run coverage report -m
