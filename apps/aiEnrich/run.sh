@@ -1,4 +1,2 @@
 #!/bin/bash
-cd apps/aiEnrich
-crewai run
-cd ../..
+uv run aienrich

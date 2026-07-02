@@ -2,13 +2,13 @@
 
 ## Context
 
-You have 3 enrichment modules. You primarily use **aiEnrich** (CrewAI + Ollama) because it gives the best extraction quality, but it's the slowest (~10-30s/job on CPU). These plans focus on making it faster while preserving quality.
+You have 3 enrichment modules. You primarily use **aiEnrich** (Ollama) because it gives the best extraction quality, but it's the slowest (~10-30s/job on CPU). These plans focus on making it faster while preserving quality.
 
 ## Modules Overview
 
 | Module | Approach | Speed | Quality |
 |--------|----------|-------|---------|
-| **aiEnrich** | CrewAI + Ollama (`qwen2.5:3b`) | Slow (10-30s/job) | Best |
+| **aiEnrich** | Ollama (`qwen2.5:3b`) | Slow (10-30s/job) | Best |
 | **aiEnrichNew** | HF Transformers (`Qwen2.5-1.5B`) | Moderate (5-15s/job) | Good |
 | **aiEnrich3** | GLiNER + mDeBERTa + Regex | Fast (0.5-2s/job) | Moderate |
 

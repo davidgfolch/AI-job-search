@@ -13,7 +13,7 @@ AI-powered job search monorepo with multi-platform scraping, AI enrichment, and 
 | **commonlib** | `apps/commonlib/` | Python utilities | Poetry |
 | **scrapper** | `apps/scrapper/` | Python, Selenium | Poetry |
 | **backend** | `apps/backend/` | Python, FastAPI | uv |
-| **aiEnrich** | `apps/aiEnrich/` | Python, CrewAI, Ollama | uv |
+| **aiEnrich** | `apps/aiEnrich/` | Python, Ollama | uv |
 | **aiEnrichNew** | `apps/aiEnrichNew/` | Python, Hugging Face | uv |
 | **aiEnrichSkill** | `apps/aiEnrichSkill/` | Python, Ollama & HuggingFace | uv |
 | **aiCvMatcher** | `apps/aiCvMatcher/` | Python, SentenceTransformers | uv |

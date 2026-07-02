@@ -6,7 +6,7 @@ This project tracks performance metrics for AI-powered job enrichment operations
 
 | Module | Technology | Speed | Use Case |
 |--------|-----------|-------|----------|
-| **aiEnrich** | Ollama + CrewAI (LLM) | Slow (~10s/job) | Full LLM-based extraction |
+| **aiEnrich** | Ollama (LLM) | Slow (~10s/job) | Full LLM-based extraction |
 | **aiEnrich3** | GLiNER + mDeBERTa + Regex (CPU) | Fast (~0.5s/job) | CPU-optimized extraction |
 | **aiEnrichNew** | HuggingFace Transformers (Qwen2.5) | Medium (~3s/job) | Batch inference, preferred |
 

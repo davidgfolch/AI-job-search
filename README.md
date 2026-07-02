@@ -25,7 +25,7 @@ This is a monorepo containing several applications and packages:
 | **Backend API**  | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.                       | Python, FastAPI, Poetry      |
 | **Cron**         | [`apps/cron`](apps/cron/README.md)                   | Background scheduler for periodic cron jobs.              | Python, uv, MongoDB          |
 | **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                              | Python, Selenium, Poetry     |
-| **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                          | Python, CrewAI, uv           |
+| **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                          | Python, Ollama, uv           |
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)     | Local AI enrichment using transformers pipeline           | Python, HuggingFace, uv      |
 | **AI Enrich 3**  | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
 | **AI Enrich Skill**| [`apps/aiEnrichSkill`](apps/aiEnrichSkill/README.md) | Local AI skill enrichment (Ollama & HuggingFace).        | Python, Transformers, uv     |
@@ -106,7 +106,7 @@ The `docker-compose.yml` defines several service profiles to control which conta
 | Profile        | Services                          | Description                      |
 | -------------- | --------------------------------- | -------------------------------- |
 | _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
-| `aienrich`     | `aienrich`                        | CrewAI AI enrichment             |
+| `aienrich`     | `aienrich`                        | Ollama AI enrichment             |
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
@@ -185,7 +185,7 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 ./apps/aiEnrich3/run.sh
 # (NEW GPU/Transformers pipeline)
 ./apps/aiEnrichNew/run.sh
-# (Using CrewAI and Ollama)
+# (Using Ollama)
 ./apps/aiEnrich/run.sh
 # (Local Fast CV Matcher)
 ./apps/aiCvMatcher/run.sh
@@ -211,7 +211,7 @@ docker compose up -d
 .\apps\aiEnrich3\run.bat
 :: (NEW GPU/Transformers pipeline)
 .\apps\aiEnrichNew\run.bat
-:: (Using CrewAI and Ollama)
+:: (Using Ollama)
 .\apps\aiEnrich\run.bat
 :: (Local Fast CV Matcher)
 .\apps\aiCvMatcher\run.bat

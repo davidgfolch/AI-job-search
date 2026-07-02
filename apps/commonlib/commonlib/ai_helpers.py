@@ -114,7 +114,7 @@ def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):
 def combineTaskResults(crewOutput, debug) -> dict:
     """Combina los resultados de todas las tareas en un único JSON"""
     result = {}
-    # Use getattr or direct access assuming object structure since we don't want crewai dependency here
+    # Use getattr or direct access assuming object structure
     raw = getattr(crewOutput, 'raw', None)
     if raw is None: # Fallback if passed dict or something else, though unlikely based on usage
          raw = str(crewOutput)

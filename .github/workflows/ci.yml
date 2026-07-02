@@ -56,15 +56,7 @@ jobs:
             npx coverage-badges --label "${MODULE}"
             mkdir -p coverage_artifacts
             cp coverage/badges.svg coverage_artifacts/coverage.svg
-          elif [ "${MODULE}" == "apps/aiEnrich" ]; then
-            uv sync
-            uv tool install crewai-cli
-            crewai install
-            uv run coverage run -m pytest
-            uv run coverage xml
-            uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-            uv run coverage report -m || true
-          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrichSkill" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ] || [ "${MODULE}" == "apps/aiFormFiller" ] || [ "${MODULE}" == "apps/cron" ]; then
+          elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrich" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrichSkill" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ] || [ "${MODULE}" == "apps/aiFormFiller" ] || [ "${MODULE}" == "apps/cron" ]; then
             uv sync
             uv run coverage run -m pytest
             uv run coverage xml

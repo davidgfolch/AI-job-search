@@ -106,7 +106,7 @@ services:
     networks:
       - ai-job-search
 
-  # AI Enrichment - CrewAI Service
+  # AI Enrichment
   aienrich:
     build:
       context: .

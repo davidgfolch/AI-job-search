@@ -1,10 +1,10 @@
-# AiJobSearch Crew
+# AI Job Enrichment
 
-Welcome to the AiJobSearch Crew project, powered by [crewAI](https://crewai.com).
+Job data enrichment service using Ollama LLMs.
 
 ## Overview
 
-This application uses a multi-agent AI system to enrich job data (e.g., extracting salary, technologies, modality) using LLMs (Ollama/OpenAI).
+This application enriches job data (e.g., extracting salary, technologies, modality) using Ollama LLMs directly via HTTP API.
 
 ## Installation
 
@@ -37,7 +37,7 @@ uv sync
 
 ### Automated Loop
 
-To run the agent in a continuous loop (monitoring the database for new jobs):
+To run the enrichment in a continuous loop (monitoring the database for new jobs):
 
 ```bash
 # Linux
@@ -49,16 +49,12 @@ To run the agent in a continuous loop (monitoring the database for new jobs):
 
 ### Manual Run (Dev)
 
-To run the crew manually:
-
 ```bash
-uv run crewai run
+uv run aienrich
 ```
 
 ## Configuration
 
-- **Agents**: Define your agents in `src/ai_job_search/config/agents.yaml`.
-- **Tasks**: Define your tasks in `src/ai_job_search/config/tasks.yaml`.
 - **CV Matching**: Enable by setting `AI_ENRICH_CV_MATCH=True` in `.env` and placing your CV in `apps/aiEnrich/cv/cv.txt`.
 
 ### LLM Model Selection
@@ -83,8 +79,3 @@ Make sure the model is pulled in Ollama:
 ```bash
 ollama pull qwen2.5:3b
 ```
-
-## Support
-
-- [crewAI Documentation](https://docs.crewai.com)
-- [GitHub Repository](https://github.com/joaomdmoura/crewai)

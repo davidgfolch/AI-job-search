@@ -1,4 +1,4 @@
-# Development Dockerfile for AI Enrichment with CrewAI
+# Development Dockerfile for AI Enrichment with Ollama
 FROM python:3.12-slim
 
 WORKDIR /app
