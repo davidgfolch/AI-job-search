@@ -43,7 +43,12 @@ export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied,
                 </li>
             )}
             {job.company && (
-                <li className="info-row">Company: <span>{job.company}</span><AppliedJobsWarning appliedJobs={appliedCompanyJobs} loadingApplied={loadingApplied} /></li>
+                <li className="info-row">Company: <span>{job.company}</span>
+                    {job.synonyms && job.synonyms.length > 0 && (
+                        <span className="synonym-hint"> (also known as: {job.synonyms.join(', ')})</span>
+                    )}
+                    <AppliedJobsWarning appliedJobs={appliedCompanyJobs} loadingApplied={loadingApplied} />
+                </li>
             )}
             {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
             {job.modality && <li className="info-row">Modality: <span>{job.modality}</span></li>}

@@ -1,20 +1,19 @@
 import time
 from typing import Optional, Dict, Any, List
 from repositories.jobs_repository import JobsRepository
-from repositories.jobDeleteRepository import JobDeleteRepository
-from repositories.jobQueryRepository import JobQueryRepository
 from repositories.queries.jobs_query_builder import build_jobs_where_clause
 from services.jobQueryService import JobQueryService
+from services.company_synonym_service import CompanySynonymService
 from services.jobSnapshotService import JobSnapshotService
-from commonlib.jobSnapshotRepository import JobSnapshotRepository
+from services.job_delete_service import JobDeleteService
 from utils.filter_parser import extract_filter_params
 
 
 class JobsService:
     def __init__(self):
         self.repo = JobsRepository()
-        self.delete_repo = JobDeleteRepository()
         self.query_service = JobQueryService()
+        self.delete_service = JobDeleteService(get_job_callback=self.get_job)
         self._snapshot_service = None
 
     @property
@@ -87,7 +86,12 @@ class JobsService:
             if not row:
                 return None
             columns = self.repo.fetch_columns(db)
-            return {col: val for col, val in zip(columns, row)}
+            result = {col: val for col, val in zip(columns, row)}
+            company = result.get("company")
+            if company:
+                synonym_service = CompanySynonymService()
+                result["synonyms"] = synonym_service.get_synonyms(company) or None
+            return result
 
     def build_where(self, **kwargs):
         return build_jobs_where_clause(**kwargs)
@@ -98,35 +102,8 @@ class JobsService:
         old_job = self.get_job(job_id)
         result = self.repo.update_job(job_id, update_data)
         if result and old_job:
-            self._maybe_create_snapshot(old_job, update_data)
+            self.snapshot_service.maybe_create_snapshot_on_update(old_job, update_data)
         return self.get_job(job_id) if result else None
-
-    def _maybe_create_snapshot(self, old_job: Dict[str, Any], new_data: Dict[str, Any]):
-        applied_changed = (
-            "applied" in new_data and new_data["applied"] and not old_job.get("applied")
-        )
-        discarded_changed = (
-            "discarded" in new_data
-            and new_data["discarded"]
-            and not old_job.get("discarded")
-        )
-        interview_flags = [
-            "interview",
-            "interview_rh",
-            "interview_tech",
-            "interview_technical_test",
-        ]
-        interview_changed = any(
-            flag in new_data and new_data[flag] and not old_job.get(flag)
-            for flag in interview_flags
-        )
-
-        if applied_changed:
-            self.snapshot_service.snapshot_on_applied(old_job)
-        elif discarded_changed:
-            self.snapshot_service.snapshot_on_discarded(old_job)
-        elif interview_changed:
-            self.snapshot_service.snapshot_on_interview(old_job)
 
     def create_job(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         if "job_id" not in job_data:
@@ -149,43 +126,10 @@ class JobsService:
         if select_all and filters:
             params = extract_filter_params(filters)
             where, db_params = build_jobs_where_clause(**params)
-            return self.delete_repo.update_jobs_by_filter(where, db_params, update_data)
+            return self.delete_service.update_jobs_by_filter(where, db_params, update_data)
         elif ids:
-            return self.delete_repo.update_jobs_by_ids(ids, update_data)
+            return self.delete_service.update_jobs_by_ids(ids, update_data)
         return 0
-
-    def _build_snapshot_queries(self, jobs: List[Dict[str, Any]]) -> List[tuple]:
-        snapshot_queries = []
-        for job in jobs:
-            query, snapshot_params = (
-                JobSnapshotRepository.build_snapshot_query_and_params(job, "DELETED")
-            )
-            snapshot_queries.append((query, snapshot_params))
-        return snapshot_queries
-
-    def _delete_by_filters(self, filters: Dict[str, Any]) -> int:
-        params = extract_filter_params(filters)
-        where, db_params = build_jobs_where_clause(**params)
-        jobs_to_delete = self.delete_repo.get_jobs_by_filter(where, db_params)
-        snapshot_queries = self._build_snapshot_queries(jobs_to_delete)
-        return self.delete_repo.delete_jobs_with_snapshots(
-            where, db_params, snapshot_queries
-        )
-
-    def _delete_by_ids(self, ids: List[int]) -> int:
-        snapshot_queries = []
-        for job_id in ids:
-            job = self.get_job(job_id)
-            if job:
-                query, snapshot_params = (
-                    JobSnapshotRepository.build_snapshot_query_and_params(
-                        job, "DELETED"
-                    )
-                )
-                snapshot_queries.append((query, snapshot_params))
-        return self.delete_repo.delete_jobs_with_snapshots(
-            ["id IN (" + ", ".join(["%s"] * len(ids)) + ")"], ids, snapshot_queries
-        )
 
     def delete_jobs(
         self,
@@ -194,7 +138,7 @@ class JobsService:
         select_all: bool = False,
     ) -> int:
         if select_all and filters:
-            return self._delete_by_filters(filters)
+            return self.delete_service.delete_by_filters(filters)
         elif ids:
-            return self._delete_by_ids(ids)
+            return self.delete_service.delete_by_ids(ids)
         return 0

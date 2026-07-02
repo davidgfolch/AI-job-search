@@ -1,0 +1,134 @@
+.synonyms-manager {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.synonyms-table-container {
+  flex: 1;
+  overflow: auto;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.synonyms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.synonyms-table th,
+.synonyms-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+.synonyms-table th {
+  background-color: var(--table-header-bg, #f5f5f5);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.group-id-cell {
+  width: 80px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+}
+
+.names-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.synonym-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--tag-bg, #e8f4fd);
+  border: 1px solid var(--tag-border, #b6d4fe);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.synonym-tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  color: #999;
+  padding: 0 2px;
+}
+
+.synonym-tag-remove:hover {
+  color: #c00;
+}
+
+.actions-cell {
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+}
+
+.btn-small {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.btn-danger {
+  background-color: var(--btn-danger-bg, #dc3545);
+  color: white;
+  border: 1px solid var(--btn-danger-border, #c82333);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-danger:hover {
+  background-color: var(--btn-danger-hover, #c82333);
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary, #999);
+}
+
+.synonym-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.synonym-input-row .form-input {
+  flex: 1;
+}
+
+.modal-content {
+  padding: 1rem;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}

@@ -26,10 +26,12 @@ create_mock_db = pytest.create_mock_db
     ],
     ids=["valid_company", "empty_result", "with_client_param"],
 )
+@patch("services.company_synonym_service.CompanySynonymService.get_synonyms")
 @patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
 def test_get_applied_jobs_by_company(
-    mock_get_db, client, url, mock_data, expected_count, expected_ids, expected_dates
+    mock_get_db, mock_synonyms, client, url, mock_data, expected_count, expected_ids, expected_dates
 ):
+    mock_synonyms.return_value = []
     """Test getting applied jobs by company with various scenarios"""
     mock_db = create_mock_db(fetchAll=mock_data)
     mock_get_db.return_value = mock_db
@@ -51,10 +53,12 @@ def test_get_applied_jobs_by_company(
     ],
     ids=["apostrophe", "ampersand", "pipe"],
 )
+@patch("services.company_synonym_service.CompanySynonymService.get_synonyms")
 @patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
 def test_get_applied_jobs_by_company_special_characters(
-    mock_get_db, client, company_param
+    mock_get_db, mock_synonyms, client, company_param
 ):
+    mock_synonyms.return_value = []
     """Test that companies with special characters (non-SQL) work correctly"""
     mock_db = create_mock_db(fetchAll=[(10, datetime(2024, 4, 1))])
     mock_get_db.return_value = mock_db
@@ -63,11 +67,13 @@ def test_get_applied_jobs_by_company_special_characters(
     assert response.status_code == 200
 
 
+@patch("services.company_synonym_service.CompanySynonymService.get_synonyms")
 @patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
 @patch("repositories.jobQueryRepository.JobQueryRepository.find_applied_jobs_by_regex")
 def test_get_applied_jobs_partial_search_exception(
-    mock_find_regex, mock_get_db, client
+    mock_find_regex, mock_get_db, mock_synonyms, client
 ):
+    mock_synonyms.return_value = []
     """Test exception handling in partial company search"""
     mock_db = create_mock_db(
         fetchAll=[]
@@ -88,11 +94,13 @@ def test_get_applied_jobs_partial_search_exception(
     assert response.json() == []
 
 
+@patch("services.company_synonym_service.CompanySynonymService.get_synonyms")
 @patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
 @patch("repositories.jobQueryRepository.JobQueryRepository.find_applied_jobs_by_regex")
 def test_get_applied_jobs_partial_search_exclusions(
-    mock_find_regex, mock_get_db, client
+    mock_find_regex, mock_get_db, mock_synonyms, client
 ):
+    mock_synonyms.return_value = []
     """
     Test that partial search excludes common words like 'The'.
     Case: 'The White Team' -> 'The White' (not found) -> 'The' (should be skipped)
@@ -110,25 +118,23 @@ def test_get_applied_jobs_partial_search_exclusions(
 
     # Check calls to find_applied_jobs_by_regex
     # Expected:
-    # 1. 'The White'
-    # 2. Should NOT call with 'The'
+    # 1. Exact match call with ['the white team']
+    # 2. Partial match call with ['...the white...']
 
     calls = [args[0] for args, _ in mock_find_regex.call_args_list]
 
-    # Verify we searched for 'the white' (regex format dependent on implementation, but broadly)
-    # Backend lowers the company name, so we expect 'the white'
-    assert any("the white" in c for c in calls)
+    # Calls are now lists of regex patterns; flatten to check contents
+    all_patterns = [p for call in calls for p in (call if isinstance(call, list) else [call])]
+
+    # Verify we searched for 'the white' (regex format)
+    assert any("the white" in p for p in all_patterns)
 
     # Verify we did NOT search for just 'The' (regex format)
-    # The regex for 'The' would be something like '(^| )The($| )' (escaped)
-    # We check that no call has a regex that is essentially just "The"
-    for call_arg in calls:
-        if "The" in call_arg and "White" not in call_arg and "Team" not in call_arg:
-            # Check if this is the "The" search we want to avoid
-            # It might look like '(^| )The($| )'
-            if len(call_arg) < 20:  # Rough check for short regex
+    for pattern in all_patterns:
+        if "The" in pattern and "White" not in pattern and "Team" not in pattern:
+            if len(pattern) < 20:
                 assert False, (
-                    f"Should not have searched for short generic term: {call_arg}"
+                    f"Should not have searched for short generic term: {pattern}"
                 )
 
 
@@ -153,6 +159,19 @@ def test_get_applied_jobs_by_company_missing_parameter(client):
     """Test that missing company parameter returns validation error"""
     response = client.get("/api/jobs/applied-by-company")
     assert response.status_code == 422
+
+
+@patch("services.company_synonym_service.CompanySynonymService.get_synonyms")
+@patch("repositories.jobQueryRepository.JobQueryRepository.get_db")
+def test_get_applied_jobs_with_synonym_expansion(mock_get_db, mock_synonyms, client):
+    mock_synonyms.return_value = ["Synonym Corp"]
+    mock_db = create_mock_db(fetchAll=[(3, datetime(2024, 2, 20))])
+    mock_get_db.return_value = mock_db
+    response = client.get("/api/jobs/applied-by-company?company=Original+Corp")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["id"] == 3
 
 
 def test_get_applied_jobs_by_company_empty_string(client):

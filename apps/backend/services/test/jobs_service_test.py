@@ -33,9 +33,9 @@ def test_bulk_update_jobs(
     with (
         patch("services.jobs_service.build_jobs_where_clause") as mock_build_where,
         patch.object(
-            service.delete_repo, "update_jobs_by_filter"
+            service.delete_service, "update_jobs_by_filter"
         ) as mock_update_filter,
-        patch.object(service.delete_repo, "update_jobs_by_ids") as mock_update_ids,
+        patch.object(service.delete_service, "update_jobs_by_ids") as mock_update_ids,
     ):
         if select_all:
             mock_build_where.return_value = (expected_where, expected_params)

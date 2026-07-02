@@ -43,6 +43,33 @@ class JobSnapshotService:
     def snapshot_on_discarded(self, job_data: dict) -> int:
         return self.create_snapshot_from_job(job_data, "DISCARDED")
 
+    def maybe_create_snapshot_on_update(self, old_job: dict, new_data: dict):
+        applied_changed = (
+            "applied" in new_data and new_data["applied"] and not old_job.get("applied")
+        )
+        discarded_changed = (
+            "discarded" in new_data
+            and new_data["discarded"]
+            and not old_job.get("discarded")
+        )
+        interview_flags = [
+            "interview",
+            "interview_rh",
+            "interview_tech",
+            "interview_technical_test",
+        ]
+        interview_changed = any(
+            flag in new_data and new_data[flag] and not old_job.get(flag)
+            for flag in interview_flags
+        )
+
+        if applied_changed:
+            self.snapshot_on_applied(old_job)
+        elif discarded_changed:
+            self.snapshot_on_discarded(old_job)
+        elif interview_changed:
+            self.snapshot_on_interview(old_job)
+
     def get_snapshots_by_date_range(self, start_date: datetime, end_date: datetime):
         return self.repo.get_snapshots_by_date_range(start_date, end_date)
 

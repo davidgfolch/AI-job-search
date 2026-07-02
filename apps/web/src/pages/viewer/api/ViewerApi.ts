@@ -34,6 +34,7 @@ export interface Job {
   cv_match_percentage: number | null;
   ai_enrich_error: string | null;
   modality: string | null;
+  synonyms?: string[] | null;
 }
 
 export interface AppliedCompanyJob {
