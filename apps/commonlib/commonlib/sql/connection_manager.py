@@ -1,14 +1,18 @@
 import ipaddress
 import os
+import queue
+import time
 import mysql.connector as mysqlConnector
 from mysql.connector import MySQLConnection
 
-from commonlib.terminalColor import green
+from commonlib.terminalColor import green, yellow, red
 
 DEBUG = False
 
 DEFAULT_MYSQL_PORT = 3306
 SMALL_RANGE_THRESHOLD = 10
+POOL_GET_RETRIES = int(os.getenv('COMMONLIB_DB_POOL_RETRIES', '3'))
+POOL_GET_DELAY = float(os.getenv('COMMONLIB_DB_POOL_RETRY_DELAY', '0.1'))
 
 _pool_initialized = False
 
@@ -130,6 +134,7 @@ def _init_pool(e2e_tests: bool = False):
     global _pool_initialized
     if _pool_initialized:
         return
+    pool_size = int(os.getenv('COMMONLIB_DB_POOL_SIZE', '32'))
     db_host = _resolve_db_host(e2e_tests)
     mysqlConnector.connect(
         host=db_host,
@@ -137,7 +142,8 @@ def _init_pool(e2e_tests: bool = False):
         password='rootPass',
         database=None if e2e_tests else 'jobs',
         pool_name='jobsPool',
-        pool_size=20,
+        pool_size=pool_size,
+        pool_reset_session=True,
     )
     _pool_initialized = True
 
@@ -147,6 +153,8 @@ def get_connection(e2e_tests: bool = False) -> MySQLConnection:
     Get a MySQL connection from the pool.
     Caller MUST close the connection to return it to the pool.
 
+    Retries with backoff when the pool is temporarily exhausted.
+
     Args:
         e2e_tests: If True, initializes pool without database (for E2E test setup)
 
@@ -154,10 +162,19 @@ def get_connection(e2e_tests: bool = False) -> MySQLConnection:
         MySQL connection instance from pool
     """
     _init_pool(e2e_tests)
-    conn = mysqlConnector.connect(pool_name='jobsPool')
-    if DEBUG:
-        print(conn.__repr__())
-    return conn
+    for attempt in range(POOL_GET_RETRIES):
+        try:
+            conn = mysqlConnector.connect(pool_name='jobsPool')
+            if DEBUG:
+                print(conn.__repr__())
+            return conn
+        except queue.Empty:
+            if attempt < POOL_GET_RETRIES - 1:
+                delay = POOL_GET_DELAY * (attempt + 1)
+                if DEBUG:
+                    print(yellow(f"Pool exhausted, retrying in {delay:.1f}s (attempt {attempt + 1}/{POOL_GET_RETRIES})"), flush=True)
+                time.sleep(delay)
+    raise queue.Empty("All pool connections are in use")
 
 
 def getConnection(e2eTests: bool = False) -> MySQLConnection:
