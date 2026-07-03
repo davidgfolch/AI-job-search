@@ -1,5 +1,6 @@
 from typing import Tuple, Optional
 from commonlib.decorator.retry import retry
+from commonlib.exceptionUtil import try_or_warn
 from commonlib.terminalColor import green, yellow, printHR
 from commonlib.stringUtil import join
 from selenium.common.exceptions import NoSuchElementException
@@ -50,19 +51,22 @@ class LinkedinNavigator(BaseNavigator):
             return True
         return False
 
+    @retry()
     def login(self, user_email, user_pwd):
         self.selenium.loadPage('https://www.linkedin.com/login')
-        self.selenium.waitUntilPageIsLoaded()
+        self.selenium.waitUntilPageIsLoaded(30)
         if self.selenium.getUrl().find('linkedin.com/feed/') > -1:
             return
         sleep(1, 1)
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_USER)
-        self.selenium.sendKeys(self.selenium.getElms(CSS_SEL_LOGIN_USER).pop(), user_email)
-        self.selenium.sendKeys(self.selenium.getElms(CSS_SEL_LOGIN_PWD).pop(), user_pwd)
-        try:
-            self.selenium.checkboxUnselect('div.remember_me__opt_in input')
-        except Exception:
-            print(yellow('Could not click on "remember me" checkbox'))
+        self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_LOGIN_PWD)
+        user_elms = self.selenium.getElms(CSS_SEL_LOGIN_USER)
+        pwd_elms = self.selenium.getElms(CSS_SEL_LOGIN_PWD)
+        if not user_elms or not pwd_elms:
+            raise Exception('Login form elements not found')
+        self.selenium.sendKeys(user_elms.pop(), user_email)
+        self.selenium.sendKeys(pwd_elms.pop(), user_pwd)
+        try_or_warn(lambda: self.selenium.checkboxUnselect('div.remember_me__opt_in input'), 'Could not click on "remember me" checkbox')
         self.loginSubmit()
     
     @retry()

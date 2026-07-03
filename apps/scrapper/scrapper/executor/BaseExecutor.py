@@ -8,7 +8,6 @@ from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.exceptionUtil import cleanUnresolvedTrace
 from ..core.utils import debug
 from ..core.baseScrapper import printScrapperTitle
-from ..core.scrapper_config import CLOSE_TAB, SCRAPPER_RUN_IN_TABS
 from ..core.utils import abortExecution
 from ..util.persistence_manager import PersistenceManager
 from ..services.selenium.seleniumService import SeleniumService
@@ -41,8 +40,6 @@ class BaseExecutor(ABC):
         name = self.site_name_key
         try:
             with KeepSystemAwake():
-                if SCRAPPER_RUN_IN_TABS:
-                     self.selenium_service.tab(name)
                 self.run(preload_page=True)
             properties['preloaded'] = True
         except Exception as e:
@@ -72,11 +69,6 @@ class BaseExecutor(ABC):
             self.persistence_manager.update_last_execution(self.site_name_key, None)
             if abortExecution():
                 return False
-        finally:
-            if SCRAPPER_RUN_IN_TABS:
-                if properties.get(CLOSE_TAB, False):
-                    self.selenium_service.tabClose(name)
-                self.selenium_service.tab()  # switches to default tab
         return True
     
     def run(self, preload_page: bool):

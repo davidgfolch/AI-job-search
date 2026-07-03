@@ -1,11 +1,9 @@
 import sys
 from importlib.metadata import version as _v
-from typing import Callable, Union, Optional
+from typing import Callable, Optional
 
-from commonlib.fileSystemUtil import getSrcPath
 from commonlib.terminalColor import cyan, red, yellow
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
-from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.executor.executor_factory import process_page_url
 from scrapper.core.scrapper_scheduler import ScrapperScheduler
@@ -49,16 +47,14 @@ def main(args):
     else:
         startingAt = None
 
-    with SeleniumService(debug=False) as seleniumUtil:
-        persistenceManager = PersistenceManager(
-            repository=MysqlUtil(getConnection())._scrapper_state_repository
-        )
-        seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
-        scheduler = ScrapperScheduler(persistenceManager, seleniumUtil)
-        if len(args) == 1 or starting or wait:
-            scheduler.runAllScrappers(wait is not None, starting is not None, startingAt)
-        else:
-            scheduler.runSpecifiedScrappers(args[1:])
+    persistenceManager = PersistenceManager(
+        repository=MysqlUtil(getConnection())._scrapper_state_repository
+    )
+    scheduler = ScrapperScheduler(persistenceManager)
+    if len(args) == 1 or starting or wait:
+        scheduler.runAllScrappers(wait is not None, starting is not None, startingAt)
+    else:
+        scheduler.runSpecifiedScrappers(args[1:])
 
 
 if __name__ == '__main__':

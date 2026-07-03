@@ -49,7 +49,7 @@ class BrowserService:
             lambda d: str(d.current_url).find(url) >= 0)
 
     @seleniumSocketConnRetry()
-    def waitUntilPageIsLoaded(self, timeout: int = 10):
+    def waitUntilPageIsLoaded(self, timeout: int = 30):
         WebDriverWait(self.driver, timeout).until(
             lambda driver: driver.execute_script('return document.readyState;') == 'complete')
 

@@ -9,6 +9,7 @@ from selenium import webdriver
 from commonlib.terminalColor import yellow
 from commonlib.environmentUtil import getEnvBool
 from commonlib.systemUtil import isWindowsOS
+from .stealthScripts import STEALTH_SCRIPTS_JS
 
 # Rotating User-Agents to avoid Cloudflare security filter
 DESKTOP_USER_AGENTS = list(filter(lambda line: len(line) > 0 and not line.startswith('#'), """
@@ -53,14 +54,21 @@ class DriverUtil:
                     temp_user_data_dir = tempfile.mkdtemp()
                     opts.add_argument(f'--user-data-dir={temp_user_data_dir}')
                     self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
+                    self._set_window_size_and_position()
                 else:
-                    self.driver = uc.Chrome(browser_executable_path=chromePath, version_main=version_main)
+                    opts = uc.ChromeOptions()
+                    opts.add_argument('--disable-gpu')
+                    opts.add_argument('--no-sandbox')
+                    opts.add_argument('--disable-dev-shm-usage')
+                    opts.add_argument('--disable-blink-features=AutomationControlled')
+                    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+                    self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
+                    self._set_window_size_and_position()
             else:
                 print(yellow('WARNING: undetected-chromedriver requires Chrome installed. Falling back to standard Selenium.'))
                 self.useUndetected = False
         if not self.useUndetected:
             opts = webdriver.ChromeOptions()
-            opts.add_argument("--window-size=1920,900")
             opts.add_argument("--disable-blink-features=AutomationControlled")
             opts.add_experimental_option("excludeSwitches", ["enable-automation"])
             opts.add_experimental_option("useAutomationExtension", False)
@@ -71,10 +79,17 @@ class DriverUtil:
             opts.add_argument("--no-sandbox")
             opts.add_argument("--disable-gpu")
             self.driver = webdriver.Chrome(options=opts)
+            self._set_window_size_and_position()
             self.driver.set_page_load_timeout(180)
             self.driver.set_script_timeout(180)
             self._apply_stealth_scripts()
         print(f'seleniumUtil init driver={self.driver}')
+
+    def _set_window_size_and_position(self):
+        avail_width = self.driver.execute_script("return screen.availWidth;")
+        avail_height = self.driver.execute_script("return screen.availHeight;")
+        self.driver.set_window_size(avail_width - 90, avail_height - 90)
+        self.driver.set_window_position(int(avail_width * 0.3), 0)
 
     def _findChrome(self):
         import platform
@@ -122,65 +137,11 @@ class DriverUtil:
         return 0
 
     def _apply_stealth_scripts(self):
-        """Apply advanced stealth techniques to bypass bot detection"""
-        stealth_js = """
-        // Overwrite the `languages` property to use a custom getter
-        Object.defineProperty(navigator, 'languages', {
-            get: function() { return ['en-US', 'en']; }
-        });
-        // Overwrite the `plugins` property to use a custom getter
-        Object.defineProperty(navigator, 'plugins', {
-            get: function() { return [1, 2, 3, 4, 5]; }
-        });
-        // Remove webdriver property
-        Object.defineProperty(navigator, 'webdriver', {
-            get: () => undefined
-        });
-        // Mock chrome runtime
-        window.chrome = {
-            runtime: {}
-        };
-        // Mock permissions
-        const originalQuery = window.navigator.permissions.query;
-        window.navigator.permissions.query = (parameters) => (
-            parameters.name === 'notifications' ?
-                Promise.resolve({ state: Notification.permission }) :
-                originalQuery(parameters)
-        );
-        // Add vendor and renderer info
-        const getParameter = WebGLRenderingContext.prototype.getParameter;
-        WebGLRenderingContext.prototype.getParameter = function(parameter) {
-            if (parameter === 37445) {
-                return 'Intel Inc.';
-            }
-            if (parameter === 37446) {
-                return 'Intel Iris OpenGL Engine';
-            }
-            return getParameter.call(this, parameter);
-        };
-        // Mock automation flags
-        Object.defineProperty(navigator, 'maxTouchPoints', {
-            get: () => 1
-        });
-        Object.defineProperty(navigator, 'hardwareConcurrency', {
-            get: () => 8
-        });
-        // Add connection info
-        Object.defineProperty(navigator, 'connection', {
-            get: () => ({
-                effectiveType: '4g',
-                rtt: 50,
-                downlink: 10,
-                saveData: false
-            })
-        });
-        """
         try:
-            self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': stealth_js})
+            self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': STEALTH_SCRIPTS_JS})
         except Exception:
-            # Fallback for non-CDP browsers
             try:
-                self.driver.execute_script(stealth_js)
+                self.driver.execute_script(STEALTH_SCRIPTS_JS)
             except Exception:
                 pass
 

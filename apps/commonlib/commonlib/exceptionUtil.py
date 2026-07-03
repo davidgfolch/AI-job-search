@@ -2,7 +2,20 @@ import os
 import re
 import sys
 import traceback
-from typing import List, Union
+from typing import Callable, List, Union
+
+from .terminalColor import yellow
+
+
+def try_or_warn(fn: Callable, warning_msg: str, show_exception: bool = False) -> bool:
+    try:
+        fn()
+        return True
+    except Exception:
+        print(yellow(warning_msg))
+        if show_exception:
+            traceback.print_exc()
+        return False
 
 
 def getProjectTraceItems(e: Exception) -> str:

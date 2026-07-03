@@ -4,21 +4,16 @@ from scrapper.main import main, hasArgument
 
 @pytest.fixture
 def mocks():
-    with patch('scrapper.main.SeleniumService') as mock_selenium_cls, \
-         patch('scrapper.main.PersistenceManager') as mock_pm_cls, \
+    with patch('scrapper.main.PersistenceManager') as mock_pm_cls, \
          patch('scrapper.main.MysqlUtil') as mock_mysql_cls, \
          patch('scrapper.main.getConnection') as mock_conn, \
          patch('scrapper.main._v', return_value='0.0.0') as mock_v, \
          patch('scrapper.main.process_page_url') as mock_process_url, \
-         patch('scrapper.main.ScrapperScheduler') as mock_scheduler_cls, \
-         patch('scrapper.main.getSrcPath', return_value='/src/path'):
+         patch('scrapper.main.ScrapperScheduler') as mock_scheduler_cls:
         
-        mock_selenium = mock_selenium_cls.return_value
-        mock_selenium.__enter__.return_value = mock_selenium
         mock_scheduler = mock_scheduler_cls.return_value
         
         yield {
-            'selenium': mock_selenium,
             'pm': mock_pm_cls.return_value,
             'process_url': mock_process_url,
             'scheduler_cls': mock_scheduler_cls,
@@ -27,14 +22,12 @@ def mocks():
 
 def test_main_no_args(mocks):
     main(['scrapper.py'])
-    mocks['selenium'].loadPage.assert_called_with('file:///src/path/scrapper/index.html')
-    mocks['scheduler_cls'].assert_called_with(mocks['pm'], mocks['selenium'])
+    mocks['scheduler_cls'].assert_called_with(mocks['pm'])
     mocks['scheduler'].runAllScrappers.assert_called_with(False, False, None)
 
 def test_main_url_arg(mocks):
     main(['scrapper.py', 'url', 'http://example.com'])
     mocks['process_url'].assert_called_with('http://example.com')
-    mocks['selenium'].loadPage.assert_not_called()
 
 def test_main_wait_arg(mocks):
     main(['scrapper.py', 'wait'])

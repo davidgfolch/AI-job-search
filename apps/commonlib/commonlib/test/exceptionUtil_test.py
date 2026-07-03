@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from commonlib.exceptionUtil import getProjectTraceItems, cleanUnresolvedTrace, filter_trace_by_paths
+from commonlib.exceptionUtil import try_or_warn, getProjectTraceItems, cleanUnresolvedTrace, filter_trace_by_paths
 
 def test_getProjectTraceItems_basic():
     try:
@@ -83,3 +83,35 @@ def test_filter_trace_by_paths_no_trace():
     with patch('sys.exc_info', return_value=(None, None, None)):
         result = filter_trace_by_paths(["apps/"])
     assert result == ""
+
+
+def ok_fn():
+    return 42
+
+
+def fail_fn():
+    raise ValueError("test error")
+
+
+@patch('commonlib.exceptionUtil.traceback.print_exc')
+def test_try_or_warn_success(mock_print_exc, capsys):
+    assert try_or_warn(ok_fn, "warning") is True
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    mock_print_exc.assert_not_called()
+
+
+@patch('commonlib.exceptionUtil.traceback.print_exc')
+def test_try_or_warn_failure_no_exception(mock_print_exc, capsys):
+    assert try_or_warn(fail_fn, "test warning") is False
+    captured = capsys.readouterr()
+    assert "\033[93mtest warning\033[0m\n" in captured.out
+    mock_print_exc.assert_not_called()
+
+
+@patch('commonlib.exceptionUtil.traceback.print_exc')
+def test_try_or_warn_failure_with_exception(mock_print_exc, capsys):
+    assert try_or_warn(fail_fn, "test warning", show_exception=True) is False
+    captured = capsys.readouterr()
+    assert "\033[93mtest warning\033[0m\n" in captured.out
+    mock_print_exc.assert_called_once()

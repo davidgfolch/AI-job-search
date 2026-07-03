@@ -2,19 +2,9 @@ import pytest
 from unittest.mock import MagicMock, call, patch
 from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
 from selenium.common.exceptions import NoSuchElementException
-
 TEST_URL = "http://url"
 
-
 class TestLinkedinNavigator:
-
-    @pytest.fixture
-    def mock_selenium(self):
-        return MagicMock()
-
-    @pytest.fixture
-    def navigator(self, mock_selenium):
-        return LinkedinNavigator(mock_selenium, False)
 
     def test_init(self, navigator, mock_selenium):
         assert navigator.selenium == mock_selenium
@@ -57,6 +47,15 @@ class TestLinkedinNavigator:
             mock_selenium.checkboxUnselect.assert_called_with('div.remember_me__opt_in input')
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_LOGIN_BUTTON)
 
+    @patch('scrapper.navigator.linkedinNavigator.sleep')
+    def test_login_calls_wait_for_both_fields(self, mock_sleep, navigator, mock_selenium):
+        mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
+        mock_selenium.getElms.return_value = [MagicMock(), MagicMock()]
+        navigator.login("user", "pass")
+        mock_selenium.waitUntil_presenceLocatedElement.assert_any_call(CSS_SEL_LOGIN_USER)
+        mock_selenium.waitUntil_presenceLocatedElement.assert_any_call(CSS_SEL_LOGIN_PWD)
+        assert mock_selenium.waitUntil_presenceLocatedElement.call_count == 2
+
     def test_loginSubmit(self, navigator, mock_selenium):
         navigator.loginSubmit()
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_LOGIN_BUTTON)
@@ -95,7 +94,6 @@ class TestLinkedinNavigator:
              mock_retry.assert_called_once()
              assert mock_selenium.scrollIntoView.call_count == 2
 
-
     def test_scroll_jobs_list_retry_execution(self, navigator, mock_selenium):
         navigator.scroll_jobs_list_retry(1)
         mock_selenium.scrollIntoView.assert_called()
@@ -117,8 +115,6 @@ class TestLinkedinNavigator:
             mock_selenium.waitAndClick.assert_called_with("css")
         else:
             mock_selenium.waitAndClick.assert_not_called()
-
-
 
     def test_job_fit_preference_found(self, navigator, mock_selenium):
         # Test fit preference

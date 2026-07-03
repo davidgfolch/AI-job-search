@@ -31,9 +31,9 @@ CSS_SEL_JOB_DATA = '#wrapper > section.m-0.pt-5 > div:nth-child(1) > div > div.c
 
 class TecnoempleoNavigator(BaseNavigator):
     
-    @retry(retries=10, delay=10)
+    @retry(retries=10, delay=10, exception=NoSuchElementException)
     def wait_for_undetected_security_filter(self):
-        self.selenium.waitUntil_presenceLocatedElement('#e_mail', 20)
+        self.selenium.getElm('#e_mail')
 
     @retry(retries=60, delay=5, exception=NoSuchElementException)
     def cloud_flare_security_filter(self):
@@ -44,7 +44,7 @@ class TecnoempleoNavigator(BaseNavigator):
     def login(self, user_email, user_pwd):
         sleep(2, 2)
         self.selenium.waitAndClick('nav ul li a[title="Acceso Candidatos"]')
-        self.selenium.waitUntilPageIsLoaded()
+        self.selenium.waitUntilPageIsLoaded(30)
         if self.selenium.usesUndetectedDriver():
             self.wait_for_undetected_security_filter()
         else:

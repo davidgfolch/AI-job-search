@@ -1,9 +1,9 @@
 from typing import Optional
-from datetime import datetime
 
 from commonlib.terminalUtil import consoleTimer
 from commonlib.terminalColor import cyan, red, yellow
-from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, SCRAPPER_RUN_IN_TABS, get_debug)
+from commonlib.fileSystemUtil import getSrcPath
+from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
@@ -13,9 +13,8 @@ from scrapper.util.terminalTableUtil import print_failed_info_table
 
 class ScrapperScheduler:
     
-    def __init__(self, persistenceManager: PersistenceManager, seleniumUtil: SeleniumService):
+    def __init__(self, persistenceManager: PersistenceManager):
         self.persistenceManager = persistenceManager
-        self.seleniumUtil = seleniumUtil
 
     def getProperties(self, name: str) -> Optional[dict]:
         return SCRAPPERS.get(name.capitalize())
@@ -65,23 +64,21 @@ class ScrapperScheduler:
                 properties = scrapper['properties']
                 debug = get_debug(name)
                 print(f'{name} DEBUG: {debug}')
-                self.seleniumUtil.debug = debug
-                if SCRAPPER_RUN_IN_TABS:
-                    self.seleniumUtil.tab(name)
-                executor = create_executor(name, self.seleniumUtil, self.persistenceManager)
-                if runPreload(properties, run_in_tabs=SCRAPPER_RUN_IN_TABS):
-                    if not executor.execute_preload(properties):
+                with SeleniumService(debug=debug) as seleniumUtil:
+                    seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
+                    executor = create_executor(name, seleniumUtil, self.persistenceManager)
+                    if runPreload(properties):
+                        if not executor.execute_preload(properties):
+                            return False, executed_startingAt
+                        if not properties.get('preloaded', True): 
+                            print(red(f"Skipping execution for {name} due to preload failure."))
+                            if hasattr(executor, 'navigator') and executor.navigator:
+                                executor.navigator.close()
+                            continue
+                    if not executor.execute(properties):
                         return False, executed_startingAt
-                    if not properties.get('preloaded', True): 
-                        print(red(f"Skipping execution for {name} due to preload failure."))
-                        # Close navigator if it was opened
-                        if hasattr(executor, 'navigator') and executor.navigator:
-                            executor.navigator.close()
-                        continue
-                if not executor.execute(properties):
-                    return False, executed_startingAt
-                if starting and startingAt == name.capitalize():
-                    executed_startingAt = True
+                    if starting and startingAt == name.capitalize():
+                        executed_startingAt = True
         return True, executed_startingAt
 
     def runAllScrappers(self, waitBeforeFirstRuns, starting, startingAt, loops=99999999999):
@@ -106,13 +103,16 @@ class ScrapperScheduler:
         for arg in scrappersList:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
-                executor = create_executor(arg.capitalize(), self.seleniumUtil, self.persistenceManager)
-                if runPreload(properties, run_in_tabs=SCRAPPER_RUN_IN_TABS):
-                    if not executor.execute_preload(properties):
-                        if hasattr(executor, 'navigator') and executor.navigator:
-                            executor.navigator.close()
+                debug = get_debug(arg)
+                print(f'{arg} DEBUG: {debug}')
+                with SeleniumService(debug=debug) as seleniumUtil:
+                    seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
+                    executor = create_executor(arg.capitalize(), seleniumUtil, self.persistenceManager)
+                    if runPreload(properties):
+                        if not executor.execute_preload(properties):
+                            if hasattr(executor, 'navigator') and executor.navigator:
+                                executor.navigator.close()
+                            return
+                    if not executor.execute(properties):
                         return
-                if not executor.execute(properties):
-                    return
-                    return
         print_failed_info_table(self.persistenceManager)

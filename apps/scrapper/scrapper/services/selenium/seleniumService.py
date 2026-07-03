@@ -117,7 +117,7 @@ class SeleniumService:
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
         self.element_service.waitAndClick(cssSel, timeout, scrollIntoView)
 
-    def waitAndClick_noError(self, cssSel: str, msg: str, showException=True) -> bool:
+    def waitAndClick_noError(self, cssSel: str, msg: str, showException=False) -> bool:
         return self.element_service.waitAndClick_noError(cssSel, msg, showException)
 
     def scrollIntoView_noError(self, cssSel: str | WebElement):

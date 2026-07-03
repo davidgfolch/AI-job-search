@@ -18,7 +18,7 @@ class TestTecnoempleoNavigator:
 
     def test_wait_for_undetected_security_filter(self, navigator, mock_selenium):
         navigator.wait_for_undetected_security_filter()
-        mock_selenium.waitUntil_presenceLocatedElement.assert_called_with('#e_mail', 20)
+        mock_selenium.getElm.assert_called_with('#e_mail')
 
     def test_cloud_flare_security_filter(self, navigator, mock_selenium):
         with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):

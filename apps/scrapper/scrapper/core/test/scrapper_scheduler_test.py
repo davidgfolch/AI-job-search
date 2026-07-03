@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from scrapper.core.scrapper_config import (
-    CLOSE_TAB, AUTORUN, SCRAPPERS, TIMER, DEBUG
+    AUTORUN, SCRAPPERS, TIMER, DEBUG
 )
 from scrapper.core.scrapper_scheduler import ScrapperScheduler
 
@@ -11,11 +11,11 @@ def mocks():
     pm.get_last_execution.return_value = None
     pm.get_failed_keywords.return_value = []
     pm.get_state.return_value = {}
-    return {'sel': MagicMock(), 'pm': pm}
+    return {'pm': pm}
 
 @pytest.fixture
 def scheduler(mocks):
-    return ScrapperScheduler(mocks['pm'], mocks['sel'])
+    return ScrapperScheduler(mocks['pm'])
 
 @pytest.fixture
 def run_mocks():
@@ -40,10 +40,16 @@ def run_mocks():
     for p in patchers.values(): p.stop()
 
 @pytest.fixture(autouse=True)
+def mock_selenium_service():
+    with patch('scrapper.core.scrapper_scheduler.SeleniumService') as mock:
+        mock.return_value.__enter__.return_value = MagicMock()
+        yield mock
+
+@pytest.fixture(autouse=True)
 def setup_scrappers():
     val = {
         'Infojobs': {TIMER: 7200, AUTORUN: True, DEBUG: False},
-        'Linkedin': {TIMER: 3600, AUTORUN: True, CLOSE_TAB: True, DEBUG: False},
+        'Linkedin': {TIMER: 3600, AUTORUN: True, DEBUG: False},
         'Glassdoor': {TIMER: 10800, AUTORUN: True, DEBUG: False},
         'Tecnoempleo': {TIMER: 7200, AUTORUN: True, DEBUG: False},
         'Indeed': {TIMER: 10800, AUTORUN: False, DEBUG: False},
@@ -70,7 +76,6 @@ def test_get_properties(scheduler, arg, props_ok):
 @patch('scrapper.core.scrapper_scheduler.consoleTimer')
 @patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=12000)
 @patch('scrapper.core.scrapper_state_calculator.parseDatetime')
-@patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False)
 def test_run_scenarios(mock_parse, mock_now, mock_timer, scheduler, mocks, run_mocks, starting, start_at, p_date, info_called, link_called):
     mock_parse.side_effect = p_date
     mocks['pm'].get_last_execution.side_effect = lambda n: f"last_run_{n.lower()}" if n in ['Infojobs', 'Linkedin'] else None
@@ -85,14 +90,12 @@ def test_run_scenarios(mock_parse, mock_now, mock_timer, scheduler, mocks, run_m
     (['Infojobs', 'Linkedin'], {'infojobs': 2, 'linkedin': 2}),
     (['infojobs', 'LINKEDIN'], {'infojobs': 2, 'linkedin': 2})
 ])
-@patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False)
 def test_specified(scheduler, scrapers, expected_calls, run_mocks):
     scheduler.runSpecifiedScrappers(scrapers)
     for name, expected_count in expected_calls.items(): 
         actual_count = run_mocks[name].execute_preload.call_count + run_mocks[name].execute.call_count
         assert actual_count == expected_count
 
-@patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False)
 def test_execute_scrappers(scheduler, run_mocks):
     status = [
         {'name': 'Infojobs', 'properties': {TIMER: 7200}, 'seconds_remaining': 0},
@@ -110,7 +113,6 @@ def test_execute_scrappers(scheduler, run_mocks):
     (True, True, None, True),     # executes on preload success
 ])
 @patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False)
-@patch('scrapper.core.scrapper_scheduler.SCRAPPER_RUN_IN_TABS', False)
 @patch('scrapper.core.scrapper_scheduler.create_executor')
 def test_preload_execution(mock_create, mock_debug, scheduler, preload_res, preloaded_val, expect_cont, expect_exec):
     mock_ex = MagicMock()

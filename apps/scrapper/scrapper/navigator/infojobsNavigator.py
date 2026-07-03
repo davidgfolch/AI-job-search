@@ -39,6 +39,7 @@ class InfojobsNavigator(BaseNavigator):
         if not self.selenium.usesUndetectedDriver():
             print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
             sleep(4, 4)
+        self.selenium.waitAndClick_noError('#reject-button', "Reject send notifications")
         self.selenium.scrollIntoView('#didomi-notice-agree-button > span')
         sleep(1, 3)
         self.selenium.waitAndClick('#didomi-notice-agree-button > span')

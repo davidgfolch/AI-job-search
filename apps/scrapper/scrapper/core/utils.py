@@ -42,6 +42,6 @@ def abortExecution() -> bool:
         return True
     return False
 
-def runPreload(properties: dict, close_tab_key: str = 'CLOSE_TAB', run_in_tabs: bool = True) -> bool:
+def runPreload(properties: dict) -> bool:
     """Check if preload is needed based on properties."""
-    return not properties.get('preloaded', False) or properties.get(close_tab_key, False) or not run_in_tabs
+    return not properties.get('preloaded', False)

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from scrapper.core.scrapper_config import CLOSE_TAB, SCRAPPERS, TIMER
+from scrapper.core.scrapper_config import SCRAPPERS, TIMER
 from scrapper.executor.BaseExecutor import BaseExecutor
 
 @pytest.fixture

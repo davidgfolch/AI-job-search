@@ -56,11 +56,6 @@ class TestRunPreload:
     @pytest.mark.parametrize("props,expected", [
         ({}, True),
         ({'preloaded': True}, False),
-        ({'preloaded': True, 'CLOSE_TAB': True}, True),
     ])
     def test_run_preload(self, props, expected):
         assert runPreload(props) is expected
-
-    def test_run_preload_run_in_tabs_false(self):
-        props = {'preloaded': True}
-        assert runPreload(props, run_in_tabs=False) is True

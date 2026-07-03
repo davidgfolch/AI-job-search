@@ -5,7 +5,8 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from scrapper.core.utils import debug, sleep
+from commonlib.exceptionUtil import try_or_warn
+from scrapper.core.utils import sleep
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 from commonlib.terminalColor import yellow
 from commonlib.systemUtil import isMacOS
@@ -80,15 +81,18 @@ class ElementService:
     
     @seleniumSocketConnRetry()
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(EC.element_to_be_clickable, self._getElmFromOpSelector(cssSel))
+        locator = (By.CSS_SELECTOR, cssSel) if isinstance(cssSel, str) else cssSel
+        WebDriverWait(self.driver, timeout).until(EC.element_to_be_clickable(locator))
 
     @seleniumSocketConnRetry()
     def waitUntilVisible(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(EC.visibility_of, self._getElmFromOpSelector(cssSel))
+        locator = (By.CSS_SELECTOR, cssSel) if isinstance(cssSel, str) else cssSel
+        WebDriverWait(self.driver, timeout).until(EC.visibility_of(locator))
 
     @seleniumSocketConnRetry()
     def waitUntil_presenceLocatedElement(self, cssSel: str | WebElement, timeout: int = 10):
-        WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located, self._getElmFromOpSelector(cssSel))
+        locator = (By.CSS_SELECTOR, cssSel) if isinstance(cssSel, str) else cssSel
+        WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located(locator))
 
     @seleniumSocketConnRetry()
     def waitAndClick(self, cssSel: str | WebElement, timeout: int = 10, scrollIntoView: bool = False):
@@ -104,15 +108,8 @@ class ElementService:
         return self.getElm(cssSel) if isinstance(cssSel, str) else cssSel
 
     @seleniumSocketConnRetry()
-    def waitAndClick_noError(self, cssSel: str, msg: str, showException=True) -> bool:
-        try:
-            self.waitAndClick(cssSel)
-            return True
-        except Exception:
-            print(yellow(f'{msg}'))
-            if showException:
-                debug(debugFlag=False, exception=True)
-            return False
+    def waitAndClick_noError(self, cssSel: str, msg: str, showException=False) -> bool:
+        return try_or_warn(lambda: self.waitAndClick(cssSel), msg, showException)
 
     @seleniumSocketConnRetry()
     def scrollIntoView_noError(self, cssSel: str | WebElement):
