@@ -158,7 +158,7 @@ backend ← web (via REST API)
 **aiEnrichNew** (`apps/aiEnrichNew/`)
 - Local Hugging Face transformers for job data enrichment
 - Model: `Qwen/Qwen2.5-1.5B-Instruct` (configurable in `dataExtractor.py`)
-- Preferred over `aiEnrich` (CrewAI/Ollama)
+- Preferred over `aiEnrich` (Ollama)
 
 **aiEnrichSkill** (`apps/aiEnrichSkill/`)
 - Skill enrichment module supporting Ollama and HuggingFace backends
