@@ -4,7 +4,7 @@ import { type Job } from '../../api/ViewerApi';
 
 vi.mock('../../api/ViewerApi', () => ({
     jobsApi: {
-        getJob: vi.fn(),
+        getJob: vi.fn().mockResolvedValue(null),
     },
 }));
 

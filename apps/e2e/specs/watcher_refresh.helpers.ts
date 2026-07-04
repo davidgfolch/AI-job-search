@@ -70,6 +70,5 @@ export async function verifyNoRefresh(
     }
     if (counters.statsRequestCount !== initialCounts.stats) {
         throw new Error(`Expected stats request count to be ${initialCounts.stats}, but got ${counters.statsRequestCount}`);
-        throw new Error(`Expected stats request count to be ${initialCounts.stats}, but got ${counters.statsRequestCount}`);
     }
 }

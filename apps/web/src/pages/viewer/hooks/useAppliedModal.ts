@@ -32,22 +32,18 @@ export function useAppliedModal({
         const jobIds: number[] = [];
         
         if (selectionMode === 'all') {
-            // "all" selection should not reach here due to button being disabled
             return;
         } else if (selectedIds.size > 1) {
-            // Multiple selection should not reach here due to button being disabled
             return;
-        } else if (selectedIds.size === 1) {
-            // Single selection in bulk mode
+        } else if (selectedIds.size === 1 && !selectedJob) {
             jobIds.push(...selectedIds);
         } else {
-            // Single job mode - will be handled by onJobUpdate
-            jobIds.push(-1); // Use -1 as indicator for single job mode
+            jobIds.push(-1);
         }
 
         setPendingJobIds(jobIds);
         setIsModalOpen(true);
-    }, [selectedIds, selectionMode]);
+    }, [selectedIds, selectionMode, selectedJob]);
 
     const handleConfirm = useCallback(async (includeComment: boolean, comment: string) => {
         const isSingleJob = pendingJobIds.length === 1 && pendingJobIds[0] === -1;
