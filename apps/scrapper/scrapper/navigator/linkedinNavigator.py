@@ -83,6 +83,14 @@ class LinkedinNavigator(BaseNavigator):
                 raise e
 
 
+    def check_redirected_to_login(self, login_callback) -> bool:
+        current_url = self.selenium.getUrl()
+        if any(p in current_url for p in ['linkedin.com/login', 'linkedin.com/uas/login', 'linkedin.com/authwall']):
+            print(yellow("Detected redirect to login page, re-logging in..."))
+            login_callback()
+            return True
+        return False
+
     def close_cookies_banner(self):
         self.selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE, 'Could not close cookies banner')
 

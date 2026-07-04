@@ -95,14 +95,13 @@ class PersistenceManager:
 
     def finalize_scrapper(self, site: str):
         from commonlib.terminalColor import yellow
-        # Clear previous errors if any
-        if 'last_error' in self.state.get(site, {}):
-            del self.state[site]['last_error']
-            if 'last_error_time' in self.state[site]:
-                del self.state[site]['last_error_time']
-            self.save()
         if not self.get_failed_keywords(site):
+            if 'last_error' in self.state.get(site, {}):
+                del self.state[site]['last_error']
+                if 'last_error_time' in self.state[site]:
+                    del self.state[site]['last_error_time']
             self.clear_state(site)
         else:
             print(yellow(f"Scrapper finished with failed keywords. State preserved for retry."))
+        self.save()
 

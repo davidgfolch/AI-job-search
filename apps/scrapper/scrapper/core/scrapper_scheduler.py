@@ -77,6 +77,7 @@ class ScrapperScheduler:
                             continue
                     if not executor.execute(properties):
                         return False, executed_startingAt
+                    properties['preloaded'] = False
                     if starting and startingAt == name.capitalize():
                         executed_startingAt = True
         return True, executed_startingAt
@@ -115,4 +116,5 @@ class ScrapperScheduler:
                             return
                     if not executor.execute(properties):
                         return
+                    properties['preloaded'] = False
         print_failed_info_table(self.persistenceManager)

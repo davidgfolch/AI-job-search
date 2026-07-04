@@ -129,9 +129,10 @@ class BaseExecutor(ABC):
                 try:
                     self._process_keyword(keyword, start_page)
                     self.persistence_manager.remove_failed_keyword(self.site_name_key, keyword)
-                except Exception:
+                except Exception as e:
                     debug(self.debug)
                     self.persistence_manager.add_failed_keyword(self.site_name_key, keyword)
+                    self.persistence_manager.set_error(self.site_name_key, cleanUnresolvedTrace(e))
         self.persistence_manager.finalize_scrapper(self.site_name_key)
 
     @abstractmethod

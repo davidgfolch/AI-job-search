@@ -31,6 +31,8 @@ class LinkedinExecutor(BaseExecutor):
 
     def _process_keyword(self, keyword: str, start_page: int):
         url = self._load_page(keyword)
+        if self.navigator.check_redirected_to_login(lambda: self.navigator.login(self.user_email, self.user_pwd)):
+            url = self._load_page(keyword)
         if self.navigator.check_login_popup(lambda: self.navigator.login(self.user_email, self.user_pwd)):
             url = self._load_page(keyword)
         if self.navigator.check_results(keyword, url, self.remote, self.location, self.f_TPR):
@@ -89,7 +91,7 @@ class LinkedinExecutor(BaseExecutor):
             baseScrapper.summarize(keywords, totalResults, currentItem)
         except Exception:
             debug(self.debug, exception=True)
-            
+            raise
     def _load_and_process_row(self, idx, rowErrors=0) -> bool | str:
         # Returns True (exists), False (new), or "ERROR"
         try:
