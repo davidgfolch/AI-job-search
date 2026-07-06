@@ -1,6 +1,7 @@
 import ipaddress
 import os
 import queue
+import threading
 import time
 import mysql.connector as mysqlConnector
 from mysql.connector import MySQLConnection
@@ -15,6 +16,7 @@ POOL_GET_RETRIES = int(os.getenv('COMMONLIB_DB_POOL_RETRIES', '3'))
 POOL_GET_DELAY = float(os.getenv('COMMONLIB_DB_POOL_RETRY_DELAY', '0.1'))
 
 _pool_initialized = False
+_pool_lock = threading.Lock()
 
 
 def _parse_ip_range(range_str: str) -> list[str]:
@@ -130,22 +132,26 @@ def _resolve_db_host(e2e_tests: bool = False) -> str:
 
 
 def _init_pool(e2e_tests: bool = False):
-    """Initialize the connection pool once."""
+    """Initialize the connection pool once (thread-safe)."""
     global _pool_initialized
     if _pool_initialized:
         return
-    pool_size = int(os.getenv('COMMONLIB_DB_POOL_SIZE', '32'))
-    db_host = _resolve_db_host(e2e_tests)
-    mysqlConnector.connect(
-        host=db_host,
-        user='root',
-        password='rootPass',
-        database=None if e2e_tests else 'jobs',
-        pool_name='jobsPool',
-        pool_size=pool_size,
-        pool_reset_session=True,
-    )
-    _pool_initialized = True
+    with _pool_lock:
+        if _pool_initialized:
+            return
+        pool_size = int(os.getenv('COMMONLIB_DB_POOL_SIZE', '32'))
+        db_host = _resolve_db_host(e2e_tests)
+        conn = mysqlConnector.connect(
+            host=db_host,
+            user='root',
+            password='rootPass',
+            database=None if e2e_tests else 'jobs',
+            pool_name='jobsPool',
+            pool_size=pool_size,
+            pool_reset_session=True,
+        )
+        conn.close()
+        _pool_initialized = True
 
 
 def get_connection(e2e_tests: bool = False) -> MySQLConnection:

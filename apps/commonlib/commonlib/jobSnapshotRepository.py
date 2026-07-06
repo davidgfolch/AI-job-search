@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Optional, Tuple, Dict, Any, List
 
-from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil
 
 
 class JobSnapshotRepository:
     def __init__(self, mysql: MysqlUtil = None):
-        self.mysql = mysql if mysql else MysqlUtil(getConnection())
+        self.mysql = mysql if mysql else MysqlUtil()
 
     @staticmethod
     def build_snapshot_query_and_params(

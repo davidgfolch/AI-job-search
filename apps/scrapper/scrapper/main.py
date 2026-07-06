@@ -47,8 +47,10 @@ def main(args):
     else:
         startingAt = None
 
+    with MysqlUtil(getConnection()) as mysql:
+        scrapper_state_repository = mysql._scrapper_state_repository
     persistenceManager = PersistenceManager(
-        repository=MysqlUtil(getConnection())._scrapper_state_repository
+        repository=scrapper_state_repository
     )
     scheduler = ScrapperScheduler(persistenceManager)
     if len(args) == 1 or starting or wait:
