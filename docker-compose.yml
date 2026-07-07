@@ -9,7 +9,7 @@ services:
     volumes:
       - /var/lib/mysql:/var/lib/mysql # Original bind mount to preserve existing data
       - ./scripts/mysql:/docker-entrypoint-initdb.d
-    command: --log_timestamps=SYSTEM
+    command: --log_timestamps=SYSTEM --max_connections=500
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootPass

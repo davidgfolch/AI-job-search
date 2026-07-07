@@ -139,7 +139,7 @@ def _init_pool(e2e_tests: bool = False):
     with _pool_lock:
         if _pool_initialized:
             return
-        pool_size = int(os.getenv('COMMONLIB_DB_POOL_SIZE', '32'))
+        pool_size = int(os.getenv('COMMONLIB_DB_POOL_SIZE', '5'))
         db_host = _resolve_db_host(e2e_tests)
         conn = mysqlConnector.connect(
             host=db_host,
