@@ -5,6 +5,7 @@ import subprocess
 import re
 import undetected_chromedriver as uc
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 from commonlib.terminalColor import yellow
 from commonlib.environmentUtil import getEnvBool
@@ -34,9 +35,18 @@ Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like 
 
 class DriverUtil:
     useUndetected: bool
-    driver: webdriver.Chrome
+    driver: webdriver.Chrome | webdriver.Firefox
 
-    def __init__(self):
+    def __init__(self, browser: str = 'chrome'):
+        self.browser = browser
+        print(f'seleniumUtil init (browser={self.browser})')
+        if self.browser == 'firefox':
+            self._init_firefox()
+        else:
+            self._init_chrome()
+        print(f'seleniumUtil init driver={self.driver}')
+
+    def _init_chrome(self):
         self.useUndetected = getEnvBool('SCRAPPER_USE_UNDETECTED_CHROMEDRIVER', False)
         print(f'seleniumUtil init (undetected={self.useUndetected})')
         if self.useUndetected:
@@ -45,12 +55,10 @@ class DriverUtil:
                 version_main = self._getChromeVersion(chromePath)
                 print(f'Detected Chrome version: {version_main}')
                 if isWindowsOS():
-                    # Avoid NoSuchElement when windows lock  https://www.perplexity.ai/search/python-selenium-undetected-chr-46Hdkb5EQCuDEmBpHh5A8Q
                     opts = uc.ChromeOptions()
                     opts.add_argument('--disable-gpu')
                     opts.add_argument('--no-sandbox')
                     opts.add_argument('--disable-dev-shm-usage')
-                    # chrome_options.add_argument('--headless')  # optional, depending on need
                     temp_user_data_dir = tempfile.mkdtemp()
                     opts.add_argument(f'--user-data-dir={temp_user_data_dir}')
                     self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
@@ -72,7 +80,6 @@ class DriverUtil:
             opts.add_argument("--disable-blink-features=AutomationControlled")
             opts.add_experimental_option("excludeSwitches", ["enable-automation"])
             opts.add_experimental_option("useAutomationExtension", False)
-            # Use random user agent
             user_agent = random.choice(DESKTOP_USER_AGENTS)
             opts.add_argument(f"--user-agent={user_agent}")
             opts.add_argument("--disable-dev-shm-usage")
@@ -83,13 +90,24 @@ class DriverUtil:
             self.driver.set_page_load_timeout(180)
             self.driver.set_script_timeout(180)
             self._apply_stealth_scripts()
-        print(f'seleniumUtil init driver={self.driver}')
+
+    def _init_firefox(self):
+        opts = FirefoxOptions()
+        user_agent = random.choice(DESKTOP_USER_AGENTS)
+        opts.set_preference("general.useragent.override", user_agent)
+        opts.add_argument("--disable-dev-shm-usage")
+        opts.add_argument("--no-sandbox")
+        opts.add_argument("--disable-gpu")
+        self.driver = webdriver.Firefox(options=opts)
+        self._set_window_size_and_position()
+        self.driver.set_page_load_timeout(180)
+        self.driver.set_script_timeout(180)
 
     def _set_window_size_and_position(self):
         avail_width = self.driver.execute_script("return screen.availWidth;")
         avail_height = self.driver.execute_script("return screen.availHeight;")
-        self.driver.set_window_size(avail_width - 90, avail_height - 90)
-        self.driver.set_window_position(int(avail_width * 0.3), 0)
+        self.driver.set_window_size(1200, avail_height - 90)
+        self.driver.set_window_position(int(avail_width - 1200), 0)
 
     def _findChrome(self):
         import platform

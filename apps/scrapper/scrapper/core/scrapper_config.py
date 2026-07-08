@@ -7,6 +7,7 @@ TIMER = 'timer'
 CLOSE_TAB = 'closeTab'
 AUTORUN = 'autoRun'
 DEBUG = 'debug'
+BROWSER = 'browser'
 
 
 def _base_config(name: str, autorun: bool = True, debug: bool = False) -> Dict[str, Any]:
@@ -15,6 +16,7 @@ def _base_config(name: str, autorun: bool = True, debug: bool = False) -> Dict[s
         TIMER: getSeconds(getEnv(f'{prefix}_RUN_CADENCY')),
         AUTORUN: getEnvBool(f'{prefix}_AUTORUN', autorun),
         DEBUG: getEnvBool(f'{prefix}_DEBUG', debug),
+        BROWSER: getEnv(f'{prefix}_BROWSER', 'chrome').lower(),
     }
 
 

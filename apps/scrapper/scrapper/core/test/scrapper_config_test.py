@@ -1,6 +1,6 @@
 import pytest
 from scrapper.core.scrapper_config import (
-    TIMER, CLOSE_TAB, AUTORUN, SCRAPPERS, SCRAPPER_RUN_IN_TABS, DEBUG
+    TIMER, CLOSE_TAB, AUTORUN, SCRAPPERS, SCRAPPER_RUN_IN_TABS, DEBUG, BROWSER
 )
 
 class TestScrapperConfig:
@@ -8,6 +8,7 @@ class TestScrapperConfig:
         assert TIMER == 'timer'
         assert CLOSE_TAB == 'closeTab'
         assert AUTORUN == 'autoRun'
+        assert BROWSER == 'browser'
     
     def test_scrappers_structure(self):
         assert isinstance(SCRAPPERS, dict)
@@ -15,8 +16,10 @@ class TestScrapperConfig:
         for name, config in SCRAPPERS.items():
             assert TIMER in config
             assert AUTORUN in config
+            assert BROWSER in config
             assert isinstance(config[TIMER], int)
             assert isinstance(config[AUTORUN], bool)
+            assert isinstance(config[BROWSER], str)
     
     @pytest.mark.parametrize("scrapper_name", [
         "Infojobs", "Tecnoempleo", "Linkedin", "Glassdoor", "Indeed"
@@ -26,6 +29,7 @@ class TestScrapperConfig:
         assert SCRAPPERS[scrapper_name][TIMER] > 0
         assert isinstance(SCRAPPERS[scrapper_name][AUTORUN], bool)
         assert isinstance(SCRAPPERS[scrapper_name][DEBUG], bool)
+        assert isinstance(SCRAPPERS[scrapper_name][BROWSER], str)
     
     def test_linkedin_has_close_tab(self):
         assert CLOSE_TAB in SCRAPPERS['Linkedin']

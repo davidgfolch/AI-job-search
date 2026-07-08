@@ -3,7 +3,7 @@ from typing import Optional
 from commonlib.terminalUtil import consoleTimer
 from commonlib.terminalColor import cyan, red, yellow
 from commonlib.fileSystemUtil import getSrcPath
-from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, get_debug)
+from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, BROWSER, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
@@ -63,8 +63,9 @@ class ScrapperScheduler:
                 name = scrapper['name']
                 properties = scrapper['properties']
                 debug = get_debug(name)
-                print(f'{name} DEBUG: {debug}')
-                with SeleniumService(debug=debug) as seleniumUtil:
+                browser = properties.get(BROWSER, 'chrome')
+                print(f'{name} DEBUG: {debug}, BROWSER: {browser}')
+                with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
                     seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
                     executor = create_executor(name, seleniumUtil, self.persistenceManager)
                     if runPreload(properties):
@@ -105,8 +106,9 @@ class ScrapperScheduler:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
                 debug = get_debug(arg)
-                print(f'{arg} DEBUG: {debug}')
-                with SeleniumService(debug=debug) as seleniumUtil:
+                browser = properties.get(BROWSER, 'chrome')
+                print(f'{arg} DEBUG: {debug}, BROWSER: {browser}')
+                with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
                     seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
                     executor = create_executor(arg.capitalize(), seleniumUtil, self.persistenceManager)
                     if runPreload(properties):
