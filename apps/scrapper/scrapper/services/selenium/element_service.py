@@ -57,13 +57,15 @@ class ElementService:
     @seleniumSocketConnRetry()
     def clearInputbox(self, cssSel: str | WebElement) -> bool:
         elm = self._getElmFromOpSelector(cssSel)
-        elm.clear() 
+        elm.clear()
         sleep(0.3, 0.5)
-        if len(elm.text) > 0:
+        elm_text = elm.get_attribute('value') or elm.text or ''
+        if len(elm_text) > 0:
             elm.send_keys((Keys.COMMAND if isMacOS() else Keys.CONTROL) + "a")
             elm.send_keys(Keys.BACKSPACE)
             sleep(0.3, 0.5)
-        return len(elm.text)==0
+            elm_text = elm.get_attribute('value') or elm.text or ''
+        return len(elm_text) == 0
         
     @seleniumSocketConnRetry()
     def checkboxUnselect(self, cssSel: str):

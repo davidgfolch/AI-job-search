@@ -69,6 +69,7 @@ class DriverUtil:
                     opts.add_argument('--no-sandbox')
                     opts.add_argument('--disable-dev-shm-usage')
                     opts.add_argument('--disable-blink-features=AutomationControlled')
+                    opts.add_argument('--disable-notifications')
                     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
                     self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
                     self._set_window_size_and_position()
