@@ -186,3 +186,8 @@ class JobsRepository:
     def create_job(self, job_data: Dict[str, Any]) -> int:
         with self.get_db() as db:
             return db.insertJob(job_data)
+
+    def find_duplicated(self, title: str, company: str, url: Optional[str] = None) -> Optional[int]:
+        from commonlib.findLastDuplicated import find_last_duplicated
+        with self.get_db() as db:
+            return find_last_duplicated(db, title, company, url)

@@ -108,6 +108,9 @@ class JobsService:
     def create_job(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         if "job_id" not in job_data:
             job_data["job_id"] = f"manual-{int(time.time() * 1000)}"
+        if not job_data.get("duplicated_id"):
+            job_data["duplicated_id"] = self.repo.find_duplicated(
+                job_data.get("title", ""), job_data.get("company", ""), job_data.get("url"))
         job_id = self.repo.create_job(job_data)
         return self.get_job(job_id) if job_id else None
 

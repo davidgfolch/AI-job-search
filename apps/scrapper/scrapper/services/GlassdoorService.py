@@ -22,7 +22,7 @@ class GlassdoorService(BaseService):
             print(f'{job_id}, {title}, {cyan(company)}, {location}, easy_apply={easy_apply} - ', end='')
             
             if validate(title, url, company, md, self.debug):
-                duplicated_id = find_last_duplicated(self.mysql, title, company)
+                duplicated_id = find_last_duplicated(self.mysql, title, company, url)
                 if id := self.mysql.insert((job_id, title, company, location, url, md,
                                        easy_apply, self.web_page, duplicated_id)):
                     print(green(f'INSERTED {id}!'), end='')
