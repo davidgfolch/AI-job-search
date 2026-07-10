@@ -46,6 +46,18 @@ Variables are grouped into four logical sections:
 - **Routing**: React Router
 - **Testing**: Vitest + React Testing Library
 
+## Backend Discovery
+
+The web app auto-discovers the backend API URL at Vite startup:
+
+| Environment | Behavior |
+|-------------|----------|
+| Docker | Uses `http://backend:8000` (Docker DNS) |
+| Local (default) | Uses `http://localhost:8000` |
+| Local (`BACKEND_DISCOVERY=True`) | Tries localhost → scans LAN for port 8000 → verifies `/health` |
+
+Set `BACKEND_DISCOVERY=True` in your `.env` to enable automatic LAN discovery when the backend runs on a different machine.
+
 ## Setup & Running
 
 ### Prerequisites

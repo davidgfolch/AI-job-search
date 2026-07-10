@@ -3,9 +3,10 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import fs from 'fs'
+import { discoverBackendUrl } from './src/common/backendDiscovery'
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode }) => {
   // In Docker: /app is WORKDIR, .env is mounted at /workspace/.env
   // In local dev: resolve from __dirname (apps/web) up two levels to monorepo root
   let envDir: string;
@@ -29,8 +30,7 @@ export default defineConfig(({ mode }) => {
   console.log('🔍 aiEnrichSkillEnabled:', aiEnrichSkillEnabled)
 
 
-  const isDocker = fs.existsSync('/workspace/.env');
-  const apiTarget = isDocker ? 'http://backend:8000' : 'http://localhost:8000';
+  const apiTarget = await discoverBackendUrl(env);
 
   return {
     define: {

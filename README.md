@@ -51,9 +51,19 @@ You can run scrapper in a (linux recommended) & connect to another mysql host pc
 (Only tested, scrapper pc connecting to another LAN PC executing all other services including db)
 TODO: running in several machines AI services, Ollama, backend, etc.
 
-### MySQL host auto-discovery
+### Scrapper MySQL host auto-discovery
 
 `COMMONLIB_DB_HOST` supports single IPs, CIDR, ranges, and comma-separated combinations, with automatic LAN fallback. See [commonlib docs](apps/commonlib/README.md#mysql-connection) for details.
+
+### Web Backend API auto-discovery
+
+Set `BACKEND_DISCOVERY=True` in `.env` to enable automatic LAN discovery of the backend API (port 8000). When enabled, the web app scans local subnets and probes `/health` to find the backend. Falls back to `localhost:8000` if nothing is found. See [web docs](apps/web/README.md#backend-discovery) for details.
+
+Run only web in the client machine like this:
+
+```bash
+docker-compose up -d --no-deps web
+```
 
 ## Screenshots
 
