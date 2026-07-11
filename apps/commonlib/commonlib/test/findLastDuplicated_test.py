@@ -36,3 +36,25 @@ def test_find_last_duplicated_not_found():
     mock_mysql.fetchAll.return_value = []
     result = find_last_duplicated(mock_mysql, "Software Engineer", "Tech Corp")
     assert result is None
+
+
+@pytest.mark.parametrize("title,company,url,should_contain", [
+    ("Software Engineer", "Tech Corp", None, "title = %s AND company = %s"),
+    ("Software Engineer", "Tech Corp", "https://example.com/job/123", "(title = %s AND company = %s) OR (url IS NOT NULL AND url = %s)"),
+])
+def test_find_last_duplicated_sql_uses_and_for_title_company(title, company, url, should_contain):
+    mock_mysql = MagicMock()
+    mock_mysql.fetchAll.return_value = []
+    find_last_duplicated(mock_mysql, title, company, url)
+    query = mock_mysql.fetchAll.call_args[0][0]
+    assert should_contain in query
+
+
+def test_find_last_duplicated_same_title_different_company_not_duplicate():
+    mock_mysql = MagicMock()
+    mock_mysql.fetchAll.return_value = []
+    result = find_last_duplicated(mock_mysql, "Backend Engineer", "Incode", "https://linkedin.com/jobs/view/123/")
+    assert result is None
+    query = mock_mysql.fetchAll.call_args[0][0]
+    assert "(title = %s AND company = %s)" in query
+    assert "OR" in query

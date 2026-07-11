@@ -11,10 +11,10 @@ def find_last_duplicated(mysql: MysqlUtil, title: str, company: str, url: Option
     if not url and (not title or not company or company.lower() == 'joppy'):
         return None
 
-    conditions = ["title = %s", "company = %s"]
+    conditions = ["(title = %s AND company = %s)"]
     params = [title or '', company or '']
     if url:
-        conditions.append("url IS NOT NULL AND url = %s")
+        conditions.append("(url IS NOT NULL AND url = %s)")
         params.append(url)
 
     query = f"SELECT id FROM jobs WHERE {' OR '.join(conditions)} ORDER BY created DESC LIMIT 1"
