@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -73,3 +73,23 @@ class BrowserService:
     @seleniumSocketConnRetry()
     def back(self):
         self.driver.back()
+
+    @seleniumSocketConnRetry()
+    def wait_for_new_window(self, old_handles: List[str], timeout: int = 10) -> str:
+        """Poll driver.window_handles until a new handle (not in old_handles) appears."""
+        WebDriverWait(self.driver, timeout).until(
+            lambda d: len(set(d.window_handles) - set(old_handles)) > 0
+        )
+        new_handles = set(self.driver.window_handles) - set(old_handles)
+        return new_handles.pop()
+
+    @seleniumSocketConnRetry()
+    def switch_to_window(self, handle: str):
+        self.driver.switch_to.window(handle)
+
+    @seleniumSocketConnRetry()
+    def close_and_switch_back(self, handle: str):
+        """Close a window and switch back to the default tab."""
+        self.driver.switch_to.window(handle)
+        self.driver.close()
+        self.driver.switch_to.window(self.default_tab)

@@ -143,3 +143,12 @@ class SeleniumService:
 
     def back(self):
         self.browser_service.back()
+
+    def wait_for_new_window(self, old_handles: List[str], timeout: int = 10) -> str:
+        return self.browser_service.wait_for_new_window(old_handles, timeout)
+
+    def switch_to_window(self, handle: str):
+        self.browser_service.switch_to_window(handle)
+
+    def close_and_switch_back(self, handle: str):
+        self.browser_service.close_and_switch_back(handle)

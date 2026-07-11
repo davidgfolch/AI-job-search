@@ -22,20 +22,21 @@ def mock_persistence_manager():
 
 @pytest.fixture
 def mock_env_vars():
-    with patch('scrapper.executor.GlassdoorExecutor.getAndCheckEnvVars') as mock:
-        mock.return_value = ('test@email.com', 'password', 'python developer')
-        yield mock
-
-@pytest.fixture
-def mock_get_env():
-    with patch('scrapper.executor.GlassdoorExecutor.getEnv') as mock:
-        mock.return_value = 'https://www.glassdoor.es/Job/jobs.htm?sc.keyword={search}'
+    def getEnv_side_effect(key, default=None):
+        if key == 'SCRAPPER_GLASSDOOR_JOBS_SEARCH':
+            return 'python developer'
+        if key == 'SCRAPPER_JOBS_SEARCH':
+            return 'python developer'
+        if key == 'SCRAPPER_GLASSDOOR_JOBS_SEARCH_BASE_URL':
+            return 'https://www.glassdoor.es/Job/jobs.htm?sc.keyword={search}'
+        return default
+    with patch('scrapper.executor.GlassdoorExecutor.getEnv', side_effect=getEnv_side_effect) as mock:
         yield mock
 
 @patch('scrapper.executor.GlassdoorExecutor.sleep')
 class TestGlassdoorExecutor:
 
-    def test_run_preload_page(self, mock_sleep, mock_selenium, mock_env_vars, mock_persistence_manager, mock_get_env):
+    def test_run_preload_page(self, mock_sleep, mock_selenium, mock_env_vars, mock_persistence_manager):
         with patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator') as mock_nav_class:
             mock_nav = mock_nav_class.return_value
             executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
@@ -44,7 +45,7 @@ class TestGlassdoorExecutor:
             # sleep is not called in run(preload_page=True) but adding patch for safety/consistency if logic changes
 
     
-    def test_run_normal_execution(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
+    def test_run_normal_execution(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch('scrapper.executor.BaseExecutor.MysqlUtil') as mock_mysql_class, \
              patch('scrapper.executor.GlassdoorExecutor.GlassdoorService') as mock_service_class, \
              patch.object(GlassdoorExecutor, '_process_keyword') as mock_process_keyword:
@@ -57,21 +58,34 @@ class TestGlassdoorExecutor:
             mock_service.prepare_resume.assert_called_once()
             mock_persistence_manager.finalize_scrapper.assert_called_once_with('Glassdoor')
 
-    def test_process_keyword(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
+    def test_process_keyword(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch.object(GlassdoorExecutor, '_load_and_process_row') as mock_load_and_process, \
              patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator') as mock_nav_class:
             mock_nav_instance = mock_nav_class.return_value
             executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             # navigator is already mocked via initialization inside Executor using the patched class
+            executor.navigator.check_results.return_value = True
             executor.navigator.get_total_results.return_value = 5
             executor.navigator.fast_forward_page.return_value = 1
             # JOBS_X_PAGE is 30, so 5 results fit in one page
             executor._process_keyword("python", 1)
             executor.navigator.load_page.assert_called_once()
+            executor.navigator.check_results.assert_called_once()
             executor.navigator.close_dialogs.assert_called_once()
             assert mock_load_and_process.call_count == 5
 
-    def test_load_and_process_row_exists(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
+    def test_process_keyword_no_results(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
+        with patch.object(GlassdoorExecutor, '_load_and_process_row') as mock_load_and_process, \
+             patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator') as mock_nav_class:
+            mock_nav_instance = mock_nav_class.return_value
+            executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
+            executor.navigator.check_results.return_value = False
+            executor._process_keyword("clojure", 1)
+            executor.navigator.load_page.assert_called_once()
+            executor.navigator.check_results.assert_called_once()
+            mock_load_and_process.assert_not_called()
+
+    def test_load_and_process_row_exists(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator'):
             executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             mock_nav = executor.navigator
@@ -84,7 +98,7 @@ class TestGlassdoorExecutor:
             mock_service.job_exists_in_db.assert_called_once_with("http://job.url?jl=123")
             mock_service.process_job.assert_not_called()
 
-    def test_load_and_process_row_new_job(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars, mock_get_env):
+    def test_load_and_process_row_new_job(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator'):
             executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             mock_nav = executor.navigator
@@ -112,15 +126,13 @@ class TestGlassdoorNavigator:
         nav = GlassdoorNavigator(mock_selenium, False)
         nav.load_main_page()
         assert mock_selenium.loadPage.call_count >= 1
-        mock_selenium.getElm.assert_called()
 
     def test_login(self, mock_sleep, mock_selenium):
         nav = GlassdoorNavigator(mock_selenium, False)
-        with patch.object(nav, 'load_main_page'):
-            nav.login("user", "pass")
-            mock_selenium.sendKeys.assert_any_call('#inlineUserEmail', 'user')
-            mock_selenium.sendKeys.assert_any_call('form input#inlineUserPassword', 'pass')
-            mock_sleep.assert_called()
+        with patch.object(nav, 'load_main_page'), \
+             patch.object(nav.authenticator, 'login') as mock_auth_login:
+            nav.login()
+            mock_auth_login.assert_called_once()
 
 class TestGlassdoorService:
     @pytest.mark.parametrize("url, expected_id", [

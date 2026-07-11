@@ -12,17 +12,22 @@ from commonlib.terminalColor import green, printHR, red, yellow
 from ..services.selenium.browser_service import sleep
 
 
-def getAndCheckEnvVars(site: str):
+def getAndCheckEnvVars(site: str, require_pwd: bool = True):
     mail = getEnv(f'SCRAPPER_{site}_EMAIL')
-    pwd = getEnv(f'SCRAPPER_{site}_PWD')
+    pwd = getEnv(f'SCRAPPER_{site}_PWD') if require_pwd else None
     search = getEnv(f'SCRAPPER_{site}_JOBS_SEARCH')
     if not search:
         search = getEnv('SCRAPPER_JOBS_SEARCH')
-    if not mail or not pwd or not search:
+    missing = []
+    if not mail:
+        missing.append(f'SCRAPPER_{site}_EMAIL')
+    if require_pwd and not pwd:
+        missing.append(f'SCRAPPER_{site}_PWD')
+    if not search:
+        missing.append(f'SCRAPPER_{site}_JOBS_SEARCH')
+    if missing:
         print(yellow('Set up .venv file with the following keys:'))
-        print(yellow(f'SCRAPPER_{site}_EMAIL' if not mail else '',
-                     f'SCRAPPER_{site}_PWD' if not pwd else '',
-                     f'SCRAPPER_{site}_JOBS_SEARCH' if not search else ''))
+        print(yellow(' '.join(missing)))
         print(yellow('Please read README.md for more info'))
         exit()
     return mail, pwd, search

@@ -5,26 +5,19 @@ from commonlib.terminalColor import yellow, green, printHR
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 from .baseNavigator import BaseNavigator
-
-
-#LOGIN
-CSS_SEL_LOGIN_EMAIL = '#inlineUserEmail'
-CSS_SEL_PASSWORD_SUBMIT = 'form button[type=submit]'
-CSS_SEL_INPUT_PASS = 'form input#inlineUserPassword'
+from .components.glassdoorAuthenticator import GlassdoorAuthenticator
 
 CSS_SEL_SEARCH_RESULT_TOTAL = 'div#left-column h1'
 CSS_SEL_COOKIES_ACCEPT = 'button#onetrust-accept-btn-handler'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'CSS_SEL_GLOBAL_ALERT_HIDE'
 CSS_SEL_DIALOG_CLOSE = 'div[data-test="Modal-content"] button[data-test=job-alert-modal-close]'
-# LIST
-CSS_SEL_NO_RESULTS = 'CSS_SEL_NO_RESULTS'
+CSS_SEL_NO_RESULTS = 'div.ErrorPage_errorPage__5lJBV'
 CSS_SEL_JOB_LI = 'div#left-column > div.JobsList_wrapper__EyUF6 > ul > li.JobsList_jobListItem__wjTHv'
 CSS_SEL_COMPANY = '.EmployerProfile_compactEmployerName__9MGcV'
 CSS_SEL_COMPANY2 = '.EmployerProfile_employerNameContainer__ptolz h4'
 CSS_SEL_LOCATION = 'header[data-test=job-details-header] div[data-test=location]'
 LI_JOB_TITLE_CSS_SUFFIX = 'a.JobCard_jobTitle__GLyJ1'
 CSS_SEL_NEXT_PAGE_BUTTON = 'div#left-column button[data-test="load-more"]'
-# JOB DETAIL (IN LIST CLICK)
 CSS_SEL_JOB_DETAIL = 'div.JobDetails_jobDetailsContainer__y9P3L'
 CSS_SEL_JOB_TITLE = f'{CSS_SEL_JOB_DETAIL} h1'
 CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div.JobDetails_jobDescription__uW_fK'
@@ -33,42 +26,25 @@ CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} header > div.JobDetails_webActio
 
 class GlassdoorNavigator(BaseNavigator):
 
+    def __init__(self, selenium: SeleniumService, debug: bool):
+        super().__init__(selenium, debug)
+        self.authenticator = GlassdoorAuthenticator(selenium)
+
     @retry(delay=5, exceptionFnc=lambda self, *args, **kwargs: None if self.selenium.usesUndetectedDriver() else self.security_filter())
     def load_main_page(self):
         self.selenium.loadPage('https://www.glassdoor.es/index.htm')
         sleep(2, 2)
-        # self.selenium.waitAndClick('button[data-test="unified-auth-indeed-button"]')
-        if len(self.selenium.getElms('a[data-test="legacy-auth-link"]')) > 0:
-            self.selenium.waitAndClick('a[data-test="legacy-auth-link"]')
-            sleep(2, 2)
-        self.selenium.getElm(CSS_SEL_LOGIN_EMAIL)
 
     @retry(retries=60, delay=5, exception=NoSuchElementException)
     def security_filter(self):
         print(yellow('SOLVE A SECURITY FILTER in selenium webbrowser...'), end='')
         sleep(4, 4)
-        self.selenium.getElm(CSS_SEL_LOGIN_EMAIL)
+        self.selenium.waitUntilPageIsLoaded()
 
     @retry()
-    def login(self, user_email, user_pwd):
-        print('Loggin in...')
-        self.load_main_page()
-        self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, user_email)
-        sleep(2, 5)
-        self.selenium.waitAndClick('.emailButton button[type=submit]')
-        sleep(2, 5)
-        self.selenium.waitUntilPageIsLoaded()
-        sleep(1, 2)
-        # 'login password slider wait'
-        self.selenium.waitUntilClickable(CSS_SEL_PASSWORD_SUBMIT)
-        self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_PASSWORD_SUBMIT)
-        self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_INPUT_PASS)
-        self.selenium.sendKeys(CSS_SEL_INPUT_PASS, user_pwd)
-        sleep(1, 2)
-        self.selenium.waitAndClick(CSS_SEL_PASSWORD_SUBMIT)
-        print(yellow('Waiting for Glassdoor to redirect after login...'))
-        self.selenium.waitUntilPageUrlContains('https://www.glassdoor.es/Job/index.htm', 60)
-
+    def login(self):
+        print('Logging in via Indeed OTP...')
+        self.authenticator.login()
 
     @retry()
     def get_total_results(self, keywords: str) -> int:
@@ -77,6 +53,15 @@ class GlassdoorNavigator(BaseNavigator):
         print(green(f'{total} total results for search: {keywords}'))
         printHR(green)
         return int(total)
+
+    def check_results(self, keywords: str, url: str) -> bool:
+        noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
+        if len(noResultElm) == 0:
+            return True
+        printHR(yellow)
+        print(yellow(f'No results found for keyword={keywords}'))
+        printHR(yellow)
+        return False
 
     def close_dialogs(self):
         sleep(1, 2)

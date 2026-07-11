@@ -3,7 +3,6 @@ from commonlib.terminalColor import green, yellow
 from commonlib.environmentUtil import getEnv
 from ..core import baseScrapper
 from ..core.utils import debug
-from ..core.baseScrapper import getAndCheckEnvVars
 from ..navigator.glassdoorNavigator import GlassdoorNavigator
 from ..services.GlassdoorService import GlassdoorService
 from ..services.selenium.browser_service import sleep
@@ -13,13 +12,19 @@ class GlassdoorExecutor(BaseExecutor):
     def _init_scrapper(self):
         self.site_name = "GLASSDOOR"
         self.jobs_x_page = 30
-        self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
+        search = getEnv(f'SCRAPPER_{self.site_name}_JOBS_SEARCH')
+        if not search:
+            search = getEnv('SCRAPPER_JOBS_SEARCH')
+        if not search:
+            print(yellow(f'Set SCRAPPER_{self.site_name}_JOBS_SEARCH in .env'))
+            exit()
+        self.jobs_search = search
         self.jobs_search_base_url = getEnv(f'SCRAPPER_{self.site_name}_JOBS_SEARCH_BASE_URL')
         self.navigator = GlassdoorNavigator(self.selenium_service, self.debug)
 
     def _preload_action(self):
         self.navigator.load_main_page()
-        self.navigator.login(self.user_email, self.user_pwd)
+        self.navigator.login()
 
     def _create_service(self, mysql):
         return GlassdoorService(mysql, self.persistence_manager, self.debug)
@@ -29,6 +34,8 @@ class GlassdoorExecutor(BaseExecutor):
         print(f'Search keyword={keyword}')
         self.navigator.load_page(url)
         sleep(2,2)
+        if not self.navigator.check_results(keyword, url):
+            return
         totalResults = self.navigator.get_total_results(keyword)
         if totalResults < 1:
             print(yellow(f'No results found for keyword={keyword}'))

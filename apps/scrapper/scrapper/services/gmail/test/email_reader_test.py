@@ -129,7 +129,7 @@ class TestEmailReader:
         email_reader.connect = Mock()
         email_reader.select_inbox = Mock(return_value=True)
         email_reader.imap.search.return_value = ("OK", [None])
-        mock_time.time.side_effect = [100, 101, 111] # Timeout > 10
+        mock_time.time.side_effect = [100, 101, 102, 111] # Timeout > 10
         with pytest.raises(GmailConnectionError, match="Timeout"):
             email_reader.get_latest_verification_code("s", 10)
 

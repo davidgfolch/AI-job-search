@@ -20,7 +20,7 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 - **LinkedIn**: Works fine. Careful with rate limits.
 - **Infojobs**: Works fine.
 - **Tecnoempleo**: Works fine.
-- **Glassdoor**: Prone to strict bot detection.
+- **Glassdoor**: Prone to strict bot detection. Uses Indeed OTP login (email+code via Gmail IMAP). `SCRAPPER_GLASSDOOR_EMAIL` is not used — GlassdoorAuthenticator reads `SCRAPPER_INDEED_EMAIL` instead.
 - **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login.
 
 ## Dual Architecture (Selenium vs Scrapling)
@@ -53,8 +53,9 @@ See `scripts/.env.example` and `scripts/.env.secrets.example`.
 ## Key Environment Variables
 
 - `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
-- `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed Selenium).
-- `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed Selenium).
+- `SCRAPPER_INDEED_EMAIL`: Indeed/Glassdoor login email (Glassdoor uses this for OTP login via Indeed popup).
+- `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed Selenium and Glassdoor OTP).
+- `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed Selenium and Glassdoor OTP).
 - `=true`: Switches execution of Indeed scraper to use the lightweight, Cloudflare-bypassing Scrapling implementation.
 - `SCRAPPER_INDEED_PROXIES`: Comma delimited list of proxy servers for `ProxyRotator` (e.g., `http://username:pass@ip:port,http://...`).
 
@@ -82,7 +83,7 @@ DEBUG = False # Set to True to stop selenium driver on error
    ```bash
    GMAIL_EMAIL=your-gmail@gmail.com
    GMAIL_APP_PASSWORD=your-16-digit-app-password
-   INDEED_EMAIL=your-indeed-email@example.com  
+   SCRAPPER_INDEED_EMAIL=your-indeed-email@example.com  
    ```
 
 > **Note**: Changing these could cause violation of LinkedIn rate limits.

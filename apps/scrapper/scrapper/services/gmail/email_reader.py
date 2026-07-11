@@ -83,11 +83,10 @@ class EmailReader:
             return ""
 
     def extract_verification_code_from_subject(self, subject: str) -> str:
-        """Extract 6-digit verification code from email subject"""
+        """Extract verification code from email subject (4-6 digits)"""
         try:
-            # Standard 6+ digit code
             print(f"subject: \"{subject}\"")
-            match = re.search(r"\b(\d{6,})\b", subject, re.IGNORECASE | re.MULTILINE)
+            match = re.search(r"(\d{4,6})", subject)
             if match and match.groups():
                 return match.group(1)
             raise VerificationCodeExtractionError("No verification code found in email subject")
@@ -102,11 +101,17 @@ class EmailReader:
             for response_part in msg_data:
                 if isinstance(response_part, tuple):
                     msg = email.message_from_bytes(response_part[1])
-                    # Decode email subject
-                    subject = decode_header(msg["Subject"])[0][0]
-                    if isinstance(subject, bytes):
-                        subject = subject.decode()
-                    return subject
+                    raw_subject = msg["Subject"]
+                    if not raw_subject:
+                        return ""
+                    parts = decode_header(raw_subject)
+                    decoded_parts = []
+                    for content, charset in parts:
+                        if isinstance(content, bytes):
+                            decoded_parts.append(content.decode(charset or "utf-8", errors="replace"))
+                        else:
+                            decoded_parts.append(content)
+                    return "".join(decoded_parts)
             return ""
         except Exception as e:
             print(yellow(f"Failed to extract email subject for ID {email_id}: {e}"))
@@ -119,38 +124,43 @@ class EmailReader:
         start_time = time.time()
         start_datetime = datetime.now()
         last_checked_id = None
+        print(f"Polling Gmail every 5s for verification code from {sender} (timeout: {timeout}s)...")
         while time.time() - start_time < timeout:
+            elapsed = int(time.time() - start_time)
             try:
                 if not self.imap:
                     self.connect()
                 if not self.select_inbox():
                     raise GmailConnectionError("Could not select inbox")
-                # Search emails from sender after start time
                 date_str = start_datetime.strftime("%d-%b-%Y")
                 search_criteria = f'(FROM "{sender}" SINCE {date_str})'
+                print(f"[{elapsed}s] Searching emails from {sender}...")
                 _, messages = self.imap.search(None, search_criteria)
                 email_ids = messages[0].split() if messages[0] else []
+                print(f"[{elapsed}s] Found {len(email_ids)} email(s) from {sender}")
                 if email_ids:
-                    latest_email_id = email_ids[-1]  # Most recent email
+                    latest_email_id = email_ids[-1]
                     if last_checked_id != latest_email_id:
                         email_subject = self.get_email_subject(latest_email_id)
+                        print(f"[{elapsed}s] Latest email subject: \"{email_subject}\"")
                         if email_subject:
                             try:
                                 code = self.extract_verification_code_from_subject(email_subject)
-                                print(f"Successfully extracted verification code: {code}")
+                                print(f"[{elapsed}s] Successfully extracted verification code: {code}")
                                 return code
                             except VerificationCodeExtractionError:
-                                print("Email found but no verification code in subject...")
+                                print(f"[{elapsed}s] Email found but no verification code in subject")
                                 last_checked_id = latest_email_id
                 time.sleep(5)
             except GmailConnectionError:
+                print(f"[{elapsed}s] Gmail connection error, reconnecting...")
                 try:
                     self.close()
                     self.connect()
                 except:
                     time.sleep(10)
             except Exception as e:
-                print(yellow(f"Error while waiting for verification code: {e}"))
+                print(yellow(f"[{elapsed}s] Error while waiting for verification code: {e}"))
                 time.sleep(5)
         raise GmailConnectionError(f"Timeout: No verification code received within {timeout} seconds")
 
