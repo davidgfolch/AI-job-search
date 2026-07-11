@@ -34,3 +34,4 @@ apps/**/data/metrics/
 playwright-report
 test-results
 scripts/mysql/*_backup.*
+data/**
