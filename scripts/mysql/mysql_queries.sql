@@ -26,6 +26,10 @@ update jobs set ai_enriched=0, salary=NULL, required_technologies=NULL, optional
 /* where id=XXXXXXXX */
 
 
+UPDATE jobs j
+JOIN jobs d ON j.duplicated_id = d.id
+SET j.duplicated_id = NULL
+WHERE trim(lower(j.title)) != trim(lower(d.title)) OR trim(lower(j.company)) != trim(lower(d.company));
 
 select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
