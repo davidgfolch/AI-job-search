@@ -577,3 +577,221 @@
     font-size: 0.7rem;
 }
 
+@media print {
+    @page {
+        margin: 1.5cm;
+    }
+
+    :root {
+        --bg-primary: white;
+        --bg-secondary: #f9f9f9;
+        --bg-tertiary: #f0f0f0;
+        --bg-hover: #eee;
+        --text-primary: #333;
+        --text-secondary: #555;
+        --text-tertiary: #777;
+        --text-white: #111;
+        --border-color: #ddd;
+        --border-color-light: #ccc;
+        --border-color-dark: #bbb;
+        --overlay-bg: transparent;
+    }
+
+    .app-header,
+    .boolean-filters,
+    .message,
+    .viewer-left,
+    .viewer-divider,
+    .modal-overlay {
+        display: none !important;
+    }
+
+    html {
+        overflow: visible;
+    }
+
+    #root {
+        height: auto;
+    }
+
+    .app {
+        height: auto;
+        overflow: visible;
+    }
+
+    .app-main {
+        height: auto;
+        flex: none;
+        overflow: visible;
+    }
+
+    .viewer {
+        height: auto;
+        overflow: visible;
+    }
+
+    .viewer-container {
+        flex: none;
+        padding: 0;
+        overflow: visible;
+    }
+
+    .viewer-content {
+        flex: none;
+        min-height: auto;
+        overflow: visible;
+    }
+
+    .viewer-right {
+        flex: none;
+        min-height: auto;
+        border: none;
+        background: none;
+        overflow: visible;
+    }
+
+    .job-detail {
+        height: auto;
+        padding: 0;
+    }
+
+    .job-detail-header {
+        border-bottom-color: var(--border-color-light);
+    }
+
+    .job-detail-header h2 {
+        color: var(--text-white);
+    }
+
+    .job-link {
+        color: var(--primary-color);
+    }
+
+    .job-link::after {
+        content: " (" attr(href) ")";
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        word-break: break-all;
+    }
+
+    .job-detail-content {
+        flex: none;
+        min-height: auto;
+        overflow: visible;
+    }
+
+    .job-detail-scroll-wrapper {
+        flex: none;
+        min-height: auto;
+        overflow: visible;
+    }
+
+    .header-actions,
+    .mobile-job-actions,
+    .mobile-nav-row,
+    .job-status-floating,
+    .job-detail-compact-header,
+    .salary-toggle-btn,
+    .salary-delete-btn,
+    .open-duplicated-btn,
+    .create-job-btn,
+    .applied-company-indicator,
+    .job-duplicated-banner,
+    .salary-calculator,
+    .skill-detail-btn {
+        display: none !important;
+    }
+
+    .job-info {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color-light);
+        break-inside: avoid;
+    }
+
+    .info-row {
+        color: var(--text-primary);
+    }
+
+    .info-row span {
+        color: var(--color-green-light);
+    }
+
+    .job-comments {
+        background: var(--bg-secondary);
+        border-color: var(--border-color-light);
+        break-inside: avoid;
+    }
+
+    .job-comments h3 {
+        color: var(--text-white);
+    }
+
+    .job-markdown {
+        background: var(--bg-secondary);
+        break-inside: avoid;
+    }
+
+    .markdown-content {
+        color: var(--text-primary);
+    }
+
+    .markdown-content h1,
+    .markdown-content h2,
+    .markdown-content h3,
+    .markdown-content h4,
+    .markdown-content h5,
+    .markdown-content h6 {
+        color: var(--text-white);
+    }
+
+    .markdown-content strong {
+        color: var(--text-white);
+    }
+
+    .markdown-content code {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    .markdown-content pre {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color-light);
+    }
+
+    .markdown-content blockquote {
+        border-left-color: var(--border-color-light);
+        color: var(--text-secondary);
+    }
+
+    .markdown-content a {
+        color: var(--primary-color);
+    }
+
+    .skill-tag {
+        background-color: #e8f5e9;
+        color: #1b5e20 !important;
+        border: 1px solid #a5d6a7;
+    }
+
+    .skill-tag-learn {
+        background-color: #f1f8e9;
+        color: #33691e !important;
+        border: 1px solid #c5e1a5;
+    }
+
+    .cv-match-bar-container {
+        background-color: #e0e0e0;
+        border-color: #ccc;
+    }
+
+    .cv-match-bar-container .cv-match-text {
+        color: #333;
+        text-shadow: none;
+    }
+
+    .salary-delete-btn.config-btn {
+        background-color: transparent;
+        color: var(--error-color);
+    }
+}
+
