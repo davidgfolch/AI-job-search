@@ -1,8 +1,9 @@
 import json
 import os
 from typing import Dict, Any, Optional
-from commonlib.dateUtil import getDatetimeNowStr
+from commonlib.dateUtil import getDatetimeNowStr, getDatetimeNow, parseDatetime
 from commonlib.sql.scrapper_state_repository import ScrapperStateRepository
+from scrapper.core.scrapper_config import STALE_THRESHOLD_HOURS
 
 class PersistenceManager:
     def __init__(self, repository: Optional[ScrapperStateRepository] = None):
@@ -49,6 +50,19 @@ class PersistenceManager:
         self.save()
         return timestamp
 
+    def update_last_ran_at(self, site: str):
+        if site not in self.state:
+            self.state[site] = {}
+        self.state[site]['last_ran_at'] = getDatetimeNowStr()
+        self.save()
+
+    def is_state_stale(self, site: str) -> bool:
+        last_ran = self.state.get(site, {}).get('last_ran_at')
+        if last_ran is None:
+            return True
+        lapsed = getDatetimeNow() - parseDatetime(last_ran)
+        return lapsed > STALE_THRESHOLD_HOURS * 3600
+
     def get_failed_keywords(self, site: str) -> list[str]:
         return self.state.get(site, {}).get('failed_keywords', [])
 
@@ -70,6 +84,12 @@ class PersistenceManager:
                 self.save()
 
     def prepare_resume(self, site: str):
+        if self.is_state_stale(site):
+            self.clear_state(site)
+            self._resume_keyword = None
+            self._resume_page = 1
+            self._is_skipping = False
+            return
         state = self.get_state(site)
         self._resume_keyword = state.get('keyword')
         self._resume_page = state.get('page', 1)

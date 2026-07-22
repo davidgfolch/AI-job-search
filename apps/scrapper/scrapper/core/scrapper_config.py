@@ -31,6 +31,7 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
 print(SCRAPPERS)
 
 SCRAPPER_RUN_IN_TABS = getEnvBool('SCRAPPER_RUN_IN_TABS', False)
+STALE_THRESHOLD_HOURS = int(getEnv('SCRAPPER_STATE_STALE_THRESHOLD_HOURS', '48'))
 
 
 def get_debug(name):

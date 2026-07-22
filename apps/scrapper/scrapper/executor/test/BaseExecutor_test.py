@@ -44,6 +44,7 @@ class TestExecutor:
             executor.execute(props)
             mock_run.assert_called_with(preload_page=False)
             mocks['pm'].update_last_execution.assert_called()
+            mocks['pm'].update_last_ran_at.assert_called_with(executor.site_name_key)
 
     def test_execute_exception(self, mocks):
         executor = MockBaseExecutor(mocks['sel'], mocks['pm'], False)
@@ -58,6 +59,8 @@ class TestExecutor:
         mocks['pm'].set_error.assert_called_with(executor.site_name_key, "Scrapper failed")
         # Verify last_execution updated to None
         mocks['pm'].update_last_execution.assert_called_with(executor.site_name_key, None)
+        # Verify last_ran_at is always updated
+        mocks['pm'].update_last_ran_at.assert_called_with(executor.site_name_key)
 
     def test_preload_failure_sets_error_in_persistence(self, mocks):
         # Setup - patch the executor to test execute_preload directly

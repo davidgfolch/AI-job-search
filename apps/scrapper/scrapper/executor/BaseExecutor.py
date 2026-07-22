@@ -49,6 +49,7 @@ class BaseExecutor(ABC):
             properties['preloaded'] = False
         except KeyboardInterrupt:
             self.persistence_manager.update_last_execution(self.site_name_key, None)
+            self.persistence_manager.update_last_ran_at(self.site_name_key)
             if abortExecution():
                 return False
         return True
@@ -60,13 +61,16 @@ class BaseExecutor(ABC):
             with KeepSystemAwake():
                 self.run(preload_page=False)
             self.persistence_manager.update_last_execution(self.site_name_key, getDatetimeNowStr())
+            self.persistence_manager.update_last_ran_at(self.site_name_key)
         except Exception as e:
             error_msg = cleanUnresolvedTrace(e)
             debug(self.debug, f"Error occurred while executing {name}:", True)
             self.persistence_manager.set_error(self.site_name_key, error_msg)
             self.persistence_manager.update_last_execution(self.site_name_key, None)
+            self.persistence_manager.update_last_ran_at(self.site_name_key)
         except KeyboardInterrupt:
             self.persistence_manager.update_last_execution(self.site_name_key, None)
+            self.persistence_manager.update_last_ran_at(self.site_name_key)
             if abortExecution():
                 return False
         return True

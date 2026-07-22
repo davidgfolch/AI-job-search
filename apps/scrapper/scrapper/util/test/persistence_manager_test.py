@@ -76,6 +76,32 @@ class TestPersistenceManager:
         assert result == "2024-06-01"
         assert manager.state["NewSite"]["last_execution"] == "2024-06-01"
 
+    def test_update_last_ran_at_new_site(self, manager, mock_repo):
+        with patch('scrapper.util.persistence_manager.getDatetimeNowStr', return_value="2024-06-01 10:00:00"):
+            manager.update_last_ran_at("NewSite")
+            assert manager.state["NewSite"]["last_ran_at"] == "2024-06-01 10:00:00"
+            mock_repo.upsert.assert_called()
+
+    def test_update_last_ran_at_existing_site(self, manager, mock_repo):
+        with patch('scrapper.util.persistence_manager.getDatetimeNowStr', return_value="2024-06-01 12:00:00"):
+            manager.update_last_ran_at("Site")
+            assert manager.state["Site"]["last_ran_at"] == "2024-06-01 12:00:00"
+
+    def test_is_state_stale_no_last_ran_at(self, manager):
+        assert manager.is_state_stale("Missing") is True
+
+    def test_is_state_stale_fresh(self, manager):
+        with patch('scrapper.util.persistence_manager.getDatetimeNow', return_value=1000000):
+            manager.state["Site"] = {"last_ran_at": "2024-06-01T10:00:00"}
+            with patch('scrapper.util.persistence_manager.parseDatetime', return_value=999999):
+                assert manager.is_state_stale("Site") is False
+
+    def test_is_state_stale_old(self, manager):
+        with patch('scrapper.util.persistence_manager.getDatetimeNow', return_value=2000000):
+            manager.state["Site"] = {"last_ran_at": "2020-01-01T00:00:00"}
+            with patch('scrapper.util.persistence_manager.parseDatetime', return_value=1000000):
+                assert manager.is_state_stale("Site") is True
+
     def test_get_failed_keywords_empty(self, manager):
         assert manager.get_failed_keywords("Site") == []
 
@@ -116,7 +142,7 @@ class TestPersistenceManager:
         manager.remove_failed_keyword("Missing", "kw")  # no error
 
     def test_prepare_resume_with_state(self, manager):
-        manager.state["Site"] = {"keyword": "python", "page": 3}
+        manager.state["Site"] = {"keyword": "python", "page": 3, "last_ran_at": "2099-01-01 00:00:00"}
         manager.prepare_resume("Site")
         assert manager._resume_keyword == "python"
         assert manager._resume_page == 3
@@ -128,14 +154,31 @@ class TestPersistenceManager:
         assert manager._resume_page == 1
         assert manager._is_skipping is False
 
+    def test_prepare_resume_stale_clears_state(self, manager, mock_repo):
+        manager.state["Site"] = {"keyword": "python", "page": 3, "last_ran_at": "2020-01-01 00:00:00"}
+        manager.prepare_resume("Site")
+        assert manager._resume_keyword is None
+        assert manager._resume_page == 1
+        assert manager._is_skipping is False
+        assert "keyword" not in manager.state["Site"]
+        assert "page" not in manager.state["Site"]
+
+    def test_prepare_resume_no_last_ran_at_clears_state(self, manager, mock_repo):
+        manager.state["Site"] = {"keyword": "python", "page": 3}
+        manager.prepare_resume("Site")
+        assert manager._resume_keyword is None
+        assert manager._resume_page == 1
+        assert manager._is_skipping is False
+
     def test_should_skip_keyword_before_resume(self, manager):
+        manager.state["Site"] = {"keyword": "python", "page": 3, "last_ran_at": "2099-01-01 00:00:00"}
         manager.prepare_resume("Site")
         skip, page = manager.should_skip_keyword("other_kw")
         assert skip is True
         assert page == 1
 
     def test_should_skip_keyword_at_resume_point(self, manager):
-        manager.state["Site"] = {"keyword": "python", "page": 3}
+        manager.state["Site"] = {"keyword": "python", "page": 3, "last_ran_at": "2099-01-01 00:00:00"}
         manager.prepare_resume("Site")
         skip, page = manager.should_skip_keyword("python")
         assert skip is False
