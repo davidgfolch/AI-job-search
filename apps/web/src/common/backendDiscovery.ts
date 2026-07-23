@@ -79,6 +79,10 @@ export async function discoverBackendUrl(env?: Record<string, string>): Promise<
   const backendDiscovery = env?.BACKEND_DISCOVERY ?? process.env.BACKEND_DISCOVERY;
   const discoveryEnabled = backendDiscovery === 'True' || backendDiscovery === 'true';
   if (!discoveryEnabled) {
+    if (isDocker) {
+      console.log('[backendDiscovery] Discovery disabled, using http://backend:8000 (Docker)');
+      return `http://backend:${BACKEND_PORT}`;
+    }
     console.log('[backendDiscovery] Discovery disabled, using http://localhost:8000');
     return 'http://localhost:8000';
   }
