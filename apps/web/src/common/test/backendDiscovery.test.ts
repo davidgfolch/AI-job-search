@@ -62,11 +62,11 @@ describe('discoverBackendUrl', () => {
     expect(result).toBe('http://backend:8000');
   });
 
-  it('falls back from Docker when backend is unreachable', async () => {
+  it('returns Docker URL when backend is unreachable and discovery is disabled', async () => {
     (fs.existsSync as any).mockReturnValue(true);
     mockHttpGet(0, true);
     const result = await discoverBackendUrl();
-    expect(result).toBe('http://localhost:8000');
+    expect(result).toBe('http://backend:8000');
   });
 
   it('returns localhost when discovery is disabled', async () => {
