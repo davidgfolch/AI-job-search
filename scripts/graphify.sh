@@ -170,10 +170,14 @@ echo "Step 4 — Re-labeling to capture any shifted communities..."
 python "$SCRIPT_DIR/graphify-label-communities.py" 2>/dev/null
 
 echo ""
+echo "Step 5 — Generating module-grouped graph.html..."
+python "$SCRIPT_DIR/graphify-html-grouped.py"
+
+echo ""
 echo "────────────────────────────────────────────────────────"
 echo "Graph complete. Outputs in $GRAPHIFY_OUT/"
 echo ""
-echo "  graph.html          - interactive graph, open in browser"
+echo "  graph.html          - interactive graph grouped by module, open in browser"
 echo "  GRAPH_REPORT.md     - architecture audit report"
 echo "  graph.json          - raw graph data"
 echo "  cross-module-edges.json - edge definitions (editable)"
