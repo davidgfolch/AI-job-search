@@ -233,6 +233,46 @@ docker compose up -d
 .\apps\web\run.bat
 ```
 
+## Knowledge Graph
+
+The project uses [graphify](https://github.com/safishamsi/graphifyy) to build a navigable knowledge graph of the codebase architecture. Each `apps/*` module is extracted independently, then merged with cross-module dependency edges.
+
+### Build the graph
+
+```bash
+# Linux/Mac
+./scripts/graphify.sh
+
+# Windows
+.\scripts\graphify.bat
+```
+
+Flags:
+
+- `--clean` — purge old graph data only
+- `--module <name>` — re-extract a single module (e.g. `--module web`)
+
+Outputs in `graphify-out/`:
+
+| File                      | Description                                              |
+|---------------------------|----------------------------------------------------------|
+| `graph.html`              | Interactive graph visualization (open in browser)        |
+| `GRAPH_REPORT.md`         | Architecture audit report with god nodes and communities |
+| `graph.json`              | Raw graph data for programmatic queries                  |
+| `cross-module-edges.json` | Editable cross-module dependency definitions             |
+
+### Query the graph
+
+```bash
+graphify query "show subsystems and their main entrypoints"
+graphify path "web" "commonlib"
+graphify explain "ScrapperScheduler"
+```
+
+### Cross-module edges
+
+Inter-module relationships are defined in `graphify-out/cross-module-edges.json`. Edit this file to add or modify dependencies, then re-run the script.
+
 ## Documentation
 
 - **Installation**: [README_INSTALL.md](READMEs/README_INSTALL.md)

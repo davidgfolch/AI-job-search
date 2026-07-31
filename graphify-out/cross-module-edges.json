@@ -1,0 +1,14 @@
+{
+  "edges": [
+    {"from": "web", "to": "backend", "relation": "REST_API", "description": "Web frontend calls backend REST API via axios/ApiClient"},
+    {"from": "backend", "to": "commonlib", "relation": "depends_on", "description": "Backend imports commonlib for DB access and utilities"},
+    {"from": "scrapper", "to": "commonlib", "relation": "depends_on", "description": "Scrapper imports commonlib for DB and Selenium utils"},
+    {"from": "aiEnrich", "to": "commonlib", "relation": "depends_on", "description": "AI Enrich imports commonlib for DB and AI helpers"},
+    {"from": "aiEnrichNew", "to": "commonlib", "relation": "depends_on", "description": "AI Enrich New imports commonlib for DB access"},
+    {"from": "aiEnrich3", "to": "commonlib", "relation": "depends_on", "description": "AI Enrich 3 imports commonlib for DB access"},
+    {"from": "aiEnrichSkill", "to": "commonlib", "relation": "depends_on", "description": "AI Enrich Skill imports commonlib for DB and skill enrichment"},
+    {"from": "aiCvMatcher", "to": "commonlib", "relation": "depends_on", "description": "AI CV Matcher imports commonlib for DB and CV loading"},
+    {"from": "cron", "to": "commonlib", "relation": "depends_on", "description": "Cron imports commonlib for DB and terminal utils"},
+    {"from": "aiFormFiller", "to": "commonlib", "relation": "depends_on", "description": "AI Form Filler imports commonlib for context loading"}
+  ]
+}

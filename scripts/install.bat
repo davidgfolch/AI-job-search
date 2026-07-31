@@ -1,6 +1,17 @@
 @echo off
 
 echo.
+echo Installing graphify...
+uv tool install graphifyy
+uv tool install "graphifyy[ollama]"
+uv tool install "graphifyy[openai]"
+uv tool install "graphifyy[sql]"
+ollama pull qwen2.5-coder:7b
+graphify install --project --platform opencode
+graphify . --backend ollama
+git add .opencode/ AGENTS.md
+
+echo.
 echo Installing commonlib...
 pushd apps\commonlib
 call poetry lock

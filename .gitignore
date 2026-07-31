@@ -35,3 +35,6 @@ playwright-report
 test-results
 scripts/mysql/*_backup.*
 data/**
+
+# graphify per-module extraction outputs
+apps/*/graphify-out/
