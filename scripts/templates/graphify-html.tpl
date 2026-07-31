@@ -40,7 +40,7 @@
   .legend-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .legend-count { color: #666; font-size: 11px; }
   #stats { padding: 10px 14px; border-top: 1px solid #2a2a4e; font-size: 11px; color: #555; }
-  #legend-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 4px 0; }
+  #legend-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; padding: 4px 0; }
   #legend-controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: #aaa; user-select: none; }
   #legend-controls label:hover { color: #e0e0e0; }
   .legend-cb, #select-all-cb { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid #3a3a5e; border-radius: 3px; background: #0f0f1a; cursor: pointer; position: relative; flex-shrink: 0; }
@@ -68,6 +68,8 @@
     <div id="legend-controls">
       <label><input type="checkbox" id="select-all-cb" checked onchange="toggleAllCommunities(!this.checked)">Select All</label>
       <label><input type="checkbox" id="external-cb" class="legend-cb" onchange="toggleExternal()">Show external/library nodes</label>
+      <label><input type="checkbox" id="file-cb" class="legend-cb" onchange="toggleFiles()">Show file nodes</label>
+      <label><input type="checkbox" id="private-cb" class="legend-cb" onchange="togglePrivate()">Show private methods</label>
     </div>
     <div id="legend"></div>
   </div>
@@ -88,6 +90,144 @@ function esc(s) {
 const EXTERNAL_COLOR = '#77778a';
 function isExternal(n) { return !n.source_file; }
 
+// --- Matrix layout: classify nodes and assign fixed grid positions ---
+const LABEL_MARGIN = 240, COL_PITCH = 190, CELL_W = 4 * COL_PITCH;
+const ROW_PITCH = 28, ROW_PAD = 14, BAND_PAD = 30;
+let moduleBands = [], layerBands = [], totalHeight = 0, totalWidth = 0;
+
+function pathPrefix(n) {
+  if (!n.source_file) return null;
+  let p = n.source_file.toLowerCase().replace(/\.(py|tsx|ts|js|jsx|sh|json|sql|toml|yml|yaml|bat|cfg|ini|md|env)$/, '');
+  return p.replace(/[/.,-]/g, '_').replace(/_+/g, '_');
+}
+
+function nodeKind(n) {
+  if (isExternal(n)) return 'external';
+  if (n.file_type === 'rationale') return 'meta';
+  const pp = pathPrefix(n);
+  if (!n.local_id || !pp) return 'function';
+  if (n.local_id === pp) return 'file';
+  if (!n.local_id.startsWith(pp + '_')) return 'function';
+  const segs = n.local_id.slice(pp.length + 1).split('_');
+  if (segs.length === 1) {
+    const hasChildren = RAW_NODES.some(m => (m.local_id || '').startsWith(n.local_id + '_'));
+    return hasChildren ? 'component' : 'function';
+  }
+  return (n.label || '').endsWith('()') ? 'method' : 'component';
+}
+
+function layerOf(n) {
+  const dirs = (n.source_file || '').split('/').slice(0, -1);
+  return dirs.length ? dirs.slice(0, 2).join('/') : '(root)';
+}
+
+function isFile(n) { return nodeKind(n) === 'file'; }
+function isPrivate(n) {
+  if (n.file_type !== 'code' || isFile(n)) return false;
+  const l = n.label || '';
+  return l.startsWith('._') || l.startsWith('_');
+}
+
+function moduleColor(name) {
+  const m = MODULES.find(x => x.module === name);
+  return m ? m.color : '#4E79A7';
+}
+
+function hexToRgba(hex, a) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function computeLayout() {
+  const cells = new Map();
+  const external = [];
+  RAW_NODES.forEach(n => {
+    const kind = nodeKind(n);
+    if (kind === 'external') { external.push(n); return; }
+    const col = kind === 'method' ? 'meth' : kind === 'meta' ? 'meta' : kind === 'file' ? 'file' : 'comp';
+    const key = `${n.module}\u0001${layerOf(n)}\u0001${n.source_file}`;
+    if (!cells.has(key)) cells.set(key, { module: n.module, layer: layerOf(n), path: n.source_file, file: [], comp: [], meth: [], meta: [], units: 0 });
+    const cell = cells.get(key);
+    cell[col].push(n);
+    cell.units = Math.max(cell.units, cell[col].length);
+  });
+  const moduleIndex = {};
+  MODULES.forEach((m, i) => { moduleIndex[m.module] = i; });
+  const layerCmp = (a, b) => a === '(root)' ? -1 : b === '(root)' ? 1 : a < b ? -1 : a > b ? 1 : 0;
+  const cellList = [...cells.values()].sort((a, b) => {
+    const mi = (moduleIndex[a.module] ?? 999) - (moduleIndex[b.module] ?? 999);
+    if (mi !== 0) return mi;
+    const li = layerCmp(a.layer, b.layer);
+    if (li !== 0) return li;
+    return a.path < b.path ? -1 : a.path > b.path ? 1 : 0;
+  });
+  const bands = [];
+  cellList.forEach(cell => {
+    const last = bands[bands.length - 1];
+    if (last && last.module === cell.module && last.layer === cell.layer) last.cells.push(cell);
+    else bands.push({ module: cell.module, layer: cell.layer, cells: [cell] });
+  });
+  const maxCpr = Math.max(...bands.map(b => b.cells.length));
+  const estDims = cpr => {
+    let totalH = 0, maxW = 0;
+    bands.forEach(b => {
+      for (let i = 0; i < b.cells.length; i += cpr) {
+        let units = 1;
+        for (let j = i; j < Math.min(i + cpr, b.cells.length); j++) units = Math.max(units, b.cells[j].units);
+        totalH += units * ROW_PITCH + ROW_PAD;
+      }
+      totalH += BAND_PAD;
+      maxW = Math.max(maxW, Math.min(b.cells.length, cpr) * CELL_W);
+    });
+    return [maxW + LABEL_MARGIN, totalH];
+  };
+  let cpr = 1, bestScore = Infinity;
+  for (let c = 1; c <= maxCpr; c++) {
+    const [w, h] = estDims(c);
+    const ratio = Math.max(w, h) / Math.min(w, h);
+    if (ratio < bestScore) { bestScore = ratio; cpr = c; }
+  }
+  const pos = {};
+  const rowRects = [];
+  let y = 0, curModule = null, curModuleY0 = 0, bandW = 0;
+  bands.forEach(b => {
+    if (b.module !== curModule) {
+      if (curModule !== null) moduleBands.push({ module: curModule, y0: curModuleY0, y1: y });
+      curModule = b.module; curModuleY0 = y;
+    }
+    const rowStartY = y;
+    for (let i = 0; i < b.cells.length; i += cpr) {
+      const slice = b.cells.slice(i, i + cpr);
+      let units = 1;
+      slice.forEach(c => { units = Math.max(units, c.units); });
+      const rowH = units * ROW_PITCH + ROW_PAD;
+      const centerY = y + rowH / 2;
+      slice.forEach((cell, ci) => {
+        const cellX = LABEL_MARGIN + ci * CELL_W;
+        [[cell.file, 0], [cell.comp, 1], [cell.meth, 2], [cell.meta, 3]].forEach(([nodes, colIdx]) => {
+          nodes.forEach((nd, k) => { pos[nd.id] = { x: cellX + colIdx * COL_PITCH, y: centerY + (k - (nodes.length - 1) / 2) * ROW_PITCH }; });
+        });
+      });
+      y += rowH;
+    }
+    rowRects.push({ module: b.module, layer: b.layer, y0: rowStartY, y1: y });
+    bandW = Math.max(bandW, Math.min(b.cells.length, cpr) * CELL_W);
+    y += BAND_PAD;
+  });
+  if (curModule !== null) moduleBands.push({ module: curModule, y0: curModuleY0, y1: y });
+  layerBands = rowRects.reduce((acc, r) => {
+    const last = acc[acc.length - 1];
+    if (last && last.module === r.module && last.layer === r.layer) last.y1 = r.y1;
+    else acc.push({ module: r.module, layer: r.layer, y0: r.y0, y1: r.y1 });
+    return acc;
+  }, []);
+  totalHeight = Math.max(y, 1);
+  totalWidth = bandW + LABEL_MARGIN;
+  external.forEach((n, i) => { pos[n.id] = { x: totalWidth + 120, y: totalHeight * (i + 1) / (external.length + 1) }; });
+  return pos;
+}
+
 // Build vis datasets
 const nodesDS = new vis.DataSet(RAW_NODES.map(n => {
   const ext = isExternal(n);
@@ -98,7 +238,7 @@ const nodesDS = new vis.DataSet(RAW_NODES.map(n => {
     font: n.font, title: n.title,
     _community: n.community, _community_name: n.community_name,
     _module: n.module, _source_file: n.source_file, _file_type: n.file_type, _degree: n.degree,
-    _external: ext,
+    _external: ext, _kind: nodeKind(n),
   };
 }));
 
@@ -113,20 +253,16 @@ const edgesDS = new vis.DataSet(RAW_EDGES.map((e, i) => ({
 })));
 
 const container = document.getElementById('graph');
+const layoutPos = computeLayout();
+const posUpdates = [];
+nodesDS.forEach(n => {
+  const p = layoutPos[n.id];
+  if (p) posUpdates.push({ id: n.id, x: p.x, y: p.y });
+});
+nodesDS.update(posUpdates);
 const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
-  physics: {
-    enabled: true,
-    solver: 'forceAtlas2Based',
-    forceAtlas2Based: {
-      gravitationalConstant: -60,
-      centralGravity: 0.005,
-      springLength: 120,
-      springConstant: 0.08,
-      damping: 0.4,
-      avoidOverlap: 0.8,
-    },
-    stabilization: { iterations: 200, fit: true },
-  },
+  physics: { enabled: false },
+  layout: { improvedLayout: false, randomSeed: 1 },
   interaction: {
     hover: true,
     tooltipDelay: 100,
@@ -138,8 +274,37 @@ const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
   edges: { smooth: { type: 'continuous', roundness: 0.2 }, selectionWidth: 3 },
 });
 
-network.once('stabilizationIterationsDone', () => {
-  network.setOptions({ physics: { enabled: false } });
+network.once('init', () => {
+  const scale = Math.min(container.clientWidth / totalWidth, container.clientHeight / totalHeight) * 0.98;
+  network.moveTo({ position: { x: totalWidth / 2, y: totalHeight / 2 }, scale });
+});
+
+network.on('beforeDrawing', ctx => {
+  moduleBands.forEach(mb => {
+    ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.06);
+    ctx.fillRect(-4000, mb.y0, 60000, mb.y1 - mb.y0);
+    ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.25);
+    ctx.fillRect(-4000, mb.y0, 60000, 1.5);
+  });
+  layerBands.forEach(b => {
+    ctx.fillStyle = hexToRgba(moduleColor(b.module), 0.03);
+    ctx.fillRect(-4000, b.y0, 60000, b.y1 - b.y0);
+  });
+  ctx.textAlign = 'left';
+  moduleBands.forEach(mb => {
+    ctx.save();
+    ctx.translate(14, (mb.y0 + mb.y1) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.9);
+    ctx.fillText(mb.module, 0, 0);
+    ctx.restore();
+  });
+  ctx.font = '16px sans-serif';
+  layerBands.forEach(b => {
+    ctx.fillStyle = hexToRgba(moduleColor(b.module), 0.5);
+    ctx.fillText(b.layer, 8, b.y0 + 22);
+  });
 });
 
 function showInfo(nodeId) {
@@ -155,6 +320,7 @@ function showInfo(nodeId) {
     <div class="field"><b>${esc(n.label)}</b>${n._external ? ' <span class="legend-ext">(external)</span>' : ''}</div>
     <div class="field">Module: ${esc(n._module || '-')}</div>
     <div class="field">Type: ${esc(n._file_type || 'unknown')}</div>
+    <div class="field">Kind: ${esc(n._kind || 'unknown')}</div>
     <div class="field">Community: ${esc(n._community_name)}</div>
     <div class="field">Source: ${esc(n._source_file || '-')}</div>
     <div class="field">Degree: ${n._degree}</div>
@@ -229,6 +395,8 @@ document.addEventListener('click', e => {
 const hiddenCommunities = new Set();
 const selectAllCb = document.getElementById('select-all-cb');
 const externalCb = document.getElementById('external-cb');
+const fileCb = document.getElementById('file-cb');
+const privateCb = document.getElementById('private-cb');
 
 function cidsForModule(moduleName) {
   const m = MODULES.find(x => x.module === moduleName);
@@ -236,7 +404,11 @@ function cidsForModule(moduleName) {
 }
 
 function isNodeHidden(n) {
-  return hiddenCommunities.has(n.community) || (isExternal(n) && !externalCb.checked);
+  if (hiddenCommunities.has(n.community)) return true;
+  if (isExternal(n) && !externalCb.checked) return true;
+  if (isFile(n) && !fileCb.checked) return true;
+  if (isPrivate(n) && !privateCb.checked) return true;
+  return false;
 }
 
 function refreshNodes() {
@@ -246,6 +418,14 @@ function refreshNodes() {
 }
 
 function toggleExternal() {
+  refreshNodes();
+}
+
+function toggleFiles() {
+  refreshNodes();
+}
+
+function togglePrivate() {
   refreshNodes();
 }
 

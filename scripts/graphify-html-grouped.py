@@ -112,7 +112,7 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
         color = community_color.get(n.get("community"), module_hex.get(node_module.get(nid, ""), "#4E79A7"))
         label = _sanitize(n.get("label", nid))
         deg = degree.get(nid, 1)
-        size = 10 + 30 * (deg / max_deg)
+        size = 8 + 16 * (deg / max_deg)
         font_size = 12 if deg >= max_deg * 0.15 else 0
         vis_nodes.append({
             "id": nid,
@@ -126,6 +126,7 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
             "module": node_module.get(nid, ""),
             "source_file": _sanitize(n.get("source_file", "")),
             "file_type": n.get("file_type", ""),
+            "local_id": _sanitize(n.get("local_id", "")),
             "degree": deg,
         })
 
