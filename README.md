@@ -44,6 +44,25 @@ This is a monorepo containing several applications and packages:
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
+## CI / GitHub Actions Pipeline
+
+The CI workflow (`.github/workflows/ci.yml`) only tests the modules affected by a change, instead of always running the full matrix.
+
+### How it works
+
+1. A `changes` job uses [`dorny/paths-filter`](https://github.com/dorny/paths-filter) to detect which `apps/*` modules were modified in the push/PR.
+2. It builds a dynamic test matrix containing exactly those modules, so unchanged apps are never executed.
+3. The `test` job runs the matrix (`npm test`, `uv run pytest`, or `poetry run pytest` depending on the module) and uploads a coverage badge artifact per module.
+4. On `master`, an `update-badges` job downloads the artifacts and commits any changed coverage badges back to the repo.
+
+### Change detection rules
+
+- **Per-module**: a change under `apps/<name>/**` triggers tests only for that module.
+- **Dependency propagation**: a change to `apps/commonlib` also triggers all modules that depend on it (everything except `apps/web`, which only talks to the backend via REST).
+- **Infrastructure**: changes to `.github/**`, `docker-compose.yml`, `pyproject.toml`, `poetry.lock`, or `uv.lock` run the full matrix as a safety net.
+- **Excluded**: changes under `scripts/` (not used by the pipeline) trigger nothing.
+- If no relevant files changed, the matrix is empty and the `test` job is skipped entirely.
+
 ## Distributed execution
 
 You can have specific mysql host server setting the `.env` ->  `COMMONLIB_DB_HOST` to your mysql database host IP.
