@@ -52,7 +52,8 @@ jobs:
           import json, os
           all_modules = ["apps/commonlib","apps/scrapper","apps/aiEnrich","apps/aiEnrichNew","apps/aiEnrichSkill","apps/aiEnrich3","apps/aiCvMatcher","apps/aiFormFiller","apps/backend","apps/web","apps/cron"]
           dependents = [m for m in all_modules if m != "apps/web"]
-          changed = json.loads(os.environ["CHANGED"])
+          raw = os.environ.get("CHANGED", "").strip()
+          changed = json.loads(raw) if raw else []
           if "all" in changed:
               modules = all_modules
           else:
