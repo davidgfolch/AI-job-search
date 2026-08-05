@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 
-export const BASE_URL = 'http://127.0.0.1:5173';
+export const BASE_URL = 'http://127.0.0.1:5174';
 
 export async function setupPageLogging(page: Page) {
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
