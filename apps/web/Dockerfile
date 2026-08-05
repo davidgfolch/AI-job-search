@@ -1,5 +1,5 @@
 # Development Dockerfile for React/Vite Web App
-FROM node:20-slim
+FROM node:24-slim
 
 WORKDIR /app
 
