@@ -1,11 +1,14 @@
 import { Page } from '@playwright/test';
 import { MOCK_JOB_1, MOCK_JOB_2, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND } from './viewer.mocks';
-import { BASE_URL, setupPageLogging, setupTimezoneMock } from './common.helpers';
+import { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks, setupApiSafetyNet, setupAppBootstrapMocks } from './common.helpers';
 
-export { BASE_URL, setupPageLogging, setupTimezoneMock };
+export { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks, setupApiSafetyNet };
 
 export async function setupSystemMocks(page: Page) {
+    await setupApiSafetyNet(page);
+    await setupAppBootstrapMocks(page);
     await setupTimezoneMock(page);
+    await setupModalityMock(page);
     await page.route(/.*\/api\/filter-configurations.*/, async (route) => {
         await route.fulfill({
             contentType: 'application/json',
@@ -37,8 +40,12 @@ export async function setupDefaultJobsRoute(page: Page) {
             await route.fulfill({ json: MOCK_JOBS_LIST });
             return;
         }
+        if (url.includes('/history')) {
+            await route.fulfill({ json: [] });
+            return;
+        }
         console.log('UNHANDLED REQUEST:', url);
-        route.continue();
+        await route.fallback();
     });
 }
 
@@ -71,7 +78,11 @@ export async function setupStateChangeJobsRoute(page: Page) {
             }
             return;
         }
-        await route.continue();
+        if (url.includes('/history')) {
+            await route.fulfill({ json: [] });
+            return;
+        }
+        await route.fallback();
     });
 }
 
@@ -80,7 +91,7 @@ export async function setupJobUpdateRoute(page: Page) {
         if (route.request().method() === 'PATCH') {
             await route.fulfill({ json: { ...MOCK_JOB_1, applied: true } });
         } else {
-            await route.continue();
+            await route.fallback();
         }
     });
 }

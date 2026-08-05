@@ -16,3 +16,37 @@ export async function setupTimezoneMock(page: Page) {
         });
     });
 }
+
+export async function setupModalityMock(page: Page) {
+    await page.route(/.*\/api\/ddl\/schema\/enum-values.*/, async (route) => {
+        await route.fulfill({
+            contentType: 'application/json',
+            json: ['REMOTE', 'HYBRID', 'ON_SITE']
+        });
+    });
+}
+
+export async function setupSalaryHistoryMocks(page: Page) {
+    await page.route(/.*\/api\/jobs\/history\/by-company.*/, async (route) => {
+        await route.fulfill({ contentType: 'application/json', json: [] });
+    });
+    await page.route(/.*\/api\/jobs\/\d+\/history.*/, async (route) => {
+        await route.fulfill({ contentType: 'application/json', json: [] });
+    });
+}
+
+export async function setupAppBootstrapMocks(page: Page) {
+    await page.route(/.*\/api\/settings\/env.*/, async (route) => {
+        await route.fulfill({ contentType: 'application/json', json: {} });
+    });
+    await page.route(/.*\/api\/skills.*/, async (route) => {
+        await route.fulfill({ contentType: 'application/json', json: [] });
+    });
+}
+
+export async function setupApiSafetyNet(page: Page) {
+    await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
+        console.log('UNMOCKED API REQUEST:', route.request().url());
+        await route.fulfill({ status: 404, contentType: 'application/json', json: {} });
+    });
+}

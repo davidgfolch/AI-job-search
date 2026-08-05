@@ -30,6 +30,9 @@ export function createJobsListRoute(counters: { listRequestCount: number }) {
 
 export async function setupJobsMocks(page: Page, counters: { listRequestCount: number }) {
     await page.route(/.*\/api\/jobs(\?|$)/, createJobsListRoute(counters));
+    await page.route(/.*\/api\/jobs\/applied-by-company.*/, async (route) => {
+        await route.fulfill({ json: [] });
+    });
     await page.route(/.*\/api\/jobs\/1$/, async (route) => {
         if (route.request().method() === 'PATCH') {
             await route.fulfill({ json: { ...MOCK_JOB_1, applied: true } });

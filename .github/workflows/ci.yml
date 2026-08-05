@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       modules: ${{ steps.build-matrix.outputs.modules }}
+      e2e: ${{ steps.build-matrix.outputs.e2e }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,6 +38,7 @@ jobs:
             apps/backend: apps/backend/**
             apps/web: apps/web/**
             apps/cron: apps/cron/**
+            apps/e2e: apps/e2e/**
             all:
               - .github/**
               - docker-compose.yml
@@ -57,11 +59,13 @@ jobs:
           if "all" in changed:
               modules = all_modules
           else:
-              modules = [m for m in changed if m != "all"]
+              modules = [m for m in changed if m not in ("all", "apps/e2e")]
               if "apps/commonlib" in modules:
                   modules += [m for m in dependents if m not in modules]
+          e2e = "apps/e2e" in changed or "apps/web" in modules
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"modules={json.dumps(modules)}\n")
+              f.write(f"e2e={'true' if e2e else 'false'}\n")
           EOF
         env:
           CHANGED: ${{ steps.filter.outputs.modules }}
@@ -135,6 +139,42 @@ jobs:
           path: |
             ${{ matrix.module }}/coverage.svg
             ${{ matrix.module }}/coverage_artifacts/coverage.svg
+
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: apps/web
+
+      - name: Install e2e dependencies
+        run: npm install
+        working-directory: apps/e2e
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+        working-directory: apps/e2e
+
+      - name: Run e2e tests
+        run: npm test
+        working-directory: apps/e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/e2e/playwright-report/
+          retention-days: 7
 
   update-badges:
     needs: test

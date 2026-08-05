@@ -75,12 +75,11 @@ if [ ${#targets[@]} -gt 0 ]; then
             echo "────────────────────────────────────────────────────────"
             echo "Running E2E tests for apps/e2e..."
             echo "────────────────────────────────────────────────────────"
-            if [ -f "apps/backend/uv.lock" ]; then
-                uv run --project apps/backend python scripts/run_e2e_tests.py $app_args
-            else
-                python scripts/run_e2e_tests.py $app_args
-            fi
-            if [ $? -ne 0 ]; then
+            pushd apps/e2e > /dev/null
+            npm test $app_args
+            ret=$?
+            popd > /dev/null
+            if [ $ret -ne 0 ]; then
                 tests_failed=1
             fi
         else
@@ -118,12 +117,11 @@ else
         echo "────────────────────────────────────────────────────────"
         echo "Unit tests passed. Running E2E tests..."
         echo "────────────────────────────────────────────────────────"
-        if [ -f "apps/backend/uv.lock" ]; then
-            uv run --project apps/backend python scripts/run_e2e_tests.py
-        else
-            python scripts/run_e2e_tests.py
-        fi
-        if [ $? -ne 0 ]; then
+        pushd apps/e2e > /dev/null
+        npm test
+        ret=$?
+        popd > /dev/null
+        if [ $ret -ne 0 ]; then
             tests_failed=1
         fi
     else

@@ -55,12 +55,11 @@ if not "%targets%"=="" (
         echo --------------------------------------------------------
         echo Unit tests passed. Running E2E tests...
         echo --------------------------------------------------------
-        if exist "apps\backend\uv.lock" (
-            uv run --project apps/backend python scripts/run_e2e_tests.py
-        ) else (
-            python scripts/run_e2e_tests.py
-        )
-        if !errorlevel! neq 0 set tests_failed=1
+        pushd "apps\e2e"
+        call npm test
+        set "e2e_code=!errorlevel!"
+        popd
+        if !e2e_code! neq 0 set tests_failed=1
     ) else (
         echo.
         echo Skipping E2E tests because unit tests failed.
@@ -78,12 +77,11 @@ echo.
 echo --------------------------------------------------------
 echo Running E2E tests for apps/e2e...
 echo --------------------------------------------------------
-if exist "apps\backend\uv.lock" (
-    uv run --project apps/backend python scripts/run_e2e_tests.py !app_args!
-) else (
-    python scripts/run_e2e_tests.py !app_args!
-)
-if !errorlevel! neq 0 exit /b 1
+pushd "apps\e2e"
+call npm test %app_args%
+set "e2e_code=!errorlevel!"
+popd
+if !e2e_code! neq 0 exit /b 1
 exit /b
 
 :run_test
