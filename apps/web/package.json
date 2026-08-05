@@ -36,7 +36,7 @@
     "coverage-badges-cli": "^2.2.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^16.5.0",
     "jsdom": "^30.0.1",
     "typescript": "~5.9.3",
