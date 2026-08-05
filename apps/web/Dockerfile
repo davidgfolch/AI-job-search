@@ -12,11 +12,20 @@ COPY apps/web/package.json apps/web/package-lock.json* /app/
 # Install dependencies
 RUN npm ci
 
+# Store lockfile hash so the entrypoint can detect stale node_modules in the
+# persistent volume on later starts (see docker-entrypoint.sh).
+RUN sha256sum package-lock.json | awk '{print $1}' > node_modules/.package-lock.sha256
+
 # Copy application code
 COPY apps/web /app/
+
+# Entrypoint reinstalls node_modules when package-lock.json changes
+COPY apps/web/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose Vite dev server port
 EXPOSE 5173
 
 # Run Vite dev server with host binding for Docker
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

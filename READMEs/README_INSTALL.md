@@ -61,6 +61,12 @@ You can use the helper script in the project root:
 ./scripts/install.sh # or .\scripts\install.bat
 ```
 
+> **Note**: The `install.*` scripts install dependencies locally. If you run the
+> web app via Docker, its image auto-detects changed `package-lock.json` and
+> reinstalls `node_modules` on start (see `apps/web/docker-entrypoint.sh`), so a
+> simple `docker-compose up -d --build web` after a dependency change is enough.
+> See [DOCKER_DEV.md](DOCKER_DEV.md) for details.
+
 Or install manually:
 
 **Commonlib, Backend & Scrapper:**

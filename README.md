@@ -194,6 +194,10 @@ Then run the scrappers in a separate terminal:
 ./apps/scrapper/run.sh # or .bat
 ```
 
+> **After changing web dependencies**, just rebuild and restart the web container:
+> `docker-compose up -d --build web`. Its entrypoint auto-detects the changed
+> `package-lock.json` and reinstalls `node_modules` on start.
+
 See [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
 
 ## Run Manually (Using Helper Scripts)
