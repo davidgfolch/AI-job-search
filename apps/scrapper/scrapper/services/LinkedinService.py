@@ -34,7 +34,7 @@ class LinkedinService(BaseService):
                     self.update_job(jobId, title, company, location, url_short, html, md, easy_apply)
                 else:
                     duplicated_id = find_last_duplicated(self.mysql, title, company)
-                    if id := self.mysql.insert((jobId, title, company, location, url_short, md, easy_apply, self.web_page, duplicated_id)):
+                    if id := self.mysql.insert((jobId, title, company, location, None, url_short, md, easy_apply, self.web_page, duplicated_id)):
                         print(green(f'INSERTED {id}!'), end='', flush=True)
                         if duplicated_id:
                             print(cyan(f' DUPLICATED {duplicated_id}'), end="")

@@ -53,7 +53,7 @@ class BaseNavigator(ABC):
         pass
 
     @abstractmethod
-    def get_job_data(self) -> Tuple[str, str, str, str, str]:
+    def get_job_data(self) -> Tuple[str, ...]:
         pass
 
     def get_url(self) -> str:

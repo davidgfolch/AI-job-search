@@ -95,7 +95,7 @@ class TestIndeedScraplingExecutor:
             mock_svc = MagicMock(spec=IndeedService)
             executor.service = mock_svc
             
-            mock_nav.get_job_data.return_value = ("Title", "Company", "Location", "http://u", "<html></html>")
+            mock_nav.get_job_data.return_value = ("Title", "Company", "Location", "60k", "http://u", "<html></html>")
             mock_nav.check_easy_apply.return_value = False
             mock_svc.job_exists_in_db.return_value = (None, False)
             mock_svc.process_job.return_value = True

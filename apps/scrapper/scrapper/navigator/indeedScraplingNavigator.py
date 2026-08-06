@@ -16,6 +16,7 @@ CSS_SEL_NEXT_PAGE_BUTTON = 'a[data-testid="pagination-page-next"]'
 CSS_SEL_JOB_TITLE = ["h1.jobsearch-JobInfoHeader-title", "h2.jobsearch-JobInfoHeader-title", "div.jobsearch-JobInfoHeader-title-container h2", "[data-testid='jobsearch-JobInfoHeader-title']", ".jobsearch-JobInfoHeader-title", "h1"]
 CSS_SEL_COMPANY = ['div[data-testid="inlineHeader-companyName"]', "[data-testid='jobsearch-JobInfoHeader-companyName']", ".jobsearch-InlineCompanyRating div", ".jobsearch-CompanyReview--inline-rating div", ".jobsearch-InlineCompanyRating-companyName", "div.jobsearch-JobInfoHeader-subtitle > div > div > div:first-child"]
 CSS_SEL_LOCATION = ['div[data-testid="inlineHeader-companyLocation"]', "[data-testid='jobsearch-JobInfoHeader-companyLocation']", ".jobsearch-JobInfoHeader-subtitle div:last-child", ".jobsearch-JobInfoHeader-subtitle > div > div", ".jobsearch-JobInfoHeader-subtitle > div"]
+CSS_SEL_JOB_SALARY = ["div[aria-label=Salario] span", "#salaryInfoAndJobType"]
 CSS_SEL_JOB_DESCRIPTION = ["#jobDescriptionText", ".jobsearch-jobDescriptionText", ".jobsearch-JobComponent-description", ".jobsearch-ViewJobLayout-jobDescription"]
 CSS_SEL_JOB_EASY_APPLY = ["#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button", "button.indeed-apply-button", ".indeed-apply-button", "[data-testid='jobsearch-ViewJobButtons-container'] button"]
 
@@ -136,7 +137,7 @@ class IndeedScraplingNavigator(BaseNavigator):
     def get_current_job_url(self) -> str:
         return self.current_page.url if self.current_page else ""
 
-    def get_job_data(self) -> Tuple[str, str, str, str, str]:
+    def get_job_data(self) -> Tuple[str, str, str, str, str, str]:
         title = _extract_text(self.current_page, CSS_SEL_JOB_TITLE, "\n- job post").removesuffix("\n- job post")
         if not title:
             h1, h2 = self.current_page.css("h1 *::text").get(), self.current_page.css("h2 *::text").get()
@@ -144,6 +145,7 @@ class IndeedScraplingNavigator(BaseNavigator):
         company = _extract_text(self.current_page, CSS_SEL_COMPANY)
         location = _extract_text(self.current_page, CSS_SEL_LOCATION)
         html = next((str(desc_el.get()) for sel in CSS_SEL_JOB_DESCRIPTION if (desc_el := self.current_page.css(sel))), "")
+        salary = _extract_text(self.current_page, CSS_SEL_JOB_SALARY)
         url = self.get_current_job_url()
         if not title or not company:
             query = parse_qs(urlparse(url).query)
@@ -153,7 +155,7 @@ class IndeedScraplingNavigator(BaseNavigator):
                 company = query['cmp'][0]
         if self.debug:
             print(f"DEBUG: Scraped detail -> Title: {title[:30] if title else 'EMPTY'}, Company: {company}, Location: {location}")
-        return title or "", company or "", location or "", url, html
+        return title or "", company or "", location or "", salary or "", url, html
 
     def check_easy_apply(self) -> bool:
         return any(self.current_page.css(sel) for sel in CSS_SEL_JOB_EASY_APPLY)

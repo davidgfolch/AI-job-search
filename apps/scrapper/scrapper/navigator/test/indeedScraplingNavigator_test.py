@@ -111,13 +111,39 @@ class TestIndeedScraplingNavigator:
                 "Python Dev" if "title" in sel and "company" not in sel else
                 "TechCorp" if "company" in sel and "Location" not in sel else
                 "Remote" if "Location" in sel or "location" in sel else
+                "60k - 70k" if "Salario" in sel else
                 "<b>Description</b>" if "Description" in sel else ""
             ))
             navigator.current_page = mock_selector
             
-            title, company, location, url, html = navigator.get_job_data()
+            title, company, location, salary, url, html = navigator.get_job_data()
             assert title == "Python Dev"
             assert company == "TechCorp"
             assert location == "Remote"
+            assert salary == "60k - 70k"
             assert url == "https://example.com/job"
             assert html == "<b>Description</b>"
+
+    def test_get_job_data_without_salary(self):
+        mock_service = create_mock_scrapling_service()
+        with pytest.MonkeyPatch.context() as m:
+            m.setattr("scrapper.navigator.indeedScraplingNavigator.ScraplingService", lambda proxies, debug: mock_service)
+            navigator = IndeedScraplingNavigator(proxies=[])
+
+            def create_mock_selector(text):
+                mock_sel = MockSelector(text=text)
+                mock_sel.css = MagicMock(return_value=MockSelector(text=text))
+                return mock_sel
+
+            mock_selector = MagicMock()
+            mock_selector.url = "https://example.com/job"
+            mock_selector.css = MagicMock(side_effect=lambda sel: create_mock_selector(
+                "Python Dev" if "title" in sel and "company" not in sel else
+                "TechCorp" if "company" in sel and "Location" not in sel else
+                "Remote" if "Location" in sel or "location" in sel else
+                "<b>Description</b>" if "Description" in sel else ""
+            ))
+            navigator.current_page = mock_selector
+
+            title, company, location, salary, url, html = navigator.get_job_data()
+            assert salary == ""

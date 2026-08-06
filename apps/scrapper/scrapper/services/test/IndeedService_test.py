@@ -73,18 +73,38 @@ class TestIndeedService:
         mock_mysql.fetchOne.return_value = None # Job not in DB
         mock_mysql.insert.return_value = 100 # Inserted ID
         
-        result = service.process_job("Title", "Company", "Loc", "http://url?jk=1", "html", False)
+        result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
         
         assert result is True
-        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "http://url?jk=1", "markdown", False, "Indeed", None))
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "60k", "http://url?jk=1", "markdown", False, "Indeed", None))
         mock_merge.assert_called()
+
+    @pytest.mark.parametrize("salary, expected_salary", [
+        ("60k", "60k"),
+        ("", ""),
+        (None, None),
+    ])
+    @patch("scrapper.services.IndeedService.htmlToMarkdown")
+    @patch("scrapper.services.IndeedService.validate")
+    @patch("scrapper.services.IndeedService.find_last_duplicated")
+    def test_process_job_passes_salary(self, mock_merge, mock_validate, mock_html2md, salary, expected_salary, service, mock_mysql):
+        mock_html2md.return_value = "markdown"
+        mock_validate.return_value = True
+        mock_merge.return_value = None
+        mock_mysql.fetchOne.return_value = None
+        mock_mysql.insert.return_value = 100
+
+        result = service.process_job("Title", "Company", "Loc", salary, "http://url?jk=1", "html", False)
+
+        assert result is True
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", expected_salary, "http://url?jk=1", "markdown", False, "Indeed", None))
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     def test_process_job_exists(self, mock_html2md, service, mock_mysql):
         mock_html2md.return_value = "markdown"
         mock_mysql.fetchOne.return_value = (1,) # Job exists
         
-        result = service.process_job("Title", "Company", "Loc", "http://url?jk=1", "html", False)
+        result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
         
         assert result is True
         mock_mysql.insert.assert_not_called()
@@ -96,7 +116,7 @@ class TestIndeedService:
         mock_mysql.fetchOne.return_value = None
         mock_validate.return_value = False
         
-        result = service.process_job("Title", "Company", "Loc", "http://url?jk=1", "html", False)
+        result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
         
         assert result is False
 
@@ -111,11 +131,11 @@ class TestIndeedService:
         
         url = "https://es.indeed.com/viewjob?jk=123&cf-turnstile-response=remove_me&other=keep"
         
-        result = service.process_job("Title", "Company", "Loc", url, "html", False)
+        result = service.process_job("Title", "Company", "Loc", "60k", url, "html", False)
         
         assert result is True
         args = mock_mysql.insert.call_args[0][0]
-        cleaned_url_arg = args[4]
+        cleaned_url_arg = args[5]
         assert "cf-turnstile-response" not in cleaned_url_arg
         # Check presence of other params (order may vary)
         assert "jk=123" in cleaned_url_arg

@@ -60,7 +60,7 @@ class IndeedService(BaseService):
         # Last resort - use hash of the entire URL
         return hashlib.md5(url.encode()).hexdigest()[:16]
 
-    def process_job(self, title, company, location, url, html, easy_apply):
+    def process_job(self, title, company, location, salary, url, html, easy_apply):
         try:
             url = removeUrlParameter(url, 'cf-turnstile-response')
             job_id = self.get_job_id(url)
@@ -74,7 +74,7 @@ class IndeedService(BaseService):
                 return True
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)
-                if id := self.mysql.insert((job_id, title, company, location, url, md, easy_apply, self.web_page, duplicated_id)):
+                if id := self.mysql.insert((job_id, title, company, location, salary, url, md, easy_apply, self.web_page, duplicated_id)):
                     print(green(f"INSERTED {id}!"), end="", flush=True)
                     return True
                 else:

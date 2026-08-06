@@ -97,14 +97,26 @@ class TestIndeedNavigator:
 
     def test_get_job_data(self, navigator, mock_selenium):
         mock_selenium.getText.side_effect = ["Title\n- job post", "Company", "Location"]
+        mock_salary = MagicMock()
+        mock_salary.text = "60k - 70k"
+        mock_selenium.getElms.return_value = [mock_salary]
         mock_selenium.getHtml.return_value = "<html>Description</html>"
         mock_selenium.getUrl.return_value = "http://job-url"
-        t, c, l, u, h = navigator.get_job_data()
+        t, c, l, s, u, h = navigator.get_job_data()
         assert t == "Title"
         assert c == "Company"
         assert l == "Location"
+        assert s == "60k - 70k"
         assert u == "http://job-url"
         assert h == "<html>Description</html>"
+
+    def test_get_job_data_no_salary(self, navigator, mock_selenium):
+        mock_selenium.getText.side_effect = ["Title\n- job post", "Company", "Location"]
+        mock_selenium.getElms.return_value = []
+        mock_selenium.getHtml.return_value = "<html>Description</html>"
+        mock_selenium.getUrl.return_value = "http://job-url"
+        t, c, l, s, u, h = navigator.get_job_data()
+        assert s == ""
 
     def test_clickSortByDate(self, navigator, mock_selenium):
         navigator.clickSortByDate()

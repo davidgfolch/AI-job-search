@@ -9,8 +9,8 @@ SELECT id,jobId FROM jobs WHERE jobId = %s"""
 
 QRY_INSERT = """
 INSERT INTO jobs (
-    jobId,title,company,location,url,markdown,easy_apply,web_page,duplicated_id)
-          values (%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    jobId,title,company,location,salary,url,markdown,easy_apply,web_page,duplicated_id)
+          values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
 
 QRY_SELECT_JOBS_VIEWER = """
 SELECT {selectFields}

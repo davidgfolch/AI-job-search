@@ -36,7 +36,7 @@ CSS_SEL_LOCATION = 'div[data-testid="inlineHeader-companyLocation"]'
 CSS_SEL_JOB_REQUIREMENTS = "#jobDescriptionText"
 CSS_SEL_JOB_DESCRIPTION = "#jobDescriptionText"
 CSS_SEL_JOB_EASY_APPLY = "#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button"
-CSS_SEL_JOB_SALARY = "#salaryInfoAndJobType"
+CSS_SEL_JOB_SALARY = "div[aria-label=Salario] span"
 CSS_SEL_JOB_CLOSED = ""
 
 class IndeedNavigator(BaseNavigator):
@@ -138,9 +138,11 @@ class IndeedNavigator(BaseNavigator):
         title = self.selenium.getText(CSS_SEL_JOB_TITLE).removesuffix("\n- job post")
         company = self.selenium.getText(CSS_SEL_COMPANY)
         location = self.selenium.getText(CSS_SEL_LOCATION)
-        html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+        salaryElms = self.selenium.getElms(CSS_SEL_JOB_SALARY)
+        salary = salaryElms[0].text if salaryElms else ""
         url = self.selenium.getUrl()
-        return title, company, location, url, html
+        html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+        return title, company, location, salary, url, html
 
     def check_easy_apply(self):
         return len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0

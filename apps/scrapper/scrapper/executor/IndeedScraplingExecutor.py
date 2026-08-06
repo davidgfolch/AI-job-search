@@ -117,6 +117,6 @@ class IndeedScraplingExecutor(BaseExecutor):
 
     @retry(raiseException=False)
     def _process_row(self, url):
-        title, company, location, _, html = self.navigator.get_job_data()
+        title, company, location, salary, _, html = self.navigator.get_job_data()
         easyApply = self.navigator.check_easy_apply()
-        return self.service.process_job(title, company, location, url, html, easyApply)
+        return self.service.process_job(title, company, location, salary, url, html, easyApply)

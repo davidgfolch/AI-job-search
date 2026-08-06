@@ -96,12 +96,12 @@ class TestIndeedExecutor:
             mock_svc = MagicMock(spec=IndeedService)
             executor.service = mock_svc
             
-            mock_nav.get_job_data.return_value = ("T", "C", "L", "http://u", "<h/>")
+            mock_nav.get_job_data.return_value = ("T", "C", "L", "60k", "http://u", "<h/>")
             mock_nav.check_easy_apply.return_value = False
             mock_svc.process_job.return_value = True
             
             assert executor._process_row("http://u") is True
-            mock_svc.process_job.assert_called_once_with("T", "C", "L", "http://u", "<h/>", False)
+            mock_svc.process_job.assert_called_once_with("T", "C", "L", "60k", "http://u", "<h/>", False)
 
     @pytest.mark.parametrize("url, expected", [
         ("https://es.indeed.com/viewjob?jk=1234567890&other=param", "1234567890"),
@@ -121,7 +121,7 @@ class TestIndeedExecutor:
         with patch("scrapper.services.IndeedService.validate", return_value=validate), \
              patch("scrapper.services.IndeedService.htmlToMarkdown", return_value="D"), \
              patch("scrapper.services.IndeedService.find_last_duplicated"):
-            assert service.process_job("T", "C", "L", "http://u?jk=1", "<h/>", False) is expected_result
+            assert service.process_job("T", "C", "L", None, "http://u?jk=1", "<h/>", False) is expected_result
             if insert_called:
                 mock_mysql.insert.assert_called_once()
             else:

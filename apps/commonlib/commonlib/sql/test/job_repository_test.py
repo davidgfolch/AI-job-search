@@ -70,6 +70,7 @@ class TestJobRepository:
             'title': 'Software Engineer',
             'company': 'Test Corp',
             'location': 'Remote',
+            'salary': '60k - 70k',
             'url': 'https://example.com/job/123',
             'markdown': '# Job Description',
             'easy_apply': True,
@@ -82,6 +83,29 @@ class TestJobRepository:
 
         assert mock_execute_transaction.called
         assert result == 1
+        callback = mock_execute_transaction.call_args[0][0]
+        cursor = MagicMock()
+        cursor.lastrowid = 1
+        callback(cursor)
+        params = cursor.execute.call_args[0][1]
+        assert params[4] == '60k - 70k'
+        assert params[5] == 'https://example.com/job/123'
+
+    def test_insert_job_salary_defaults_to_none(self, job_repository, mock_execute_transaction):
+        """insert_job should use None salary when not provided."""
+        job_data = {'job_id': 'job123'}
+        mock_execute_transaction.return_value = 1
+
+        result = job_repository.insert_job(job_data)
+
+        assert mock_execute_transaction.called
+        assert result == 1
+        callback = mock_execute_transaction.call_args[0][0]
+        cursor = MagicMock()
+        cursor.lastrowid = 1
+        callback(cursor)
+        params = cursor.execute.call_args[0][1]
+        assert params[4] is None
 
     def test_insert_job_with_defaults(self, job_repository, mock_execute_transaction):
         """insert_job should use defaults for missing keys."""
