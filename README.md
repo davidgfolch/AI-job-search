@@ -11,6 +11,7 @@
 ![aiCvMatcher](apps/aiCvMatcher/coverage.svg)
 ![aiFormFiller](apps/aiFormFiller/coverage.svg)
 ![cron](apps/cron/coverage.svg)
+![e2e](apps/e2e/coverage.svg)
 
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
 

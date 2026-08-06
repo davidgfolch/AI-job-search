@@ -168,6 +168,23 @@ jobs:
         run: npm test
         working-directory: apps/e2e
 
+      - name: Generate coverage badge
+        if: success()
+        run: |
+          npx coverage-badges --label "apps/e2e"
+          mkdir -p coverage_artifacts
+          cp coverage/badges.svg coverage_artifacts/coverage.svg
+        working-directory: apps/e2e
+
+      - name: Upload coverage badge
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: badge-apps-e2e
+          path: |
+            apps/e2e/coverage.svg
+            apps/e2e/coverage_artifacts/coverage.svg
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -177,13 +194,14 @@ jobs:
           retention-days: 7
 
   update-badges:
-    needs: test
+    needs: [test, e2e]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && success()
+    if: github.ref == 'refs/heads/master' && needs.test.result != 'failure' && needs.e2e.result != 'failure'
     steps:
       - uses: actions/checkout@v4
       
       - name: Download all badges
+        if: needs.test.result == 'success' || needs.e2e.result == 'success'
         uses: actions/download-artifact@v4
         with:
           path: /tmp/badges
@@ -194,7 +212,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           changes=false
-          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/aiEnrichSkill apps/aiEnrich3 apps/aiCvMatcher apps/aiFormFiller apps/backend apps/web apps/cron"
+          MODULES="apps/commonlib apps/scrapper apps/aiEnrich apps/aiEnrichNew apps/aiEnrichSkill apps/aiEnrich3 apps/aiCvMatcher apps/aiFormFiller apps/backend apps/web apps/cron apps/e2e"
           read -ra MODULE_ARR <<< "${MODULES}"
           
           for MODULE in "${MODULE_ARR[@]}"; do

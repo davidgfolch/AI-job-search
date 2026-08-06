@@ -13,6 +13,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
+  /* Merge Chromium V8 coverage (collected per-test in coverage.fixtures.ts). */
+  globalSetup: './coverage.setup.ts',
+  globalTeardown: './coverage.teardown.ts',
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { open: 'never' }]],
   /* Vite dev server compiles modules on-demand; cold starts need a longer expect timeout. */
