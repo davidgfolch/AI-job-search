@@ -32,7 +32,11 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        /* --disable-web-security is a Chromium-only flag; WebKit/Firefox reject it. */
+        launchOptions: { args: ['--disable-web-security'] },
+      },
     },
 
     {

@@ -13,9 +13,6 @@ import {
 
 test.use({
     bypassCSP: true,
-    launchOptions: {
-        args: ['--disable-web-security'],
-    },
 });
 
 test.describe('Viewer E2E', () => {
