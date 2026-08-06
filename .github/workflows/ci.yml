@@ -68,7 +68,7 @@ jobs:
               f.write(f"e2e={'true' if e2e else 'false'}\n")
           EOF
         env:
-          CHANGED: ${{ steps.filter.outputs.modules }}
+          CHANGED: ${{ steps.filter.outputs.changes }}
 
   test:
     needs: changes
