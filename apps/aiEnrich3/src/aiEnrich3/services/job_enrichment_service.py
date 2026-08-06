@@ -1,11 +1,9 @@
 import time
-import json
 import traceback
-from typing import List, Dict, Any, Tuple, Optional, Set
+from typing import List, Dict, Any, Tuple, Set
 
-from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.aiEnrichRepository import AiEnrichRepository
-from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX
+from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX, flatten_skill_groups
 from commonlib.terminalColor import yellow, magenta, cyan, red
 from commonlib.stopWatch import StopWatch
 from commonlib.observability import get_logger
@@ -19,8 +17,8 @@ collector = MetricsCollector()
 
 
 def _save_job_result(repo: AiEnrichRepository, job_id: int, company: str, result: Dict[str, Any]):
-    req_tech_str = ", ".join(result.get('required_skills', []))
-    opt_tech_str = ", ".join(result.get('optional_skills', []))
+    req_tech_str = ", ".join(flatten_skill_groups(result.get('required_skills', [])))
+    opt_tech_str = ", ".join(flatten_skill_groups(result.get('optional_skills', [])))
     req_tech_str = req_tech_str if req_tech_str else None
     opt_tech_str = opt_tech_str if opt_tech_str else None
     modality_val = result.get('modality', None)

@@ -33,6 +33,22 @@ def test_save_job_result(mock_repo):
         modality='REMOTE'
     )
 
+def test_save_job_result_flattens_parenthesized_skills(mock_repo):
+    result = {
+        'salary': '100k',
+        'required_skills': ['AWS (RDS, Cognito, ECS)', 'Java', 'Observability (Grafana, Sentry)'],
+        'optional_skills': ['Docker (Compose, Swarm)'],
+        'modality': 'REMOTE'
+    }
+    _save_job_result(mock_repo, 1, "test_company", result)
+    mock_repo.update_enrichment.assert_called_once_with(
+        id=1,
+        salary='100k',
+        required_tech='AWS, RDS, Cognito, ECS, Java, Observability, Grafana, Sentry',
+        optional_tech='Docker, Compose, Swarm',
+        modality='REMOTE'
+    )
+
 def test_save_job_result_empty(mock_repo):
     result = {}
     _save_job_result(mock_repo, 2, "test_company", result)

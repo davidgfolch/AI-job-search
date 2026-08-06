@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.ai_helpers import (
     validateResult, listsToString, mapJob, combineTaskResults, footer,
-    _expand_parenthesized_skills, _normalizeModality, VALID_MODALITIES
+    _expand_parenthesized_skills, flatten_skill_groups, _normalizeModality, VALID_MODALITIES
 )
 import json
 
@@ -31,6 +31,35 @@ def test_listsToString_types():
     assert data["req"] == "a,b"
     assert data["opt"] == "c,d"
     assert data["none"] is None
+
+def test_listsToString_list_with_parenthesized_groups():
+    data = {"tech": ["Java", "AWS (RDS, Cognito, ECS)", "Observability (Grafana, Sentry)"]}
+    listsToString(data, ["tech"])
+    assert data["tech"] == "Java,AWS,RDS,Cognito,ECS,Observability,Grafana,Sentry"
+
+@pytest.mark.parametrize("value, expected", [
+    ("Java,Spring Boot,AWS (RDS, Cognito, ECS),Observability (Grafana, Sentry)",
+     ["Java", "Spring Boot", "AWS", "RDS", "Cognito", "ECS", "Observability", "Grafana", "Sentry"]),
+    ("Cloud (AWS (EC2, S3), Azure)", ["Cloud", "AWS", "EC2", "S3", "Azure"]),
+    ("No parentheses here", ["No parentheses here"]),
+    ("Java,Java,AWS (EC2, S3)", ["Java", "AWS", "EC2", "S3"]),
+])
+def test_flatten_skill_groups_string(value, expected):
+    assert flatten_skill_groups(value) == expected
+
+@pytest.mark.parametrize("value, expected", [
+    (["AWS (RDS, Cognito)", "Java", "Observability (Grafana, Sentry)"],
+     ["AWS", "RDS", "Cognito", "Java", "Observability", "Grafana", "Sentry"]),
+    (["Cloud (AWS (EC2, S3), Azure)", "Java"], ["Cloud", "AWS", "EC2", "S3", "Azure", "Java"]),
+    (["Java", None, "AWS (EC2, S3)", "AWS (EC2, S3)"], ["Java", "AWS", "EC2", "S3"]),
+    ([], []),
+])
+def test_flatten_skill_groups_list(value, expected):
+    assert flatten_skill_groups(value) == expected
+
+def test_flatten_skill_groups_invalid_type():
+    assert flatten_skill_groups(123) == []
+    assert flatten_skill_groups(None) == []
 
 
 @pytest.mark.parametrize("input_data, expected_salary", [

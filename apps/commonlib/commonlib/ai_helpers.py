@@ -81,20 +81,29 @@ def _expand_parenthesized_skills(value: str) -> str:
     return value
 
 
+def flatten_skill_groups(value) -> list[str]:
+    if isinstance(value, str):
+        value = _expand_parenthesized_skills(value)
+        items = [x.strip() for x in value.split(",")]
+    elif isinstance(value, list):
+        items = []
+        for item in value:
+            if item is None:
+                continue
+            expanded = _expand_parenthesized_skills(str(item).strip())
+            items.extend(x.strip() for x in expanded.split(","))
+    else:
+        items = []
+    return list(dict.fromkeys([x for x in items if x]))
+
+
 def listsToString(result: dict[str, str], fields: list[str]):
     for f in fields:
         value = result.get(f, None)
         if not value:
             result[f] = None
         else:
-            if isinstance(value, str):
-                value = _expand_parenthesized_skills(value)
-                items = [x.strip() for x in value.split(",")]
-            elif isinstance(value, list):
-                items = [str(x).strip() for x in value if x is not None]
-            else:
-                items = []
-            unique_items = list(dict.fromkeys([x for x in items if x]))
+            unique_items = flatten_skill_groups(value)
             if unique_items:
                 result[f] = ",".join(unique_items)
                 if result[f].lower() in ['none specified', 'null']:
