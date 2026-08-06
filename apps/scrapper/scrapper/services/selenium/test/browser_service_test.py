@@ -110,3 +110,13 @@ class TestBack:
     def test_back(self, browser_service, mock_driver):
         browser_service.back()
         mock_driver.back.assert_called_once()
+
+
+class TestSetWindowSize:
+    def test_set_window_size(self, browser_service, mock_driver):
+        browser_service.set_window_size(500, 600)
+        mock_driver.set_window_size.assert_called_once_with(500, 600)
+
+    def test_set_window_size_small(self, browser_service, mock_driver):
+        browser_service.set_window_size(300, 400)
+        mock_driver.set_window_size.assert_called_once_with(300, 400)

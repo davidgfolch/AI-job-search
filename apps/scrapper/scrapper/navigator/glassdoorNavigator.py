@@ -41,7 +41,6 @@ class GlassdoorNavigator(BaseNavigator):
         sleep(4, 4)
         self.selenium.waitUntilPageIsLoaded()
 
-    @retry()
     def login(self):
         print('Logging in via Indeed OTP...')
         self.authenticator.login()

@@ -88,6 +88,10 @@ class BrowserService:
         self.driver.switch_to.window(handle)
 
     @seleniumSocketConnRetry()
+    def set_window_size(self, width: int, height: int):
+        self.driver.set_window_size(width, height)
+
+    @seleniumSocketConnRetry()
     def close_and_switch_back(self, handle: str):
         """Close a window and switch back to the default tab."""
         self.driver.switch_to.window(handle)

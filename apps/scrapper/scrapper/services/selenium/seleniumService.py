@@ -150,5 +150,8 @@ class SeleniumService:
     def switch_to_window(self, handle: str):
         self.browser_service.switch_to_window(handle)
 
+    def set_window_size(self, width: int, height: int):
+        self.browser_service.set_window_size(width, height)
+
     def close_and_switch_back(self, handle: str):
         self.browser_service.close_and_switch_back(handle)

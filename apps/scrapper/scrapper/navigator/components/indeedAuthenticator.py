@@ -1,7 +1,8 @@
-from commonlib.decorator.retry import retry, StackTrace
 from ...services.selenium.browser_service import sleep
 from ...services.gmail.indeed_gmail_service import IndeedGmailService
 from ...core import baseScrapper
+from .captchaHandler import _detect_captcha
+from .exceptionHandler import wait_for_cloudflare_filter, raise_if_otp_invalid
 
 LOGIN_PAGE = "https://es.indeed.com/account/login"
 
@@ -22,18 +23,13 @@ CSS_SEL_COOKIE_ACCEPT = "#onetrust-accept-btn-handler, button[data-testid='accep
 class IndeedAuthenticator:
     def __init__(self, selenium):
         self.selenium = selenium
-        # Get Indeed credentials from environment
         self.USER_EMAIL, self.USER_PWD, _ = baseScrapper.getAndCheckEnvVars("INDEED")
 
     def accept_cookies(self):
         self.selenium.waitAndClick_noError(CSS_SEL_COOKIE_ACCEPT, "Could not accept cookies")
 
-    @retry(retries=60, delay=1, raiseException=False, stackTrace=StackTrace.NEVER)
     def waitForCloudflareFilterInLogin(self):
-        if self.selenium.waitUntil_presenceLocatedElement_noError(CSS_SEL_LOGIN_EMAIL) or \
-            self.selenium.waitUntil_presenceLocatedElement_noError('#AccountMenu'):
-            return
-        raise Exception("Could not login because cloudFlare security filter was not resolved")
+        return wait_for_cloudflare_filter(self.selenium, CSS_SEL_LOGIN_EMAIL)
 
     def login(self):
         print("Navigating to Indeed login page...")
@@ -66,8 +62,8 @@ class IndeedAuthenticator:
     def click_google_otp_fallback(self):
         self.selenium.waitAndClick(CSS_SEL_GOOGLE_OTP_FALLBACK)
         sleep(5, 5)
+        _detect_captcha(self.selenium)
 
-    @retry(delay=1)
     def getEmail2faCode(self):
         sleep(5, 5)
         with IndeedGmailService() as gmail:
@@ -75,9 +71,7 @@ class IndeedAuthenticator:
         self.selenium.sendKeys(CSS_SEL_2FA_PASSCODE_INPUT, code)
         self.selenium.waitAndClick(CSS_SEL_2FA_VERIFY_SUBMIT)
         self.selenium.waitUntilPageIsLoaded()
-        inputError = self.selenium.getElms("#label-passcode-input-error")
-        if len(inputError) > 0 and inputError[0].is_displayed(): # invalid code, try again
-            raise ValueError("Invalid code")
+        raise_if_otp_invalid(self.selenium)
 
     def ignore_access_key_form(self):
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_WEBAUTHN_CONTINUE)

@@ -5,6 +5,7 @@ from scrapper.navigator.components.glassdoorAuthenticator import (
     CSS_SEL_INDEED_AUTH_BUTTON,
     CSS_SEL_EMAIL_INPUT,
     CSS_SEL_EMAIL_SUBMIT,
+    CSS_SEL_COOKIE_ACCEPT,
     CSS_SEL_GOOGLE_OTP_FALLBACK,
     CSS_SEL_PASSCODE_INPUT,
     CSS_SEL_OTP_VERIFY_SUBMIT,
@@ -23,9 +24,11 @@ class TestGlassdoorAuthenticator:
         with patch('scrapper.navigator.components.glassdoorAuthenticator.baseScrapper.getAndCheckEnvVars', return_value=('user@test.com', None, 'search')):
             return GlassdoorAuthenticator(mock_selenium)
 
+    @patch('scrapper.navigator.components.glassdoorAuthenticator._detect_captcha')
     @patch('scrapper.navigator.components.glassdoorAuthenticator.sleep')
     @patch.object(GlassdoorAuthenticator, '_get_otp_code')
-    def test_login_flow(self, mock_otp, mock_sleep, authenticator, mock_selenium):
+    @patch.object(GlassdoorAuthenticator, '_accept_cookies_if_present')
+    def test_login_flow(self, mock_cookies, mock_otp, mock_sleep, mock_detect, authenticator, mock_selenium):
         mock_selenium.wait_for_new_window.return_value = "popup_handle"
         mock_selenium.driver.window_handles = ["handle1"]
         mock_selenium.getElms.return_value = []
@@ -35,9 +38,11 @@ class TestGlassdoorAuthenticator:
         mock_selenium.waitAndClick.assert_any_call(CSS_SEL_INDEED_AUTH_BUTTON)
         mock_selenium.wait_for_new_window.assert_called_with(["handle1"])
         mock_selenium.switch_to_window.assert_called_with("popup_handle")
+        mock_selenium.set_window_size.assert_called_with(1370, 1000)
         mock_selenium.sendKeys.assert_any_call(CSS_SEL_EMAIL_INPUT, 'user@test.com')
         mock_selenium.waitAndClick.assert_any_call(CSS_SEL_EMAIL_SUBMIT)
         mock_selenium.waitAndClick.assert_any_call(CSS_SEL_GOOGLE_OTP_FALLBACK)
+        mock_detect.assert_called()
         mock_otp.assert_called_once()
         mock_selenium.close_and_switch_back.assert_called_with("popup_handle")
         assert authenticator._popup_handle is None
@@ -66,9 +71,12 @@ class TestGlassdoorAuthenticator:
         with pytest.raises(ValueError, match="Invalid OTP code"):
             authenticator._get_otp_code()
 
-    def test_get_otp_code_no_error_element(self, authenticator, mock_selenium):
-        mock_selenium.getElms.return_value = []
-        with patch.object(authenticator, '_get_otp_code') as mock_method:
-            mock_method.return_value = None
-            mock_method()
-            assert mock_method.called
+    def test_accept_cookies_when_banner_present(self, authenticator, mock_selenium):
+        authenticator._accept_cookies_if_present()
+        mock_selenium.waitUntilVisible.assert_called_with(CSS_SEL_COOKIE_ACCEPT, timeout=5)
+        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_COOKIE_ACCEPT)
+
+    def test_accept_cookies_when_banner_absent(self, authenticator, mock_selenium):
+        mock_selenium.waitUntilVisible.side_effect = Exception("Timeout")
+        authenticator._accept_cookies_if_present()
+        mock_selenium.waitAndClick.assert_not_called()

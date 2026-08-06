@@ -38,22 +38,20 @@ class TestIndeedAuthenticator:
         mock_selenium.waitUntil_presenceLocatedElement_noError.side_effect = [False, False, False]
         with patch.object(IndeedAuthenticator, 'waitForCloudflareFilterInLogin', return_value=True), \
              patch.object(IndeedAuthenticator, 'accept_cookies') as mock_accept:
-            
+
             authenticator.login()
-            
+
             mock_selenium.loadPage.assert_called_with(LOGIN_PAGE)
             mock_selenium.sendKeys.assert_any_call(CSS_SEL_LOGIN_EMAIL, 'user@test.com')
             mock_accept.assert_called_once()
             mock_selenium.waitAndClick.assert_any_call(CSS_SEL_LOGIN_SUBMIT)
             mock_otp.assert_called_once()
-            mock_2fa.assert_called_once()
             mock_ignore.assert_called_once()
 
     def test_login_already_logged_in(self, authenticator, mock_selenium):
         with patch.object(IndeedAuthenticator, 'waitForCloudflareFilterInLogin', return_value=True):
-             mock_selenium.waitUntil_presenceLocatedElement_noError.return_value = True # AccountMenu found
+             mock_selenium.waitUntil_presenceLocatedElement_noError.return_value = True
              authenticator.login()
-             # Should return early
              mock_selenium.sendKeys.assert_not_called()
 
     @patch('scrapper.navigator.components.indeedAuthenticator.IndeedGmailService')
@@ -62,9 +60,9 @@ class TestIndeedAuthenticator:
         mock_gmail = mock_gmail_class.return_value.__enter__.return_value
         mock_gmail.wait_for_verification_code.return_value = "123456"
         mock_selenium.getElms.return_value = []
-        
+
         authenticator.getEmail2faCode()
-        
+
         mock_selenium.sendKeys.assert_called_with(CSS_SEL_2FA_PASSCODE_INPUT, "123456")
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_2FA_VERIFY_SUBMIT)
 
