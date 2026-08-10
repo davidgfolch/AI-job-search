@@ -95,7 +95,6 @@ jobs:
           
       - name: Install global tools
         run: |
-          cp 'scripts/.env.example' .env
           cp 'scripts/.env.secrets.example' .env.secrets
           curl -LsSf https://astral.sh/uv/install.sh | sh
           curl -sSL https://install.python-poetry.org | python3 -

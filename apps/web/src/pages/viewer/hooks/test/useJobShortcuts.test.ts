@@ -1,0 +1,106 @@
+import { renderHook, act, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useJobShortcuts } from '../useJobShortcuts';
+import { UI_SHORTCUTS_STORAGE_KEY } from '../../shortcutsConfig';
+
+const mockUseEnvSettings = vi.fn();
+vi.mock('../../../common/hooks/useEnvSettings', () => ({
+    useEnvSettings: (...args: unknown[]) => mockUseEnvSettings(...args),
+}));
+
+const onAction = vi.fn();
+
+const render = () => renderHook(() => useJobShortcuts({ onAction }));
+
+describe('useJobShortcuts', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        onAction.mockClear();
+        mockUseEnvSettings.mockReturnValue({ data: undefined });
+    });
+
+    it('fires action for matching alt combo', () => {
+        render();
+        fireEvent.keyDown(window, { key: 'i', altKey: true });
+        expect(onAction).toHaveBeenCalledWith('ignore');
+    });
+
+    it('uses env-defined ctrl combos', () => {
+        mockUseEnvSettings.mockReturnValue({ data: { UI_SHORTCUTS_IGNORE: 'ctrl+i' } });
+        render();
+        fireEvent.keyDown(window, { key: 'i', ctrlKey: true });
+        expect(onAction).toHaveBeenCalledWith('ignore');
+        fireEvent.keyDown(window, { key: 'i', altKey: true });
+        expect(onAction).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not fire when disabled', () => {
+        const { result } = render();
+        act(() => result.current.toggleEnabled());
+        fireEvent.keyDown(window, { key: 'i', altKey: true });
+        expect(onAction).not.toHaveBeenCalled();
+    });
+
+    it('ignores editable targets', () => {
+        render();
+        const input = document.createElement('input');
+        document.body.appendChild(input);
+        try {
+            fireEvent.keyDown(input, { key: 'i', altKey: true });
+            expect(onAction).not.toHaveBeenCalled();
+        } finally {
+            document.body.removeChild(input);
+        }
+    });
+
+    it('ignores keys when a modal is open', () => {
+        render();
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        document.body.appendChild(overlay);
+        try {
+            fireEvent.keyDown(window, { key: 'i', altKey: true });
+            expect(onAction).not.toHaveBeenCalled();
+        } finally {
+            document.body.removeChild(overlay);
+        }
+    });
+
+    it('does not fire for non-matching keys', () => {
+        render();
+        fireEvent.keyDown(window, { key: 'x', altKey: true });
+        fireEvent.keyDown(window, { key: 'i' });
+        expect(onAction).not.toHaveBeenCalled();
+    });
+
+    it('persists the toggle in localStorage', () => {
+        const { result } = render();
+        act(() => result.current.toggleEnabled());
+        expect(localStorage.getItem(UI_SHORTCUTS_STORAGE_KEY)).toBe('false');
+        act(() => result.current.toggleEnabled());
+        expect(localStorage.getItem(UI_SHORTCUTS_STORAGE_KEY)).toBe('true');
+    });
+
+    it('initializes disabled from localStorage', () => {
+        localStorage.setItem(UI_SHORTCUTS_STORAGE_KEY, 'false');
+        const { result } = render();
+        expect(result.current.enabled).toBe(false);
+        fireEvent.keyDown(window, { key: 'i', altKey: true });
+        expect(onAction).not.toHaveBeenCalled();
+    });
+
+    it('respects env UI_SHORTCUTS_ENABLED default when nothing stored', () => {
+        mockUseEnvSettings.mockReturnValue({ data: { UI_SHORTCUTS_ENABLED: 'false' } });
+        const { result } = render();
+        expect(result.current.enabled).toBe(false);
+        fireEvent.keyDown(window, { key: 'i', altKey: true });
+        expect(onAction).not.toHaveBeenCalled();
+    });
+
+    it('returns resolved shortcuts from env settings', () => {
+        mockUseEnvSettings.mockReturnValue({ data: { UI_SHORTCUTS_APPLY: 'ctrl+a' } });
+        const { result } = render();
+        expect(result.current.shortcuts.apply).toEqual({ ctrl: true, alt: false, key: 'a', display: 'Ctrl+A' });
+        expect(result.current.shortcuts.ignore.display).toBe('Alt+I');
+    });
+});

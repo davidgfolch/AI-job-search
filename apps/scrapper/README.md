@@ -48,7 +48,7 @@ poetry install
 ### Configuration
 
 Scraper behavior is configured via environment variables and configuration files (`scrapper_config.py`).
-See `scripts/.env.example` and `scripts/.env.secrets.example`.
+See `.env` and `scripts/.env.secrets.example`.
 
 ## Key Environment Variables
 
@@ -98,7 +98,7 @@ You can override the cadency for specific hours of the day.
 
 Format: `XX_RUN_CADENCY_START-END=duration`
 
-See `scripts/.env.example` and `scripts/.env.secrets.example` for examples.
+See `.env` and `scripts/.env.secrets.example` for examples.
 
 Order of precedence:
 1. Specific hour range match

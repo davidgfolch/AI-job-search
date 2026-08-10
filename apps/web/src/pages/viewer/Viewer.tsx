@@ -14,14 +14,21 @@ import './Viewer.css';
 import PageHeader from "../common/components/PageHeader";
 import { BOOLEAN_FILTERS } from './constants';
 import { useDefaultComment } from '../common/hooks/useDefaultComment';
+import { useJobShortcuts } from './hooks/useJobShortcuts';
+import ShortcutsControls from './components/ShortcutsControls';
+import { useViewerShortcuts } from './hooks/useViewerShortcuts';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
     const { comment: defaultComment } = useDefaultComment();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
     const jobListRef = useRef<HTMLDivElement>(null);
+    const detailScrollRef = useRef<HTMLDivElement>(null);
     const [configCount, setConfigCount] = useState<number>();
     const [collapsedPanel, setCollapsedPanel] = useState<'none' | 'left' | 'right'>('none');
+
+    const handleShortcut = useViewerShortcuts(actions, state.selectedJob, jobListRef, detailScrollRef);
+    const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts } = useJobShortcuts({ onAction: handleShortcut });
 
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
@@ -39,7 +46,9 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
 
     return (
         <>
-            <PageHeader title="Jobs"/>
+            <PageHeader title="Jobs">
+                <ShortcutsControls enabled={shortcutsEnabled} onToggle={toggleShortcuts} shortcuts={shortcuts} />
+            </PageHeader>
             <main className="app-main">
                 <div className="viewer">
                     <ConfirmModal
@@ -142,7 +151,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                 </div>
                             </div>
                             <PanelDivider collapsedPanel={collapsedPanel} onCollapse={setCollapsedPanel} onReset={() => setCollapsedPanel('none')} />
-                                <div className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : collapsedPanel === 'right' ? { display: 'none' } : undefined}>
+                                <div ref={detailScrollRef} tabIndex={-1} className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : collapsedPanel === 'right' ? { display: 'none' } : undefined}>
                                 {state.selectedJob ? (
                                     <>
                                         <div style={state.duplicatedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

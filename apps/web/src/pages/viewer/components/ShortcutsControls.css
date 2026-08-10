@@ -1,0 +1,57 @@
+.shortcuts-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.shortcuts-button {
+    background: transparent;
+    border: 1px solid white;
+    color: var(--text-primary);
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.shortcuts-button:hover {
+    background-color: var(--header-menu-hover);
+}
+
+.shortcuts-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.shortcuts-table th,
+.shortcuts-table td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.shortcuts-table th {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.shortcuts-description {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+kbd {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}

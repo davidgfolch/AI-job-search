@@ -157,9 +157,8 @@ docker-compose --profile scrapper run scrapper
 
 ### Quick Start
 
-- Copy `scripts/.env.example` to `.env` and `scripts/.env.secrets.example` to `.env.secrets`:
-  - set your credentials in `.env.secrets`.
-  - set your options in `.env` (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
+- Copy `scripts/.env.secrets.example` to `.env.secrets` and set your credentials there.
+- Set your options in `.env` (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications `docker-compose up -d` (starts default services).
 - Run `apps/scrappers/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)

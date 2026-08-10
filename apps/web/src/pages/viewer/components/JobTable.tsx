@@ -109,7 +109,7 @@ export default function JobTable({
     }, [selectedJob?.id]);
 
     return (
-        <div className="job-table-container" ref={containerRef}>
+        <div className="job-table-container" ref={containerRef} tabIndex={-1}>
             <table className="job-table">
                 <thead>
                     <tr>

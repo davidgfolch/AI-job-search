@@ -35,7 +35,7 @@ vi.mock('../../services/FilterConfigService', () => ({
 
 setupGlobalMocks();
 
-import { screen } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { jobsApi } from '../viewer/api/ViewerApi';
 import { renderViewer } from './ViewerTestUtils';
@@ -78,5 +78,17 @@ describe('Viewer - User Interactions', () => {
         renderViewer(['/?ids=1,2']);
         await runTimers();
         expect(jobsApi.getJobs).toHaveBeenCalledWith(expect.objectContaining({ sql_filter: 'id IN (1,2)', page: 1 }));
+    });
+
+    it('ignores selected job via keyboard shortcut', async () => {
+        localStorage.clear();
+        mockJobsApiDefault();
+        renderViewer();
+        await runTimers();
+        selectJob('Job 1');
+        await runTimers();
+        fireEvent.keyDown(window, { key: 'i', altKey: true });
+        await runTimers();
+        expect(jobsApi.updateJob).toHaveBeenCalledWith(1, { ignored: true });
     });
 });

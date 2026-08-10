@@ -11,7 +11,6 @@ env_lock = threading.Lock()
 # apps/commonlib/commonlib/environmentUtil.py -> ../../../.env (Root)
 ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env'
 ENV_SECRETS_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env.secrets'
-ENV_EXAMPLE_PATH = Path(__file__).resolve().parent.parent.parent.parent / 'scripts' / '.env.example'
 ENV_SECRETS_EXAMPLE_PATH = Path(__file__).resolve().parent.parent.parent.parent / 'scripts' / '.env.secrets.example'
 
 def _get_mtime(path: Path) -> float:
@@ -73,12 +72,11 @@ def getEnvByPrefix(prefix: str, required: bool = False) -> dict[str, str]:
     return result
 
 def getEnvAll() -> dict[str, str]:
-    """Returns all env vars from both .env.example and .env.secrets.example, overlayed with actual values from .env and .env.secrets"""
-    example_main = dotenv_values(ENV_EXAMPLE_PATH) if ENV_EXAMPLE_PATH.exists() else {}
+    """Returns all env vars from .env.secrets.example, overlayed with actual values from .env and .env.secrets"""
     example_secrets = dotenv_values(ENV_SECRETS_EXAMPLE_PATH) if ENV_SECRETS_EXAMPLE_PATH.exists() else {}
     actual_main = dotenv_values(ENV_PATH) if ENV_PATH.exists() else {}
     actual_secrets = dotenv_values(ENV_SECRETS_PATH) if ENV_SECRETS_PATH.exists() else {}
-    example_values = {**example_secrets, **example_main}
+    example_values = example_secrets
     actual_values = {**actual_secrets, **actual_main}
     if not example_values:
         return actual_values

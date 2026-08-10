@@ -92,8 +92,6 @@ class TestEnvironmentUtil:
     @patch('commonlib.environmentUtil.dotenv_values')
     def test_getEnvAll(self, mock_dotenv_values):
         def mock_dotenv(path):
-            if str(path).endswith('.env.example'):
-                return {'KEY1': 'default1', 'KEY2': 'default2', 'KEY3': 'default3'}
             if str(path).endswith('.env.secrets.example'):
                 return {'SECRET_KEY1': 'secret_default1'}
             if str(path).endswith('.env.secrets'):
@@ -104,12 +102,9 @@ class TestEnvironmentUtil:
 
         mock_dotenv_values.side_effect = mock_dotenv
 
-        with patch('commonlib.environmentUtil.ENV_EXAMPLE_PATH') as mock_eg_path, \
-             patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path, \
+        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path, \
              patch('commonlib.environmentUtil.ENV_SECRETS_EXAMPLE_PATH') as mock_seg_path, \
              patch('commonlib.environmentUtil.ENV_SECRETS_PATH') as mock_senv_path:
-            mock_eg_path.exists.return_value = True
-            mock_eg_path.__str__.return_value = '/fake/.env.example'
             mock_env_path.exists.return_value = True
             mock_env_path.__str__.return_value = '/fake/.env'
             mock_seg_path.exists.return_value = True
@@ -120,9 +115,9 @@ class TestEnvironmentUtil:
             result = getEnvAll()
 
             assert result['KEY1'] == 'actual1'
-            assert result['KEY2'] == 'default2'
             assert result['KEY3'] == ''
             assert result['SECRET_KEY1'] == 'secret_actual1'
+            assert 'KEY2' not in result
 
     @patch('commonlib.environmentUtil.set_key')
     @patch('commonlib.environmentUtil.load_dotenv')

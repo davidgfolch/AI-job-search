@@ -45,7 +45,7 @@ Follow these steps to implement a new scrapper using Scrapling.
 4.  **Integration**:
     - Ensure the new scrapper follows the existing application architecture (e.g., using a repository pattern or service layer).
     - Map the extracted fields to the expected DTOs or models representing jobs or candidates.
-     - **Feature Flag**: A feature flag MUST be implemented and set up for each implemented scrapper to toggle its execution (e.g., ``). Add this flag to `.env` and `scripts\.env.example` (config), or to `.env.secrets` and `scripts\.env.secrets.example` if it's a secret.
+     - **Feature Flag**: A feature flag MUST be implemented and set up for each implemented scrapper to toggle its execution (e.g., ``). Add this flag to `.env` (config), or to `.env.secrets` and `scripts\.env.secrets.example` if it's a secret.
     - **Isolation**: Strictly decouple `scrapling` implementations from any existing `selenium` ones. They should not share execution paths or services that assume a specific browser driver. For example, `IndeedScraplingExecutor` vs `IndeedExecutor`.
 
 5.  **Testing**:
