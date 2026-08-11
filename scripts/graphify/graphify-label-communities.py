@@ -6,7 +6,7 @@ based on the dominant module + top node labels, and writes
 graphify-out/.graphify_labels.json for graphify to consume.
 
 Usage:
-    python scripts/graphify-label-communities.py [--graph PATH]
+    python scripts/graphify/graphify-label-communities.py [--graph PATH]
 """
 import json
 import sys

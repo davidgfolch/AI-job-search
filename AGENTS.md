@@ -207,6 +207,7 @@ Agent skills are located in `.opencode/skills/`:
 - `skill-builder`: Create new agent skills
 - `e2e-implementer`: Create Playwright E2E tests
 - `test-implementer`: Implement unit tests
+- `graphify-dev`: Change/improve graphify functionality (visualization, pipeline scripts). MANDATORY before editing anything graphify-related — never modify the uv-installed graphify package.
 
 ## graphify
 

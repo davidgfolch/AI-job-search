@@ -6,7 +6,7 @@ Removes nodes that represent third-party package references
 bare package-name nodes.
 
 Usage:
-    python scripts/graphify-filter-deps.py [--graph PATH]
+    python scripts/graphify/graphify-filter-deps.py [--graph PATH]
 """
 import json
 import sys

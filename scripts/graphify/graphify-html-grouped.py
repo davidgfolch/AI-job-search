@@ -6,7 +6,7 @@ and colors nodes by module (base hue per module, shade per community) so the
 graph is visually organized by app while keeping every edge intact.
 
 Usage:
-    python scripts/graphify-html-grouped.py [--graph PATH] [--out PATH]
+    python scripts/graphify/graphify-html-grouped.py [--graph PATH] [--out PATH]
 """
 import html as _html
 import json

@@ -2,13 +2,13 @@
 # Graphify: build per-module knowledge graphs, merge, inject cross-module edges
 #
 # Usage:
-#   ./scripts/graphify.sh              Full pipeline: clean, extract all, merge, inject, report
-#   ./scripts/graphify.sh --clean      Purge old graph data only
-#   ./scripts/graphify.sh --module X   Re-extract a single module, then merge + inject + report
+#   ./scripts/graphify/graphify.sh              Full pipeline: clean, extract all, merge, inject, report
+#   ./scripts/graphify/graphify.sh --clean      Purge old graph data only
+#   ./scripts/graphify/graphify.sh --module X   Re-extract a single module, then merge + inject + report
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # graphify honors a GRAPHIFY_OUT env var; drop any inherited value so
 # per-module extractions write to apps/<module>/graphify-out, not the root.
 unset GRAPHIFY_OUT

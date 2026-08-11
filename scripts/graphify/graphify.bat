@@ -3,12 +3,12 @@ setlocal EnableDelayedExpansion
 
 rem ──────────────────────  Graphify: per-module knowledge graph pipeline  ────
 rem Usage:
-rem   scripts\graphify.bat              Full pipeline
-rem   scripts\graphify.bat --clean      Purge old graph data only
-rem   scripts\graphify.bat --module X   Re-extract a single module
+rem   scripts\graphify\graphify.bat            Full pipeline
+rem   scripts\graphify\graphify.bat --clean    Purge old graph data only
+rem   scripts\graphify\graphify.bat --module X Re-extract a single module
 
 set "SCRIPT_DIR=%~dp0"
-set "ROOT_DIR=%SCRIPT_DIR%.."
+set "ROOT_DIR=%SCRIPT_DIR%..\.."
 rem graphify honors a GRAPHIFY_OUT env var; clear any inherited value so
 rem per-module extractions write to apps/<module>/graphify-out, not the root.
 set "GRAPHIFY_OUT="

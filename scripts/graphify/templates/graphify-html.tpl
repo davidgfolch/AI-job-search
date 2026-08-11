@@ -68,7 +68,7 @@
     <div id="legend-controls">
       <label><input type="checkbox" id="select-all-cb" checked onchange="toggleAllCommunities(!this.checked)">Select All</label>
       <label><input type="checkbox" id="external-cb" class="legend-cb" onchange="toggleExternal()">Show external/library nodes</label>
-      <label><input type="checkbox" id="file-cb" class="legend-cb" onchange="toggleFiles()">Show file nodes</label>
+      <label><input type="checkbox" id="file-cb" class="legend-cb" checked onchange="toggleFiles()">Show file nodes</label>
       <label><input type="checkbox" id="private-cb" class="legend-cb" onchange="togglePrivate()">Show private methods</label>
     </div>
     <div id="legend"></div>
@@ -270,7 +270,15 @@ const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
     navigationButtons: false,
     keyboard: false,
   },
-  nodes: { shape: 'dot', borderWidth: 1.5 },
+  nodes: {
+    shape: 'dot',
+    borderWidth: 1.5,
+    // vis.js scales node label text with the canvas, so zooming out shrinks it
+    // to illegibility. A huge drawThreshold suppresses vis.js's own labels
+    // entirely — they are redrawn by the afterDrawing overlay below at a
+    // zoom-relative (never-too-small) screen size.
+    scaling: { label: { enabled: true, drawThreshold: 1e9, maxVisible: 1e9 } },
+  },
   edges: { smooth: { type: 'continuous', roundness: 0.2 }, selectionWidth: 3 },
 });
 
@@ -280,6 +288,10 @@ network.once('init', () => {
 });
 
 network.on('beforeDrawing', ctx => {
+  // Structure labels (module bands + layers) are drawn in network coordinates,
+  // so they shrink with zoom-out. Size them relative to zoom and clamp to a
+  // minimum screen size so they stay readable and always visible at any zoom.
+  const zoom = network.getScale();
   moduleBands.forEach(mb => {
     ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.06);
     ctx.fillRect(-4000, mb.y0, 60000, mb.y1 - mb.y0);
@@ -291,20 +303,55 @@ network.on('beforeDrawing', ctx => {
     ctx.fillRect(-4000, b.y0, 60000, b.y1 - b.y0);
   });
   ctx.textAlign = 'left';
+  const modPx = Math.max(15, Math.min(40, 24 * zoom));
   moduleBands.forEach(mb => {
     ctx.save();
     ctx.translate(14, (mb.y0 + mb.y1) / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.font = 'bold 24px sans-serif';
+    ctx.font = 'bold ' + (modPx / zoom) + 'px sans-serif';
     ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.9);
     ctx.fillText(mb.module, 0, 0);
     ctx.restore();
   });
-  ctx.font = '16px sans-serif';
+  const layerPx = Math.max(12, Math.min(28, 16 * zoom));
+  ctx.font = (layerPx / zoom) + 'px sans-serif';
   layerBands.forEach(b => {
     ctx.fillStyle = hexToRgba(moduleColor(b.module), 0.5);
-    ctx.fillText(b.layer, 8, b.y0 + 22);
+    ctx.fillText(b.layer, 8, b.y0 + (layerPx / zoom) * 1.4);
   });
+});
+
+// Node labels redrawn at a zoom-relative screen size. `afterDrawing` hands us
+// a ctx already transformed to network coordinates, so a font of
+// `screenPx / zoom` renders at `screenPx` on screen regardless of zoom: labels
+// never shrink below the minimum and scale with zoom between bounds. Labels
+// appear once zoomed in past a threshold (avoids a wall of text on the full
+// view) and stay readable from the moment they appear. The same tier info the
+// generator set via `font.size` (0 = hidden) decides which nodes get a label.
+network.on('afterDrawing', ctx => {
+  const zoom = network.getScale();
+  const positions = network.getPositions();
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const items = nodesDS.get({ filter: n => !n.hidden && n.font && n.font.size > 0 });
+  for (let i = 0; i < items.length; i++) {
+    const n = items[i];
+    const p = positions[n.id];
+    if (!p) continue;
+    const isHover = n.id === hoveredNodeId;
+    const raw = 12 * zoom;
+    if (!isHover && raw < 8) continue;
+    const screenPx = Math.max(8, Math.min(24, raw));
+    ctx.font = (isHover ? 'bold ' : '') + (screenPx / zoom) + 'px sans-serif';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(8,8,18,0.9)';
+    ctx.lineWidth = Math.max(1.2, 3 / zoom);
+    ctx.strokeText(n.label, p.x, p.y - (n.size + 5) / zoom);
+    ctx.fillStyle = isHover ? '#ffd166' : '#ffffff';
+    ctx.fillText(n.label, p.x, p.y - (n.size + 5) / zoom);
+  }
+  ctx.restore();
 });
 
 function showInfo(nodeId) {

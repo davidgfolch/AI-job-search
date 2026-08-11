@@ -5,7 +5,7 @@ Reads graphify-out/graph.json (merged) and graphify-out/cross-module-edges.json,
 adds one edge between the highest-degree node of each module pair, and writes back.
 
 Usage:
-    python scripts/graphify-inject-edges.py [--graph PATH] [--edges PATH]
+    python scripts/graphify/graphify-inject-edges.py [--graph PATH] [--edges PATH]
 """
 import json
 import sys
