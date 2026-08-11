@@ -6,6 +6,7 @@ import {
     setupDefaultJobsRoute,
     setupStateChangeJobsRoute,
     setupJobUpdateRoute,
+    setupBulkJobsRoute,
     toggleFiltersIfNeeded,
     waitForFilterConfigurations,
     searchJobs
@@ -62,5 +63,31 @@ test.describe('Viewer E2E', () => {
         await page.waitForTimeout(1000);
         await expect(page.locator('#job-row-1')).not.toBeVisible();
         await expect(page.locator('#job-row-2')).toBeVisible();
+    });
+
+    test('should bulk ignore selected jobs', async ({ page }) => {
+        await setupBulkJobsRoute(page);
+        await page.goto(BASE_URL);
+        await page.locator('#job-table-select-1').check();
+        await page.locator('#job-table-select-2').check();
+        const bulkRequest = page.waitForRequest(req => req.method() === 'POST' && /\/api\/jobs\/bulk$/.test(req.url()));
+        await page.locator('.list-header-actions').getByTitle('Mark as ignored').click();
+        await page.getByRole('button', { name: 'Confirm' }).click();
+        const request = await bulkRequest;
+        expect(request.postDataJSON()).toEqual({ ids: [1, 2], update: { ignored: true } });
+        await expect(page.locator('#job-row-1')).not.toBeVisible();
+        await expect(page.locator('#job-row-2')).not.toBeVisible();
+    });
+
+    test('should bulk delete all selected jobs', async ({ page }) => {
+        await setupBulkJobsRoute(page);
+        await page.goto(BASE_URL);
+        await page.locator('#job-table-select-all').check();
+        const bulkRequest = page.waitForRequest(req => req.method() === 'POST' && /\/api\/jobs\/bulk\/delete/.test(req.url()));
+        await page.locator('.tab-button.delete-button').click();
+        await page.getByRole('button', { name: 'Confirm' }).click();
+        const request = await bulkRequest;
+        expect(request.postDataJSON().select_all).toBe(true);
+        await expect(page.locator('tr[id^="job-row-"]')).toHaveCount(0);
     });
 });

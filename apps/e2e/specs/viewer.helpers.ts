@@ -86,6 +86,16 @@ export async function setupStateChangeJobsRoute(page: Page) {
     });
 }
 
+export async function setupBulkJobsRoute(page: Page) {
+    await page.route(/.*\/api\/jobs\/bulk.*/, async (route) => {
+        if (route.request().url().includes('/bulk/delete')) {
+            await route.fulfill({ json: { deleted: 2 } });
+        } else {
+            await route.fulfill({ json: { updated: 2 } });
+        }
+    });
+}
+
 export async function setupJobUpdateRoute(page: Page) {
     await page.route(/.*\/api\/jobs\/1/, async (route) => {
         if (route.request().method() === 'PATCH') {

@@ -63,3 +63,36 @@ export const MOCK_SEARCH_BACKEND = {
     page: 1,
     size: 20,
 };
+
+export const SALARY_CALC_COMMENT = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":40,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
+
+export const MOCK_JOB_WITH_CALC_COMMENTS = {
+    ...MOCK_JOB_1,
+    comments: SALARY_CALC_COMMENT,
+};
+
+export const MOCK_JOB_NO_SALARY = {
+    ...MOCK_JOB_1,
+    salary: null,
+};
+
+export const SALARY_HISTORY_ENTRIES = [
+    {
+        job_id: 1,
+        company_raw: 'Tech Corp',
+        company_normalized: 'tech corp',
+        title: 'Frontend Engineer',
+        salary: '120k',
+        recorded_at: '2023-06-01T10:00:00',
+        source: 'LinkedIn',
+    },
+    {
+        job_id: 3,
+        company_raw: 'Tech Corp',
+        company_normalized: 'tech corp',
+        title: 'Senior Frontend Engineer',
+        salary: '140k',
+        recorded_at: '2023-07-01T10:00:00',
+        source: 'Indeed',
+    },
+];
