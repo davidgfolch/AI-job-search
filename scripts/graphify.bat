@@ -9,8 +9,11 @@ rem   scripts\graphify.bat --module X   Re-extract a single module
 
 set "SCRIPT_DIR=%~dp0"
 set "ROOT_DIR=%SCRIPT_DIR%.."
-set "GRAPHIFY_OUT=%ROOT_DIR%\graphify-out"
-set "EDGES_FILE=%GRAPHIFY_OUT%\cross-module-edges.json"
+rem graphify honors a GRAPHIFY_OUT env var; clear any inherited value so
+rem per-module extractions write to apps/<module>/graphify-out, not the root.
+set "GRAPHIFY_OUT="
+set "GRAPHIFY_OUT_DIR=%ROOT_DIR%\graphify-out"
+set "EDGES_FILE=%GRAPHIFY_OUT_DIR%\cross-module-edges.json"
 
 rem ──────────────────────  Parse arguments  ──────────────────────────────────
 set "clean=0"
@@ -83,7 +86,7 @@ if !graph_count! lss 2 (
 )
 
 echo Merging !graph_count! graphs...
-graphify merge-graphs !graph_files! --out "%GRAPHIFY_OUT%\graph.json"
+graphify merge-graphs !graph_files! --out "%GRAPHIFY_OUT_DIR%\graph.json"
 
 echo.
 echo Filtering external dependency nodes...
@@ -115,7 +118,7 @@ python "%SCRIPT_DIR%graphify-html-grouped.py"
 
 echo.
 echo --------------------------------------------------------
-echo Graph complete. Outputs in %GRAPHIFY_OUT%
+echo Graph complete. Outputs in %GRAPHIFY_OUT_DIR%
 echo.
 echo   graph.html          - interactive graph grouped by module, open in browser
 echo   GRAPH_REPORT.md     - architecture audit report
@@ -136,19 +139,19 @@ exit /b
 
 :do_clean_func
 echo Cleaning graphify-out/...
-if exist "%GRAPHIFY_OUT%" (
+if exist "%GRAPHIFY_OUT_DIR%" (
     rem Preserve cross-module-edges.json
     if exist "%EDGES_FILE%" (
         copy "%EDGES_FILE%" "%TEMP%\cross-module-edges-backup.json" >nul
     )
-    rmdir /s /q "%GRAPHIFY_OUT%"
-    mkdir "%GRAPHIFY_OUT%"
+    rmdir /s /q "%GRAPHIFY_OUT_DIR%"
+    mkdir "%GRAPHIFY_OUT_DIR%"
     if exist "%TEMP%\cross-module-edges-backup.json" (
         move "%TEMP%\cross-module-edges-backup.json" "%EDGES_FILE%" >nul
     )
     echo   Cleaned. ^(cross-module-edges.json preserved^)
 ) else (
-    mkdir "%GRAPHIFY_OUT%"
+    mkdir "%GRAPHIFY_OUT_DIR%"
     echo   Created graphify-out/
 )
 rem Clean per-module extraction outputs

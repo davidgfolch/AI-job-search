@@ -9,6 +9,9 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# graphify honors a GRAPHIFY_OUT env var; drop any inherited value so
+# per-module extractions write to apps/<module>/graphify-out, not the root.
+unset GRAPHIFY_OUT
 GRAPHIFY_OUT="$ROOT_DIR/graphify-out"
 EDGES_FILE="$GRAPHIFY_OUT/cross-module-edges.json"
 
