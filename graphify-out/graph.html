@@ -32,7 +32,10 @@
   .legend-module:first-child { border-top: none; }
   .legend-module:hover { background: #2a2a4e; padding-left: 4px; }
   .legend-module.dimmed { opacity: 0.35; }
-  .legend-module-communities { padding-left: 10px; }
+  .legend-module-communities { padding-left: 10px; display: none; }
+  .legend-module-communities.open { display: block; }
+  .legend-caret { width: 12px; display: inline-block; color: #888; font-size: 10px; transition: transform 0.15s; flex-shrink: 0; }
+  .legend-module.open .legend-caret { transform: rotate(90deg); }
   .legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 4px; font-size: 12px; }
   .legend-item:hover { background: #2a2a4e; padding-left: 4px; }
   .legend-item.dimmed { opacity: 0.35; }
@@ -91,7 +94,8 @@ const EXTERNAL_COLOR = '#77778a';
 function isExternal(n) { return !n.source_file; }
 
 // --- Matrix layout: classify nodes and assign fixed grid positions ---
-const LABEL_MARGIN = 240, COL_PITCH = 190, CELL_W = 4 * COL_PITCH;
+const LABEL_MARGIN = 150, COL_PITCH = 190, CELL_W = 4 * COL_PITCH;
+const hiddenModules = new Set();
 const ROW_PITCH = 28, ROW_PAD = 14, BAND_PAD = 30;
 let moduleBands = [], layerBands = [], totalHeight = 0, totalWidth = 0;
 
@@ -121,6 +125,16 @@ function layerOf(n) {
   return dirs.length ? dirs.slice(0, 2).join('/') : '(root)';
 }
 
+// Layer label for display: drop the module-name folder segment(s) so the module
+// band header and the layer row header don't repeat (e.g. `scrapper/services`
+// under module `scrapper` shows as `services`).
+function layerLabel(moduleName, layer) {
+  if (layer === '(root)') return layer;
+  const m = String(moduleName).toLowerCase();
+  const parts = layer.split('/').filter(seg => seg.toLowerCase() !== m);
+  return parts.length ? parts.join('/') : '(root)';
+}
+
 function isFile(n) { return nodeKind(n) === 'file'; }
 function isPrivate(n) {
   if (n.file_type !== 'code' || isFile(n)) return false;
@@ -143,6 +157,7 @@ function computeLayout() {
   const cells = new Map();
   const external = [];
   RAW_NODES.forEach(n => {
+    if (hiddenModules.has(n.module)) return;
     const kind = nodeKind(n);
     if (kind === 'external') { external.push(n); return; }
     const col = kind === 'method' ? 'meth' : kind === 'meta' ? 'meta' : kind === 'file' ? 'file' : 'comp';
@@ -253,13 +268,20 @@ const edgesDS = new vis.DataSet(RAW_EDGES.map((e, i) => ({
 })));
 
 const container = document.getElementById('graph');
-const layoutPos = computeLayout();
-const posUpdates = [];
-nodesDS.forEach(n => {
-  const p = layoutPos[n.id];
-  if (p) posUpdates.push({ id: n.id, x: p.x, y: p.y });
-});
-nodesDS.update(posUpdates);
+function applyLayout() {
+  const layoutPos = computeLayout();
+  const posUpdates = [];
+  nodesDS.forEach(n => {
+    const p = layoutPos[n.id];
+    posUpdates.push(p ? { id: n.id, x: p.x, y: p.y } : { id: n.id, x: -100000, y: -100000 });
+  });
+  nodesDS.update(posUpdates);
+}
+function fitView() {
+  const scale = Math.min(container.clientWidth / totalWidth, container.clientHeight / totalHeight) * 0.98;
+  network.moveTo({ position: { x: totalWidth / 2, y: totalHeight / 2 }, scale });
+}
+applyLayout();
 const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
   physics: { enabled: false },
   layout: { improvedLayout: false, randomSeed: 1 },
@@ -283,8 +305,7 @@ const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
 });
 
 network.once('init', () => {
-  const scale = Math.min(container.clientWidth / totalWidth, container.clientHeight / totalHeight) * 0.98;
-  network.moveTo({ position: { x: totalWidth / 2, y: totalHeight / 2 }, scale });
+  fitView();
 });
 
 network.on('beforeDrawing', ctx => {
@@ -303,21 +324,22 @@ network.on('beforeDrawing', ctx => {
     ctx.fillRect(-4000, b.y0, 60000, b.y1 - b.y0);
   });
   ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
   const modPx = Math.max(15, Math.min(40, 24 * zoom));
+  const modTop = {};
+  const modRight = {};
   moduleBands.forEach(mb => {
-    ctx.save();
-    ctx.translate(14, (mb.y0 + mb.y1) / 2);
-    ctx.rotate(-Math.PI / 2);
+    modTop[mb.module] = mb.y0;
     ctx.font = 'bold ' + (modPx / zoom) + 'px sans-serif';
-    ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.9);
-    ctx.fillText(mb.module, 0, 0);
-    ctx.restore();
+    modRight[mb.module] = 2 + ctx.measureText(mb.module).width + 10 / zoom;
   });
   const layerPx = Math.max(12, Math.min(28, 16 * zoom));
   ctx.font = (layerPx / zoom) + 'px sans-serif';
   layerBands.forEach(b => {
-    ctx.fillStyle = hexToRgba(moduleColor(b.module), 0.5);
-    ctx.fillText(b.layer, 8, b.y0 + (layerPx / zoom) * 1.4);
+    const label = layerLabel(b.module, b.layer);
+    const x = (b.y0 === modTop[b.module]) ? modRight[b.module] : 2;
+    ctx.fillStyle = hexToRgba(moduleColor(b.module), 0.55);
+    ctx.fillText(label, x, b.y0 + (layerPx / zoom) * 1.4);
   });
 });
 
@@ -351,6 +373,16 @@ network.on('afterDrawing', ctx => {
     ctx.fillStyle = isHover ? '#ffd166' : '#ffffff';
     ctx.fillText(n.label, p.x, p.y - (n.size + 5) / zoom);
   }
+  // Module names drawn last, at the top-left of each module band, so they stay
+  // readable even when node dots/labels sit underneath them.
+  const modPx = Math.max(15, Math.min(40, 24 * zoom));
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  moduleBands.forEach(mb => {
+    ctx.font = 'bold ' + (modPx / zoom) + 'px sans-serif';
+    ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.9);
+    ctx.fillText(mb.module, 2, mb.y0 + (modPx / zoom) * 1.2);
+  });
   ctx.restore();
 });
 
@@ -451,6 +483,7 @@ function cidsForModule(moduleName) {
 }
 
 function isNodeHidden(n) {
+  if (hiddenModules.has(n.module)) return true;
   if (hiddenCommunities.has(n.community)) return true;
   if (isExternal(n) && !externalCb.checked) return true;
   if (isFile(n) && !fileCb.checked) return true;
@@ -500,8 +533,14 @@ function toggleAllCommunities(hide) {
     cb.checked = !hide;
   });
   hiddenCommunities.clear();
-  if (hide) MODULES.forEach(m => m.communities.forEach(c => hiddenCommunities.add(c.cid)));
+  hiddenModules.clear();
+  if (hide) {
+    MODULES.forEach(m => m.communities.forEach(c => hiddenCommunities.add(c.cid)));
+    MODULES.forEach(m => hiddenModules.add(m.module));
+  }
   refreshNodes();
+  applyLayout();
+  fitView();
 }
 
 const legendEl = document.getElementById('legend');
@@ -516,29 +555,35 @@ MODULES.forEach(m => {
   mcb.addEventListener('change', (e) => {
     e.stopPropagation();
     const cids = cidsForModule(m.module);
-    cids.forEach(cid => {
-      if (mcb.checked) hiddenCommunities.delete(cid); else hiddenCommunities.add(cid);
-    });
+    if (mcb.checked) {
+      hiddenModules.delete(m.module);
+      cids.forEach(cid => hiddenCommunities.delete(cid));
+    } else {
+      hiddenModules.add(m.module);
+      cids.forEach(cid => hiddenCommunities.add(cid));
+    }
     document.querySelectorAll(`[data-module="${m.module}"] .legend-item`).forEach(item => {
       const icb = item.querySelector('.legend-cb-community');
       if (icb) { icb.checked = mcb.checked; item.classList.toggle('dimmed', !mcb.checked); }
     });
     refreshNodes();
+    applyLayout();
+    fitView();
   });
-  header.innerHTML = `<span class="legend-dot" style="background:${m.color}"></span>
+  header.innerHTML = `<span class="legend-caret">▶</span><span class="legend-dot" style="background:${m.color}"></span>
     <span class="legend-label">${esc(m.module)}</span>
     <span class="legend-count">${m.count}</span>`;
   header.prepend(mcb);
-  header.onclick = (e) => {
-    if (e.target === mcb) return;
-    mcb.checked = !mcb.checked;
-    mcb.dispatchEvent(new Event('change'));
-  };
-  legendEl.appendChild(header);
-
   const group = document.createElement('div');
   group.className = 'legend-module-communities';
   group.setAttribute('data-module', m.module);
+  header.onclick = (e) => {
+    if (e.target === mcb) return;
+    const open = group.classList.toggle('open');
+    header.classList.toggle('open', open);
+  };
+  legendEl.appendChild(header);
+
   m.communities.forEach(c => {
     const item = document.createElement('div');
     item.className = 'legend-item';
