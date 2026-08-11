@@ -18,8 +18,8 @@ export const useViewerShortcuts = (actions: ViewerShortcutActions, selectedJob: 
             case 'next': actions.nextJob(); break;
             case 'previous': actions.previousJob(); break;
             case 'openUrl': if (selectedJob?.url) window.open(selectedJob.url, '_blank'); break;
-            case 'listFocus': jobListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); break;
-            case 'detailFocus': detailScrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); break;
+            case 'listFocus': jobListRef.current?.focus({ preventScroll: true }); break;
+            case 'detailFocus': detailScrollRef.current?.focus({ preventScroll: true }); break;
         }
     }, [actions, selectedJob, jobListRef, detailScrollRef]);
 };

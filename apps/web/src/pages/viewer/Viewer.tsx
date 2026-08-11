@@ -151,7 +151,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                 </div>
                             </div>
                             <PanelDivider collapsedPanel={collapsedPanel} onCollapse={setCollapsedPanel} onReset={() => setCollapsedPanel('none')} />
-                                <div ref={detailScrollRef} tabIndex={-1} className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : collapsedPanel === 'right' ? { display: 'none' } : undefined}>
+                                <div className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : collapsedPanel === 'right' ? { display: 'none' } : undefined}>
                                 {state.selectedJob ? (
                                     <>
                                         <div style={state.duplicatedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -172,7 +172,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                                 onDiscarded={actions.discardedJob}
                                                 onClosed={actions.closedJob}
                                                 onIgnore={actions.ignoreJob}
-                                            />
+                                                detailScrollRef={detailScrollRef} />
                                         </div>
                                         {state.duplicatedJob && (
                                             <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>

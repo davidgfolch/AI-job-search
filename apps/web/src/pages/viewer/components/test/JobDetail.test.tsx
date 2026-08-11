@@ -1,5 +1,6 @@
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { RefObject } from 'react';
 import JobDetail from "../JobDetail";
 import type { Job } from '../../api/ViewerApi';
 import { jobsApi } from '../../api/ViewerApi';
@@ -74,6 +75,16 @@ describe('JobDetail', () => {
         expect(screen.queryByText('Company:')).not.toBeInTheDocument();
         expect(screen.queryByText('100k')).not.toBeInTheDocument();
         expect(screen.queryByText('Initial comment')).not.toBeInTheDocument();
+    });
+
+    it('forwards detailScrollRef to the scrollable content element', async () => {
+        const detailScrollRef = { current: null } as RefObject<HTMLDivElement | null>;
+        renderWithProviders(<JobDetail job={mockJob} detailScrollRef={detailScrollRef} />);
+        await waitFor(() => expect(screen.getByText('Software Engineer')).toBeInTheDocument());
+
+        expect(detailScrollRef.current).not.toBeNull();
+        expect(detailScrollRef.current).toHaveClass('job-detail-content');
+        expect(detailScrollRef.current).toHaveAttribute('tabindex', '-1');
     });
 
     describe('Interactions', () => {

@@ -52,15 +52,15 @@ describe('useViewerShortcuts', () => {
         }
     });
 
-    it('scrolls list and detail refs into view on focus actions', () => {
-        const listScrollIntoView = vi.fn();
-        const detailScrollIntoView = vi.fn();
-        const jobListRef = { current: { scrollIntoView: listScrollIntoView } as unknown as HTMLDivElement };
-        const detailScrollRef = { current: { scrollIntoView: detailScrollIntoView } as unknown as HTMLDivElement };
+    it('focuses list and detail scroll refs on focus actions', () => {
+        const listFocus = vi.fn();
+        const detailFocus = vi.fn();
+        const jobListRef = { current: { focus: listFocus } as unknown as HTMLDivElement };
+        const detailScrollRef = { current: { focus: detailFocus } as unknown as HTMLDivElement };
         const { result } = render(makeActions(), null, jobListRef, detailScrollRef);
         result.current('listFocus');
         result.current('detailFocus');
-        expect(listScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
-        expect(detailScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+        expect(listFocus).toHaveBeenCalledWith({ preventScroll: true });
+        expect(detailFocus).toHaveBeenCalledWith({ preventScroll: true });
     });
 });

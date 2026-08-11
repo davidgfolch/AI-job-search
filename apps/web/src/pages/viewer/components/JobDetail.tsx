@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, type RefObject } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ReactMarkdownCustom from '../../common/components/core/ReactMarkdownCustom';
 import { jobsApi, type Job } from "../api/ViewerApi";
@@ -31,9 +31,10 @@ interface JobDetailProps {
     onDiscarded?: () => void;
     onClosed?: () => void;
     onIgnore?: () => void;
+    detailScrollRef?: RefObject<HTMLDivElement | null>;
 }
 
-    export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hideDuplicatedButton, onCloseMobile, onNext, onPrevious, hasNext, hasPrevious, filters, onSeen, onApplied, onDiscarded, onClosed, onIgnore }: JobDetailProps) {
+    export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hideDuplicatedButton, onCloseMobile, onNext, onPrevious, hasNext, hasPrevious, filters, onSeen, onApplied, onDiscarded, onClosed, onIgnore, detailScrollRef }: JobDetailProps) {
     const { data: appliedCompanyJobs, isLoading: loadingApplied } = useQuery<AppliedCompanyJob[]>({
         queryKey: ['appliedCompanyJobs', job.company, job.client],
         queryFn: async () => {
@@ -47,6 +48,10 @@ interface JobDetailProps {
     });
 
     const contentRef = useRef<HTMLDivElement>(null);
+    const setContentRef = useCallback((node: HTMLDivElement | null) => {
+        contentRef.current = node;
+        if (detailScrollRef) detailScrollRef.current = node;
+    }, [detailScrollRef]);
     const savedCalcParams = useMemo(() => parseSalaryCalculationFromComments(job.comments), [job.comments]);
     const allSavedCalcParams = useMemo(() => parseAllSalaryCalculationsFromComments(job.comments), [job.comments]);
     const [showCalculator, setShowCalculator] = useState(false);
@@ -96,7 +101,7 @@ interface JobDetailProps {
                         <span key={status} className={`status-tag status-${status}`}>{status.replace(/_/g, ' ')}</span>
                     ))}
                 </div>
-                <div className="job-detail-content" ref={contentRef}>
+                <div className="job-detail-content" ref={setContentRef} tabIndex={-1}>
                     {isScrolled && <JobDetailCompactHeader job={job} />}
                     <JobDetailInfo job={job} appliedCompanyJobs={appliedCompanyJobs || []} loadingApplied={loadingApplied} onUpdate={onUpdate} showCalculator={showCalculator} onToggleCalculator={() => setShowCalculator(!showCalculator)} />
                     {showCalculator && <SalaryCalculator key={job.id} onClose={() => setShowCalculator(false)} job={job} onUpdate={onUpdate} initialParams={savedCalcParams} allSavedParams={allSavedCalcParams} />}

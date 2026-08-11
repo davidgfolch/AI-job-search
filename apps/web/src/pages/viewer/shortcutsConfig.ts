@@ -19,8 +19,8 @@ export const SHORTCUT_ACTIONS: ShortcutActionInfo[] = [
     { action: 'next', label: 'Next job', description: 'Select the next job in the list' },
     { action: 'previous', label: 'Previous job', description: 'Select the previous job in the list' },
     { action: 'openUrl', label: 'Open job URL', description: 'Open the selected job link in a new tab' },
-    { action: 'listFocus', label: 'List scroll focus', description: 'Scroll the jobs list into focus' },
-    { action: 'detailFocus', label: 'Job detail scroll focus', description: 'Scroll the job detail into focus' },
+    { action: 'listFocus', label: 'List scroll focus', description: 'Focus the jobs list to scroll with arrow keys' },
+    { action: 'detailFocus', label: 'Job detail scroll focus', description: 'Focus the job detail to scroll with arrow keys' },
 ];
 
 export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
