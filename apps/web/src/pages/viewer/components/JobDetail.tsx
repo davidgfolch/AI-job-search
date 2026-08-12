@@ -65,6 +65,8 @@ interface JobDetailProps {
 
     useEffect(() => { if (contentRef.current) contentRef.current.scrollTop = 0; }, [job]);
 
+    useEffect(() => { contentRef.current?.focus({ preventScroll: true }); }, [job.id]);
+
     useEffect(() => {
         const content = contentRef.current;
         if (content) { content.addEventListener('scroll', handleScroll); return () => content.removeEventListener('scroll', handleScroll); }

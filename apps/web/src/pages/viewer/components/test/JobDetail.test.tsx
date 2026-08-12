@@ -87,6 +87,13 @@ describe('JobDetail', () => {
         expect(detailScrollRef.current).toHaveAttribute('tabindex', '-1');
     });
 
+    it.each([1, 2])('auto-focuses the scrollable content when job %s is selected', async (id) => {
+        renderWithProviders(<JobDetail job={createMockJob({ id })} />);
+        await waitFor(() => expect(screen.getByText('Software Engineer')).toBeInTheDocument());
+
+        expect(document.activeElement).toHaveClass('job-detail-content');
+    });
+
     describe('Interactions', () => {
         it('toggles salary calculator and handles external link', async () => {
             const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
