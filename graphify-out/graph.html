@@ -154,6 +154,10 @@ function hexToRgba(hex, a) {
 }
 
 function computeLayout() {
+  moduleBands = [];
+  layerBands = [];
+  totalHeight = 0;
+  totalWidth = 0;
   const cells = new Map();
   const external = [];
   RAW_NODES.forEach(n => {
