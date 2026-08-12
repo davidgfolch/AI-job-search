@@ -89,6 +89,10 @@ echo Merging !graph_count! graphs...
 graphify merge-graphs !graph_files! --out "%GRAPHIFY_OUT_DIR%\graph.json"
 
 echo.
+echo Preserving raw merged graph...
+copy "%GRAPHIFY_OUT_DIR%\graph.json" "%GRAPHIFY_OUT_DIR%\graph.raw.json" >nul
+
+echo.
 echo Filtering external dependency nodes...
 python "%SCRIPT_DIR%graphify-filter-deps.py"
 
@@ -122,7 +126,8 @@ echo Graph complete. Outputs in %GRAPHIFY_OUT_DIR%
 echo.
 echo   graph.html          - interactive graph grouped by module, open in browser
 echo   GRAPH_REPORT.md     - architecture audit report
-echo   graph.json          - raw graph data
+echo   graph.json          - post-processed graph data
+echo   graph.raw.json      - raw merged graph ^(before filtering/injection/clustering^)
 echo   cross-module-edges.json - edge definitions ^(editable^)
 echo --------------------------------------------------------
 exit /b

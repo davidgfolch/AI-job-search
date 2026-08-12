@@ -67,8 +67,9 @@
     <div id="info-content"><span class="empty">Click a node to inspect it</span></div>
   </div>
   <div id="legend-wrap">
-    <h3>Communities by module</h3>
+    <h3 id="legend-title">Communities by module</h3>
     <div id="legend-controls">
+      <label><input type="checkbox" id="raw-cb" class="legend-cb" onchange="toggleRawView()">Original graph (no postprocessing)</label>
       <label><input type="checkbox" id="select-all-cb" checked onchange="toggleAllCommunities(!this.checked)">Select All</label>
       <label><input type="checkbox" id="external-cb" class="legend-cb" onchange="toggleExternal()">Show external/library nodes</label>
       <label><input type="checkbox" id="file-cb" class="legend-cb" checked onchange="toggleFiles()">Show file nodes</label>
@@ -83,6 +84,10 @@ const RAW_NODES = __NODES_JSON__;
 const RAW_EDGES = __EDGES_JSON__;
 const MODULES = __MODULES_JSON__;
 const TOTAL_COMMUNITIES = __TOTAL_COMMUNITIES__;
+const RAW_NODES_ORIG = __RAW_NODES_JSON__;
+const RAW_EDGES_ORIG = __RAW_EDGES_JSON__;
+const HAS_RAW = __HAS_RAW__;
+let rawView = false;
 
 // HTML-escape helper — prevents XSS when injecting graph data into innerHTML
 function esc(s) {
@@ -248,7 +253,7 @@ function computeLayout() {
 }
 
 // Build vis datasets
-const nodesDS = new vis.DataSet(RAW_NODES.map(n => {
+function mapCustomNode(n) {
   const ext = isExternal(n);
   return {
     id: n.id, label: n.label,
@@ -259,17 +264,43 @@ const nodesDS = new vis.DataSet(RAW_NODES.map(n => {
     _module: n.module, _source_file: n.source_file, _file_type: n.file_type, _degree: n.degree,
     _external: ext, _kind: nodeKind(n),
   };
-}));
-
-const edgesDS = new vis.DataSet(RAW_EDGES.map((e, i) => ({
-  id: i, from: e.from, to: e.to,
-  label: '',
-  title: e.title,
-  dashes: e.dashes,
-  width: e.width,
-  color: e.color,
-  arrows: { to: { enabled: true, scaleFactor: 0.5 } },
-})));
+}
+function mapRawNode(n) {
+  const ext = isExternal(n);
+  return {
+    id: n.id, label: n.label,
+    color: n.color,
+    size: n.size,
+    font: n.font, title: n.title,
+    _module: n.module, _source_file: n.source_file, _file_type: n.file_type, _degree: n.degree,
+    _external: ext, _kind: nodeKind(n),
+  };
+}
+function mapEdge(e, i) {
+  return {
+    id: i, from: e.from, to: e.to,
+    label: '',
+    title: e.title,
+    dashes: e.dashes,
+    width: e.width,
+    color: e.color,
+    arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+  };
+}
+function setCustomData() {
+  nodesDS.clear();
+  nodesDS.add(RAW_NODES.map(mapCustomNode));
+  edgesDS.clear();
+  edgesDS.add(RAW_EDGES.map(mapEdge));
+}
+function setRawData() {
+  nodesDS.clear();
+  nodesDS.add(RAW_NODES_ORIG.map(mapRawNode));
+  edgesDS.clear();
+  edgesDS.add(RAW_EDGES_ORIG.map(mapEdge));
+}
+const nodesDS = new vis.DataSet(RAW_NODES.map(mapCustomNode));
+const edgesDS = new vis.DataSet(RAW_EDGES.map(mapEdge));
 
 const container = document.getElementById('graph');
 function applyLayout() {
@@ -313,6 +344,7 @@ network.once('init', () => {
 });
 
 network.on('beforeDrawing', ctx => {
+  if (rawView) return;
   // Structure labels (module bands + layers) are drawn in network coordinates,
   // so they shrink with zoom-out. Size them relative to zoom and clamp to a
   // minimum screen size so they stay readable and always visible at any zoom.
@@ -379,16 +411,51 @@ network.on('afterDrawing', ctx => {
   }
   // Module names drawn last, at the top-left of each module band, so they stay
   // readable even when node dots/labels sit underneath them.
-  const modPx = Math.max(15, Math.min(40, 24 * zoom));
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  moduleBands.forEach(mb => {
-    ctx.font = 'bold ' + (modPx / zoom) + 'px sans-serif';
-    ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.9);
-    ctx.fillText(mb.module, 2, mb.y0 + (modPx / zoom) * 1.2);
-  });
+  if (!rawView) {
+    const modPx = Math.max(15, Math.min(40, 24 * zoom));
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    moduleBands.forEach(mb => {
+      ctx.font = 'bold ' + (modPx / zoom) + 'px sans-serif';
+      ctx.fillStyle = hexToRgba(moduleColor(mb.module), 0.9);
+      ctx.fillText(mb.module, 2, mb.y0 + (modPx / zoom) * 1.2);
+    });
+  }
   ctx.restore();
 });
+
+function toggleRawView() {
+  if (!HAS_RAW) { rawView = false; return; }
+  rawView = !rawView;
+  if (rawView) {
+    setRawData();
+    network.setOptions({
+      physics: {
+        enabled: true, solver: 'forceAtlas2Based',
+        forceAtlas2Based: { gravitationalConstant: -60, centralGravity: 0.005, springLength: 120, springConstant: 0.08, damping: 0.4, avoidOverlap: 0.8 },
+        stabilization: { iterations: 150, fit: true },
+      },
+    });
+    network.once('stabilizationIterationsDone', () => {
+      network.setOptions({ physics: { enabled: false } });
+      network.fit();
+    });
+    network.stabilize();
+  } else {
+    network.setOptions({ physics: { enabled: false } });
+    setCustomData();
+    applyLayout();
+    fitView();
+  }
+  refreshNodes();
+  document.getElementById('legend-title').style.display = rawView ? 'none' : '';
+  document.getElementById('legend').style.display = rawView ? 'none' : '';
+  document.querySelectorAll('#legend-controls label').forEach(l => {
+    if (l.querySelector('#raw-cb')) return;
+    l.style.display = rawView ? 'none' : '';
+  });
+  updateStatsView();
+}
 
 function showInfo(nodeId) {
   const n = nodesDS.get(nodeId);
@@ -404,7 +471,7 @@ function showInfo(nodeId) {
     <div class="field">Module: ${esc(n._module || '-')}</div>
     <div class="field">Type: ${esc(n._file_type || 'unknown')}</div>
     <div class="field">Kind: ${esc(n._kind || 'unknown')}</div>
-    <div class="field">Community: ${esc(n._community_name)}</div>
+    <div class="field">Community: ${esc(n._community_name || '-')}</div>
     <div class="field">Source: ${esc(n._source_file || '-')}</div>
     <div class="field">Degree: ${n._degree}</div>
     ${neighborIds.length ? `<div class="field" style="margin-top:8px;color:#aaa;font-size:11px">Neighbors (${neighborIds.length})</div><div id="neighbors-list">${neighborItems}</div>` : ''}
@@ -451,7 +518,7 @@ searchInput.addEventListener('input', () => {
   const q = searchInput.value.toLowerCase().trim();
   searchResults.innerHTML = '';
   if (!q) { searchResults.style.display = 'none'; return; }
-  const matches = RAW_NODES.filter(n => n.label.toLowerCase().includes(q) && !isNodeHidden(n)).slice(0, 20);
+  const matches = (rawView ? RAW_NODES_ORIG : RAW_NODES).filter(n => n.label.toLowerCase().includes(q) && !isNodeHidden(n)).slice(0, 20);
   if (!matches.length) { searchResults.style.display = 'none'; return; }
   searchResults.style.display = 'block';
   matches.forEach(n => {
@@ -487,6 +554,7 @@ function cidsForModule(moduleName) {
 }
 
 function isNodeHidden(n) {
+  if (rawView) return false;
   if (hiddenModules.has(n.module)) return true;
   if (hiddenCommunities.has(n.community)) return true;
   if (isExternal(n) && !externalCb.checked) return true;
@@ -616,10 +684,17 @@ MODULES.forEach(m => {
   legendEl.appendChild(group);
 });
 
+const statsEl = document.getElementById('stats');
+const BASE_STATS = statsEl.textContent;
 const extCount = RAW_NODES.filter(isExternal).length;
-const extStats = document.createElement('span');
-extStats.textContent = ` · ${extCount} external`;
-document.getElementById('stats').appendChild(extStats);
+function updateStatsView() {
+  statsEl.textContent = rawView ? `${RAW_NODES_ORIG.length} raw nodes · ${RAW_EDGES_ORIG.length} edges (no postprocessing)` : `${BASE_STATS} · ${extCount} external`;
+}
+updateStatsView();
+if (!HAS_RAW) {
+  const rl = document.getElementById('raw-cb').closest('label');
+  if (rl) rl.style.display = 'none';
+}
 refreshNodes();
 </script>
 </body>

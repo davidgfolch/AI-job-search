@@ -8,28 +8,19 @@ graph is visually organized by app while keeping every edge intact.
 Usage:
     python scripts/graphify/graphify-html-grouped.py [--graph PATH] [--out PATH]
 """
-import html as _html
-import json
 import sys
 from collections import Counter
 from pathlib import Path
 
+from graphify_raw_viz import build_raw_vis, js_safe, load_graph, sanitize
+
 DEFAULT_GRAPH = Path("graphify-out/graph.json")
 DEFAULT_OUT = Path("graphify-out/graph.html")
-
 MODULE_ORDER = [
     "commonlib", "backend", "web", "scrapper", "aiEnrich", "aiEnrichNew",
     "aiEnrich3", "aiEnrichSkill", "aiCvMatcher", "aiFormFiller", "cron",
 ]
-
 TPL_PATH = Path(__file__).parent / "templates" / "graphify-html.tpl"
-
-def _js_safe(obj) -> str:
-    """Escape </script> sequences so embedded JSON cannot break out of the script tag."""
-    return json.dumps(obj).replace("</", "<\\/")
-
-def _sanitize(value) -> str:
-    return _html.escape(str(value or ""))
 
 def hsl_to_hex(h: float, s: float, l: float) -> str:
     """Convert HSL (0-360 / 0-1 / 0-1) to a #rrggbb hex string."""
@@ -66,9 +57,7 @@ def community_colors(communities: list[int], base_hue: float) -> dict[int, str]:
     return colors
 
 def generate_html(graph_path: Path, out_path: Path) -> None:
-    data = json.loads(graph_path.read_text(encoding="utf-8"))
-    if "links" not in data and "edges" in data:
-        data = dict(data, links=data["edges"])
+    data = load_graph(graph_path)
     nodes = data.get("nodes", [])
     links = data.get("links", [])
 
@@ -76,7 +65,6 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
     for e in links:
         degree[e.get("source", "")] += 1
         degree[e.get("target", "")] += 1
-
     communities: dict[int, list[dict]] = {}
     for n in nodes:
         cid = n.get("community")
@@ -110,7 +98,7 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
     for n in nodes:
         nid = n["id"]
         color = community_color.get(n.get("community"), module_hex.get(node_module.get(nid, ""), "#4E79A7"))
-        label = _sanitize(n.get("label", nid))
+        label = sanitize(n.get("label", nid))
         deg = degree.get(nid, 1)
         size = 8 + 16 * (deg / max_deg)
         font_size = 12 if deg >= max_deg * 0.15 else 0
@@ -120,13 +108,13 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
             "color": {"background": color, "border": color, "highlight": {"background": "#ffffff", "border": color}},
             "size": round(size, 1),
             "font": {"size": font_size, "color": "#ffffff"},
-            "title": _sanitize(label),
+            "title": sanitize(label),
             "community": n.get("community"),
-            "community_name": _sanitize(n.get("community_name", f"Community {n.get('community')}")),
+            "community_name": sanitize(n.get("community_name", f"Community {n.get('community')}")),
             "module": node_module.get(nid, ""),
-            "source_file": _sanitize(n.get("source_file", "")),
+            "source_file": sanitize(n.get("source_file", "")),
             "file_type": n.get("file_type", ""),
-            "local_id": _sanitize(n.get("local_id", "")),
+            "local_id": sanitize(n.get("local_id", "")),
             "degree": deg,
         })
 
@@ -138,7 +126,7 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
             "from": e.get("source", ""),
             "to": e.get("target", ""),
             "label": relation,
-            "title": _sanitize(f"{relation} [{confidence}]"),
+            "title": sanitize(f"{relation} [{confidence}]"),
             "dashes": confidence != "EXTRACTED",
             "width": 2 if confidence == "EXTRACTED" else 1,
             "color": {"opacity": 0.7 if confidence == "EXTRACTED" else 0.35},
@@ -155,7 +143,7 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
             "communities": [
                 {
                     "cid": cid,
-                    "label": _sanitize(community_name[cid]),
+                    "label": sanitize(community_name[cid]),
                     "count": len(communities[cid]),
                     "color": community_color[cid],
                 }
@@ -164,14 +152,24 @@ def generate_html(graph_path: Path, out_path: Path) -> None:
         })
 
     total_communities = len(communities)
-    title = _sanitize(str(out_path))
+    title = sanitize(str(out_path))
     stats = f"{len(nodes)} nodes &middot; {len(links)} edges &middot; {total_communities} communities &middot; {len(modules)} modules"
+    raw_nodes_json, raw_edges_json, has_raw = "[]", "[]", "false"
+    raw_path = graph_path.parent / "graph.raw.json"
+    if raw_path.exists():
+        raw_nodes, raw_edges = build_raw_vis(load_graph(raw_path), module_hex)
+        raw_nodes_json, raw_edges_json = js_safe(raw_nodes), js_safe(raw_edges)
+        has_raw = "true"
+        stats += f" &middot; raw {len(raw_nodes)} nodes"
     html = (TPL_PATH.read_text(encoding="utf-8")
         .replace("__TITLE__", title)
         .replace("__STATS__", stats)
-        .replace("__NODES_JSON__", _js_safe(vis_nodes))
-        .replace("__EDGES_JSON__", _js_safe(vis_edges))
-        .replace("__MODULES_JSON__", _js_safe(module_data))
+        .replace("__NODES_JSON__", js_safe(vis_nodes))
+        .replace("__EDGES_JSON__", js_safe(vis_edges))
+        .replace("__MODULES_JSON__", js_safe(module_data))
+        .replace("__RAW_NODES_JSON__", raw_nodes_json)
+        .replace("__RAW_EDGES_JSON__", raw_edges_json)
+        .replace("__HAS_RAW__", has_raw)
         .replace("__TOTAL_COMMUNITIES__", str(total_communities)))
     out_path.write_text(html, encoding="utf-8")
     print(f"Wrote {out_path} ({len(nodes)} nodes, {len(links)} edges, {total_communities} communities, {len(modules)} modules)")

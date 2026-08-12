@@ -46,7 +46,8 @@ All graphify implementation lives in this repo under `scripts/graphify/`:
 | `graphify-inject-edges.py` | Reads `graphify-out/cross-module-edges.json`, adds an INFERRED edge between the highest-degree node of each module pair. |
 | `graphify-label-communities.py` | Deterministic (no-LLM) community labeling; writes `graphify-out/.graphify_labels.json`. |
 | `graphify-html-grouped.py` | Step 5: generates `graphify-out/graph.html` by filling the template with nodes/edges/modules JSON. |
-| `templates/graphify-html.tpl` | The HTML/CSS/JS template for the module-grouped matrix visualization. |
+| `graphify_raw_viz.py` | Builds vis-network datasets from the raw merged graph (`graph.raw.json`, preserved right after `merge-graphs`): nodes colored by module, edges from raw links. Shared `sanitize`/`js_safe` helpers. |
+| `templates/graphify-html.tpl` | The HTML/CSS/JS template for the module-grouped matrix visualization. Includes an "Original graph (no postprocessing)" toggle that swaps in the raw datasets and force-directed physics view. |
 
 This repo only uses the graphify CLI (extract/merge/cluster) and Python APIs as-is. Everything custom — module grouping, layering, labels, toggles, zoom behavior — is implemented as post-processing scripts + template, never inside uv.
 

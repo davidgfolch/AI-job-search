@@ -149,6 +149,10 @@ fi
 graphify merge-graphs "${GRAPH_FILES[@]}" --out "$GRAPHIFY_OUT/graph.json"
 
 echo ""
+echo "Preserving raw merged graph..."
+cp "$GRAPHIFY_OUT/graph.json" "$GRAPHIFY_OUT/graph.raw.json"
+
+echo ""
 echo "Filtering external dependency nodes..."
 python "$SCRIPT_DIR/graphify-filter-deps.py"
 
@@ -182,6 +186,7 @@ echo "Graph complete. Outputs in $GRAPHIFY_OUT/"
 echo ""
 echo "  graph.html          - interactive graph grouped by module, open in browser"
 echo "  GRAPH_REPORT.md     - architecture audit report"
-echo "  graph.json          - raw graph data"
+echo "  graph.json          - post-processed graph data"
+echo "  graph.raw.json      - raw merged graph (before filtering/injection/clustering)"
 echo "  cross-module-edges.json - edge definitions (editable)"
 echo "────────────────────────────────────────────────────────"
