@@ -20,7 +20,7 @@ commonlib = { path = "../../apps/commonlib/", develop = true }
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0.0",
+    "pytest>=9.1.1",
     "httpx>=0.26.0",
     "pytest-cov>=7.0.0",
     "genbadge[coverage]>=1.1.0",
