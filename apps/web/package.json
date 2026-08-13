@@ -30,7 +30,7 @@
     "@types/prismjs": "^1.26.6",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
+    "@vitejs/plugin-react": "^6.0.5",
     "@vitest/coverage-v8": "^4.0.14",
     "baseline-browser-mapping": "^2.11.12",
     "coverage-badges-cli": "^2.2.0",
