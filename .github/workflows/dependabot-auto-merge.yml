@@ -15,7 +15,11 @@ concurrency:
 
 jobs:
   auto-merge:
-    if: contains(github.event.pull_request.labels.*.name, 'dependencies')
+    if: |
+      github.actor == 'dependabot[bot]' &&
+      contains(github.event.pull_request.labels.*.name, 'dependencies') &&
+      (contains(github.event.pull_request.head.ref, 'minor-patch') ||
+       contains(github.event.pull_request.head.ref, 'github-actions'))
     runs-on: ubuntu-latest
     steps:
       - uses: peter-evans/enable-pull-request-automerge@v3

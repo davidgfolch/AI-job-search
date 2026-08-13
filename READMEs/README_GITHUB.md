@@ -49,9 +49,11 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 ### Behavior
 
 - It runs when a Dependabot PR is opened, labeled, updated, or reopened against `master`.
+- It only acts on **grouped** minor/patch PRs (branch names contain the group identifiers `minor-patch` or `github-actions`).
 - It enables auto-merge with **squash** merging.
 - GitHub only performs the merge once **all required checks pass** (green CI).
 - **A PR that fails CI simply never merges** — it stays open for a human to handle. There is no agent and no automatic fix attempt.
+- **Major version bumps never auto-merge.** They are raised as separate, ungrouped PRs (branch contains the dependency name) and stay open for manual review and merge.
 
 ### Prerequisites (one-time, repo admin)
 
@@ -60,6 +62,7 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 
 ### Notes & caveats
 
+- If Dependabot fails to group an update (rare grouping edge cases), it falls back to an ungrouped PR, which will **not** auto-merge — conservative by design.
 - The workflow uses the default `GITHUB_TOKEN`, so the resulting merge does **not** trigger further workflow runs (e.g. the `update-badges` job on `master` won't run after a Dependabot merge). To trigger them, replace `secrets.GITHUB_TOKEN` with a `repo`-scoped PAT secret.
 - A `commonlib` bump runs the full Python test matrix (all dependents), so those PRs take longer to reach green but still auto-merge when they pass.
 - The CI `test` job runs `poetry lock` for `commonlib`/`scrapper`; if you see lockfile churn on Dependabot branches, that regeneration is the cause.
