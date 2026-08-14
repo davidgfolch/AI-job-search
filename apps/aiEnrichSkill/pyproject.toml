@@ -5,7 +5,7 @@ description = "AI Skill Enrichment module supporting Ollama and HuggingFace back
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "commonlib==0.1.0",
-    "requests>=2.31.0",
+    "requests>=2.34.2",
     "pandas==2.3.3",
     "transformers>=4.40.0",
     "torch>=2.2.0",
