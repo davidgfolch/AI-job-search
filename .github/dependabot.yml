@@ -41,7 +41,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/commonlib"
     schedule:
       interval: "daily"
@@ -69,7 +69,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/backend"
     schedule:
       interval: "daily"
@@ -84,7 +84,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/aiEnrich"
     schedule:
       interval: "daily"
@@ -99,7 +99,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/aiEnrichNew"
     schedule:
       interval: "daily"
@@ -114,7 +114,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/aiEnrichSkill"
     schedule:
       interval: "daily"
@@ -129,7 +129,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/aiEnrich3"
     schedule:
       interval: "daily"
@@ -144,7 +144,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/aiCvMatcher"
     schedule:
       interval: "daily"
@@ -159,7 +159,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/aiFormFiller"
     schedule:
       interval: "daily"
@@ -174,7 +174,7 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/cron"
     schedule:
       interval: "daily"
