@@ -8,7 +8,7 @@ dependencies = [
     "pandas==2.3.3",
     "transformers>=4.40.0",
     "torch>=2.2.0",
-    "accelerate>=0.29.0",
+    "accelerate>=1.14.0",
     "langchain-huggingface>=0.0.1",
 ]
 
