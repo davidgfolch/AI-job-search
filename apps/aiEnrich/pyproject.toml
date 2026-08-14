@@ -22,7 +22,7 @@ commonlib = { path = "../commonlib", editable = true }
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.2",
+    "pytest>=9.1.1",
     "pytest-cov>=7.0.0",
     "genbadge[coverage]>=1.1.0"
 ]
