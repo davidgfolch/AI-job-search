@@ -37,6 +37,14 @@ Ask the agent to "create a new skill named [skill-name]" or "use the skill build
 
 **Location:** `.agent/skills/skill-builder/SKILL.md`
 
+### Dependabot Agent
+Processes open Dependabot PRs locally: runs the TDD pipeline for the affected module, fixes failures, and gets green PRs merged into `staging`. Requires the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
+
+**Usage:**
+Ask the agent to "process the open dependabot PRs" (optionally scoped to a module).
+
+**Location:** `.opencode/skills/dependabot-agent/SKILL.md`
+
 ## Related Documentation
 
 - **Installation Guide**: [README_INSTALL.md](README_INSTALL.md)

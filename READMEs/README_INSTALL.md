@@ -41,7 +41,27 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 Download and install from [nodejs.org](https://nodejs.org/).
 
-### 4. Install Ollama & llama3.2 model
+### 4. Install GitHub CLI (recommended)
+
+Required by the agent tooling to process Dependabot PRs (see the `dependabot-agent` skill in `.opencode/skills/` and [README_GITHUB.md](README_GITHUB.md)).
+
+```bash
+# Windows
+winget install GitHub.cli
+
+# Linux/Mac
+curl -fsSL https://cli.github.com/packages/install.sh | sh  # or use your distro's package manager
+```
+
+Then authenticate:
+
+```bash
+gh auth login
+```
+
+Verify with `gh auth status`.
+
+### 5. Install Ollama & llama3.2 model
 
 > **Note**: If you are using Docker, you do not need to install Ollama manually. You can run `aiEnrich` and Ollama via `docker-compose up -d`.
 
@@ -53,7 +73,7 @@ Run the following command to install the llama3.2 model:
 ollama pull llama3.2
 ```
 
-### 5. Install Project Dependencies
+### 6. Install Project Dependencies
 
 You can use the helper script in the project root:
 

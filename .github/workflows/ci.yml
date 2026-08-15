@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "staging"]
   pull_request:
-    branches: ["master"]
+    branches: ["master", "staging"]
 
 permissions:
   contents: write
@@ -195,7 +195,7 @@ jobs:
   update-badges:
     needs: [test, e2e]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && needs.test.result != 'failure' && needs.e2e.result != 'failure'
+    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging') && needs.test.result != 'failure' && needs.e2e.result != 'failure'
     steps:
       - uses: actions/checkout@v4
       

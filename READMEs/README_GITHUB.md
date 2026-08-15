@@ -31,6 +31,7 @@ The configuration lives in `.github/dependabot.yml`.
 - **`pip`** — all Python apps (daily): `commonlib`, `scrapper`, `backend`, `aiEnrich`, `aiEnrichNew`, `aiEnrichSkill`, `aiEnrich3`, `aiCvMatcher`, `aiFormFiller`, `cron`.
 - **`github-actions`** — the repository root (weekly), so the CI workflows themselves stay up to date.
 - Every Dependabot PR is labeled `dependencies` and each update is capped at 5 open PRs.
+- **All PRs target the `staging` branch** via `target-branch: "staging"` on every update entry. Nothing from Dependabot is ever merged straight into `master`.
 
 ### Grouping strategy
 
@@ -42,27 +43,47 @@ Non-breaking updates are grouped per app into a single PR via a `minor-patch` gr
 
 Add an `updates` entry for the app's package manager (`npm` or `pip`). For `pip` apps, keep the `ignore` rule for the local `commonlib` dependency so Dependabot never tries to bump it to a registry version. Include the same `groups.minor-patch` block as the other entries.
 
-## Auto-merge
+## Auto-merge (staging gate)
 
-The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's native auto-merge for every PR labeled `dependencies`.
+Merging into `master` is protected by a **staging gate**. Dependency updates flow:
+
+```
+dependabot PR ──auto-merge──▶ staging ──persistent PR + auto-merge──▶ master
+```
+
+The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's native auto-merge for every PR labeled `dependencies` **against `staging`**.
 
 ### Behavior
 
-- It runs when a Dependabot PR is opened, labeled, updated, or reopened against `master`.
+- It runs when a Dependabot PR is opened, labeled, updated, or reopened against `staging`.
 - It only acts on **grouped** minor/patch PRs (branch names contain the group identifiers `minor-patch` or `github-actions`).
 - It enables auto-merge with **squash** merging.
 - GitHub only performs the merge once **all required checks pass** (green CI).
-- **A PR that fails CI simply never merges** — it stays open for a human to handle. There is no agent and no automatic fix attempt.
+- A semver-major guard scans the PR body for `version-update:semver-major` and **skips** auto-merge for those PRs, so a major that slips into a grouped PR still needs a human/agent.
+- **A PR that fails CI simply never merges** — it stays open for the agent (`.opencode/skills/dependabot-agent`) to fix locally and push, or for a human to handle.
 - **Major version bumps never auto-merge.** They are raised as separate, ungrouped PRs (branch contains the dependency name) and stay open for manual review and merge.
+
+### Promotion to master
+
+- A **persistent `staging → master` PR** is kept open with native auto-merge (squash) enabled. GitHub re-evaluates it on every push to `staging`, so each validated batch is promoted automatically once the **full** CI matrix + e2e is green.
+- A regression on `staging` simply keeps that PR open — `master` stays clean and deployable.
+- Nothing writes to `master` except this PR's merge and the `update-badges` direct push.
 
 ### Prerequisites (one-time, repo admin)
 
 1. **Repo Settings → General → Pull Requests**: enable **"Allow auto-merge"**.
-2. Create a **branch protection rule / Ruleset** on `master` that **requires the `CI` check** (at least one requirement). Without a branch protection requirement the action cannot enable auto-merge (and would merge immediately if the PR is already mergeable).
+2. Create the `staging` branch from `master`.
+3. Add a **branch protection rule / Ruleset** on `master` that **requires the `CI` check**. Without a branch protection requirement the auto-merge action cannot enable auto-merge.
+4. Create a fine-grained PAT with `contents: write` and `pull-requests: write` on this repo, and store it as the `AUTOMERGE_TOKEN` secret. It is used by `dependabot-auto-merge.yml` and when enabling auto-merge on the persistent `staging → master` PR, so the resulting merges **do** trigger downstream workflows (badges, promotion re-checks).
+5. Create the persistent `staging → master` PR and enable auto-merge on it with the PAT:
+   ```bash
+   gh pr create --base master --head staging --title "chore: promote staging to master" --body "Auto-merge gate: promotes staging to master when the full CI matrix + e2e are green."
+   gh pr merge <number> --auto --squash --admin
+   ```
 
 ### Notes & caveats
 
 - If Dependabot fails to group an update (rare grouping edge cases), it falls back to an ungrouped PR, which will **not** auto-merge — conservative by design.
-- The workflow uses the default `GITHUB_TOKEN`, so the resulting merge does **not** trigger further workflow runs (e.g. the `update-badges` job on `master` won't run after a Dependabot merge). To trigger them, replace `secrets.GITHUB_TOKEN` with a `repo`-scoped PAT secret.
 - A `commonlib` bump runs the full Python test matrix (all dependents), so those PRs take longer to reach green but still auto-merge when they pass.
-- The CI `test` job runs `poetry lock` for `commonlib`/`scrapper`; if you see lockfile churn on Dependabot branches, that regeneration is the cause.
+- The CI `test` job runs `poetry lock` for `commonlib`/`scrapper`; if you see lockfile churn on Dependabot branches, that regeneration is the cause. The dependabot-agent skill commits this churn back to the PR branch.
+- **Agent integration**: the `dependabot-agent` skill (`.opencode/skills/dependabot-agent/SKILL.md`) processes open dependabot PRs locally — it runs the TDD pipeline for the affected module, fixes failures, and pushes so auto-merge can proceed. Run it on demand with opencode.

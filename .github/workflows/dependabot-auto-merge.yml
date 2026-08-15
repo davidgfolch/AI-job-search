@@ -3,7 +3,7 @@ name: Auto-merge Dependabot PRs
 on:
   pull_request:
     types: [opened, labeled, synchronize, reopened]
-    branches: ["master"]
+    branches: ["staging"]
 
 permissions:
   pull-requests: write
@@ -22,8 +22,19 @@ jobs:
        contains(github.event.pull_request.head.ref, 'github-actions'))
     runs-on: ubuntu-latest
     steps:
+      - name: Skip if PR contains a semver-major update
+        id: check-major
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        shell: bash
+        run: |
+          if printf '%s' "$PR_BODY" | grep -q "version-update:semver-major"; then
+            echo "skipping" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: peter-evans/enable-pull-request-automerge@v3
+        if: steps.check-major.outputs.skipping == ''
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.AUTOMERGE_TOKEN }}
           pull-request-number: ${{ github.event.pull_request.number }}
           merge-method: squash
