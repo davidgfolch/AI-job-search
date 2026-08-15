@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: write
-  checks: write
 
 jobs:
   changes:
@@ -266,15 +265,6 @@ jobs:
             git commit -m "Update coverage badges"
             # Xtheirs ignore conflicts keeping this commit version
             git pull --rebase -Xtheirs
-            # The badge commit only touches *.svg files whose parent passed the full matrix.
-            # Report the required ci-gate check for this SHA so the push to the protected branch is allowed.
-            BADGE_SHA=$(git rev-parse HEAD)
-            curl -sS -X POST \
-              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "Content-Type: application/json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/check-runs" \
-              -d "{\"name\":\"ci-gate\",\"head_sha\":\"${BADGE_SHA}\",\"status\":\"completed\",\"conclusion\":\"success\"}"
             git push
           else
             echo "No coverage badge files changed"
