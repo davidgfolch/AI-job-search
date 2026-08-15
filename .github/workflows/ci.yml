@@ -264,3 +264,15 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  ci-gate:
+    needs: [changes, test, e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail on upstream failure
+        run: |
+          if [ "${{ needs.changes.result }}" == "failure" ] || [ "${{ needs.test.result }}" == "failure" ] || [ "${{ needs.e2e.result }}" == "failure" ]; then
+            echo "One or more CI jobs failed" >&2
+            exit 1
+          fi
