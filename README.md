@@ -1,4 +1,4 @@
-# AI Job Search Monorepo  [![backend-build-lint-and-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml/badge.svg)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml)  [![e2e-tests](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml/badge.svg?job=e2e)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml)
+# AI Job Search Monorepo  [![master CI](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml?branch=master)  [![staging CI](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml/badge.svg?branch=staging)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml?branch=staging)
 
 ![commonlib](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/commonlib/coverage.svg)
 ![backend](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/backend/coverage.svg)
