@@ -1,14 +1,14 @@
 <svg width="115.3" height="20" viewBox="0 0 1153 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="apps/e2e: 71.54%">
   <title>apps/e2e: 71.54%</title>
-  <linearGradient id="GHUfz" x2="0" y2="100%">
+  <linearGradient id="THBOk" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <mask id="vUJZu"><rect width="1153" height="200" rx="30" fill="#FFF"/></mask>
-  <g mask="url(#vUJZu)">
+  <mask id="abfli"><rect width="1153" height="200" rx="30" fill="#FFF"/></mask>
+  <g mask="url(#abfli)">
     <rect width="613" height="200" fill="#555"/>
     <rect width="540" height="200" fill="#cba317" x="613"/>
-    <rect width="1153" height="200" fill="url(#GHUfz)"/>
+    <rect width="1153" height="200" fill="url(#THBOk)"/>
   </g>
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="513" fill="#000" opacity="0.25">apps/e2e</text>
