@@ -90,10 +90,13 @@ For each open staging PR:
   ```bash
   git checkout master && git pull
   ```
-- Verify the persistent `staging → master` PR is healthy (promotion is automatic via auto-merge):
+- Verify the persistent `staging → master` PR is healthy (promotion is automatic via auto-merge). It closes on each merge, so if none is open and `staging` is ahead of `master`, recreate it (with gh on PATH):
   ```bash
-  gh pr list --base master --head staging --json number --jq '.[0].number' | ForEach-Object { gh pr checks $_ --watch }
+  gh pr list --base master --head staging --json number,state --jq '.[0].number'
+  gh pr create --base master --head staging --title "chore: promote staging to master" --body "Auto-generated persistent promotion PR from the staging gate. Auto-merge enabled."
+  gh pr merge <new-pr-number> --auto --squash
   ```
+  If `staging` and `master` have identical content the PR cannot be created yet — wait for the next Dependabot merge into `staging`, then recreate.
 
 ## Safety rules
 
