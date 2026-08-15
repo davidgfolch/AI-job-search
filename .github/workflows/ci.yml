@@ -198,7 +198,14 @@ jobs:
     if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging') && needs.test.result != 'failure' && needs.e2e.result != 'failure'
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          fetch-depth: 0
+
+      - name: Checkout badges branch
+        run: |
+          git fetch origin badges
+          git checkout badges
+
       - name: Download all badges
         if: needs.test.result == 'success' || needs.e2e.result == 'success'
         uses: actions/download-artifact@v4
@@ -257,8 +264,8 @@ jobs:
           if $changes; then
             git commit -m "Update coverage badges"
             # Xtheirs ignore conflicts keeping this commit version
-            git pull --rebase -Xtheirs
-            git push
+            git pull --rebase origin badges || true
+            git push origin badges
           else
             echo "No coverage badge files changed"
           fi

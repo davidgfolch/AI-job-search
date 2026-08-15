@@ -11,7 +11,7 @@ The CI workflow (`.github/workflows/ci.yml`) only tests the modules affected by 
 1. A `changes` job uses [`dorny/paths-filter`](https://github.com/dorny/paths-filter) to detect which `apps/*` modules were modified in the push/PR.
 2. It builds a dynamic test matrix containing exactly those modules, so unchanged apps are never executed.
 3. The `test` job runs the matrix (`npm test`, `uv run pytest`, or `poetry run pytest` depending on the module) and uploads a coverage badge artifact per module.
-4. On `master`, an `update-badges` job downloads the artifacts and commits any changed coverage badges back to the repo.
+4. On `master`/`staging`, an `update-badges` job downloads the artifacts and commits any changed coverage badges to a dedicated `badges` branch (not the protected `master`), which the README badge images load from.
 
 ### Change detection rules
 
@@ -67,7 +67,7 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 
 - A **persistent `staging → master` PR** is kept open with native auto-merge (squash) enabled. GitHub re-evaluates it on every push to `staging`, so each validated batch is promoted automatically once the **full** CI matrix + e2e is green.
 - A regression on `staging` simply keeps that PR open — `master` stays clean and deployable.
-- Nothing writes to `master` except this PR's merge and the `update-badges` direct push.
+- Nothing writes to `master` except this PR's merge. Coverage badges are pushed to the dedicated `badges` branch by `update-badges`, so `master`'s required status checks (`ci-gate`) are never violated.
 
 ### Prerequisites (one-time, repo admin)
 
