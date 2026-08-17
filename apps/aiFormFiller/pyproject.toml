@@ -10,7 +10,7 @@ dependencies = [
     "openai>=1.55.0",
     "torch>=2.2.0",
     "transformers>=4.40.0",
-    "accelerate>=0.29.0",
+    "accelerate>=1.14.0",
 ]
 
 [project.scripts]
