@@ -7,7 +7,7 @@ dependencies = [
     "commonlib==0.1.0",
     "fastapi>=0.115.0",
     "uvicorn>=0.30.0",
-    "openai>=1.55.0",
+    "openai>=3.0.0",
     "torch>=2.2.0",
     "transformers>=4.40.0",
     "accelerate>=1.14.0",
