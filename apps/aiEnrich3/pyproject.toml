@@ -7,7 +7,7 @@ dependencies = [
     "commonlib==0.1.0",
     "gliner>=0.2.7",
     "transformers>=4.40.0",
-    "torch>=2.2.0",
+    "torch>=2.13.0",
     "price-parser>=0.3.4",
 ]
 
