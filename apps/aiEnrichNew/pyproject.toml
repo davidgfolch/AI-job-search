@@ -9,7 +9,7 @@ dependencies = [
     "transformers>=5.15.0",
     "torch>=2.2.0",
     "accelerate>=0.29.0",
-    "langchain-huggingface>=0.0.1",
+    "langchain-huggingface>=1.2.2",
 ]
 
 [project.scripts]
