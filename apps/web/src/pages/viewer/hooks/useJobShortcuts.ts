@@ -10,9 +10,10 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 
 interface UseJobShortcutsProps {
     onAction: (action: ShortcutAction) => void;
+    onPinnedConfigShortcut?: (index: number) => void;
 }
 
-export const useJobShortcuts = ({ onAction }: UseJobShortcutsProps) => {
+export const useJobShortcuts = ({ onAction, onPinnedConfigShortcut }: UseJobShortcutsProps) => {
     const { data: envSettings } = useEnvSettings();
     const shortcuts = resolveShortcuts(envSettings);
     const [storedEnabled, setStoredEnabled] = useState<boolean | null>(() => {
@@ -44,10 +45,14 @@ export const useJobShortcuts = ({ onAction }: UseJobShortcutsProps) => {
                     return;
                 }
             }
+            if (!e.ctrlKey && e.altKey && key >= '1' && key <= '9' && onPinnedConfigShortcut) {
+                e.preventDefault();
+                onPinnedConfigShortcut(Number(key));
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [enabled, shortcuts, onAction]);
+    }, [enabled, shortcuts, onAction, onPinnedConfigShortcut]);
 
     return { enabled, toggleEnabled, shortcuts };
 };

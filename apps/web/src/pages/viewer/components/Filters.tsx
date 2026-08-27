@@ -16,9 +16,10 @@ interface BooleanFiltersProps {
     configCount?: number;
     onConfigsLoaded?: (count: number) => void;
     modalityValues?: string[];
+    onPinnedShortcutReady?: (handler: (index: number) => void, pinnedShortcuts: { name: string; index: number }[]) => void;
 }
 
-export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange, refreshJobs, configCount, onConfigsLoaded, modalityValues }: BooleanFiltersProps) {
+export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange, refreshJobs, configCount, onConfigsLoaded, modalityValues, onPinnedShortcutReady }: BooleanFiltersProps) {
     const { isExpanded, setIsExpanded } = useFilterExpanded({ configCount });
     const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
 
@@ -41,7 +42,8 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                         isExpanded={isExpanded}
                         onToggleExpand={() => setIsExpanded(!isExpanded)}
                         hasActiveFilters={hasActiveFilters}
-                        onConfigsLoaded={onConfigsLoaded}/>
+                        onConfigsLoaded={onConfigsLoaded}
+                        onPinnedShortcutReady={onPinnedShortcutReady}/>
                 </div>
                 {isExpanded && (
                     <div className="filters-content">

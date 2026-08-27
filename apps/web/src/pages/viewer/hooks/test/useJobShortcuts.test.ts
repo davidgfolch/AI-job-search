@@ -9,13 +9,15 @@ vi.mock('../../../common/hooks/useEnvSettings', () => ({
 }));
 
 const onAction = vi.fn();
+const onPinnedConfigShortcut = vi.fn();
 
-const render = () => renderHook(() => useJobShortcuts({ onAction }));
+const render = () => renderHook(() => useJobShortcuts({ onAction, onPinnedConfigShortcut }));
 
 describe('useJobShortcuts', () => {
     beforeEach(() => {
         localStorage.clear();
         onAction.mockClear();
+        onPinnedConfigShortcut.mockClear();
         mockUseEnvSettings.mockReturnValue({ data: undefined });
     });
 
@@ -87,6 +89,37 @@ describe('useJobShortcuts', () => {
         expect(result.current.enabled).toBe(false);
         fireEvent.keyDown(window, { key: 'i', altKey: true });
         expect(onAction).not.toHaveBeenCalled();
+    });
+
+    it('fires pinned config shortcut for alt+digit by position', () => {
+        render();
+        fireEvent.keyDown(window, { key: '3', altKey: true });
+        expect(onPinnedConfigShortcut).toHaveBeenCalledWith(3);
+    });
+
+    it('does not fire pinned config shortcut without alt', () => {
+        render();
+        fireEvent.keyDown(window, { key: '2' });
+        expect(onPinnedConfigShortcut).not.toHaveBeenCalled();
+    });
+
+    it('does not fire pinned config shortcut for non-digit keys', () => {
+        render();
+        fireEvent.keyDown(window, { key: 'a', altKey: true });
+        expect(onPinnedConfigShortcut).not.toHaveBeenCalled();
+    });
+
+    it('does not fire pinned config shortcut with ctrl', () => {
+        render();
+        fireEvent.keyDown(window, { key: '1', altKey: true, ctrlKey: true });
+        expect(onPinnedConfigShortcut).not.toHaveBeenCalled();
+    });
+
+    it('does not fire when disabled', () => {
+        const { result } = render();
+        act(() => result.current.toggleEnabled());
+        fireEvent.keyDown(window, { key: '1', altKey: true });
+        expect(onPinnedConfigShortcut).not.toHaveBeenCalled();
     });
 
     it('respects env UI_SHORTCUTS_ENABLED default when nothing stored', () => {

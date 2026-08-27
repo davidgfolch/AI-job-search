@@ -28,7 +28,21 @@ export default function Viewer() {
     const [collapsedPanel, setCollapsedPanel] = useState<'none' | 'left' | 'right'>('none');
 
     const handleShortcut = useViewerShortcuts(actions, state.selectedJob, jobListRef, detailScrollRef);
-    const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts } = useJobShortcuts({ onAction: handleShortcut });
+    const loadPinnedByPositionRef = useRef<(index: number) => void>(() => {});
+    const [pinnedShortcuts, setPinnedShortcuts] = useState<{ name: string; index: number }[]>([]);
+    const handlePinnedShortcutReady = useCallback((handler: (index: number) => void, shortcuts: { name: string; index: number }[]) => {
+        loadPinnedByPositionRef.current = handler;
+        setPinnedShortcuts(prev => {
+            if (prev.length === shortcuts.length && prev.every((p, i) => p.name === shortcuts[i].name && p.index === shortcuts[i].index)) {
+                return prev;
+            }
+            return shortcuts;
+        });
+    }, []);
+    const handlePinnedConfigShortcut = useCallback((index: number) => {
+        loadPinnedByPositionRef.current(index);
+    }, []);
+    const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts } = useJobShortcuts({ onAction: handleShortcut, onPinnedConfigShortcut: handlePinnedConfigShortcut });
 
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
@@ -47,7 +61,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
     return (
         <>
             <PageHeader title="Jobs">
-                <ShortcutsControls enabled={shortcutsEnabled} onToggle={toggleShortcuts} shortcuts={shortcuts} />
+                <ShortcutsControls enabled={shortcutsEnabled} onToggle={toggleShortcuts} shortcuts={shortcuts} pinnedShortcuts={pinnedShortcuts} />
             </PageHeader>
             <main className="app-main">
                 <div className="viewer">
@@ -73,6 +87,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             refreshJobs={actions.refreshJobs}
                             configCount={configCount}
                             onConfigsLoaded={setConfigCount}
+                            onPinnedShortcutReady={handlePinnedShortcutReady}
                             modalityValues={state.modalityValues} />
                         <div className="viewer-content">
                             <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: state.duplicatedJob ? 'none' : collapsedPanel === 'left' ? 'none' : 'flex' }}>
