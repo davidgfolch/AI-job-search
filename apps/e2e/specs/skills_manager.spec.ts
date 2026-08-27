@@ -74,6 +74,20 @@ test.describe('Skills Manager E2E', () => {
         expect(request.postDataJSON()).toMatchObject({ name: 'Rust', description: 'A systems programming language' });
     });
 
+    test('should create a new skill with Ctrl+Enter', async ({ page }) => {
+        await page.goto(`${BASE_URL}/skills-manager`);
+        await page.getByRole('button', { name: '+ Add Skill' }).click();
+        await expect(page.locator('.modal-content')).toContainText('Add New Skill');
+        await page.locator('#skill-name-input').fill('Rust');
+        await page.locator('#skill-category-input').fill('Languages');
+        await page.locator('#skill-description-textarea').fill('A systems programming language');
+        const postRequest = page.waitForRequest(SKILLS_POST);
+        await page.locator('#skill-description-textarea').press('Control+Enter');
+        const request = await postRequest;
+        expect(request.url()).toContain('/api/skills/Rust');
+        expect(request.postDataJSON()).toMatchObject({ name: 'Rust', description: 'A systems programming language' });
+    });
+
     test('should edit an existing skill', async ({ page }) => {
         await page.goto(`${BASE_URL}/skills-manager`);
         await page.locator('.skill-row').filter({ hasText: 'React' }).getByTitle('Edit Skill').click();

@@ -65,6 +65,12 @@ describe('ConfirmModal', () => {
         expect(defaultProps.onCancel).not.toHaveBeenCalled();
     });
 
+    it('should call onConfirm when Enter is pressed', () => {
+        render(<ConfirmModal {...defaultProps} />);
+        fireEvent.keyDown(window, { key: 'Enter' });
+        expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+    });
+
     it('should call onConfirm when Ctrl+Enter is pressed', () => {
         render(<ConfirmModal {...defaultProps} />);
         fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
@@ -75,5 +81,11 @@ describe('ConfirmModal', () => {
         render(<ConfirmModal {...defaultProps} />);
         fireEvent.keyDown(window, { key: 'Enter', metaKey: true });
         expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onCancel when Escape is pressed', () => {
+        render(<ConfirmModal {...defaultProps} />);
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(defaultProps.onCancel).toHaveBeenCalledTimes(1);
     });
 });
