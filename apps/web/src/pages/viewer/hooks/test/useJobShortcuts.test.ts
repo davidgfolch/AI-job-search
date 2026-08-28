@@ -55,6 +55,19 @@ describe('useJobShortcuts', () => {
         }
     });
 
+    it('fires action when focus is on a checkbox input', () => {
+        render();
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        document.body.appendChild(checkbox);
+        try {
+            fireEvent.keyDown(checkbox, { key: 'i', altKey: true });
+            expect(onAction).toHaveBeenCalledWith('ignore');
+        } finally {
+            document.body.removeChild(checkbox);
+        }
+    });
+
     it('ignores keys when a modal is open', () => {
         render();
         const overlay = document.createElement('div');

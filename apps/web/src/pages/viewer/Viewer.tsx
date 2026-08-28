@@ -29,7 +29,7 @@ export default function Viewer() {
     const [configCount, setConfigCount] = useState<number>();
     const [collapsedPanel, setCollapsedPanel] = useState<'none' | 'left' | 'right'>('none');
 
-    const handleShortcut = useViewerShortcuts(actions, state.selectedJob, jobListRef, detailScrollRef);
+    const handleShortcut = useViewerShortcuts(actions, state.selectedJob, isBulk, jobListRef, detailScrollRef);
     const loadPinnedByPositionRef = useRef<(index: number) => void>(() => {});
     const [pinnedShortcuts, setPinnedShortcuts] = useState<{ name: string; index: number }[]>([]);
     const handlePinnedShortcutReady = useCallback((handler: (index: number) => void, shortcuts: { name: string; index: number }[]) => {

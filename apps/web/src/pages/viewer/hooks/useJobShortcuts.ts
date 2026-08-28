@@ -5,7 +5,11 @@ import { UI_SHORTCUTS_ENABLED_KEY, UI_SHORTCUTS_STORAGE_KEY } from '../shortcuts
 
 const isEditableTarget = (target: EventTarget | null): boolean => {
     if (!(target instanceof HTMLElement)) return false;
-    return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable;
+    if (target.tagName === 'INPUT') {
+        const type = (target as HTMLInputElement).type.toLowerCase();
+        return !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color'].includes(type);
+    }
+    return target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable;
 };
 
 interface UseJobShortcutsProps {
