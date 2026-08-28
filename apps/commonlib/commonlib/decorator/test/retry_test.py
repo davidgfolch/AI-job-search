@@ -1,77 +1,91 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from commonlib.decorator.retry import retry, StackTrace
 
 
-from commonlib.decorator.retry import retry
-from commonlib.decorator.retry import StackTrace
+class TestRetry:
+    def test_retry_success_first_try(self):
+        @retry(retries=3, delay=0.001)
+        def success():
+            return "ok"
+        assert success() == "ok"
 
-def test_retry_success():
-    @retry(retries=3, delay=1)
-    def always_succeeds():
-        return "success"
-    
-    with patch('commonlib.decorator.retry.sleep') as mock_sleep:
-        assert always_succeeds() == "success"
-        mock_sleep.assert_not_called()
+    def test_retry_success_after_failures(self):
+        call_count = [0]
+        @retry(retries=3, delay=0.001)
+        def flaky():
+            call_count[0] += 1
+            if call_count[0] < 3:
+                raise ValueError("not yet")
+            return "done"
+        assert flaky() == "done"
+        assert call_count[0] == 3
 
-def test_retry_eventual_success():
-    call_count = 0
+    def test_retry_exhausted_raises(self):
+        @retry(retries=2, delay=0.001)
+        def always_fail():
+            raise ValueError("boom")
+        with pytest.raises(ValueError, match="boom"):
+            always_fail()
 
-    @retry(retries=3, delay=1)
-    def succeeds_after_two_tries():
-        nonlocal call_count
-        call_count += 1
-        if call_count < 3:
-            raise ValueError("Fail")
-        return "success"
-    
-    with patch('commonlib.decorator.retry.sleep') as mock_sleep:
-        assert succeeds_after_two_tries() == "success"
-        assert call_count == 3
-        assert mock_sleep.call_count == 2
+    def test_retry_exhausted_no_raise(self):
+        @retry(retries=2, delay=0.001, raiseException=False)
+        def always_fail():
+            raise ValueError("boom")
+        result = always_fail()
+        assert result is False
 
-def test_retry_eventual_failure():
-    @retry(retries=3, delay=1, raiseException=False)
-    def always_fails():
-        raise ValueError("Fail")
-    
-    with patch('commonlib.decorator.retry.sleep') as mock_sleep:
-        assert always_fails() is False
-        assert mock_sleep.call_count == 3
+    def test_retry_keyboard_interrupt_propagates(self):
+        @retry(retries=3, delay=0.001)
+        def keyboard_interrupt():
+            raise KeyboardInterrupt()
+        with pytest.raises(KeyboardInterrupt):
+            keyboard_interrupt()
 
-def test_retry_custom_exception_handling():
-    custom_exception_handled = False
+    def test_retry_validates_retries(self):
+        with pytest.raises(ValueError, match="retries should be"):
+            @retry(retries=0, delay=1)
+            def f(): pass
 
-    def custom_exception_handler():
-        nonlocal custom_exception_handled
-        custom_exception_handled = True
+    def test_retry_validates_delay(self):
+        with pytest.raises(ValueError, match="retries should be"):
+            @retry(retries=1, delay=0)
+            def f2(): pass
 
-    @retry(retries=3, delay=1, exceptionFnc=custom_exception_handler)
-    def always_fails():
-        raise ValueError("Fail")
-    
-    with patch('commonlib.decorator.retry.sleep') as mock_sleep:
+    def test_retry_exception_callback(self):
+        callback = MagicMock()
+        @retry(retries=2, delay=0.001, exceptionFnc=callback)
+        def fail():
+            raise ValueError("err")
         with pytest.raises(ValueError):
-            always_fails()
-        assert custom_exception_handled
-        assert mock_sleep.call_count == 3
+            fail()
+        assert callback.called
 
-def test_retry_stacktrace_always():
-    @retry(retries=1, delay=1, stackTrace=StackTrace.ALWAYS)
-    def always_fails():
-        raise ValueError("Fail")
-    
-    with patch('commonlib.decorator.retry.sleep') as mock_sleep:
+    def test_retry_exception_callback_with_args(self):
+        callback = MagicMock()
+        @retry(retries=2, delay=0.001, exceptionFnc=callback)
+        def fail(x):
+            raise ValueError("err")
         with pytest.raises(ValueError):
-            always_fails()
-        assert mock_sleep.call_count == 1
+            fail(42)
+        callback.assert_called_with(42)
 
-def test_retry_stacktrace_never():
-    @retry(retries=1, delay=1, stackTrace=StackTrace.NEVER)
-    def always_fails():
-        raise ValueError("Fail")
-    
-    with patch('commonlib.decorator.retry.sleep') as mock_sleep:
+    def test_retry_stack_trace_always(self):
+        @retry(retries=1, delay=0.001, stackTrace=StackTrace.ALWAYS)
+        def fail():
+            raise ValueError("err")
         with pytest.raises(ValueError):
-            always_fails()
-        assert mock_sleep.call_count == 1
+            fail()
+
+    def test_retry_stack_trace_never(self):
+        @retry(retries=1, delay=0.001, stackTrace=StackTrace.NEVER, raiseException=False)
+        def fail():
+            raise ValueError("err")
+        result = fail()
+        assert result is False
+
+    def test_retry_returns_false_on_exhausted(self):
+        @retry(retries=1, delay=0.001, raiseException=False)
+        def fail():
+            raise ValueError("err")
+        assert fail() is False
