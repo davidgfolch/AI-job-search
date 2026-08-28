@@ -6,6 +6,7 @@ rem Usage:
 rem   scripts\graphify\graphify.bat            Full pipeline
 rem   scripts\graphify\graphify.bat --clean    Purge old graph data only
 rem   scripts\graphify\graphify.bat --module X Re-extract a single module
+rem   scripts\graphify\graphify.bat [graphify CLI args...]  Delegate to graphify CLI
 
 set "SCRIPT_DIR=%~dp0"
 set "ROOT_DIR=%SCRIPT_DIR%..\.."
@@ -16,6 +17,8 @@ set "GRAPHIFY_OUT_DIR=%ROOT_DIR%\graphify-out"
 set "EDGES_FILE=%GRAPHIFY_OUT_DIR%\cross-module-edges.json"
 
 rem ──────────────────────  Parse arguments  ──────────────────────────────────
+set "first_arg=%~1"
+set "second_arg=%~2"
 set "clean=0"
 set "single_module="
 
@@ -38,6 +41,49 @@ for /f "tokens=1,2 delims==" %%a in ("%~1") do (
 shift
 goto :parse_args
 :done_args
+
+rem ──────────────────────  CLI passthrough  ──────────────────────────────────
+rem Read-only/meta subcommands are delegated verbatim to the graphify CLI.
+set "PASSTHROUGH=0"
+for %%c in (query path explain) do (
+    if /i "%first_arg%"=="%%c" set "PASSTHROUGH=1"
+)
+if "%first_arg%"=="--help" set "PASSTHROUGH=1"
+if "%first_arg%"=="-h" set "PASSTHROUGH=1"
+if "%first_arg%"=="--version" set "PASSTHROUGH=1"
+if "%PASSTHROUGH%"=="1" goto :delegate_plain
+rem `export html` maps to the repo custom generator - the upstream export would
+rem overwrite graphify-out/graph.html with the default single-graph visualization.
+if /i "%first_arg%"=="export" if /i "%second_arg%"=="html" goto :delegate_html_gen
+rem Graph/HTML-mutating subcommands and URLs are delegated, then the wrapper
+rem re-runs the custom generator so graph.html stays module-grouped.
+set "PASSTHROUGH=0"
+for %%c in (update cluster-only add export extract merge-graphs) do (
+    if /i "%first_arg%"=="%%c" set "PASSTHROUGH=1"
+)
+if /i "!first_arg:~0,5!"=="http:" set "PASSTHROUGH=1"
+if /i "!first_arg:~0,6!"=="https:" set "PASSTHROUGH=1"
+if "%PASSTHROUGH%"=="1" goto :delegate_restore
+goto :after_delegation
+
+:delegate_plain
+echo Delegating to graphify CLI: graphify %*
+graphify %*
+exit /b !errorlevel!
+
+:delegate_html_gen
+echo Regenerating custom graph.html ^(repo generator^)...
+python "%SCRIPT_DIR%graphify-html-grouped.py" --graph "%GRAPHIFY_OUT_DIR%\graph.json" --out "%GRAPHIFY_OUT_DIR%\graph.html"
+exit /b !errorlevel!
+
+:delegate_restore
+echo Delegating to graphify CLI: graphify %*
+graphify %*
+set "code=!errorlevel!"
+python "%SCRIPT_DIR%graphify-html-grouped.py" --graph "%GRAPHIFY_OUT_DIR%\graph.json" --out "%GRAPHIFY_OUT_DIR%\graph.html" >nul 2>&1
+exit /b !code!
+
+:after_delegation
 
 rem ──────────────────────  Clean function  ───────────────────────────────────
 if "%clean%"=="1" goto :do_clean
