@@ -105,6 +105,8 @@ test.describe('Viewer Pinned Filter Keyboard Shortcuts E2E', () => {
     test('should load the pinned filter configuration with Alt+1 by position', async ({ page }) => {
         await page.goto(BASE_URL);
         await expect(page.locator('#job-row-1')).toBeVisible();
+        await expect(page.locator('.pinned-config-item').first()).toBeVisible();
+        await page.waitForTimeout(100);
         await page.keyboard.press('Alt+1');
         await expect(page.locator('#job-row-1')).not.toBeVisible();
         await expect(page.locator('#job-row-2')).toBeVisible();
