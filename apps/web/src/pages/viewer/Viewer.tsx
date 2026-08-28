@@ -4,6 +4,7 @@ import JobList from './components/JobList';
 import JobDetail from './components/JobDetail';
 import JobEditForm from './components/JobEditForm';
 import JobActions from './components/JobActions';
+import ShortcutBadge from './components/ShortcutBadge';
 import AppliedModal from './components/AppliedModal';
 import Filters from './components/Filters';
 import MessageContainer from '../common/components/core/MessageContainer';
@@ -17,6 +18,7 @@ import { useDefaultComment } from '../common/hooks/useDefaultComment';
 import { useJobShortcuts } from './hooks/useJobShortcuts';
 import ShortcutsControls from './components/ShortcutsControls';
 import { useViewerShortcuts } from './hooks/useViewerShortcuts';
+import { ShortcutsContext } from './shortcutsContext';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
@@ -42,7 +44,7 @@ export default function Viewer() {
     const handlePinnedConfigShortcut = useCallback((index: number) => {
         loadPinnedByPositionRef.current(index);
     }, []);
-    const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts } = useJobShortcuts({ onAction: handleShortcut, onPinnedConfigShortcut: handlePinnedConfigShortcut });
+    const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts, modifierPressed } = useJobShortcuts({ onAction: handleShortcut, onPinnedConfigShortcut: handlePinnedConfigShortcut });
 
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
@@ -59,7 +61,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
     }, [actions.setMessage]);
 
     return (
-        <>
+        <ShortcutsContext.Provider value={{ shortcuts, modifierPressed }}>
             <PageHeader title="Jobs">
                 <ShortcutsControls enabled={shortcutsEnabled} onToggle={toggleShortcuts} shortcuts={shortcuts} pinnedShortcuts={pinnedShortcuts} />
             </PageHeader>
@@ -133,7 +135,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                         )}
                                     </div>
                                     <div className="tab-content">
-                                        <div style={{ display: state.activeTab === 'list' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                                        <div style={{ display: state.activeTab === 'list' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
                                             <JobList
                                                 isLoading={status.isLoading}
                                                 error={status.apiError || status.error}
@@ -148,6 +150,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                                 onToggleSelectAll={actions.toggleSelectAll}
                                                 containerRef={jobListRef}
                                             />
+                                            <ShortcutBadge display={shortcuts.listFocus.display} visible={modifierPressed} />
                                         </div>
                                         <div style={{ display: state.activeTab === 'create' ? 'block' : 'none', height: '100%' }}>
                                             <JobEditForm 
@@ -209,6 +212,6 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                     </div>
                 </div>
             </main>
-        </>
+        </ShortcutsContext.Provider>
     );
 }

@@ -21,6 +21,7 @@ export const useJobShortcuts = ({ onAction, onPinnedConfigShortcut }: UseJobShor
         return stored === null ? null : stored === 'true';
     });
     const enabled = storedEnabled ?? (envSettings ? envSettings[UI_SHORTCUTS_ENABLED_KEY] !== 'false' : true);
+    const [modifierPressed, setModifierPressed] = useState(false);
 
     const toggleEnabled = useCallback(() => {
         setStoredEnabled(prev => {
@@ -54,5 +55,37 @@ export const useJobShortcuts = ({ onAction, onPinnedConfigShortcut }: UseJobShor
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [enabled, shortcuts, onAction, onPinnedConfigShortcut]);
 
-    return { enabled, toggleEnabled, shortcuts };
+    useEffect(() => {
+        const trackedModifiers = new Set<string>(['alt']);
+        for (const info of SHORTCUT_ACTIONS) {
+            trackedModifiers.add(shortcuts[info.action].ctrl ? 'ctrl' : 'alt');
+        }
+        const trackAlt = trackedModifiers.has('alt');
+        const trackCtrl = trackedModifiers.has('ctrl');
+        const isAltKey = (e: KeyboardEvent): boolean => {
+            const k = e.key.toLowerCase();
+            return k === 'alt' || k === 'altgraph';
+        };
+        const isCtrlKey = (e: KeyboardEvent): boolean => e.key.toLowerCase() === 'control';
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (!enabled) return;
+            if (trackAlt && (isAltKey(e) || e.altKey)) setModifierPressed(true);
+            if (trackCtrl && (isCtrlKey(e) || e.ctrlKey)) setModifierPressed(true);
+        };
+        const onKeyUp = (e: KeyboardEvent) => {
+            if (trackAlt && (isAltKey(e) || !e.altKey)) setModifierPressed(false);
+            if (trackCtrl && (isCtrlKey(e) || !e.ctrlKey)) setModifierPressed(false);
+        };
+        const onFocus = () => setModifierPressed(false);
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('focus', onFocus);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keyup', onKeyUp);
+            window.removeEventListener('focus', onFocus);
+        };
+    }, [enabled, shortcuts]);
+
+    return { enabled, toggleEnabled, shortcuts, modifierPressed };
 };

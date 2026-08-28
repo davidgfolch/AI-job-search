@@ -1,4 +1,7 @@
 import type { Job } from '../../api/ViewerApi';
+import { titleWithShortcut } from '../../shortcutsConfig';
+import { useShortcuts } from '../../shortcutsContext';
+import ShortcutBadge from '../ShortcutBadge';
 
 interface JobDetailHeaderProps {
     job: Job;
@@ -7,11 +10,13 @@ interface JobDetailHeaderProps {
 }
 
 export default function JobDetailHeader({ job, onCloseDuplicated, onOpenDuplicated }: JobDetailHeaderProps) {
+    const { shortcuts, modifierPressed } = useShortcuts();
     return (
         <div className="job-detail-header">
             <h2 id="job-detail-title">
-                <a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link">
+                <a href={job.url || '#'} target="_blank" rel="noopener noreferrer" className="job-link" title={titleWithShortcut('Open job URL', shortcuts.openUrl)}>
                     {job.title}
+                    <ShortcutBadge display={shortcuts.openUrl.display} visible={modifierPressed} />
                 </a>
             </h2>
             {job.duplicated_id && onOpenDuplicated && (
@@ -33,6 +38,7 @@ export default function JobDetailHeader({ job, onCloseDuplicated, onOpenDuplicat
                     ✕ Close old duplicated
                 </button>
             )}
+            <ShortcutBadge display={shortcuts.detailFocus.display} visible={modifierPressed} />
         </div>
     );
 }

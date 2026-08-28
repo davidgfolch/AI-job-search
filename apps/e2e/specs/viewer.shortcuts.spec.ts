@@ -96,6 +96,43 @@ test.describe('Viewer Keyboard Shortcuts E2E', () => {
     });
 });
 
+test.describe('Viewer Shortcut Hints E2E', () => {
+    test.beforeEach(async ({ page }) => {
+        setupPageLogging(page);
+        await setupSystemMocks(page);
+        await setupDefaultJobsRoute(page);
+    });
+
+    test('should show shortcut hints on the job list toolbar while Alt is held', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await page.locator('#job-row-1').click();
+        await expect(page.locator('#job-detail-title')).toBeVisible();
+
+        const toolbarBadges = page.locator('.list-header-actions .shortcut-badge');
+        await expect(toolbarBadges).toHaveCount(0);
+        await page.keyboard.down('Alt');
+        await expect(toolbarBadges.filter({ hasText: 'Alt+I' })).toBeVisible();
+        await expect(toolbarBadges.filter({ hasText: 'Alt+A' })).toBeVisible();
+        await expect(toolbarBadges.filter({ hasText: 'Alt+N' })).toBeVisible();
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+L' })).toBeVisible();
+        await page.keyboard.up('Alt');
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+    });
+
+    test('should show shortcut hints on the job detail while Alt is held', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await page.locator('#job-row-1').click();
+        await expect(page.locator('#job-detail-title')).toContainText('Frontend Engineer');
+
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+        await page.keyboard.down('Alt');
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+O' })).toBeVisible();
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+J' })).toBeVisible();
+        await page.keyboard.up('Alt');
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+    });
+});
+
 test.describe('Viewer Pinned Filter Keyboard Shortcuts E2E', () => {
     test.beforeEach(async ({ page }) => {
         setupPageLogging(page);
