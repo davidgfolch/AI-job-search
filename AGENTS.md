@@ -17,6 +17,23 @@ cp scripts/.env.secrets.example .env.secrets
 docker-compose up -d
 ```
 
+### Sandboxed Docker Verification (dependabot-agent)
+Brings a service up in an isolated `dependabot-test` project so the live `ai-job-search-*` stack and its data are never touched. Uses `docker-compose.test.override.yml` (renamed `-test` containers, remapped ports, data under `.docker-sandbox/`), and tears the sandbox down on exit.
+```bash
+# Windows
+.\scripts\test-sandbox.bat <service> [--profile <name>] [--no-db-clone] [--keep]
+# Linux/Mac
+./scripts/test-sandbox.sh <service> [--profile <name>] [--no-db-clone] [--keep]
+
+# Examples
+.\scripts\test-sandbox.bat backend
+.\scripts\test-sandbox.bat --profile aiEnrichNew aienrichnew
+```
+- `backend` auto-clones the live MySQL `jobs` DB into the sandbox (via `scripts/mysql/backup.*`); skip with `--no-db-clone`.
+- Mongo boots fresh/empty from `scripts/mongo/init.js`; ollama/prometheus/grafana are never duplicated.
+- Profile-gated ai workers need their profile (`--profile aienrich|aiEnrichNew|aiEnrichSkill|aiEnrich3`).
+- Ollama-dependent services (`aienrich`, `aienrichskill`, `scrapper`) are validated build-only + unit tests + ci-gate, not `up`.
+
 ### Python Apps (commonlib, scrapper)
 ```bash
 # Install dependencies
