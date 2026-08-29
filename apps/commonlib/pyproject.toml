@@ -11,20 +11,20 @@ from = "."
 
 dependencies = [
     "mysql-connector-python==26.7.0",
-    "python-dotenv>=1.0.0",
-    "mathparse (>=0.2.8,<0.3.0)",
-    "pdfplumber>=0.11.8",
+    "python-dotenv>=1.2.3",
+    "mathparse>=0.2.9,<0.3.0",
+    "pdfplumber>=0.11.10",
     "pandas>=2.3.3",
     "pymongo>=4.17.0",
-    "structlog>=24.0.0",
+    "structlog>=26.1.0",
     "prometheus-client>=0.21.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
-    "genbadge[coverage]>=1.1.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "genbadge[coverage]>=1.1.3",
 ]
 
 [tool.coverage.run]

@@ -5,8 +5,8 @@ description = "Generic background scheduler for periodic cron jobs"
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "commonlib==0.1.0",
-    "pymongo>=4.10.0",
-    "mysql-connector-python>=9.0.0",
+    "pymongo>=4.17.0",
+    "mysql-connector-python>=26.7.0",
 ]
 
 [project.scripts]

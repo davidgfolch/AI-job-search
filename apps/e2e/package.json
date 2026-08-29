@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.3.0",
     "coverage-badges-cli": "^2.2.0",
     "monocart-coverage-reports": "^2.12.12",
     "typescript": "~5.9.3"
