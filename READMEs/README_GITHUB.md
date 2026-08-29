@@ -69,6 +69,16 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 - A regression on `staging` simply keeps that PR open — `master` stays clean and deployable.
 - Nothing writes to `master` except this PR's merge. Coverage badges are pushed to the dedicated `badges` branch by `update-badges`, so `master`'s required status checks (`ci-gate`) are never violated.
 
+### Sandbox verification (mandatory dependabot-agent gate)
+
+Before a Dependabot PR is merged, the agent **builds and runs** every affected compose service in an isolated sandbox and verifies the logs are error-free. The sandbox is powered by `scripts/test-sandbox.*` + `docker-compose.test.override.yml` in the `dependabot-test` project:
+
+- Containers are renamed `ai-job-search-test-*`, host ports are remapped (`mysql 13306`, `mongo 17017`, `backend 18000`, `web 15173`, `aiformfiller 18080`), data lives in `.docker-sandbox/`, and ollama/prometheus/grafana are never duplicated.
+- **No autodiscovery**: every interacting URL is pinned to deterministic sandbox addresses (`web BACKEND_URL=http://backend:8000`, `COMMONLIB_DB_HOST=mysql_db`, `MONGO_URI=… mongo_db:27017`, and `host.docker.internal` for services not deployed, e.g. ollama). `COMMONLIB_DB_DISCOVERY=False` prevents commonlib from LAN-scanning for MySQL (which would otherwise find the live DB on the docker bridge).
+- Modules disabled in `.env` (`AI_*`/`AI_ENRICH*` flags) are **build-only**; `aienrich`/`aienrichskill`/`scrapper` (ollama-dependent) are build-only.
+- The live MySQL `jobs` DB is dumped and restored into the sandbox (schema-only init + authenticated readiness check) so data-dependent services run on real data.
+- **Any sandbox error aborts the dependabot process**: a failed build, a service not healthy, or `ERROR/CRITICAL/Traceback` in the logs means the PR is not merged until the underlying cause is fixed.
+
 ### Prerequisites (one-time, repo admin)
 
 1. **Repo Settings → General → Pull Requests**: enable **"Allow auto-merge"**.
@@ -86,4 +96,4 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 - If Dependabot fails to group an update (rare grouping edge cases), it falls back to an ungrouped PR, which will **not** auto-merge — conservative by design.
 - A `commonlib` bump runs the full Python test matrix (all dependents), so those PRs take longer to reach green but still auto-merge when they pass.
 - The CI `test` job runs `poetry lock` for `commonlib`/`scrapper`; if you see lockfile churn on Dependabot branches, that regeneration is the cause. The dependabot-agent skill commits this churn back to the PR branch.
-- **Agent integration**: the `dependabot-agent` skill (`.opencode/skills/dependabot-agent/SKILL.md`) processes open dependabot PRs locally — it runs the TDD pipeline for the affected module, fixes failures, and pushes so auto-merge can proceed. Run it on demand with opencode.
+- **Agent integration**: the `dependabot-agent` skill (`.opencode/skills/dependabot-agent/SKILL.md`) processes open dependabot PRs locally — it runs the TDD pipeline for the affected module, sandbox-builds **and runs** the affected docker-compose services, checks logs for errors, fixes failures, and pushes so auto-merge can proceed. Run it on demand with opencode.
