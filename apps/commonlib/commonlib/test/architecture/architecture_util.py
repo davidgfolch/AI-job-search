@@ -5,7 +5,8 @@ EXTENSIONS = {'.py', '.ts', '.tsx', '.js', '.jsx'}
 EXCLUDES = {
     'node_modules', '.venv', 'custom-venv', 'dist', 'build', '.git', 
     '__pycache__', 'coverage', '.next', '.pytest_cache', '.amazonq',
-    'READMEs' # Documentation often has large files or isn't code
+    'READMEs', # Documentation often has large files or isn't code
+    '.vite', # Vite dependency cache
 }
 
 def get_project_root():
