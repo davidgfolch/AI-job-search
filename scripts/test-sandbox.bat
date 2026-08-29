@@ -70,6 +70,15 @@ if errorlevel 1 (
 )
 
 if "%DB_CLONE%"=="1" if /i "%TARGET%"=="backend" (
+    rem The mysql healthcheck (mysqladmin ping via socket) passes while the entrypoint
+    rem temporary init server is up, but that server later restarts to the final server
+    rem (port 3306). Restoring before that restart finishes races the down socket.
+    rem Wait until the in-container socket accepts queries before restoring.
+    call :waitmysql
+    if errorlevel 1 (
+        echo Sandbox mysql did not become ready for restore.
+        goto :cleanup
+    )
     echo Cloning live MySQL 'jobs' DB into sandbox mysql...
     call "%BACKUP_SCRIPT%"
     if errorlevel 1 (
@@ -95,6 +104,14 @@ docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% ps
 
 echo --- Logs for %TARGET% (last 100 lines) ---
 docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% logs %TARGET% --tail=100
+
+goto :cleanup
+
+:waitmysql
+rem Poll the in-container mysql socket until the final server accepts queries.
+rem Redirection targets /dev/null inside the container so docker exec stays quiet.
+docker exec -e MYSQL_PWD=rootPass ai-job-search-test-mysql /bin/sh -c "i=0; until mysqladmin ping -u root >/dev/null 2>&1; do i=$((i+1)); if [ $i -ge 90 ]; then exit 1; fi; sleep 1; done; exit 0"
+exit /b %errorlevel%
 
 :cleanup
 if "%KEEP%"=="1" (
