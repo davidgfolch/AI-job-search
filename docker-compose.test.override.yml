@@ -8,10 +8,11 @@
 services:
   mysql_db:
     container_name: ai-job-search-test-mysql
-    volumes:
+    volumes: !override
       - ./.docker-sandbox/mysql:/var/lib/mysql
-      - ./scripts/mysql:/docker-entrypoint-initdb.d
-    ports:
+      - ./scripts/mysql/ddl.sql:/docker-entrypoint-initdb.d/01-ddl.sql:ro
+      - ./scripts/mysql/skills_data.sql:/docker-entrypoint-initdb.d/02-skills_data.sql:ro
+    ports: !override
       - "13306:3306"
 
   mongo_db:
@@ -19,21 +20,25 @@ services:
     volumes:
       - mongo_data_sandbox:/data/db
       - ./scripts/mongo:/docker-entrypoint-initdb.d
-    ports:
+    ports: !override
       - "17017:27017"
 
   backend:
     container_name: ai-job-search-test-backend
-    ports:
+    ports: !override
       - "18000:8000"
     environment:
       - COMMONLIB_DB_HOST=mysql_db
+      - COMMONLIB_DB_DISCOVERY=False
       - MONGO_URI=mongodb://root:rootPass@mongo_db:27017/
 
   web:
     container_name: ai-job-search-test-web
-    ports:
+    ports: !override
       - "15173:5173"
+    environment:
+      - BACKEND_DISCOVERY=Disable
+      - BACKEND_URL=http://backend:8000
 
   aienrich:
     container_name: ai-job-search-test-aienrich
@@ -42,6 +47,7 @@ services:
         condition: service_healthy
     environment:
       COMMONLIB_DB_HOST: mysql_db
+      COMMONLIB_DB_DISCOVERY: "False"
       AI_ENRICH_OLLAMA_BASE_URL: http://host.docker.internal:11434
 
   aienrichnew:
@@ -51,6 +57,7 @@ services:
         condition: service_healthy
     environment:
       COMMONLIB_DB_HOST: mysql_db
+      COMMONLIB_DB_DISCOVERY: "False"
 
   aienrichskill:
     container_name: ai-job-search-test-aienrichskill
@@ -59,6 +66,7 @@ services:
         condition: service_healthy
     environment:
       COMMONLIB_DB_HOST: mysql_db
+      COMMONLIB_DB_DISCOVERY: "False"
       AI_ENRICHSKILL_OLLAMA_BASE_URL: http://host.docker.internal:11434
 
   aienrich3:
@@ -68,6 +76,7 @@ services:
         condition: service_healthy
     environment:
       COMMONLIB_DB_HOST: mysql_db
+      COMMONLIB_DB_DISCOVERY: "False"
 
   aicvmatcher:
     container_name: ai-job-search-test-aicvmatcher
@@ -76,6 +85,19 @@ services:
         condition: service_healthy
     environment:
       COMMONLIB_DB_HOST: mysql_db
+      COMMONLIB_DB_DISCOVERY: "False"
+
+  cron:
+    container_name: ai-job-search-test-cron
+    environment:
+      - COMMONLIB_DB_HOST=mysql_db
+      - COMMONLIB_DB_DISCOVERY=False
+      - MONGO_URI=mongodb://root:rootPass@mongo_db:27017/
+
+  aiformfiller:
+    container_name: ai-job-search-test-aiformfiller
+    ports: !override
+      - "18080:8080"
 
 volumes:
   mongo_data_sandbox:

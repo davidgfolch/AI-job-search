@@ -35,6 +35,33 @@ if "%TARGET%"=="" (
     exit /b 1
 )
 
+rem Modules disabled in .env (all their *_JOB/*_SKILL/*_ENABLED flags false) get a build-only check.
+set "CHECK_KEYS="
+if "%TARGET%"=="aienrich" set "CHECK_KEYS=AI_ENRICH_JOB AI_ENRICH_SKILL"
+if "%TARGET%"=="aienrichnew" set "CHECK_KEYS=AI_ENRICHNEW_JOB AI_ENRICHNEW_SKILL"
+if "%TARGET%"=="aienrichskill" set "CHECK_KEYS=AI_ENRICHSKILL_ENABLED"
+if "%TARGET%"=="aienrich3" set "CHECK_KEYS=AI_ENRICH3_JOB AI_ENRICH3_SKILL"
+if "%TARGET%"=="aicvmatcher" set "CHECK_KEYS=AI_CVMATCHER_ENABLED"
+if defined CHECK_KEYS (
+    set "MODULE_DISABLED=1"
+    for %%k in (%CHECK_KEYS%) do (
+        for /f "delims=" %%l in ('findstr /b /c:"%%k=" "%CD%\.env"') do (
+            set "VAL=%%l"
+            set "VAL=!VAL:*==!"
+            set "VAL=!VAL:"=!"
+            set "VAL=!VAL:'=!"
+            if /i "!VAL!"=="true" set "MODULE_DISABLED=0"
+            if /i "!VAL!"=="yes" set "MODULE_DISABLED=0"
+            if "!VAL!"=="1" set "MODULE_DISABLED=0"
+        )
+    )
+    if "!MODULE_DISABLED!"=="1" (
+        echo Module '%TARGET%' is disabled in .env, performing build-only check...
+        docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% build %TARGET%
+        exit /b !errorlevel!
+    )
+)
+
 echo Building and starting '%TARGET%' in isolated project '%PROJECT%'...
 docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% up -d --build %TARGET%
 if errorlevel 1 (
