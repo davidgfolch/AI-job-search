@@ -5,6 +5,7 @@ import {
     setupSystemMocks,
     setupDefaultJobsRoute,
 } from './viewer.helpers';
+import { setupConfigurationsMocks } from './configurations.helpers';
 
 test.use({
     bypassCSP: true,
@@ -92,5 +93,67 @@ test.describe('Viewer Keyboard Shortcuts E2E', () => {
         await page.keyboard.press('Alt+i');
         await page.waitForTimeout(500);
         expect(patched).toBe(false);
+    });
+});
+
+test.describe('Viewer Shortcut Hints E2E', () => {
+    test.beforeEach(async ({ page }) => {
+        setupPageLogging(page);
+        await setupSystemMocks(page);
+        await setupDefaultJobsRoute(page);
+    });
+
+    test('should show shortcut hints on the job list toolbar while Alt is held', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await page.locator('#job-row-1').click();
+        await expect(page.locator('#job-detail-title')).toBeVisible();
+
+        const toolbarBadges = page.locator('.list-header-actions .shortcut-badge');
+        await expect(toolbarBadges).toHaveCount(0);
+        await page.keyboard.down('Alt');
+        await expect(toolbarBadges.filter({ hasText: 'Alt+I' })).toBeVisible();
+        await expect(toolbarBadges.filter({ hasText: 'Alt+A' })).toBeVisible();
+        await expect(toolbarBadges.filter({ hasText: 'Alt+N' })).toBeVisible();
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+L' })).toBeVisible();
+        await page.keyboard.up('Alt');
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+    });
+
+    test('should show shortcut hints on the job detail while Alt is held', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await page.locator('#job-row-1').click();
+        await expect(page.locator('#job-detail-title')).toContainText('Frontend Engineer');
+
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+        await page.keyboard.down('Alt');
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+O' })).toBeVisible();
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+J' })).toBeVisible();
+        await page.keyboard.up('Alt');
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+    });
+});
+
+test.describe('Viewer Pinned Filter Keyboard Shortcuts E2E', () => {
+    test.beforeEach(async ({ page }) => {
+        setupPageLogging(page);
+        await setupConfigurationsMocks(page);
+    });
+
+    test('should load the pinned filter configuration with Alt+1 by position', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await expect(page.locator('#job-row-1')).toBeVisible();
+        await expect(page.locator('.pinned-config-item').first()).toBeVisible();
+        await page.waitForTimeout(100);
+        await page.keyboard.press('Alt+1');
+        await expect(page.locator('#job-row-1')).not.toBeVisible();
+        await expect(page.locator('#job-row-2')).toBeVisible();
+    });
+
+    test('should list pinned filters in the shortcuts help modal', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await page.getByTitle('Show keyboard shortcuts').click();
+        await expect(page.getByText('Load pinned filters:')).toBeVisible();
+        await expect(page.locator('.shortcuts-table')).toContainText('Backend Filter');
+        await expect(page.locator('.shortcuts-table')).toContainText('Alt+1');
     });
 });

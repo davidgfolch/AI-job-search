@@ -29,11 +29,12 @@ interface FilterConfigurationsProps {
     onToggleExpand: () => void;
     hasActiveFilters: boolean;
     onConfigsLoaded?: (count: number) => void;
+    onPinnedShortcutReady?: (handler: (index: number) => void, pinnedShortcuts: { name: string; index: number }[]) => void;
 }
 
 const ADDITIONAL_DEFAULTS = [CLEAN_OLD_JOBS_CONFIG];
 
-export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters, onConfigsLoaded}: FilterConfigurationsProps) {
+export default function FilterConfigurations({ currentFilters, onLoadConfig, onMessage, isExpanded, onToggleExpand, hasActiveFilters, onConfigsLoaded, onPinnedShortcutReady }: FilterConfigurationsProps) {
     const {
         configName,
         isOpen,
@@ -59,7 +60,9 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         toggleWatcherActive,
         savedConfigs,
         savedConfigName,
-        reorderConfigurations
+        reorderConfigurations,
+        pinnedConfigs,
+        loadPinnedByPosition
     } = useFilterConfigurations({ 
         currentFilters, 
         onLoadConfig, 
@@ -67,7 +70,9 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         additionalDefaults: ADDITIONAL_DEFAULTS 
     });
 
-    const pinnedConfigs = savedConfigs.filter(c => c.pinned);
+    useEffect(() => {
+        onPinnedShortcutReady?.(loadPinnedByPosition, pinnedConfigs.map((c, i) => ({ name: c.name, index: i + 1 })));
+    }, [onPinnedShortcutReady, loadPinnedByPosition, pinnedConfigs]);
 
     useEffect(() => {
         onConfigsLoaded?.(pinnedConfigs.length);

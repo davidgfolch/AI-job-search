@@ -36,6 +36,9 @@ test-results
 scripts/mysql/*_backup.*
 data/**
 
+# Dependabot sandbox (scripts/test-sandbox.*)
+.docker-sandbox/
+
 # graphify per-module extraction outputs
 apps/*/graphify-out/
 

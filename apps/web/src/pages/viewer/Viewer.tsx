@@ -4,6 +4,7 @@ import JobList from './components/JobList';
 import JobDetail from './components/JobDetail';
 import JobEditForm from './components/JobEditForm';
 import JobActions from './components/JobActions';
+import ShortcutBadge from './components/ShortcutBadge';
 import AppliedModal from './components/AppliedModal';
 import Filters from './components/Filters';
 import MessageContainer from '../common/components/core/MessageContainer';
@@ -17,6 +18,7 @@ import { useDefaultComment } from '../common/hooks/useDefaultComment';
 import { useJobShortcuts } from './hooks/useJobShortcuts';
 import ShortcutsControls from './components/ShortcutsControls';
 import { useViewerShortcuts } from './hooks/useViewerShortcuts';
+import { ShortcutsContext } from './shortcutsContext';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
@@ -27,8 +29,22 @@ export default function Viewer() {
     const [configCount, setConfigCount] = useState<number>();
     const [collapsedPanel, setCollapsedPanel] = useState<'none' | 'left' | 'right'>('none');
 
-    const handleShortcut = useViewerShortcuts(actions, state.selectedJob, jobListRef, detailScrollRef);
-    const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts } = useJobShortcuts({ onAction: handleShortcut });
+    const handleShortcut = useViewerShortcuts(actions, state.selectedJob, isBulk, jobListRef, detailScrollRef);
+    const loadPinnedByPositionRef = useRef<(index: number) => void>(() => {});
+    const [pinnedShortcuts, setPinnedShortcuts] = useState<{ name: string; index: number }[]>([]);
+    const handlePinnedShortcutReady = useCallback((handler: (index: number) => void, shortcuts: { name: string; index: number }[]) => {
+        loadPinnedByPositionRef.current = handler;
+        setPinnedShortcuts(prev => {
+            if (prev.length === shortcuts.length && prev.every((p, i) => p.name === shortcuts[i].name && p.index === shortcuts[i].index)) {
+                return prev;
+            }
+            return shortcuts;
+        });
+    }, []);
+    const handlePinnedConfigShortcut = useCallback((index: number) => {
+        loadPinnedByPositionRef.current(index);
+    }, []);
+    const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts, modifierPressed } = useJobShortcuts({ onAction: handleShortcut, onPinnedConfigShortcut: handlePinnedConfigShortcut });
 
     const handleFiltersChange = useCallback((newFilters: any) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
@@ -45,9 +61,9 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
     }, [actions.setMessage]);
 
     return (
-        <>
+        <ShortcutsContext.Provider value={{ shortcuts, modifierPressed }}>
             <PageHeader title="Jobs">
-                <ShortcutsControls enabled={shortcutsEnabled} onToggle={toggleShortcuts} shortcuts={shortcuts} />
+                <ShortcutsControls enabled={shortcutsEnabled} onToggle={toggleShortcuts} shortcuts={shortcuts} pinnedShortcuts={pinnedShortcuts} />
             </PageHeader>
             <main className="app-main">
                 <div className="viewer">
@@ -70,9 +86,9 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onFiltersChange={handleFiltersChange}
                             onMessage={handleMessage} 
                             onConfigNameChange={actions.setActiveConfigName}
-                            refreshJobs={actions.refreshJobs}
                             configCount={configCount}
                             onConfigsLoaded={setConfigCount}
+                            onPinnedShortcutReady={handlePinnedShortcutReady}
                             modalityValues={state.modalityValues} />
                         <div className="viewer-content">
                             <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: state.duplicatedJob ? 'none' : collapsedPanel === 'left' ? 'none' : 'flex' }}>
@@ -119,7 +135,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                         )}
                                     </div>
                                     <div className="tab-content">
-                                        <div style={{ display: state.activeTab === 'list' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                                        <div style={{ display: state.activeTab === 'list' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
                                             <JobList
                                                 isLoading={status.isLoading}
                                                 error={status.apiError || status.error}
@@ -134,6 +150,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                                 onToggleSelectAll={actions.toggleSelectAll}
                                                 containerRef={jobListRef}
                                             />
+                                            <ShortcutBadge display={shortcuts.listFocus.display} visible={modifierPressed} />
                                         </div>
                                         <div style={{ display: state.activeTab === 'create' ? 'block' : 'none', height: '100%' }}>
                                             <JobEditForm 
@@ -195,6 +212,6 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                     </div>
                 </div>
             </main>
-        </>
+        </ShortcutsContext.Provider>
     );
 }

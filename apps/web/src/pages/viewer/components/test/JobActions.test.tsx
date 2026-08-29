@@ -2,6 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import JobActions from '../JobActions';
 import type { JobListParams } from '../../api/jobs';
+import { ShortcutsContext, type ShortcutsContextValue } from '../../shortcutsContext';
+import { defaultValue } from '../../shortcutsContext';
 
 describe('JobActions', () => {
     const mockProps = {
@@ -18,6 +20,15 @@ describe('JobActions', () => {
         hasPrevious: true,
     };
 
+    const renderWithContext = (value: Partial<ShortcutsContextValue> = {}) => {
+        const contextValue = { ...defaultValue(), ...value };
+        return render(
+            <ShortcutsContext.Provider value={contextValue}>
+                <JobActions {...mockProps} />
+            </ShortcutsContext.Provider>
+        );
+    };
+
     beforeEach(() => {
         vi.clearAllMocks();
         // Mock clipboard
@@ -31,13 +42,13 @@ describe('JobActions', () => {
     it('should render all buttons', () => {
         render(<JobActions {...mockProps} />);
         expect(screen.getByTitle('Mark as seen')).toBeInTheDocument();
-        expect(screen.getByTitle('Mark as applied')).toBeInTheDocument();
+        expect(screen.getByTitle('Mark as applied — Alt+A')).toBeInTheDocument();
         expect(screen.getByTitle('Mark as discarded')).toBeInTheDocument();
         expect(screen.getByTitle('Mark as closed')).toBeInTheDocument();
-        expect(screen.getByTitle('Mark as ignored')).toBeInTheDocument();
+        expect(screen.getByTitle('Mark as ignored — Alt+I')).toBeInTheDocument();
         expect(screen.getByTitle('Copy permalink to clipboard')).toBeInTheDocument();
-        expect(screen.getByTitle('Previous job')).toBeInTheDocument();
-        expect(screen.getByTitle('Next job')).toBeInTheDocument();
+        expect(screen.getByTitle('Previous job — Alt+P')).toBeInTheDocument();
+        expect(screen.getByTitle('Next job — Alt+N')).toBeInTheDocument();
     });
 
     it('should call callbacks on click', () => {
@@ -46,10 +57,10 @@ describe('JobActions', () => {
         fireEvent.click(screen.getByTitle('Mark as seen'));
         expect(mockProps.onSeen).toHaveBeenCalled();
 
-        fireEvent.click(screen.getByTitle('Mark as applied'));
+        fireEvent.click(screen.getByTitle('Mark as applied — Alt+A'));
         expect(mockProps.onApplied).toHaveBeenCalled();
         
-        fireEvent.click(screen.getByTitle('Next job'));
+        fireEvent.click(screen.getByTitle('Next job — Alt+N'));
         expect(mockProps.onNext).toHaveBeenCalled();
     });
 
@@ -70,8 +81,8 @@ describe('JobActions', () => {
 
     it('should disable nav buttons based on hasNext/hasPrevious', () => {
         render(<JobActions {...mockProps} hasNext={false} hasPrevious={false} />);
-        expect(screen.getByTitle('Next job')).toBeDisabled();
-        expect(screen.getByTitle('Previous job')).toBeDisabled();
+        expect(screen.getByTitle('Next job — Alt+N')).toBeDisabled();
+        expect(screen.getByTitle('Previous job — Alt+P')).toBeDisabled();
     });
 
     it('should handle copy permalink with simplified jobId only', () => {
@@ -88,5 +99,26 @@ describe('JobActions', () => {
         expect(calledUrl).not.toContain('search=dev');
         expect(calledUrl).not.toContain('order=salary');
         expect(calledUrl).not.toContain('days_old=7');
+    });
+
+    it('hides shortcut badges when modifier is not pressed', () => {
+        renderWithContext({ modifierPressed: false });
+        expect(screen.queryByText('Alt+I')).not.toBeInTheDocument();
+        expect(screen.queryByText('Alt+A')).not.toBeInTheDocument();
+    });
+
+    it('shows shortcut badges only on shortcut-mapped buttons when modifier is held', () => {
+        renderWithContext({ modifierPressed: true });
+        expect(screen.getByText('Alt+I')).toBeInTheDocument();
+        expect(screen.getByText('Alt+A')).toBeInTheDocument();
+        expect(screen.getByText('Alt+P')).toBeInTheDocument();
+        expect(screen.getByText('Alt+N')).toBeInTheDocument();
+    });
+
+    it('derives overlay badges from configured shortcuts', () => {
+        const shortcuts = defaultValue().shortcuts;
+        renderWithContext({ shortcuts: { ...shortcuts, ignore: { ctrl: true, alt: false, key: 'i', display: 'Ctrl+I' } }, modifierPressed: true });
+        expect(screen.getByText('Ctrl+I')).toBeInTheDocument();
+        expect(screen.getByTitle('Mark as ignored — Ctrl+I')).toBeInTheDocument();
     });
 });
