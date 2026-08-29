@@ -5,15 +5,16 @@ import type { ShortcutAction } from '../shortcutsConfig';
 
 export interface ViewerShortcutActions {
     ignoreJob: () => void;
+    ignoreSelected: () => void;
     appliedJob: () => void;
     nextJob: () => void;
     previousJob: () => void;
 }
 
-export const useViewerShortcuts = (actions: ViewerShortcutActions, selectedJob: Job | null, jobListRef: RefObject<HTMLDivElement | null>, detailScrollRef: RefObject<HTMLDivElement | null>) => {
+export const useViewerShortcuts = (actions: ViewerShortcutActions, selectedJob: Job | null, isBulk: boolean, jobListRef: RefObject<HTMLDivElement | null>, detailScrollRef: RefObject<HTMLDivElement | null>) => {
     return useCallback((action: ShortcutAction) => {
         switch (action) {
-            case 'ignore': actions.ignoreJob(); break;
+            case 'ignore': if (isBulk) actions.ignoreSelected(); else actions.ignoreJob(); break;
             case 'apply': actions.appliedJob(); break;
             case 'next': actions.nextJob(); break;
             case 'previous': actions.previousJob(); break;
@@ -21,5 +22,5 @@ export const useViewerShortcuts = (actions: ViewerShortcutActions, selectedJob: 
             case 'listFocus': jobListRef.current?.focus({ preventScroll: true }); break;
             case 'detailFocus': detailScrollRef.current?.focus({ preventScroll: true }); break;
         }
-    }, [actions, selectedJob, jobListRef, detailScrollRef]);
+    }, [actions, selectedJob, isBulk, jobListRef, detailScrollRef]);
 };

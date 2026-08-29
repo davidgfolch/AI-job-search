@@ -1,0 +1,24 @@
+.shortcut-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 5;
+    background: var(--color-amber);
+    color: #111;
+    font-family: inherit;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.3;
+    border-radius: 3px;
+    padding: 1px 4px;
+    pointer-events: none;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+}
+
+@media print {
+    .shortcut-badge {
+        display: none !important;
+    }
+}

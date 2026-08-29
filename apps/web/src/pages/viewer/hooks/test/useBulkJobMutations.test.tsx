@@ -41,6 +41,16 @@ describe('useBulkJobMutations', () => {
       await waitFor(() => expect(result.current.bulkUpdateMutation.isSuccess).toBe(true));
       expect(mockProps.setMessage).toHaveBeenCalledWith({ text: 'Updated 5 jobs', type: 'success' });
       expect(mockProps.setSelectionMode).toHaveBeenCalledWith('none');
+      expect(mockProps.onJobsDeleted).toHaveBeenCalledWith([1, 2]);
+    });
+
+    it('clears the list on a select_all update', async () => {
+      vi.mocked(jobsApi.bulkUpdateJobs).mockResolvedValue({ updated: 10 });
+      const { result } = renderHook(() => useBulkJobMutations(mockProps), { wrapper: createWrapper() });
+      result.current.bulkUpdateMutation.mutate({ select_all: true, update: { ignored: true } });
+      await waitFor(() => expect(result.current.bulkUpdateMutation.isSuccess).toBe(true));
+      expect(mockProps.setMessage).toHaveBeenCalledWith({ text: 'Updated 10 jobs', type: 'success' });
+      expect(mockProps.onJobsDeleted).toHaveBeenCalledWith('all');
     });
 
     it('handles update errors', async () => {

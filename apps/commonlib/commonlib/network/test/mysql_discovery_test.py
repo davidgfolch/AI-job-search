@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
 import pytest
 from commonlib.network.mysql_discovery import (
-    get_local_subnets, _scan_port, discover_mysql_hosts,
+    get_local_subnets, _scan_port, _scan_hosts, discover_mysql_hosts,
     verify_mysql, auto_discover_host,
 )
 
@@ -44,6 +44,16 @@ class TestScanPort:
         assert _scan_port('192.168.1.1', 3306, 0.5) is False
 
 
+class TestScanHosts:
+    @patch('commonlib.network.mysql_discovery._scan_port')
+    def test_returns_responsive_ips(self, mock_scan_port):
+        def scan_side_effect(host, port, timeout):
+            return host.endswith('.10')
+        mock_scan_port.side_effect = scan_side_effect
+        result = _scan_hosts(['192.168.1.10', '192.168.1.20'], 3306, 0.5)
+        assert result == ['192.168.1.10']
+
+
 class TestDiscoverMySQLHosts:
     @patch('commonlib.network.mysql_discovery._scan_hosts')
     def test_with_targets(self, mock_scan):
@@ -52,10 +62,8 @@ class TestDiscoverMySQLHosts:
         assert result == ['192.168.1.10', '192.168.1.20']
         mock_scan.assert_called_once_with(['192.168.1.10', '192.168.1.20'], 3306, 0.5)
 
-    @patch('commonlib.network.mysql_discovery.get_local_subnets')
     @patch('commonlib.network.mysql_discovery._scan_hosts')
-    def test_with_subnets(self, mock_scan, mock_subnets):
-        mock_subnets.return_value = ['192.168.1.0/24']
+    def test_with_subnets(self, mock_scan):
         mock_scan.return_value = ['192.168.1.5']
         result = discover_mysql_hosts(subnets=['10.0.0.0/24'])
         assert result == ['192.168.1.5']
@@ -74,6 +82,12 @@ class TestDiscoverMySQLHosts:
         mock_scan.return_value = []
         with patch('commonlib.network.mysql_discovery.get_local_subnets', return_value=[]):
             result = discover_mysql_hosts()
+        assert result == []
+
+    @patch('commonlib.network.mysql_discovery._scan_hosts')
+    def test_invalid_subnet_skipped(self, mock_scan):
+        mock_scan.return_value = []
+        result = discover_mysql_hosts(subnets=['not-a-cidr', '192.168.1.0/24'])
         assert result == []
 
 

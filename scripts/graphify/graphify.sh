@@ -5,6 +5,7 @@
 #   ./scripts/graphify/graphify.sh              Full pipeline: clean, extract all, merge, inject, report
 #   ./scripts/graphify/graphify.sh --clean      Purge old graph data only
 #   ./scripts/graphify/graphify.sh --module X   Re-extract a single module, then merge + inject + report
+#   ./scripts/graphify/graphify.sh [graphify CLI args...]  Delegate to graphify CLI
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -46,6 +47,29 @@ for arg in "$@"; do
     esac
     prev_arg="$arg"
 done
+
+# ────────────────────── CLI passthrough ─────────────────────
+# Read-only/meta subcommands are delegated verbatim to the `graphify` binary.
+for cmd in query path explain --help -h --version; do
+    [ "$1" = "$cmd" ] && { echo "Delegating to graphify CLI: graphify $*"; exec graphify "$@"; }
+done
+# `export html` maps to the repo custom generator — the upstream export would
+# overwrite graphify-out/graph.html with the default single-graph visualization.
+if [ "$1" = "export" ] && [ "$2" = "html" ]; then
+    echo "Regenerating custom graph.html (repo generator)..."
+    exec python "$SCRIPT_DIR/graphify-html-grouped.py" --graph "$GRAPHIFY_OUT/graph.json" --out "$GRAPHIFY_OUT/graph.html"
+fi
+# Graph/HTML-mutating subcommands and URLs are delegated, then the wrapper
+# re-runs the custom generator so graph.html always keeps the module-grouped
+# output (never the upstream default viz).
+case "$1" in
+    update|cluster-only|add|export|extract|merge-graphs|http://*|https://*)
+        echo "Delegating to graphify CLI: graphify $*"
+        code=0; graphify "$@" || code=$?
+        python "$SCRIPT_DIR/graphify-html-grouped.py" --graph "$GRAPHIFY_OUT/graph.json" --out "$GRAPHIFY_OUT/graph.html" >/dev/null 2>&1 || true
+        exit $code
+        ;;
+esac
 
 # ────────────────────── Clean function ──────────────────────
 clean_graph() {

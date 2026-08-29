@@ -1,6 +1,8 @@
 import type { FilterConfig } from './hooks/useFilterConfigurations';
 import type { WatcherResult } from './hooks/useFilterWatcher';
 import { useState } from 'react';
+import { useShortcuts } from '../../shortcutsContext';
+import ShortcutBadge from '../ShortcutBadge';
 
 interface PinnedConfigurationsProps {
     pinnedConfigs: FilterConfig[];
@@ -11,6 +13,7 @@ interface PinnedConfigurationsProps {
 }
 
 export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results = {}, selectedConfigName }: PinnedConfigurationsProps) {
+    const { modifierPressed } = useShortcuts();
     const [collapsed, setCollapsed] = useState(false);
     if (pinnedConfigs.length === 0) {
         return null;
@@ -26,16 +29,17 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
             >
                 {collapsed ? '▶' : '▼'} Watched {hasWatched && `(${watchedConfigs.length})`}
             </button>
-            {!collapsed && pinnedConfigs.map((config) => {
+            {!collapsed && pinnedConfigs.map((config, index) => {
                 const result = results[config.name];
                 const hasNew = result && result.newItems > 0;
                 const isSelected = config.name === selectedConfigName;
+                const shortcutDisplay = `Alt+${index + 1}`;
                 return (
                     <div key={config.name} className={`pinned-config-item ${isSelected ? 'selected' : ''} ${config.watched ? 'is-watched' : ''}`}>
                         <button
                             className="pinned-config-load"
                             onClick={() => onLoad(config)}
-                            title={`Load: ${config.name}`}
+                            title={`Load: ${config.name} — ${shortcutDisplay}`}
                         >
                             <span className="pinned-config-name text-no-wrap">
                                 {config.name}
@@ -45,6 +49,7 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
                                 {config.statistics !== false && <span title="Included in Statistics">📈</span>}
                                 {config.watched && <span title="Watched">🔔</span>}
                             </span>
+                            <ShortcutBadge display={shortcutDisplay} visible={modifierPressed} />
                         </button>
                         <button
                             className="pinned-config-unpin"

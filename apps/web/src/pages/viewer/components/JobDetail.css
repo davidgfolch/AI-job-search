@@ -7,6 +7,7 @@
 }
 
 .job-detail-header {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -147,6 +148,8 @@
 }
 
 .job-link {
+    position: relative;
+    display: inline-block;
     color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
