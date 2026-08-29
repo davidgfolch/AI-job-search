@@ -67,6 +67,12 @@ function probeBackend(url: string): Promise<boolean> {
 }
 
 export async function discoverBackendUrl(env?: Record<string, string>): Promise<string> {
+  const backendUrl = env?.BACKEND_URL ?? process.env.BACKEND_URL;
+  if (backendUrl) {
+    console.log(`[backendDiscovery] Using configured BACKEND_URL ${backendUrl}`);
+    return backendUrl;
+  }
+
   const isDocker = fs.existsSync('/workspace/.env');
   if (isDocker) {
     if (await probeBackend(`http://backend:${BACKEND_PORT}/health`)) {
