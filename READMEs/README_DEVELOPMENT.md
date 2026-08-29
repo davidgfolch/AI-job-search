@@ -38,7 +38,7 @@ Ask the agent to "create a new skill named [skill-name]" or "use the skill build
 **Location:** `.agent/skills/skill-builder/SKILL.md`
 
 ### Dependabot Agent
-Processes open Dependabot PRs locally: runs the TDD pipeline for the affected module, fixes failures, and gets green PRs merged into `staging`. Requires the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
+Processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). The agent runs the TDD pipeline for the affected module, then **builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, checks logs for errors, and **aborts the whole process on any build/start/log error**. Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
 
 **Usage:**
 Ask the agent to "process the open dependabot PRs" (optionally scoped to a module).

@@ -89,6 +89,16 @@ if [ "$DB_CLONE" -eq 1 ] && [ "$TARGET" == "backend" ]; then
     "$BACKUP_SCRIPT" || { echo "MySQL backup failed." >&2; exit 1; }
     BACKUP_FILE=$(ls -t "$(dirname "${BASH_SOURCE[0]}")/mysql/backups/"*_backup.sql 2>/dev/null | head -n 1)
     if [ -n "$BACKUP_FILE" ]; then
+        echo "Waiting for sandbox mysql to accept authenticated connections..."
+        ready=0
+        for i in $(seq 1 30); do
+            if docker exec -e MYSQL_PWD=rootPass ai-job-search-test-mysql /usr/bin/mysql -h 127.0.0.1 -u root -e "SELECT 1" > /dev/null 2>&1; then ready=1; break; fi
+            sleep 2
+        done
+        if [ "$ready" -ne 1 ]; then
+            echo "Sandbox mysql not ready for restore after 30 tries." >&2
+            exit 1
+        fi
         docker exec -i -e MYSQL_PWD=rootPass ai-job-search-test-mysql /usr/bin/mysql -u root jobs < "$BACKUP_FILE" \
             || { echo "MySQL restore failed." >&2; exit 1; }
     fi
@@ -99,3 +109,9 @@ docker compose $FILES $PROFILE_ARGS -p "$PROJECT" ps
 
 echo "--- Logs for $TARGET (last 100 lines) ---"
 docker compose $FILES $PROFILE_ARGS -p "$PROJECT" logs "$TARGET" --tail=100
+
+echo "Checking sandbox logs for errors..."
+if docker compose $FILES $PROFILE_ARGS -p "$PROJECT" logs "$TARGET" 2>&1 | grep -E 'ERROR|CRITICAL|Traceback' > /dev/null; then
+    echo "Sandbox log check FAILED: ERROR/CRITICAL/Traceback found in '$TARGET' logs." >&2
+    exit 1
+fi

@@ -16,6 +16,7 @@ set "KEEP=0"
 set "PROFILE="
 set "PROFILE_ARGS="
 set "NEXT_IS_PROFILE=0"
+set "FAILED=0"
 
 for %%i in (%*) do (
     if "%%i"=="--no-db-clone" ( set DB_CLONE=0
@@ -70,32 +71,36 @@ if errorlevel 1 (
 )
 
 if "%DB_CLONE%"=="1" if /i "%TARGET%"=="backend" (
-    rem The mysql healthcheck (mysqladmin ping via socket) passes while the entrypoint
-    rem temporary init server is up, but that server later restarts to the final server
-    rem (port 3306). Restoring before that restart finishes races the down socket.
-    rem Wait until the in-container socket accepts queries before restoring.
-    call :waitmysql
-    if errorlevel 1 (
-        echo Sandbox mysql did not become ready for restore.
-        goto :cleanup
-    )
     echo Cloning live MySQL 'jobs' DB into sandbox mysql...
     call "%BACKUP_SCRIPT%"
     if errorlevel 1 (
         echo MySQL backup failed.
+        set "FAILED=1"
         goto :cleanup
     )
     set "BACKUP_FILE="
     for /f "delims=" %%f in ('dir /b /o-d "%CD%\scripts\mysql\backups\*_backup.sql" 2^>nul') do if not defined BACKUP_FILE set "BACKUP_FILE=%%f"
-    if defined BACKUP_FILE (
-        type "%CD%\scripts\mysql\backups\!BACKUP_FILE!" | docker exec -i -e MYSQL_PWD=rootPass ai-job-search-test-mysql /usr/bin/mysql -u root jobs
-        if errorlevel 1 (
-            echo MySQL restore failed.
-            goto :cleanup
-        )
-    ) else (
-        echo No MySQL backup file found.
+)
+
+if defined BACKUP_FILE (
+    echo Waiting for sandbox mysql to accept authenticated connections...
+    call :wait_mysql
+    if errorlevel 1 (
+        echo Sandbox mysql not ready for restore.
+        set "FAILED=1"
         goto :cleanup
+    )
+    echo Restoring MySQL backup into sandbox...
+    type "%CD%\scripts\mysql\backups\!BACKUP_FILE!" | docker exec -i -e MYSQL_PWD=rootPass ai-job-search-test-mysql /usr/bin/mysql -u root jobs
+    if errorlevel 1 (
+        echo MySQL restore failed.
+        set "FAILED=1"
+        goto :cleanup
+    )
+) else if "%FAILED%"=="0" (
+    if "%DB_CLONE%"=="1" if /i "%TARGET%"=="backend" (
+        echo No MySQL backup file found.
+        set "FAILED=1"
     )
 )
 
@@ -105,22 +110,38 @@ docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% ps
 echo --- Logs for %TARGET% (last 100 lines) ---
 docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% logs %TARGET% --tail=100
 
-goto :cleanup
-
-:waitmysql
-rem Poll the in-container mysql socket until the final server accepts queries.
-rem Redirection targets /dev/null inside the container so docker exec stays quiet.
-docker exec -e MYSQL_PWD=rootPass ai-job-search-test-mysql /bin/sh -c "i=0; until mysqladmin ping -u root >/dev/null 2>&1; do i=$((i+1)); if [ $i -ge 90 ]; then exit 1; fi; sleep 1; done; exit 0"
-exit /b %errorlevel%
+echo Checking sandbox logs for errors...
+docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% logs %TARGET% 2>&1 | findstr /i /c:"ERROR" /c:"CRITICAL" /c:"Traceback"
+if not errorlevel 1 (
+    echo Sandbox log check FAILED: ERROR/CRITICAL/Traceback found in '%TARGET%' logs.
+    set "FAILED=1"
+)
 
 :cleanup
 if "%KEEP%"=="1" (
     echo Keep mode: leaving sandbox running in project '%PROJECT%'.
-    exit /b 0
+    exit /b %FAILED%
 )
 echo Tearing down sandbox project '%PROJECT%'...
 docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% rm -sfv
 docker volume rm %PROJECT%_mongo_data_sandbox >nul 2>&1
 rmdir /s /q "%SANDBOX_DIR%" >nul 2>&1
+if "%FAILED%"=="1" (
+    echo Sandbox verification FAILED.
+    exit /b 1
+)
 echo Sandbox removed.
 exit /b 0
+
+:wait_mysql
+set /a MYSQL_TRIES=0
+:wait_mysql_loop
+docker exec -e MYSQL_PWD=rootPass ai-job-search-test-mysql /usr/bin/mysql -h 127.0.0.1 -u root -e "SELECT 1" >nul 2>&1
+if not errorlevel 1 exit /b 0
+set /a MYSQL_TRIES+=1
+if !MYSQL_TRIES! GEQ 30 (
+    echo Sandbox mysql not ready.
+    exit /b 1
+)
+ping -n 3 127.0.0.1 >nul
+goto wait_mysql_loop

@@ -10,10 +10,16 @@ services:
     container_name: ai-job-search-test-mysql
     volumes: !override
       - ./.docker-sandbox/mysql:/var/lib/mysql
-      - ./scripts/mysql/ddl.sql:/docker-entrypoint-initdb.d/01-ddl.sql:ro
-      - ./scripts/mysql/skills_data.sql:/docker-entrypoint-initdb.d/02-skills_data.sql:ro
+      - ./scripts/mysql/ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
+      - ./scripts/mysql/skills_data.sql:/docker-entrypoint-initdb.d/skills_data.sql
     ports: !override
       - "13306:3306"
+    healthcheck:
+      test: [ "CMD-SHELL", "mysql -h 127.0.0.1 -uroot -prootPass -e 'SELECT 1' >/dev/null 2>&1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 10s
 
   mongo_db:
     container_name: ai-job-search-test-mongo
