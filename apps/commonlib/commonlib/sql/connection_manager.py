@@ -14,6 +14,7 @@ DEFAULT_MYSQL_PORT = 3306
 SMALL_RANGE_THRESHOLD = 10
 POOL_GET_RETRIES = int(os.getenv('COMMONLIB_DB_POOL_RETRIES', '3'))
 POOL_GET_DELAY = float(os.getenv('COMMONLIB_DB_POOL_RETRY_DELAY', '0.1'))
+DB_DISCOVERY_ENABLED = os.getenv('COMMONLIB_DB_DISCOVERY', 'True').strip().lower() not in ('false', '0', 'no')
 
 _pool_initialized = False
 _pool_lock = threading.Lock()
@@ -118,7 +119,7 @@ def _resolve_db_host(e2e_tests: bool = False) -> str:
     else:
         resolved = _try_targets(['127.0.0.1'], e2e_tests)
 
-    if not resolved:
+    if not resolved and DB_DISCOVERY_ENABLED:
         from commonlib.network.mysql_discovery import auto_discover_host
         resolved = auto_discover_host()
 
@@ -126,9 +127,10 @@ def _resolve_db_host(e2e_tests: bool = False) -> str:
         print(green(f"MySQL at {resolved}"), flush=True)
         return resolved
 
-    raise ConnectionError(
-        "Could not connect to MySQL via configured hosts or LAN discovery"
-    )
+    reason = "Could not connect to MySQL via configured hosts or LAN discovery"
+    if not DB_DISCOVERY_ENABLED:
+        reason = "Could not connect to MySQL via configured hosts (COMMONLIB_DB_DISCOVERY=False)"
+    raise ConnectionError(reason)
 
 
 def _init_pool(e2e_tests: bool = False):

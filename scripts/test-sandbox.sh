@@ -35,6 +35,35 @@ if [ -z "$TARGET" ]; then
     exit 1
 fi
 
+# Modules disabled in .env (all their *_JOB/*_SKILL/*_ENABLED flags false) get a build-only check.
+env_file() { echo "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env"; }
+module_disabled() {
+    local keys=""
+    case "$1" in
+        aienrich) keys="AI_ENRICH_JOB AI_ENRICH_SKILL" ;;
+        aienrichnew) keys="AI_ENRICHNEW_JOB AI_ENRICHNEW_SKILL" ;;
+        aienrichskill) keys="AI_ENRICHSKILL_ENABLED" ;;
+        aienrich3) keys="AI_ENRICH3_JOB AI_ENRICH3_SKILL" ;;
+        aicvmatcher) keys="AI_CVMATCHER_ENABLED" ;;
+    esac
+    [ -z "$keys" ] && return 1
+    if [ -f "$(env_file)" ]; then
+        for key in $keys; do
+            val=$(grep -E "^${key}=" "$(env_file)" | head -n1 | cut -d= -f2- | tr -d "'\" ")
+            case "$val" in
+                [Tt]rue|[Yy]es|[Yy]|TRUE|1) return 1 ;;
+            esac
+        done
+    fi
+    return 0
+}
+
+if module_disabled "$TARGET"; then
+    echo "Module '$TARGET' is disabled in .env, performing build-only check..."
+    docker compose $FILES $PROFILE_ARGS -p "$PROJECT" build "$TARGET"
+    exit $?
+fi
+
 cleanup() {
     if [ "$KEEP" -eq 1 ]; then
         echo "Keep mode: leaving sandbox running in project '$PROJECT'."

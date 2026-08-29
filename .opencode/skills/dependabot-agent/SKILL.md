@@ -1,6 +1,6 @@
 ---
 name: dependabot-agent
-description: Process open GitHub Dependabot PRs on a local checkout: check the library changelog for breaking changes, make required changes and build, run all tests, sandbox-build the affected docker-compose services, check the logs for failures, and verify the GitHub pipeline completes. Requires the GitHub CLI (gh). Master is never pushed to directly — the persistent staging→master PR handles promotion.
+description: Process open GitHub Dependabot PRs on a local checkout: check the library changelog for breaking changes, make required changes and build, run all tests, sandbox-build AND run the affected docker-compose services, verify the logs are error-free, and confirm the GitHub pipeline completes. Any sandbox error aborts the process. Requires the GitHub CLI (gh). Master is never pushed to directly — the persistent staging→master PR handles promotion.
 ---
 
 # Dependabot Agent Instructions
@@ -66,9 +66,9 @@ This regenerates lockfiles/badges like CI does (`ci.yml` runs this matrix):
 ```
 For a `commonlib` bump run the full Python dependent set, e.g. `.\scripts\test.bat commonlib backend scrapper aiEnrich aiEnrichNew aiEnrichSkill aiEnrich3 aiCvMatcher aiFormFiller cron`.
 
-### 5. Sandbox build the affected docker-compose services and check logs
+### 5. Sandbox build+run the affected docker-compose services and check logs — MANDATORY GATE
 
-Run the docker verification in an **isolated sandbox project** so the live `ai-job-search-*` stack and its data are never touched. The sandbox uses `docker-compose.test.override.yml` (renamed `-test` containers, remapped ports, data isolated under `.docker-sandbox/`). The scripts handle build, MySQL clone, log check, and teardown:
+Every PR whose diff touchs a module that runs in the compose stack **must** be built **and** run in the isolated sandbox, and the logs must be clean. The sandbox uses `docker-compose.test.override.yml` (renamed `-test` containers, ports `!override` so no host port collides with the live stack, data isolated under `.docker-sandbox/`). The scripts handle build, MySQL clone, log check, and teardown:
 
 ```bash
 # Windows
@@ -77,22 +77,25 @@ Run the docker verification in an **isolated sandbox project** so the live `ai-j
 ./scripts/test-sandbox.sh <service>
 ```
 
-- Use the affected composed service name, e.g. `backend` or `web`. The script brings up only that service plus its DB dependencies in the isolated `dependabot-test` project. The `aiEnrich*` workers (`aienrich`, `aienrichnew`, `aienrichskill`, `aienrich3`) and `aicvmatcher` are also defined in the sandbox override; the `aiEnrich*` ones are profile-gated in the base file, so pass their profile, e.g. `.\scripts\test-sandbox.bat --profile aiEnrichNew aienrichnew`.
-- **MySQL data clone**: for `backend`, the script dumps the live `jobs` DB (`scripts/mysql/backup.*`) into `scripts/mysql/backups/`, then restores it into the sandbox mysql container. Skip with `--no-db-clone`.
+- Use the affected composed service name, e.g. `backend` or `web`. The script brings up only that service plus its DB dependencies in the isolated `dependabot-test` project. The `aiEnrich*` workers except `aienrich`/`aienrichskill` (`aienrichnew`, `aienrich3`), `aicvmatcher`, `cron`, and `aiformfiller` are sandbox-runnable; the profile-gated ones need their profile, e.g. `.\scripts\test-sandbox.bat --profile aiEnrichNew aienrichnew`.
+- **Deterministic addresses — no autodiscovery**: the sandbox never autodiscovers IPs/ports. `docker-compose.test.override.yml` pins every interacting URL to the sandbox service names + internal ports (e.g. web `BACKEND_URL=http://backend:8000`, backend `COMMONLIB_DB_HOST=mysql_db` + `MONGO_URI=...mongo_db:27017`), and sets `COMMONLIB_DB_DISCOVERY=False` so commonlib never LAN-scans for MySQL (which would otherwise find the LIVE mysql at the docker bridge). Services NOT deployed in the sandbox point to the host (`host.docker.internal`, e.g. ollama at `:11434`). The web dev-proxy skips its probe/scan because `BACKEND_URL` is set.
+- **Disabled aiEnrich modules are build-only**: the script reads the module enable flags from `.env` (`AI_ENRICH_JOB`/`AI_ENRICH_SKILL`, `AI_ENRICHNEW_JOB`/`AI_ENRICHNEW_SKILL`, `AI_ENRICHSKILL_ENABLED`, `AI_ENRICH3_JOB`/`AI_ENRICH3_SKILL`, `AI_CVMATCHER_ENABLED`). If every flag for the module is false, it does a **build-only** check and does not require the service to run/process.
+- **MySQL data clone**: the script dumps the live `jobs` DB (`scripts/mysql/backup.*`) into `scripts/mysql/backups/`, then restores it into the sandbox mysql container. Skip with `--no-db-clone`. The sandbox mysql is initialized only from the schema SQL files (`ddl.sql`, `mysql_queries.sql`, `skills_data.sql`), never from the maintenance `backup.*`/`restore.*` scripts (they break the MySQL entrypoint on fresh boots due to CRLF).
 - **Mongo**: the sandbox spins a fresh, empty Mongo seeded by `scripts/mongo/init.js` (full isolation) — the base full-stack Mongo is never touched.
-- **Ollama/prometheus/grafana are never duplicated**: they are not defined in the override. The sandbox runs services whose dependency graph avoids ollama (`backend`, `web`, `aienrichnew`, `aienrich3`, `aicvmatcher`, `cron`).
-- **Ollama-dependent services** (`aienrich`, `aienrichskill`, `scrapper`): do a **build-only** check (never `up`) and rely on the module unit tests + the GitHub `ci-gate` for runtime validation. Example:
+- **Ollama/prometheus/grafana are never duplicated**: they are not defined in the override.
+- **Ollama-dependent services** (`aienrich`, `aienrichskill`, `scrapper`): their dependency graph includes ollama, so they cannot `up` in the sandbox — do a **build-only** check (which still must succeed):
   ```bash
   docker compose -f docker-compose.yml -f docker-compose.test.override.yml -p dependabot-test build <service>
   ```
-  Then tear the project down (the wrapper's teardown only covers `up`-based runs).
-- Skip this step entirely for a module that never runs in the compose stack (e.g. pure `apps/e2e` only).
+  Then tear the build artifacts down.
 - **Check for startup success and errors** in the sandbox:
   ```bash
   docker compose -p dependabot-test ps                 # sandbox services should be Up (healthy)
   docker compose -p dependabot-test logs <service> --tail=100
   ```
-  Treat container restart loops, non-zero exits, failed healthchecks, or error-level stack traces as red flags requiring investigation before committing.
+  The log check must show **zero ERROR/CRITICAL/Traceback lines** and no restart loops, non-zero exits, or failed healthchecks.
+- **A sandbox error ABORTS the dependabot process**: if the build fails, a service fails to start, or the logs contain errors, STOP — do not merge, do not move on to the next PR. Fix the underlying cause (the sandbox fix may itself be a required change) and re-run the sandbox until it is clean. Do not treat known build errors as "pre-existing and acceptable".
+- **Skip ONLY** for a module that never runs in the compose stack (e.g. pure `apps/e2e` only).
 - The wrapper tears down the sandbox (removes containers, the `mongo_data_sandbox` volume, and the `.docker-sandbox/` dir) on exit unless `--keep` is passed.
 
 ### 6. Green result

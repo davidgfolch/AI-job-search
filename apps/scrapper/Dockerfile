@@ -40,8 +40,8 @@ RUN wget -q -O /tmp/google-chrome-key.pub https://dl-ssl.google.com/linux/linux_
     && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/* /tmp/google-chrome-key.pub
 
-# Install Poetry
-RUN pip install --no-cache-dir poetry==1.8.0
+# Install Poetry (>=2 required for PEP 621 [project] pyproject support)
+RUN pip install --no-cache-dir "poetry>=2.0"
 
 # Copy commonlib first and install it
 COPY apps/commonlib /app/apps/commonlib
