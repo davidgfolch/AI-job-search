@@ -1,20 +1,20 @@
-<svg width="115.3" height="20" viewBox="0 0 1153 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="apps/e2e: 72.75%">
-  <title>apps/e2e: 72.75%</title>
-  <linearGradient id="EDxMU" x2="0" y2="100%">
+<svg width="115.3" height="20" viewBox="0 0 1153 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="apps/e2e: 72.82%">
+  <title>apps/e2e: 72.82%</title>
+  <linearGradient id="fVvOD" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <mask id="paZpu"><rect width="1153" height="200" rx="30" fill="#FFF"/></mask>
-  <g mask="url(#paZpu)">
+  <mask id="OwVEL"><rect width="1153" height="200" rx="30" fill="#FFF"/></mask>
+  <g mask="url(#OwVEL)">
     <rect width="613" height="200" fill="#555"/>
     <rect width="540" height="200" fill="#cba317" x="613"/>
-    <rect width="1153" height="200" fill="url(#EDxMU)"/>
+    <rect width="1153" height="200" fill="url(#fVvOD)"/>
   </g>
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="513" fill="#000" opacity="0.25">apps/e2e</text>
     <text x="50" y="138" textLength="513">apps/e2e</text>
-    <text x="668" y="148" textLength="440" fill="#000" opacity="0.25">72.75%</text>
-    <text x="658" y="138" textLength="440">72.75%</text>
+    <text x="668" y="148" textLength="440" fill="#000" opacity="0.25">72.82%</text>
+    <text x="658" y="138" textLength="440">72.82%</text>
   </g>
   
 </svg>
