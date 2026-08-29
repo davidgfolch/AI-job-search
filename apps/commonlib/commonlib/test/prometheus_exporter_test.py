@@ -1,4 +1,5 @@
-from commonlib.prometheus_exporter import build_prometheus_metrics
+from unittest.mock import patch, mock_open
+from commonlib.prometheus_exporter import build_prometheus_metrics, build_log_metrics, LOG_SOURCES, MAX_LOG_ENTRIES
 
 
 def test_empty_snapshot():
@@ -86,3 +87,63 @@ def test_missing_optional_fields():
     assert 'ai_enrich_jobs_processed_total{module="minimal"} 1.0' in output
     assert 'ai_enrich_duration_seconds_p50{module=' not in output
     assert 'ai_enrich_last_processed_timestamp{module=' not in output
+
+
+def test_invalid_last_processed_timestamp():
+    snapshot = {
+        "modules": {
+            "bad_ts": {
+                "jobs_processed": 1, "jobs_succeeded": 1, "jobs_failed": 0,
+                "total_duration": 5.0, "pending_jobs": 0,
+                "cache_hits": 0, "cache_misses": 0,
+                "last_processed_at": "not-a-valid-timestamp",
+            }
+        },
+        "global": {"total_jobs": 1, "total_errors": 0},
+    }
+    result = build_prometheus_metrics(snapshot)
+    output = result.decode()
+    assert 'ai_enrich_last_processed_timestamp{' not in output
+
+
+def test_build_log_metrics_no_files():
+    with patch("os.path.isfile", return_value=False):
+        result = build_log_metrics()
+    assert isinstance(result, bytes)
+
+
+def test_build_log_metrics_with_valid_entries():
+    log_data = (
+        '{"event": "job.result", "job_id": "job-1", "duration": 1.5}\n'
+        '{"event": "job.result", "job_id": "job-2", "duration": 2.5}\n'
+        '{"event": "other.event", "job_id": "job-3", "duration": 3.5}\n'
+    )
+    with patch("os.path.isfile", return_value=True), \
+         patch("builtins.open", mock_open(read_data=log_data)):
+        result = build_log_metrics()
+    output = result.decode()
+    assert 'ai_enrich_job_duration_seconds{job_id="job-1",module="aiEnrich"} 1.5' in output
+    assert 'ai_enrich_job_duration_seconds{job_id="job-3",module="aiEnrichSkill"}' not in output
+
+
+def test_build_log_metrics_file_oserror():
+    with patch("os.path.isfile", return_value=True), \
+         patch("builtins.open", side_effect=OSError("permission denied")):
+        result = build_log_metrics()
+    assert isinstance(result, bytes)
+
+
+def test_build_log_metrics_invalid_json_lines():
+    log_data = 'not json\n{"event": "job.result", "job_id": null, "duration": "abc"}\n'
+    with patch("os.path.isfile", return_value=True), \
+         patch("builtins.open", mock_open(read_data=log_data)):
+        result = build_log_metrics()
+    assert isinstance(result, bytes)
+
+
+def test_build_log_metrics_without_duration():
+    log_data = '{"event": "job.result", "job_id": "job-1"}\n'
+    with patch("os.path.isfile", return_value=True), \
+         patch("builtins.open", mock_open(read_data=log_data)):
+        result = build_log_metrics()
+    assert isinstance(result, bytes)

@@ -114,6 +114,13 @@ export function useFilterConfigurations({
         operations.loadConfiguration(config);
     }, [operations.loadConfiguration, isWatching, resetWatcher]);
 
+    const pinnedConfigs = useMemo(() => savedConfigs.filter(c => c.pinned), [savedConfigs]);
+
+    const loadPinnedByPosition = useCallback((index: number) => {
+        const config = pinnedConfigs[index - 1];
+        if (config) handleLoadConfiguration(config);
+    }, [pinnedConfigs, handleLoadConfiguration]);
+
     const {
         toggleWatch: toggleConfigWatch,
         toggleStatistics,
@@ -179,6 +186,8 @@ export function useFilterConfigurations({
         watcherResults,
         lastCheckTime,
         toggleWatcherActive,
-        reorderConfigurations: operations.reorderConfigurations
+        reorderConfigurations: operations.reorderConfigurations,
+        pinnedConfigs,
+        loadPinnedByPosition
     };
 }

@@ -57,6 +57,8 @@ export function parseShortcut(value: string | undefined): ShortcutCombo | null {
     return { ctrl, alt: !ctrl, key, display: `${modifier.charAt(0).toUpperCase()}${modifier.slice(1)}+${key.toUpperCase()}` };
 }
 
+export const titleWithShortcut = (description: string, combo: ShortcutCombo): string => `${description} — ${combo.display}`;
+
 export function resolveShortcuts(envSettings: Record<string, string> | undefined): Record<ShortcutAction, ShortcutCombo> {
     const result = {} as Record<ShortcutAction, ShortcutCombo>;
     for (const info of SHORTCUT_ACTIONS) {

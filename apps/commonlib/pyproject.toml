@@ -22,9 +22,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.2",
+    "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
-    "genbadge[coverage]>=1.1.0",
+    "genbadge[coverage]>=1.1.3",
 ]
 
 [tool.coverage.run]
@@ -33,7 +33,7 @@ source = ["commonlib"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 85
+fail_under = 90
 exclude_lines = [
     "pragma: no cover",
     # Exclude Windows-specific blocks from coverage on Linux/macOS

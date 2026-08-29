@@ -5,6 +5,7 @@ import type { Job } from '../../api/ViewerApi';
 
 const makeActions = () => ({
     ignoreJob: vi.fn(),
+    ignoreSelected: vi.fn(),
     appliedJob: vi.fn(),
     nextJob: vi.fn(),
     previousJob: vi.fn(),
@@ -12,8 +13,8 @@ const makeActions = () => ({
 
 const makeJob = (overrides: Partial<Job> = {}) => ({ id: 1, url: 'https://example.com/job', ...overrides } as Job);
 
-const render = (actions = makeActions(), selectedJob: Job | null = null, jobListRef: { current: HTMLDivElement | null } = { current: null }, detailScrollRef: { current: HTMLDivElement | null } = { current: null }) => {
-    const { result } = renderHook(() => useViewerShortcuts(actions, selectedJob, jobListRef, detailScrollRef));
+const render = (actions = makeActions(), selectedJob: Job | null = null, isBulk = false, jobListRef: { current: HTMLDivElement | null } = { current: null }, detailScrollRef: { current: HTMLDivElement | null } = { current: null }) => {
+    const { result } = renderHook(() => useViewerShortcuts(actions, selectedJob, isBulk, jobListRef, detailScrollRef));
     return { actions, result };
 };
 
@@ -28,6 +29,13 @@ describe('useViewerShortcuts', () => {
         expect(actions.appliedJob).toHaveBeenCalledTimes(1);
         expect(actions.nextJob).toHaveBeenCalledTimes(1);
         expect(actions.previousJob).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls ignoreSelected when bulk', () => {
+        const { actions, result } = render(makeActions(), null, true);
+        result.current('ignore');
+        expect(actions.ignoreSelected).toHaveBeenCalledTimes(1);
+        expect(actions.ignoreJob).not.toHaveBeenCalled();
     });
 
     it('opens the selected job url on openUrl', () => {
@@ -57,7 +65,7 @@ describe('useViewerShortcuts', () => {
         const detailFocus = vi.fn();
         const jobListRef = { current: { focus: listFocus } as unknown as HTMLDivElement };
         const detailScrollRef = { current: { focus: detailFocus } as unknown as HTMLDivElement };
-        const { result } = render(makeActions(), null, jobListRef, detailScrollRef);
+        const { result } = render(makeActions(), null, false, jobListRef, detailScrollRef);
         result.current('listFocus');
         result.current('detailFocus');
         expect(listFocus).toHaveBeenCalledWith({ preventScroll: true });

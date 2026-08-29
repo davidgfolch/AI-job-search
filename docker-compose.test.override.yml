@@ -1,0 +1,82 @@
+# Docker Compose TEST SANDBOX override.
+# Used ONLY by scripts/test-sandbox.* (dependabot-agent) with an isolated project:
+#   docker-compose -p dependabot-test -f docker-compose.yml -f docker-compose.test.override.yml <cmd>
+# It renames containers to -test, remaps host ports, and isolates data into
+# .docker-sandbox/ so it never touches the live ai-job-search-* stack.
+# Ollama/prometheus/grafana are intentionally NOT defined here (no duplicates).
+
+services:
+  mysql_db:
+    container_name: ai-job-search-test-mysql
+    volumes:
+      - ./.docker-sandbox/mysql:/var/lib/mysql
+      - ./scripts/mysql:/docker-entrypoint-initdb.d
+    ports:
+      - "13306:3306"
+
+  mongo_db:
+    container_name: ai-job-search-test-mongo
+    volumes:
+      - mongo_data_sandbox:/data/db
+      - ./scripts/mongo:/docker-entrypoint-initdb.d
+    ports:
+      - "17017:27017"
+
+  backend:
+    container_name: ai-job-search-test-backend
+    ports:
+      - "18000:8000"
+    environment:
+      - COMMONLIB_DB_HOST=mysql_db
+      - MONGO_URI=mongodb://root:rootPass@mongo_db:27017/
+
+  web:
+    container_name: ai-job-search-test-web
+    ports:
+      - "15173:5173"
+
+  aienrich:
+    container_name: ai-job-search-test-aienrich
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      COMMONLIB_DB_HOST: mysql_db
+      AI_ENRICH_OLLAMA_BASE_URL: http://host.docker.internal:11434
+
+  aienrichnew:
+    container_name: ai-job-search-test-aienrichnew
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      COMMONLIB_DB_HOST: mysql_db
+
+  aienrichskill:
+    container_name: ai-job-search-test-aienrichskill
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      COMMONLIB_DB_HOST: mysql_db
+      AI_ENRICHSKILL_OLLAMA_BASE_URL: http://host.docker.internal:11434
+
+  aienrich3:
+    container_name: ai-job-search-test-aienrich3
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      COMMONLIB_DB_HOST: mysql_db
+
+  aicvmatcher:
+    container_name: ai-job-search-test-aicvmatcher
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      COMMONLIB_DB_HOST: mysql_db
+
+volumes:
+  mongo_data_sandbox:
+    driver: local

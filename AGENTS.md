@@ -17,6 +17,23 @@ cp scripts/.env.secrets.example .env.secrets
 docker-compose up -d
 ```
 
+### Sandboxed Docker Verification (dependabot-agent)
+Brings a service up in an isolated `dependabot-test` project so the live `ai-job-search-*` stack and its data are never touched. Uses `docker-compose.test.override.yml` (renamed `-test` containers, remapped ports, data under `.docker-sandbox/`), and tears the sandbox down on exit.
+```bash
+# Windows
+.\scripts\test-sandbox.bat <service> [--profile <name>] [--no-db-clone] [--keep]
+# Linux/Mac
+./scripts/test-sandbox.sh <service> [--profile <name>] [--no-db-clone] [--keep]
+
+# Examples
+.\scripts\test-sandbox.bat backend
+.\scripts\test-sandbox.bat --profile aiEnrichNew aienrichnew
+```
+- `backend` auto-clones the live MySQL `jobs` DB into the sandbox (via `scripts/mysql/backup.*`); skip with `--no-db-clone`.
+- Mongo boots fresh/empty from `scripts/mongo/init.js`; ollama/prometheus/grafana are never duplicated.
+- Profile-gated ai workers need their profile (`--profile aienrich|aiEnrichNew|aiEnrichSkill|aiEnrich3`).
+- Ollama-dependent services (`aienrich`, `aienrichskill`, `scrapper`) are validated build-only + unit tests + ci-gate, not `up`.
+
 ### Python Apps (commonlib, scrapper)
 ```bash
 # Install dependencies
@@ -215,9 +232,13 @@ This project has a knowledge graph at graphify-out/ with god nodes, community st
 
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
+Always run graphify through the wrapper scripts — `scripts\graphify\graphify.bat` (Windows) or `scripts/graphify/graphify.sh` (Linux/Mac) — never the raw `graphify` binary. The wrapper owns the full pipeline (no args = rebuild, `--clean`, `--module <name>`) and delegates `query`/`path`/`explain` to the CLI; mutating subcommands (`update`, `cluster-only`, `add`, `export`, `extract`, `merge-graphs`, URLs) are delegated and then re-run the repo HTML generator.
+
+`graphify-out/graph.html` is repo-owned: it is generated ONLY by `python scripts/graphify/graphify-html-grouped.py` (module-grouped visualization). Never regenerate it with upstream CLI commands (`graphify export html`, bare `graphify update .`, `graphify cluster-only`, path builds) — they overwrite it with the default/aggregated output.
+
 Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- For codebase questions, first run the wrapper `query` subcommand (e.g. `scripts\graphify\graphify.bat query "<question>"`) when graphify-out/graph.json exists. Use `path` for relationships and `explain` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- After modifying code, run the wrapper `update` subcommand (e.g. `scripts\graphify\graphify.bat update .`) to keep the graph current (AST-only, no API cost).
