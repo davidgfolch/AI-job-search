@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal } from '../../common/components/core/Modal';
 
 interface EditSynonymGroupModalProps {
@@ -10,6 +10,10 @@ interface EditSynonymGroupModalProps {
 
 export function EditSynonymGroupModal({ groupId, onSave, onClose }: EditSynonymGroupModalProps) {
   const [names, setNames] = useState<string[]>(['', '']);
+  const namesRef = useRef(names);
+  const onSaveRef = useRef(onSave);
+  useEffect(() => { namesRef.current = names; }, [names]);
+  useEffect(() => { onSaveRef.current = onSave; }, [onSave]);
 
   const updateName = (index: number, value: string) => {
     const updated = [...names];
@@ -33,8 +37,21 @@ export function EditSynonymGroupModal({ groupId, onSave, onClose }: EditSynonymG
 
   const valid = names.filter(n => n.trim()).length >= 2;
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const current = namesRef.current;
+      const filtered = current.map(n => n.trim()).filter(Boolean);
+      if (e.key === 'Enter' && filtered.length >= 2) {
+        e.preventDefault();
+        onSaveRef.current(filtered);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <Modal onClose={onClose}>
+    <Modal isOpen={true} onClose={onClose}>
       <div className="modal-content">
         <h2>{groupId ? 'Add Synonym' : 'New Synonym Group'}</h2>
         {names.map((name, i) => (

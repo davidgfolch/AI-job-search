@@ -21,7 +21,7 @@ COPY apps/web /app/
 
 # Entrypoint reinstalls node_modules when package-lock.json changes
 COPY apps/web/docker-entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Expose Vite dev server port
 EXPOSE 5173

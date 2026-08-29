@@ -45,4 +45,18 @@ describe('ShortcutsControls', () => {
         fireEvent.keyDown(window, { key: 'Escape' });
         expect(screen.queryByText('Keyboard shortcuts')).not.toBeInTheDocument();
     });
+
+    it('shows pinned configuration shortcuts with position', () => {
+        const pinnedShortcuts = [
+            { name: 'By company', index: 1 },
+            { name: 'Remote', index: 2 },
+        ];
+        render(<ShortcutsControls enabled={true} onToggle={vi.fn()} shortcuts={shortcuts} pinnedShortcuts={pinnedShortcuts} />);
+        fireEvent.click(screen.getByTitle('Show keyboard shortcuts'));
+        expect(screen.getByText('Load pinned filters:')).toBeInTheDocument();
+        expect(screen.getByText('By company')).toBeInTheDocument();
+        expect(screen.getByText('Remote')).toBeInTheDocument();
+        expect(screen.getByText('Alt+1')).toBeInTheDocument();
+        expect(screen.getByText('Alt+2')).toBeInTheDocument();
+    });
 });

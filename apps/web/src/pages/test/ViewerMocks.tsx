@@ -22,6 +22,23 @@ export const MockJobList = ({ jobs, onJobSelect, onLoadMore, isLoading, error }:
     );
 };
 
+export const MockSelectableJobList = ({ jobs, onToggleSelectJob, onToggleSelectAll }: any) => (
+    <div>
+        <input id="job-table-select-all" type="checkbox" onChange={onToggleSelectAll} />
+        {jobs.map((job: any) => (
+            <div key={job.id}>
+                <input
+                    id={`job-job-${job.id}-checkbox`}
+                    type="checkbox"
+                    aria-label={`Select ${job.title}`}
+                    onChange={() => onToggleSelectJob(job.id)}
+                />
+                <span>{job.title}</span>
+            </div>
+        ))}
+    </div>
+);
+
 export const MockJobDetail = ({ job }: any) => (
     <div>
         <div className="markdown-content"><p>{job.markdown}</p></div>
