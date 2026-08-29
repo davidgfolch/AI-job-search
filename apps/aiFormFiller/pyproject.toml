@@ -7,10 +7,10 @@ dependencies = [
     "commonlib==0.1.0",
     "fastapi>=0.115.0",
     "uvicorn>=0.30.0",
-    "openai>=1.55.0",
+    "openai>=3.0.0",
     "torch>=2.2.0",
     "transformers>=4.40.0",
-    "accelerate>=0.29.0",
+    "accelerate>=1.14.0",
 ]
 
 [project.scripts]
@@ -22,7 +22,7 @@ commonlib = { path = "../commonlib", editable = true }
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
+    "pytest-cov>=7.1.0",
     "httpx>=0.28.0",
     "genbadge[coverage]>=1.1.0",
 ]

@@ -59,6 +59,7 @@ export const useJobMutations = ({
       setSelectedIds,
       onUpdateSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["jobUpdates"] });
+          queryClient.invalidateQueries({ queryKey: ["jobs"] });
       }
   });
 

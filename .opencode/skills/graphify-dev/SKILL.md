@@ -35,6 +35,18 @@ diff -r <pristine>/graphify "$GRAPHIFY_DIR" --exclude=__pycache__
 If the diff is non-empty, the package was modified. Restore it by reinstalling:
 `uv tool install --force graphifyy==<version>` (or `uv tool upgrade graphifyy`). Never try to preserve or re-apply the edits.
 
+## Always invoke through the repo scripts
+
+Agents run graphify in this repo by calling the wrappers — `scripts\graphify\graphify.bat` (Windows) or `scripts/graphify/graphify.sh` (Linux/Mac) — never the raw `graphify` binary. The wrappers own the full pipeline (no args = rebuild, `--clean`, `--module <name>`), delegate read-only/meta subcommands (`query`, `path`, `explain`, `--help`, `--version`) verbatim, and shadow the graph/HTML-mutating subcommands (`update`, `cluster-only`, `add`, `export`, `extract`, `merge-graphs`, URLs) so `graphify-out/graph.html` always keeps the repo customization.
+
+### Hard rule: `graphify-out/graph.html` is repo-owned
+
+`graphify-out/graph.html` is generated ONLY by `scripts/graphify/graphify-html-grouped.py` (module-grouped matrix). NEVER let upstream CLI output replace it:
+- Never run `graphify export html`, a bare `graphify update .`, `graphify cluster-only`, or a direct path build — they write the default/aggregated visualization and destroy the custom output.
+- Regenerating HTML only (data already in `graphify-out/graph.json`): `python scripts/graphify/graphify-html-grouped.py`.
+- Rebuilding data + HTML: the wrapper pipeline (no args) or `--module <name>` — Step 5 already runs the custom generator.
+- Mutating wrapper subcommands (`update .`, `cluster-only`, `export html`, …) automatically re-run the custom generator afterwards, restoring the module-grouped HTML.
+
 ## Where customization actually lives
 
 All graphify implementation lives in this repo under `scripts/graphify/`:
@@ -56,7 +68,7 @@ This repo only uses the graphify CLI (extract/merge/cluster) and Python APIs as-
 1. **Read the pipeline first.** `scripts/graphify/graphify.sh` (or `.bat`) is the single entry point. Understand which step produces the output you want to change before touching anything.
 2. **Changes to the visualization** → edit `scripts/graphify/templates/graphify-html.tpl`, then regenerate with `python scripts/graphify/graphify-html-grouped.py` (fast: it only rebuilds the HTML from the existing `graphify-out/graph.json`). Full pipeline `scripts/graphify/graphify.sh` only needed if graph data itself changed.
 3. **Changes to graph data** (nodes/edges/communities) → edit the relevant post-processing script and re-run the full pipeline (or `--module <name>` + merge steps).
-4. **Verify by regenerating** `graphify-out/graph.html` and opening it, or inspecting the emitted JSON. Re-run `graphify update .` after any code change to keep `graphify-out/` current (AST-only, no API cost).
+4. **Verify by regenerating** `graphify-out/graph.html` and opening it, or inspecting the emitted JSON. Re-run `scripts/graphify/graphify.sh update .` (or `scripts\graphify\graphify.bat update .` on Windows) after any code change to keep `graphify-out/` current (AST-only, no API cost).
 
 ### Worked example: a sidebar toggle default
 
@@ -64,6 +76,6 @@ The "Show file nodes" checkbox is defined in `scripts/graphify/templates/graphif
 
 ## When NOT to use this skill
 
-- Using graphify to query an existing graph (asking architecture questions, `/graphify query`, `graphify path`, `graphify explain`) → use the `graphify` skill instead.
+- Using graphify to query an existing graph (asking architecture questions, `/graphify query`, `path`, `explain` — all run through `scripts/graphify/graphify.[bat|sh]`) → use the `graphify` skill instead.
 - Running a one-off graph build without changing graphify itself → the `graphify` skill.
-- Only `graphify-out/*` output files changed and you just want to rebuild → `graphify update .`.
+- Only `graphify-out/*` output files changed and you just want to rebuild → `scripts/graphify/graphify.sh update .` (or `.bat` on Windows).

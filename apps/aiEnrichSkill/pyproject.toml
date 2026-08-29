@@ -8,7 +8,7 @@ dependencies = [
     "requests>=2.31.0",
     "pandas==2.3.3",
     "transformers>=4.40.0",
-    "torch>=2.2.0",
+    "torch>=2.13.0",
     "accelerate>=0.29.0",
 ]
 
@@ -21,7 +21,7 @@ commonlib = { path = "../commonlib", editable = true }
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
+    "pytest-cov>=7.1.0",
     "genbadge[coverage]>=1.1.0"
 ]
 

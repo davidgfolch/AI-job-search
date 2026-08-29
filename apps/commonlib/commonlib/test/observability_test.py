@@ -43,9 +43,7 @@ def test_log_writes_to_jsonl_file():
     configure_logging("test_jsonl")
     logger = get_logger("test_jsonl.case")
     log_file = os.path.join(LOG_DIR, "test_jsonl.jsonl")
-
     logger.info("test.event", key="value", num=42)
-
     assert os.path.exists(log_file)
     with open(log_file, encoding="utf-8") as f:
         line = f.readline().strip()
@@ -56,7 +54,6 @@ def test_log_writes_to_jsonl_file():
     assert entry["level"] == "info"
     assert entry["logger"] == "test_jsonl"
     assert "timestamp" in entry
-
     os.remove(log_file)
 
 
@@ -65,10 +62,8 @@ def test_log_rotation():
     configure_logging("test_rotation")
     logger = get_logger("test_rotation.case")
     log_file = os.path.join(LOG_DIR, "test_rotation.jsonl")
-
     with open(log_file, "w", encoding="utf-8") as f:
         f.write("x" * 101)
-
     orig_max = observability.LOG_FILE_MAX_BYTES
     try:
         observability.LOG_FILE_MAX_BYTES = 100
@@ -76,8 +71,47 @@ def test_log_rotation():
         assert os.path.exists(f"{log_file}.1")
     finally:
         observability.LOG_FILE_MAX_BYTES = orig_max
-
     if os.path.exists(f"{log_file}.1"):
         os.remove(f"{log_file}.1")
     if os.path.exists(log_file):
         os.remove(log_file)
+
+
+def test_log_rotation_oserror():
+    _reset()
+    configure_logging("test_rotation_err")
+    logger = get_logger("test_rotation_err.case")
+    log_file = os.path.join(LOG_DIR, "test_rotation_err.jsonl")
+    orig_max = observability.LOG_FILE_MAX_BYTES
+    orig_backup = observability.LOG_FILE_BACKUP_COUNT
+    try:
+        observability.LOG_FILE_MAX_BYTES = 10
+        observability.LOG_FILE_BACKUP_COUNT = 2
+        with open(log_file, "w", encoding="utf-8") as f:
+            f.write("x" * 20)
+        with patch("os.replace", side_effect=OSError("permission denied")):
+            logger.info("rotation_error_test")
+    finally:
+        observability.LOG_FILE_MAX_BYTES = orig_max
+        observability.LOG_FILE_BACKUP_COUNT = orig_backup
+    if os.path.exists(log_file):
+        os.remove(log_file)
+
+
+def test_log_jsonl_write_oserror():
+    _reset()
+    configure_logging("test_write_err")
+    logger = get_logger("test_write_err.case")
+    log_file = os.path.join(LOG_DIR, "test_write_err.jsonl")
+    orig_max = observability.LOG_FILE_MAX_BYTES
+    try:
+        observability.LOG_FILE_MAX_BYTES = 999999999
+        with patch("builtins.open", side_effect=OSError("disk full")):
+            logger.info("write_error_test")
+    finally:
+        observability.LOG_FILE_MAX_BYTES = orig_max
+    if os.path.exists(log_file):
+        os.remove(log_file)
+
+
+from unittest.mock import patch

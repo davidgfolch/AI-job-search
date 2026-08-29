@@ -33,7 +33,9 @@ export function useBulkJobMutations({
       setMessage({ text: `Updated ${data.updated} jobs`, type: "success" });
       setSelectionMode("none");
       setSelectedIds(new Set());
-      if (variables.ids && onJobsDeleted) {
+      if (variables.select_all && onJobsDeleted) {
+        onJobsDeleted('all');
+      } else if (variables.ids && onJobsDeleted) {
         onJobsDeleted(variables.ids);
       }
       onUpdateSuccess?.(variables);

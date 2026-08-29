@@ -1,0 +1,10 @@
+# Ensure shell scripts always use LF line endings (required for Docker/Linux)
+*.sh text eol=lf
+
+# Dockerfiles
+Dockerfile* text eol=lf
+
+# Config files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf

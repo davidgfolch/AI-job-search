@@ -21,7 +21,7 @@ export default function ConfirmModal({
         if (!isOpen) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 onConfirm();
             }
