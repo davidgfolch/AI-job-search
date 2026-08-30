@@ -25,28 +25,13 @@ Run specific app tests (single or multiple):
 - **Linux**: `./scripts/test.sh commonlib` or `./scripts/test.sh commonlib web e2e`
 - **Windows**: `.\scripts\test.bat commonlib` or `.\scripts\test.bat commonlib web e2e`
 
-## Agent Skills
+## Agentic SDLC
 
-The agent has access to specialized skills located in `.agent/skills`.
-
-### Skill Builder
-A meta-skill used to create new skills for the agent.
-
-**Usage:**
-Ask the agent to "create a new skill named [skill-name]" or "use the skill builder".
-
-**Location:** `.agent/skills/skill-builder/SKILL.md`
-
-### Dependabot Agent
-Processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). The agent runs the TDD pipeline for the affected module, then **builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, checks logs for errors, and **aborts the whole process on any build/start/log error**. Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
-
-**Usage:**
-Ask the agent to "process the open dependabot PRs" (optionally scoped to a module).
-
-**Location:** `.opencode/skills/dependabot-agent/SKILL.md`
+Agent skills, rules, and workflows (including graphify and the dependabot agent) are documented in [AGENTIC_SDLC.md](AGENTIC_SDLC.md). All agent skills live under `.claude/skills/`.
 
 ## Related Documentation
 
+- **Agentic SDLC**: [AGENTIC_SDLC.md](AGENTIC_SDLC.md)
 - **Installation Guide**: [README_INSTALL.md](README_INSTALL.md)
 - **Docker Development**: [DOCKER_DEV.md](DOCKER_DEV.md)
 - **Contribution Guide**: [README_CONTRIBUTE.md](README_CONTRIBUTE.md)
