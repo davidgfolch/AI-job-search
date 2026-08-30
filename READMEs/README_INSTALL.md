@@ -17,7 +17,7 @@ This project uses different package managers for different components:
 
 ## Installation Steps
 
-> **Note**: For the best development experience in VS Code, open the `AI-job-search.code-workspace` file after installation. This ensures the correct Python interpreters are selected for each app.
+> **Note**: For the best development experience in VS Code, open the `.vscode/AI-job-search.code-workspace` file after installation. This ensures the correct Python interpreters are selected for each app.
 
 ### 1. Install Poetry (Python)
 

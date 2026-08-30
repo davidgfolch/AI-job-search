@@ -2,47 +2,47 @@
     "folders": [
         {
             "name": "root",
-            "path": "."
+            "path": "../"
         },
         {
             "name": "backend",
-            "path": "apps/backend"
+            "path": "../apps/backend"
         },
         {
             "name": "scrapper",
-            "path": "apps/scrapper"
+            "path": "../apps/scrapper"
         },
         {
             "name": "web",
-            "path": "apps/web"
+            "path": "../apps/web"
         },
         {
             "name": "commonlib",
-            "path": "apps/commonlib"
+            "path": "../apps/commonlib"
         },
         {
             "name": "aiEnrich",
-            "path": "apps/aiEnrich"
+            "path": "../apps/aiEnrich"
         },
         {
             "name": "aiEnrichNew",
-            "path": "apps/aiEnrichNew"
+            "path": "../apps/aiEnrichNew"
         },
         {
             "name": "aiCvEnrich3",
-            "path": "apps/aiEnrich3"
+            "path": "../apps/aiEnrich3"
         },
         {
             "name": "aiCvMatcher",
-            "path": "apps/aiCvMatcher"
+            "path": "../apps/aiCvMatcher"
         },
         {
             "name": "e2e",
-            "path": "apps/e2e"
+            "path": "../apps/e2e"
         }
     ],
     "settings": {
-        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+        "python.defaultInterpreterPath": "${workspaceFolder}/../.venv/Scripts/python.exe",
         "python.terminal.activateEnvironment": true,
         "files.exclude": {
             "**/.git": true,

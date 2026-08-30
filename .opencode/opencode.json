@@ -1,5 +1,14 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "instructions": [".claude/rules/*.md"],
+  "formatter": {
+    "ruff": {
+      "disabled": true
+    },
+    "uv": {
+      "disabled": true
+    }
+  },
   "plugin": [
     ".opencode/plugins/graphify.js"
   ]
