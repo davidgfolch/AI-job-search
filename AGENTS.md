@@ -220,11 +220,16 @@ Environment variables are split across two files:
 
 ## Skills
 
-Agent skills are located in `.opencode/skills/`:
+Agent skills are located in `.claude/skills/`:
 - `skill-builder`: Create new agent skills
 - `e2e-implementer`: Create Playwright E2E tests
 - `test-implementer`: Implement unit tests
+- `graphify`: Query the repository knowledge graph (query/path/explain)
 - `graphify-dev`: Change/improve graphify functionality (visualization, pipeline scripts). MANDATORY before editing anything graphify-related — never modify the uv-installed graphify package.
+- `version-bumper`: Bump the version of any apps/* module following semver
+- `dependabot-agent`: Process open GitHub Dependabot PRs
+- `scrapling-implementer`: Scrapling library usage (fetching, parsing, spiders)
+- `view-backend-logs`: How to view backend logs using docker-compose
 
 ## graphify
 

@@ -43,7 +43,7 @@ Download and install from [nodejs.org](https://nodejs.org/).
 
 ### 4. Install GitHub CLI (recommended)
 
-Required by the agent tooling to process Dependabot PRs (see the `dependabot-agent` skill in `.opencode/skills/` and [README_GITHUB.md](README_GITHUB.md)).
+Required by the agent tooling to process Dependabot PRs (see the `dependabot-agent` skill in `.claude/skills/`, [AGENTIC_SDLC.md](AGENTIC_SDLC.md), and [README_GITHUB.md](README_GITHUB.md)).
 
 ```bash
 # Windows

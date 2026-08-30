@@ -12,7 +12,7 @@ uv tool install "graphifyy[sql]"
 ollama pull qwen2.5-coder:7b
 graphify install --project --platform opencode
 graphify . --backend ollama
-git add .opencode/ AGENTS.md
+git add .claude/ .opencode/ AGENTS.md
 
 
 echo ""

@@ -60,7 +60,7 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 - It enables auto-merge with **squash** merging.
 - GitHub only performs the merge once **all required checks pass** (green CI).
 - A semver-major guard scans the PR body for `version-update:semver-major` and **skips** auto-merge for those PRs, so a major that slips into a grouped PR still needs a human/agent.
-- **A PR that fails CI simply never merges** — it stays open for the agent (`.opencode/skills/dependabot-agent`) to fix locally and push, or for a human to handle.
+- **A PR that fails CI simply never merges** — it stays open for the agent (the `dependabot-agent` skill in `.claude/skills/`, see [AGENTIC_SDLC.md](AGENTIC_SDLC.md)) to fix locally and push, or for a human to handle.
 - **Major version bumps never auto-merge.** They are raised as separate, ungrouped PRs (branch contains the dependency name) and stay open for manual review and merge.
 
 ### Promotion to master
@@ -96,4 +96,4 @@ Before a Dependabot PR is merged, the agent **builds and runs** every affected c
 - If Dependabot fails to group an update (rare grouping edge cases), it falls back to an ungrouped PR, which will **not** auto-merge — conservative by design.
 - A `commonlib` bump runs the full Python test matrix (all dependents), so those PRs take longer to reach green but still auto-merge when they pass.
 - The CI `test` job runs `poetry lock` for `commonlib`/`scrapper`; if you see lockfile churn on Dependabot branches, that regeneration is the cause. The dependabot-agent skill commits this churn back to the PR branch.
-- **Agent integration**: the `dependabot-agent` skill (`.opencode/skills/dependabot-agent/SKILL.md`) processes open dependabot PRs locally — it runs the TDD pipeline for the affected module, sandbox-builds **and runs** the affected docker-compose services, checks logs for errors, fixes failures, and pushes so auto-merge can proceed. Run it on demand with opencode.
+- **Agent integration**: the `dependabot-agent` skill (`.claude/skills/dependabot-agent/SKILL.md`, see [AGENTIC_SDLC.md](AGENTIC_SDLC.md)) processes open dependabot PRs locally — it runs the TDD pipeline for the affected module, sandbox-builds **and runs** the affected docker-compose services, checks logs for errors, fixes failures, and pushes so auto-merge can proceed. Run it on demand with opencode.
