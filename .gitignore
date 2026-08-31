@@ -23,7 +23,6 @@ apps/*/cv/*
 **/logs/**
 apps/web/coverage/.tmp
 
-!AI-job-search.code-workspace
 .a0proj/
 *.log
 

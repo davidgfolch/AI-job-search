@@ -173,5 +173,172 @@ def test_list_jobs_with_created_after(mock_db_session, client):
         assert cutoff in params
 
 
+def _mock_job_dict(job_id=1):
+    return {
+        "id": job_id,
+        "title": "Job 1",
+        "company": "Acme",
+        "created": "2023-01-01T00:00:00",
+        "modified": "2023-01-01T00:00:00",
+    }
+
+
+def test_create_job_success(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.create_job.return_value = _mock_job_dict()
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.post("/api/jobs", json={"title": "Job 1", "company": "Acme"})
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    mock_service.create_job.assert_called_once()
+
+
+def test_create_job_failure(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.create_job.return_value = None
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.post("/api/jobs", json={"title": "Job 1", "company": "Acme"})
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 500
+
+
+def test_get_job_success(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.get_job.return_value = _mock_job_dict()
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.get("/api/jobs/1")
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+
+
+def test_get_job_not_found(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.get_job.return_value = None
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.get("/api/jobs/999")
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 404
+
+
+def test_update_job_success(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.update_job.return_value = _mock_job_dict()
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.patch("/api/jobs/1", json={"ignored": True})
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
+    mock_service.update_job.assert_called_once()
+
+
+def test_update_job_not_found(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.update_job.return_value = None
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.patch("/api/jobs/999", json={"ignored": True})
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 404
+
+
+def test_bulk_update_jobs(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.bulk_update_jobs.return_value = 3
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.post(
+            "/api/jobs/bulk", json={"ids": [1, 2, 3], "update": {"ignored": True}}
+        )
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 200
+    assert response.json() == {"updated": 3}
+
+
+def test_bulk_delete_jobs(client):
+    from api.jobs import get_service
+
+    mock_service = MagicMock()
+    mock_service.delete_jobs.return_value = 2
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    try:
+        response = client.post("/api/jobs/bulk/delete", json={"ids": [1, 2]})
+    finally:
+        client.app.dependency_overrides.pop(get_service, None)
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": 2}
+
+
+def test_watcher_stats(client):
+    from api.jobs import get_watcher_service
+
+    mock_watcher = MagicMock()
+    mock_watcher.get_watcher_stats.return_value = {1: {"total": 5, "new_items": 2}}
+    client.app.dependency_overrides[get_watcher_service] = lambda: mock_watcher
+    try:
+        response = client.get("/api/jobs/watcher-stats?config_ids=1,3&from_1=2023-01-01T00:00:00")
+    finally:
+        client.app.dependency_overrides.pop(get_watcher_service, None)
+
+    assert response.status_code == 200
+    mock_watcher.get_watcher_stats.assert_called_once()
+    call_kwargs = mock_watcher.get_watcher_stats.call_args[1]
+    assert call_kwargs["config_ids"] == [1, 3]
+    assert call_kwargs["cutoff_map"] == {1: "2023-01-01T00:00:00"}
+
+
+def test_watcher_stats_without_cutoff(client):
+    from api.jobs import get_watcher_service
+
+    mock_watcher = MagicMock()
+    mock_watcher.get_watcher_stats.return_value = {}
+    client.app.dependency_overrides[get_watcher_service] = lambda: mock_watcher
+    try:
+        response = client.get("/api/jobs/watcher-stats?config_ids=2")
+    finally:
+        client.app.dependency_overrides.pop(get_watcher_service, None)
+
+    assert response.status_code == 200
+    mock_watcher.get_watcher_stats.assert_called_once()
+    call_kwargs = mock_watcher.get_watcher_stats.call_args[1]
+    assert call_kwargs["config_ids"] == [2]
+    assert call_kwargs["cutoff_map"] == {}
+
+
 
 

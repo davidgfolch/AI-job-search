@@ -6,7 +6,7 @@ This guide covers setting up your development environment, running the applicati
 
 To ensure VS Code automatically selects the correct interpreter for each project:
 
-1. **Open the Workspace**: Open the `AI-job-search.code-workspace` file in VS Code (`File > Open Workspace from File...`).
+1. **Open the Workspace**: Open the `.vscode/AI-job-search.code-workspace` file in VS Code (`File > Open Workspace from File...`).
 2. **Interpreter Selection**: The workspace is configured to automatically pick up the `.venv` in each application folder (`apps/backend`, `apps/scrapper`, etc.).
 
 > **Note the root `pyproject.toml` is not required** for deploying or running the applications**, as each module (in `apps/`) has its own dependencies and configuration for Docker and CI/CD. However, it is **highly necessary for the local Developer Experience (DX)**. It configures the virtual environment used by the VS Code Workspace (`.venv`), providing global linting/formatting tools (like `black`, `ruff`, and `mypy`), and ensures the IDE can correctly resolve cross-module imports like `commonlib`.

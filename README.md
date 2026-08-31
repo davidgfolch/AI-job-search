@@ -13,7 +13,7 @@
 ![cron](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/cron/coverage.svg)
 ![e2e](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/e2e/coverage.svg)
 
-A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI.
+A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI job offer structured data extraction, skills/technologies description inference, etc.
 
 ## Project Structure
 
@@ -99,6 +99,8 @@ docker-compose up -d --no-deps web
 ### Stats
 
 ![UIStats](READMEs/assets/UIStats.png)
+
+![Prometheus/Graphana](READMEs/assets/UIPrometheusGraphana.png)
 
 ### Stats Filter Configurations
 

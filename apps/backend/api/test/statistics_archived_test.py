@@ -42,3 +42,28 @@ def test_get_snapshots_by_reason(app, mock_service):
 
     assert response.status_code == 200
     assert response.json()[0]["count"] == 10
+
+
+@pytest.mark.parametrize("path,method", [
+    ("/sources-date", "get_archived_sources_by_date"),
+    ("/sources-hour", "get_archived_sources_by_hour"),
+    ("/sources-weekday", "get_archived_sources_by_weekday"),
+    ("/combined/history", "get_combined_history_stats"),
+    ("/combined/sources-date", "get_combined_sources_by_date"),
+    ("/combined/sources-hour", "get_combined_sources_by_hour"),
+    ("/combined/sources-weekday", "get_combined_sources_by_weekday"),
+    ("/snapshots-by-platform", "get_snapshots_by_platform"),
+], ids=["sources-date", "sources-hour", "sources-weekday", "combined-history",
+        "combined-sources-date", "combined-sources-hour", "combined-sources-weekday",
+        "snapshots-by-platform"])
+def test_archived_endpoints(app, mock_service, path, method):
+    method_mock = getattr(mock_service, method)
+    method_mock.return_value = [{"dateCreated": "2023-01-01", "total": 1}]
+
+    with patch("api.statistics_archived.service", mock_service):
+        client = TestClient(app)
+        response = client.get(path)
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    method_mock.assert_called_once()
