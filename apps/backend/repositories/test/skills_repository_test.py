@@ -56,3 +56,88 @@ def test_delete_skill(mock_get_connection, mock_mysql_util):
     repo = SkillsRepository()
     result = repo.delete_skill('Python')
     assert result is True
+
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_list_skills_invalid_json(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchAll=[
+        ('Python', 'Language', 'not-json', 0, 0, 'Language'),
+    ])
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    skills = repo.list_skills()
+    assert len(skills) == 1
+    assert skills[0].learning_path == []
+
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_find_by_name_case_insensitive_found(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchOne=('Python', 'Language', '["a"]', 0, 1, 'Language'))
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    result = repo.find_by_name_case_insensitive('python')
+    assert result['name'] == 'Python'
+    assert result['learning_path'] == ['a']
+    assert result['ai_enriched'] is True
+
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_find_by_name_case_insensitive_not_found(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchOne=None)
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    result = repo.find_by_name_case_insensitive('missing')
+    assert result is None
+
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_find_by_name_case_insensitive_invalid_json(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchOne=('Python', 'Language', 'bad-json', 0, 0, 'Language'))
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    result = repo.find_by_name_case_insensitive('python')
+    assert result['learning_path'] == []
+
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_update_skill_all_fields(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchOne=('Python',))
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    result = repo.update_skill('Python', {
+        'description': 'Updated',
+        'learning_path': ['x'],
+        'disabled': True,
+        'ai_enriched': True,
+        'category': 'Language',
+    })
+    assert result == 'Python'
+    mock_db.executeAndCommit.assert_called_once()
+    query = mock_db.executeAndCommit.call_args[0][0]
+    assert 'disabled = %s' in query
+
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_update_skill_learning_path_none(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchOne=('Python',))
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    result = repo.update_skill('Python', {'learning_path': None})
+    assert result == 'Python'
+
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_update_skill_no_fields(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchOne=('Python',))
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    result = repo.update_skill('Python', {})
+    assert result == 'Python'
+    mock_db.executeAndCommit.assert_not_called()

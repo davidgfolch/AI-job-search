@@ -9,3 +9,9 @@ def test_get_timezone():
     data = response.json()
     assert "offset_minutes" in data
     assert isinstance(data["offset_minutes"], int)
+
+
+def test_health():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

@@ -147,3 +147,69 @@ def test_count(repo_with_mock):
     result = repo.count()
     
     assert result == 5
+
+
+def test_find_all_invalid_json(repo_with_mock):
+    """Test find_all when filters is not valid JSON"""
+    repo, mock_db = repo_with_mock
+    mock_db.fetchAll.return_value = [
+        (1, 'Config 1', 'not-json', 1, 1, 0, '2024-01-01', None),
+    ]
+
+    result = repo.find_all()
+
+    assert len(result) == 1
+    assert result[0]['filters'] == {}
+
+
+def test_find_by_id_invalid_json(repo_with_mock):
+    """Test find_by_id when filters is not valid JSON"""
+    repo, mock_db = repo_with_mock
+    mock_db.fetchOne.return_value = (1, 'Test', 'not-json', 0, 1, 1, '2024-01-01', None)
+
+    result = repo.find_by_id(1)
+
+    assert result['filters'] == {}
+
+
+def test_find_by_name_invalid_json(repo_with_mock):
+    """Test find_by_name when filters is not valid JSON"""
+    repo, mock_db = repo_with_mock
+    mock_db.fetchOne.return_value = (1, 'Test', 'not-json', 0, 1, 0, '2024-01-01', None)
+
+    result = repo.find_by_name('Test')
+
+    assert result['filters'] == {}
+
+
+def test_find_by_name_not_found(repo_with_mock):
+    """Test find_by_name for non-existent configuration"""
+    repo, mock_db = repo_with_mock
+    mock_db.fetchOne.return_value = None
+
+    result = repo.find_by_name('Missing')
+
+    assert result is None
+
+
+def test_update_statistics_ordering(repo_with_mock):
+    """Test updating statistics and ordering fields"""
+    repo, mock_db = repo_with_mock
+
+    result = repo.update(1, statistics=False, ordering=5)
+
+    assert result is True
+    mock_db.executeAndCommit.assert_called_once()
+    query = mock_db.executeAndCommit.call_args[0][0]
+    assert 'statistics = %s' in query
+    assert 'ordering = %s' in query
+
+
+def test_update_no_fields(repo_with_mock):
+    """Test update with no fields returns early without DB call"""
+    repo, mock_db = repo_with_mock
+
+    result = repo.update(1)
+
+    assert result is True
+    mock_db.executeAndCommit.assert_not_called()
