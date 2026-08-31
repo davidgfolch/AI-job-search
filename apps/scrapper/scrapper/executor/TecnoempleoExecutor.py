@@ -109,7 +109,11 @@ class TecnoempleoExecutor(BaseExecutor):
                 return True, True
             print(yellow('loading...'), end='')
             pageLoaded = self.navigator.load_detail(cssSelLink)
-            self._process_row()
+            try:
+                self._process_row()
+            except Exception as e:
+                print(f' {e}')
+                return True, False
             return True, False
         except Exception:
             debug(self.debug, exception=True)

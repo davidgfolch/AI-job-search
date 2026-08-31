@@ -86,7 +86,7 @@ class SeleniumService:
     def clearInputbox(self, cssSel: str | WebElement) -> bool:
         return self.element_service.clearInputbox(cssSel)
         
-    def checkboxUnselect(self, cssSel: str):
+    def checkboxUnselect(self, cssSel: str | WebElement):
         self.element_service.checkboxUnselect(cssSel)
 
     def waitUntilPageIsLoaded(self, timeout: int = 10):

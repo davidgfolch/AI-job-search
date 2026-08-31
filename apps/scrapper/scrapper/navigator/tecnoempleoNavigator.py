@@ -114,6 +114,7 @@ class TecnoempleoNavigator(BaseNavigator):
     @retry(raiseException=False)
     def load_detail(self, cssSelLink: str):
         self.selenium.waitAndClick(cssSelLink)
+        self.selenium.waitUntilPageIsLoaded()
         return True
 
     def get_job_data(self):
