@@ -38,24 +38,12 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 ```bash
 # Install dependencies
 poetry install
-
-# Run tests
-poetry run pytest
-
-# Run tests with coverage
-poetry run coverage run -m pytest && poetry run coverage report -m
 ```
 
 ### Python Apps (backend, aiEnrich, aiEnrich3, aiEnrichNew, aiEnrichSkill, aiCvMatcher)
 ```bash
 # Install dependencies
 uv sync
-
-# Run tests
-uv run pytest
-
-# Run tests with coverage
-uv run coverage run -m pytest && uv run coverage report -m
 ```
 
 ### Web Frontend (apps/web)
@@ -65,9 +53,6 @@ npm install
 
 # Dev server
 npm run dev
-
-# Test
-npm test
 
 # Lint
 npm run lint
@@ -85,7 +70,8 @@ npm run test:ui
 npm run codegen
 ```
 
-### Monorepo-wide Testing
+### Testing
+Always use the centralized test script to run tests. Never run `poetry run pytest`, `uv run pytest`, or `npm test` directly. Always include `commonlib` as it contains architecture tests and is a shared library; also include any other modified `apps/*` modules.
 ```bash
 # Run all tests (Linux/Mac)
 ./scripts/test.sh
@@ -93,11 +79,14 @@ npm run codegen
 # Run all tests (Windows)
 .\scripts\test.bat
 
-# Run specific apps
-.\scripts\test.bat commonlib web e2e
+# Run commonlib + specific modified apps (Linux/Mac)
+./scripts/test.sh commonlib scrapper web e2e
+
+# Run commonlib + specific modified apps (Windows)
+.\scripts\test.bat commonlib scrapper web e2e
 
 # With coverage
-.\scripts\test.bat --coverage
+./scripts/test.sh --coverage
 ```
 
 ### Running Individual Apps

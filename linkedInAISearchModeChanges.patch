@@ -1,0 +1,117 @@
+diff --git a/.env b/.env
+index e8ec499..35ad753 100644
+--- a/.env
++++ b/.env
+@@ -43,7 +43,7 @@ SCRAPPER_STATE_STALE_THRESHOLD_HOURS=8
+ SCRAPPER_LINKEDIN_RUN_CADENCY=2h
+ SCRAPPER_LINKEDIN_RUN_CADENCY_7-19=30m
+ SCRAPPER_LINKEDIN_AUTORUN=True
+-SCRAPPER_LINKEDIN_DEBUG=False
++SCRAPPER_LINKEDIN_DEBUG=True
+ 
+ # Scrapper - InfoJobs
+ # SCRAPPER_INFOJOBS_BROWSER=chrome           # Browser: chrome, firefox
+@@ -72,7 +72,7 @@ SCRAPPER_TECNOEMPLEO_DEBUG=False
+ # SCRAPPER_INDEED_BROWSER=chrome             # Browser: chrome, firefox
+ SCRAPPER_INDEED_RUN_CADENCY=3h
+ SCRAPPER_INDEED_AUTORUN=True
+-SCRAPPER_INDEED_DEBUG=True
++SCRAPPER_INDEED_DEBUG=False
+ # Scrapper (SCRAPLING VERSION) - Indeed
+ SCRAPPER_INDEED_SCRAPLING=True
+ SCRAPPER_INDEED_PROXIES=
+diff --git a/apps/scrapper/scrapper/executor/LinkedinExecutor.py b/apps/scrapper/scrapper/executor/LinkedinExecutor.py
+index 74926bb..7d16b81 100644
+--- a/apps/scrapper/scrapper/executor/LinkedinExecutor.py
++++ b/apps/scrapper/scrapper/executor/LinkedinExecutor.py
+@@ -92,6 +92,7 @@ class LinkedinExecutor(BaseExecutor):
+         except Exception:
+             debug(self.debug, exception=True)
+             raise
++
+     def _load_and_process_row(self, idx, rowErrors=0) -> bool | str:
+         # Returns True (exists), False (new), or "ERROR"
+         try:
+diff --git a/apps/scrapper/scrapper/navigator/linkedinNavigator.py b/apps/scrapper/scrapper/navigator/linkedinNavigator.py
+index 0a4c4a9..4e8c542 100644
+--- a/apps/scrapper/scrapper/navigator/linkedinNavigator.py
++++ b/apps/scrapper/scrapper/navigator/linkedinNavigator.py
+@@ -15,17 +15,16 @@ CSS_SEL_LOGIN_USER = 'input[type=email]'
+ CSS_SEL_LOGIN_PWD = 'input[type=password]'
+ CSS_SEL_LOGIN_BUTTON = 'button[type=submit]'
+ CSS_SEL_LOGIN_BUTTON_ES = 'button[type=button]'
+-CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
++CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'header div[componentkey="searchResultsHeaderComponent"] > div > div > p'
+ CSS_SEL_MESSAGES_HIDE = 'aside#msg-overlay div.msg-overlay-bubble-header__controls button:last-child'
+ CSS_SEL_GLOBAL_ALERT_HIDE = 'section.artdeco-global-alert__body button:first-child'
+ # LIST
+ CSS_SEL_NO_RESULTS = 'div.jobs-search-no-results-banner'
+-CSS_SEL_JOB_LI = 'div.scaffold-layout__list > div > ul > li'
+-CSS_SEL_JOB_LI_IDX = f'{CSS_SEL_JOB_LI}:nth-child(##idx##)'
++CSS_SEL_JOB_LI_IDX = 'div[componentkey="SearchResultsMainContent"] > div:nth-child(##idx##) div[role=button][componentkey^=job-card-component-ref-]'
+ CSS_SEL_COMPANY = 'div.artdeco-entity-lockup__subtitle'
+ CSS_SEL_LOCATION = 'div.artdeco-entity-lockup__caption'
+ LI_JOB_TITLE_CSS_SUFFIX = 'div.artdeco-entity-lockup__title > a > span > strong'
+-CSS_SEL_JOB_LINK = f'{CSS_SEL_JOB_LI_IDX} > div > div > div > div > div > div > a'
++CSS_SEL_JOB_LINK = f'{CSS_SEL_JOB_LI_IDX}'
+ CSS_SEL_NEXT_PAGE_BUTTON = 'div.jobs-search-pagination > button.jobs-search-pagination__button--next'
+ # JOB DETAIL (IN LIST CLICK)
+ CSS_SEL_JOB_DETAIL = 'main'
+@@ -66,23 +65,21 @@ class LinkedinNavigator(BaseNavigator):
+             raise Exception('Login form elements not found')
+         self.selenium.sendKeys(user_elms.pop(), user_email)
+         self.selenium.sendKeys(pwd_elms.pop(), user_pwd)
+-        try_or_warn(lambda: self.selenium.checkboxUnselect('div.remember_me__opt_in input'), 'Could not click on "remember me" checkbox')
++        try_or_warn(lambda: self.selenium.checkboxUnselect(self.selenium.getElms('input[type=checkbox]').pop()),
++                    'Could not click on "remember me" checkbox')
+         self.loginSubmit()
+     
+-    @retry()
+     def loginSubmit(self):
+         """Login in english is a button[type=submit], in spanish is a button[type=button]"""
+         try:
+             self.selenium.waitAndClick(CSS_SEL_LOGIN_BUTTON)
+         except Exception as e:
+-            print(yellow('Could not click on login button'))
+             try:
+                 self.selenium.waitAndClick(self.selenium.getElms(CSS_SEL_LOGIN_BUTTON_ES).pop())
+             except Exception as e:
+-                print(yellow('Could not click on login button 2'))
++                print(yellow('Could not click on login button'))
+                 raise e
+ 
+-
+     def check_redirected_to_login(self, login_callback) -> bool:
+         current_url = self.selenium.getUrl()
+         if any(p in current_url for p in ['linkedin.com/login', 'linkedin.com/uas/login', 'linkedin.com/authwall']):
+@@ -105,7 +102,7 @@ class LinkedinNavigator(BaseNavigator):
+         return False
+ 
+     def replace_index(self, cssSelector: str, idx: int):
+-        return cssSelector.replace('##idx##', str(idx))
++        return cssSelector.replace('##idx##', str(idx+(idx-1)*2))
+ 
+     @retry(exception=NoSuchElementException)
+     def get_total_results(self, keywords: str, remote, location, f_TPR, sortBy) -> int:
+@@ -128,7 +125,7 @@ class LinkedinNavigator(BaseNavigator):
+         self.selenium.waitUntilClickable(cssSel)
+         return cssSel
+ 
+-    @retry()
++    # @retry()
+     def scroll_jobs_list_retry(self, idx):
+         for i in range(idx, idx+1):
+             cssSelI = self.replace_index(CSS_SEL_JOB_LI_IDX, i)
+diff --git a/apps/scrapper/scrapper/services/selenium/seleniumService.py b/apps/scrapper/scrapper/services/selenium/seleniumService.py
+index 14c5fa6..4407207 100644
+--- a/apps/scrapper/scrapper/services/selenium/seleniumService.py
++++ b/apps/scrapper/scrapper/services/selenium/seleniumService.py
+@@ -86,7 +86,7 @@ class SeleniumService:
+     def clearInputbox(self, cssSel: str | WebElement) -> bool:
+         return self.element_service.clearInputbox(cssSel)
+         
+-    def checkboxUnselect(self, cssSel: str):
++    def checkboxUnselect(self, cssSel: str | WebElement):
+         self.element_service.checkboxUnselect(cssSel)
+ 
+     def waitUntilPageIsLoaded(self, timeout: int = 10):

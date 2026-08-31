@@ -64,7 +64,7 @@ This regenerates lockfiles/badges like CI does (`ci.yml` runs this matrix):
 # Linux/Mac
 ./scripts/test.sh <module>
 ```
-For a `commonlib` bump run the full Python dependent set, e.g. `.\scripts\test.bat commonlib backend scrapper aiEnrich aiEnrichNew aiEnrichSkill aiEnrich3 aiCvMatcher aiFormFiller cron`.
+For a `commonlib` bump run the full Python dependent set, e.g. `.\scripts\test.bat commonlib backend scrapper aiEnrich aiEnrichNew aiEnrichSkill aiEnrich3 aiCvMatcher aiFormFiller cron` (or `./scripts/test.sh` on Linux/Mac).
 
 ### 5. Sandbox build+run the affected docker-compose services and check logs — MANDATORY GATE
 
@@ -123,12 +123,12 @@ Every PR whose diff touchs a module that runs in the compose stack **must** be b
 
 - Read the failure output. Common causes: API/code breaking changes in a new version, a too-narrow dependency constraint, or lockfile churn.
 - Fix only what is required to make the module green: bump constraints in the module's `pyproject.toml`/`package.json`, or patch code/tests for the new version.
-- Re-run the module tests (`.\scripts\test.bat <module>`), then run the architecture checks if code changed:
+- Re-run the module tests via the centralized script (`.\scripts\test.bat commonlib <module>` or `./scripts/test.sh commonlib <module>`), which also runs architecture checks:
   ```bash
-  # Python apps
-  poetry run pytest apps/commonlib/commonlib/test/architecture_test.py
-  # Web app
-  npx vitest run src/test/architecture.test.ts   # from apps/web
+  # Linux/Mac
+  ./scripts/test.sh commonlib <module>
+  # Windows
+  .\scripts\test.bat commonlib <module>
   ```
 - Re-run step 5 (sandbox build + logs via `scripts/test-sandbox.*`) after a code/constraint fix if the affected service is a composed one.
 - Commit + push and re-verify until green.

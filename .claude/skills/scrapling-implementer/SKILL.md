@@ -51,7 +51,7 @@ Follow these steps to implement a new scrapper using Scrapling.
 5.  **Testing**:
     - Write parameterized unit tests for the scrapper using `pytest`.
     - Ensure the test mocks the `Fetcher` or HTTP requests to avoid hitting live servers during CI.
-    - Check architecture by running `apps\commonlib> poetry run pytest .\test\architecture_test.py` if needed.
+    - Run tests via the centralized script: `./scripts/test.sh commonlib scrapper` (Linux/Mac) or `.\scripts\test.bat commonlib scrapper` (Windows).
 
 ## Usage
 Use this skill when the user requests to "create a new scrapper", "implement a scraper", or to specifically pull data using the `Scrapling` framework.

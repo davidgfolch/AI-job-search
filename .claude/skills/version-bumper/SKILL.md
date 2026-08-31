@@ -71,16 +71,13 @@ Search for the pattern `commonlib==<old_version>` and replace with `commonlib==<
 
 ## 6. Verify
 
-Run the affected app's tests afterward:
+Run the affected app's tests via the centralized test script. Always include `commonlib` (shared library with architecture tests) plus any modified apps:
 ```bash
-# Python (uv)
-uv run pytest
+# Linux/Mac
+./scripts/test.sh commonlib <app>
 
-# Python (poetry — commonlib, scrapper)
-poetry run pytest
-
-# npm
-npm test
+# Windows
+.\scripts\test.bat commonlib <app>
 ```
 
 ## Usage

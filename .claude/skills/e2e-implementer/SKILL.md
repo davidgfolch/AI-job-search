@@ -25,7 +25,7 @@ Use this skill when implementing or modifying End-to-End (E2E) tests. These test
 
 ## 4. Architecture Verification
 - Ensure `apps/e2e` does not import internal implementations from other apps directly (unless it's a shared type/constant). It should interact via the browser.
-- Run commonlib/.../architecture_test.py to verify the architecture.
+- Run architecture tests via the centralized script: `./scripts/test.sh commonlib` (Linux/Mac) or `.\scripts\test.bat commonlib` (Windows).
 
 ## Usage
 - **Preferred Method**: Run `npm test` inside `apps/e2e`. Playwright starts its own Vite dev server for `apps/web` on port 5174 and mocks all `/api/**` requests via `page.route()` — no backend, database, or Docker services required.

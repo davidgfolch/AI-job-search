@@ -9,9 +9,9 @@ trigger: always_on
    - Keep closing braces/parens on same line as last content, not on their own line
    - No extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`
    - Avoid empty lines inside method bodies
-3. Use the following test to check modified files follow architecture rules:
-   - apps\commonlib> poetry run pytest .\test\architecture_test.py
-   - apps\web> npx vitest run src\test\architecture.test.ts
+3. Use the following test to check modified files follow architecture rules (via the centralized test script):
+   - `./scripts/test.sh commonlib` (Linux/Mac) or `.\scripts\test.bat commonlib` (Windows)
+   - `./scripts/test.sh web` (Linux/Mac) or `.\scripts\test.bat web` (Windows)
 3. Monorepo module's:
    - This project contains several modules in apps folder.
    - Each module use a package manager, check test.* or install.* in scripts folder to know wich to use.

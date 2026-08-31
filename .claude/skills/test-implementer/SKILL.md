@@ -35,14 +35,27 @@ Use this skill when you need to implement or run tests. Follow these strict guid
     - **Initial Check on Mount**: If a hook/component performs async work on mount, use `await vi.advanceTimersByTimeAsync(0)` (with fake timers) or `await waitFor(...)` (with real timers) to ensure it completes before asserting or clearing mocks.
 - **TanStack Query (React Query)**: Ensure ALL query functions used by the SUT are mocked. If using `vi.mock()`, explicitly mock setiap function with `mockResolvedValue` to avoid "Query data cannot be undefined" errors, as React Query v5+ does not allow `undefined` returns.
 
-## 4. Architecture Verification
-Refuse to complete the task without verifying architecture compliance.
-- **CommonLib**: Run `poetry run pytest apps/commonlib/commonlib/test/architecture_test.py` (adjust path as needed from CWD).
-- **Web**: Run `npx vitest run apps/web/src/test/architecture.test.ts` (adjust path as needed from CWD).
+## 4. Running Tests
+Always use the centralized test script to run tests. Never run `poetry run pytest`, `uv run pytest`, or `npx vitest run` directly. Always include `commonlib` (it contains architecture tests and is a shared library) plus any other modified `apps/*` modules.
+```bash
+# Run tests for commonlib + specific apps (Linux/Mac)
+./scripts/test.sh commonlib scrapper
+# Run tests for commonlib + specific apps (Windows)
+.\scripts\test.bat commonlib scrapper
+
+# Run all tests (Linux/Mac)
+./scripts/test.sh
+
+# Run all tests with coverage
+./scripts/test.sh --coverage
+```
+
+## 5. Architecture Verification
+Refuse to complete the task without verifying architecture compliance. Architecture tests are included when running the centralized test script for `commonlib`.
 
 ## Usage
 - When creating a new unit test for `MyService`:
     1. Create `test/MyService_test.py` (or `.test.ts`).
     2. Instantiate `sut = MyService()`.
-    3. Run tests.
-    4. Run architecture tests to enforce rules.
+    3. Run tests via `./scripts/test.sh commonlib <app>` (or `.bat` on Windows).
+    4. Architecture rules are enforced by `architecture_test.py` in commonlib's test suite.
