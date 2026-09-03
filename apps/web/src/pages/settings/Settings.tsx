@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import Editor from 'react-simple-code-editor';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
+import EditorImport from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import 'prismjs/themes/prism-tomorrow.css';
@@ -12,6 +12,9 @@ import { useEnvSettings } from '../common/hooks/useEnvSettings';
 import './Settings.css';
 
 type SetStateAction<T> = React.Dispatch<React.SetStateAction<T>>;
+type CodeEditorProps = { value: string; onValueChange: (code: string) => void; highlight: (code: string) => ReactNode; padding: number; className: string };
+
+const Editor = ((EditorImport as unknown as { default?: unknown }).default ?? EditorImport) as React.ComponentType<CodeEditorProps>;
 
 export default function Settings() {
     const { data: envSettingsData, isLoading: isEnvLoading, isError: isEnvError } = useEnvSettings();
