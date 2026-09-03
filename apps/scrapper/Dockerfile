@@ -54,8 +54,8 @@ COPY apps/scrapper/pyproject.toml apps/scrapper/poetry.lock* /app/apps/scrapper/
 # Install dependencies
 WORKDIR /app/apps/scrapper
 RUN poetry config virtualenvs.create false \
-    && poetry lock --no-update \
-    && poetry install --no-interaction --no-ansi --only main
+    && poetry lock \
+    && poetry install --no-interaction --no-ansi --only main --no-root
 
 # Copy application code
 COPY apps/scrapper /app/apps/scrapper
