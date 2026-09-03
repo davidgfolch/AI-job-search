@@ -96,6 +96,7 @@ export const useViewer = () => {
     const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
     const [creationSessionId, setCreationSessionId] = useState(0);
     const [duplicatedJob, setDuplicatedJob] = useState<Job | null>(null);
+    const autoSelectAllAfterLoad = useRef(false);
 
     const openDuplicatedJob = async (id: number) => {
         try { setDuplicatedJob(await jobsApi.getJob(id)); } 
@@ -113,6 +114,10 @@ export const useViewer = () => {
                 }
                 return [...jobs, ...newItems];
             });
+            if (autoSelectAllAfterLoad.current && filters.page === 1) {
+                autoSelectAllAfterLoad.current = false;
+                setTimeout(() => setSelectionMode('all'), 0);
+            }
             setIsLoadingMore(false);
         }
     }, [data, filters.page, setAllJobs, setIsLoadingMore]);
@@ -123,6 +128,12 @@ export const useViewer = () => {
             setShouldSelectFirst(false);
         }
     }, [shouldSelectFirst, data]);
+
+    useEffect(() => {
+        if (activeConfigName === 'Clean - Ignore jobs by title') {
+            autoSelectAllAfterLoad.current = true;
+        }
+    }, [activeConfigName]);
 
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;
     const hasNext = (selectedIndex >= 0 && selectedIndex < allJobs.length - 1) || hasMorePages;
