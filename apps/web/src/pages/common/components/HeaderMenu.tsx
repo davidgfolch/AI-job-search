@@ -12,6 +12,9 @@ const HeaderMenu = () => {
   return (
     <Dropdown trigger={trigger} className="header-menu">
       <div className="menu-items">
+        <Link to="/dashboard" target="_blank" className="menu-item">
+          Dashboard
+        </Link>
         <Link to="/statistics" target="_blank" className="menu-item">
           Statistics
         </Link>

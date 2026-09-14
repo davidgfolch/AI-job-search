@@ -1,0 +1,122 @@
+.service-card {
+    background: var(--bg-secondary, #1e1e1e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 8px;
+    padding: 16px;
+    transition: border-color 0.2s;
+}
+
+.service-card:hover {
+    border-color: var(--accent-color, #3b82f6);
+}
+
+.service-card--running {
+    border-left: 3px solid #22c55e;
+}
+
+.service-card--error {
+    border-left: 3px solid #ef4444;
+}
+
+.service-card--stopped {
+    border-left: 3px solid #6b7280;
+}
+
+.service-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot--running {
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e66;
+}
+
+.status-dot--error {
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef444466;
+}
+
+.status-dot--stopped {
+    background: #6b7280;
+}
+
+.service-card-name {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.service-card-status {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.service-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.service-card-metrics {
+    display: flex;
+    gap: 16px;
+}
+
+.metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.metric--error .metric-value {
+    color: #ef4444;
+}
+
+.metric-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.service-card-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--bg-tertiary, #2a2a2a);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    width: fit-content;
+}
+
+.service-card-last-activity {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.service-card-last-error {
+    font-size: 0.75rem;
+    color: #f59e0b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

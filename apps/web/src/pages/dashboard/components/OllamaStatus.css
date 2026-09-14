@@ -1,0 +1,62 @@
+.ollama-status {
+    background: var(--bg-secondary, #1e1e1e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.ollama-status--ok {
+    border-left: 3px solid #22c55e;
+}
+
+.ollama-status--error {
+    border-left: 3px solid #ef4444;
+}
+
+.ollama-status-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ollama-status-title {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.ollama-status-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ollama-status-errors {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ollama-error-entry {
+    display: flex;
+    gap: 8px;
+    font-size: 0.75rem;
+    padding: 6px 8px;
+    background: var(--bg-tertiary, #2a2a2a);
+    border-radius: 4px;
+}
+
+.ollama-error-time {
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.ollama-error-msg {
+    color: #f59e0b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -8,6 +8,7 @@ const Statistics = lazy(() => import('./pages/statistics/Statistics'));
 const SkillsManager = lazy(() => import('./pages/skillsManager/SkillsManager'));
 const CompanySynonymsManager = lazy(() => import('./pages/companySynonymsManager/CompanySynonymsManager'));
 const Settings = lazy(() => import('./pages/settings/Settings'));
+const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/company-synonyms" element={<CompanySynonymsManager />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>
     </div>
