@@ -120,5 +120,35 @@ describe('useJobsData', () => {
     
     await waitFor(() => expect(result.current.data).toEqual(page2Data));
   });
+
+  it('blocks load-more while showing placeholder data (config transition)', async () => {
+    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce({ items: [{ id: 1 }], total: 100, page: 1, size: 20 });
+    const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.data?.total).toBe(100));
+    expect(result.current.isPlaceholderData).toBe(false);
+
+    // New config fetch: keep previous data as placeholder while it is in flight
+    let resolveNewConfig!: (value: any) => void;
+    vi.mocked(jobsApi.getJobs).mockImplementationOnce(() => new Promise(resolve => { resolveNewConfig = resolve; }));
+
+    act(() => {
+        result.current.setFilters(prev => ({ ...prev, sql_filter: 'jvm', page: 1 }));
+    });
+
+    // While the new query is pending, previous data is shown as placeholder
+    await waitFor(() => expect(result.current.isPlaceholderData).toBe(true));
+
+    // Load-more must NOT advance the page off the placeholder snapshot
+    act(() => {
+        result.current.handleLoadMore();
+    });
+    expect(result.current.filters.page).toBe(1);
+
+    await act(async () => {
+        resolveNewConfig({ items: [{ id: 2 }], total: 100, page: 1, size: 20 });
+    });
+    await waitFor(() => expect(result.current.isPlaceholderData).toBe(false));
+  });
 });
 

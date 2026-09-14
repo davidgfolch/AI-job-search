@@ -36,7 +36,7 @@ export const useJobsData = () => {
 
     const queryClient = useQueryClient();
 
-    const { data, isLoading, error, refetch } = useQuery({
+    const { data, isLoading, error, refetch, isPlaceholderData, isFetching } = useQuery({
         queryKey: ['jobs', filters],
         queryFn: () => jobsApi.getJobs(filters),
         placeholderData: keepPreviousData,
@@ -60,12 +60,12 @@ export const useJobsData = () => {
 
     const handleLoadMore = useCallback(() => {
         const nextPage = (filters.page || 1) + 1;
-        if (!isLoadingMore && !isLoading && allJobs.length < (data?.total || 0) && !requestedPages.current.has(nextPage)) {
+        if (!isLoadingMore && !isPlaceholderData && !isFetching && allJobs.length < (data?.total || 0) && !requestedPages.current.has(nextPage)) {
             requestedPages.current.add(nextPage);
             setIsLoadingMore(true);
             setFilters(prev => ({ ...prev, page: nextPage }));
         }
-    }, [isLoadingMore, isLoading, allJobs.length, data?.total, filters.page]);
+    }, [isLoadingMore, isPlaceholderData, isFetching, allJobs.length, data?.total, filters.page]);
 
     return {
         filters,
@@ -75,6 +75,7 @@ export const useJobsData = () => {
         isLoadingMore,
         data,
         isLoading,
+        isPlaceholderData,
         error,
         handleLoadMore,
         setIsLoadingMore,

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useJobsData } from './useJobsData';
 import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
@@ -13,7 +13,7 @@ export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
     const { data: modalityValues = [] } = useModalityValues();
     const {
-        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, error: queryError, handleLoadMore, setIsLoadingMore, hardRefresh
+        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, isPlaceholderData, error: queryError, handleLoadMore, setIsLoadingMore, hardRefresh
     } = useJobsData();
     const apiError = data?.error; // Error returned from API (e.g., database errors)
     const [dismissedApiErrors, setDismissedApiErrors] = useState<Set<string>>(new Set());
@@ -103,8 +103,16 @@ export const useViewer = () => {
         catch (e) { console.error("Failed to load duplicated job", e); }
     };
 
+    const configKey = useMemo(() =>
+        JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([key]) => key !== 'page'))),
+    [filters]);
+
     useEffect(() => {
-        if (data?.items && data.page === (filters.page || 1)) {
+        setAllJobs([]);
+    }, [configKey, setAllJobs]);
+
+    useEffect(() => {
+        if (data?.items && data.page === (filters.page || 1) && !isPlaceholderData) {
             setAllJobs(jobs => {
                 if (filters.page === 1) return data.items;
                 const newItems = data.items.filter(item => !jobs.some(p => p.id === item.id));
@@ -116,11 +124,11 @@ export const useViewer = () => {
             });
             if (autoSelectAllAfterLoad.current && filters.page === 1) {
                 autoSelectAllAfterLoad.current = false;
-                setTimeout(() => setSelectionMode('all'), 0);
+                setSelectionMode('all');
             }
             setIsLoadingMore(false);
         }
-    }, [data, filters.page, setAllJobs, setIsLoadingMore]);
+    }, [data, filters.page, isPlaceholderData, setSelectionMode, setAllJobs, setIsLoadingMore]);
 
     useEffect(() => {
         if (shouldSelectFirst && data?.items?.length) {
@@ -132,6 +140,8 @@ export const useViewer = () => {
     useEffect(() => {
         if (activeConfigName === 'Clean - Ignore jobs by title') {
             autoSelectAllAfterLoad.current = true;
+        } else {
+            autoSelectAllAfterLoad.current = false;
         }
     }, [activeConfigName]);
 
@@ -142,7 +152,7 @@ export const useViewer = () => {
     return {
         state: { filters, allJobs, selectedJob, activeTab, message, data, selectedIds, selectionMode, confirmModal, activeConfigName, creationSessionId, duplicatedJob, modalityValues,
             appliedModal: { isOpen: isAppliedModalOpen, onConfirm: handleAppliedConfirm, onCancel: handleAppliedCancel } },
-        status: { isLoading: isLoading && (filters.page || 1) === 1, isLoadingMore, error: queryError, apiError: displayedApiError, hasNext, hasPrevious },
+        status: { isLoading: (isLoading || isPlaceholderData) && (filters.page || 1) === 1, isLoadingMore, error: queryError, apiError: displayedApiError, hasNext, hasPrevious },
         actions: {
             setFilters, setActiveTab, setMessage, selectJob: handleJobSelect, updateJob: handleJobUpdate,
             ignoreJob: () => handleJobUpdate({ ignored: true }), seenJob: () => handleJobUpdate({ seen: true }),

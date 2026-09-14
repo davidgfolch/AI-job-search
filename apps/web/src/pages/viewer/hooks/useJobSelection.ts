@@ -51,7 +51,12 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
         setSelectionMode('none');
         setSelectedIds(new Set());
         setSelectedIdxs(new Set());
-    }, [filters.search, filters.status, filters.not_status, filters.days_old, filters.salary, filters.order, filters.sql_filter]);
+    }, [
+        filters.search, filters.status, filters.not_status, filters.days_old, filters.salary, filters.order, filters.sql_filter,
+        filters.flagged, filters.like, filters.ignored, filters.seen, filters.applied, filters.discarded, filters.closed,
+        filters.interview_rh, filters.interview, filters.interview_tech, filters.interview_technical_test, filters.interview_technical_test_done,
+        filters.ai_enriched, filters.easy_apply, filters.duplicated, filters.modality, filters.ids,
+    ]);
 
     // Auto-select next job after data refetch when a state change occurred
     useEffect(() => {
