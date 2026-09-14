@@ -94,15 +94,19 @@ Some ISPs (e.g. Movistar) block or time out the model download host `r2.cloudfla
 # qwen2.5:3b (aiEnrich / aiEnrichSkill default)
 ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
 ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
+ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m   # alias shares the same files; keep the list clean
 
 # qwen2.5-coder:7b (graphify community naming)
 ollama pull hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M
 ollama cp hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M qwen2.5-coder:7b
+ollama rm hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M
 ```
+
+The `ollama rm` removes the temporary HuggingFace tag (it shares the same blobs, so no space is freed/lost).
 
 For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
 
-The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`.
+The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable, then removes the temporary tag. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`.
 
 ### 6. Install Project Dependencies
 

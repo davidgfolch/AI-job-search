@@ -94,6 +94,7 @@ if "!R2_OK!"=="1" (
     !RUN_CMD! pull "!HF_SPEC!"
     if errorlevel 1 exit /b 0
     !RUN_CMD! cp "!HF_SPEC!" "!MODEL!"
+    !RUN_CMD! rm "!HF_SPEC!"
 ) else (
     echo Pulling !MODEL! via !RUN_CMD!...
     !RUN_CMD! pull "!MODEL!"

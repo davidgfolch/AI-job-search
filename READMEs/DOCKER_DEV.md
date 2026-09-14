@@ -44,6 +44,7 @@ docker exec ai-job-search-ollama ollama pull qwen2.5:3b
 # instead and alias the model to the expected tag:
 docker exec ai-job-search-ollama ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
 docker exec ai-job-search-ollama ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
+docker exec ai-job-search-ollama ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m   # temp tag shares the same files
 
 # Test Ollama connection
 curl http://localhost:11434/api/tags

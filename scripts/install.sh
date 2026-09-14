@@ -45,6 +45,7 @@ ollama_pull() {
             echo "Ollama registry unreachable (r2.cloudflarestorage.com blocked) - pulling $model from HuggingFace ($hf_spec)..."
             if $run pull "$hf_spec"; then
                 $run cp "$hf_spec" "$model"
+                $run rm "$hf_spec"
             fi
         else
             echo "Pulling $model via $run..."
