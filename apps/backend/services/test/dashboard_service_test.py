@@ -28,9 +28,11 @@ SNAPSHOT = {
 
 @pytest.mark.parametrize("last_processed,last_error_at,expected", [
     (_iso(), None, "running"),
-    (_iso(-10), None, "stopped"),
+    (_iso(-10), None, "running"),
+    (_iso(-30), None, "stopped"),
     (_iso(), _iso(), "error"),
     (None, None, "stopped"),
+    ("2026-09-14T14:00:00Z", None, "stopped"),
 ])
 def test_determine_status(last_processed, last_error_at, expected):
     now = datetime.now(timezone.utc)
@@ -42,6 +44,7 @@ def test_determine_status(last_processed, last_error_at, expected):
 @patch("services.dashboard_service._repo")
 def test_get_services_status_running(mock_repo, mock_collector):
     mock_repo.read_recent_errors.return_value = []
+    mock_repo.read_last_activity.return_value = None
     mock_repo.check_ollama_errors.return_value = []
     mock_collector.return_value.reload.return_value = None
     mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
@@ -63,8 +66,27 @@ def test_get_services_status_running(mock_repo, mock_collector):
 
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
-def test_get_services_status_ollama_unreachable(mock_repo, mock_collector):
+@patch("services.dashboard_service._probe_ollama")
+def test_get_services_status_ollama_reachable(mock_probe, mock_repo, mock_collector):
+    mock_probe.return_value = True
     mock_repo.read_recent_errors.return_value = []
+    mock_repo.read_last_activity.return_value = None
+    mock_repo.check_ollama_errors.return_value = []
+    mock_collector.return_value.reload.return_value = None
+    mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
+
+    result = dashboard_service.get_services_status()
+
+    assert result["ollama"]["reachable"] is True
+
+
+@patch("services.dashboard_service.MetricsCollector")
+@patch("services.dashboard_service._repo")
+@patch("services.dashboard_service._probe_ollama")
+def test_get_services_status_ollama_unreachable(mock_probe, mock_repo, mock_collector):
+    mock_probe.return_value = False
+    mock_repo.read_recent_errors.return_value = []
+    mock_repo.read_last_activity.return_value = None
     mock_repo.check_ollama_errors.return_value = [
         {"event": "ollama.ping_failed", "module": "aienrich", "message": "connection refused"}
     ]
@@ -83,6 +105,7 @@ def test_get_services_status_reads_errors(mock_repo, mock_collector):
     mock_repo.read_recent_errors.return_value = [
         {"timestamp": "2026-09-03T10:00:00", "event": "job.failed", "level": "error", "message": "boom"}
     ]
+    mock_repo.read_last_activity.return_value = None
     mock_repo.check_ollama_errors.return_value = []
     mock_collector.return_value.reload.return_value = None
     mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
@@ -92,6 +115,23 @@ def test_get_services_status_reads_errors(mock_repo, mock_collector):
     aienrich = result["services"][0]
     assert len(aienrich["recentErrors"]) == 1
     assert aienrich["recentErrors"][0]["event"] == "job.failed"
+
+
+@patch("services.dashboard_service.MetricsCollector")
+@patch("services.dashboard_service._repo")
+def test_get_services_status_log_fallback(mock_repo, mock_collector):
+    activity = _iso()
+    mock_repo.read_recent_errors.return_value = []
+    mock_repo.read_last_activity.return_value = activity
+    mock_repo.check_ollama_errors.return_value = []
+    mock_collector.return_value.reload.return_value = None
+    mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
+
+    result = dashboard_service.get_services_status()
+
+    by_name = {s["name"]: s for s in result["services"]}
+    assert by_name["aicvmatcher"]["status"] == "running"
+    assert by_name["aicvmatcher"]["lastActivity"] == activity
 
 
 def test_display_name_mapping():

@@ -1,9 +1,14 @@
 import json
 import os
 import tempfile
+from datetime import datetime, timezone
 from unittest.mock import patch
 
-from repositories.dashboard_repository import DashboardRepository
+from repositories.dashboard_repository import DashboardRepository, LOG_SOURCES
+
+
+def test_log_sources_include_aicvmatcher():
+    assert LOG_SOURCES["aicvmatcher"] == "/logs/aicvmatcher/app.jsonl"
 
 
 def _write_log(path, entries):
@@ -76,3 +81,17 @@ def test_check_ollama_errors_no_matches(tmp_path):
     with patch("repositories.dashboard_repository.LOG_SOURCES", {"aienrich": str(log_file)}):
         errors = repo.check_ollama_errors()
     assert errors == []
+
+
+def test_check_ollama_errors_recency(tmp_path):
+    log_file = tmp_path / "app.jsonl"
+    recent = datetime.now(timezone.utc).isoformat()
+    _write_log(str(log_file), [
+        {"timestamp": "2026-09-03T10:00:01", "event": "ollama.ping_failed", "level": "error"},
+        {"timestamp": recent, "event": "ollama.failed", "level": "error"},
+    ])
+    repo = DashboardRepository()
+    with patch("repositories.dashboard_repository.LOG_SOURCES", {"aienrich": str(log_file)}):
+        errors = repo.check_ollama_errors(within_seconds=1800)
+    assert len(errors) == 1
+    assert errors[0]["event"] == "ollama.failed"

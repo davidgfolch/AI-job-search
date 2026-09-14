@@ -29,7 +29,7 @@ export default function RecentErrors({ services }: Props) {
                     <div key={i} className={`error-entry error-entry--${err.level}`}>
                         <span className="error-service">{err.serviceName}</span>
                         <span className="error-time">
-                            {err.timestamp ? new Date(err.timestamp).toLocaleTimeString() : ''}
+                            {err.timestamp ? new Date(err.timestamp).toLocaleString() : ''}
                         </span>
                         <span className="error-event">{err.event}</span>
                         <span className="error-message" title={err.message}>{err.message}</span>

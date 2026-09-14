@@ -1,4 +1,7 @@
+import os
+import urllib.request
 from datetime import datetime, timezone
+
 from commonlib.services.metrics_collector import MetricsCollector
 from repositories.dashboard_repository import DashboardRepository
 
@@ -13,7 +16,10 @@ MODULE_METRIC_KEYS = {
     "aicvmatcher": "aiCvMatcher",
 }
 OLLAMA_MODULES = {"aienrich", "aienrichskill"}
-STALE_THRESHOLD_SECONDS = 300
+STALE_THRESHOLD_SECONDS = 1200
+OLLAMA_ERROR_WINDOW_SECONDS = 1800
+OLLAMA_PROBE_TIMEOUT_SECONDS = 3
+OLLAMA_CANDIDATE_URLS = ("http://ollama:11434", "http://localhost:11434")
 
 
 def get_services_status() -> dict:
@@ -26,7 +32,7 @@ def get_services_status() -> dict:
     for module in MODULES:
         metric_key = MODULE_METRIC_KEYS.get(module, module)
         m = modules.get(metric_key, {})
-        last_processed = m.get("last_processed_at")
+        last_processed = m.get("last_processed_at") or _repo.read_last_activity(module)
         last_error_at = m.get("last_error_at")
         last_error = m.get("last_error")
         status = _determine_status(now, last_processed, last_error_at)
@@ -47,35 +53,56 @@ def get_services_status() -> dict:
             },
             "recentErrors": recent_errors,
         })
-    ollama_errors = _repo.check_ollama_errors(3)
-    ollama_reachable = len(ollama_errors) == 0
+    ollama_errors = _repo.check_ollama_errors(3, within_seconds=OLLAMA_ERROR_WINDOW_SECONDS)
     return {
         "services": services,
         "ollama": {
-            "reachable": ollama_reachable,
+            "reachable": _probe_ollama(),
             "recentErrors": ollama_errors,
         },
         "timestamp": now.isoformat(),
     }
 
 
-def _determine_status(now: datetime, last_processed: str | None, last_error_at: str | None) -> str:
-    if not last_processed:
-        return "stopped"
+def _probe_ollama() -> bool:
+    base = os.environ.get("AI_ENRICH_OLLAMA_BASE_URL")
+    candidates = ([base] if base else []) + list(OLLAMA_CANDIDATE_URLS)
+    for url in candidates:
+        try:
+            with urllib.request.urlopen(f"{url}/api/version", timeout=OLLAMA_PROBE_TIMEOUT_SECONDS) as resp:
+                if resp.status == 200:
+                    return True
+        except Exception:
+            continue
+    return False
+
+
+def _local(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone().replace(tzinfo=None)
+
+
+def _parse_local(value: str | None) -> datetime | None:
+    if not value:
+        return None
     try:
-        last_ts = datetime.fromisoformat(last_processed).replace(tzinfo=timezone.utc)
+        return _local(datetime.fromisoformat(value.replace("Z", "+00:00")))
     except ValueError:
+        return None
+
+
+def _determine_status(now: datetime, last_processed: str | None, last_error_at: str | None) -> str:
+    now = _local(now)
+    last_ts = _parse_local(last_processed)
+    if last_ts is None:
         return "stopped"
     seconds_since = (now - last_ts).total_seconds()
     if seconds_since > STALE_THRESHOLD_SECONDS:
         return "stopped"
-    if last_error_at:
-        try:
-            err_ts = datetime.fromisoformat(last_error_at).replace(tzinfo=timezone.utc)
-            if err_ts >= last_ts:
-                return "error"
-        except ValueError:
-            pass
+    error_ts = _parse_local(last_error_at)
+    if error_ts is not None and error_ts >= last_ts:
+        return "error"
     return "running"
 
 

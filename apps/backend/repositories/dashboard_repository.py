@@ -8,6 +8,7 @@ LOG_SOURCES = {
     "aienrich3": "/logs/aienrich3/app.jsonl",
     "aienrichnew": "/logs/aienrichnew/app.jsonl",
     "aienrichskill": "/logs/aienrichskill/app.jsonl",
+    "aicvmatcher": "/logs/aicvmatcher/app.jsonl",
 }
 
 ERROR_LEVELS = {"error", "warning", "critical"}
@@ -60,9 +61,10 @@ class DashboardRepository:
                 continue
         return None
 
-    def check_ollama_errors(self, count: int = 5) -> list[dict]:
+    def check_ollama_errors(self, count: int = 5, within_seconds: int | None = None) -> list[dict]:
         ollama_events = {"ollama.ping_failed", "ollama.unreachable", "ollama.failed", "ollama.error"}
         errors = []
+        now = datetime.now()
         for module in LOG_SOURCES:
             path = LOG_SOURCES.get(module)
             if not path or not os.path.isfile(path):
@@ -78,18 +80,33 @@ class DashboardRepository:
                 try:
                     entry = json.loads(line)
                     event = entry.get("event", "")
-                    if event in ollama_events:
-                        errors.append({
-                            "timestamp": entry.get("timestamp", ""),
-                            "event": event,
-                            "module": module,
-                            "message": self._format_error(entry),
-                        })
+                    if event not in ollama_events:
+                        continue
+                    if within_seconds is not None and not self._ts_within(entry.get("timestamp"), now, within_seconds):
+                        continue
+                    errors.append({
+                        "timestamp": entry.get("timestamp", ""),
+                        "event": event,
+                        "module": module,
+                        "message": self._format_error(entry),
+                    })
                 except (json.JSONDecodeError, ValueError):
                     continue
             if len(errors) >= count:
                 break
         return errors
+
+    @staticmethod
+    def _ts_within(timestamp: str, now: datetime, within_seconds: int) -> bool:
+        if not timestamp:
+            return True
+        try:
+            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except ValueError:
+            return True
+        if dt.tzinfo is not None:
+            dt = dt.astimezone().replace(tzinfo=None)
+        return (now - dt).total_seconds() <= within_seconds
 
     def _format_error(self, entry: dict) -> str:
         parts = []

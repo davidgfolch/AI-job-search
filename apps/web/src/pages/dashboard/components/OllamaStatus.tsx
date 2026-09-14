@@ -19,7 +19,7 @@ export default function OllamaStatus({ ollama }: Props) {
                     {recentErrors.map((err, i) => (
                         <div key={i} className="ollama-error-entry">
                             <span className="ollama-error-time">
-                                {err.timestamp ? new Date(err.timestamp).toLocaleTimeString() : ''}
+                                {err.timestamp ? new Date(err.timestamp).toLocaleString() : ''}
                             </span>
                             <span className="ollama-error-msg">{err.message}</span>
                         </div>

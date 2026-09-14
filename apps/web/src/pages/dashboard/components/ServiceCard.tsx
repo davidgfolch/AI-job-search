@@ -40,7 +40,7 @@ export default function ServiceCard({ service }: Props) {
                 )}
                 {lastActivity && (
                     <div className="service-card-last-activity">
-                        Last: {new Date(lastActivity).toLocaleTimeString()}
+                        Last: {new Date(lastActivity).toLocaleString()}
                     </div>
                 )}
                 {metrics.lastError && (

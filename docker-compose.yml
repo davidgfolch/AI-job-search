@@ -45,6 +45,7 @@ services:
       - ./apps/aiEnrich3/data/logs:/logs/aienrich3:ro
       - ./apps/aiEnrichNew/data/logs:/logs/aienrichnew:ro
       - ./apps/aiEnrichSkill/data/logs:/logs/aienrichskill:ro
+      - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
     ports:
       - "8000:8000"
     environment:
