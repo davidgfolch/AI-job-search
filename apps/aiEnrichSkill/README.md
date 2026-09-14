@@ -43,6 +43,25 @@ Set these in your `.env` or `.env.secrets`:
 - `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (default: `http://localhost:11434`)
 - `AI_ENRICHSKILL_OLLAMA_MODEL` — Model name (default: `ollama/qwen2.5:3b`)
 
+Pull the default model before running:
+
+Non-dockerized (local Ollama server):
+```bash
+ollama pull qwen2.5:3b
+```
+
+Dockerized (Ollama container, models persisted via the mounted `~/.ollama` volume):
+```bash
+docker exec ai-job-search-ollama ollama pull qwen2.5:3b
+```
+
+> **ISP blocking the Ollama registry (e.g. Movistar)**: if `ollama pull` hangs with `dial tcp ...:443: i/o timeout`, the download host `r2.cloudflarestorage.com` is blocked. Pull the same model from HuggingFace and alias it instead:
+> ```bash
+> ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
+> ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
+> ```
+> For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
+
 ### HuggingFace Backend
 - `AI_ENRICHSKILL_HF_MODEL_ID` — Model ID (default: `Qwen/Qwen2.5-1.5B-Instruct`)
 - `AI_ENRICHSKILL_HF_TEMPERATURE` — Temperature (default: `0.1`)

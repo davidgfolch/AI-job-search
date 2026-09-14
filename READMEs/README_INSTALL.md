@@ -61,17 +61,48 @@ gh auth login
 
 Verify with `gh auth status`.
 
-### 5. Install Ollama & llama3.2 model
+### 5. Install Ollama & required models
 
-> **Note**: If you are using Docker, you do not need to install Ollama manually. You can run `aiEnrich` and Ollama via `docker-compose up -d`.
+> **Note**: If you are using Docker, you do not need to install Ollama manually. You can run `aiEnrich` and Ollama via `docker-compose up -d` (see [DOCKER_DEV.md](DOCKER_DEV.md)).
 
 Download and install from [ollama.com/download](https://ollama.com/download).
 
-Run the following command to install the llama3.2 model:
+Run the following command to pull the models used by the AI modules:
 
 ```bash
-ollama pull llama3.2
+# Required: default model for aiEnrich and aiEnrichSkill
+ollama pull qwen2.5:3b
+
+# Optional alternatives (recommended in apps/aiEnrich/README.md)
+ollama pull phi3.5:3b
+ollama pull llama3.2:1b
 ```
+
+> `scripts/install.sh` / `scripts/install.bat` also pull `qwen2.5-coder:7b` (graphify tooling) and `qwen2.5:3b` (AI modules) automatically, detecting whether Ollama is dockerized (pull via the `ai-job-search-ollama` container) or installed directly on the host.
+
+If you are running the Dockerized Ollama server (`docker-compose up -d ollama`), pull the models through the container instead:
+
+```bash
+docker exec ai-job-search-ollama ollama pull qwen2.5:3b
+```
+
+### 5.1 ISP blocking the Ollama registry (e.g. Movistar)
+
+Some ISPs (e.g. Movistar) block or time out the model download host `r2.cloudflarestorage.com` (Cloudflare R2), so `ollama pull` hangs and fails with `dial tcp ...:443: i/o timeout`. Pull the same models from HuggingFace instead and alias them to the expected names:
+
+```bash
+# qwen2.5:3b (aiEnrich / aiEnrichSkill default)
+ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
+ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
+
+# qwen2.5-coder:7b (graphify community naming)
+ollama pull hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M
+ollama cp hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M qwen2.5-coder:7b
+```
+
+For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
+
+The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`.
 
 ### 6. Install Project Dependencies
 

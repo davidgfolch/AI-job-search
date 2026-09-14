@@ -29,7 +29,21 @@ docker-compose --profile aiEnrichNew up -d aienrichnew
 
 # Ollama uses models from your host (defaults to ~/.ollama)
 # For Windows, set in .env: OLLAMA_MODELS_PATH=C:/Users/YOUR_USERNAME/.ollama
-# No need to pull models again - they're already available!
+
+# Pull the models required by aiEnrich / aiEnrichSkill.
+# Non-dockerized (host Ollama, shared via the OLLAMA_MODELS_PATH volume):
+ollama pull qwen2.5:3b # required default
+# ollama pull phi3.5:3b  # optional faster alternative
+# ollama pull llama3.2:1b # optional fastest alternative
+
+# Dockerized (pull inside the container):
+docker exec ai-job-search-ollama ollama pull qwen2.5:3b
+
+# If your ISP blocks the Ollama model CDN (r2.cloudflarestorage.com, e.g. Movistar),
+# `ollama pull` hangs with "dial tcp ... i/o timeout". Pull from HuggingFace
+# instead and alias the model to the expected tag:
+docker exec ai-job-search-ollama ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
+docker exec ai-job-search-ollama ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
 
 # Test Ollama connection
 curl http://localhost:11434/api/tags

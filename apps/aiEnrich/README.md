@@ -76,6 +76,20 @@ AI_ENRICH_OLLAMA_MODEL=ollama/phi3.5:3b
 | `ollama/llama3.2:1b` | Fastest | Lower |
 
 Make sure the model is pulled in Ollama:
+
+Non-dockerized (local Ollama server):
 ```bash
 ollama pull qwen2.5:3b
 ```
+
+Dockerized (Ollama container, models persisted via the mounted `~/.ollama` volume):
+```bash
+docker exec ai-job-search-ollama ollama pull qwen2.5:3b
+```
+
+> **ISP blocking the Ollama registry (e.g. Movistar)**: if `ollama pull` hangs with `dial tcp ...:443: i/o timeout`, the download host `r2.cloudflarestorage.com` is blocked. Pull the same model from HuggingFace and alias it instead:
+> ```bash
+> ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
+> ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
+> ```
+> For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
