@@ -217,6 +217,7 @@ Agent skills are located in `.claude/skills/`:
 - `graphify-dev`: Change/improve graphify functionality (visualization, pipeline scripts). MANDATORY before editing anything graphify-related — never modify the uv-installed graphify package.
 - `version-bumper`: Bump the version of any apps/* module following semver
 - `dependabot-agent`: Process open GitHub Dependabot PRs
+- `gh-actions-debug`: Debug GitHub Actions / Dependabot run failures with the gh CLI
 - `scrapling-implementer`: Scrapling library usage (fetching, parsing, spiders)
 - `view-backend-logs`: How to view backend logs using docker-compose
 

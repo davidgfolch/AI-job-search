@@ -28,8 +28,13 @@ All agent skills live in `.claude/skills/`. Core ones:
 - **`graphify-dev`** — Changes/improves graphify functionality. MANDATORY before editing anything graphify-related; never modify the uv-installed graphify package.
 - **`version-bumper`** — Bumps the version of any `apps/*` module following semver.
 - **`dependabot-agent`** — Processes open GitHub Dependabot PRs.
+- **`gh-actions-debug`** — Debugs GitHub Actions / Dependabot run failures with `gh`.
 - **`scrapling-implementer`** — Scrapling library usage (fetching, parsing, spiders).
 - **`view-backend-logs`** — How to view backend logs using docker-compose.
+
+## Required Tools
+
+Agentic workflows require **Docker** and the **GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md))**. `gh` is used by `dependabot-agent` (processing Dependabot PRs) and `gh-actions-debug` (inspecting workflow/Dependabot run logs, which the web UI hides behind a write-access link).
 
 ## graphify (knowledge graph)
 
