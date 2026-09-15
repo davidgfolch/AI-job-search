@@ -20,4 +20,7 @@ RUN uv sync
 
 COPY .env* /app/
 
+# Copy healthcheck script
+COPY scripts/healthcheck/ollama_healthcheck.py /app/healthcheck.py
+
 CMD ["uv", "run", "aienrichskill"]

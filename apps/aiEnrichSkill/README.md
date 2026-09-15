@@ -8,7 +8,7 @@ Extracted from `aiEnrich` and `aiEnrichNew` — provides AI-based enrichment of 
 
 | Backend | Env Value | Requirements |
 |---------|-----------|-------------|
-| Ollama (default) | `ollama` | Ollama server running (`http://localhost:11434`) |
+| Ollama (default) | `ollama` | Ollama server running (default URL centralized as `OLLAMA_DEFAULT_BASE_URL` in `commonlib`) |
 | HuggingFace | `huggingface` | Local transformers, GPU recommended |
 
 ## Usage
@@ -40,7 +40,7 @@ Set these in your `.env` or `.env.secrets`:
 - `AI_ENRICHSKILL_TIMEOUT` — Timeout per item in seconds (default: `90`)
 
 ### Ollama Backend
-- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (default: `http://localhost:11434`)
+- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_DEFAULT_BASE_URL` in `commonlib`)
 - `AI_ENRICHSKILL_OLLAMA_MODEL` — Model name (default: `ollama/qwen2.5:3b`)
 
 Pull the default model before running:

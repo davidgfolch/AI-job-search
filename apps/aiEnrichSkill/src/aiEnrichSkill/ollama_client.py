@@ -3,6 +3,7 @@ import time
 import requests
 
 from commonlib.observability import get_logger
+from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL
 
 logger = get_logger("aiEnrichSkill.ollama_client")
 
@@ -11,7 +12,7 @@ def _get_num_predict() -> int:
     return int(os.getenv("AI_ENRICHSKILL_MAX_NEW_TOKENS", "2048"))
 
 
-def ping_ollama(base_url: str = "http://localhost:11434", timeout: int = 5) -> bool:
+def ping_ollama(base_url: str = OLLAMA_DEFAULT_BASE_URL, timeout: int = 5) -> bool:
     try:
         resp = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=timeout)
         resp.raise_for_status()
@@ -30,7 +31,7 @@ def _strip_provider_prefix(model: str) -> str:
 def query_ollama(
     prompt: str,
     model: str = "ollama/qwen2.5:3b",
-    base_url: str = "http://localhost:11434",
+    base_url: str = OLLAMA_DEFAULT_BASE_URL,
     timeout: int = 90,
     json_mode: bool = True,
 ) -> str | None:

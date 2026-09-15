@@ -1,4 +1,5 @@
 import json
+import sys
 import time
 import traceback
 
@@ -17,6 +18,7 @@ from commonlib.ai_helpers import (
 )
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger
+from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL
 from commonlib.services.metrics_collector import MetricsCollector
 from .ollama_client import query_ollama, ping_ollama
 
@@ -50,7 +52,7 @@ def get_job_enabled() -> bool:
 
 
 def get_ollama_base_url() -> str:
-    return getEnv("AI_ENRICH_OLLAMA_BASE_URL", "http://localhost:11434")
+    return getEnv("AI_ENRICH_OLLAMA_BASE_URL", OLLAMA_DEFAULT_BASE_URL)
 
 
 def get_timeout_job() -> int:
@@ -61,20 +63,32 @@ def get_model() -> str:
     return getEnv("AI_ENRICH_OLLAMA_MODEL", "ollama/qwen2.5:3b")
 
 
+def get_max_ollama_failures() -> int:
+    return int(getEnv("AI_ENRICH_MAX_OLLAMA_FAILURES", "3"))
+
+
 DEBUG = False
 
 stopWatch = StopWatch()
 totalCount = 0
 total = 0
 jobErrors = set[tuple[int, str]]()
+ollama_consecutive_failures = 0
 
 
 def dataExtractor() -> int:
+    global ollama_consecutive_failures
     if not get_job_enabled():
         return 0
     if not ping_ollama(base_url=get_ollama_base_url()):
-        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich")
+        ollama_consecutive_failures += 1
+        max_failures = get_max_ollama_failures()
+        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+        if ollama_consecutive_failures >= max_failures:
+            logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
+            sys.exit(1)
         return 0
+    ollama_consecutive_failures = 0
     global totalCount, jobErrors
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
@@ -91,11 +105,18 @@ def dataExtractor() -> int:
 
 
 def retry_failed_jobs() -> int:
+    global ollama_consecutive_failures
     if not get_job_enabled():
         return 0
     if not ping_ollama(base_url=get_ollama_base_url()):
-        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich")
+        ollama_consecutive_failures += 1
+        max_failures = get_max_ollama_failures()
+        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+        if ollama_consecutive_failures >= max_failures:
+            logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
+            sys.exit(1)
         return 0
+    ollama_consecutive_failures = 0
     global totalCount, jobErrors
 
     with MysqlUtil() as mysql:

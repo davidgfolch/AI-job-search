@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
+from commonlib.test.ollama_constants import OLLAMA_TEST_URL
 from ..ollama_client import ping_ollama, query_ollama, _strip_provider_prefix
 
 
@@ -25,7 +26,7 @@ def test_ping_ollama(mock_get, side_effect, expected):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-    result = ping_ollama("http://localhost:11434", timeout=5)
+    result = ping_ollama(OLLAMA_TEST_URL, timeout=5)
     assert result is expected
 
 

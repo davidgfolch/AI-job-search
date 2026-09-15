@@ -27,6 +27,9 @@ RUN uv sync
 # Copy environment file
 COPY .env* /app/
 
+# Copy healthcheck script
+COPY scripts/healthcheck/ollama_healthcheck.py /app/healthcheck.py
+
 # Note: AI Enrichment typically runs as a scheduled/batch job
 # It processes jobs not yet ai_enriched from the database
 CMD ["uv", "run", "aienrich"]

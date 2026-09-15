@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
+from commonlib.test.ollama_constants import OLLAMA_TEST_URL, OLLAMA_DOCKER_TEST_URL
 from ..ollama_client import ping_ollama, query_ollama, _strip_provider_prefix
 
 
@@ -87,9 +88,9 @@ class TestQueryOllama:
         mock_post.return_value.json.return_value = {"response": "x"}
         mock_post.return_value.raise_for_status.return_value = None
 
-        query_ollama("prompt", base_url="http://localhost:11434/")
+        query_ollama("prompt", base_url=f"{OLLAMA_TEST_URL}/")
 
-        assert mock_post.call_args[0][0] == "http://localhost:11434/api/generate"
+        assert mock_post.call_args[0][0] == f"{OLLAMA_TEST_URL}/api/generate"
 
     @patch("aiEnrich.ollama_client.requests.post")
     def test_raises_for_status_triggers_retry(self, mock_post):
@@ -108,25 +109,25 @@ class TestPingOllama:
     @patch("aiEnrich.ollama_client.requests.get")
     def test_success(self, mock_get):
         mock_get.return_value.raise_for_status.return_value = None
-        assert ping_ollama("http://localhost:11434") is True
-        mock_get.assert_called_once_with("http://localhost:11434/api/tags", timeout=5)
+        assert ping_ollama(OLLAMA_TEST_URL) is True
+        mock_get.assert_called_once_with(f"{OLLAMA_TEST_URL}/api/tags", timeout=5)
 
     @patch("aiEnrich.ollama_client.requests.get")
     def test_failure_returns_false(self, mock_get):
         mock_get.side_effect = Exception("Connection refused")
-        assert ping_ollama("http://localhost:11434", timeout=2) is False
+        assert ping_ollama(OLLAMA_TEST_URL, timeout=2) is False
 
     @patch("aiEnrich.ollama_client.requests.get")
     def test_trailing_slash_stripped(self, mock_get):
         mock_get.return_value.raise_for_status.return_value = None
-        ping_ollama("http://localhost:11434/")
-        assert mock_get.call_args[0][0] == "http://localhost:11434/api/tags"
+        ping_ollama(f"{OLLAMA_TEST_URL}/")
+        assert mock_get.call_args[0][0] == f"{OLLAMA_TEST_URL}/api/tags"
 
     @patch("aiEnrich.ollama_client.requests.get")
     def test_custom_timeout(self, mock_get):
         mock_get.return_value.raise_for_status.return_value = None
-        ping_ollama("http://ollama:11434", timeout=10)
-        mock_get.assert_called_once_with("http://ollama:11434/api/tags", timeout=10)
+        ping_ollama(OLLAMA_DOCKER_TEST_URL, timeout=10)
+        mock_get.assert_called_once_with(f"{OLLAMA_DOCKER_TEST_URL}/api/tags", timeout=10)
 
 
 class TestStripProviderPrefix:

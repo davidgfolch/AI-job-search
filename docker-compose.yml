@@ -137,17 +137,18 @@ services:
       - TZ=${GLOBAL_TZ}
       - AI_ENRICH_OLLAMA_BASE_URL=http://ollama:11434
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
+      - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mysql_db:
         condition: service_healthy
       ollama:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
+      test: [ "CMD", "python", "/app/healthcheck.py" ]
       start_period: 30s
       interval: 30s
-      timeout: 5s
-      retries: 1
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
     networks:
       - ai-job-search
@@ -208,17 +209,18 @@ services:
       - TZ=${GLOBAL_TZ}
       - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
+      - OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mysql_db:
         condition: service_healthy
       ollama:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
+      test: [ "CMD", "python", "/app/healthcheck.py" ]
       start_period: 30s
       interval: 30s
-      timeout: 5s
-      retries: 1
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
     networks:
       - ai-job-search

@@ -2,6 +2,8 @@ import os
 import pytest
 from unittest.mock import patch
 
+from commonlib.test.ollama_constants import OLLAMA_TEST_URL
+
 
 @pytest.fixture(autouse=True)
 def clean_env():
@@ -34,7 +36,7 @@ def test_get_job_enabled(env_val, expected):
 
 
 @pytest.mark.parametrize("env_val, expected", [
-    pytest.param(None, "http://localhost:11434", id="default"),
+    pytest.param(None, OLLAMA_TEST_URL, id="default"),
     pytest.param("http://custom:11434", "http://custom:11434", id="custom"),
 ])
 def test_get_ollama_base_url(env_val, expected):

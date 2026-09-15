@@ -2,6 +2,8 @@ import os
 import pytest
 from unittest.mock import patch
 
+from commonlib.test.ollama_constants import OLLAMA_TEST_URL
+
 from ..config import (
     get_enabled,
     get_backend,
@@ -52,8 +54,8 @@ def test_get_ollama_model_default(mock_env):
 
 @patch("aiEnrichSkill.config.getEnv")
 def test_get_ollama_base_url_default(mock_env):
-    mock_env.return_value = "http://localhost:11434"
-    assert get_ollama_base_url() == "http://localhost:11434"
+    mock_env.return_value = OLLAMA_TEST_URL
+    assert get_ollama_base_url() == OLLAMA_TEST_URL
 
 
 @patch("aiEnrichSkill.config.getEnv")
