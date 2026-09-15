@@ -26,7 +26,7 @@ This is a monorepo containing several applications and packages:
 | **Backend API**  | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.                       | Python, FastAPI, Poetry      |
 | **Cron**         | [`apps/cron`](apps/cron/README.md)                   | Background scheduler for periodic cron jobs.              | Python, uv, MongoDB          |
 | **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                              | Python, Selenium, Poetry     |
-| **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | Local AI enrichment using Ollama                          | Python, Ollama, uv           |
+| **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI enrichment using Ollama or OpenRouter                  | Python, Ollama/OpenRouter, uv |
 | **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)     | Local AI enrichment using transformers pipeline           | Python, HuggingFace, uv      |
 | **AI Enrich 3**  | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
 | **AI Enrich Skill**| [`apps/aiEnrichSkill`](apps/aiEnrichSkill/README.md) | Local AI skill enrichment (Ollama & HuggingFace).        | Python, Transformers, uv     |
@@ -205,7 +205,7 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 ./apps/aiEnrich3/run.sh
 # (NEW GPU/Transformers pipeline)
 ./apps/aiEnrichNew/run.sh
-# (Using Ollama)
+# (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
 ./apps/aiEnrich/run.sh
 # (Local Fast CV Matcher)
 ./apps/aiCvMatcher/run.sh
@@ -231,7 +231,7 @@ docker compose up -d
 .\apps\aiEnrich3\run.bat
 :: (NEW GPU/Transformers pipeline)
 .\apps\aiEnrichNew\run.bat
-:: (Using Ollama)
+:: (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
 .\apps\aiEnrich\run.bat
 :: (Local Fast CV Matcher)
 .\apps\aiCvMatcher\run.bat

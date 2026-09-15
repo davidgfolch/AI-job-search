@@ -11,7 +11,8 @@ def mock_deps():
          patch('aiEnrich.dataExtractor.rawToJson'), patch('aiEnrich.dataExtractor.mapJob'), \
          patch('aiEnrich.dataExtractor.AiEnrichRepository') as repo_cls, \
          patch('aiEnrich.dataExtractor.query_ollama') as mock_ollama, \
-         patch('aiEnrich.dataExtractor.ping_ollama', return_value=True) as mock_ping:
+         patch('aiEnrich.dataExtractor.ping_backend', return_value=True) as mock_ping, \
+         patch('aiEnrich.dataExtractor.get_backend', return_value='ollama'):
 
         mysql = MagicMock()
         mysql_util.return_value.__enter__.return_value = mysql

@@ -8,6 +8,7 @@ dependencies = [
     "requests>=2.34.2",
     "pandas==2.3.3",
     "protobuf>=4.0.0",
+    "openai>=3.0.0",
 ]
 
 [project.scripts]

@@ -14,10 +14,12 @@ docker-compose down
 
 ## With AI Services (AI Enrichment + Ollama)
 
-**Ollama CPU/GPU:** `aienrich` service uses Ollama (runs by default).
+**Ollama CPU/GPU:** `aienrich` service uses Ollama by default (runs by default). Set `AI_ENRICH_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
 **New CPU:** `aienrich3` service uses local fast CPU models (profile: `aiEnrich3`).
 **New GPU:** `aienrichnew` service uses transformers pipeline (profile: `aiEnrichNew`).
 **CV Matcher:** `aicvmatcher` service uses sentence transformers to rapidly match your cv (runs by default if configured in .env).
+
+> Note: even when `aienrich` uses OpenRouter, the Ollama service still starts because `aienrichskill` depends on it (`AI_ENRICHSKILL_BACKEND=ollama`).
 
 ```bash
 # Start core services (now includes aiEnrich)

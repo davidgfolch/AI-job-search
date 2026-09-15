@@ -65,6 +65,8 @@ Verify with `gh auth status`.
 
 > **Note**: If you are using Docker, you do not need to install Ollama manually. You can run `aiEnrich` and Ollama via `docker-compose up -d` (see [DOCKER_DEV.md](DOCKER_DEV.md)).
 
+> **No-Ollama alternative**: if you plan to use the `openrouter` backend for `aiEnrich` (`AI_ENRICH_BACKEND=openrouter` in `.env`, see [apps/aiEnrich/README.md](../apps/aiEnrich/README.md)), you can skip Ollama entirely for that module — you only need an OpenRouter API key in `.env.secrets`. Ollama is still required by `aiEnrichSkill` (default backend `ollama`) unless it is also switched off.
+
 Download and install from [ollama.com/download](https://ollama.com/download).
 
 Run the following command to pull the models used by the AI modules:

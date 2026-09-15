@@ -21,6 +21,7 @@ from commonlib.observability import get_logger
 from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL
 from commonlib.services.metrics_collector import MetricsCollector
 from .ollama_client import query_ollama, ping_ollama
+from .openrouter_client import query_openrouter, ping_openrouter, DEFAULT_BASE_URL as OPENROUTER_DEFAULT_BASE_URL, DEFAULT_MODEL as OPENROUTER_DEFAULT_MODEL, DEFAULT_FALLBACK_MODEL as OPENROUTER_DEFAULT_FALLBACK_MODEL
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
@@ -67,6 +68,28 @@ def get_max_ollama_failures() -> int:
     return int(getEnv("AI_ENRICH_MAX_OLLAMA_FAILURES", "3"))
 
 
+def get_backend() -> str:
+    return getEnv("AI_ENRICH_BACKEND", "ollama")
+
+
+def get_openrouter_base_url() -> str:
+    return getEnv("AI_ENRICH_OPENROUTER_BASE_URL", OPENROUTER_DEFAULT_BASE_URL)
+
+
+def get_openrouter_model() -> str:
+    return getEnv("AI_ENRICH_OPENROUTER_MODEL", OPENROUTER_DEFAULT_MODEL)
+
+
+def get_openrouter_fallback_model() -> str:
+    return getEnv("AI_ENRICH_OPENROUTER_FALLBACK_MODEL", OPENROUTER_DEFAULT_FALLBACK_MODEL)
+
+
+def ping_backend() -> bool:
+    if get_backend() == "openrouter":
+        return ping_openrouter(base_url=get_openrouter_base_url())
+    return ping_ollama(base_url=get_ollama_base_url())
+
+
 DEBUG = False
 
 stopWatch = StopWatch()
@@ -80,12 +103,12 @@ def dataExtractor() -> int:
     global ollama_consecutive_failures
     if not get_job_enabled():
         return 0
-    if not ping_ollama(base_url=get_ollama_base_url()):
+    if not ping_backend():
         ollama_consecutive_failures += 1
         max_failures = get_max_ollama_failures()
-        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+        logger.error("ai.unreachable", backend=get_backend(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
         if ollama_consecutive_failures >= max_failures:
-            logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
+            logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
             sys.exit(1)
         return 0
     ollama_consecutive_failures = 0
@@ -108,12 +131,12 @@ def retry_failed_jobs() -> int:
     global ollama_consecutive_failures
     if not get_job_enabled():
         return 0
-    if not ping_ollama(base_url=get_ollama_base_url()):
+    if not ping_backend():
         ollama_consecutive_failures += 1
         max_failures = get_max_ollama_failures()
-        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+        logger.error("ai.unreachable", backend=get_backend(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
         if ollama_consecutive_failures >= max_failures:
-            logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
+            logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
             sys.exit(1)
         return 0
     ollama_consecutive_failures = 0
@@ -152,23 +175,35 @@ def _process_job_safe(
             return
         title, company, markdown = mapJob(job)
         try:
-            logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx)
+            backend = get_backend()
+            model = get_openrouter_model() if backend == "openrouter" else get_model()
+            logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx, backend=backend, model=model)
             prompt = PROMPT_TEMPLATE.format(markdown=f"# {title} \n {markdown}")
-            raw = query_ollama(
-                prompt=prompt,
-                model=get_model(),
-                base_url=get_ollama_base_url(),
-                timeout=get_timeout_job(),
-                json_mode=True,
-            )
+            if get_backend() == "openrouter":
+                raw = query_openrouter(
+                    prompt=prompt,
+                    model=get_openrouter_model(),
+                    base_url=get_openrouter_base_url(),
+                    timeout=get_timeout_job(),
+                    json_mode=False,
+                    fallback_model=get_openrouter_fallback_model(),
+                )
+            else:
+                raw = query_ollama(
+                    prompt=prompt,
+                    model=get_model(),
+                    base_url=get_ollama_base_url(),
+                    timeout=get_timeout_job(),
+                    json_mode=True,
+                )
             if raw is None:
-                logger.warning("job.skipped_ollama_unreachable", job_id=id, title=title, company=company)
+                logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
             else:
                 result = rawToJson(raw)
                 if result is not None:
                     _save(repo, id, result)
                     success = True
-                logger.info("job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3))
+                logger.info("job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend, model=model)
         except (Exception, KeyboardInterrupt) as ex:
             _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:
