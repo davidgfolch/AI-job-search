@@ -80,20 +80,20 @@ def test_find_by_name(repo_with_mock):
 def test_create(repo_with_mock):
     """Test creating new configuration"""
     repo, mock_db = repo_with_mock
-    
-    # We need to simulate _transaction executing the callback
+
+    # We need to simulate transaction executing the callback
     def side_effect(callback):
         # Create a mock cursor
         mock_cursor = MagicMock()
         mock_cursor.lastrowid = 123
         return callback(mock_cursor)
-        
-    mock_db._transaction.side_effect = side_effect
-    
+
+    mock_db.transaction.side_effect = side_effect
+
     result = repo.create('New Config', {'page': 1}, True, True, True)
-    
+
     assert result == 123
-    mock_db._transaction.assert_called_once()
+    mock_db.transaction.assert_called_once()
     
     # Verify what happened inside the transaction
     # We need to check if execute was called on the cursor passed to callback

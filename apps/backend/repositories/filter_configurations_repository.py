@@ -78,7 +78,7 @@ class FilterConfigurationsRepository:
             return c.lastrowid
             
         with self.get_db() as db:
-            return db._transaction(op)
+            return db.transaction(op)
     
     def update(self, config_id: int, name: Optional[str] = None, filters: Optional[dict] = None, watched: Optional[bool] = None, statistics: Optional[bool] = None, pinned: Optional[bool] = None, ordering: Optional[int] = None) -> bool:
         updates = []

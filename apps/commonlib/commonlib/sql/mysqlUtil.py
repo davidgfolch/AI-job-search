@@ -8,6 +8,7 @@ Main entry point: MysqlUtil class composed of:
 - JobRepository: Job-specific operations
 """
 from contextlib import contextmanager
+from typing import Any, Callable
 from mysql.connector import MySQLConnection
 
 from .connection_manager import get_connection, getConnection
@@ -153,6 +154,10 @@ class MysqlUtil:
     def executeAllAndCommit(self, queries: list[dict[str, any]]) -> list[int]:
         """Execute multiple queries in transaction."""
         return self._transaction_manager.execute_all_and_commit(queries)
+
+    def transaction(self, callback: Callable) -> Any:
+        """Execute a callback within a transaction, returning the callback's result."""
+        return self._transaction_manager.execute_transaction(callback)
 
     def getConnection(self) -> MySQLConnection:
         """Get the MySQL connection."""
