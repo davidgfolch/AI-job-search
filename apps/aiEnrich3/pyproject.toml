@@ -9,6 +9,8 @@ dependencies = [
     "transformers>=4.40.0",
     "torch>=2.13.0",
     "price-parser>=0.3.4",
+    "tiktoken>=0.7.0",
+    "protobuf>=4.25.0",
 ]
 
 [project.scripts]
