@@ -10,6 +10,19 @@ MYSQL_PASSWORD = 'rootPass'
 MYSQL_DATABASE = 'jobs'
 
 
+def get_local_ip():
+    """Return the machine's primary LAN IPv4 or None."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(2)
+    try:
+        s.connect(('8.8.8.8', 80))
+        return s.getsockname()[0]
+    except Exception:
+        return None
+    finally:
+        s.close()
+
+
 def get_local_subnets():
     """Detect local LAN subnets by finding the machine's IP via UDP connect."""
     subnets = []
@@ -123,3 +136,32 @@ def auto_discover_host():
         return None
     except Exception:
         return None
+
+
+SPEC_LOCAL = ('local', 'localhost', '127.0.0.1')
+SPEC_AUTO = ('auto', 'discover')
+
+
+def resolve_mysql_host(spec='auto'):
+    """Resolve a host spec to a reachable MySQL host IP.
+
+    - 'local' | 'localhost' | '127.0.0.1' -> 127.0.0.1 (assumed, no probe)
+    - 'auto' | 'discover' -> LAN scan, first verified host excluding local
+    - otherwise -> the given IP, verified as a MySQL host
+
+    Raises ConnectionError when nothing can be resolved.
+    """
+    spec = (spec or 'auto').strip().lower()
+    if spec in SPEC_LOCAL:
+        return '127.0.0.1'
+    if spec in SPEC_AUTO:
+        local = get_local_ip()
+        for host in discover_mysql_hosts():
+            if local and host == local:
+                continue
+            if verify_mysql(host):
+                return host
+        raise ConnectionError('Auto-discovery found no reachable MySQL host on the LAN')
+    if verify_mysql(spec):
+        return spec
+    raise ConnectionError(f"MySQL host '{spec}' is not reachable or has no '{MYSQL_DATABASE}' database")

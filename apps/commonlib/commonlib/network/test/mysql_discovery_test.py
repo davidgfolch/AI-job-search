@@ -1,8 +1,8 @@
 from unittest.mock import patch, MagicMock
 import pytest
 from commonlib.network.mysql_discovery import (
-    get_local_subnets, _scan_port, _scan_hosts, discover_mysql_hosts,
-    verify_mysql, auto_discover_host,
+    get_local_subnets, get_local_ip, _scan_port, _scan_hosts, discover_mysql_hosts,
+    verify_mysql, auto_discover_host, resolve_mysql_host,
 )
 
 
@@ -140,3 +140,61 @@ class TestAutoDiscoverHost:
     def test_exception(self, mock_discover):
         mock_discover.side_effect = Exception("unexpected error")
         assert auto_discover_host() is None
+
+
+class TestGetLocalIp:
+    @patch('commonlib.network.mysql_discovery.socket.socket')
+    def test_returns_ip(self, mock_socket_class):
+        inst = MagicMock()
+        inst.getsockname.return_value = ('192.168.1.10', 50000)
+        mock_socket_class.return_value = inst
+        assert get_local_ip() == '192.168.1.10'
+
+    @patch('commonlib.network.mysql_discovery.socket.socket')
+    def test_failure(self, mock_socket_class):
+        inst = MagicMock()
+        inst.connect.side_effect = Exception("no network")
+        mock_socket_class.return_value = inst
+        assert get_local_ip() is None
+
+
+class TestResolveMysqlHost:
+    @pytest.mark.parametrize("spec", ['local', 'localhost', '127.0.0.1', 'LOCAL'])
+    def test_local(self, spec):
+        assert resolve_mysql_host(spec) == '127.0.0.1'
+
+    @patch('commonlib.network.mysql_discovery.discover_mysql_hosts')
+    @patch('commonlib.network.mysql_discovery.get_local_ip')
+    @patch('commonlib.network.mysql_discovery.verify_mysql')
+    def test_auto_skips_local(self, mock_verify, mock_local, mock_discover):
+        mock_local.return_value = '192.168.1.10'
+        mock_discover.return_value = ['192.168.1.10', '192.168.1.50']
+        mock_verify.return_value = True
+        assert resolve_mysql_host('auto') == '192.168.1.50'
+        mock_verify.assert_any_call('192.168.1.50')
+        assert mock_verify.call_count == 1
+
+    @patch('commonlib.network.mysql_discovery.discover_mysql_hosts')
+    @patch('commonlib.network.mysql_discovery.get_local_ip')
+    def test_auto_none_found(self, mock_local, mock_discover):
+        mock_local.return_value = '192.168.1.10'
+        mock_discover.return_value = ['192.168.1.50']
+        with pytest.raises(ConnectionError):
+            resolve_mysql_host('auto')
+
+    @patch('commonlib.network.mysql_discovery.verify_mysql')
+    def test_explicit_ip_verified(self, mock_verify):
+        mock_verify.return_value = True
+        assert resolve_mysql_host('192.168.1.50') == '192.168.1.50'
+
+    @patch('commonlib.network.mysql_discovery.verify_mysql')
+    def test_explicit_ip_not_verified(self, mock_verify):
+        mock_verify.return_value = False
+        with pytest.raises(ConnectionError):
+            resolve_mysql_host('192.168.1.50')
+
+    @patch('commonlib.network.mysql_discovery.discover_mysql_hosts')
+    def test_default_is_auto(self, mock_discover):
+        mock_discover.return_value = []
+        with pytest.raises(ConnectionError):
+            resolve_mysql_host()
