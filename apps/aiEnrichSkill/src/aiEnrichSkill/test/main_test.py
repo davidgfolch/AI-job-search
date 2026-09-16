@@ -20,12 +20,14 @@ def test_run_disabled(mock_cyan, mock_enabled, mock_mysql, mock_enrich, mock_tim
 
 
 @patch("aiEnrichSkill.main.collector")
+@patch("aiEnrichSkill.main.get_backend", return_value="ollama")
+@patch("aiEnrichSkill.main.ping_ollama", return_value=True)
 @patch("aiEnrichSkill.main.consoleTimer")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_collector):
+def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_ping, mock_backend, mock_collector):
     mock_enabled.return_value = True
     mysql = MagicMock()
     mock_mysql_cls.return_value.__enter__.return_value = mysql
@@ -42,12 +44,14 @@ def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_
 
 
 @patch("aiEnrichSkill.main.collector")
+@patch("aiEnrichSkill.main.get_backend", return_value="ollama")
+@patch("aiEnrichSkill.main.ping_ollama", return_value=True)
 @patch("aiEnrichSkill.main.consoleTimer")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_collector):
+def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_ping, mock_backend, mock_collector):
     mock_enabled.return_value = True
     mysql = MagicMock()
     mock_mysql_cls.return_value.__enter__.return_value = mysql
@@ -64,12 +68,14 @@ def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enric
 
 
 @patch("aiEnrichSkill.main.collector")
+@patch("aiEnrichSkill.main.get_backend", return_value="ollama")
+@patch("aiEnrichSkill.main.ping_ollama", return_value=True)
 @patch("aiEnrichSkill.main.consoleTimer")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_persists_after_each_enrich_cycle(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_collector):
+def test_run_persists_after_each_enrich_cycle(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_ping, mock_backend, mock_collector):
     mock_enabled.return_value = True
     mysql = MagicMock()
     mock_mysql_cls.return_value.__enter__.return_value = mysql
