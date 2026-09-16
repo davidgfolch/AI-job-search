@@ -15,7 +15,7 @@ dependencies = [
     "mathparse>=0.2.9,<0.3.0",
     "pdfplumber>=0.11.10",
     "pandas>=2.3.3",
-    "pymongo>=4.17.0",
+    "pymongo>=4.18.1",
     "structlog>=26.1.0",
     "prometheus-client>=0.21.0",
 ]
