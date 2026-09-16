@@ -65,6 +65,7 @@ def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enric
 
     mock_timer.assert_called_once()
     mock_collector.persist.assert_called_once()
+    mock_collector.record_heartbeat.assert_called_with("aiEnrichSkill")
 
 
 @patch("aiEnrichSkill.main.collector")

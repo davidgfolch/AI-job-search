@@ -2,6 +2,7 @@ import os
 import urllib.request
 from datetime import datetime, timezone
 
+from commonlib.environmentUtil import getEnv
 from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL, OLLAMA_DOCKER_BASE_URL
 from commonlib.services.metrics_collector import MetricsCollector
 from repositories.dashboard_repository import DashboardRepository
@@ -21,6 +22,12 @@ STALE_THRESHOLD_SECONDS = 1200
 OLLAMA_ERROR_WINDOW_SECONDS = 1800
 OLLAMA_PROBE_TIMEOUT_SECONDS = 3
 OLLAMA_CANDIDATE_URLS = (OLLAMA_DOCKER_BASE_URL, OLLAMA_DEFAULT_BASE_URL)
+BACKEND_LABELS = {
+    "ollama": "Ollama",
+    "ollama_cloud": "Ollama Cloud",
+    "openai": "OpenAI",
+    "openrouter": "OpenRouter",
+}
 
 
 def get_services_status() -> dict:
@@ -33,7 +40,7 @@ def get_services_status() -> dict:
     for module in MODULES:
         metric_key = MODULE_METRIC_KEYS.get(module, module)
         m = modules.get(metric_key, {})
-        last_processed = m.get("last_processed_at") or _repo.read_last_activity(module)
+        last_processed = _pick_freshest(m.get("last_processed_at"), m.get("last_heartbeat_at"), _repo.read_last_activity(module))
         last_error_at = m.get("last_error_at")
         last_error = m.get("last_error")
         status = _determine_status(now, last_processed, last_error_at)
@@ -84,6 +91,17 @@ def _local(dt: datetime) -> datetime:
     return dt.astimezone().replace(tzinfo=None)
 
 
+def _pick_freshest(*candidates: str | None) -> str | None:
+    best, best_ts = None, None
+    for candidate in candidates:
+        if not candidate:
+            continue
+        ts = _parse_local(candidate)
+        if ts is not None and (best_ts is None or ts > best_ts):
+            best, best_ts = candidate, ts
+    return best
+
+
 def _parse_local(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -108,8 +126,11 @@ def _determine_status(now: datetime, last_processed: str | None, last_error_at: 
 
 
 def _display_name(module: str) -> str:
+    if module == "aienrich":
+        backend = getEnv("AI_ENRICH_BACKEND", "ollama").strip().lower()
+        label = BACKEND_LABELS.get(backend) or backend.replace("_", " ").title() or "Ollama"
+        return f"AI Enrich ({label})"
     names = {
-        "aienrich": "AI Enrich (Ollama)",
         "aienrichnew": "AI Enrich New (HF)",
         "aienrichskill": "AI Enrich Skill",
         "aienrich3": "AI Enrich 3 (CPU)",

@@ -211,6 +211,7 @@ def _process_job_safe(
     totalCount += 1
     duration = time.time() - start_time
     collector.record_job("aiEnrich", duration, success)
+    collector.persist_if_due(60)
     stopWatch.end()
     footer(total, idx, totalCount, jobErrors)
 

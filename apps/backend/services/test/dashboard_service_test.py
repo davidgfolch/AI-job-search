@@ -27,12 +27,8 @@ SNAPSHOT = {
 
 
 @pytest.mark.parametrize("last_processed,last_error_at,expected", [
-    (_iso(), None, "running"),
-    (_iso(-10), None, "running"),
-    (_iso(-30), None, "stopped"),
-    (_iso(), _iso(), "error"),
-    (None, None, "stopped"),
-    ("2026-09-14T14:00:00Z", None, "stopped"),
+    (_iso(), None, "running"), (_iso(-10), None, "running"), (_iso(-30), None, "stopped"),
+    (_iso(), _iso(), "error"), (None, None, "stopped"), ("2026-09-14T14:00:00Z", None, "stopped"),
 ])
 def test_determine_status(last_processed, last_error_at, expected):
     now = datetime.now(timezone.utc)
@@ -134,9 +130,56 @@ def test_get_services_status_log_fallback(mock_repo, mock_collector):
     assert by_name["aicvmatcher"]["lastActivity"] == activity
 
 
-def test_display_name_mapping():
-    assert dashboard_service._display_name("aienrich") == "AI Enrich (Ollama)"
-    assert dashboard_service._display_name("unknown") == "unknown"
+@pytest.mark.parametrize("backend,label", [
+    ("ollama", "Ollama"), ("ollama_cloud", "Ollama Cloud"), ("openai", "OpenAI"),
+    ("openrouter", "OpenRouter"), ("OPENROUTER", "OpenRouter"), ("custom_backend", "Custom Backend"),
+])
+@patch("services.dashboard_service.getEnv")
+def test_display_name_aienrich_backend(mock_env, backend, label):
+    mock_env.return_value = backend
+    assert dashboard_service._display_name("aienrich") == f"AI Enrich ({label})"
+
+
+@pytest.mark.parametrize("module,expected", [
+    ("aienrichnew", "AI Enrich New (HF)"), ("aienrichskill", "AI Enrich Skill"),
+    ("aienrich3", "AI Enrich 3 (CPU)"), ("aicvmatcher", "CV Matcher"), ("unknown", "unknown"),
+])
+def test_display_name_mapping(module, expected):
+    assert dashboard_service._display_name(module) == expected
+
+
+@pytest.mark.parametrize("metrics,log,expected", [
+    (_iso(-30), _iso(), "log"), (_iso(), _iso(-30), "metrics"), (None, None, None),
+    ("garbage", None, None), (None, "garbage", None), ("garbage", "garbage", None),
+    ("garbage", _iso(), "log"), (_iso(), "garbage", "metrics"), (None, _iso(-10), "log"), (_iso(-10), None, "metrics"),
+])
+def test_pick_freshest(metrics, log, expected):
+    result = dashboard_service._pick_freshest(metrics, log)
+    if expected is None:
+        assert result is None
+    else:
+        assert result == (log if expected == "log" else metrics)
+
+
+@pytest.mark.parametrize("module,module_metrics,log,expected_name", [
+    ("aiEnrich", {"last_processed_at": _iso(-40)}, _iso(), "aienrich"),
+    ("aiEnrichSkill", {"last_processed_at": None, "last_heartbeat_at": _iso()}, None, "aienrichskill"),
+])
+@patch("services.dashboard_service.MetricsCollector")
+@patch("services.dashboard_service._repo")
+def test_get_services_status_recent_activity_running(mock_repo, mock_collector, module, module_metrics, log, expected_name):
+    mock_repo.read_recent_errors.return_value = []
+    mock_repo.read_last_activity.return_value = log
+    mock_repo.check_ollama_errors.return_value = []
+    snapshot = dict(SNAPSHOT)
+    snapshot["modules"] = dict(SNAPSHOT["modules"])
+    snapshot["modules"][module] = module_metrics
+    mock_collector.return_value.reload.return_value = None
+    mock_collector.return_value.get_snapshot.return_value = snapshot
+
+    result = dashboard_service.get_services_status()
+
+    assert {s["name"]: s["status"] for s in result["services"]}[expected_name] == "running"
 
 
 def test_module_metric_key_mapping():

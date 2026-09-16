@@ -28,6 +28,7 @@ class MetricsCollector:
         if self._initialized:
             return
         self._initialized = True
+        self._last_persist = time.time()
         self._modules: dict[str, dict] = defaultdict(
             lambda: {
                 "jobs_processed": 0,
@@ -38,6 +39,7 @@ class MetricsCollector:
                 "cache_hits": 0,
                 "cache_misses": 0,
                 "last_processed_at": None,
+                "last_heartbeat_at": None,
                 "last_error_at": None,
                 "last_error": None,
                 "pending_jobs": 0,
@@ -58,6 +60,10 @@ class MetricsCollector:
             else:
                 m["jobs_failed"] += 1
             m["last_processed_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    def record_heartbeat(self, module: str):
+        with self._lock:
+            self._modules[module]["last_heartbeat_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
     def record_error(self, module: str, error: str):
         with self._lock:
@@ -101,6 +107,14 @@ class MetricsCollector:
         raw = {"modules": {name: dict(m) for name, m in self._modules.items()}}
         with open(METRICS_FILE, "w") as f:
             json.dump(raw, f, indent=2, default=str)
+
+    def persist_if_due(self, interval_seconds: int = 60) -> bool:
+        with self._lock:
+            if time.time() - self._last_persist < interval_seconds:
+                return False
+            self._last_persist = time.time()
+        self.persist()
+        return True
 
     def reload(self):
         with self._lock:

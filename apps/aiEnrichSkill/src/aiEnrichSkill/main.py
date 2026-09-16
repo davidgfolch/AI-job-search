@@ -31,6 +31,7 @@ def run():
 
     ollama_consecutive_failures = 0
     while True:
+        collector.record_heartbeat("aiEnrichSkill")
         if get_backend() == "ollama" and not ping_ollama(base_url=get_ollama_base_url()):
             ollama_consecutive_failures += 1
             max_failures = get_max_ollama_failures()

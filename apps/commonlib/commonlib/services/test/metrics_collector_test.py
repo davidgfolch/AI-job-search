@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import time
 
 import pytest
 
@@ -52,6 +53,13 @@ def test_record_error(collector):
 def test_set_pending(collector):
     collector.set_pending("test_module", 42)
     assert collector._modules["test_module"]["pending_jobs"] == 42
+
+
+def test_record_heartbeat(collector):
+    collector.record_heartbeat("test_module")
+    m = collector._modules["test_module"]
+    assert m["last_heartbeat_at"] is not None
+    assert m["last_processed_at"] is None
 
 
 def test_get_snapshot_no_data(collector):
@@ -111,3 +119,23 @@ def test_load_corrupted_file(collector):
     c2 = MetricsCollector()
     assert c2._modules == {}
     os.remove(path)
+
+
+def test_persist_if_due_writes_when_interval_elapsed(collector):
+    collector.record_job("mod_p", 1.0, True)
+    collector._last_persist = time.time() - 120
+    assert collector.persist_if_due(60) is True
+    path = METRICS_FILE
+    assert os.path.exists(path)
+    with open(path) as f:
+        data = json.load(f)
+    assert data["modules"]["mod_p"]["jobs_processed"] == 1
+    assert data["modules"]["mod_p"]["last_processed_at"] is not None
+    os.remove(path)
+
+
+def test_persist_if_due_skips_when_recent(collector):
+    collector.record_job("mod_q", 1.0, True)
+    collector._last_persist = time.time()
+    assert collector.persist_if_due(60) is False
+    assert not os.path.exists(METRICS_FILE)
