@@ -1,8 +1,8 @@
 import { useViewer } from "./hooks/useViewer";
 import { useCallback, useRef, useState } from "react";
 import JobList from './components/JobList';
-import JobDetail from './components/JobDetail';
 import JobEditForm from './components/JobEditForm';
+import JobDetailPanels from './components/JobDetailPanels';
 import JobActions from './components/JobActions';
 import ShortcutBadge from './components/ShortcutBadge';
 import AppliedModal from './components/AppliedModal';
@@ -168,46 +168,26 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                 </div>
                             </div>
                             <PanelDivider collapsedPanel={collapsedPanel} onCollapse={setCollapsedPanel} onReset={() => setCollapsedPanel('none')} />
-                                <div className={`viewer-right ${!state.selectedJob ? 'mobile-hidden' : ''}`} style={state.duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : collapsedPanel === 'right' ? { display: 'none' } : undefined}>
-                                {state.selectedJob ? (
-                                    <>
-                                        <div style={state.duplicatedJob ? { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' } : { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                                            <JobDetail 
-                                                key={state.selectedJob.id}
-                                                job={state.selectedJob} 
-                                                onUpdate={actions.updateJob} 
-                                                onOpenDuplicated={actions.openDuplicatedJob}
-                                                hideDuplicatedButton={!!state.duplicatedJob}
-                                                onCloseMobile={actions.closeSelectedJob}
-                                                onNext={actions.nextJob}
-                                                onPrevious={actions.previousJob}
-                                                hasNext={status.hasNext}
-                                                hasPrevious={status.hasPrevious}
-                                                filters={state.filters}
-                                                onSeen={actions.seenJob}
-                                                onApplied={actions.appliedJob}
-                                                onDiscarded={actions.discardedJob}
-                                                onClosed={actions.closedJob}
-                                                onIgnore={actions.ignoreJob}
-                                                detailScrollRef={detailScrollRef} />
-                                        </div>
-                                        {state.duplicatedJob && (
-                                            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--border-color)', paddingLeft: '1rem' }}>
-                                                <JobDetail 
-                                                    key={state.duplicatedJob.id}
-                                                    job={state.duplicatedJob} 
-                                                    onUpdate={actions.updateJob} // Allows updating the duplicated job too
-                                                    onClose={actions.closeDuplicatedJob}
-                                                />
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="no-selection">
-                                        Select a job to view details
-                                    </div>
-                                )}
-                            </div>
+                                <JobDetailPanels
+                                    selectedJob={state.selectedJob}
+                                    duplicatedJob={state.duplicatedJob}
+                                    collapsedPanel={collapsedPanel}
+                                    filters={state.filters}
+                                    detailScrollRef={detailScrollRef}
+                                    onUpdate={actions.updateJob}
+                                    onOpenDuplicated={actions.openDuplicatedJob}
+                                    onCloseMobile={actions.closeSelectedJob}
+                                    onCloseDuplicated={actions.closeDuplicatedJob}
+                                    onNext={actions.nextJob}
+                                    onPrevious={actions.previousJob}
+                                    hasNext={status.hasNext}
+                                    hasPrevious={status.hasPrevious}
+                                    onSeen={actions.seenJob}
+                                    onApplied={actions.appliedJob}
+                                    onDiscarded={actions.discardedJob}
+                                    onClosed={actions.closedJob}
+                                    onIgnore={actions.ignoreJob}
+                                />
                         </div>
                     </div>
                 </div>

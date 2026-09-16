@@ -1,4 +1,3 @@
-import json
 import sys
 import time
 import traceback
@@ -6,8 +5,6 @@ import traceback
 from commonlib.json_helpers import rawToJson
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
-from commonlib.terminalColor import magenta, yellow, red
-from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.ai_helpers import (
     footer,
     mapJob,
@@ -18,10 +15,13 @@ from commonlib.ai_helpers import (
 )
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger
-from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL
+from commonlib.aiEnrich_config import (
+    get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
+    get_backend, get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model,
+)
 from commonlib.services.metrics_collector import MetricsCollector
 from .ollama_client import query_ollama, ping_ollama
-from .openrouter_client import query_openrouter, ping_openrouter, DEFAULT_BASE_URL as OPENROUTER_DEFAULT_BASE_URL, DEFAULT_MODEL as OPENROUTER_DEFAULT_MODEL, DEFAULT_FALLBACK_MODEL as OPENROUTER_DEFAULT_FALLBACK_MODEL
+from .openrouter_client import query_openrouter, ping_openrouter
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
@@ -48,46 +48,24 @@ The json output must have the following fields and structure:
 }}"""
 
 
-def get_job_enabled() -> bool:
-    return getEnvBool("AI_ENRICH_JOB", True)
-
-
-def get_ollama_base_url() -> str:
-    return getEnv("AI_ENRICH_OLLAMA_BASE_URL", OLLAMA_DEFAULT_BASE_URL)
-
-
-def get_timeout_job() -> int:
-    return int(getEnv("AI_ENRICH_TIMEOUT_JOB", "90"))
-
-
-def get_model() -> str:
-    return getEnv("AI_ENRICH_OLLAMA_MODEL", "ollama/qwen2.5:3b")
-
-
-def get_max_ollama_failures() -> int:
-    return int(getEnv("AI_ENRICH_MAX_OLLAMA_FAILURES", "3"))
-
-
-def get_backend() -> str:
-    return getEnv("AI_ENRICH_BACKEND", "ollama")
-
-
-def get_openrouter_base_url() -> str:
-    return getEnv("AI_ENRICH_OPENROUTER_BASE_URL", OPENROUTER_DEFAULT_BASE_URL)
-
-
-def get_openrouter_model() -> str:
-    return getEnv("AI_ENRICH_OPENROUTER_MODEL", OPENROUTER_DEFAULT_MODEL)
-
-
-def get_openrouter_fallback_model() -> str:
-    return getEnv("AI_ENRICH_OPENROUTER_FALLBACK_MODEL", OPENROUTER_DEFAULT_FALLBACK_MODEL)
-
-
 def ping_backend() -> bool:
     if get_backend() == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
     return ping_ollama(base_url=get_ollama_base_url())
+
+
+def _check_backend_available() -> bool:
+    global ollama_consecutive_failures
+    if ping_backend():
+        ollama_consecutive_failures = 0
+        return True
+    ollama_consecutive_failures += 1
+    max_failures = get_max_ollama_failures()
+    logger.error("ai.unreachable", backend=get_backend(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+    if ollama_consecutive_failures >= max_failures:
+        logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
+        sys.exit(1)
+    return False
 
 
 DEBUG = False
@@ -100,19 +78,11 @@ ollama_consecutive_failures = 0
 
 
 def dataExtractor() -> int:
-    global ollama_consecutive_failures
+    global totalCount, jobErrors
     if not get_job_enabled():
         return 0
-    if not ping_backend():
-        ollama_consecutive_failures += 1
-        max_failures = get_max_ollama_failures()
-        logger.error("ai.unreachable", backend=get_backend(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-        if ollama_consecutive_failures >= max_failures:
-            logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
-            sys.exit(1)
+    if not _check_backend_available():
         return 0
-    ollama_consecutive_failures = 0
-    global totalCount, jobErrors
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         total = repo.count_pending_enrichment()
@@ -120,28 +90,18 @@ def dataExtractor() -> int:
             return 0
         logger.info("jobs.found", total=total, module="aiEnrich")
         collector.set_pending("aiEnrich", total)
-        if total > 0:
-            stopWatch.start()
-            for idx, id in enumerate(_getJobIdsList(repo)):
-                _process_job_safe(repo, id, total, idx, "enrich")
+        stopWatch.start()
+        for idx, id in enumerate(_getJobIdsList(repo)):
+            _process_job_safe(repo, id, total, idx, "enrich")
         return total
 
 
 def retry_failed_jobs() -> int:
-    global ollama_consecutive_failures
+    global totalCount, jobErrors
     if not get_job_enabled():
         return 0
-    if not ping_backend():
-        ollama_consecutive_failures += 1
-        max_failures = get_max_ollama_failures()
-        logger.error("ai.unreachable", backend=get_backend(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-        if ollama_consecutive_failures >= max_failures:
-            logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
-            sys.exit(1)
+    if not _check_backend_available():
         return 0
-    ollama_consecutive_failures = 0
-    global totalCount, jobErrors
-
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         error_id = repo.get_enrichment_error_id_retry()
@@ -165,11 +125,7 @@ def _process_job_safe(
     success = False
     title, company = "Unknown", "Unknown"
     try:
-        job = (
-            repo.get_job_to_enrich(id)
-            if process_name == "enrich"
-            else repo.get_job_to_retry(id)
-        )
+        job = repo.get_job_to_enrich(id) if process_name == "enrich" else repo.get_job_to_retry(id)
         if job is None:
             logger.warning("job.not_found", job_id=id)
             return
@@ -218,13 +174,8 @@ def _process_job_safe(
 
 def _save(repo: AiEnrichRepository, id, result: dict):
     validateResult(result)
-    repo.update_enrichment(
-        id,
-        result.get("salary", None),
-        result.get("required_technologies", None),
-        result.get("optional_technologies", None),
-        result.get("modality", None),
-    )
+    repo.update_enrichment(id, result.get("salary", None), result.get("required_technologies", None),
+                           result.get("optional_technologies", None), result.get("modality", None))
 
 
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):

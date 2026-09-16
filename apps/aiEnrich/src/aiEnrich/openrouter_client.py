@@ -7,10 +7,12 @@ from openai import OpenAI
 from commonlib.observability import get_logger
 
 logger = get_logger("aiEnrich.openrouter_client")
+from commonlib.aiEnrich_config import (
+    OPENROUTER_DEFAULT_BASE_URL as DEFAULT_BASE_URL,
+    OPENROUTER_DEFAULT_MODEL as DEFAULT_MODEL,
+    OPENROUTER_DEFAULT_FALLBACK_MODEL as DEFAULT_FALLBACK_MODEL,
+)
 
-DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "openrouter/free"
-DEFAULT_FALLBACK_MODEL = "nex-agi/nex-n2.5-pro:free"
 RETRIES_PER_MODEL = 3
 
 SYSTEM_PROMPT = "You are a technical job data extractor. Given a job posting, extract structured data as valid JSON."
