@@ -82,7 +82,7 @@ def dataExtractor() -> int:
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
-        return 0
+        return -1
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         total = repo.count_pending_enrichment()
@@ -101,7 +101,7 @@ def retry_failed_jobs() -> int:
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
-        return 0
+        return -1
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         error_id = repo.get_enrichment_error_id_retry()

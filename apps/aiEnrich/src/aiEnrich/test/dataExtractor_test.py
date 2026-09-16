@@ -51,11 +51,11 @@ class TestDataExtractor:
 
     @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
     def test_skips_when_ollama_down(self, mock_ids, mock_deps):
-        """Skips pre-check and returns 0 when Ollama is unreachable"""
+        """Returns -1 when Ollama is unreachable"""
         mock_deps['ping'].return_value = False
         mock_deps['repo'].count_pending_enrichment.return_value = 1
 
-        assert dataExtractor() == 0
+        assert dataExtractor() == -1
         mock_deps['ollama'].assert_not_called()
         mock_deps['save'].assert_not_called()
 
