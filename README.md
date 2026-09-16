@@ -100,6 +100,8 @@ docker-compose up -d --no-deps web
 
 ![UIStats](READMEs/assets/UIStats.png)
 
+![UIDashboard](READMEs/assets/UIDashboard.png)
+
 ![Prometheus/Graphana](READMEs/assets/UIPrometheusGraphana.png)
 
 ### Stats Filter Configurations

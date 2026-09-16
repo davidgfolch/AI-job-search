@@ -56,6 +56,7 @@ export const useConfigOperations = ({
     try {
       await service.save(updated);
       setSavedConfigs(updated);
+      setSavedConfigName(newConfig.name);
       setConfigName('');
       setIsOpen(false);
       notify(`Configuration "${newConfig.name}" saved!`, 'success');
@@ -69,6 +70,7 @@ export const useConfigOperations = ({
     savedConfigs,
     service,
     setSavedConfigs,
+    setSavedConfigName,
     setConfigName,
     setIsOpen,
     notify,
