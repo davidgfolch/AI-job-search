@@ -47,7 +47,8 @@ describe('useConfigOperations - saveConfiguration', () => {
 
         expect(props.service.save).toHaveBeenCalled();
         expect(props.setSavedConfigs).toHaveBeenCalled();
-        expect(props.setConfigName).toHaveBeenCalledWith('');
+        expect(props.setSavedConfigName).toHaveBeenCalledWith('Test Config');
+        expect(props.setConfigName).toHaveBeenCalledWith('Test Config');
         expect(props.setIsOpen).toHaveBeenCalledWith(false);
         expect(props.notify).toHaveBeenCalledWith('Configuration "Test Config" saved!', 'success');
     });

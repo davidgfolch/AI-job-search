@@ -88,7 +88,8 @@ describe('useFilterConfigurations', () => {
 
         expect(result.current.filteredConfigs).toHaveLength(1);
         expect(result.current.filteredConfigs[0].name).toBe('New Config');
-        expect(result.current.configName).toBe('');
+        expect(result.current.configName).toBe('New Config');
+        expect(result.current.savedConfigName).toBe('New Config');
     });
 
     it('should delete a configuration', async () => {

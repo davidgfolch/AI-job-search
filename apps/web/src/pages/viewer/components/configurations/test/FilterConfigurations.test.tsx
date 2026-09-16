@@ -33,7 +33,7 @@ describe('FilterConfigurations Saving', () => {
         
         await waitFor(() => {
             expect(localStorage.getItem('filter_configurations')).toContain('My Config');
-            expect(input.value).toBe('');
+            expect(input.value).toBe('My Config');
         });
         
         expect(onMessage).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success');
