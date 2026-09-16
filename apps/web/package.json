@@ -32,7 +32,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
-    "baseline-browser-mapping": "^2.11.22",
+    "baseline-browser-mapping": "^2.11.23",
     "coverage-badges-cli": "^2.2.0",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
