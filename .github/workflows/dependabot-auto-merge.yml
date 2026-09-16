@@ -32,9 +32,8 @@ jobs:
             echo "skipping" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: peter-evans/enable-pull-request-automerge@v3
+      - name: Enable auto-merge
         if: steps.check-major.outputs.skipping == ''
-        with:
-          token: ${{ secrets.AUTOMERGE_TOKEN }}
-          pull-request-number: ${{ github.event.pull_request.number }}
-          merge-method: squash
+        run: gh pr merge --squash --auto "${{ github.event.pull_request.number }}"
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
