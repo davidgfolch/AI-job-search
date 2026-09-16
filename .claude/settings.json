@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "python .claude/hooks/graphify-reminder.py"
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/docker-build.py"
           }
         ]
       }
