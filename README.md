@@ -156,7 +156,7 @@ docker-compose --profile scrapper run scrapper
   - Run `aiEnrich3` (local fast CPU models) with `docker-compose --profile aiEnrich3 up -d`.
   - Alternatively, `docker-compose --profile aiEnrichNew up -d` for the transformers-based engine.
 - Run `aiCvMatcher` (local fast CV matching):
-  - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CV_MATCH=True` is in your `.env`.
+  - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CVMATCHER_ENABLED=True` is in your `.env`.
 - Run `aiFormFiller` (AI-powered form question answerer):
   - Auto-starts with Docker by default. Alternatively run manually with `.\apps\aiFormFiller\run.bat`.
   - Load the `apps/aiFormFiller/extension/` folder as an unpacked extension in Chrome.

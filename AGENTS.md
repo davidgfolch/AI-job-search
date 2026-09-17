@@ -197,7 +197,7 @@ Environment variables are split across two files:
 - `SCRAPPER_*_RUN_CADENCY`: Scraping frequency (e.g., `2h`, `40m`)
 - `SCRAPPER_*_RUN_CADENCY_7-19=40m`: Time-based cadency override for specific hours
 - `SCRAPPER_JOBS_SEARCH`: Comma-separated job search terms
-- `AI_CV_MATCH=True`: Enable CV matching (requires `apps/aiEnrich/cv/cv.txt`)
+- `AI_CVMATCHER_ENABLED=True`: Enable CV matching (uses the CV in `apps/aiCvMatcher/cv/cv.txt`)
 - `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=True`: Bypass bot detection
 
 ## Code Style

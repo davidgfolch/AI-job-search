@@ -31,7 +31,7 @@ class CVLoader:
             return True
             
         if not self.enabled:
-            print(yellow('AI_CV_MATCH disabled'))
+            print(yellow('AI_CVMATCHER_ENABLED disabled'))
             return False
 
         print(f'Loading CV from: {self.cv_location}')

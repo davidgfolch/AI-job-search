@@ -58,7 +58,7 @@ uv run aienrich
 
 ## Configuration
 
-- **CV Matching**: Enable by setting `AI_ENRICH_CV_MATCH=True` in `.env` and placing your CV in `apps/aiEnrich/cv/cv.txt`.
+
 
 ### LLM Backend Selection
 
