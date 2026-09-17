@@ -1,49 +1,49 @@
-# Graph Report - AI-job-search  (2026-09-16)
+# Graph Report - AI-job-search  (2026-09-17)
 
 ## Corpus Check
-- 879 files · ~366,385 words
+- 886 files · ~371,828 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 6251 nodes · 11530 edges · 718 communities (369 shown, 349 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 384 edges (avg confidence: 0.58)
+- 6287 nodes · 11642 edges · 717 communities (363 shown, 354 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 380 edges (avg confidence: 0.58)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `dc0ecd8b`
+- Built from commit: `f28dd177`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - scrapper::commonlib_findlastduplicated
 - backend::commonlib_company_matcher
-- TestEnvironmentUtil
+- environmentUtil.py
 - cron::commonlib_company_normalizer
 - viewer.helpers.ts
 - ViewerApi.ts
 - scrapper::c_users_trendingpc_projects_ai_job_search_apps_scrapper_scrapper_core_py
 - web::c_users_trendingpc_projects_ai_job_search_apps_web_src_pages_viewer_components_test_jobactions_test_renderwithcontext
-- Settings.tsx
+- Settings.mocks.tsx
 - IndeedScraplingNavigator
 - backend::decimal
-- persistence_manager.py
+- green
 - scrapper::commonlib_dateutil
 - ai_helpers.py
 - web::c_users_trendingpc_projects_ai_job_search_apps_web_src_pages_viewer_api_jobs_joblistparams
 - commonlib::c_users_trendingpc_projects_ai_job_search_apps_commonlib_commonlib_test_terminalcolor_test_py
 - aiCvMatcher::commonlib_aienrichrepository
 - Viewer.tsx
-- BaseExecutor
+- ollama_client.py
 - backend::commonlib_terminalcolor
 - backend::commonlib_test_db_mock_util
 - backend::commonlib_environmentutil
 - MetricsCollector
-- TecnoempleoExecutor_test.py
+- TecnoempleoExecutor
 - commonlib::contextlib
 - web::c_users_trendingpc_projects_ai_job_search_apps_web_src_pages_viewer_api_salary
 - TestLinkedinNavigator
 - web::src_pages_viewer_components_configurations_hooks_usefilterwatcher_last_watcher_check_time_key
-- patch
+- mysql_discovery_test.py
 - scrapper::email
 - aiFormFiller::dataclasses
 - SeleniumService
@@ -55,10 +55,10 @@
 - commonlib::ctypes
 - backend::json
 - IndeedService
-- scrapper_scheduler.py
+- persistence_manager.py
 - sqlUtil.py
 - ContextLoader
-- GlassdoorExecutor_test.py
+- LinkedinNavigator
 - Adaptive scraping
 - useFilterWatcher.ts
 - web::src_resources_defaultfilterconfigurations
@@ -67,7 +67,7 @@
 - backend::re
 - exceptionUtil_test.py
 - CompanySynonymService
-- JobsService
+- jobs_service_test.py
 - scrapper::concurrent_futures
 - Viewer.interactions.test.tsx
 - web::c_users_trendingpc_projects_ai_job_search_apps_web_src_pages_viewer_api_jobs
@@ -78,30 +78,30 @@
 - backend::commonlib_exceptionutil
 - commonlib::json
 - aiEnrichSkill/test/config_test.py
-- InfojobsExecutor_test.py
-- query_ollama
+- InfojobsExecutor
+- test-utils.tsx
 - web::c_users_trendingpc_projects_ai_job_search_apps_web_src_pages_skillsmanager_skillsmanager_handleexport
 - aiEnrich3::aienrich3_services_job_enrichment_service
 - aiEnrichNew::commonlib_ai_helpers
 - QueryExecutor
-- SalaryHistoryRepository
+- salary_history_repository_test.py
 - commonlib::pymongo
 - TestBaseService
-- browser_service_test.py
+- seleniumSocketConnRetry
 - aiEnrichSkill::commonlib_dateutil
 - useSqlEditor.ts
 - compilerOptions
 - backend::api
 - observability.py
-- aiEnrichNew/dataExtractor.py
-- view_generator.py
-- TestJobRepository
+- metrics_collector.py
+- build_jobs_where_clause
+- JobRepository
 - aiEnrichNew::unittest
 - TestIndeedNavigator
 - commonlib::os
 - SkillsManagerApi.ts
 - SalaryCalculator.tsx
-- aiEnrich3/test/config_test.py
+- aiEnrich3/dataExtractor.py
 - aiEnrich3/services/test/job_enrichment_service_test.py
 - query_openrouter
 - AiEnrichRepository
@@ -121,7 +121,7 @@
 - terminalColor.py
 - JobListParams
 - LinkedinExecutor
-- FormField.tsx
+- EditSkillModal.tsx
 - devDependencies
 - aiEnrich::os
 - backend::commonlib_company_normalizer
@@ -133,9 +133,9 @@
 - GmailConnectionError
 - commonlib::c_users_trendingpc_projects_ai_job_search_apps_commonlib_commonlib_decorator_py
 - commonlib::functools
-- ElementService
-- FilterConfigurationsTestUtils.tsx
-- JobDetailInfo.tsx
+- TransactionManager
+- FilterConfigurations.tsx
+- Job
 - aiEnrich3::os
 - aiEnrichSkill::os
 - commonlib::dotenv
@@ -144,15 +144,15 @@
 - aiEnrich/dataExtractor.py
 - commonlib::mathparse
 - enrichment_service_test.py
-- get_best_candidate
+- SalaryHistoryRepository
 - aiEnrichSkill::commonlib_environmentutil
-- green
+- patch
 - backend::commonlib_salary
 - DashboardApi.ts
 - commonlib::commonlib
 - commonlib::re
 - IndeedGmailService
-- persistence_manager_test.py
+- TestQueryExecutor
 - scrapper::tabulate
 - web::src_index
 - StatisticsApi.ts
@@ -168,7 +168,7 @@
 - IndeedScraplingExecutor
 - connection_manager.py
 - AppliedModal.tsx
-- Modal.tsx
+- api/main.py
 - backend::pandas
 - manifest.json
 - commonlib::collections
@@ -181,39 +181,40 @@
 - IndeedAuthenticator
 - TestBaseNavigator
 - aiFormFiller::os
-- useLearnList.ts
+- SkillsManager.tsx
 - AI Job Search Monorepo  [![master CI](https://img.shields.io/github/actions/workflow/status/davidgfolch/AI-job-search/ci.yml?branch=master&label=master%20CI)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml?branch=master)  [![staging CI](https://img.shields.io/github/actions/workflow/status/davidgfolch/AI-job-search/ci.yml?branch=staging&label=staging%20CI)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml?branch=staging)
 - .layout_check.cjs
 - process_skill_enrichment
 - JobSnapshotService
 - aiEnrich::commonlib_environmentutil
-- FilterConfigurationsRepository
+- statistics_service_test.py
 - TestTransactionManager
 - aiEnrichRepository_test.py
 - scheduler_test.py
 - TestInfojobsNavigator
 - testSetup.ts
 - Build and Development Commands
-- enrichment_service.py
+- JobsService
 - SkillsService
 - web::c_users_trendingpc_projects_ai_job_search_apps_web_src_pages_skillsmanager_components_uselearnlist
 - dateUtil.py
 - devDependencies
-- DashboardRepository
+- generate_config_view_sql
 - aiEnrichSkill::unittest_mock
 - retry
 - AGENTS.md
-- TecnoempleoNavigator
+- WatcherRepository
 - scrapper::pathlib
 - getEnv
 - TestQuestionAnsweringService
 - commonlib::ast
 - company_synonyms.py
 - prometheus_exporter_test.py
-- company_synonyms_test.py
+- create_mock_db
 - CombinedStatsRepository
-- extract_filter_params
+- jobs_service.py
 - CVLoader
+- company_salary_history/job.py
 - TestEmailReader
 - Statistics.tsx
 - AI Job Search — Metrics & Observability
@@ -223,8 +224,8 @@
 - WatcherService
 - AI Job Search API
 - JobDeleteRepository
-- create_mock_db
-- Spinner
+- SkillsRepository
+- company_synonym_service_test.py
 - JobSnapshotRepository
 - MongoDbProvider
 - Job Scrappers
@@ -233,7 +234,7 @@
 - Plan B: RAG Cache Layer (Skip LLM Inference for Similar Jobs)
 - panel.js
 - AI Form Filler
-- build_jobs_where_clause
+- backend/repositories/__init__.py
 - TestIndeedService
 - Plan A: Direct Ollama API (Remove CrewAI)
 - Plan C: Two-Stage Pipeline (aiEnrich3 Fast Path + aiEnrich LLM Fallback)
@@ -263,27 +264,27 @@
 - AI Job Search Web UI
 - Plan D: GGUF Quantized Models via llama-cpp-python
 - aiEnrichSkill
-- baseScrapper_test.py
+- TestScrapperStateRepository
 - JobDeleteService
 - TestGlassdoorNavigator
 - Auto-merge (staging gate)
 - SettingsApi.ts
-- aiEnrichSkill/ollama_client.py
-- FastAPI
+- DdlRepository
+- statistics_archived.py
 - Requests & Responses
 - StatisticsArchivedService
 - MockBaseExecutor
-- TestGlassdoorAuthenticator
+- FilterConfigurationsRepository
 - DriverUtil
-- print_failed_info_table
-- viewer/hooks/useFilterConfigurations.ts
-- DdlRepository
+- restore_target
+- jobQueryService_test.py
+- DdlService
 - TODO
 - run_e2e_tests.py
 - Workflow
 - TestApiRoutes
-- client
-- get_skill_context
+- statistics_archived_test.py
+- skill_enricher_service.py
 - Company Salary History Scanner
 - TestInfojobsService
 - backendDiscovery.ts
@@ -291,14 +292,14 @@
 - graphify-inject-edges.py
 - PageHeader.tsx
 - commonlib
-- mysqlUtil.py
-- patch
+- TestContextLoader
+- resolve_mysql_host
 - Tools
 - Version Bumper Instructions
 - AI Job Enrichment
-- aiEnrichSkill/main.py
+- Settings.tsx
 - getSrcPath
-- yellow
+- mysql_sync.py
 - GlassdoorGmailService
 - App.tsx
 - validationUtils.ts
@@ -315,17 +316,17 @@
 - react
 - StatisticsFilters.tsx
 - SkillsManager.test.tsx
-- aiEnrich/pipeline.py
+- cyan
 - main
-- get_services_status
+- .conn
 - TestGlassdoorService
 - CompanySynonymsManager.tsx
 - ScrapperStateRepository
 - filter_configurations_test.py
 - skills_test.py
 - consoleTimer
-- InfojobsExecutor
-- EditSkillModal.tsx
+- JobQueryRepository
+- SalaryCalculatorControls.tsx
 - graphify development
 - Fetching dynamic websites
 - Examples
@@ -334,7 +335,7 @@
 - api/test/settings_test.py
 - statistics_test.py
 - statistics_archived_service_test.py
-- CronStateRepository
+- cron_state_repository_test.py
 - TestScrapperConfig
 - _detect_captcha
 - web/package.json
@@ -345,7 +346,7 @@
 - AI Job Search Default Development Guide
 - QuotesSpider
 - graphify reference: extra exports and benchmark
-- TestOpenAIProvider
+- QuestionAnsweringService
 - Fetchers basics
 - getSeconds
 - scripts
@@ -357,14 +358,14 @@
 - Examples
 - content.js
 - StealthyFetcher
-- driverUtil.py
-- SkillsManager.tsx
+- TestStealthScripts
+- SkillsTable.tsx
 - Screenshots
 - filter_deps
 - generate_labels
-- execute_with_error_handler
+- verify_mysql
 - mock_sleep
-- seleniumSocketConnRetry
+- is_up_command
 - SkillTag.tsx
 - queryTestUtils.tsx
 - opencode.json
@@ -377,7 +378,7 @@
 - Scrapling Examples
 - Agentic SDLC
 - test_seed_defaults
-- GlassdoorExecutor
+- docker-build.md
 - .connect
 - HTTP requests
 - Examples
@@ -390,7 +391,7 @@
 - test.sh
 - graphify reference: commit hook and native CLAUDE.md integration
 - graphify reference: incremental update and cluster-only
-- ollama_config.py
+- ollama_probe_urls
 - graphify reference: GitHub clone and cross-repo merge
 - graphify reference: transcribe video and audio
 - aiEnrich/run.sh
@@ -400,17 +401,17 @@
 - backend/run.sh
 - cron/run.sh
 - scrapper/run.sh
-- aiEnrich/test/config_test.py
+- docker-build.js
 - docker-entrypoint.sh
 - Migrating from BeautifulSoup to Scrapling
 - eslint-plugin-react-refresh
-- dashboard_service.py
-- find_last_duplicated
+- .fetchAll
+- .fetchOne
 - @types/prismjs
-- ScrapperScheduler
-- environmentUtil.py
+- .get_scrapper_state
+- yellow
 - TestBooleanFilterKeys
-- IndeedScraplingExecutor_test.py
+- .getTableDdlColumnNames
 - web/run.sh
 - setup.ts
 - .claude/rules/architecture-guidelines.md
@@ -645,11 +646,10 @@
 - 01_fetcher_session.py
 - 02_dynamic_session.py
 - 03_stealthy_session.py
-- CustomConverter
-- IndeedService_test.py
+- .insertJob
+- .updateFromAI
 - Debug GitHub Actions & Dependabot Runs with `gh`
-- element_service.py
-- baseline-browser-mapping
+- globals
 - @eslint/js
 - @testing-library/react
 - @testing-library/user-event
@@ -663,137 +663,137 @@
 2. `yellow()` - 100 edges
 3. `SeleniumService` - 90 edges
 4. `PersistenceManager` - 79 edges
-5. `retry()` - 58 edges
-6. `getEnv()` - 57 edges
-7. `JobsService` - 46 edges
-8. `create_mock_db()` - 44 edges
-9. `sleep()` - 43 edges
-10. `seleniumSocketConnRetry()` - 43 edges
+5. `getEnv()` - 66 edges
+6. `retry()` - 58 edges
+7. `create_mock_db()` - 45 edges
+8. `sleep()` - 43 edges
+9. `seleniumSocketConnRetry()` - 43 edges
+10. `AiEnrichRepository` - 42 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `check_backend()` --calls--> `getEnv()`  [EXTRACTED]
+  scripts/healthcheck/ollama_healthcheck.py → apps/commonlib/commonlib/environmentUtil.py
+- `check_ollama()` --calls--> `getEnv()`  [EXTRACTED]
+  scripts/healthcheck/ollama_healthcheck.py → apps/commonlib/commonlib/environmentUtil.py
+- `check_openrouter()` --calls--> `getEnv()`  [EXTRACTED]
+  scripts/healthcheck/ollama_healthcheck.py → apps/commonlib/commonlib/environmentUtil.py
+- `check_ollama()` --calls--> `ollama_probe_urls()`  [EXTRACTED]
+  scripts/healthcheck/ollama_healthcheck.py → apps/commonlib/commonlib/ollama_config.py
 - `ai-job-search` --depends_on--> `commonlib`  [EXTRACTED]
   pyproject.toml → apps/commonlib/pyproject.toml
-- `FastCVMatcher` --uses--> `AiEnrichRepository`  [INFERRED]
-  apps/aiCvMatcher/src/aiCvMatcher/cvMatcher.py → apps/commonlib/commonlib/aiEnrichRepository.py
-- `FastCVMatcher` --uses--> `CVLoader`  [INFERRED]
-  apps/aiCvMatcher/src/aiCvMatcher/cvMatcher.py → apps/commonlib/commonlib/cv_loader.py
-- `FastCVMatcher` --uses--> `MysqlUtil`  [INFERRED]
-  apps/aiCvMatcher/src/aiCvMatcher/cvMatcher.py → apps/commonlib/commonlib/sql/mysqlUtil.py
-- `FastCVMatcher` --uses--> `StopWatch`  [INFERRED]
-  apps/aiCvMatcher/src/aiCvMatcher/cvMatcher.py → apps/commonlib/commonlib/stopWatch.py
 
 ## Import Cycles
 - 3-file cycle: `apps/web/src/pages/viewer/components/configurations/hooks/useFilterConfigurations.ts -> apps/web/src/pages/viewer/components/configurations/hooks/useFilterWatcher.ts -> apps/web/src/pages/viewer/components/configurations/hooks/useFilterWatcher.utils.ts -> apps/web/src/pages/viewer/components/configurations/hooks/useFilterConfigurations.ts`
 
-## Communities (718 total, 349 thin omitted)
+## Communities (717 total, 354 thin omitted)
 
-### Community 2 - "TestEnvironmentUtil"
-Cohesion: 0.14
-Nodes (11): checkEnvReload(), getEnvBool(), getEnvByPrefix(), getEnvModified(), getEnvMultiline(), Updates multiple keys in the .env file and reloads the environment, Updates a single key in the .env file and reloads the environment, setEnv() (+3 more)
+### Community 2 - "environmentUtil.py"
+Cohesion: 0.10
+Nodes (19): checkEnvReload(), _get_mtime(), getEnvAll(), getEnvBool(), getEnvByPrefix(), getEnvModified(), getEnvMultiline(), Path (+11 more)
 
 ### Community 4 - "viewer.helpers.ts"
 Cohesion: 0.08
 Nodes (39): coverageOptions, setupApiSafetyNet(), setupAppBootstrapMocks(), setupModalityMock(), setupPageLogging(), setupSalaryHistoryMocks(), setupTimezoneMock(), setupSynonymsMocks() (+31 more)
 
 ### Community 5 - "ViewerApi.ts"
-Cohesion: 0.07
-Nodes (35): useModalityValues(), createDefaultJobMutationsProps(), createWrapper(), mocks, AppliedCompanyJob, Job, JobListResponse, jobsApi (+27 more)
+Cohesion: 0.10
+Nodes (26): useModalityValues(), createDefaultJobMutationsProps(), createWrapper(), mocks, AppliedCompanyJob, JobListResponse, jobsApi, WatcherStats (+18 more)
 
-### Community 8 - "Settings.tsx"
-Cohesion: 0.20
-Nodes (17): CodeEditorProps, Editor, renderGroup(), renderInlineItem(), renderScrapperEditor(), renderSubgroup(), SetStateAction, Settings() (+9 more)
+### Community 8 - "Settings.mocks.tsx"
+Cohesion: 0.35
+Nodes (8): mockEnvSettings, mockGroupedSettings, mockScrapperState, createTestQueryClient(), renderWithClient(), setupSettingsMocks(), getSubgroupTitle(), groupSettingsByKey()
 
 ### Community 9 - "IndeedScraplingNavigator"
 Cohesion: 0.05
 Nodes (9): _extract_text(), IndeedScraplingNavigator, create_mock_scrapling_service(), MockSelector, TestIndeedScraplingNavigator, ScraplingService, _make_service(), fixture (+1 more)
 
-### Community 11 - "persistence_manager.py"
-Cohesion: 0.15
-Nodes (6): htmlToMarkdown(), validate(), BaseService, ABC, Extract job ID from URL, Hook for post-processing markdown. Defaults to identity.
+### Community 11 - "green"
+Cohesion: 0.05
+Nodes (40): find_last_duplicated(), Find the last duplicated job by title, company (excluding 'Joppy').     Returns, join(), blue(), green(), printHR(), test_find_last_duplicated_empty_args(), test_find_last_duplicated_found() (+32 more)
 
 ### Community 13 - "ai_helpers.py"
 Cohesion: 0.16
 Nodes (27): combineTaskResults(), _expand_parenthesized_skills(), flatten_skill_groups(), footer(), listsToString(), mapJob(), _normalizeModality(), Combina los resultados de todas las tareas en un único JSON (+19 more)
 
 ### Community 17 - "Viewer.tsx"
-Cohesion: 0.08
-Nodes (35): PinnedConfigurations(), JobDetailHeader(), JobDetailHeaderProps, JobActions(), JobActionsProps, PanelDividerProps, ShortcutBadge(), ShortcutBadgeProps (+27 more)
+Cohesion: 0.07
+Nodes (37): PinnedConfigurations(), PinnedConfigurationsProps, JobDetailHeader(), JobActions(), JobActionsProps, JobDetailPanels(), JobDetailPanelsProps, PanelDividerProps (+29 more)
 
-### Community 18 - "BaseExecutor"
-Cohesion: 0.09
-Nodes (16): parametrize, TestAbortExecution, TestDebug, TestPageExists, TestRunPreload, abortExecution(), pageExists(), Check if preload is needed based on properties. (+8 more)
+### Community 18 - "ollama_client.py"
+Cohesion: 0.12
+Nodes (16): _get_num_predict(), ping_ollama(), query_ollama(), _query_url(), Shared Ollama HTTP client used by the Ollama-backed AI enrichment modules.  Sing, Return the URL of the first reachable Ollama server, or None if none respond., resolve_ollama_url(), _strip_provider_prefix() (+8 more)
 
 ### Community 22 - "MetricsCollector"
-Cohesion: 0.11
-Nodes (7): MetricsCollector, collector(), fixture, reset_singleton(), test_load_corrupted_file(), test_persist_and_load(), test_singleton()
+Cohesion: 0.05
+Nodes (37): DashboardRepository, datetime, test_check_ollama_errors(), test_check_ollama_errors_no_matches(), test_check_ollama_errors_recency(), test_read_last_activity(), test_read_recent_errors(), test_read_recent_errors_invalid_module() (+29 more)
 
-### Community 23 - "TecnoempleoExecutor_test.py"
-Cohesion: 0.13
-Nodes (10): mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, TestTecnoempleoService, TecnoempleoService, fixture (+2 more)
+### Community 23 - "TecnoempleoExecutor"
+Cohesion: 0.10
+Nodes (13): Returns ok: bool, jobExistsInDb: bool, TecnoempleoExecutor, mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, TestTecnoempleoExecutor (+5 more)
 
 ### Community 26 - "TestLinkedinNavigator"
 Cohesion: 0.10
 Nodes (3): parametrize, patch, TestLinkedinNavigator
 
-### Community 28 - "patch"
-Cohesion: 0.08
-Nodes (25): auto_discover_host(), discover_mysql_hosts(), get_local_ip(), get_local_subnets(), Verify host is our MySQL — connect and check the database exists., Auto-discover MySQL host on LAN. Returns host IP string or None., Return the machine's primary LAN IPv4 or None., Resolve a host spec to a reachable MySQL host IP.      - 'local' | 'localhost' (+17 more)
+### Community 28 - "mysql_discovery_test.py"
+Cohesion: 0.16
+Nodes (11): get_local_ip(), get_local_subnets(), Return the machine's primary LAN IPv4 or None., Detect local LAN subnets by finding the machine's IP via UDP connect., Scan a list of hosts on the given port. Returns list of responsive IPs., _scan_hosts(), _scan_port(), TestGetLocalIp (+3 more)
 
 ### Community 31 - "SeleniumService"
 Cohesion: 0.06
 Nodes (3): WebElement, SeleniumService, TestSeleniumService
 
 ### Community 33 - "MysqlUtil"
-Cohesion: 0.06
-Nodes (15): _save_skill_result(), MysqlUtil, Insert job record with given params., Check if job exists by job_id., Insert job from dict data., Get all scrapper state as {site: state_dict}., Replace all scrapper state entries., Fetch single row by ID. (+7 more)
+Cohesion: 0.08
+Nodes (10): _save_skill_result(), MysqlUtil, Insert job record with given params., Check if job exists by job_id., Replace all scrapper state entries., Execute query and commit., Context manager for providing a connection.         Closes it only if it was cr, MySQL utility class providing database operations.      Composes specialized m (+2 more)
 
 ### Community 36 - "GmailService"
 Cohesion: 0.07
 Nodes (22): GmailService, Check if Gmail service is connected, Close Gmail connection, parametrize, Test connect fails when credentials missing, Test connect handles exception gracefully, Test connect succeeds, Test Gmail service functionality (+14 more)
 
 ### Community 39 - "IndeedService"
-Cohesion: 0.11
-Nodes (10): IndeedExecutor, Return true if job was inserted, mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, parametrize (+2 more)
+Cohesion: 0.10
+Nodes (14): IndeedExecutor, Return true if job was inserted, mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, parametrize (+6 more)
 
-### Community 40 - "scrapper_scheduler.py"
-Cohesion: 0.19
-Nodes (11): get_debug(), create_executor(), process_page_url(), Process a specific URL (only LinkedIn is currently supported)., Factory method to create executor instances by name., parametrize, patch, test_create_executor() (+3 more)
+### Community 40 - "persistence_manager.py"
+Cohesion: 0.10
+Nodes (22): get_debug(), ScrapperScheduler, create_executor(), process_page_url(), Process a specific URL (only LinkedIn is currently supported)., Factory method to create executor instances by name., parametrize, patch (+14 more)
 
 ### Community 41 - "sqlUtil.py"
-Cohesion: 0.11
-Nodes (17): avoidInjection(), binaryColumnIgnoreCase(), deleteJobsQuery(), emptyToNone(), formatSql(), getAndFilter(), inFilter(), maxLen() (+9 more)
+Cohesion: 0.09
+Nodes (23): SQL queries and constants for job-related database operations.  These constant, MySQL utility module - refactored for SRP compliance.  Main entry point: Mysql, avoidInjection(), binaryColumnIgnoreCase(), deleteJobsQuery(), emptyToNone(), error(), formatSql() (+15 more)
 
 ### Community 42 - "ContextLoader"
-Cohesion: 0.08
-Nodes (8): init_routes(), ContextLoader, Path, create_app(), run(), TestContextLoader, TempFiles, TestMain
+Cohesion: 0.12
+Nodes (7): init_routes(), ContextLoader, Path, create_app(), TempFiles, TestMain, FastAPI
 
-### Community 43 - "GlassdoorExecutor_test.py"
-Cohesion: 0.20
-Nodes (8): mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, parametrize, TestGlassdoorService, GlassdoorService
+### Community 43 - "LinkedinNavigator"
+Cohesion: 0.12
+Nodes (5): LinkedinNavigator, Login in english is a button[type=submit], in spanish is a button[type=button], mock_selenium(), navigator(), fixture
 
 ### Community 44 - "Adaptive scraping"
 Cohesion: 0.05
 Nodes (36): Adaptive scraping, How the adaptive scraping feature works, How to use adaptive feature, Known Issues, No Matches Found, Real-World Scenario, The CSS/XPath Selection way, The manual way (+28 more)
 
 ### Community 45 - "useFilterWatcher.ts"
-Cohesion: 0.15
-Nodes (14): NotificationService, ConfigurationDropdown(), ConfigurationDropdownProps, cleanupMocks(), createWrapper(), mockSavedConfigs, resetTestQueryClient(), testQueryClient (+6 more)
+Cohesion: 0.11
+Nodes (17): NotificationService, persistenceApi, persistenceDefaults, HistoryInputProps, ConfigurationDropdown(), ConfigurationDropdownProps, cleanupMocks(), createWrapper() (+9 more)
 
 ### Community 47 - "configurations/hooks/useFilterConfigurations.ts"
-Cohesion: 0.11
-Nodes (18): filterConfigsApi, FilterConfiguration, FilterConfigurationCreate, FilterConfigurationUpdate, mockConfig, setupMocks(), useConfigDropdownState(), useConfigOperations() (+10 more)
+Cohesion: 0.10
+Nodes (20): apiClient, filterConfigsApi, FilterConfiguration, FilterConfigurationCreate, FilterConfigurationUpdate, mockConfig, useConfigDropdownState(), useConfigOperations() (+12 more)
 
 ### Community 50 - "exceptionUtil_test.py"
-Cohesion: 0.22
-Nodes (18): cleanUnresolvedTrace(), filter_trace_by_paths(), getProjectTraceItems(), Exception, try_or_warn(), fail_fn(), ok_fn(), parametrize (+10 more)
+Cohesion: 0.16
+Nodes (21): execute_with_error_handler(), test_execute_with_error_handler_success(), test_execute_with_error_handler_with_items(), cleanUnresolvedTrace(), filter_trace_by_paths(), getProjectTraceItems(), Exception, try_or_warn() (+13 more)
 
 ### Community 51 - "CompanySynonymService"
-Cohesion: 0.08
-Nodes (12): JobQueryRepository, test_find_applied_by_company(), CompanySynonymService, Any, JobQueryService, Any, mock_repo(), mock_synonym_service() (+4 more)
+Cohesion: 0.15
+Nodes (4): CompanySynonymService, Any, JobQueryService, Any
 
-### Community 52 - "JobsService"
+### Community 52 - "jobs_service_test.py"
 Cohesion: 0.11
-Nodes (22): get_applied_jobs_by_company(), get_service(), get, JobsService, Any, parametrize, Test bulk update operations, test_bulk_update_jobs() (+14 more)
+Nodes (5): mock_db(), fixture, parametrize, service(), test_bulk_update_jobs()
 
 ### Community 54 - "Viewer.interactions.test.tsx"
 Cohesion: 0.22
@@ -804,32 +804,32 @@ Cohesion: 0.06
 Nodes (30): 1.1 Critical: Files Exceeding 200-Line Limit (Architecture Rule #1), 1.2 Module Consolidation: AI Enrich Variants, 1.3 Commonlib Coupling Issues, 1.4 Layer Architecture Violations, 1.5 Service Layer Analysis, 1.6 Test Architecture, 1. PYTHON MODULES (Backend & Commonlib), 2.1 Component File Size Analysis (+22 more)
 
 ### Community 62 - "aiEnrichSkill/test/config_test.py"
-Cohesion: 0.14
-Nodes (28): get_hf_model_id(), get_hf_repetition_penalty(), get_hf_temperature(), get_hf_top_p(), get_input_max_len(), get_max_new_tokens(), get_skill_categories(), get_skill_system_prompt() (+20 more)
+Cohesion: 0.08
+Nodes (54): get_backend(), get_batch_size(), get_enabled(), get_enrich_limit(), get_gpu_cleanup(), get_hf_model_id(), get_hf_repetition_penalty(), get_hf_temperature() (+46 more)
 
-### Community 63 - "InfojobsExecutor_test.py"
-Cohesion: 0.16
-Nodes (8): mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, parametrize, TestInfojobsService, InfojobsService
+### Community 63 - "InfojobsExecutor"
+Cohesion: 0.10
+Nodes (10): getAndCheckEnvVars(), InfojobsExecutor, mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, parametrize (+2 more)
 
-### Community 64 - "query_ollama"
-Cohesion: 0.18
-Nodes (8): _get_num_predict(), ping_ollama(), query_ollama(), _strip_provider_prefix(), patch, TestPingOllama, TestQueryOllama, TestStripProviderPrefix
+### Community 64 - "test-utils.tsx"
+Cohesion: 0.15
+Nodes (10): mockJob, mockJob, mockJob, mockJobs, cleanupFakeTimers(), createMockJob(), createMockJobs(), renderWithProviders() (+2 more)
 
 ### Community 68 - "QueryExecutor"
-Cohesion: 0.07
-Nodes (16): callable, T, QueryExecutor, Execute a query callback with cursor management., Execute a callback within a transaction., Get cursor from pool connection, closing is handled by connection context., Executes database queries including fetch and count operations., Execute a COUNT query and return the result.          Args:             query (+8 more)
+Cohesion: 0.12
+Nodes (13): callable, T, QueryExecutor, Execute a query callback with cursor management., Execute a callback within a transaction., Get cursor from pool connection, closing is handled by connection context., Executes database queries including fetch and count operations., Execute a COUNT query and return the result.          Args:             query (+5 more)
 
-### Community 69 - "SalaryHistoryRepository"
-Cohesion: 0.08
-Nodes (5): datetime, SalaryHistoryRepository, mock_mongo_provider(), fixture, repo()
+### Community 69 - "salary_history_repository_test.py"
+Cohesion: 0.13
+Nodes (3): mock_mongo_provider(), fixture, repo()
 
 ### Community 71 - "TestBaseService"
 Cohesion: 0.15
 Nodes (4): ConcreteService, fixture, parametrize, TestBaseService
 
-### Community 72 - "browser_service_test.py"
-Cohesion: 0.07
-Nodes (14): browser_service(), mock_driver(), fixture, TestBack, TestBrowserServiceInit, TestGetUrl, TestLoadPage, TestScrollProgressive (+6 more)
+### Community 72 - "seleniumSocketConnRetry"
+Cohesion: 0.05
+Nodes (25): BrowserService, Remote, Switch or create to tab name. If no name specified switches to default tab., Poll driver.window_handles until a new handle (not in old_handles) appears., Close a window and switch back to the default tab., ElementService, Remote, WebElement (+17 more)
 
 ### Community 74 - "useSqlEditor.ts"
 Cohesion: 0.13
@@ -843,17 +843,17 @@ Nodes (27): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, jsx
 Cohesion: 0.35
 Nodes (12): configure_logging(), get_logger(), _reset(), test_configure_logging_idempotent(), test_get_logger_returns_bound_logger(), test_get_logger_with_name(), test_log_jsonl_write_oserror(), test_log_rotation() (+4 more)
 
-### Community 78 - "aiEnrichNew/dataExtractor.py"
+### Community 78 - "metrics_collector.py"
+Cohesion: 0.16
+Nodes (17): get_batch_size(), get_job_enabled(), dataExtractor(), retry_failed_jobs(), run(), parametrize, patch, test_get_batch_size() (+9 more)
+
+### Community 79 - "build_jobs_where_clause"
 Cohesion: 0.15
-Nodes (22): get_batch_size(), get_enrich_timeout_job(), get_input_max_len(), get_job_enabled(), get_job_system_prompt(), should_cleanup_gpu(), dataExtractor(), retry_failed_jobs() (+14 more)
+Nodes (23): build_jobs_where_clause(), _col(), get_boolean_condition(), get_days_old_condition(), get_modality_condition(), get_salary_condition(), get_search_conditions(), parse_job_order() (+15 more)
 
-### Community 79 - "view_generator.py"
-Cohesion: 0.12
-Nodes (25): _col(), get_boolean_condition(), get_days_old_condition(), get_modality_condition(), get_salary_condition(), get_search_conditions(), Returns SQL condition for search.     Args:         search_term_provider: SQL, Args:         field_name: Column name         value_provider: SQL snippet prov (+17 more)
-
-### Community 80 - "TestJobRepository"
-Cohesion: 0.08
-Nodes (15): fixture, Tests for job_repository module., insert_job should use defaults for missing keys., Mock execute_transaction function., Mock execute_query function., Create JobRepository instance with mocks., Should initialize with execute_transaction and execute_query functions., insert should call execute_transaction with correct callback. (+7 more)
+### Community 80 - "JobRepository"
+Cohesion: 0.06
+Nodes (22): JobRepository, Any, callable, Repository for job-specific database operations., Insert a job record into the database.          Args:             params: Tup, Check if job exists in database by job_id., Insert job data and return row ID if successful.          Args:             j, fixture (+14 more)
 
 ### Community 82 - "TestIndeedNavigator"
 Cohesion: 0.10
@@ -867,25 +867,25 @@ Nodes (9): skillsApi, mocks, mocks, mocks, mocks, mocks, mocks, mocks (+1 more)
 Cohesion: 0.22
 Nodes (13): JobDetail(), formatSavedLabel(), SalaryCalculator(), SalaryCalculatorProps, SalaryCalculatorResults(), SalaryCalculatorResultsProps, CalcMode, paramsEqual() (+5 more)
 
-### Community 86 - "aiEnrich3/test/config_test.py"
-Cohesion: 0.22
-Nodes (14): get_batch_size(), get_input_max_len(), get_job_enabled(), get_skill_enabled(), getEnvBool(), run(), parametrize, test_get_batch_size() (+6 more)
+### Community 86 - "aiEnrich3/dataExtractor.py"
+Cohesion: 0.12
+Nodes (25): get_batch_size(), get_input_max_len(), get_job_enabled(), get_skill_enabled(), getEnvBool(), dataExtractor(), run(), ExtractionPipeline (+17 more)
 
 ### Community 87 - "aiEnrich3/services/test/job_enrichment_service_test.py"
-Cohesion: 0.11
-Nodes (32): dataExtractor(), ExtractionPipeline, enrich_jobs(), _fetch_and_sort_jobs(), _process_job_batch_local(), Any, retry_failed_job(), _save_job_result() (+24 more)
+Cohesion: 0.17
+Nodes (24): enrich_jobs(), _fetch_and_sort_jobs(), _process_job_batch_local(), Any, retry_failed_job(), _save_job_result(), _update_error_state(), mock_pipeline() (+16 more)
 
 ### Community 88 - "query_openrouter"
 Cohesion: 0.17
-Nodes (9): _get_api_key(), _get_max_tokens(), _is_valid_json(), ping_openrouter(), query_openrouter(), _strip_fences(), patch, TestPingOpenrouter (+1 more)
+Nodes (12): _get_api_key(), _get_max_tokens(), _is_valid_json(), ping_openrouter(), query_openrouter(), _strip_fences(), _build_response(), make_choice_response() (+4 more)
 
 ### Community 89 - "AiEnrichRepository"
-Cohesion: 0.10
-Nodes (19): build_job_prompt_messages(), map_db_job_to_domain(), Any, Pure function to build chat messages for job enrichment., Pure function to map a DB job row to a domain dictionary., parametrize, patch, test_build_job_prompt_messages() (+11 more)
+Cohesion: 0.09
+Nodes (23): get_enrich_timeout_job(), get_input_max_len(), get_job_system_prompt(), build_job_prompt_messages(), map_db_job_to_domain(), Any, Pure function to build chat messages for job enrichment., Pure function to map a DB job row to a domain dictionary. (+15 more)
 
 ### Community 90 - "AnswerResult"
-Cohesion: 0.13
-Nodes (11): AIProvider, AnswerResult, ABC, get_pipeline(), LocalHFProvider, OpenAIProvider, TestAIProvider, TestAnswerResult (+3 more)
+Cohesion: 0.12
+Nodes (12): AIProvider, AnswerResult, ABC, get_pipeline(), LocalHFProvider, OpenAIProvider, TestAIProvider, TestAnswerResult (+4 more)
 
 ### Community 95 - "commonlib/test/salary_test.py"
 Cohesion: 0.11
@@ -896,36 +896,36 @@ Cohesion: 0.14
 Nodes (22): bulk_create_skills(), create_skill(), delete_skill(), get_skill(), list_skills(), delete, get, post (+14 more)
 
 ### Community 98 - "filter_configurations_repository_test.py"
-Cohesion: 0.05
-Nodes (37): mock_db(), fixture, Test updating configuration, Test partial update (name only), Test deleting configuration, Create repository with mocked database, Test counting configurations, Test find_all when filters is not valid JSON (+29 more)
+Cohesion: 0.11
+Nodes (3): mock_db(), fixture, repo_with_mock()
 
 ### Community 101 - "scrapper_scheduler_test.py"
 Cohesion: 0.24
 Nodes (13): mock_selenium_service(), mocks(), fixture, parametrize, patch, run_mocks(), scheduler(), setup_scrappers() (+5 more)
 
 ### Community 102 - "PersistenceManager"
-Cohesion: 0.14
-Nodes (7): PersistenceManager, Any, Returns (should_skip, start_page), manager(), mock_repo(), fixture, ScrapperStateRepository
+Cohesion: 0.07
+Nodes (23): PersistenceManager, Any, Returns (should_skip, start_page), manager(), mock_repo(), fixture, parametrize, test_add_failed_keyword() (+15 more)
 
 ### Community 103 - "terminalColor.py"
-Cohesion: 0.09
-Nodes (11): Librería común para el monorepo, getAndCheckEnvVars(), join(), debug(), BaseNavigator, ABC, Fast forwards to the start_page by clicking next page button.         Returns t, LinkedinNavigator (+3 more)
+Cohesion: 0.06
+Nodes (22): parametrize, TestAbortExecution, TestDebug, TestPageExists, TestRunPreload, abortExecution(), debug(), pageExists() (+14 more)
 
 ### Community 104 - "JobListParams"
-Cohesion: 0.06
-Nodes (38): JobListParams, ConfigurationInput(), ConfigurationInputProps, UseFilterConfigurationsProps, normalizeFilters(), RESETTABLE_FILTERS, ADDITIONAL_DEFAULTS, CLEAN_OLD_JOBS_CONFIG (+30 more)
+Cohesion: 0.09
+Nodes (26): useConfirmationModal(), JobListParams, UseFilterConfigurationsProps, TestConfig, BooleanFilters(), BooleanFiltersProps, BooleanFilterGroups(), BooleanFilterGroupsProps (+18 more)
 
 ### Community 105 - "LinkedinExecutor"
-Cohesion: 0.15
-Nodes (8): LinkedinExecutor, mock_mysql(), mock_pm(), mock_selenium(), mocks(), fixture, parametrize, TestLinkedinExecutor
+Cohesion: 0.10
+Nodes (10): magenta(), LinkedinExecutor, mock_mysql(), mock_pm(), mock_selenium(), mocks(), fixture, parametrize (+2 more)
 
-### Community 106 - "FormField.tsx"
-Cohesion: 0.13
-Nodes (9): FormField(), FormFieldProps, SkillDescriptionField(), SkillDescriptionFieldProps, SkillLearningPathField(), SkillLearningPathFieldProps, CalcMode, SalaryCalculatorControls() (+1 more)
+### Community 106 - "EditSkillModal.tsx"
+Cohesion: 0.18
+Nodes (10): FormField(), FormFieldProps, EditSkillModal(), EditSkillModalProps, SkillDescriptionField(), SkillDescriptionFieldProps, SkillLearningPathField(), SkillLearningPathFieldProps (+2 more)
 
 ### Community 107 - "devDependencies"
 Cohesion: 0.08
-Nodes (25): devDependencies, coverage-badges-cli, eslint, eslint-plugin-react-hooks, globals, jsdom, @testing-library/jest-dom, @types/react (+17 more)
+Nodes (25): devDependencies, baseline-browser-mapping, coverage-badges-cli, eslint, eslint-plugin-react-hooks, jsdom, @testing-library/jest-dom, @types/react (+17 more)
 
 ### Community 110 - "What You Must Do When Invoked"
 Cohesion: 0.08
@@ -943,37 +943,37 @@ Nodes (17): get_env_settings(), get_scrapper_state(), get, post, update_env_sett
 Cohesion: 0.23
 Nodes (10): EmailNotFoundError, GmailConnectionError, GmailTimeoutError, Exception, Exception raised when verification code cannot be extracted from email, Exception raised when Gmail operation times out, Exception raised when Gmail connection fails, Exception raised when expected email is not found (+2 more)
 
-### Community 118 - "ElementService"
-Cohesion: 0.22
-Nodes (3): ElementService, Remote, WebElement
+### Community 118 - "TransactionManager"
+Cohesion: 0.15
+Nodes (11): Any, MySQLConnection, Handles database transactions including rollback and commit operations., Execute a callback within a transaction, committing on success or         rolli, Execute a query callback without transaction commit., Execute a query and commit, returning affected row count., Execute multiple queries in a single transaction, returning row counts., Rollback on the given connection and re-raise. (+3 more)
 
-### Community 119 - "FilterConfigurationsTestUtils.tsx"
-Cohesion: 0.24
-Nodes (9): byCompanyConfigs, TestConfig, testConfigs, configureMockServiceBehavior(), mockFilters, { mockService }, setup(), waitForLoad() (+1 more)
+### Community 119 - "FilterConfigurations.tsx"
+Cohesion: 0.10
+Nodes (18): ConfirmModal(), ConfirmModalProps, Modal(), ModalProps, ConfigurationInput(), ConfigurationInputProps, byCompanyConfigs, testConfigs (+10 more)
 
-### Community 120 - "JobDetailInfo.tsx"
-Cohesion: 0.12
-Nodes (17): CvMatchBarProps, SalaryHistoryEntry, AppliedJobsWarning(), AppliedJobsWarningProps, formatDateTime(), isModified(), JobDetailInfo(), JobDetailInfoProps (+9 more)
+### Community 120 - "Job"
+Cohesion: 0.08
+Nodes (26): CvMatchBarProps, Job, SalaryHistoryEntry, useJobEditForm(), UseJobEditFormProps, AppliedJobsWarning(), AppliedJobsWarningProps, JobDetailCompactHeaderProps (+18 more)
 
 ### Community 125 - "SalaryExtractor"
 Cohesion: 0.11
 Nodes (13): GLiNER, SalaryExtractor, GLiNER, Extracts skills from text and separates them into required and optional., SkillsExtractor, extractor(), fixture, parametrize (+5 more)
 
 ### Community 126 - "aiEnrich/dataExtractor.py"
-Cohesion: 0.21
-Nodes (21): dataExtractor(), get_backend(), get_job_enabled(), get_max_ollama_failures(), get_model(), get_ollama_base_url(), get_openrouter_base_url(), get_openrouter_fallback_model() (+13 more)
+Cohesion: 0.09
+Nodes (41): _check_backend_available(), dataExtractor(), _get_ollama_base_url(), _getJobIdsList(), _handle_error(), ping_backend(), _process_job_safe(), retry_failed_jobs() (+33 more)
 
 ### Community 128 - "enrichment_service_test.py"
 Cohesion: 0.22
 Nodes (20): _enrich_ollama(), enrich_skills(), capture_process_batch_callbacks(), make_ollama_mocks(), run_process_skill_batch(), parametrize, patch, test_enrich_huggingface() (+12 more)
 
-### Community 129 - "get_best_candidate"
-Cohesion: 0.35
-Nodes (5): get_best_candidate(), search_partial_company(), parametrize, TestGetBestCandidate, TestSearchPartialCompany
-
-### Community 131 - "green"
+### Community 129 - "SalaryHistoryRepository"
 Cohesion: 0.14
-Nodes (13): printJob(), getDatetimeNowStr(), join(), blue(), green(), printHR(), parametrize, test_color_functions() (+5 more)
+Nodes (7): get_best_candidate(), search_partial_company(), datetime, SalaryHistoryRepository, parametrize, TestGetBestCandidate, TestSearchPartialCompany
+
+### Community 131 - "patch"
+Cohesion: 0.25
+Nodes (7): auto_discover_host(), discover_mysql_hosts(), Auto-discover MySQL host on LAN. Returns host IP string or None., Scan LAN for hosts with open MySQL port. Returns list of IPs.      Args:, patch, TestAutoDiscoverHost, TestDiscoverMySQLHosts
 
 ### Community 133 - "DashboardApi.ts"
 Cohesion: 0.15
@@ -983,9 +983,9 @@ Nodes (14): dashboardApi, DashboardData, OllamaError, OllamaStatus, ServiceError
 Cohesion: 0.20
 Nodes (5): IndeedGmailService, Wait for Indeed verification code with predefined sender, Get verification code from latest Indeed email, Indeed-specific Gmail service with predefined sender and convenience methods, TestIndeedGmailService
 
-### Community 137 - "persistence_manager_test.py"
+### Community 137 - "TestQueryExecutor"
 Cohesion: 0.13
-Nodes (16): parametrize, test_add_failed_keyword(), test_clear_state(), test_finalize_scrapper(), test_get_failed_keywords(), test_get_last_execution(), test_get_state(), test_is_state_stale() (+8 more)
+Nodes (3): fixture, Tests for query_executor module., TestQueryExecutor
 
 ### Community 140 - "StatisticsApi.ts"
 Cohesion: 0.23
@@ -1008,48 +1008,48 @@ Cohesion: 0.14
 Nodes (14): create_configuration(), delete_configuration(), get_all_configurations(), get_configuration(), get_service(), delete, get, post (+6 more)
 
 ### Community 146 - "GlassdoorNavigator"
-Cohesion: 0.15
-Nodes (3): TestGlassdoorNavigator, GlassdoorNavigator, Click on next to load next page.
+Cohesion: 0.09
+Nodes (13): GlassdoorExecutor, mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture, parametrize, patch (+5 more)
 
 ### Community 148 - "ScrapperStateRepository"
-Cohesion: 0.09
-Nodes (9): MySQLConnection, Get the MySQL connection., Any, callable, ScrapperStateRepository, fixture, parametrize, Tests for scrapper_state_repository module. (+1 more)
+Cohesion: 0.15
+Nodes (5): MySQLConnection, Get the MySQL connection., Any, callable, ScrapperStateRepository
 
 ### Community 149 - "TestJobQueries"
 Cohesion: 0.09
 Nodes (12): Tests for job_queries module., Tests for SQL query constants., QRY_FIND_JOB_BY_JOB_ID should be a non-empty string., QRY_INSERT should be a non-empty string., QRY_SELECT_JOBS_VIEWER should be a non-empty string., QRY_SELECT_COUNT_JOBS should be a non-empty string., SELECT_APPLIED_JOB_IDS_BY_COMPANY should be a non-empty string., SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT should be a non-empty string. (+4 more)
 
 ### Community 150 - "IndeedScraplingExecutor"
-Cohesion: 0.21
-Nodes (4): IndeedScraplingExecutor, Execution logic for Indeed using Scrapling framework to bypass Cloudflare, Return true if job was inserted, TestIndeedScraplingExecutor
+Cohesion: 0.15
+Nodes (9): IndeedScraplingExecutor, Execution logic for Indeed using Scrapling framework to bypass Cloudflare, Return true if job was inserted, mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture (+1 more)
 
 ### Community 151 - "connection_manager.py"
-Cohesion: 0.14
-Nodes (18): get_connection(), getConnection(), _init_pool(), _parse_host_targets(), _parse_ip_range(), _probe_mysql(), MySQLConnection, Resolve MySQL host — try configured targets, fall back to LAN discovery. (+10 more)
+Cohesion: 0.16
+Nodes (17): get_connection(), getConnection(), _init_pool(), _parse_host_targets(), _parse_ip_range(), _probe_mysql(), MySQLConnection, Resolve MySQL host — try configured targets, fall back to LAN discovery. (+9 more)
 
 ### Community 152 - "AppliedModal.tsx"
 Cohesion: 0.21
 Nodes (5): useAutoResizeTextArea(), AppliedModal(), AppliedModalProps, JobFormFields(), JobFormFieldsProps
 
-### Community 153 - "Modal.tsx"
-Cohesion: 0.24
-Nodes (6): ConfirmModal(), ConfirmModalProps, Modal(), ModalProps, EditSynonymGroupModal(), EditSynonymGroupModalProps
+### Community 153 - "api/main.py"
+Cohesion: 0.15
+Nodes (9): get_services_status(), get, get_enum_values(), get_schema(), get, get_timezone(), health_check(), get (+1 more)
 
 ### Community 155 - "manifest.json"
 Cohesion: 0.10
 Nodes (20): background, service_worker, content_scripts, description, host_permissions, icons, 128, 16 (+12 more)
 
 ### Community 157 - "jobs.py"
-Cohesion: 0.15
-Nodes (30): bulk_delete_jobs(), bulk_update_jobs(), BulkJobDelete, BulkJobUpdate, create_job(), get_job(), get_watcher_stats(), list_jobs() (+22 more)
+Cohesion: 0.17
+Nodes (27): get_applied_jobs_by_company(), get, bulk_delete_jobs(), bulk_update_jobs(), BulkJobDelete, BulkJobUpdate, create_job(), BaseModel (+19 more)
 
 ### Community 159 - "jobs_test.py"
-Cohesion: 0.11
-Nodes (33): get_service(), get_watcher_service(), _get_query_from_mock(), mock_db_session(), _mock_job_dict(), fixture, parametrize, patch (+25 more)
+Cohesion: 0.13
+Nodes (23): get_service(), get_watcher_service(), get_query_from_mock(), mock_job_dict(), request_jobs(), mock_db_session(), mock_jobs_service(), mock_watcher_service() (+15 more)
 
 ### Community 160 - "CompanySynonymRepository"
-Cohesion: 0.09
-Nodes (16): CompanySynonymRepository, Any, test_create_group(), test_create_group_empty(), test_find_synonyms(), test_find_synonyms_not_found(), test_list_groups(), test_list_groups_empty() (+8 more)
+Cohesion: 0.18
+Nodes (11): CompanySynonymRepository, Any, test_create_group(), test_create_group_empty(), test_find_synonyms(), test_find_synonyms_not_found(), test_list_groups(), test_list_groups_empty() (+3 more)
 
 ### Community 161 - "patch"
 Cohesion: 0.07
@@ -1060,16 +1060,16 @@ Cohesion: 0.22
 Nodes (15): check_layer(), get_file_imports(), _validate_dependencies(), getLongFiles(), get_test_naming_violations(), get_files_without_sibling_test(), get_test_location_violations(), count_lines() (+7 more)
 
 ### Community 163 - "IndeedAuthenticator"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (12): check_for_otp_error(), is_element_present(), raise_if_otp_invalid(), wait_for_cloudflare_filter(), wait_for_element_present(), IndeedAuthenticator, fixture, TestExceptionHandler (+4 more)
 
 ### Community 164 - "TestBaseNavigator"
 Cohesion: 0.13
 Nodes (4): ConcreteNavigator, fixture, parametrize, TestBaseNavigator
 
-### Community 166 - "useLearnList.ts"
-Cohesion: 0.20
-Nodes (12): createWrapper(), mockClient, mockSkills, setupHook(), useLearnList(), normalizeName(), SkillsList(), SkillsListProps (+4 more)
+### Community 166 - "SkillsManager.tsx"
+Cohesion: 0.16
+Nodes (17): downloadFile(), Skill, createWrapper(), mockClient, mockSkills, setupHook(), UseEditSkillFormProps, useLearnList() (+9 more)
 
 ### Community 167 - "AI Job Search Monorepo  [![master CI](https://img.shields.io/github/actions/workflow/status/davidgfolch/AI-job-search/ci.yml?branch=master&label=master%20CI)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml?branch=master)  [![staging CI](https://img.shields.io/github/actions/workflow/status/davidgfolch/AI-job-search/ci.yml?branch=staging&label=staging%20CI)](https://github.com/davidgfolch/AI-job-search/actions/workflows/ci.yml?branch=staging)"
 Cohesion: 0.10
@@ -1087,21 +1087,21 @@ Nodes (16): parse_skill_llm_output(), process_skill_enrichment(), Common logic f
 Cohesion: 0.09
 Nodes (7): JobSnapshotService, datetime, mock_repo(), fixture, parametrize, service(), test_maybe_create_snapshot_on_update()
 
-### Community 172 - "FilterConfigurationsRepository"
-Cohesion: 0.10
-Nodes (9): FilterConfigurationsRepository, Any, Any, StatisticsService, mock_filter_repo(), mock_jobs_repo(), mock_repo(), fixture (+1 more)
+### Community 172 - "statistics_service_test.py"
+Cohesion: 0.14
+Nodes (7): Any, StatisticsService, mock_filter_repo(), mock_jobs_repo(), mock_repo(), fixture, service()
 
 ### Community 173 - "TestTransactionManager"
-Cohesion: 0.06
-Nodes (18): Backward compatible property for connection access., Setter for backward compatibility., Get a cursor with automatic connection and cleanup., fixture, Tests for transaction_manager module., TestTransactionManager, Any, MySQLConnection (+10 more)
+Cohesion: 0.11
+Nodes (3): fixture, Tests for transaction_manager module., TestTransactionManager
 
 ### Community 174 - "aiEnrichRepository_test.py"
 Cohesion: 0.16
 Nodes (13): MockMysqlUtil, mockRepo(), test_count_pending_cv_match(), test_count_pending_enrichment(), test_get_enrichment_error_id_retry(), test_get_job_to_enrich(), test_get_job_to_match_cv(), test_get_job_to_retry() (+5 more)
 
 ### Community 175 - "scheduler_test.py"
-Cohesion: 0.22
-Nodes (16): _parse_cadency(), Scheduler, _MockJob, test_cron_job_base_run_raises(), test_parse_cadency_days(), test_parse_cadency_default(), test_parse_cadency_hours(), test_parse_cadency_minutes() (+8 more)
+Cohesion: 0.19
+Nodes (17): CronJob, _parse_cadency(), Scheduler, _MockJob, test_cron_job_base_run_raises(), test_parse_cadency_days(), test_parse_cadency_default(), test_parse_cadency_hours() (+9 more)
 
 ### Community 177 - "testSetup.ts"
 Cohesion: 0.18
@@ -1111,41 +1111,41 @@ Nodes (15): createAxiosInstanceMock(), createAxiosMock(), mockAxios, setupAxiosM
 Cohesion: 0.10
 Nodes (18): Architecture, Build and Development Commands, Code Style, Configuration, Database, E2E Tests (apps/e2e), Environment Setup, graphify (+10 more)
 
-### Community 179 - "enrichment_service.py"
-Cohesion: 0.25
-Nodes (12): get_batch_size(), get_enrich_limit(), get_ollama_model(), get_timeout(), parse_skill_enrichment_result(), parametrize, test_parse_skill_enrichment_result(), _enrich_huggingface() (+4 more)
+### Community 179 - "JobsService"
+Cohesion: 0.22
+Nodes (6): get_service(), get_job(), list_jobs(), get, JobsService, Any
 
 ### Community 180 - "SkillsService"
 Cohesion: 0.22
 Nodes (10): Any, Skill, SkillsService, patch, test_bulk_create_skills(), test_create_skill(), test_delete_skill(), test_list_skills() (+2 more)
 
 ### Community 182 - "dateUtil.py"
-Cohesion: 0.14
-Nodes (11): get_tz(), getDatetimeNow(), parseDatetime(), patch, TestDatetimeStr, TestGetTz, TestParseDatetime, Calculates if there is an active error penalty.         Returns: (timeoutSecond (+3 more)
+Cohesion: 0.13
+Nodes (15): printJob(), get_tz(), getDatetimeNow(), getDatetimeNowStr(), getTimeUnits(), parseDatetime(), Convert seconds to a detailed time unit string (e.g., 1h 35m 10s)., patch (+7 more)
 
 ### Community 183 - "devDependencies"
 Cohesion: 0.11
 Nodes (18): devDependencies, coverage-badges-cli, monocart-coverage-reports, @playwright/test, @types/node, typescript, coverage-badges-cli, @types/node (+10 more)
 
-### Community 184 - "DashboardRepository"
-Cohesion: 0.22
-Nodes (10): DashboardRepository, datetime, test_check_ollama_errors(), test_check_ollama_errors_no_matches(), test_check_ollama_errors_recency(), test_read_last_activity(), test_read_recent_errors(), test_read_recent_errors_invalid_module() (+2 more)
+### Community 184 - "generate_config_view_sql"
+Cohesion: 0.21
+Nodes (13): Test generating SQL for dropping config view, Test generating SQL with all supported filters including sql_filter, status, etc, Test generating SQL with boolean filters at the top level, Test generating SQL for config view, Test generating SQL with duplicated filter, test_drop_config_view_sql(), test_generate_config_view_sql(), test_generate_config_view_sql_with_all_filters() (+5 more)
 
 ### Community 186 - "retry"
 Cohesion: 0.04
-Nodes (19): Enum, Exception, Attempt to call a function, if it fails, try again with a specified delay., retry(), StackTrace, TestRetry, TestSleep, sleep() (+11 more)
+Nodes (20): Enum, Exception, Attempt to call a function, if it fails, try again with a specified delay., retry(), StackTrace, TestRetry, TestSleep, sleep() (+12 more)
 
 ### Community 187 - "AGENTS.md"
 Cohesion: 0.10
 Nodes (20): AGENTS.md, Architecture Patterns, Backend (FastAPI Layered), Build & Test Commands, Code Style Guidelines, Definition of Done, Development & Linting, Environment Setup (+12 more)
 
-### Community 188 - "TecnoempleoNavigator"
-Cohesion: 0.10
-Nodes (4): Returns ok: bool, jobExistsInDb: bool, TecnoempleoExecutor, TestTecnoempleoExecutor, TecnoempleoNavigator
+### Community 188 - "WatcherRepository"
+Cohesion: 0.22
+Nodes (7): mock_db(), fixture, patch, test_get_watcher_stats_empty_ids(), test_get_watcher_stats_from_view(), Any, WatcherRepository
 
 ### Community 190 - "getEnv"
-Cohesion: 0.26
-Nodes (15): get_cv_path(), get_hf_model(), get_looking_for_path(), get_max_tokens(), get_openai_api_key(), get_openai_model(), get_openrouter_api_key(), get_openrouter_model() (+7 more)
+Cohesion: 0.22
+Nodes (17): get_cv_path(), get_hf_model(), get_looking_for_path(), get_max_tokens(), get_openai_api_key(), get_openai_model(), get_openrouter_api_key(), get_openrouter_model() (+9 more)
 
 ### Community 191 - "TestQuestionAnsweringService"
 Cohesion: 0.33
@@ -1159,21 +1159,25 @@ Nodes (15): add_to_group(), create_synonym_group(), get_synonyms(), list_synonym
 Cohesion: 0.22
 Nodes (14): get_prometheus_metrics(), get, build_log_metrics(), build_prometheus_metrics(), test_build_log_metrics_file_oserror(), test_build_log_metrics_invalid_json_lines(), test_build_log_metrics_no_files(), test_build_log_metrics_with_valid_entries() (+6 more)
 
-### Community 195 - "company_synonyms_test.py"
-Cohesion: 0.29
-Nodes (11): parametrize, patch, test_add_to_group(), test_create_group(), test_create_group_invalid(), test_get_synonyms(), test_get_synonyms_not_found(), test_list_synonym_groups() (+3 more)
+### Community 195 - "create_mock_db"
+Cohesion: 0.23
+Nodes (16): parametrize, patch, test_add_to_group(), test_create_group(), test_create_group_invalid(), test_get_synonyms(), test_get_synonyms_not_found(), test_list_synonym_groups() (+8 more)
 
 ### Community 196 - "CombinedStatsRepository"
 Cohesion: 0.25
 Nodes (7): CombinedStatsRepository, DataFrame, test_get_combined_history_stats_df(), test_get_combined_history_stats_df_with_dates(), test_get_combined_sources_by_date_df_with_dates(), test_get_combined_sources_by_hour_df_with_dates(), test_get_combined_sources_by_weekday_df_with_dates()
 
-### Community 197 - "extract_filter_params"
+### Community 197 - "jobs_service.py"
 Cohesion: 0.09
 Nodes (21): build_where_params(), extract_boolean_filters(), extract_filter_params(), Any, Filter parsing utilities for consistent filter extraction across the backend., Extract boolean filters from a filters dictionary.      Only includes keys tha, Extract all standard filter parameters from a filters dictionary.      Args:, Build WHERE clause clauses and parameters from filter parameters.      This is (+13 more)
 
 ### Community 198 - "CVLoader"
 Cohesion: 0.20
 Nodes (5): CVLoader, extractTextFromPDF(), patch, TestCVLoader, TestCVLoaderTextPath
+
+### Community 199 - "company_salary_history/job.py"
+Cohesion: 0.25
+Nodes (5): CompanySalaryHistoryJob, patch, test_job_has_name_and_cadency(), test_job_run_no_prior_state(), test_job_run_with_prior_state()
 
 ### Community 200 - "TestEmailReader"
 Cohesion: 0.17
@@ -1192,48 +1196,48 @@ Cohesion: 0.19
 Nodes (11): AbstractContextManager, _clear_power_request(), _close_handle(), DetailedStructure, KeepSystemAwake, Context manager to prevent the system from going to sleep or turning off the dis, REASON_CONTEXT, ReasonUnion (+3 more)
 
 ### Community 204 - "settings_service.py"
-Cohesion: 0.21
-Nodes (15): get_env_settings(), get_scrapper_state(), update_env_setting(), update_env_settings_bulk(), update_scrapper_state(), parametrize, patch, test_get_env_settings() (+7 more)
+Cohesion: 0.24
+Nodes (13): get_env_settings(), get_scrapper_state(), update_env_setting(), update_env_settings_bulk(), update_scrapper_state(), parametrize, patch, test_get_env_settings() (+5 more)
 
 ### Community 205 - "cvMatcher_test.py"
 Cohesion: 0.23
 Nodes (13): mock_all(), fixture, test_disabled(), test_footer_err(), test_init(), test_job_none(), test_match(), test_match_exc() (+5 more)
 
 ### Community 206 - "WatcherService"
-Cohesion: 0.11
-Nodes (18): mock_db(), fixture, patch, test_get_watcher_stats_empty_ids(), test_get_watcher_stats_from_view(), Any, WatcherRepository, mock_repo() (+10 more)
+Cohesion: 0.17
+Nodes (13): get_watcher_stats(), mock_repo(), fixture, Test scenario:     - Frontend sends Naive Local Time string (e.g., "2026-02-07T, Test scenario:     - Host/DB Time: UTC+1 (e.g., 10:00 Local is 09:00 UTC), test_get_watcher_stats(), test_get_watcher_stats_error_handling(), test_get_watcher_stats_naive_local_input() (+5 more)
 
 ### Community 207 - "AI Job Search API"
 Cohesion: 0.12
 Nodes (16): AI Job Search API, API Documentation, API Endpoints, Company Synonyms, Database, Features, How it affects the applied-by-company search, Installation (+8 more)
 
 ### Community 208 - "JobDeleteRepository"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (13): JobDeleteRepository, Any, mock_mysql(), fixture, test_delete_jobs_by_filter(), test_delete_jobs_by_ids(), test_delete_jobs_by_ids_empty(), test_delete_jobs_with_snapshots() (+5 more)
 
-### Community 209 - "create_mock_db"
-Cohesion: 0.18
-Nodes (21): Any, Skill, SkillsRepository, patch, test_create_skill(), test_delete_skill(), test_find_by_name_case_insensitive_found(), test_find_by_name_case_insensitive_invalid_json() (+13 more)
+### Community 209 - "SkillsRepository"
+Cohesion: 0.21
+Nodes (16): Any, Skill, SkillsRepository, patch, test_create_skill(), test_delete_skill(), test_find_by_name_case_insensitive_found(), test_find_by_name_case_insensitive_invalid_json() (+8 more)
 
-### Community 210 - "Spinner"
-Cohesion: 0.36
-Nodes (3): _consoleTimerLocal(), Spinner, TestSpinner
+### Community 210 - "company_synonym_service_test.py"
+Cohesion: 0.17
+Nodes (5): mock_repo(), fixture, parametrize, sut(), test_create_group_invalid()
 
 ### Community 211 - "JobSnapshotRepository"
 Cohesion: 0.08
 Nodes (10): JobSnapshotRepository, Any, datetime, mock_mysql(), fixture, repo(), test_build_snapshot_query_and_params(), test_build_snapshot_query_empty_job() (+2 more)
 
 ### Community 212 - "MongoDbProvider"
-Cohesion: 0.22
-Nodes (9): get_mongo_provider(), MongoDbProvider, CQRS-style MongoDB connection provider.      Separates read and write connecti, test_get_database_returns_database(), test_get_database_write_returns_writer(), test_get_mongo_provider_caches(), test_get_mongo_provider_different_keys(), test_provider_creates_read_and_write_clients() (+1 more)
+Cohesion: 0.15
+Nodes (11): get_mongo_provider(), MongoDbProvider, CQRS-style MongoDB connection provider.      Separates read and write connecti, CronStateRepository, test_get_database_returns_database(), test_get_database_write_returns_writer(), test_get_mongo_provider_caches(), test_get_mongo_provider_different_keys() (+3 more)
 
 ### Community 213 - "Job Scrappers"
 Cohesion: 0.12
 Nodes (17): Architecture, Configuration, Dual Architecture (Selenium vs Scrapling), Dynamic Cadency (Time-based), Features, Gmail Configuration, Installation, Job Scrappers (+9 more)
 
 ### Community 214 - "TestLinkedinService"
-Cohesion: 0.12
-Nodes (4): LinkedinService, fixture, parametrize, TestLinkedinService
+Cohesion: 0.15
+Nodes (3): fixture, parametrize, TestLinkedinService
 
 ### Community 215 - "dependencies"
 Cohesion: 0.12
@@ -1251,9 +1255,9 @@ Nodes (14): answerAll(), answerAllBtn, container, detectAllFields(), errorSectio
 Cohesion: 0.12
 Nodes (15): 1. Prepare context documents, 2. Start the backend, 3. Install the browser extension, AI Form Filler, AI Providers, API Endpoints, Architecture, Development (+7 more)
 
-### Community 219 - "build_jobs_where_clause"
-Cohesion: 0.15
-Nodes (14): JobReadRepository, build_jobs_where_clause(), parse_job_order(), Any, parametrize, Test building where clause with created_after, test_build_jobs_where_clause_boolean_filters(), test_build_jobs_where_clause_created_after() (+6 more)
+### Community 219 - "backend/repositories/__init__.py"
+Cohesion: 0.26
+Nodes (3): JobReadRepository, patch, test_list_jobs()
 
 ### Community 220 - "TestIndeedService"
 Cohesion: 0.16
@@ -1284,15 +1288,15 @@ Cohesion: 0.26
 Nodes (4): AI CV Matcher, Quickstart, Requirements, aiEnrich3
 
 ### Community 227 - "process_batch"
-Cohesion: 0.20
-Nodes (6): process_batch(), Any, Exception, T, patch, TestLLMUtils
+Cohesion: 0.19
+Nodes (7): should_cleanup_gpu(), process_batch(), Any, Exception, T, patch, TestLLMUtils
 
 ### Community 228 - "SnapshotsRepository"
 Cohesion: 0.16
 Nodes (14): DataFrame, SnapshotsRepository, mock_connection(), fixture, test_get_history_stats_df(), test_get_history_stats_df_with_dates(), test_get_snapshot_count_by_platform(), test_get_snapshot_count_by_reason() (+6 more)
 
 ### Community 229 - "StatisticsRepository"
-Cohesion: 0.27
+Cohesion: 0.28
 Nodes (7): DataFrame, StatisticsRepository, patch, test_get_history_stats_df(), test_get_history_stats_df_with_dates(), test_get_sources_by_date_df(), test_get_sources_by_hour_df()
 
 ### Community 230 - "EmailReader"
@@ -1304,8 +1308,8 @@ Cohesion: 0.29
 Nodes (9): CompanySalaryHistoryScanner, patch, test_scanner_backfill_new_jobs(), test_scanner_incremental_new_jobs(), test_scanner_last_run_at_no_updates(), test_scanner_no_new_jobs(), test_scanner_updated_jobs_no_prior_record(), test_scanner_updated_jobs_salary_changed() (+1 more)
 
 ### Community 232 - "ScrapperStateCalculator"
-Cohesion: 0.19
-Nodes (6): Calculates final status message and display wait string.         Returns: (seco, ScrapperStateCalculator, mocks(), fixture, parametrize, TestScrapperStateCalculator
+Cohesion: 0.18
+Nodes (7): Calculates if there is an active error penalty.         Returns: (timeoutSecond, Calculates final status message and display wait string.         Returns: (seco, ScrapperStateCalculator, mocks(), fixture, parametrize, TestScrapperStateCalculator
 
 ### Community 233 - "JobTable.tsx"
 Cohesion: 0.27
@@ -1324,8 +1328,8 @@ Cohesion: 0.20
 Nodes (9): ExtractionResult, ModalityType, Enum, ModalityExtractor, extractor(), fixture, parametrize, test_extract_modality() (+1 more)
 
 ### Community 237 - "process_batch"
-Cohesion: 0.22
-Nodes (12): get_gpu_cleanup(), process_batch(), Any, Exception, T, test_get_gpu_cleanup_default_true(), patch, test_cleanup_gpu() (+4 more)
+Cohesion: 0.26
+Nodes (10): process_batch(), Any, Exception, T, patch, test_cleanup_gpu(), test_process_batch_empty(), test_process_batch_inference_error() (+2 more)
 
 ### Community 238 - "SalaryHistoryService"
 Cohesion: 0.23
@@ -1371,33 +1375,33 @@ Nodes (13): `apps/aiEnrichNew/pyproject.toml`, `apps/aiEnrichNew/src/aiEnrichNew
 Cohesion: 0.15
 Nodes (12): aiEnrichSkill, Architecture, Backends, Configuration, Dependencies, General, HuggingFace Backend, Linux / Mac (+4 more)
 
-### Community 249 - "baseScrapper_test.py"
-Cohesion: 0.21
-Nodes (14): removeInvalidScapes(), removeLinks(), removeUrlParameter(), parametrize, patch, test_join(), test_print_page(), test_print_scrapper_title() (+6 more)
+### Community 249 - "TestScrapperStateRepository"
+Cohesion: 0.18
+Nodes (4): fixture, parametrize, Tests for scrapper_state_repository module., TestScrapperStateRepository
 
 ### Community 250 - "JobDeleteService"
 Cohesion: 0.15
 Nodes (9): JobDeleteService, Any, mock_get_job(), mock_repo(), fixture, parametrize, service(), service_with_callback() (+1 more)
 
 ### Community 251 - "TestGlassdoorNavigator"
-Cohesion: 0.17
-Nodes (3): fixture, patch, TestGlassdoorNavigator
+Cohesion: 0.09
+Nodes (7): fixture, object, patch, TestGlassdoorAuthenticator, fixture, patch, TestGlassdoorNavigator
 
 ### Community 252 - "Auto-merge (staging gate)"
 Cohesion: 0.14
 Nodes (14): Adding a new app, Auto-merge (staging gate), Behavior, Change detection rules, CI / GitHub Actions Pipeline, Dependabot, Ecosystems & cadency, GitHub Automation (CI, Dependabot & Auto-merge) (+6 more)
 
 ### Community 253 - "SettingsApi.ts"
-Cohesion: 0.38
-Nodes (6): apiClient, useDefaultComment(), useEnvSettings(), ScrapperStateUpdateDto, settingsApi, SettingsEnvUpdateDto
+Cohesion: 0.31
+Nodes (7): useDefaultComment(), useEnvSettings(), ScrapperStateUpdateDto, settingsApi, SettingsEnvUpdateDto, SalaryActions(), SalaryActionsProps
 
-### Community 254 - "aiEnrichSkill/ollama_client.py"
-Cohesion: 0.27
-Nodes (11): _get_num_predict(), ping_ollama(), query_ollama(), _strip_provider_prefix(), parametrize, patch, test_ping_ollama(), test_query_ollama_failure_all_retries() (+3 more)
+### Community 254 - "DdlRepository"
+Cohesion: 0.32
+Nodes (7): DdlRepository, patch, test_get_enum_values(), test_get_enum_values_not_enum(), test_get_enum_values_not_found(), test_get_keywords(), test_get_schema()
 
-### Community 255 - "FastAPI"
-Cohesion: 0.09
-Nodes (23): get_services_status(), get, get_timezone(), health_check(), get, Returns the server's UTC offset in minutes.     Example: UTC+1 returns 60., get_archived_history_stats(), get_archived_sources_by_date() (+15 more)
+### Community 255 - "statistics_archived.py"
+Cohesion: 0.30
+Nodes (11): get_archived_history_stats(), get_archived_sources_by_date(), get_archived_sources_by_hour(), get_archived_sources_by_weekday(), get_combined_history_stats(), get_combined_sources_by_date(), get_combined_sources_by_hour(), get_combined_sources_by_weekday() (+3 more)
 
 ### Community 256 - "Requests & Responses"
 Cohesion: 0.13
@@ -1407,21 +1411,17 @@ Nodes (13): Callbacks, Deduplication, Disabling Referer Flow, Request Meta, Requ
 Cohesion: 0.24
 Nodes (5): MockBaseExecutor, mocks(), fixture, run_mocks(), TestExecutor
 
-### Community 259 - "TestGlassdoorAuthenticator"
-Cohesion: 0.23
-Nodes (4): fixture, object, patch, TestGlassdoorAuthenticator
+### Community 261 - "restore_target"
+Cohesion: 0.20
+Nodes (8): build_restore_cmd(), Run a subprocess; returns (returncode, stdout_text, stderr_text)., docker exec mysql command applying a dump onto the target host., Apply the dump onto the target host (full replace of the DB)., restore_target(), _run(), TestBuildRestoreCmd, TestRestoreTarget
 
-### Community 261 - "print_failed_info_table"
-Cohesion: 0.29
-Nodes (10): _collect_failed_info(), print_failed_info_table(), mock_pm(), fixture, parametrize, test_collect_failed_info(), test_collect_failed_info_with_error_details(), test_collect_failed_info_with_multiple_keywords() (+2 more)
+### Community 262 - "jobQueryService_test.py"
+Cohesion: 0.22
+Nodes (4): mock_repo(), mock_synonym_service(), fixture, service()
 
-### Community 262 - "viewer/hooks/useFilterConfigurations.ts"
-Cohesion: 0.18
-Nodes (9): persistenceApi, persistenceDefaults, HistoryInputProps, useConfirmationModal(), FilterConfig, useFilterConfigurations(), UseFilterConfigurationsProps, useFilterDropdown() (+1 more)
-
-### Community 263 - "DdlRepository"
-Cohesion: 0.11
-Nodes (16): get_enum_values(), get_schema(), get, patch, test_get_schema(), DdlRepository, patch, test_get_enum_values() (+8 more)
+### Community 263 - "DdlService"
+Cohesion: 0.20
+Nodes (6): patch, test_get_schema(), DdlService, patch, test_get_keywords(), test_get_schema()
 
 ### Community 264 - "TODO"
 Cohesion: 0.17
@@ -1435,12 +1435,12 @@ Nodes (11): cleanup_all_e2e_databases(), get_e2e_connection(), get_free_port(), 
 Cohesion: 0.14
 Nodes (13): 1. List open Dependabot PRs, 2. Process each PR (smallest PR number first), 3. Changelog / breaking-change gate, 4. Run the TDD pipeline for the module, 5. Sandbox build+run the affected docker-compose services and check logs — MANDATORY GATE, 6. Green result, 7. Red result, 8. Wrap-up (+5 more)
 
-### Community 268 - "client"
-Cohesion: 0.40
-Nodes (4): client(), fixture, Pytest configuration and shared fixtures, Shared test client fixture
+### Community 268 - "statistics_archived_test.py"
+Cohesion: 0.17
+Nodes (9): app(), mock_service(), fixture, parametrize, test_archived_endpoints(), client(), fixture, Pytest configuration and shared fixtures (+1 more)
 
-### Community 269 - "get_skill_context"
-Cohesion: 0.26
+### Community 269 - "skill_enricher_service.py"
+Cohesion: 0.24
 Nodes (4): _fetch_skill_context_safe(), get_skill_context(), Fetches context for a skill by looking at required and optional technologies, TestSkillContext
 
 ### Community 270 - "Company Salary History Scanner"
@@ -1471,13 +1471,9 @@ Nodes (4): DropdownProps, HeaderMenu(), PageHeader(), PageHeaderProps
 Cohesion: 0.18
 Nodes (11): ai-job-search, aiCvMatcher, aiEnrich, aiEnrich3, aiEnrichNew, aiEnrichSkill, aiFormFiller, api (+3 more)
 
-### Community 277 - "mysqlUtil.py"
-Cohesion: 0.13
-Nodes (11): SQL queries and constants for job-related database operations.  These constant, JobRepository, Any, callable, Repository for job-specific database operations., Insert a job record into the database.          Args:             params: Tup, Check if job exists in database by job_id., Insert job data and return row ID if successful.          Args:             j (+3 more)
-
-### Community 278 - "patch"
-Cohesion: 0.19
-Nodes (8): clean_env(), mock_deps(), fixture, patch, Skips pre-check and returns 0 when Ollama is unreachable, Skips job without saving/erroring when ollama returns None mid-batch, TestDataExtractor, TestProcessJobSafeBackend
+### Community 278 - "resolve_mysql_host"
+Cohesion: 0.31
+Nodes (4): Resolve a host spec to a reachable MySQL host IP.      - 'local' | 'localhost', resolve_mysql_host(), parametrize, TestResolveMysqlHost
 
 ### Community 279 - "Tools"
 Cohesion: 0.17
@@ -1491,17 +1487,17 @@ Nodes (11): 1. Detect Modified Apps, 2. Ask User for Bump Type, 3. Update the Ve
 Cohesion: 0.17
 Nodes (12): 1. Install `uv` Package Manager, 2. Install Project Dependencies, AI Job Enrichment, Automated Loop, Configuration, Installation, LLM Backend Selection, Manual Run (Dev) (+4 more)
 
-### Community 282 - "aiEnrichSkill/main.py"
-Cohesion: 0.27
-Nodes (12): get_backend(), get_enabled(), get_max_ollama_failures(), get_ollama_base_url(), run(), test_get_backend_default_ollama(), test_get_enabled_default_true(), patch (+4 more)
+### Community 282 - "Settings.tsx"
+Cohesion: 0.33
+Nodes (9): CodeEditorProps, Editor, renderGroup(), renderInlineItem(), renderScrapperEditor(), renderSubgroup(), SetStateAction, Settings() (+1 more)
 
 ### Community 283 - "getSrcPath"
 Cohesion: 0.36
 Nodes (6): createFolder(), getSrcPath(), listFiles(), Path, patch, TestFileSystemUtil
 
-### Community 284 - "yellow"
-Cohesion: 0.06
-Nodes (36): FastCVMatcher, run(), printJsonException(), Exception, build_dump_cmd(), build_restore_cmd(), confirm(), dump_local() (+28 more)
+### Community 284 - "mysql_sync.py"
+Cohesion: 0.12
+Nodes (19): build_dump_cmd(), confirm(), dump_local(), dump_tables(), main(), make_dump_path(), preflight_target(), docker exec mysqldump command to dump the local DB. (+11 more)
 
 ### Community 285 - "GlassdoorGmailService"
 Cohesion: 0.25
@@ -1540,8 +1536,8 @@ Cohesion: 0.42
 Nodes (7): normalize_company_name(), test_collapses_spaces(), test_empty_name(), test_lowercases_and_trims(), test_removes_parentheticals(), test_removes_special_chars(), test_removes_suffixes()
 
 ### Community 294 - "terminalUtil.py"
-Cohesion: 0.21
-Nodes (11): mock_sleep(), mock_windows_api(), fixture, patch, test_console_timer_calls_wakeable_timer(), test_wakeable_timer_other_os(), test_wakeable_timer_windows(), Timer that can wake the Windows system from suspend state.     Uses CreateWaita (+3 more)
+Cohesion: 0.14
+Nodes (14): _consoleTimerLocal(), Spinner, TestSpinner, mock_sleep(), mock_windows_api(), fixture, patch, test_console_timer_calls_wakeable_timer() (+6 more)
 
 ### Community 295 - "Common Library"
 Cohesion: 0.22
@@ -1552,7 +1548,7 @@ Cohesion: 0.22
 Nodes (8): Configuration, Cron — Background Scheduler, Docker, How it works, Registered jobs, Running, Tech Stack, Testing
 
 ### Community 297 - "Undetected ChromeDriver Usage"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (8): Benefits, Configuration, How It Works, Option 1: Environment Variable (Recommended), Option 2: Programmatic, Overview, Troubleshooting, Undetected ChromeDriver Usage
 
 ### Community 298 - "react"
@@ -1567,25 +1563,25 @@ Nodes (4): StatisticsControlsProps, StatisticsFiltersProps, TIME_RANGE_OPTIONS, 
 Cohesion: 0.42
 Nodes (7): initialSkills, MockEditSkillModal(), mockRemoveSkill, mockReorderSkills, mockSaveSkill, mockUpdateSkill, setupLearnListMock()
 
-### Community 301 - "aiEnrich/pipeline.py"
-Cohesion: 0.22
-Nodes (7): get_job_enabled(), run(), run_pipeline(), patch, TestMain, patch, TestPipeline
+### Community 301 - "cyan"
+Cohesion: 0.13
+Nodes (16): get_job_enabled(), run(), run_pipeline(), clean_env(), fixture, parametrize, test_get_job_enabled(), test_get_ollama_base_url() (+8 more)
 
 ### Community 302 - "main"
-Cohesion: 0.28
+Cohesion: 0.29
 Nodes (11): hasArgument(), main(), mocks(), fixture, parametrize, test_has_argument(), test_main_no_args(), test_main_specified_scrappers() (+3 more)
 
-### Community 303 - "get_services_status"
-Cohesion: 0.32
-Nodes (10): _display_name(), get_services_status(), _iso(), patch, test_display_name_mapping(), test_get_services_status_log_fallback(), test_get_services_status_ollama_reachable(), test_get_services_status_ollama_unreachable() (+2 more)
+### Community 303 - ".conn"
+Cohesion: 0.28
+Nodes (4): Backward compatible property for connection access., Setter for backward compatibility., Get a cursor with automatic connection and cleanup., setter
 
 ### Community 304 - "TestGlassdoorService"
 Cohesion: 0.24
 Nodes (3): fixture, parametrize, TestGlassdoorService
 
 ### Community 305 - "CompanySynonymsManager.tsx"
-Cohesion: 0.42
-Nodes (6): companySynonymsApi, SynonymGroup, CompanySynonymsManager(), CompanySynonymsTable(), CompanySynonymsTableProps, useCompanySynonyms()
+Cohesion: 0.27
+Nodes (8): companySynonymsApi, SynonymGroup, CompanySynonymsManager(), CompanySynonymsTable(), CompanySynonymsTableProps, EditSynonymGroupModal(), EditSynonymGroupModalProps, useCompanySynonyms()
 
 ### Community 306 - "ScrapperStateRepository"
 Cohesion: 0.29
@@ -1603,9 +1599,9 @@ Nodes (7): patch, test_create_skill(), test_delete_skill(), test_delete_skill_no
 Cohesion: 0.36
 Nodes (4): consoleTimer(), consoleTimerDocker(), patch, TestTerminalFunctions
 
-### Community 311 - "EditSkillModal.tsx"
-Cohesion: 0.33
-Nodes (6): Skill, EditSkillModal(), EditSkillModalProps, testQueryClient, useEditSkillForm(), UseEditSkillFormProps
+### Community 311 - "SalaryCalculatorControls.tsx"
+Cohesion: 0.25
+Nodes (3): CalcMode, SalaryCalculatorControls(), SalaryCalculatorControlsProps
 
 ### Community 312 - "graphify development"
 Cohesion: 0.20
@@ -1635,9 +1631,9 @@ Nodes (6): patch, test_get_filter_config_stats(), test_get_history_stats(), test
 Cohesion: 0.13
 Nodes (5): mock_combined_repo(), mock_snapshots_repo(), mock_stats_repo(), fixture, service()
 
-### Community 320 - "CronStateRepository"
-Cohesion: 0.14
-Nodes (10): CronStateRepository, mock_mongo_provider(), fixture, repo(), CompanySalaryHistoryJob, patch, test_job_has_name_and_cadency(), test_job_run_no_prior_state() (+2 more)
+### Community 320 - "cron_state_repository_test.py"
+Cohesion: 0.33
+Nodes (3): mock_mongo_provider(), fixture, repo()
 
 ### Community 322 - "_detect_captcha"
 Cohesion: 0.38
@@ -1660,8 +1656,8 @@ Cohesion: 0.20
 Nodes (9): Blocked Request Handling, Custom Block Detection, Custom Rotation Strategies, Customizing Retries, Per-Request Proxy Override, Proxy management and handling Blocks, ProxyRotator, Random Rotation (+1 more)
 
 ### Community 327 - "get_pipeline"
-Cohesion: 0.24
-Nodes (9): mock_pipeline(), mock_repo(), fixture, get_pipeline(), mock_dependencies(), fixture, patch, test_get_pipeline_initialization() (+1 more)
+Cohesion: 0.36
+Nodes (6): get_pipeline(), mock_dependencies(), fixture, patch, test_get_pipeline_initialization(), test_get_pipeline_singleton()
 
 ### Community 328 - "AI Job Search Default Development Guide"
 Cohesion: 0.40
@@ -1680,8 +1676,8 @@ Cohesion: 0.25
 Nodes (6): Fetchers basics, Fetchers Overview, Introduction, Parser configuration in all fetchers, Response Object, Set parser config per request
 
 ### Community 333 - "getSeconds"
-Cohesion: 0.22
-Nodes (8): getSeconds(), getTimeUnits(), timeUnit: 30s|8m|2h|1h 30m, Convert seconds to a detailed time unit string (e.g., 1h 35m 10s)., parametrize, TestTimeFunctions, _base_config(), Any
+Cohesion: 0.33
+Nodes (4): getSeconds(), timeUnit: 30s|8m|2h|1h 30m, parametrize, TestTimeFunctions
 
 ### Community 334 - "scripts"
 Cohesion: 0.33
@@ -1719,10 +1715,6 @@ Nodes (3): cssSelector(), detectAllQuestions(), detectQuestion()
 Cohesion: 0.25
 Nodes (8): Async Session Usage, Basic Usage, Full list of arguments, Session Benefits, Session Management, StealthyFetcher, What does it do?, When to Use
 
-### Community 345 - "SkillsManager.tsx"
-Cohesion: 0.29
-Nodes (5): downloadFile(), SkillsTable(), SkillsTableProps, SkillsManager(), generateSkillsMarkdown()
-
 ### Community 346 - "Screenshots"
 Cohesion: 0.18
 Nodes (11): AI daemons & fullstack app logs, Filters Configurations, Scrapper, Screenshots, Settings — Environment Variables, Settings — Scrapper State, Skills Edit, Skills Manager (+3 more)
@@ -1735,29 +1727,29 @@ Nodes (4): filter_deps(), is_external_dep(), main(), Path
 Cohesion: 0.70
 Nodes (4): generate_labels(), main(), Path, _skip_label()
 
-### Community 349 - "execute_with_error_handler"
-Cohesion: 0.60
-Nodes (3): execute_with_error_handler(), test_execute_with_error_handler_success(), test_execute_with_error_handler_with_items()
+### Community 349 - "verify_mysql"
+Cohesion: 0.47
+Nodes (3): Verify host is our MySQL — connect and check the database exists., verify_mysql(), TestVerifyMySQL
 
 ### Community 350 - "mock_sleep"
 Cohesion: 0.50
 Nodes (3): mock_sleep(), fixture, Mock sleep and wait functions globally to speed up test execution.     Reduces
 
-### Community 351 - "seleniumSocketConnRetry"
-Cohesion: 0.13
-Nodes (8): BrowserService, Remote, Switch or create to tab name. If no name specified switches to default tab., Poll driver.window_handles until a new handle (not in old_handles) appears., Close a window and switch back to the default tab., Default retry configuration for SeleniumUtil socket disconnection problems, seleniumSocketConnRetry(), TestSeleniumSocketConnRetry
+### Community 351 - "is_up_command"
+Cohesion: 0.67
+Nodes (3): is_up_command(), main(), Match
 
 ### Community 353 - "queryTestUtils.tsx"
 Cohesion: 0.67
 Nodes (3): createHookTestWrapper(), createTestQueryClient(), wrapper
 
 ### Community 354 - "opencode.json"
-Cohesion: 0.18
-Nodes (10): formatter, ruff, uv, instructions, plugin, disabled, $schema, disabled (+2 more)
+Cohesion: 0.17
+Nodes (11): formatter, ruff, uv, instructions, plugin, disabled, $schema, disabled (+3 more)
 
 ### Community 355 - "StopWatch"
-Cohesion: 0.29
-Nodes (4): StopWatch, test_elapsed(), test_end(), test_start()
+Cohesion: 0.23
+Nodes (5): Librería común para el monorepo, StopWatch, test_elapsed(), test_end(), test_start()
 
 ### Community 356 - "HTTP Methods"
 Cohesion: 0.29
@@ -1791,9 +1783,9 @@ Nodes (7): Agent Homes, Agentic SDLC, Dependabot PR workflow, graphify (knowledg
 Cohesion: 0.67
 Nodes (3): patch, Test seeding default configurations from JSON file, test_seed_defaults()
 
-### Community 365 - "GlassdoorExecutor"
-Cohesion: 0.47
-Nodes (3): GlassdoorExecutor, patch, TestGlassdoorExecutor
+### Community 365 - "docker-build.md"
+Cohesion: 0.50
+Nodes (3): Dependency-refresh caveats, Docker container bring-up: always `--build`, When rebuilding is required (why)
 
 ### Community 367 - "HTTP requests"
 Cohesion: 0.40
@@ -1815,29 +1807,21 @@ Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify refer
 Cohesion: 0.50
 Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
 
-### Community 379 - "ollama_config.py"
-Cohesion: 0.28
-Nodes (4): Centralized Ollama configuration constants.  Single source of truth for the Olla, check_backend(), check_ollama(), check_openrouter()
+### Community 379 - "ollama_probe_urls"
+Cohesion: 0.18
+Nodes (11): _probe_ollama(), _candidate_urls(), ollama_candidate_urls(), ollama_probe_urls(), Ordered, deduplicated URLs to try, primary first and then the shared fallback ch, Every plausible Ollama server for liveness checks, deduplicated.      Expands ea, parametrize, test_ollama_candidate_urls() (+3 more)
 
-### Community 392 - "aiEnrich/test/config_test.py"
-Cohesion: 0.36
-Nodes (7): get_timeout_job(), clean_env(), fixture, parametrize, test_get_job_enabled(), test_get_ollama_base_url(), test_get_timeout_job()
+### Community 392 - "docker-build.js"
+Cohesion: 0.67
+Nodes (3): DockerBuildPlugin(), injectBuild(), OTHER_SUBCOMMANDS
 
-### Community 396 - "dashboard_service.py"
-Cohesion: 0.46
-Nodes (7): _determine_status(), _local(), _parse_local(), _probe_ollama(), datetime, parametrize, test_determine_status()
-
-### Community 397 - "find_last_duplicated"
-Cohesion: 0.48
-Nodes (6): find_last_duplicated(), Find the last duplicated job by title, company (excluding 'Joppy').     Returns, test_find_last_duplicated_empty_args(), test_find_last_duplicated_found(), test_find_last_duplicated_joppy(), test_find_last_duplicated_not_found()
+### Community 400 - "yellow"
+Cohesion: 0.23
+Nodes (6): FastCVMatcher, run(), printJsonException(), Exception, red(), yellow()
 
 ### Community 401 - "TestBooleanFilterKeys"
 Cohesion: 0.33
 Nodes (4): Tests for BOOLEAN_FILTER_KEYS constant., Test that BOOLEAN_FILTER_KEYS is defined., Test that all boolean keys are valid field names., TestBooleanFilterKeys
-
-### Community 402 - "IndeedScraplingExecutor_test.py"
-Cohesion: 0.53
-Nodes (5): mock_env_vars(), mock_mysql(), mock_persistence_manager(), mock_selenium(), fixture
 
 ### Community 409 - ".executeAllAndCommit"
 Cohesion: 0.40
@@ -1851,28 +1835,24 @@ Nodes (3): ollama_pull(), ollama_registry_reachable(), install.sh script
 Cohesion: 0.24
 Nodes (8): { mockPost }, salaryApi, SalaryCalculationRequest, SalaryCalculationResponse, mockJob, mockSalaryResponse(), skipInitialCalculation(), waitForDebounce()
 
-### Community 704 - "IndeedService_test.py"
-Cohesion: 0.60
-Nodes (4): mock_mysql(), mock_persistence_manager(), fixture, service()
-
 ### Community 705 - "Debug GitHub Actions & Dependabot Runs with `gh`"
 Cohesion: 0.40
 Nodes (4): Debug GitHub Actions & Dependabot Runs with `gh`, Dependabot update-run failures, Inspect an Actions run, Tips
 
 ## Knowledge Gaps
-- **839 isolated node(s):** `$schema`, `.claude/rules/*.md`, `disabled`, `disabled`, `.opencode/plugins/graphify.js` (+834 more)
+- **844 isolated node(s):** `$schema`, `.claude/rules/*.md`, `disabled`, `disabled`, `.opencode/plugins/graphify.js` (+839 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **349 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **354 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `MysqlUtil` connect `MysqlUtil` to `enrichment_service_test.py`, `DdlRepository`, `persistence_manager.py`, `get_skill_context`, `ai_helpers.py`, `find_last_duplicated`, `environmentUtil.py`, `TestInfojobsService`, `BaseExecutor`, `GlassdoorNavigator`, `ScrapperStateRepository`, `mysqlUtil.py`, `IndeedScraplingExecutor`, `connection_manager.py`, `TecnoempleoExecutor_test.py`, `.executeAllAndCommit`, `aiEnrichSkill/main.py`, `yellow`, `CompanySynonymRepository`, `IndeedService`, `process_skill_enrichment`, `GlassdoorExecutor_test.py`, `FilterConfigurationsRepository`, `TestTransactionManager`, `aiEnrichRepository_test.py`, `main`, `TestGlassdoorService`, `ScrapperStateRepository`, `enrichment_service.py`, `CompanySynonymService`, `InfojobsExecutor`, `TecnoempleoNavigator`, `InfojobsExecutor_test.py`, `QueryExecutor`, `TestBaseService`, `aiEnrichNew/dataExtractor.py`, `WatcherService`, `JobDeleteRepository`, `create_mock_db`, `JobSnapshotRepository`, `TestLinkedinService`, `aiEnrich3/services/test/job_enrichment_service_test.py`, `AiEnrichRepository`, `build_jobs_where_clause`, `TestIndeedService`, `CompanySalaryHistoryScanner`, `LinkedinExecutor`, `GlassdoorExecutor`, `JobsRepository`, `JobWriteRepository`, `aiEnrich/dataExtractor.py`?**
-  _High betweenness centrality (0.113) - this node is a cross-community bridge._
-- **Why does `yellow()` connect `yellow` to `TestEnvironmentUtil`, `green`, `DriverUtil`, `print_failed_info_table`, `IndeedScraplingNavigator`, `persistence_manager.py`, `ai_helpers.py`, `ScrapperScheduler`, `environmentUtil.py`, `BaseExecutor`, `GlassdoorNavigator`, `mysqlUtil.py`, `IndeedScraplingExecutor`, `connection_manager.py`, `GmailService`, `terminalUtil.py`, `IndeedService`, `process_skill_enrichment`, `ContextLoader`, `TestTransactionManager`, `main`, `exceptionUtil_test.py`, `consoleTimer`, `InfojobsExecutor`, `retry`, `TecnoempleoNavigator`, `_detect_captcha`, `CVLoader`, `Spinner`, `StopWatch`, `EmailReader`, `terminalColor.py`, `CompanySalaryHistoryScanner`, `LinkedinExecutor`, `PersistenceManager`, `.connect`, `ElementService`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Why does `GmailService` connect `GmailService` to `EmailReader`, `IndeedGmailService`, `.connect`, `GmailConnectionError`, `GlassdoorGmailService`, `getEnv`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Why does `MysqlUtil` connect `MysqlUtil` to `enrichment_service_test.py`, `FilterConfigurationsRepository`, `green`, `.fetchAll`, `skill_enricher_service.py`, `ai_helpers.py`, `.fetchOne`, `yellow`, `.get_scrapper_state`, `.getTableDdlColumnNames`, `GlassdoorNavigator`, `ScrapperStateRepository`, `TestInfojobsService`, `IndeedScraplingExecutor`, `TecnoempleoExecutor`, `.executeAllAndCommit`, `CompanySynonymRepository`, `IndeedService`, `sqlUtil.py`, `JobSnapshotService`, `process_skill_enrichment`, `aiEnrichRepository_test.py`, `.conn`, `main`, `TestGlassdoorService`, `ScrapperStateRepository`, `JobQueryRepository`, `WatcherRepository`, `aiEnrichSkill/test/config_test.py`, `.insertJob`, `.updateFromAI`, `InfojobsExecutor`, `QueryExecutor`, `TestBaseService`, `metrics_collector.py`, `JobDeleteRepository`, `SkillsRepository`, `JobRepository`, `JobSnapshotRepository`, `aiEnrich3/dataExtractor.py`, `TestLinkedinService`, `AiEnrichRepository`, `backend/repositories/__init__.py`, `TestIndeedService`, `CompanySalaryHistoryScanner`, `terminalColor.py`, `LinkedinExecutor`, `JobsRepository`, `JobWriteRepository`, `TransactionManager`, `aiEnrich/dataExtractor.py`, `DdlRepository`?**
+  _High betweenness centrality (0.134) - this node is a cross-community bridge._
+- **Why does `yellow()` connect `yellow` to `environmentUtil.py`, `DriverUtil`, `IndeedScraplingNavigator`, `green`, `ai_helpers.py`, `skill_enricher_service.py`, `GlassdoorNavigator`, `IndeedScraplingExecutor`, `connection_manager.py`, `TecnoempleoExecutor`, `mysql_sync.py`, `GmailService`, `terminalUtil.py`, `IndeedService`, `persistence_manager.py`, `process_skill_enrichment`, `ContextLoader`, `sqlUtil.py`, `LinkedinNavigator`, `main`, `exceptionUtil_test.py`, `consoleTimer`, `retry`, `InfojobsExecutor`, `_detect_captcha`, `CVLoader`, `seleniumSocketConnRetry`, `MongoDbProvider`, `StopWatch`, `EmailReader`, `terminalColor.py`, `CompanySalaryHistoryScanner`, `LinkedinExecutor`, `PersistenceManager`, `.connect`, `TransactionManager`?**
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
+- **Why does `TransactionManager` connect `TransactionManager` to `MysqlUtil`, `sqlUtil.py`, `TestTransactionManager`, `.conn`, `ScrapperStateRepository`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Are the 62 inferred relationships involving `MysqlUtil` (e.g. with `FastCVMatcher` and `.process_db_jobs()`) actually correct?**
   _`MysqlUtil` has 62 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 2 inferred relationships involving `yellow()` (e.g. with `.check_results()` and `.finalize_scrapper()`) actually correct?**
