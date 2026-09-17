@@ -1,5 +1,5 @@
 from commonlib.environmentUtil import getEnv, getEnvBool
-from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL
+from commonlib.ollama_config import OLLAMA_HOST_BASE_URL
 
 
 def get_enabled() -> bool:
@@ -15,7 +15,7 @@ def get_ollama_model() -> str:
 
 
 def get_ollama_base_url() -> str:
-    return getEnv("AI_ENRICHSKILL_OLLAMA_BASE_URL", OLLAMA_DEFAULT_BASE_URL)
+    return getEnv("AI_ENRICHSKILL_OLLAMA_BASE_URL", OLLAMA_HOST_BASE_URL)
 
 
 def get_max_new_tokens() -> int:

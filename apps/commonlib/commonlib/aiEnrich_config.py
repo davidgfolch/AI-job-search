@@ -1,5 +1,5 @@
 from commonlib.environmentUtil import getEnv, getEnvBool
-from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL
+from commonlib.ollama_config import OLLAMA_HOST_BASE_URL
 
 OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_DEFAULT_MODEL = "openrouter/free"
@@ -11,7 +11,7 @@ def get_job_enabled() -> bool:
 
 
 def get_ollama_base_url() -> str:
-    return getEnv("AI_ENRICH_OLLAMA_BASE_URL", OLLAMA_DEFAULT_BASE_URL)
+    return getEnv("AI_ENRICH_OLLAMA_BASE_URL", OLLAMA_HOST_BASE_URL)
 
 
 def get_timeout_job() -> int:

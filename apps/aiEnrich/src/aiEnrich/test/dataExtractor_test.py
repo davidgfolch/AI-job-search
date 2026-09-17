@@ -132,20 +132,20 @@ class TestPingBackend:
     def test_routes_to_ollama(self):
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         from aiEnrich import dataExtractor
-        with patch.object(dataExtractor, "ping_ollama", return_value=True) as mock_ping, \
+        with patch.object(dataExtractor, "resolve_ollama_url", return_value="http://host:11434") as mock_resolve, \
              patch.object(dataExtractor, "ping_openrouter") as mock_ping_or:
             assert dataExtractor.ping_backend() is True
-        mock_ping.assert_called_once()
+        mock_resolve.assert_called_once()
         mock_ping_or.assert_not_called()
 
     def test_routes_to_openrouter(self):
         os.environ["AI_ENRICH_BACKEND"] = "openrouter"
         from aiEnrich import dataExtractor
-        with patch.object(dataExtractor, "ping_ollama") as mock_ping, \
+        with patch.object(dataExtractor, "resolve_ollama_url", return_value=None) as mock_resolve, \
              patch.object(dataExtractor, "ping_openrouter", return_value=True) as mock_ping_or:
             assert dataExtractor.ping_backend() is True
         mock_ping_or.assert_called_once()
-        mock_ping.assert_not_called()
+        mock_resolve.assert_not_called()
 
 
 class TestProcessJobSafeBackend:

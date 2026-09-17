@@ -21,7 +21,7 @@ def test_enrich_skills(mock_hf, mock_ollama, mock_backend, backend, expected, ca
     result = enrich_skills(mysql)
     assert result == expected
     if called_mock == "_enrich_ollama":
-        mock_ollama.assert_called_once_with(mysql)
+        mock_ollama.assert_called_once_with(mysql, None)
         mock_hf.assert_not_called()
     elif called_mock == "_enrich_huggingface":
         mock_hf.assert_called_once_with(mysql)

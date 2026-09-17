@@ -13,7 +13,7 @@ from commonlib.terminalUtil import consoleTimer
 from commonlib.services.metrics_collector import MetricsCollector
 from .config import get_enabled, get_backend, get_ollama_base_url, get_max_ollama_failures
 from .services.enrichment_service import enrich_skills
-from .ollama_client import ping_ollama
+from commonlib.ollama_client import resolve_ollama_url
 
 configure_logging("aiEnrichSkill")
 
@@ -32,18 +32,21 @@ def run():
     ollama_consecutive_failures = 0
     while True:
         collector.record_heartbeat("aiEnrichSkill")
-        if get_backend() == "ollama" and not ping_ollama(base_url=get_ollama_base_url()):
-            ollama_consecutive_failures += 1
-            max_failures = get_max_ollama_failures()
-            logger.error("ollama.unreachable", base_url=get_ollama_base_url(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-            if ollama_consecutive_failures >= max_failures:
-                logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
-                sys.exit(1)
-            consoleTimer(cyan('Ollama unreachable, retrying... '), '10s', end='\r')
-            continue
-        ollama_consecutive_failures = 0
+        ollama_base_url = get_ollama_base_url()
+        if get_backend() == "ollama":
+            ollama_base_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
+            if ollama_base_url is None:
+                ollama_consecutive_failures += 1
+                max_failures = get_max_ollama_failures()
+                logger.error("ollama.unreachable", base_url=get_ollama_base_url(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+                if ollama_consecutive_failures >= max_failures:
+                    logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
+                    sys.exit(1)
+                consoleTimer(cyan('Ollama unreachable, retrying... '), '10s', end='\r')
+                continue
+            ollama_consecutive_failures = 0
         with MysqlUtil() as mysql:
-            count = enrich_skills(mysql)
+            count = enrich_skills(mysql, ollama_base_url=ollama_base_url)
             if count > 0:
                 collector.persist()
                 continue

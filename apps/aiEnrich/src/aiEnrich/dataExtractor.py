@@ -20,7 +20,7 @@ from commonlib.aiEnrich_config import (
     get_backend, get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model,
 )
 from commonlib.services.metrics_collector import MetricsCollector
-from .ollama_client import query_ollama, ping_ollama
+from commonlib.ollama_client import query_ollama, resolve_ollama_url
 from .openrouter_client import query_openrouter, ping_openrouter
 
 logger = get_logger("aiEnrich.dataExtractor")
@@ -48,10 +48,19 @@ The json output must have the following fields and structure:
 }}"""
 
 
+_resolved_ollama_url: str | None = None
+
+
+def _get_ollama_base_url() -> str:
+    return _resolved_ollama_url or get_ollama_base_url()
+
+
 def ping_backend() -> bool:
+    global _resolved_ollama_url
     if get_backend() == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
-    return ping_ollama(base_url=get_ollama_base_url())
+    _resolved_ollama_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
+    return _resolved_ollama_url is not None
 
 
 def _check_backend_available() -> bool:
@@ -148,9 +157,10 @@ def _process_job_safe(
                 raw = query_ollama(
                     prompt=prompt,
                     model=get_model(),
-                    base_url=get_ollama_base_url(),
+                    primary_url=_get_ollama_base_url(),
                     timeout=get_timeout_job(),
                     json_mode=True,
+                    log=logger,
                 )
             if raw is None:
                 logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)

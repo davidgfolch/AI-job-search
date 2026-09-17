@@ -73,6 +73,8 @@ AI_ENRICH_BACKEND=ollama
 AI_ENRICH_OLLAMA_MODEL=ollama/phi3.5:3b
 ```
 
+The Ollama server URL is centralized as `OLLAMA_HOST_BASE_URL` in `commonlib` and can be overridden with `AI_ENRICH_OLLAMA_BASE_URL`. The module resolves the first reachable server once per cycle (configured URL first, then `host.docker.internal`, `localhost`, and the containerized `ollama:11434`) and reuses it for the whole batch — so a missing containerized Ollama transparently falls back to a host server instead of failing.
+
 > or change it in http://localhost:5173/settings (docker with web/backend must be running, see [DOCKER_DEV.md](../READMEs/DOCKER_DEV.md))
 
 **Recommended models for CPU-only inference:**

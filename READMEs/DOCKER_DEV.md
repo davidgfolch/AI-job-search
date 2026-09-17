@@ -48,7 +48,7 @@ docker exec ai-job-search-ollama ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF
 docker exec ai-job-search-ollama ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
 docker exec ai-job-search-ollama ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m   # temp tag shares the same files
 
-# Test Ollama connection (URL defaults to centralized `OLLAMA_DEFAULT_BASE_URL` in commonlib)
+# Test Ollama connection (URL defaults to centralized `OLLAMA_HOST_BASE_URL` in commonlib; unreachable configured URLs fall back to the host server)
 curl <Ollama-URL>/api/tags
 ```
 
@@ -75,7 +75,7 @@ docker-compose --profile ai-services --profile scrapper up -d
 - **Backend (FastAPI)**: http://localhost:8000/docs
 - **Viewer (Streamlit)**: http://localhost:8501
 - **MySQL**: localhost:3306
-- **Ollama**: `OLLAMA_DEFAULT_BASE_URL` (centralized in `commonlib`)
+- **Ollama**: `OLLAMA_HOST_BASE_URL` (centralized in `commonlib`; modules fall back from the containerized `ollama:11434` to the host server)
 
 ## Development Tips
 - Code changes are automatically detected (hot-reload enabled)

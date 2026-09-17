@@ -1,9 +1,8 @@
-import os
 import urllib.request
 from datetime import datetime, timezone
 
 from commonlib.environmentUtil import getEnv
-from commonlib.ollama_config import OLLAMA_DEFAULT_BASE_URL, OLLAMA_DOCKER_BASE_URL
+from commonlib.ollama_config import ollama_probe_urls
 from commonlib.services.metrics_collector import MetricsCollector
 from repositories.dashboard_repository import DashboardRepository
 
@@ -21,7 +20,6 @@ OLLAMA_MODULES = {"aienrich", "aienrichskill"}
 STALE_THRESHOLD_SECONDS = 1200
 OLLAMA_ERROR_WINDOW_SECONDS = 1800
 OLLAMA_PROBE_TIMEOUT_SECONDS = 3
-OLLAMA_CANDIDATE_URLS = (OLLAMA_DOCKER_BASE_URL, OLLAMA_DEFAULT_BASE_URL)
 BACKEND_LABELS = {
     "ollama": "Ollama",
     "ollama_cloud": "Ollama Cloud",
@@ -73,9 +71,7 @@ def get_services_status() -> dict:
 
 
 def _probe_ollama() -> bool:
-    base = os.environ.get("AI_ENRICH_OLLAMA_BASE_URL")
-    candidates = ([base] if base else []) + list(OLLAMA_CANDIDATE_URLS)
-    for url in candidates:
+    for url in ollama_probe_urls():
         try:
             with urllib.request.urlopen(f"{url}/api/version", timeout=OLLAMA_PROBE_TIMEOUT_SECONDS) as resp:
                 if resp.status == 200:
