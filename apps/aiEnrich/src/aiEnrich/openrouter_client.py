@@ -7,7 +7,7 @@ from openai import OpenAI
 from commonlib.observability import get_logger
 
 logger = get_logger("aiEnrich.openrouter_client")
-from commonlib.aiEnrich_config import (
+from .aiEnrich_config import (
     OPENROUTER_DEFAULT_BASE_URL as DEFAULT_BASE_URL,
     OPENROUTER_DEFAULT_MODEL as DEFAULT_MODEL,
     OPENROUTER_DEFAULT_FALLBACK_MODEL as DEFAULT_FALLBACK_MODEL,

@@ -42,6 +42,9 @@ Set these in your `.env` or `.env.secrets`:
 ### Ollama Backend
 - `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_HOST_BASE_URL` in `commonlib`)
 - `AI_ENRICHSKILL_OLLAMA_MODEL` — Model name (default: `ollama/qwen2.5:3b`)
+- `AI_ENRICHSKILL_MAX_NEW_TOKENS` — Max output tokens (default: `2048`)
+- `AI_ENRICHSKILL_NUM_CTX` — Context window sent to Ollama per request (default: auto-bucketed from prompt length, capped at `32768`)
+- `AI_ENRICHSKILL_REPEAT_PENALTY` — Repetition penalty for Ollama (default: `1.3`, higher than server default `1.1` to avoid degenerate loops)
 
 Pull the default model before running:
 

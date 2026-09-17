@@ -18,6 +18,12 @@ _MODULE_OLLAMA_URL_ENVS = (
     "OLLAMA_BASE_URL",
 )
 
+MAX_NEW_TOKENS_ENVS = ("AI_ENRICH_MAX_NEW_TOKENS", "AI_ENRICHSKILL_MAX_NEW_TOKENS")
+NUM_CTX_ENVS = ("AI_ENRICH_NUM_CTX", "AI_ENRICHSKILL_NUM_CTX")
+REPEAT_PENALTY_ENVS = ("AI_ENRICH_REPEAT_PENALTY", "AI_ENRICHSKILL_REPEAT_PENALTY")
+DEFAULT_REPEAT_PENALTY = 1.3
+MAX_NUM_CTX = 32768
+
 
 def ollama_candidate_urls(primary: str | None = None) -> tuple[str, ...]:
     """Ordered, deduplicated URLs to try, primary first and then the shared fallback chain."""
@@ -46,3 +52,35 @@ def ollama_probe_urls() -> tuple[str, ...]:
         if url not in urls:
             urls.append(url)
     return tuple(urls)
+
+
+def get_num_predict() -> int:
+    for env in MAX_NEW_TOKENS_ENVS:
+        value = getEnv(env)
+        if value:
+            return int(value)
+    return 2048
+
+
+def get_num_ctx(prompt: str, num_predict: int) -> int:
+    for env in NUM_CTX_ENVS:
+        value = getEnv(env)
+        if value:
+            return min(int(value), MAX_NUM_CTX)
+    required = len(prompt) // 3 + num_predict
+    bucketed = max(2048, ((required + 2047) // 2048) * 2048)
+    return min(bucketed, MAX_NUM_CTX)
+
+
+def get_repeat_penalty() -> float:
+    for env in REPEAT_PENALTY_ENVS:
+        value = getEnv(env)
+        if value:
+            return float(value)
+    return DEFAULT_REPEAT_PENALTY
+
+
+def strip_provider_prefix(model: str) -> str:
+    if "/" in model:
+        return model.split("/", 1)[1]
+    return model

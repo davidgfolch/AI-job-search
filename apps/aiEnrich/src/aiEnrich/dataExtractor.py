@@ -15,7 +15,7 @@ from commonlib.ai_helpers import (
 )
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger
-from commonlib.aiEnrich_config import (
+from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
     get_backend, get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model,
 )
@@ -144,24 +144,10 @@ def _process_job_safe(
             model = get_openrouter_model() if backend == "openrouter" else get_model()
             logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx, backend=backend, model=model)
             prompt = PROMPT_TEMPLATE.format(markdown=f"# {title} \n {markdown}")
-            if get_backend() == "openrouter":
-                raw = query_openrouter(
-                    prompt=prompt,
-                    model=get_openrouter_model(),
-                    base_url=get_openrouter_base_url(),
-                    timeout=get_timeout_job(),
-                    json_mode=False,
-                    fallback_model=get_openrouter_fallback_model(),
-                )
+            if backend == "openrouter":
+                raw = query_openrouter(prompt=prompt, model=model, base_url=get_openrouter_base_url(), timeout=get_timeout_job(), json_mode=False, fallback_model=get_openrouter_fallback_model())
             else:
-                raw = query_ollama(
-                    prompt=prompt,
-                    model=get_model(),
-                    primary_url=_get_ollama_base_url(),
-                    timeout=get_timeout_job(),
-                    json_mode=True,
-                    log=logger,
-                )
+                raw = query_ollama(prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True, log=logger)
             if raw is None:
                 logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
             else:
