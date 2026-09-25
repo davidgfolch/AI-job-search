@@ -62,6 +62,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       start_period: 15s
@@ -150,6 +154,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
 
   # AI Enrichment New - Hugging Face Local Models
   aienrichnew:
@@ -220,6 +228,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
 
   # AI CV Matcher - Local CV Matching extracted from AiEnrichNew
   aicvmatcher:
@@ -399,6 +411,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
     profiles:
       - scrapper # Optional service, enable with --profile scrapper
     # Note: Scrapper runs as a batch job, not a long-running service
