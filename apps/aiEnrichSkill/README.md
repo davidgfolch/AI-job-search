@@ -46,6 +46,8 @@ Set these in your `.env` or `.env.secrets`:
 - `AI_ENRICHSKILL_NUM_CTX` — Context window sent to Ollama per request (default: auto-bucketed from prompt length, capped at `32768`)
 - `AI_ENRICHSKILL_REPEAT_PENALTY` — Repetition penalty for Ollama (default: `1.3`, higher than server default `1.1` to avoid degenerate loops)
 
+The three knobs above are shared with `aiEnrich` through `commonlib/ollama_config.py` and are not module-scoped: the first one set in `AI_ENRICH_*` → `AI_ENRICHSKILL_*` order wins, so an `AI_ENRICH_NUM_CTX` in `.env` also applies here.
+
 Pull the default model before running:
 
 Non-dockerized (local Ollama server):
