@@ -102,10 +102,14 @@ services:
     networks:
       - ai-job-search
 
-  # Ollama - LLM Service for AI Enrichment
+  # Ollama - LLM Service for AI Enrichment. Opt-in via `--profile ollama`; the workers
+  # auto-detect a host-installed Ollama through the shared fallback chain, so the container
+  # is only needed when you want Ollama itself containerized.
   ollama:
     image: ollama/ollama:latest
     container_name: ai-job-search-ollama
+    profiles:
+      - ollama
     restart: unless-stopped
     ports:
       - "11434:11434"
@@ -146,8 +150,6 @@ services:
       - HEALTHCHECK_BACKEND=${AI_ENRICH_BACKEND:-ollama}
     depends_on:
       mysql_db:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "/app/apps/aiEnrich/.venv/bin/python", "/app/healthcheck.py" ]
@@ -403,8 +405,6 @@ services:
       - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mysql_db:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
