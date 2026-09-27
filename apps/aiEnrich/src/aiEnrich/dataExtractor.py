@@ -2,7 +2,6 @@ import sys
 import time
 import traceback
 
-from commonlib.json_helpers import rawToJson
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.ai_helpers import (
@@ -17,35 +16,25 @@ from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger
 from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
-    get_backend, get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model,
+    get_max_validation_retries, get_backend, get_openrouter_base_url, get_openrouter_model,
+    get_openrouter_fallback_model,
 )
 from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.ollama_client import query_ollama, resolve_ollama_url
+from .extraction_contract import EXTRACTION_SCHEMA, query_and_parse
 from .openrouter_client import query_openrouter, ping_openrouter
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
 
 PROMPT_TEMPLATE = """Analyze the following job offer and extract structured information.
+Return only one valid JSON object with exactly these fields: required_technologies, optional_technologies, salary, and modality.
+Both technology fields must be JSON arrays of non-empty strings; use an empty array when none are stated.
+Salary must be a string or null. Modality must be exactly REMOTE, HYBRID, or ON_SITE.
+Do not include markdown, explanations, nested objects, or any other fields.
 
 Job Offer:
-{markdown}
-
-Extract the following information:
-- Required technologies (comma-separated list)
-- Optional technologies (comma-separated list)
-- Salary information (if available)
-- Modality (must be exactly REMOTE, HYBRID, or ON_SITE)
-
-A valid JSON object with the extracted information. Include all fields even if empty.
-IMPORTANT: Use JSON ARRAYS for technology lists (e.g., ["technology1", "technology2"]). Do NOT use comma-separated strings inside quotes.
-The json output must have the following fields and structure:
-{{
-  "required_technologies": ["technology1", "technology2"],
-  "optional_technologies": ["technology3", "technology4"],
-  "salary": "...",
-  "modality": "..."
-}}"""
+{markdown}"""
 
 
 _resolved_ollama_url: str | None = None
@@ -53,6 +42,18 @@ _resolved_ollama_url: str | None = None
 
 def _get_ollama_base_url() -> str:
     return _resolved_ollama_url or get_ollama_base_url()
+
+
+def _query_job(prompt: str, backend: str, model: str):
+    if backend == "openrouter":
+        return query_openrouter(
+            prompt=prompt, model=model, base_url=get_openrouter_base_url(), timeout=get_timeout_job(), json_mode=False,
+            fallback_model=get_openrouter_fallback_model(),
+        )
+    return query_ollama(
+        prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True,
+        response_schema=EXTRACTION_SCHEMA, return_metadata=True, log=logger,
+    )
 
 
 def ping_backend() -> bool:
@@ -144,18 +145,20 @@ def _process_job_safe(
             model = get_openrouter_model() if backend == "openrouter" else get_model()
             logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx, backend=backend, model=model)
             prompt = PROMPT_TEMPLATE.format(markdown=f"# {title} \n {markdown}")
-            if backend == "openrouter":
-                raw = query_openrouter(prompt=prompt, model=model, base_url=get_openrouter_base_url(), timeout=get_timeout_job(), json_mode=False, fallback_model=get_openrouter_fallback_model())
-            else:
-                raw = query_ollama(prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True, log=logger)
-            if raw is None:
+            result, response = query_and_parse(
+                lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
+                max_attempts=get_max_validation_retries() + 1, log=logger,
+            )
+            if response is None:
                 logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
             else:
-                result = rawToJson(raw)
                 if result is not None:
                     _save(repo, id, result)
                     success = True
-                logger.info("job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend, model=model)
+                logger.info(
+                    "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
+                    model=model, done_reason=getattr(response, "done_reason", None),
+                )
         except (Exception, KeyboardInterrupt) as ex:
             _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:

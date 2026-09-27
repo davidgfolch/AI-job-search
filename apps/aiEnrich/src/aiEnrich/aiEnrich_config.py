@@ -26,6 +26,10 @@ def get_max_ollama_failures() -> int:
     return int(getEnv("AI_ENRICH_MAX_OLLAMA_FAILURES", "3"))
 
 
+def get_max_validation_retries() -> int:
+    return int(getEnv("AI_ENRICH_MAX_VALIDATION_RETRIES", "1"))
+
+
 def get_backend() -> str:
     return getEnv("AI_ENRICH_BACKEND", "ollama")
 
