@@ -13,8 +13,10 @@ from .baseNavigator import BaseNavigator
 
 CSS_SEL_LOGIN_USER = 'input[type=email]'
 CSS_SEL_LOGIN_PWD = 'input[type=password]'
-CSS_SEL_LOGIN_BUTTON = 'button[type=submit]'
-CSS_SEL_LOGIN_BUTTON_ES = 'button[type=button]'
+CSS_SEL_LOGIN_BUTTON = 'button[type=button]'  # login form is rendered twice, the submit is the last button of the last copy
+CSS_SEL_LOGIN_BUTTON_LEGACY = 'button[type=submit]'
+# "keep me signed in" is a custom ARIA toggle: classes are hashed, aria-label is localized, so match on role/aria-checked
+CSS_SEL_LOGIN_REMEMBER_ME = 'div[role=checkbox][aria-checked="true"]'
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
 CSS_SEL_MESSAGES_HIDE = 'aside#msg-overlay div.msg-overlay-bubble-header__controls button:last-child'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'section.artdeco-global-alert__body button:first-child'
@@ -66,21 +68,25 @@ class LinkedinNavigator(BaseNavigator):
             raise Exception('Login form elements not found')
         self.selenium.sendKeys(user_elms.pop(), user_email)
         self.selenium.sendKeys(pwd_elms.pop(), user_pwd)
-        try_or_warn(lambda: self.selenium.checkboxUnselect('div.remember_me__opt_in input'), 'Could not click on "remember me" checkbox')
+        self.uncheck_remember_me()
         self.loginSubmit()
-    
+
+    def uncheck_remember_me(self):
+        elms = self.selenium.getElms(CSS_SEL_LOGIN_REMEMBER_ME)
+        if not elms:
+            print(yellow('"Remember me" checkbox not found or already unchecked'))
+            return
+        try_or_warn(lambda: self.selenium.checkboxUnselect(elms.pop()), 'Could not uncheck "remember me" checkbox')
+
     @retry()
     def loginSubmit(self):
-        """Login in english is a button[type=submit], in spanish is a button[type=button]"""
-        try:
-            self.selenium.waitAndClick(CSS_SEL_LOGIN_BUTTON)
-        except Exception as e:
-            print(yellow('Could not click on login button'))
-            try:
-                self.selenium.waitAndClick(self.selenium.getElms(CSS_SEL_LOGIN_BUTTON_ES).pop())
-            except Exception as e:
-                print(yellow('Could not click on login button 2'))
-                raise e
+        """LinkedIn used to submit with button[type=submit], nowadays the whole form is a JS widget whose last button submits"""
+        for cssSel in (CSS_SEL_LOGIN_BUTTON_LEGACY, CSS_SEL_LOGIN_BUTTON):
+            elms = self.selenium.getElms(cssSel)
+            if elms:
+                self.selenium.waitAndClick(elms.pop())
+                return
+        raise Exception('Login submit button not found')
 
 
     def check_redirected_to_login(self, login_callback) -> bool:
