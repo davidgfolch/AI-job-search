@@ -14,9 +14,11 @@ class MockMysqlUtil:
         self.last_params = None
         
     def count(self, query):
+        self.last_query = query
         return self.count_result
         
     def fetchAll(self, query):
+        self.last_query = query
         return self.fetch_all_result
         
     def fetchOne(self, query, *args):
@@ -42,11 +44,13 @@ def test_count_pending_enrichment():
     mock_mysql, repo = mockRepo()
     mock_mysql.count_result = 5
     assert repo.count_pending_enrichment() == 5
+    assert "ai_enrich_error" in mock_mysql.last_query
 
 def test_get_pending_enrichment_ids():
     mock_mysql, repo = mockRepo()
     mock_mysql.fetch_all_result = [(1,), (2,)]
     assert repo.get_pending_enrichment_ids() == [1, 2]
+    assert "ai_enrich_error" in mock_mysql.last_query
 
 def test_get_job_to_enrich():
     mock_mysql, repo = mockRepo()
@@ -70,12 +74,14 @@ def test_update_enrichment():
     mock_mysql, repo = mockRepo()
     repo.update_enrichment(1, "100k", "python", "java", "REMOTE")
     assert mock_mysql.update_called
-    assert mock_mysql.last_params[-2] == "REMOTE"  # modality is 4th param (before id)
+    assert "COALESCE" in mock_mysql.last_query
+    assert mock_mysql.last_params[-2] == "REMOTE"
 
 def test_update_enrichment_error():
     mock_mysql, repo = mockRepo()
     repo.update_enrichment_error(1, "Error message", is_enrichment=True)
     assert "ai_enrich_error" in mock_mysql.last_query
+    assert mock_mysql.last_params["ai_enriched"] is False
     
     repo.update_enrichment_error(1, "Error", is_enrichment=False)
     assert "cv_match_percentage" in mock_mysql.last_query

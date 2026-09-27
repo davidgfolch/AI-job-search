@@ -12,6 +12,7 @@ class AiEnrichRepository:
         query = """SELECT count(id) 
                    FROM jobs
                    WHERE (ai_enriched IS NULL OR not ai_enriched) and
+                   (ai_enrich_error IS NULL OR ai_enrich_error = '') and
                    not (ignored or discarded or closed)
                    ORDER BY created desc"""
         return self.mysql.count(query)
@@ -20,6 +21,7 @@ class AiEnrichRepository:
         query = """SELECT id 
                    FROM jobs
                    WHERE (ai_enriched IS NULL OR not ai_enriched) and
+                   (ai_enrich_error IS NULL OR ai_enrich_error = '') and
                    not (ignored or discarded or closed)
                    ORDER BY created desc"""
         return [row[0] for row in self.mysql.fetchAll(query)]
@@ -28,7 +30,9 @@ class AiEnrichRepository:
         query = """
             SELECT id, title, markdown, company
             FROM jobs
-            WHERE id=%s and not ai_enriched and not (ignored or discarded or closed)
+            WHERE id=%s and (ai_enriched IS NULL OR not ai_enriched)
+            and (ai_enrich_error IS NULL OR ai_enrich_error = '')
+            and not (ignored or discarded or closed)
             ORDER BY created desc"""
         return self.mysql.fetchOne(query, id)
 
@@ -52,10 +56,10 @@ class AiEnrichRepository:
     def update_enrichment(self, id: int, salary, required_tech, optional_tech, modality):
         query = """
             UPDATE jobs SET
-                salary=%s,
-                required_technologies=%s,
-                optional_technologies=%s,
-                modality=%s,
+                salary=COALESCE(%s, salary),
+                required_technologies=COALESCE(%s, required_technologies),
+                optional_technologies=COALESCE(%s, optional_technologies),
+                modality=COALESCE(%s, modality),
                 ai_enriched=1,
                 ai_enrich_error=NULL
             WHERE id=%s"""
@@ -70,7 +74,7 @@ class AiEnrichRepository:
 
     def update_enrichment_error(self, id: int, error_msg: str, is_enrichment: bool):
         error_msg = error_msg[:MAX_AI_ENRICH_ERROR_LEN]
-        fields = {'ai_enrich_error': error_msg, 'ai_enriched': True} if is_enrichment else {'cv_match_percentage': -1}
+        fields = {'ai_enrich_error': error_msg, 'ai_enriched': False} if is_enrichment else {'cv_match_percentage': -1}
         query, params = updateFieldsQuery([id], fields)
         return self.mysql.executeAndCommit(query, params)
 
