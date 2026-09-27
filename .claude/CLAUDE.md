@@ -153,6 +153,7 @@ Before marking any task as complete, always verify:
 1. **No architecture violations**: Run architecture tests to ensure no files exceed 200 lines
 2. **Tests pass**: Ensure all related tests pass after changes
 3. **Lint/TypeScript clean**: Run linting and type checking commands
+4. **Docs synced**: Apply the change → docs map in `.claude/rules/documentation-update.md` and list the updated docs in your summary (or state that none were needed)
 
 ```bash
 # Quick check for architecture violations (always run before finishing)
@@ -182,6 +183,10 @@ docker-compose --profile ollama --profile aienrich up -d
 ./scripts/install.sh   # Linux/Mac
 .\scripts\install.bat  # Windows
 ```
+
+## Documentation Sync (mandatory, automatic)
+
+Documentation is updated in the same session as every plan implementation, feature, fix, refactor, config change, or dependency bump — never as a follow-up task, never only when the user asks. The rule lives in `.claude/rules/documentation-update.md` (change → docs map + definition-of-done checklist) and is reinforced by `.claude/hooks/docs-sync.py` and `.opencode/plugins/docs-sync.js`. Module behavior → `apps/<module>/README.md`; new module → root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`; env var → root `README.md`; compose change → `READMEs/DOCKER_DEV.md`; command change → `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md`; new host tool → `READMEs/README_INSTALL.md`; API/DB → `apps/backend/README.md`; UI flow → root `README.md`; CI → `READMEs/README_GITHUB.md`; skill/rule/hook/plugin → `READMEs/AGENTIC_SDLC.md`; plan → the plan file + `READMZs/TODO.md`.
 
 ## Skills
 

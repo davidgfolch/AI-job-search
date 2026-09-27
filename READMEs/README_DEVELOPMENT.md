@@ -29,6 +29,10 @@ Run specific app tests (single or multiple):
 
 Agent skills, rules, and workflows (including graphify and the dependabot agent) are documented in [AGENTIC_SDLC.md](AGENTIC_SDLC.md). All agent skills live under `.claude/skills/`.
 
+## Documentation Sync
+
+Documentation is part of the implementation: after every plan implementation, feature, fix, or config change, the affected docs are updated in the same session. The change → docs map and the definition-of-done checklist live in `.claude/rules/documentation-update.md` and are described in [AGENTIC_SDLC.md](AGENTIC_SDLC.md#documentation-sync-automatic-mandatory).
+
 ## Related Documentation
 
 - **Agentic SDLC**: [AGENTIC_SDLC.md](AGENTIC_SDLC.md)

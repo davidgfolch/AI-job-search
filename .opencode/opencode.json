@@ -11,6 +11,7 @@
   },
   "plugin": [
     ".opencode/plugins/graphify.js",
-    ".opencode/plugins/docker-build.js"
+    ".opencode/plugins/docker-build.js",
+    ".opencode/plugins/docs-sync.js"
   ]
 }

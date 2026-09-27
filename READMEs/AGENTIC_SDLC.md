@@ -9,7 +9,8 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 | Directory | Purpose |
 |-----------|---------|
 | `.claude/skills/` | Canonical home for all agent skills |
-| `.claude/rules/` | Shared rule files (e.g. `architecture-guidelines.md`) |
+| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `docker-build.md`, `documentation-update.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
+| `.claude/hooks/` | Claude Code `PreToolUse` hooks (`docker-build.py`, `docs-sync.py`) |
 | `.claude/CLAUDE.md` | Agent guidance for Claude Code (repo overview, build/test commands, code style, graphify rules) |
 | `.claude/settings.json` | Project-shared Claude Code settings (hooks) |
 | `.claude/settings.local.json` | Local Claude Code permissions (not committed) |
@@ -51,6 +52,24 @@ Rules:
 - If `graphify-out/wiki/index.md` exists, use it for broad navigation.
 - Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review.
 - After modifying code, run the wrapper `update` subcommand to keep the graph current (AST-only, no API cost).
+
+## Documentation Sync (automatic, mandatory)
+
+Documentation is updated **in the same session** as every plan implementation, feature, fix, refactor, config change, or dependency bump — it is never a follow-up task, and it is never left for the user to ask for.
+
+The workflow is defined once in `.claude/rules/documentation-update.md` (an always-on rule, loaded by opencode through `instructions` and by any harness that reads `.claude/rules/`), and it is reinforced automatically by:
+
+| Mechanism | Harness | What it does |
+|-----------|---------|--------------|
+| `.claude/rules/documentation-update.md` | all | Canonical rule: when the doc sync applies, the change → docs map, and the definition-of-done checklist |
+| `.claude/hooks/docs-sync.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit`) | Injects a reminder the first time a source/config file is edited in the session |
+| `.opencode/plugins/docs-sync.js` | opencode | Tracks source edits and prints the same reminder once on the next bash call |
+
+Every task ends with the same five steps: pick the doc-map rows that match the change, open each listed doc, fix only what became inaccurate, keep snippets copy-pasteable, and report the updated docs in the final summary (or state that none were needed).
+
+Rows of the map worth remembering: module behavior → `apps/<module>/README.md`; new/removed module → root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`; env var → root `README.md` (Settings); compose service/profile/port → `READMEs/DOCKER_DEV.md`; build/test/install command → `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md`; new host tool → `READMEs/README_INSTALL.md`; API/DB schema → `apps/backend/README.md`; user-facing UI → root `README.md` (Features/Screenshots); CI/Dependabot → `READMEs/README_GITHUB.md`; skill/rule/hook/plugin → this file plus the Skills lists; plan implementation → the plan file (`Status:` + outcome) and `READMZs/TODO.md`.
+
+`graphify-out/` is generated output: refresh it with the wrapper (`scripts\graphify\graphify.bat update .`) after code changes, but never hand-edit it and never count it as documentation.
 
 ## Dependabot PR workflow
 

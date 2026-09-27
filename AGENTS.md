@@ -217,6 +217,28 @@ Environment variables are split across two files:
 - **Closing braces/parens**: Keep on the same line as last content, not on their own line
 - **Method bodies**: Avoid extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`. Avoid empty lines inside method bodies.
 
+## Documentation Sync (mandatory, automatic)
+
+Documentation is part of the implementation, never a follow-up task. After **every** plan implementation, feature, fix, refactor, config change, or dependency bump, update the affected docs in the same session, before reporting the work as done. Never wait for the user to ask for it.
+
+The rule is defined once in `.claude/rules/documentation-update.md` (always-on, auto-loaded via `instructions` in `.opencode/opencode.json`) and reinforced by `.claude/hooks/docs-sync.py` (Claude Code) and `.opencode/plugins/docs-sync.js` (opencode). Change → docs map, in short:
+
+| Change | Docs to update |
+|--------|-----------------|
+| Behavior/feature/bug fix in `apps/<module>/` | `apps/<module>/README.md` |
+| New/renamed/removed module in `apps/` | root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/AGENTIC_SDLC.md` |
+| Env var added/renamed/removed | root `README.md` (Settings), affected `apps/<module>/README.md` |
+| Docker service, profile, port, volume | `READMEs/DOCKER_DEV.md`, root `README.md` (Docker Compose Profiles), `AGENTS.md` |
+| Build/test/install/run command | `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md` |
+| New host tool (Docker, `gh`, Ollama model) | `READMEs/README_INSTALL.md` |
+| Backend endpoint / DB schema | `apps/backend/README.md` |
+| User-visible UI flow | root `README.md` (Features, Screenshots) |
+| CI / Dependabot behavior | `READMEs/README_GITHUB.md` |
+| Agent skill/rule/hook/plugin | `READMEs/AGENTIC_SDLC.md`, `AGENTS.md` + `.claude/CLAUDE.md` (Skills) |
+| Plan implementation | the plan file (`Status:` + outcome), `READMZs/TODO.md` |
+
+Before reporting done: open every listed doc, fix only what the change made inaccurate, and list the updated docs in the final summary (or state that none were needed). `graphify-out/` is generated output — refresh it with the wrapper, never hand-edit it, and never count it as documentation.
+
 ## Skills
 
 Agent skills are located in `.claude/skills/`:
