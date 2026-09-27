@@ -124,19 +124,32 @@ The `docker-compose.yml` defines several service profiles to control which conta
 
 | Profile        | Services                          | Description                      |
 | -------------- | --------------------------------- | -------------------------------- |
-| _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
+| _(default)_    | `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
+| `ollama`       | `ollama`                          | Containerized Ollama server (opt-in; see [Ollama: host vs container](#ollama-host-vs-container)) |
 | `aienrich`     | `aienrich`                        | Ollama AI enrichment             |
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
 | `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
 
-**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`.
+**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`.
 Use `--profile` to run alternative AI enrichment services:
 
 ```bash
 docker-compose --profile aiEnrich3 up -d
 docker-compose --profile aiEnrichNew up -d
+```
+
+#### Ollama: host vs container
+
+The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) auto-detect the server at startup: they try the configured URL, then `host.docker.internal`, `localhost`, and finally the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`). No module hard-depends on the `ollama` container, so it is never started implicitly.
+
+```bash
+# Ollama already installed on the host (nothing extra to start)
+docker-compose --profile aienrich up -d aienrich
+
+# Ollama containerized as well
+docker-compose --profile ollama --profile aienrich up -d
 ```
 
 The **scrapper** runs as a batch job (not long-running). Start it manually:

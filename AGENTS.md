@@ -17,6 +17,16 @@ cp scripts/.env.secrets.example .env.secrets
 docker-compose up -d
 ```
 
+### Ollama: host vs container
+The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434` — first reachable wins, reused for the whole batch.
+```bash
+# Ollama on the host (nothing extra to start)
+docker-compose --profile aienrich up -d aienrich
+# Ollama containerized as well
+docker-compose --profile ollama --profile aienrich up -d
+```
+Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`, `scrapper`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
+
 ### Sandboxed Docker Verification (dependabot-agent)
 Brings a service up in an isolated `dependabot-test` project so the live `ai-job-search-*` stack and its data are never touched. Uses `docker-compose.test.override.yml` (renamed `-test` containers, remapped ports, data under `.docker-sandbox/`), and tears the sandbox down on exit.
 ```bash

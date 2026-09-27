@@ -170,7 +170,13 @@ cd apps/commonlib && poetry run pytest test/architecture_test.py
 
 ```bash
 # Full stack development
-docker-compose up -d  # MySQL, Backend, Web, aiEnrichNew
+docker-compose up -d  # MySQL, Backend, Web, aicvmatcher, aiformfiller
+
+# Ollama is opt-in (`--profile ollama`): the Ollama-backed modules auto-detect a
+# host-installed server via the fallback chain in commonlib/ollama_config.py, so
+# add the profile only when you want Ollama itself containerized.
+docker-compose --profile aienrich up -d aienrich
+docker-compose --profile ollama --profile aienrich up -d
 
 # Install all dependencies
 ./scripts/install.sh   # Linux/Mac
