@@ -6,6 +6,8 @@ candidates are tried automatically when the primary server is unreachable, so a
 down containerized Ollama transparently falls back to the host server.
 """
 import time
+from dataclasses import dataclass
+
 import requests
 
 from commonlib.observability import get_logger
@@ -14,6 +16,25 @@ from commonlib.ollama_config import (
 )
 
 logger = get_logger("commonlib.ollama_client")
+
+
+@dataclass(frozen=True)
+class OllamaResponse:
+    text: str
+    url: str
+    model: str = ""
+    done: bool = False
+    done_reason: str | None = None
+    total_duration: int | None = None
+    load_duration: int | None = None
+    prompt_eval_count: int | None = None
+    prompt_eval_duration: int | None = None
+    eval_count: int | None = None
+    eval_duration: int | None = None
+
+    @property
+    def truncated(self) -> bool:
+        return self.done_reason == "length"
 
 
 def _candidate_urls(primary_url: str | None) -> tuple[str, ...]:
@@ -48,7 +69,7 @@ def ping_ollama(primary_url: str | None = None, timeout: int = 5, *, log=None) -
     return resolve_ollama_url(primary_url=primary_url, timeout=timeout, log=log) is not None
 
 
-def _query_url(url: str, payload: dict, timeout: int, log) -> str | None:
+def _query_url(url: str, payload: dict, timeout: int, log) -> OllamaResponse | None:
     for attempt, delay in enumerate([0, 1, 3]):
         if attempt > 0:
             log.warning("ollama.retry", attempt=attempt, delay=delay, base_url=url)
@@ -56,8 +77,23 @@ def _query_url(url: str, payload: dict, timeout: int, log) -> str | None:
         try:
             resp = requests.post(f"{url.rstrip('/')}/api/generate", json=payload, timeout=timeout)
             resp.raise_for_status()
-            return resp.json().get("response", "")
-        except requests.exceptions.ReadTimeout as e:
+            body = resp.json()
+            if not isinstance(body, dict):
+                raise ValueError("Ollama response is not a JSON object")
+            return OllamaResponse(
+                text=body.get("response") or "",
+                url=url,
+                model=body.get("model") or payload.get("model", ""),
+                done=bool(body.get("done", False)),
+                done_reason=body.get("done_reason"),
+                total_duration=body.get("total_duration"),
+                load_duration=body.get("load_duration"),
+                prompt_eval_count=body.get("prompt_eval_count"),
+                prompt_eval_duration=body.get("prompt_eval_duration"),
+                eval_count=body.get("eval_count"),
+                eval_duration=body.get("eval_duration"),
+            )
+        except requests.exceptions.ReadTimeout:
             log.warning("ollama.timeout", base_url=url, timeout=timeout)
             return None
         except Exception as e:
@@ -72,10 +108,13 @@ def query_ollama(
     timeout: int = 90,
     json_mode: bool = True,
     *,
+    response_schema: dict | None = None,
+    return_metadata: bool = False,
     log=None,
-) -> str | None:
+) -> str | OllamaResponse | None:
     log = log or logger
     num_predict = get_num_predict()
+    num_ctx = get_num_ctx(prompt, num_predict)
     payload = {
         "model": strip_provider_prefix(model),
         "prompt": prompt,
@@ -83,17 +122,28 @@ def query_ollama(
         "options": {
             "temperature": 0,
             "num_predict": num_predict,
-            "num_ctx": get_num_ctx(prompt, num_predict),
+            "num_ctx": num_ctx,
             "repeat_penalty": get_repeat_penalty(),
         },
     }
     if json_mode:
-        payload["format"] = "json"
+        payload["format"] = response_schema or "json"
+    log.info("ollama.request", model=model, prompt_length=len(prompt), num_predict=num_predict, num_ctx=num_ctx, schema=response_schema is not None)
 
     for url in _candidate_urls(primary_url):
         result = _query_url(url, payload, timeout, log)
         if result is not None:
-            return result
+            log.info(
+                "ollama.response",
+                model=result.model,
+                base_url=result.url,
+                done=result.done,
+                done_reason=result.done_reason,
+                prompt_eval_count=result.prompt_eval_count,
+                eval_count=result.eval_count,
+                total_duration=result.total_duration,
+            )
+            return result if return_metadata else result.text
 
     log.error("ollama.failed", model=model)
     return None

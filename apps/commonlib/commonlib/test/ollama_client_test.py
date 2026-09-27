@@ -3,7 +3,7 @@ import requests
 from unittest.mock import MagicMock
 
 from commonlib.test.ollama_constants import OLLAMA_TEST_URL, OLLAMA_DOCKER_TEST_URL
-from commonlib.ollama_client import ping_ollama, query_ollama, resolve_ollama_url
+from commonlib.ollama_client import OllamaResponse, ping_ollama, query_ollama, resolve_ollama_url
 from commonlib.ollama_config import OLLAMA_HOST_FROM_DOCKER_BASE_URL
 
 POST = "commonlib.ollama_client.requests.post"
@@ -69,6 +69,24 @@ class TestQueryOllama:
     def test_json_mode_adds_format(self, post, single):
         query_ollama("prompt", json_mode=True)
         assert post.call_args[1]["json"]["format"] == "json"
+
+    def test_schema_and_metadata_are_returned(self, post, single):
+        post.return_value.json.return_value = {
+            "response": '{"ok": true}',
+            "model": "qwen2.5:3b",
+            "done": True,
+            "done_reason": "stop",
+            "prompt_eval_count": 12,
+            "eval_count": 3,
+        }
+        schema = {"type": "object"}
+        response = query_ollama("prompt", response_schema=schema, return_metadata=True)
+        assert post.call_args[1]["json"]["format"] == schema
+        assert isinstance(response, OllamaResponse)
+        assert response.text == '{"ok": true}'
+        assert response.done_reason == "stop"
+        assert response.prompt_eval_count == 12
+        assert response.eval_count == 3
 
     def test_empty_response_field(self, post, single):
         post.return_value.json.return_value = {}

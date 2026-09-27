@@ -12,7 +12,7 @@ This package provides utility modules for:
 - **System**: Power management utilities (`keep_system_awake.py`, `wake_timer.py`) to keep the system running during long scrap jobs.
 - **Terminal**: Console output coloring (`terminalColor.py`).
 - **Observability**: Structured logging via `structlog` (`observability.py`), runtime metrics collection (`services/metrics_collector.py`), and Prometheus text-format export (`prometheus_exporter.py` — converts the in-memory snapshot to `prometheus_client` format for the backend's `/metrics` endpoint).
-- **Ollama**: Centralized server URL config and fallback chain (`ollama_config.py`) plus the shared HTTP client (`ollama_client.py`) used by the Ollama-backed modules. `resolve_ollama_url()` returns the first reachable server (primary first, then `host.docker.internal`, `localhost`, and the containerized service), so a module resolves the server once and reuses it for `ping_ollama()`/`query_ollama()`.
+- **Ollama**: Centralized server URL config and fallback chain (`ollama_config.py`) plus the shared HTTP client (`ollama_client.py`) used by the Ollama-backed modules. `resolve_ollama_url()` returns the first reachable server (primary first, then `host.docker.internal`, `localhost`, and the containerized service), so a module resolves the server once and reuses it for `ping_ollama()`/`query_ollama()`. The request knobs (`get_num_predict()`, `get_num_ctx()`, `get_repeat_penalty()`) are shared by every Ollama-backed module and are not module-scoped: the first env var set in `AI_ENRICH_*` → `AI_ENRICHSKILL_*` order wins, so setting e.g. `AI_ENRICH_NUM_CTX` also applies to `aiEnrichSkill`.
 
 ## MySQL connection
 
