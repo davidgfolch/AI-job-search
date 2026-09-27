@@ -1,5 +1,7 @@
 import re
 
+UNSPECIFIED_COMPANY = 'unspecified'
+
 _SUFFIXES = {
     "inc", "llc", "ltd",
     "sa", "sl", "s.l.", "s.a.", "s.r.l.",
@@ -17,3 +19,10 @@ def normalize_company_name(name: str | None) -> str:
     name = re.sub(r'[^a-z0-9\s]', '', name)
     name = re.sub(r'\s+', ' ', name).strip()
     return name
+
+
+def is_unspecified_company(company: str | None) -> bool:
+    """True when the company is missing or holds the generic UNSPECIFIED_COMPANY sentinel."""
+    if company is None:
+        return True
+    return not company.strip() or company.strip().lower() == UNSPECIFIED_COMPANY

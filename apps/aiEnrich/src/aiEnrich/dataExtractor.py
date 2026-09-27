@@ -23,6 +23,7 @@ from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.ollama_client import query_ollama, resolve_ollama_url
 from .extraction_contract import EXTRACTION_SCHEMA, query_and_parse
 from .openrouter_client import query_openrouter, ping_openrouter
+from .companyExtractor import resolve_unspecified_company
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
@@ -155,6 +156,7 @@ def _process_job_safe(
                 if result is not None:
                     _save(repo, id, result)
                     success = True
+                    resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_job(p, backend, model), log=logger)
                 logger.info(
                     "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
                     model=model, done_reason=getattr(response, "done_reason", None),

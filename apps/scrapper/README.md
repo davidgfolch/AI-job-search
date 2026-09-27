@@ -19,7 +19,7 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 
 - **LinkedIn**: Works fine. Careful with rate limits.
 - **Infojobs**: Works fine.
-- **Tecnoempleo**: Works fine.
+- **Tecnoempleo**: Works fine. Some offers are published without company, they are stored with the company set to `unspecified` instead of being discarded, and the company is inferred later by `aiEnrich` (see [aiEnrich README](../aiEnrich/README.md)). While the company is unspecified the job is not linked to a duplicate; the duplicate check runs again once the company is known.
 - **Glassdoor**: Prone to strict bot detection. Uses Indeed OTP login (email+code via Gmail IMAP). `SCRAPPER_GLASSDOOR_EMAIL` is not used — GlassdoorAuthenticator reads `SCRAPPER_INDEED_EMAIL` instead.
 - **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login.
 

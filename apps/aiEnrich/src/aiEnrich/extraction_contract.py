@@ -2,6 +2,7 @@ import json
 from typing import Any, Callable
 
 from commonlib.ai_helpers import VALID_MODALITIES
+from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 
 
 class ExtractionValidationError(ValueError):
@@ -19,6 +20,17 @@ EXTRACTION_SCHEMA = {
     "required": ["required_technologies", "optional_technologies", "salary", "modality"],
     "additionalProperties": False,
 }
+
+COMPANY_SCHEMA = {
+    "type": "object",
+    "properties": {"company": {"type": ["string", "null"]}},
+    "required": ["company"],
+    "additionalProperties": False,
+}
+
+MAX_COMPANY_LEN = 100
+_UNKNOWN_COMPANIES = {UNSPECIFIED_COMPANY, "unknown", "n/a", "na", "none", "null", "not specified", "not informed",
+                      "no informado", "sin empresa", "empresa", "company", "the company"}
 
 _TECHNOLOGY_FIELDS = ("required_technologies", "optional_technologies")
 _REQUIRED_FIELDS = (*_TECHNOLOGY_FIELDS, "salary", "modality")
@@ -64,9 +76,33 @@ def parse_extraction_result(raw: str) -> dict[str, Any]:
     return validate_extraction_result(result)
 
 
-def query_and_parse(
-    query: Callable[[str], Any], prompt: str, max_attempts: int = 2, log=None
-) -> tuple[dict[str, Any] | None, Any]:
+def parse_company_result(raw: str) -> str | None:
+    """Parses a company guess, returning None when no company could be determined."""
+    if not isinstance(raw, str) or not raw.strip():
+        raise ExtractionValidationError("response is empty")
+    try:
+        result = json.loads(_strip_code_fence(raw.strip()))
+    except (TypeError, json.JSONDecodeError) as ex:
+        raise ExtractionValidationError(f"invalid JSON: {getattr(ex, 'msg', str(ex))}") from ex
+    if not isinstance(result, dict):
+        raise ExtractionValidationError("response must be a JSON object")
+    if "company" not in result:
+        raise ExtractionValidationError("missing fields: company")
+    company = result["company"]
+    if company is not None and not isinstance(company, str):
+        raise ExtractionValidationError("company must be a string or null")
+    if company is None:
+        return None
+    company = company.strip()
+    if not company or company.lower() in _UNKNOWN_COMPANIES:
+        return None
+    if len(company) > MAX_COMPANY_LEN:
+        raise ExtractionValidationError(f"company exceeds {MAX_COMPANY_LEN} characters")
+    return company
+
+
+def _query_retry(query: Callable[[str], Any], prompt: str, parse: Callable[[str], Any],
+                 max_attempts: int = 2, log=None) -> tuple[Any, Any]:
     attempts = max(1, max_attempts)
     for attempt in range(attempts):
         raw = query(prompt if attempt == 0 else f"{prompt}\n\nThe previous response was invalid. Return exactly one valid JSON object matching the requested structure.")
@@ -75,10 +111,22 @@ def query_and_parse(
         try:
             if getattr(raw, "done_reason", None) == "length":
                 raise ExtractionValidationError("response reached the output token limit")
-            return parse_extraction_result(getattr(raw, "text", raw)), raw
+            return parse(getattr(raw, "text", raw)), raw
         except ExtractionValidationError as ex:
             if attempt == attempts - 1:
                 raise
             if log:
                 log.warning("ai.structured_retry", attempt=attempt + 1, max_attempts=attempts, error=str(ex))
     return None, None
+
+
+def query_and_parse(
+    query: Callable[[str], Any], prompt: str, max_attempts: int = 2, log=None
+) -> tuple[dict[str, Any] | None, Any]:
+    return _query_retry(query, prompt, parse_extraction_result, max_attempts, log)
+
+
+def query_company(
+    query: Callable[[str], Any], prompt: str, max_attempts: int = 2, log=None
+) -> tuple[str | None, Any]:
+    return _query_retry(query, prompt, parse_company_result, max_attempts, log)

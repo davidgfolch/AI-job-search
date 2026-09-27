@@ -1,4 +1,5 @@
-from commonlib.company_normalizer import normalize_company_name
+import pytest
+from commonlib.company_normalizer import UNSPECIFIED_COMPANY, is_unspecified_company, normalize_company_name
 
 
 def test_empty_name():
@@ -21,3 +22,11 @@ def test_removes_special_chars():
 
 def test_collapses_spaces():
     assert normalize_company_name("  Tech   Corp  ") == "tech corp"
+
+@pytest.mark.parametrize("company", [None, "", "   ", "unspecified", "Unspecified", " UNSPECIFIED "])
+def test_is_unspecified_company(company):
+    assert is_unspecified_company(company) is True
+
+@pytest.mark.parametrize("company", ["Acme", "Joppy", "unspecified corp"])
+def test_is_not_unspecified_company(company):
+    assert is_unspecified_company(company) is False

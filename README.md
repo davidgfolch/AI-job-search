@@ -39,6 +39,7 @@ This is a monorepo containing several applications and packages:
 - UI to manage job offers (& skills)
 - AI enrichment of job offers (salary, skills, work modality)
 - AI enrichment of skills
+- AI enrichment of the company when a job board publishes the offer without one (stored as `unspecified` until inferred)
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
 - **Observability**: Structured logging + Prometheus metrics via `commonlib`; scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
