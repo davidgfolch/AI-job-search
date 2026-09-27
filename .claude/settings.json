@@ -6,11 +6,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/graphify-reminder.py"
-          },
+            "command": "python .claude/hooks/docker-build.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/docker-build.py"
+            "command": "graphify hook-guard search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-guard read",
+            "timeout": 10
           }
         ]
       }
