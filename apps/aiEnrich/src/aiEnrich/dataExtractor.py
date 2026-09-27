@@ -21,22 +21,12 @@ from .aiEnrich_config import (
 )
 from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.ollama_client import query_ollama, resolve_ollama_url
-from .extraction_contract import EXTRACTION_SCHEMA, query_and_parse
+from .extraction_contract import COMPANY_SCHEMA, EXTRACTION_SCHEMA, build_extraction_prompt, query_and_parse
 from .openrouter_client import query_openrouter, ping_openrouter
 from .companyExtractor import resolve_unspecified_company
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
-
-PROMPT_TEMPLATE = """Analyze the following job offer and extract structured information.
-Return only one valid JSON object with exactly these fields: required_technologies, optional_technologies, salary, and modality.
-Both technology fields must be JSON arrays of non-empty strings; use an empty array when none are stated.
-Salary must be a string or null. Modality must be exactly REMOTE, HYBRID, or ON_SITE.
-Do not include markdown, explanations, nested objects, or any other fields.
-
-Job Offer:
-{markdown}"""
-
 
 _resolved_ollama_url: str | None = None
 
@@ -45,7 +35,7 @@ def _get_ollama_base_url() -> str:
     return _resolved_ollama_url or get_ollama_base_url()
 
 
-def _query_job(prompt: str, backend: str, model: str):
+def _query_job(prompt: str, backend: str, model: str, response_schema: dict | None = None):
     if backend == "openrouter":
         return query_openrouter(
             prompt=prompt, model=model, base_url=get_openrouter_base_url(), timeout=get_timeout_job(), json_mode=False,
@@ -53,8 +43,17 @@ def _query_job(prompt: str, backend: str, model: str):
         )
     return query_ollama(
         prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True,
-        response_schema=EXTRACTION_SCHEMA, return_metadata=True, log=logger,
+        response_schema=response_schema or EXTRACTION_SCHEMA, return_metadata=True, log=logger,
     )
+
+
+def _query_company(prompt: str, backend: str, model: str):
+    """Company-only request, constrained with COMPANY_SCHEMA.
+
+    EXTRACTION_SCHEMA must never be reused here: Ollama grammar-constrains the reply to it and its
+    additionalProperties=false forbids `company`, so every response failed with "missing fields: company".
+    """
+    return _query_job(prompt, backend, model, COMPANY_SCHEMA)
 
 
 def ping_backend() -> bool:
@@ -145,7 +144,7 @@ def _process_job_safe(
             backend = get_backend()
             model = get_openrouter_model() if backend == "openrouter" else get_model()
             logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx, backend=backend, model=model)
-            prompt = PROMPT_TEMPLATE.format(markdown=f"# {title} \n {markdown}")
+            prompt = build_extraction_prompt(title, markdown)
             result, response = query_and_parse(
                 lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
                 max_attempts=get_max_validation_retries() + 1, log=logger,
@@ -156,7 +155,7 @@ def _process_job_safe(
                 if result is not None:
                     _save(repo, id, result)
                     success = True
-                    resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_job(p, backend, model), log=logger)
+                    resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
                 logger.info(
                     "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
                     model=model, done_reason=getattr(response, "done_reason", None),

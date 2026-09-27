@@ -35,6 +35,19 @@ _UNKNOWN_COMPANIES = {UNSPECIFIED_COMPANY, "unknown", "n/a", "na", "none", "null
 _TECHNOLOGY_FIELDS = ("required_technologies", "optional_technologies")
 _REQUIRED_FIELDS = (*_TECHNOLOGY_FIELDS, "salary", "modality")
 
+EXTRACTION_PROMPT = """Analyze the following job offer and extract structured information.
+Return only one valid JSON object with exactly these fields: required_technologies, optional_technologies, salary, and modality.
+Both technology fields must be JSON arrays of non-empty strings; use an empty array when none are stated.
+Salary must be a string or null. Modality must be exactly REMOTE, HYBRID, or ON_SITE.
+Do not include markdown, explanations, nested objects, or any other fields.
+
+Job Offer:
+{markdown}"""
+
+
+def build_extraction_prompt(title: str, markdown: str) -> str:
+    return EXTRACTION_PROMPT.format(markdown=f"# {title} \n {markdown}")
+
 
 def _strip_code_fence(value: str) -> str:
     if not value.startswith("```") or not value.endswith("```"):
