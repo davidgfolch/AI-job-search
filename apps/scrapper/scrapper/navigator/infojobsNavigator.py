@@ -1,11 +1,13 @@
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry
-from commonlib.terminalColor import green, yellow, printHR
-from commonlib.stringUtil import join
+from commonlib.observability import get_logger
+from commonlib.terminalColor import yellow
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 from .baseNavigator import BaseNavigator
+
+logger = get_logger("scrapper.infojobsNavigator")
 
 LOGIN_PAGE = 'https://www.infojobs.net/candidate/candidate-login/candidate-login.xhtml'
 
@@ -57,14 +59,12 @@ class InfojobsNavigator(BaseNavigator):
         try:
             self.accept_cookies()
         except NoSuchElementException:
-            print(yellow('Could not accept cookies'))
+            logger.warning("infojobs.cookies.not_accepted")
         self.selenium.waitUntilPageUrlContains('https://www.infojobs.net', 60)
 
     def get_total_results(self, keywords: str) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-        printHR()
-        print(green(join(f'{total} total results for search: {keywords}')))
-        printHR()
+        logger.info("infojobs.results_found", total=total, keywords=keywords)
         return int(total.replace(',', ''))
 
     def scroll_to_bottom(self):
@@ -82,10 +82,10 @@ class InfojobsNavigator(BaseNavigator):
 
     def load_search_page(self):
         if self.selenium.getUrl().find('infojobs.net') == -1:
-            print(f'Loading search-jobs page')
+            logger.debug("infojobs.search.page_loading")
             self.selenium.loadPage('https://www.infojobs.net/')
             self.selenium.waitUntilPageIsLoaded()
-        print(f'Click on search-jobs button')
+        logger.debug("infojobs.search.button_click")
         self.click_on_search_jobs()
 
     @retry(retries=10, delay=5, exceptionFnc=lambda self, *args, **kwargs: self.security_filter())
@@ -96,13 +96,13 @@ class InfojobsNavigator(BaseNavigator):
         self.selenium.waitUntilPageIsLoaded()
 
     def waitForSecurityFilterUserResolved(self):
-        print(yellow(f'Waiting for security filter to be resolved'))
-        
+        logger.warning("infojobs.auth.security_filter_pending")
+
     @retry(retries=50, delay=2, exceptionFnc=lambda self, *args, **kwargs: self.waitForSecurityFilterUserResolved())
     def load_filtered_search_results(self, keywords: str):
         self.click_on_search_jobs()
         if not self.selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2), clear=True):
-            print(yellow('Could not set search keyword, reloading search page'))
+            logger.warning("infojobs.search.keyword_set_failed", keywords=keywords)
             self.click_on_search_jobs(forcePageLoad=True)
             self.selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2))
         sleep(0.5, 1)
@@ -113,9 +113,7 @@ class InfojobsNavigator(BaseNavigator):
         self.selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
         sleep(1, 2)
         if self.selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
-            print(yellow(f'No results for keyword={keywords}'))
-            printHR()
-            print()
+            logger.info("infojobs.no_results", keywords=keywords)
             return False
         self.filterByRemote()
         return True

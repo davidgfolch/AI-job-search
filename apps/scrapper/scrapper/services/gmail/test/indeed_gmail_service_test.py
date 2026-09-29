@@ -62,3 +62,15 @@ class TestIndeedGmailService:
         service.email_reader.get_latest_verification_code.side_effect = Exception("generic error")
         with pytest.raises(GmailConnectionError):
             service.get_indeed_verification_code_from_latest_email()
+
+    def test_get_verification_code_logs_length_never_code(self):
+        from scrapper.services.gmail.indeed_gmail_service import IndeedGmailService
+        service = IndeedGmailService(email="test@gmail.com", app_password="pass")
+        service._is_connected = True
+        service.email_reader = MagicMock()
+        service.email_reader.get_latest_verification_code.return_value = "654321"
+        with patch('scrapper.services.gmail.indeed_gmail_service.logger') as log:
+            service.get_indeed_verification_code_from_latest_email(timeout=120)
+        log.info.assert_any_call('indeed.otp.waiting', timeout=120)
+        log.info.assert_any_call('indeed.otp.received', code_length=6)
+        assert not any('654321' in str(c) for c in log.info.call_args_list)

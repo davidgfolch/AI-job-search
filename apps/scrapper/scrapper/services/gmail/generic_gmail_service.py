@@ -1,7 +1,7 @@
 import time
 from typing import Optional
 from commonlib.environmentUtil import getEnv
-from commonlib.terminalColor import green, yellow
+from commonlib.observability import get_logger
 from .email_reader import EmailReader
 from .email_exceptions import (
     GmailConnectionError,
@@ -9,6 +9,8 @@ from .email_exceptions import (
     VerificationCodeExtractionError,
     GmailTimeoutError,
 )
+
+logger = get_logger("scrapper.generic_gmail_service")
 
 
 class GmailService:
@@ -26,10 +28,10 @@ class GmailService:
             self.email_reader = EmailReader(self.email, self.app_password)
             self.email_reader.connect()
             self._is_connected = True
-            print(green("Gmail service connected successfully"))
+            logger.info("gmail.connected", has_credentials=True)
             return True
         except Exception as e:
-            print(yellow(f"Failed to connect Gmail service: {e}"))
+            logger.error("gmail.connect_failed", error=str(e))
             return False
 
     def wait_for_verification_code(self, sender_filter: str, timeout: int = 120) -> str:
@@ -37,11 +39,11 @@ class GmailService:
             if not self._is_connected:
                 if not self.connect():
                     raise GmailConnectionError("Failed to connect to Gmail")
-            print(f"Waiting for verification code from {sender_filter}...")
+            logger.info("gmail.code_wait_started", timeout=timeout, sender_present=bool(sender_filter))
             code = self.email_reader.get_latest_verification_code(
                 sender_filter, timeout
             )
-            print(green(f"Verification code received: {code}"))
+            logger.info("gmail.code_received", code_length=len(code))
             return code
         except GmailConnectionError:
             raise
@@ -64,9 +66,9 @@ class GmailService:
             if self.email_reader:
                 self.email_reader.close()
                 self._is_connected = False
-                print("Gmail connection closed")
+                logger.info("gmail.closed")
         except Exception as e:
-            print(yellow(f"Error closing Gmail connection: {e}"))
+            logger.error("gmail.close_failed", error=str(e))
 
     def __enter__(self):
         """Context manager entry"""

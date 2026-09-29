@@ -19,18 +19,26 @@ def test_get_env_settings(mock_get_all):
 ], ids=["update_existing", "add_new"])
 @patch("services.settings_service.getEnvAll", return_value=ENV_DATA)
 @patch("services.settings_service.setEnv")
-def test_update_env_setting(mock_set, mock_get_all, key, value):
+def test_update_env_setting(mock_set, mock_get_all, key, value, log_records):
     result = settings_service.update_env_setting(key, value)
     mock_set.assert_called_once_with(key, value)
     assert result == ENV_DATA
+    records = log_records(event="settings.updated")
+    assert [record["level"] for record in records] == ["info"]
+    assert records[0]["key"] == key
+    assert records[0]["count"] == 1
+    assert value not in records[0].values()
 
 
 @patch("services.settings_service.getEnvAll", return_value=ENV_DATA)
-def test_update_env_settings_bulk(mock_get_all):
+def test_update_env_settings_bulk(mock_get_all, log_records):
     updates = {"KEY_A": "x", "KEY_B": "y"}
     with patch("commonlib.environmentUtil.setEnvBulk") as mock_bulk:
         result = settings_service.update_env_settings_bulk(updates)
         assert result == ENV_DATA
+    records = log_records(event="settings.updated")
+    assert [record["count"] for record in records] == [2]
+    assert all(update not in record.values() for record in records for update in updates.values())
 
 
 @patch("services.settings_service._repo")
@@ -41,10 +49,15 @@ def test_get_scrapper_state_returns_state(mock_repo):
 
 
 @patch("services.settings_service._repo")
-def test_get_scrapper_state_returns_empty_on_error(mock_repo):
+def test_get_scrapper_state_returns_empty_on_error(mock_repo, log_records):
     mock_repo.get_all.side_effect = Exception("DB error")
     result = settings_service.get_scrapper_state()
     assert result == {}
+    records = log_records(event="scrapper_state.read_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "error"
+    assert records[0]["error"] == "DB error"
+    assert "Exception" in records[0]["exception"]
 
 
 @patch("services.settings_service._repo")
@@ -53,3 +66,15 @@ def test_update_scrapper_state(mock_repo):
     result = settings_service.update_scrapper_state(STATE_DATA)
     assert result == STATE_DATA
     mock_repo.replace_all.assert_called_once_with(STATE_DATA)
+
+
+@patch("services.settings_service._repo")
+def test_update_scrapper_state_returns_input_on_error(mock_repo, log_records):
+    mock_repo.replace_all.side_effect = Exception("DB error")
+    result = settings_service.update_scrapper_state(STATE_DATA)
+    assert result == STATE_DATA
+    records = log_records(event="scrapper_state.write_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "error"
+    assert records[0]["error"] == "DB error"
+    assert "Exception" in records[0]["exception"]

@@ -2,6 +2,9 @@ import statistics
 import time
 
 from .terminalColor import yellow
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.stopWatch")
 
 
 class StopWatch:
@@ -21,4 +24,4 @@ class StopWatch:
         end = time.time()
         timeElapsed = end-self.startTime
         self.times.append(timeElapsed)
-        print(f'Time elapsed: {timeElapsed:.2f} secs. (Media: {statistics.median(self.times):.2f})')
+        logger.info("timer.elapsed", elapsed_secs=round(timeElapsed, 2), median_secs=round(statistics.median(self.times), 2), samples=len(self.times))

@@ -1,6 +1,5 @@
 import sys
 import time
-import traceback
 
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
@@ -179,7 +178,7 @@ def _save(repo: AiEnrichRepository, id, result: dict):
 
 
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):
-    logger.error("job.failed", job_id=id, title=title, company=company, error=str(ex), traceback=traceback.format_exc())
+    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex))
     jobErrors.add((id, f"{title} - {company}: {ex}"))
     prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
     error_msg = f"{prefix}{ex}"

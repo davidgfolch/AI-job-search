@@ -7,10 +7,12 @@ import undetected_chromedriver as uc
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
-from commonlib.terminalColor import yellow
+from commonlib.observability import get_logger
 from commonlib.environmentUtil import getEnvBool
 from commonlib.systemUtil import isWindowsOS
 from .stealthScripts import STEALTH_SCRIPTS_JS
+
+logger = get_logger("scrapper.driverUtil")
 
 # Rotating User-Agents to avoid Cloudflare security filter
 DESKTOP_USER_AGENTS = list(filter(lambda line: len(line) > 0 and not line.startswith('#'), """
@@ -39,21 +41,21 @@ class DriverUtil:
 
     def __init__(self, browser: str = 'chrome'):
         self.browser = browser
-        print(f'seleniumUtil init (browser={self.browser})')
+        logger.info("driver.starting", browser=self.browser)
         if self.browser == 'firefox':
             self._init_firefox()
         else:
             self._init_chrome()
-        print(f'seleniumUtil init driver={self.driver}')
+        logger.info("driver.ready", browser=self.browser, driver_type=type(self.driver).__name__)
 
     def _init_chrome(self):
         self.useUndetected = getEnvBool('SCRAPPER_USE_UNDETECTED_CHROMEDRIVER', False)
-        print(f'seleniumUtil init (undetected={self.useUndetected})')
+        logger.debug("driver.undetected_configured", undetected=self.useUndetected)
         if self.useUndetected:
             chromePath = self._findChrome()
             if chromePath is not None:
                 version_main = self._getChromeVersion(chromePath)
-                print(f'Detected Chrome version: {version_main}')
+                logger.info("driver.chrome_version_detected", major_version=version_main)
                 if isWindowsOS():
                     opts = uc.ChromeOptions()
                     opts.add_argument('--disable-gpu')
@@ -74,7 +76,8 @@ class DriverUtil:
                     self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
                     self._set_window_size_and_position()
             else:
-                print(yellow('WARNING: undetected-chromedriver requires Chrome installed. Falling back to standard Selenium.'))
+                logger.warning("driver.undetected_unavailable", fallback="selenium",
+                               reason="undetected-chromedriver requires Chrome installed")
                 self.useUndetected = False
         if not self.useUndetected:
             opts = webdriver.ChromeOptions()
@@ -152,7 +155,7 @@ class DriverUtil:
             if match:
                 return int(match.group(1))
         except Exception as e:
-            print(yellow(f'WARNING: Failed to detect Chrome version: {e}'))
+            logger.warning("driver.chrome_version_detection_failed", error=str(e))
         return 0
 
     def _apply_stealth_scripts(self):

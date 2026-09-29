@@ -1,3 +1,4 @@
+from commonlib.observability import get_logger
 from ...services.selenium.browser_service import sleep
 from ...services.gmail.indeed_gmail_service import IndeedGmailService
 from ...core import baseScrapper
@@ -20,6 +21,8 @@ CSS_SEL_WEBAUTHN_CONTINUE = "#pass-WebAuthn-continue-button"
 # COOKIE CONSENT
 CSS_SEL_COOKIE_ACCEPT = "#onetrust-accept-btn-handler, button[data-testid='accept-all'], .accept-cookies, [aria-label*='Accept' i]"
 
+logger = get_logger("scrapper.indeedAuthenticator")
+
 class IndeedAuthenticator:
     def __init__(self, selenium):
         self.selenium = selenium
@@ -32,29 +35,29 @@ class IndeedAuthenticator:
         return wait_for_cloudflare_filter(self.selenium, CSS_SEL_LOGIN_EMAIL)
 
     def login(self):
-        print("Navigating to Indeed login page...")
+        logger.info("indeed.auth.login_started")
         self.selenium.loadPage(LOGIN_PAGE)
         self.selenium.waitUntilPageIsLoaded()
         sleep(3, 3)
         self.waitForCloudflareFilterInLogin()
         if self.selenium.waitUntil_presenceLocatedElement_noError('#AccountMenu'):
             return
-        print("Filling login form...")
+        logger.debug("indeed.auth.form_filling")
         self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, self.USER_EMAIL)
         self.accept_cookies()
-        print("Submitting login form...")
+        logger.debug("indeed.auth.form_submitting")
         self.selenium.waitAndClick(CSS_SEL_LOGIN_SUBMIT)
-        print("Waiting for Cloudflare filter...")
+        logger.info("indeed.auth.cloudflare_waiting")
         sleep(5, 5)
         if not self.selenium.waitAndClick_noError(CSS_SEL_LOGIN_SUBMIT,
             "Could not resubmit login form after cloudflare filter...",
             showException=False):
             sleep(3, 3)
-        print("Handling Google OTP fallback...")
+        logger.debug("indeed.auth.otp_fallback_handling")
         self.click_google_otp_fallback()
-        print("Get email 2FA code...")
+        logger.info("indeed.auth.otp_retrieving")
         self.getEmail2faCode()
-        print("Ignore Access key form question")
+        logger.debug("indeed.auth.access_key_form_ignored")
         sleep(2, 3)
         self.ignore_access_key_form()
         sleep(2, 3)
@@ -68,6 +71,7 @@ class IndeedAuthenticator:
         sleep(5, 5)
         with IndeedGmailService() as gmail:
             code = gmail.wait_for_verification_code("login@indeed.com", 60)
+        logger.info("indeed.auth.otp_received", code_length=len(code))
         self.selenium.sendKeys(CSS_SEL_2FA_PASSCODE_INPUT, code)
         self.selenium.waitAndClick(CSS_SEL_2FA_VERIFY_SUBMIT)
         self.selenium.waitUntilPageIsLoaded()

@@ -1,11 +1,13 @@
-import json
 import re
 
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr, getTimeUnits
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
-from commonlib.terminalColor import green, red, yellow
+from commonlib.terminalColor import green
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.ai_helpers")
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 RETRY_ERROR_PREFIX = "RETRY ERROR: "
@@ -52,7 +54,7 @@ def validateResult(result: dict[str, str]):
         elif salary is not None and not isinstance(salary, str):
             salary = str(salary)
         if salary and re.match(r'^[^0-9]+$', salary):  # doesn't contain numbers
-            print(yellow(f'Removing no numbers salary: {salary}'))
+            logger.warning("ai.invalid_salary", reason="no_numbers", salary=salary)
             result.update({'salary': None})
         elif salary:
             regex = r'^(sueldo|salarios?|\(?según experiencia\)?)[: ]+(.+)'
@@ -66,10 +68,10 @@ def validateResult(result: dict[str, str]):
         try:
             match_value = int(cv_match)
             if match_value < 0 or match_value > 100:
-                print(yellow(f'Invalid cv_match_percentage: {cv_match}, setting to None'))
+                logger.warning("ai.invalid_cv_match", reason="out_of_range", cv_match_percentage=cv_match)
                 result.update({'cv_match_percentage': None})
         except (ValueError, TypeError):
-            print(yellow(f'Invalid cv_match_percentage format: {cv_match}, setting to None'))
+            logger.warning("ai.invalid_cv_match", reason="not_a_number", cv_match_percentage=cv_match)
             result.update({'cv_match_percentage': None})
 
 
@@ -113,11 +115,12 @@ def listsToString(result: dict[str, str], fields: list[str]):
 
 
 def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):
-    msg = f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {totalCount}'
+    fields = dict(processed=idx + 1, total=total, total_processed=totalCount, job_errors=len(jobErrors))
     if elapsed_time is not None and (idx + 1) > 0:
         media = elapsed_time / (idx + 1)
-        msg += f', Time elapsed: {getTimeUnits(elapsed_time)} (Media: {getTimeUnits(media)}/job)'
-    print(yellow(msg), red(f'  Total job errors: {len(jobErrors)}') if jobErrors else '', end='\n')
+        fields['elapsed'] = getTimeUnits(elapsed_time)
+        fields['elapsed_per_job'] = getTimeUnits(media)
+    logger.info("ai.batch_completed", **fields)
 
 
 def combineTaskResults(crewOutput, debug) -> dict:
@@ -130,7 +133,7 @@ def combineTaskResults(crewOutput, debug) -> dict:
     mainResult = rawToJson(raw)
     if mainResult:
         if debug:
-            print(yellow(f'Main result: {json.dumps(mainResult, indent=2)}'))
+            logger.debug("ai.main_result", result=mainResult)
         result.update(mainResult)
     # Process individual task results if available
     tasks_output = getattr(crewOutput, 'tasks_output', None)
@@ -140,7 +143,7 @@ def combineTaskResults(crewOutput, debug) -> dict:
             taskResult = rawToJson(task_raw)
             if taskResult:
                 if debug:
-                    print(yellow(f'Task {task_idx} result: {json.dumps(taskResult, indent=2)}'))
+                    logger.debug("ai.task_result", task_index=task_idx, result=taskResult)
                 for key, value in taskResult.items():
                     allowed = ["required_technologies", "optional_technologies", "salary", "modality", "experience_level", "responsibilities", "cv_match_percentage"]
                     if key in allowed and (key not in result or result[key] is None) and value is not None:

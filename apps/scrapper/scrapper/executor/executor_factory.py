@@ -1,7 +1,10 @@
-from commonlib.terminalColor import cyan
+from urllib.parse import urlsplit
+from commonlib.observability import get_logger
 from ..core.scrapper_config import SCRAPPERS, get_debug
 from ..util.persistence_manager import PersistenceManager
 from ..services.selenium.seleniumService import SeleniumService
+
+logger = get_logger("scrapper.executor_factory")
 
 def create_executor(name: str, selenium_service: SeleniumService, persistence_manager: PersistenceManager):
     """Factory method to create executor instances by name."""
@@ -33,7 +36,8 @@ def process_page_url(url: str):
     """Process a specific URL (only LinkedIn is currently supported)."""
     for name, _ in SCRAPPERS.items():
         if url.find(name.lower()) != -1:
-            print(cyan(f'Running scrapper for pageUrl: {url}'))
+            parsed = urlsplit(url)
+            logger.info("executor.page_url_requested", scrapper=name, url_host=parsed.netloc, url_path=parsed.path)
             from ..executor.LinkedinExecutor import LinkedinExecutor
             match name.lower():
                 case 'linkedin':

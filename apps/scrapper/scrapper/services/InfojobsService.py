@@ -2,10 +2,12 @@ import re
 from typing import Tuple
 from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
-from commonlib.terminalColor import green, cyan
+from commonlib.observability import get_logger
 from ..core.baseScrapper import htmlToMarkdown, validate, removeLinks, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
+
+logger = get_logger("scrapper.InfojobsService")
 
 REMOVE_IN_MARKDOWN = [
     "¿Te gusta esta oferta?",
@@ -25,15 +27,15 @@ class InfojobsService(BaseService):
             job_id = self.get_job_id(url)
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
-            
-            print(f'{job_id}, {title}, {cyan(company)}, {location} - ', end='')
-            
+
+            logger.debug("infojobs.job.scraped", job_id=job_id, title=title, company=company, location=location)
+
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)
                 if id := self.mysql.insert((job_id, title, company, location, None, url, md, None, self.web_page, duplicated_id)):
-                    print(green(f'INSERTED {id}!'), end='')
+                    logger.info("infojobs.job.inserted", job_id=job_id, insert_id=id)
                     if duplicated_id:
-                        print(cyan(f' DUPLICATED {duplicated_id}'), end="")
+                        logger.info("infojobs.job.duplicated", job_id=job_id, duplicated_id=duplicated_id)
                     return True
             else:
                 raise ValueError('Validation failed')

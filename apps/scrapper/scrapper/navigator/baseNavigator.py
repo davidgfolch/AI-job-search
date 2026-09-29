@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any, Tuple, Optional
-from commonlib.terminalColor import yellow
+from urllib.parse import urlsplit
+from commonlib.observability import get_logger
 from ..services.selenium.browser_service import sleep
 from ..core.utils import pageExists
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.scrapling.scraplingService import ScraplingService
+
+logger = get_logger("scrapper.baseNavigator")
 
 class BaseNavigator(ABC):
     def __init__(self, browser_service: SeleniumService | ScraplingService, debug: bool):
@@ -19,7 +22,8 @@ class BaseNavigator(ABC):
         self.selenium.back()
 
     def load_page(self, url: str):
-        print(f'Loading page {url}')
+        parsed = urlsplit(url)
+        logger.debug("page.loading", url_host=parsed.netloc, url_path=parsed.path)
         self.selenium.loadPage(url)
         self.selenium.waitUntilPageIsLoaded()
 
@@ -30,7 +34,7 @@ class BaseNavigator(ABC):
         """
         page = 1
         if start_page > 1 and pageExists(start_page, total_results, jobs_x_page):
-            print(yellow(f"Fast forwarding to page {start_page}..."))
+            logger.debug("page.fast_forwarding", start_page=start_page, total_results=total_results, jobs_x_page=jobs_x_page)
             while page < start_page:
                 if self.click_next_page():
                     page += 1

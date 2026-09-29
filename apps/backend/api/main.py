@@ -1,4 +1,5 @@
 from importlib.metadata import version as _v
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -14,10 +15,16 @@ from api import jobs_history
 from api import metrics
 from api import company_synonyms
 from api import dashboard
-from commonlib.terminalColor import cyan
+from commonlib.observability import configure_logging, get_logger
+from middleware.request_logging import RequestLoggingMiddleware
+
+configure_logging("backend")
+logger = get_logger("backend.api.main")
+
+logging.getLogger("uvicorn.access").disabled = True  # request timeline is emitted once, as http.request_completed
 
 app = FastAPI(title="AI Job Search API")
-print(cyan(f"Backend API v{_v('api')}"))
+logger.info("app.started", version=_v('api'))
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,6 +33,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 app.include_router(salary.router, prefix="/api/salary", tags=["salary"])

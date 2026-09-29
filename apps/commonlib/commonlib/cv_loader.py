@@ -1,8 +1,9 @@
-import traceback
 from pathlib import Path
 import pdfplumber
 import pandas as pd
-from commonlib.terminalColor import yellow, red, cyan
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.cv_loader")
 
 def extractTextFromPDF(pdf_path: str) -> str:
     all_text = []
@@ -31,47 +32,46 @@ class CVLoader:
             return True
             
         if not self.enabled:
-            print(yellow('AI_CVMATCHER_ENABLED disabled'))
+            logger.info("cv.load_skipped", reason="disabled", location=self.cv_location)
             return False
 
-        print(f'Loading CV from: {self.cv_location}')
+        logger.info("cv.load_started", location=self.cv_location)
         try:
             filePath = Path(self.cv_location)
             cvLocationTxt = self.cv_location.replace('.pdf', '.txt')
             filePathTxt = Path(cvLocationTxt)
             
             if not filePath.exists() and not filePathTxt.exists():
-                print(red(f'CV file not found: {self.cv_location}'))
+                logger.warning("cv.file_not_found", location=self.cv_location)
                 return False
                 
             fileExtension = filePath.suffix.lower()
             if fileExtension == '.pdf' and not filePathTxt.exists():
                 self.cv_content = extractTextFromPDF(self.cv_location)
-                print(f'CV (PDF) loaded from: {self.cv_location} ({len(self.cv_content)} chars)')
+                logger.info("cv.loaded", source="pdf", location=self.cv_location, chars=len(self.cv_content))
                 try:
                     with open(cvLocationTxt, 'w', encoding='utf-8') as mdFile:
                         mdFile.write(self.cv_content)
                 except Exception as e:
-                     print(yellow(f"Could not save cached TXT CV: {e}"))
+                     logger.warning("cv.cache_write_failed", location=cvLocationTxt, error=str(e))
             elif filePathTxt.exists():
                 with open(cvLocationTxt, 'r', encoding='utf-8') as f:
                     self.cv_content = f.read()
-                print(f'CV (text from PDF) loaded from: {cvLocationTxt} ({len(self.cv_content)} chars)')
+                logger.info("cv.loaded", source="pdf_text", location=cvLocationTxt, chars=len(self.cv_content))
             else:
-                print(yellow(f'Unsupported CV file format: {fileExtension}. Supported formats: .txt, .pdf'))
+                logger.warning("cv.unsupported_format", location=self.cv_location, extension=fileExtension, supported=['.txt', '.pdf'])
                 return False
                 
             if not self.cv_content or len(self.cv_content.strip()) == 0:
-                print(yellow('CV file is empty'))
+                logger.warning("cv.empty", location=cvLocationTxt)
                 return False
                 
             return True
         except FileNotFoundError:
-            print(red(f'CV file not found: {self.cv_location}'))
+            logger.warning("cv.file_not_found", location=self.cv_location)
             return False
         except Exception:
-            print(red(f'Error loading CV:'))
-            print(red(traceback.format_exc()))
+            logger.exception("cv.load_failed", location=self.cv_location)
             return False
 
     def get_content(self):

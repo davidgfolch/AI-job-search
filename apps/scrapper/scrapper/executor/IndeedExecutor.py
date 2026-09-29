@@ -1,5 +1,5 @@
 import math
-from commonlib.terminalColor import green, yellow, red
+from commonlib.observability import get_logger
 from commonlib.decorator.retry import retry
 from ..core import baseScrapper
 from ..core.utils import debug
@@ -8,6 +8,8 @@ from ..services.selenium.browser_service import sleep
 from ..navigator.indeedNavigator import IndeedNavigator
 from ..services.IndeedService import IndeedService
 from .BaseExecutor import BaseExecutor
+
+logger = get_logger("scrapper.IndeedExecutor")
 
 class IndeedExecutor(BaseExecutor):
 
@@ -30,13 +32,13 @@ class IndeedExecutor(BaseExecutor):
         self.navigator.wait_until_page_is_loaded()
         sleep(2,2)
         if self.navigator.checkNoResults():
-            print(yellow(f"No results for search={keyword}"))
+            logger.info("indeed.no_results", keyword=keyword)
             return False
         return True
 
     def _process_keyword(self, keyword: str, start_page: int):
         sleep(3,4)
-        print(f"Search keyword={keyword}")
+        logger.debug("indeed.search.started", keyword=keyword)
         self.navigator.search(keyword, self.location, self.remote, self.days_old, start_page)
         if not self._checkNoResults(keyword):
             return
@@ -56,14 +58,13 @@ class IndeedExecutor(BaseExecutor):
             idx = 0
             foundNewJobInPage = False
             while idx < self.jobs_x_page:
-                print(green(f"pg {page} job {idx + 1} - "), end="")
+                logger.debug("indeed.job.processing", page=page, idx=idx + 1)
                 if self._load_and_process_row(idx):
                     foundNewJobInPage = True
                 currentItem += 1
-                print()
                 idx += 1
             if not foundNewJobInPage and (page > start_page + 1 or (start_page < 2 and page > 2)):
-                print(yellow("No new jobs found in this page, stopping keyword processing."))
+                logger.info("indeed.pagination.no_new_jobs", keyword=keyword, page=page)
                 break
             if self.navigator.click_next_page():
                 self.navigator.wait_until_page_is_loaded()
@@ -87,19 +88,19 @@ class IndeedExecutor(BaseExecutor):
             initial_url = self.navigator.get_job_url(jobLinkElm)
             jobId, jobExists = self.service.job_exists_in_db(initial_url)
             if jobExists:
-                print(yellow(f"Job id={jobId} already exists in DB, IGNORED."), end="", flush=True)
+                logger.info("indeed.job.already_exists", job_id=jobId)
                 return False
             self.navigator.load_job_detail(jobLinkElm)
             sleep(2, 2)
             url = self.navigator.selenium.getUrl()
             ignore = False
         except IndexError as ex:
-            print(yellow(f"WARNING: could not get all items per page, that's expected because not always has {self.jobs_x_page} pages: {ex}"), end='')
+            logger.warning("indeed.page.items_truncated", jobs_x_page=self.jobs_x_page, error_type=type(ex).__name__)
         except Exception:
             debug(self.debug)
         if not ignore:
             if not self._process_row(url):
-                print(red("Validation failed"))
+                logger.error("indeed.job.validation_failed")
                 return self._load_and_process_row(idx)
             sleep(1, 2)
             return True

@@ -1,12 +1,14 @@
 import math
-from commonlib.terminalColor import green, yellow
 from commonlib.environmentUtil import getEnv
+from commonlib.observability import get_logger
 from ..core import baseScrapper
 from ..core.utils import debug
 from ..navigator.glassdoorNavigator import GlassdoorNavigator
 from ..services.GlassdoorService import GlassdoorService
 from ..services.selenium.browser_service import sleep
 from .BaseExecutor import BaseExecutor
+
+logger = get_logger("scrapper.GlassdoorExecutor")
 
 class GlassdoorExecutor(BaseExecutor):
     def _init_scrapper(self):
@@ -16,7 +18,7 @@ class GlassdoorExecutor(BaseExecutor):
         if not search:
             search = getEnv('SCRAPPER_JOBS_SEARCH')
         if not search:
-            print(yellow(f'Set SCRAPPER_{self.site_name}_JOBS_SEARCH in .env'))
+            logger.error("glassdoor.config.jobs_search_missing", env_var=f'SCRAPPER_{self.site_name}_JOBS_SEARCH')
             exit()
         self.jobs_search = search
         self.jobs_search_base_url = getEnv(f'SCRAPPER_{self.site_name}_JOBS_SEARCH_BASE_URL')
@@ -31,15 +33,15 @@ class GlassdoorExecutor(BaseExecutor):
 
     def _process_keyword(self, keyword: str, start_page: int):
         url = self.jobs_search_base_url.format(**{'search': keyword})
-        print(f'Search keyword={keyword}')
+        logger.debug("glassdoor.search.started", keyword=keyword)
         self.navigator.load_page(url)
         sleep(2,2)
         if not self.navigator.check_results(keyword, url):
             return
         totalResults = self.navigator.get_total_results(keyword)
         if totalResults < 1:
-            print(yellow(f'No results found for keyword={keyword}'))
-            return 
+            logger.info("glassdoor.no_results", keyword=keyword)
+            return
         self.navigator.close_dialogs()
         totalPages = math.ceil(totalResults / self.jobs_x_page)
         page = self.navigator.fast_forward_page(start_page, totalResults, self.jobs_x_page)
@@ -48,7 +50,7 @@ class GlassdoorExecutor(BaseExecutor):
             baseScrapper.printPage('Glassdoor', page, totalPages, keyword)
             idx = 0
             while idx < self.jobs_x_page and currentItem < totalResults:
-                print(green(f'pg {page} job {idx + 1} - '), end='', flush=True)
+                logger.debug("glassdoor.job.processing", page=page, idx=idx + 1)
                 self._load_and_process_row(idx)
                 currentItem += 1
                 idx += 1
@@ -74,7 +76,7 @@ class GlassdoorExecutor(BaseExecutor):
             url = self.navigator.get_job_url(li_elm)
             job_id, job_exists = self.service.job_exists_in_db(url)
             if job_exists:
-                print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='')
+                logger.info("glassdoor.job.already_exists", job_id=job_id)
             else:
                 self.navigator.load_job_detail(li_elm)
                 sleep(1,1)
@@ -86,5 +88,3 @@ class GlassdoorExecutor(BaseExecutor):
                     self.navigator.go_back()
         except Exception:
             debug(self.debug, exception=True)
-        finally:
-            print(flush=True)

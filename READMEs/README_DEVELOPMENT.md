@@ -25,6 +25,77 @@ Run specific app tests (single or multiple):
 - **Linux**: `./scripts/test.sh commonlib` or `./scripts/test.sh commonlib web e2e`
 - **Windows**: `.\scripts\test.bat commonlib` or `.\scripts\test.bat commonlib web e2e`
 
+## Structured Logging
+
+Every Python app in `apps/*` logs through one shared `structlog` configuration in `commonlib.observability`. Records are JSON lines with a dotted `domain.action` event name and `key=value` fields, written to stdout *and* mirrored to a per-app JSONL file. The backend dashboard and the Prometheus exporter in `commonlib.prometheus_exporter` read those files, so keeping the event names and fields stable is a contract, not a style preference.
+
+### Wiring an app
+
+The entrypoint configures logging as its first executable statement, before any other module logs:
+
+```python
+from commonlib.observability import configure_logging, get_logger
+
+
+def run():
+    configure_logging("myApp")
+    logger = get_logger("myApp.main")
+    logger.info("app.started")
+```
+
+The order matters. `LOG_LEVEL` and `LOG_COLOR` are read once, when structlog is first configured, and frozen on each logger's first call. The app *name* is resolved per record, so a later `configure_logging()` still re-points the JSONL file; the level cannot change that late.
+
+`get_logger(name)` binds `name` to the `module` field explicitly, because `structlog.get_logger(name)` hands the name to the logger factory and `PrintLoggerFactory` discards it.
+
+### Conventions
+
+| Rule | Example |
+|---|---|
+| Event names are dotted `domain.action`, never sentences | `logger.info("job.result", job_id=id, duration=1.5)` |
+| No f-strings in log calls; every dynamic value is a field | `logger.warning("job.retry", attempt=2, delay=3)` — not `f"retry {n}"` |
+| Levels: `debug` per-item detail, `info` lifecycle, `warning` recoverable, `error` failed operation |  |
+| Inside `except`, use `logger.exception(...)`; never pass `traceback=` | `logger.exception("skill.failed", skill=name, error=str(ex))` |
+| Never log secrets, env values, SQL bind values, CV text, or model prompts/answers | log lengths, ids, names, counts, durations instead |
+| Never log whole documents or large blobs | pass ids and counts as fields |
+
+Records carry `event`, `module` (the `get_logger` name), `logger` (the app name), `level`, and an ISO `timestamp`, plus whatever fields the call site passes.
+
+**Progress bars, countdowns, tables, and banners stay `print`.** They are presentational output that a person reads in a terminal, not signals to scrape. Anything using `end=`, `flush=True`, or `\r` for in-place updates stays as `print`; wrap those phases in structured lifecycle events (`job.started` / `job.completed`) so the sequence is still observable. Colors from `commonlib.terminalColor` are only for these presentational prints — drop the import when the last colored print goes.
+
+The in-place redraw only applies on an interactive terminal. When the helper runs in a container (`commonlib.terminalUtil.consoleTimerDocker`, i.e. `isDocker()`), the static countdown line is skipped and the wait is collapsed to a single `timer.started` record (no `timer.completed`): `docker-compose logs` is not an interactive console, so one line per idle cycle is enough. ANSI escape codes passed into the helpers are stripped before a `message` lands in a record.
+
+### Configuration
+
+All apps share these variables. They can be set in `.env` (bind-mounted into every container, so a restart is enough — no rebuild) or per service in `docker-compose.yml`.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `LOG_LEVEL` | `20` | 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR |
+| `LOG_COLOR` | `True` | Colored console output instead of raw JSON on stdout |
+| `LOG_DIR` | `data/logs` | Directory holding the JSONL files |
+| `LOG_APP_NAME` | `app` | Provisional app name, used until an entrypoint sets one |
+| `LOG_FILE_MAX_BYTES` | `10485760` | Rotate the file once it grows past this |
+| `LOG_FILE_BACKUP_COUNT` | `5` | Rotated files to keep (`<app>.jsonl.1` … `.N`) |
+
+`AI_ENRICH_LOG_*` names predate the modules that share this library and are still read as deprecated aliases; prefer the generic names for new configuration.
+
+### Output layout
+
+Each app writes `data/logs/<app>.jsonl` relative to its working directory — for example `apps/cron/data/logs/cron.jsonl` on the host. The directory is created on first write, and file I/O failures are swallowed deliberately: losing a log line must never take down a worker. Containers receive the same files through the read-only log mounts declared in `docker-compose.yml`.
+
+```bash
+# Tail one app
+tail -f apps/backend/data/logs/backend.jsonl
+
+# Count events by level
+jq -r '.level' apps/backend/data/logs/backend.jsonl | sort | uniq -c
+
+# Top event names
+jq -r '.event' apps/backend/data/logs/backend.jsonl | sort | uniq -c | sort -rn | head
+```
+
+Per-app details live in each module's own README (`apps/<module>/README.md`); the metrics contract built on top of these files is in [README_METRICS.md](README_METRICS.md).
+
 ## Agentic SDLC
 
 Agent skills, rules, and workflows (including graphify and the dependabot agent) are documented in [AGENTIC_SDLC.md](AGENTIC_SDLC.md). All agent skills live under `.claude/skills/`.
@@ -39,3 +110,4 @@ Documentation is part of the implementation: after every plan implementation, fe
 - **Installation Guide**: [README_INSTALL.md](README_INSTALL.md)
 - **Docker Development**: [DOCKER_DEV.md](DOCKER_DEV.md)
 - **Contribution Guide**: [README_CONTRIBUTE.md](README_CONTRIBUTE.md)
+- **Metrics & Grafana**: [README_METRICS.md](README_METRICS.md)

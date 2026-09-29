@@ -1,14 +1,14 @@
 from selenium.common.exceptions import NoSuchElementException
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.decorator.retry import StackTrace, retry
-from commonlib.terminalColor import green, yellow, printHR
-from commonlib.stringUtil import join
+from commonlib.observability import get_logger
+from commonlib.terminalColor import yellow
 from .baseNavigator import BaseNavigator
 from ..core.utils import debug
 from ..services.selenium.browser_service import sleep
 from ..services.selenium.seleniumService import SeleniumService
 
-
+logger = get_logger("scrapper.tecnoempleoNavigator")
 
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.container div.row div:nth-child(2) h1'
 CSS_SEL_MESSAGES_HIDE = 'aside[id="msg-overlay"] header > div.msg-overlay-bubble-header__controls > button'
@@ -58,10 +58,7 @@ class TecnoempleoNavigator(BaseNavigator):
     def check_results(self, keywords: str, url: str, remote) -> bool:
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElm) > 0:
-            print(Exception(
-                join('No results for job search on Tecnoempleo for',
-                     f'keywords={keywords}', f'remote={remote}',
-                     )))
+            logger.info("tecnoempleo.no_results", keywords=keywords, remote=remote)
             return False
         return True
 
@@ -70,10 +67,7 @@ class TecnoempleoNavigator(BaseNavigator):
 
     def get_total_results(self, keywords: str, remote) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-        printHR(green)
-        print(green(join(f'{total} total results for search: {keywords}',
-                         f'(remote={remote})')))
-        printHR(green)
+        logger.info("tecnoempleo.results_found", total=total, keywords=keywords, remote=remote)
         return int(total)
 
     def scroll_to_bottom(self):

@@ -1,7 +1,10 @@
 from typing import List, Optional, Dict, Any
 import re
+from commonlib.observability import get_logger
 from repositories.skills_repository import SkillsRepository
 from models.skill import Skill
+
+logger = get_logger("backend.services.skills_service")
 
 class SkillsService:
     def __init__(self):
@@ -55,5 +58,5 @@ class SkillsService:
                     self.repository.create_skill(skill)
                 count += 1
             except Exception as e:
-                print(f"Error saving skill {skill.name}: {e}")
+                logger.exception("skills.save_failed", error=str(e), skill=skill.name)
         return count

@@ -2,7 +2,15 @@ import pytest
 from unittest.mock import MagicMock, patch
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from scrapper.services.selenium import browser_service as browser_service_mod
 from scrapper.services.selenium.browser_service import BrowserService
+from scrapper.test.log_capture import captured_records
+
+LOG_MODULE = "scrapper.browser_service"
+
+
+def _events(records, event):
+    return [r for r in records if r["event"] == event]
 
 
 @pytest.fixture
@@ -120,3 +128,55 @@ class TestSetWindowSize:
     def test_set_window_size_small(self, browser_service, mock_driver):
         browser_service.set_window_size(300, 400)
         mock_driver.set_window_size.assert_called_once_with(300, 400)
+
+
+class TestTabLogging:
+    def test_logs_default_switch(self, mock_driver):
+        service = BrowserService(mock_driver)
+        with captured_records(browser_service_mod, LOG_MODULE) as records:
+            service.tab()
+        switch = _events(records, "tab.switch_default")
+        assert len(switch) == 1
+        assert switch[0]["tab"] == "window_handle_1"
+        assert switch[0]["log_level"] == "debug"
+
+    def test_logs_existing_switch(self, mock_driver):
+        service = BrowserService(mock_driver)
+        service.tabs = {"tab1": "handle2"}
+        with patch.object(service, 'waitUntilPageIsLoaded'):
+            with captured_records(browser_service_mod, LOG_MODULE) as records:
+                service.tab("tab1")
+        switch = _events(records, "tab.switch_existing")
+        assert len(switch) == 1
+        assert switch[0]["tab"] == "tab1"
+
+    def test_logs_creation(self, mock_driver):
+        service = BrowserService(mock_driver)
+        with patch.object(service, 'waitUntilPageIsLoaded'):
+            with captured_records(browser_service_mod, LOG_MODULE) as records:
+                service.tab("new_tab")
+        created = _events(records, "tab.created")
+        assert len(created) == 1
+        assert created[0]["tab"] == "new_tab"
+
+    @pytest.mark.parametrize("close_error, expected_events", [
+        (None, []),
+        (RuntimeError("no such window"), ["tab.close_failed"]),
+    ], ids=["success", "failure"])
+    def test_logs_close_outcome(self, mock_driver, close_error, expected_events):
+        mock_driver.close.side_effect = close_error
+        service = BrowserService(mock_driver)
+        with captured_records(browser_service_mod, LOG_MODULE) as records:
+            service.tabClose("tab1")
+        assert [r["event"] for r in records] == expected_events
+        if expected_events:
+            assert records[0]["log_level"] == "error"
+            assert records[0]["error"] == "no such window"
+
+    def test_no_record_leaks_page_source(self, mock_driver):
+        mock_driver.page_source = "SECRET_PAGE_SOURCE"
+        service = BrowserService(mock_driver)
+        with captured_records(browser_service_mod, LOG_MODULE) as records:
+            service.loadPage("https://example.com")
+            service.tab()
+        assert "SECRET_PAGE_SOURCE" not in str(records)

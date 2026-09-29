@@ -1,6 +1,9 @@
 from typing import Any, Dict
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.dateUtil import getSeconds
+from commonlib.observability import get_logger
+
+logger = get_logger("scrapper.scrapper_config")
 
 
 TIMER = 'timer'
@@ -28,7 +31,7 @@ SCRAPPERS: Dict[str, Dict[str, Any]] = {
     'Indeed': _base_config('Indeed'),
 }
 
-print(SCRAPPERS)
+logger.info("config.loaded", scrappers=list(SCRAPPERS.keys()), scrapper_count=len(SCRAPPERS))
 
 SCRAPPER_RUN_IN_TABS = getEnvBool('SCRAPPER_RUN_IN_TABS', False)
 STALE_THRESHOLD_HOURS = int(getEnv('SCRAPPER_STATE_STALE_THRESHOLD_HOURS', '48'))

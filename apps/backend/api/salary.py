@@ -2,7 +2,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from decimal import Decimal
 from typing import Dict, Optional
+from commonlib.observability import get_logger
 from services.salary_service import SalaryService
+
+logger = get_logger("backend.api.salary")
 
 router = APIRouter()
 
@@ -28,4 +31,5 @@ async def calculate_salary(request: SalaryCalculationRequest):
         )
         return result
     except Exception as e:
+        logger.exception("salary.calculation_failed", error=str(e), rate_type=request.rate_type)
         raise HTTPException(status_code=500, detail=str(e))

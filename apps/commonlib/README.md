@@ -36,6 +36,29 @@ The connection pool is initialized once via `get_connection()` from `sql/connect
 
 All attempts are logged at INFO/WARNING level. The resolved host is cached for the process lifetime.
 
+## Structured logging
+
+Modules report telemetry through `observability.py` instead of `print()`. Each module binds a logger once at module level:
+
+```python
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.cv_loader")
+logger.warning("cv.file_not_found", location=self.cv_location)
+```
+
+Conventions:
+
+- Event names are dotted `domain.action` (`cv.loaded`, `db.dump_started`, `skill.enrich_started`), never free text.
+- Dynamic values are `key=value` fields; f-strings are never passed to a log call, so records stay queryable.
+- Levels: `debug` per-item detail, `info` lifecycle, `warning` recoverable problem, `error` failed operation, `exception` for tracebacks (called inside an `except` block, traceback attached automatically).
+- Secrets and PII are never logged (no env values, tokens, CV text or user content), and large blobs are passed as objects rather than pre-rendered strings.
+- `print()` is kept only for presentational output: in-place terminal progress (`end=`, `flush=True`, `\r`) — the `terminalUtil.py` countdown and the `decorator/retry.py` progress chain — and the `sync/mysql_sync.py` dry-run summary. In-place redraws require an interactive terminal; in containers (`consoleTimerDocker`) the static countdown line is skipped and the wait is collapsed to a single `timer.started` record (no `timer.completed`), so `docker-compose logs` shows one line per idle cycle. ANSI color codes passed into the `terminalUtil` helpers are stripped before a `message` reaches the JSONL, so records never carry escape sequences.
+
+`environmentUtil.py` is the one module that cannot import `observability` at module scope, because `observability` imports `environmentUtil`. It resolves the logger lazily inside `_logEvent()` and emits `env.loaded` (debug, once) and `env.reloaded` (info) with the dotenv file paths only — never their values. A reentrancy guard keeps the reload from recursing through `configure_logging`.
+
+`terminalColor.py` remains for colored console output; `printHR()` is a rule-drawing primitive and is not structured-logged.
+
 ## Installation
 
 This package is managed with **Poetry**.

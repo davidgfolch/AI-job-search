@@ -1,5 +1,8 @@
 from typing import List, Dict, Any, Optional
+from commonlib.observability import get_logger
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
+
+logger = get_logger("backend.repositories.company_synonym_repository")
 
 
 class CompanySynonymRepository:
@@ -59,7 +62,8 @@ class CompanySynonymRepository:
                     [name, group_id],
                 )
                 return True
-            except Exception:
+            except Exception as e:
+                logger.exception("db.insert_failed", error=str(e), table="company_synonyms", group_id=group_id)
                 return False
 
     def remove_name(self, name: str) -> bool:

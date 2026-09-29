@@ -38,3 +38,20 @@ class TestTecnoempleoService:
         assert params[2] == UNSPECIFIED_COMPANY
         assert params[-1] is None
         mock_mysql.fetchAll.assert_not_called()
+
+    def test_process_job_logs_scraped_fields(self, service, mock_mysql):
+        with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="MD"), \
+             patch('scrapper.services.TecnoempleoService.logger') as log:
+            mock_mysql.insert.return_value = 1
+            service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
+        log.debug.assert_any_call('tecnoempleo.job.scraped', job_id='rf-123', title='Title', company='Company', location='Location', easy_apply=False)
+
+    def test_process_job_logs_inserted_and_duplicated(self, service, mock_mysql):
+        with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="MD"), \
+             patch('scrapper.services.TecnoempleoService.find_last_duplicated', return_value=11), \
+             patch('scrapper.services.TecnoempleoService.logger') as log:
+            mock_mysql.insert.return_value = 4
+            service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
+        events = {c.args[0]: c.kwargs for c in log.info.call_args_list}
+        assert events['tecnoempleo.job.inserted'] == {'job_id': 'rf-123', 'insert_id': 4}
+        assert events['tecnoempleo.job.duplicated'] == {'job_id': 'rf-123', 'duplicated_id': 11}

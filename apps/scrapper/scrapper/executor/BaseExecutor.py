@@ -1,7 +1,7 @@
 import math
 from abc import ABC, abstractmethod
 
-from commonlib.terminalColor import yellow, cyan
+from commonlib.observability import get_logger
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.keep_system_awake import KeepSystemAwake
 from commonlib.dateUtil import getDatetimeNowStr
@@ -11,6 +11,8 @@ from ..core.baseScrapper import printScrapperTitle
 from ..core.utils import abortExecution
 from ..util.persistence_manager import PersistenceManager
 from ..services.selenium.seleniumService import SeleniumService
+
+logger = get_logger("scrapper.BaseExecutor")
 
 
 class BaseExecutor(ABC):
@@ -128,7 +130,7 @@ class BaseExecutor(ABC):
                              # For now, I will assume the child class might want to control the loop or I implement the common `should_skip_keyword` logic here if service fails.
                              pass
                 if skip:
-                    print(yellow(f"Skipping keyword '{keyword}' (already processed)"))
+                    logger.info("executor.keyword_skipped", scrapper=self.site_name_key, keyword=keyword, already_processed=True)
                     continue
                 try:
                     self._process_keyword(keyword, start_page)

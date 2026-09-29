@@ -7,17 +7,21 @@ from importlib.metadata import version as _v
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.environmentUtil import getEnvBool
-from commonlib.terminalColor import yellow, cyan
+from commonlib.observability import configure_logging, get_logger
+from commonlib.terminalColor import cyan
 from commonlib.terminalUtil import consoleTimer
 import time
 from .cvMatcher import FastCVMatcher
 
+logger = get_logger("aiCvMatcher.main")
+
 def run():
-    print(cyan(f"AI CV Matcher v{_v('aiCvMatcher')}"))
+    configure_logging("aiCvMatcher")
+    logger.info("app.started", version=_v('aiCvMatcher'))
     if getEnvBool('AI_CVMATCHER_ENABLED'):
         cvMatcher = FastCVMatcher.instance()
     else:
-        print(yellow("AI_CVMATCHER_ENABLED is not enabled. Exiting CV Matcher loop."))
+        logger.info("app.disabled", flag="AI_CVMATCHER_ENABLED")
         sys.exit(0)
 
     while True:

@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 from commonlib.observability import configure_logging, get_logger
 from commonlib.terminalColor import cyan
 from commonlib.sql.mysqlUtil import MysqlUtil
-from commonlib.terminalUtil import consoleTimer
+from commonlib.terminalUtil import consoleTimer, getSeconds, isDocker, WakeableTimer
 from commonlib.services.metrics_collector import MetricsCollector
 from .config import get_enabled, get_backend, get_ollama_base_url, get_max_ollama_failures
 from .services.enrichment_service import enrich_skills
@@ -23,7 +23,6 @@ collector = MetricsCollector()
 
 def run():
     logger.info("startup", version=_v('aiEnrichSkill'))
-    print(cyan(f"AI Skill Enrich v{_v('aiEnrichSkill')}"))
 
     if not get_enabled():
         logger.info("disabled")
@@ -51,4 +50,7 @@ def run():
                 collector.persist()
                 continue
         collector.persist()
-        consoleTimer(cyan('All skills enriched. '), '10s', end='\r')
+        if isDocker():
+            WakeableTimer().wait(getSeconds('10s'))
+        else:
+            consoleTimer(cyan('All skills enriched. '), '10s', end='\r')

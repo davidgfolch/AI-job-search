@@ -216,6 +216,7 @@ Environment variables are split across two files:
 - **Method signatures**: Keep parameters on the same line when possible, avoid line-per-parameter
 - **Closing braces/parens**: Keep on the same line as last content, not on their own line
 - **Method bodies**: Avoid extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`. Avoid empty lines inside method bodies.
+- **Logging**: Structured events via `commonlib.observability` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)). Bare `print()` is only allowed for presentational output listed in `PRINT_ALLOWLIST` in `apps/commonlib/commonlib/test/architecture/architecture_logging.py` — a commonlib architecture test enforces this.
 
 ## Documentation Sync (mandatory, automatic)
 

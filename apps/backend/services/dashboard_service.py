@@ -2,9 +2,12 @@ import urllib.request
 from datetime import datetime, timezone
 
 from commonlib.environmentUtil import getEnv
+from commonlib.observability import get_logger
 from commonlib.ollama_config import ollama_probe_urls
 from commonlib.services.metrics_collector import MetricsCollector
 from repositories.dashboard_repository import DashboardRepository
+
+logger = get_logger("backend.services.dashboard_service")
 
 _repo = DashboardRepository()
 
@@ -76,7 +79,8 @@ def _probe_ollama() -> bool:
             with urllib.request.urlopen(f"{url}/api/version", timeout=OLLAMA_PROBE_TIMEOUT_SECONDS) as resp:
                 if resp.status == 200:
                     return True
-        except Exception:
+        except Exception as e:
+            logger.debug("ollama.probe_failed", error=str(e), url=url)
             continue
     return False
 
@@ -103,7 +107,8 @@ def _parse_local(value: str | None) -> datetime | None:
         return None
     try:
         return _local(datetime.fromisoformat(value.replace("Z", "+00:00")))
-    except ValueError:
+    except ValueError as e:
+        logger.debug("metrics.timestamp_unparsed", error=str(e))
         return None
 
 

@@ -6,6 +6,7 @@ from commonlib.test.architecture.architecture_metrics import getLongFiles
 from commonlib.test.architecture.architecture_layers import check_layer
 from commonlib.test.architecture.architecture_structure import get_files_without_sibling_test, get_test_location_violations
 from commonlib.test.architecture.architecture_naming import get_test_naming_violations
+from commonlib.test.architecture.architecture_logging import get_print_violations
 from commonlib.terminalColor import YELLOW, RED, ORANGE, RESET
 
 def test_files_exceed_200_lines():
@@ -73,6 +74,16 @@ def test_test_file_naming_conventions():
         for path, reason in violations:
              message += f"{YELLOW}{path}{RESET}: {RED}{reason}{RESET}\n"
         print(message)
+        pytest.fail(message)
+
+def test_no_bare_print_in_source():
+    violations = get_print_violations()
+    if violations:
+        message = f"\n{YELLOW}Found print() calls outside the presentational allowlist.{RESET}\n"
+        message += f"{YELLOW}Convert them to structured events via commonlib.observability, or\n"
+        message += f"justify the presentational output and add the file to PRINT_ALLOWLIST:{RESET}\n"
+        for violation in violations:
+            message += f"{RED}{violation}{RESET}\n"
         pytest.fail(message)
 
 def test_test_file_location_and_correspondence():

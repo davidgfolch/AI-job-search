@@ -4,10 +4,12 @@ import hashlib
 from typing import Tuple
 from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
-from commonlib.terminalColor import green, yellow, cyan
+from commonlib.observability import get_logger
 from ..core.baseScrapper import htmlToMarkdown, validate, debug, removeUrlParameter
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
+
+logger = get_logger("scrapper.IndeedService")
 
 
 class IndeedService(BaseService):
@@ -67,15 +69,15 @@ class IndeedService(BaseService):
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
             # Use the actual URL from seleniumService.getUrl() directly
-            print(f"{job_id}, {title}, {cyan(company)}, easy_apply={easy_apply} - ", end="", flush=True)
+            logger.debug("indeed.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy_apply)
             # Double check existence with the final canonical ID
             if self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None:
-                print(yellow(f"Job id={job_id} already exists in DB (late check), IGNORED."), end="", flush=True)
+                logger.info("indeed.job.already_exists", job_id=job_id)
                 return True
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)
                 if id := self.mysql.insert((job_id, title, company, location, salary, url, md, easy_apply, self.web_page, duplicated_id)):
-                    print(green(f"INSERTED {id}!"), end="", flush=True)
+                    logger.info("indeed.job.inserted", job_id=job_id, insert_id=id)
                     return True
                 else:
                     debug(self.debug, exception=True)

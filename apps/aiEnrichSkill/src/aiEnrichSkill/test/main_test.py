@@ -46,12 +46,13 @@ def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_
 @patch("aiEnrichSkill.main.collector")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
 @patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
+@patch("aiEnrichSkill.main.isDocker", return_value=False)
 @patch("aiEnrichSkill.main.consoleTimer")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_resolve, mock_backend, mock_collector):
+def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_docker, mock_resolve, mock_backend, mock_collector):
     mock_enabled.return_value = True
     mysql = MagicMock()
     mock_mysql_cls.return_value.__enter__.return_value = mysql
@@ -66,6 +67,32 @@ def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enric
     mock_timer.assert_called_once()
     mock_collector.persist.assert_called_once()
     mock_collector.record_heartbeat.assert_called_with("aiEnrichSkill")
+
+
+@patch("aiEnrichSkill.main.collector")
+@patch("aiEnrichSkill.main.WakeableTimer")
+@patch("aiEnrichSkill.main.get_backend", return_value="ollama")
+@patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
+@patch("aiEnrichSkill.main.isDocker", return_value=True)
+@patch("aiEnrichSkill.main.consoleTimer")
+@patch("aiEnrichSkill.main.enrich_skills")
+@patch("aiEnrichSkill.main.MysqlUtil")
+@patch("aiEnrichSkill.main.get_enabled")
+@patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
+def test_run_no_skills_waits_silent_in_docker(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_docker, mock_resolve, mock_backend, mock_wakeable, mock_collector):
+    mock_enabled.return_value = True
+    mysql = MagicMock()
+    mock_mysql_cls.return_value.__enter__.return_value = mysql
+    mock_enrich.side_effect = [0, Exception("BreakLoop")]
+
+    try:
+        run()
+    except Exception as e:
+        if str(e) != "BreakLoop":
+            raise e
+
+    mock_timer.assert_not_called()
+    mock_wakeable.return_value.wait.assert_called()
 
 
 @patch("aiEnrichSkill.main.collector")

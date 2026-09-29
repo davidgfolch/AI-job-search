@@ -1,7 +1,11 @@
 import pytest
 from unittest.mock import MagicMock, patch
+from scrapper.navigator import baseNavigator
 from scrapper.navigator.baseNavigator import BaseNavigator
 from scrapper.services.selenium.seleniumService import SeleniumService
+from scrapper.test.log_capture import captured_records
+
+LOG_MODULE = "scrapper.baseNavigator"
 
 class ConcreteNavigator(BaseNavigator):
     def get_total_results(self, *args, **kwargs) -> int:
@@ -90,3 +94,39 @@ class TestBaseNavigator:
         navigator = ConcreteNavigator(mock_selenium, debug=False)
         navigator.close()
         mock_selenium.exit.assert_not_called()
+
+
+class TestStructuredLogging:
+    @pytest.mark.parametrize("url, expected_host, expected_path", [
+        ("https://www.linkedin.com/jobs/view/123", "www.linkedin.com", "/jobs/view/123"),
+        ("https://es.indeed.com/viewjob?jk=789&sessionid=SECRET", "es.indeed.com", "/viewjob"),
+    ], ids=["linkedin", "indeed_with_session_query"])
+    def test_load_page_logs_host_and_path_only(self, mock_selenium, url, expected_host, expected_path):
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
+        with captured_records(baseNavigator, LOG_MODULE) as records:
+            navigator.load_page(url)
+        assert [r["event"] for r in records] == ["page.loading"]
+        assert records[0]["log_level"] == "debug"
+        assert records[0]["url_host"] == expected_host
+        assert records[0]["url_path"] == expected_path
+        assert "SECRET" not in str(records)
+        assert url not in str(records)
+
+    @pytest.mark.parametrize("start_page, total_results, jobs_x_page, expected_event", [
+        (3, 100, 10, "page.fast_forwarding"),
+        (1, 100, 10, None),
+        (5, 20, 10, None),
+    ], ids=["fast_forward", "already_first_page", "page_does_not_exist"])
+    def test_fast_forward_logging(self, mock_selenium, start_page, total_results, jobs_x_page, expected_event):
+        navigator = ConcreteNavigator(mock_selenium, debug=False)
+        navigator.click_next_page = MagicMock(return_value=False)
+        with patch("scrapper.navigator.baseNavigator.sleep"):
+            with captured_records(baseNavigator, LOG_MODULE) as records:
+                navigator.fast_forward_page(start_page, total_results, jobs_x_page)
+        if expected_event is None:
+            assert records == []
+        else:
+            assert [r["event"] for r in records] == [expected_event]
+            assert records[0]["start_page"] == start_page
+            assert records[0]["total_results"] == total_results
+            assert records[0]["jobs_x_page"] == jobs_x_page

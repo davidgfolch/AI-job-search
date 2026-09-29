@@ -86,6 +86,8 @@ main.py → enrich_skills() loop
        └─ backend == "huggingface" → llm_client.py + llm_utils.py batch processing
 ```
 
+Each idle cycle logs a single `skill.enrich_skipped` record (`reason=no_pending_skills`) and then waits. In containers the wait is silent (`WakeableTimer`); on interactive terminals it shows the in-place countdown. When Ollama is unreachable, `ollama.unreachable` is logged and the retry countdown runs on both paths (up to `AI_ENRICHSKILL_MAX_OLLAMA_FAILURES`, then exit).
+
 ## Dependencies
 
 - `commonlib` (shared library)

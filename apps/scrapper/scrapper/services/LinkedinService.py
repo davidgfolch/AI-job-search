@@ -2,10 +2,12 @@ import re
 from typing import Tuple
 from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
-from commonlib.terminalColor import green, magenta, yellow, cyan
+from commonlib.observability import get_logger
 from ..core import baseScrapper
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
+
+logger = get_logger("scrapper.LinkedinService")
 
 class LinkedinService(BaseService):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, debug: bool):
@@ -28,16 +30,16 @@ class LinkedinService(BaseService):
             url_short = self.get_job_url_short(url)
             jobId = self.get_job_id(url_short)
             md = baseScrapper.htmlToMarkdown(html)
-            print(f'{jobId}, {title}, {cyan(company)}, {location}, easy_apply={easy_apply} - ', end='', flush=True)
+            logger.debug("linkedin.job.scraped", job_id=jobId, title=title, company=company, location=location, easy_apply=easy_apply)
             if baseScrapper.validate(title, url_short, company, md, self.debug):
                 if is_direct_url_scrapping and self.mysql.jobExists(str(jobId)):
                     self.update_job(jobId, title, company, location, url_short, html, md, easy_apply)
                 else:
                     duplicated_id = find_last_duplicated(self.mysql, title, company)
                     if id := self.mysql.insert((jobId, title, company, location, None, url_short, md, easy_apply, self.web_page, duplicated_id)):
-                        print(green(f'INSERTED {id}!'), end='', flush=True)
+                        logger.info("linkedin.job.inserted", job_id=jobId, insert_id=id)
                         if duplicated_id:
-                            print(cyan(f' DUPLICATED {duplicated_id}'), end="")
+                            logger.info("linkedin.job.duplicated", job_id=jobId, duplicated_id=duplicated_id)
             else:
                 raise ValueError('Validation failed')
         except (ValueError, KeyboardInterrupt) as e:
@@ -46,16 +48,10 @@ class LinkedinService(BaseService):
             baseScrapper.debug(self.debug, exception=True)
 
     def print_job(self, title, company, location, url, jobId, html, md):
-        print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
-        print(yellow(f'TITLE={title}'))
-        print(yellow('COMPANY=') + cyan(company))
-        print(yellow(f'LOCATION={location}'))
-        print(yellow(f'URL={url}'))
-        print(yellow(f'HTML:\n', magenta(html)))
-        print(yellow(f'MARKDOWN:\n', magenta(md)))
+        logger.debug("linkedin.job.already_exists", job_id=jobId, title=title, company=company, location=location, url=url, html_length=len(html or ''), markdown_length=len(md or ''))
 
     def update_job(self, jobId, title, company, location, url, html, md, easy_apply):
         self.print_job(title, company, location, url, jobId, html, md)
         params = (title, company, location, url, md, easy_apply, jobId, self.web_page)
         self.mysql.executeAndCommit(QRY_UPDATE_JOB_DIRECT_URL, params)
-        print(green(f'Job updated {jobId}'), flush=True)
+        logger.info("linkedin.job.updated", job_id=jobId)

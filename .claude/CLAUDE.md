@@ -80,6 +80,7 @@ poetry run pytest
 - **Error Handling**: Use specific exceptions, avoid bare except clauses
 - **Dependencies**: uv for new projects, Poetry for legacy (commonlib, scrapper)
 - **Testing**: pytest with `test_` prefix, use fixtures for setup/teardown. Use `@pytest.mark.parametrize` with descriptive `id=` for repetitive test cases.
+- **Logging**: Structured events via `commonlib.observability` (root READMEs/README_DEVELOPMENT.md#structured-logging). Bare `print()` only for presentational output in the `PRINT_ALLOWLIST` (`apps/commonlib/commonlib/test/architecture/architecture_logging.py`) — enforced by a commonlib architecture test.
 
 ### TypeScript/React (Web Frontend)
 - **Imports**: External libs first, then internal modules, avoid relative import hell

@@ -140,3 +140,26 @@ class TestIndeedService:
         # Check presence of other params (order may vary)
         assert "jk=123" in cleaned_url_arg
         assert "other=keep" in cleaned_url_arg
+
+    @patch("scrapper.services.IndeedService.htmlToMarkdown")
+    @patch("scrapper.services.IndeedService.validate")
+    @patch("scrapper.services.IndeedService.find_last_duplicated")
+    def test_process_job_logs_inserted(self, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
+        mock_html2md.return_value = "markdown"
+        mock_validate.return_value = True
+        mock_merge.return_value = None
+        mock_mysql.fetchOne.return_value = None
+        mock_mysql.insert.return_value = 100
+        with patch('scrapper.services.IndeedService.logger') as log:
+            service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", True)
+        log.debug.assert_any_call('indeed.job.scraped', job_id='1', title='Title', company='Company', easy_apply=True)
+        log.info.assert_called_once_with('indeed.job.inserted', job_id='1', insert_id=100)
+
+    @patch("scrapper.services.IndeedService.htmlToMarkdown")
+    def test_process_job_logs_already_exists(self, mock_html2md, service, mock_mysql):
+        mock_html2md.return_value = "markdown"
+        mock_mysql.fetchOne.return_value = (1,)
+        with patch('scrapper.services.IndeedService.logger') as log:
+            result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
+        assert result is True
+        log.info.assert_called_once_with('indeed.job.already_exists', job_id='1')

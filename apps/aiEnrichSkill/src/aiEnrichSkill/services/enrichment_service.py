@@ -1,6 +1,5 @@
 import time
 import json
-import traceback
 from typing import List, Dict, Any
 
 from commonlib.sql.mysqlUtil import MysqlUtil
@@ -55,7 +54,7 @@ def _enrich_ollama(mysql: MysqlUtil, ollama_base_url=None) -> int:
             description = result[0] if isinstance(result, tuple) and len(result) == 2 else (result if isinstance(result, str) else "")
             success = bool(description) and "Error" not in description
             collector.record_job("aiEnrichSkill", duration, success)
-            logger.info("job.result", duration=duration, skill=name, success=success)
+            logger.info("skill.result", duration=duration, skill=name, success=success)
             return result
         except Exception as e:
             duration = time.time() - start
@@ -156,7 +155,7 @@ def _process_skill_batch(
         description, category = parse_skill_enrichment_result(generated_text)
         success = bool(description) and "Error" not in description
         collector.record_job("aiEnrichSkill", duration, success)
-        logger.info("job.result", duration=duration, skill=name, success=success)
+        logger.info("skill.result", duration=duration, skill=name, success=success)
         if success:
             _save_skill_result(mysql, name, description, category)
             success_count += 1
@@ -170,8 +169,8 @@ def _process_skill_batch(
         _timing["last"] = now
         collector.record_job("aiEnrichSkill", duration, False)
         collector.record_error("aiEnrichSkill", str(ex))
-        logger.info("job.result", duration=duration, skill=name, success=False)
-        logger.error("skill.failed", skill=name, error=str(ex), traceback=traceback.format_exc())
+        logger.info("skill.result", duration=duration, skill=name, success=False)
+        logger.exception("skill.failed", skill=name, error=str(ex))
 
     process_batch(
         pipeline,

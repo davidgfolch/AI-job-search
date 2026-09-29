@@ -1,11 +1,14 @@
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry
-from commonlib.terminalColor import yellow, green, printHR
+from commonlib.observability import get_logger
+from commonlib.terminalColor import yellow
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 from .baseNavigator import BaseNavigator
 from .components.glassdoorAuthenticator import GlassdoorAuthenticator
+
+logger = get_logger("scrapper.glassdoorNavigator")
 
 CSS_SEL_SEARCH_RESULT_TOTAL = 'div#left-column h1'
 CSS_SEL_COOKIES_ACCEPT = 'button#onetrust-accept-btn-handler'
@@ -42,24 +45,20 @@ class GlassdoorNavigator(BaseNavigator):
         self.selenium.waitUntilPageIsLoaded()
 
     def login(self):
-        print('Logging in via Indeed OTP...')
+        logger.info("glassdoor.auth.login_started", method="indeed_otp")
         self.authenticator.login()
 
     @retry()
     def get_total_results(self, keywords: str) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_TOTAL).split(' ')[0]
-        printHR(green)
-        print(green(f'{total} total results for search: {keywords}'))
-        printHR(green)
+        logger.info("glassdoor.results_found", total=total, keywords=keywords)
         return int(total)
 
     def check_results(self, keywords: str, url: str) -> bool:
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElm) == 0:
             return True
-        printHR(yellow)
-        print(yellow(f'No results found for keyword={keywords}'))
-        printHR(yellow)
+        logger.info("glassdoor.no_results", keywords=keywords)
         return False
 
     def close_dialogs(self):

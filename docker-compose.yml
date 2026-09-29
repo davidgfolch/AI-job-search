@@ -46,6 +46,9 @@ services:
       - ./apps/aiEnrichNew/data/logs:/logs/aienrichnew:ro
       - ./apps/aiEnrichSkill/data/logs:/logs/aienrichskill:ro
       - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
+      - ./apps/scrapper/data/logs:/logs/scrapper:ro
+      - ./apps/cron/data/logs:/logs/cron:ro
+      - ./apps/aiFormFiller/data/logs:/logs/aiformfiller:ro
     ports:
       - "8000:8000"
     environment:

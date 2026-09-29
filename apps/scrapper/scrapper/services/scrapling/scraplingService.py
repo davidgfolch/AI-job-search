@@ -1,7 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 from scrapling.fetchers import StealthySession, ProxyRotator
-from commonlib.terminalColor import yellow
+from commonlib.observability import get_logger
+
+logger = get_logger("scrapper.scraplingService")
 
 
 class ScraplingService:
@@ -70,13 +72,13 @@ class ScraplingService:
         try:
             return self.fetch(url, **kwargs)
         except Exception as e:
-            print(yellow(f"Fetch failed: {e}, resetting session..."))
+            logger.warning("scrapling.fetch_failed", error_type=type(e).__name__)
             self.reset_session()
             return self.fetch(url, **kwargs)
 
     def reset_session(self):
         if self.session:
-            print(yellow("Resetting scrapling session..."))
+            logger.info("scrapling.session_resetting")
             self.close()
             self._init_session()
 

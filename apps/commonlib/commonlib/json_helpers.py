@@ -1,8 +1,9 @@
 import json
 import re
-import traceback
 
-from commonlib.terminalColor import red, yellow
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.json_helpers")
 
 def decode_unicode_escapes(parsed_dict: dict) -> None:
     # CrewAI/LiteLLM can return literal unicode escapes like \u00f3 instead of native characters
@@ -53,12 +54,7 @@ class LazyDecoder(json.JSONDecoder):
 
 
 def printJsonException(ex: Exception, res: str, raw: str) -> None:
-    print(red(f'Could not parse json after clean it: '))
-    # Traceback is already printed by caller usually, but logic in crewHelper prints it.
-    # jsonHelper commented it out. We will keep it but maybe concise?
-    print(red(traceback.format_exc()))
-    print(red(f'Json after clean:\n{res}'))
-    print(yellow(f'Original json:\n{raw}'))
+    logger.exception("json.parse_failed", cleaned=res, raw=raw)
     raise ex
 
 
