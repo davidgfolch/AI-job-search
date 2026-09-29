@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.LinkedinService import LinkedinService
+from scrapper.test.log_capture import assert_console_text, assert_logged, structured_fields
 
 class TestLinkedinService:
     @pytest.fixture
@@ -89,12 +90,14 @@ class TestLinkedinService:
     def test_print_job_logs_lengths_not_blobs(self, service):
         with patch('scrapper.services.LinkedinService.logger') as log:
             service.print_job('T', 'C', 'L', 'U', 123, '<h1>x</h1>', 'MD')
-        log.debug.assert_called_once_with('linkedin.job.already_exists', job_id=123, title='T', company='C', location='L', url='U', html_length=10, markdown_length=2)
+        assert_logged(log, 'debug', 'linkedin.job.already_exists', job_id=123, title='T', company='C', location='L', url='U', html_length=10, markdown_length=2)
+        assert_console_text(log, 'debug', 'linkedin.job.already_exists', 'TITLE=T')
 
     def test_update_job_logs_event(self, service, mock_mysql):
         with patch('scrapper.services.LinkedinService.logger') as log:
             service.update_job(123, 'T', 'C', 'L', 'U', 'H', 'MD', False)
-        log.info.assert_called_once_with('linkedin.job.updated', job_id=123)
+        assert_logged(log, 'info', 'linkedin.job.updated', job_id=123)
+        assert_console_text(log, 'info', 'linkedin.job.updated', 'Job updated 123')
         mock_mysql.executeAndCommit.assert_called_once()
 
     def test_process_job_logs_inserted_and_duplicated(self, service, mock_mysql):
@@ -105,9 +108,10 @@ class TestLinkedinService:
             mock_mysql.jobExists.return_value = False
             mock_mysql.insert.return_value = 5
             service.process_job("T", "C", "L", "https://www.linkedin.com/jobs/view/9/", "H", False, False)
-        events = {c.args[0]: c.kwargs for c in log.debug.call_args_list + log.info.call_args_list}
+        events = {c.args[0]: structured_fields(c.kwargs) for c in log.debug.call_args_list + log.info.call_args_list}
         assert events['linkedin.job.inserted'] == {'job_id': 9, 'insert_id': 5}
         assert events['linkedin.job.duplicated'] == {'job_id': 9, 'duplicated_id': 77}
+        assert_console_text(log, 'info', 'linkedin.job.inserted', 'INSERTED 5!', end='')
 
     def test_process_job_logs_scraped_fields(self, service, mock_mysql):
         with patch('scrapper.core.baseScrapper.validate', return_value=True), \
@@ -117,4 +121,5 @@ class TestLinkedinService:
             mock_mysql.jobExists.return_value = False
             mock_mysql.insert.return_value = 1
             service.process_job("T", "C", "L", "https://www.linkedin.com/jobs/view/9/", "H", False, True)
-        log.debug.assert_any_call('linkedin.job.scraped', job_id=9, title='T', company='C', location='L', easy_apply=True)
+        assert_logged(log, 'info', 'linkedin.job.scraped', job_id=9, title='T', company='C', location='L', easy_apply=True)
+        assert_console_text(log, 'info', 'linkedin.job.scraped', '9, T,', end='')

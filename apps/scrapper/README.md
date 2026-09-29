@@ -70,6 +70,35 @@ f_TPR = 'r86400'  # last 24 hours
 DEBUG = False # Set to True to stop selenium driver on error
 ```
 
+## Console Output & Structured Logging
+
+The scrapper is the reference implementation of the dual-output logging in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging): the console is a human transcript and `apps/scrapper/data/logs/scrapper.jsonl` is the machine record.
+
+`main.py` configures the app with `configure_logging("scrapper", console=CONSOLE_MESSAGE)`, so:
+
+- A record with `console=` prints only that text — no timestamp, level, or event name — and the text is ANSI-stripped into the record's `message` in the JSONL.
+- A record without `console=` is written to the JSONL only. This is what keeps `commonlib` chatter (`sql.query_executed`, `ollama.client.*`) off the console.
+- `end=""` rebuilds a `print(..., end='')` progress prefix, so a job line such as `pg 1 job 1 - 42, Python Dev, Acme - INSERTED 99!` still assembles on one line. In JSONL each part is its own record.
+- `LOG_CONSOLE_MODE` does not affect the scrapper: the mode is chosen in code, not from the environment.
+
+The first line of every run is the resolved absolute path of the JSONL file, printed as a `logging.file_opened` record (with `path`), so the location is never a guess:
+
+```text
+Log file: /home/user/ai_job_search/apps/scrapper/data/logs/scrapper.jsonl
+Scrapper v0.1.0
+```
+
+The path is resolved against the working directory of the process — `apps/scrapper` on the host, `/app` in the container — and honours `LOG_DIR`.
+
+```python
+logger.info("linkedin.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy,
+            console=f"{job_id}, {title}, {cyan(company)}, {location}, easy_apply={easy} - ", end="")
+logger.info("linkedin.job.inserted", job_id=job_id, insert_id=insert_id, console=green(f"INSERTED {insert_id}!"), end="")
+logger.info("linkedin.job.duplicated", job_id=job_id, duplicated_id=duplicated_id, console=cyan(f" DUPLICATED {duplicated_id}"), end="")
+```
+
+Console text obeys the logging rules: OTP codes, email subjects, and URL query strings are never printed (only host + path, and `*_length` for codes), and `LinkedinService` prints the HTML/markdown lengths rather than the documents.
+
 ## Gmail Configuration
 
 1. **Enable 2FA on Gmail**: Make sure 2FA is enabled on your Gmail account
@@ -138,10 +167,11 @@ Implemented for LinkedIn only:
 
 ## Testing
 
-Run tests with pytest:
+Run tests with the centralized script, from the repository root (`commonlib` is always included because it holds the architecture tests):
 
 ```bash
-poetry run pytest
+./scripts/test.sh commonlib scrapper   # Linux/Mac
+.\scripts\test.bat commonlib scrapper   # Windows
 ```
 
 ## Troubleshooting

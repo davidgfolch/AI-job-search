@@ -1,18 +1,12 @@
 import random
-import re
 from datetime import timedelta
 from .wake_timer import WakeableTimer
-from .terminalColor import yellow, cyan
+from .terminalColor import yellow, cyan, stripAnsi
 from .systemUtil import isDocker
 from .dateUtil import getSeconds
 from .observability import get_logger
 
 logger = get_logger("commonlib.terminalUtil")
-
-ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
-
-def _strip_ansi(text: str) -> str:
-    return ANSI_ESCAPE.sub('', text)
 
 class Spinner():
     SPINNERS = [
@@ -43,7 +37,7 @@ def _consoleTimerLocal(message: str, timeUnit: str, end='\r'):
     spinner = Spinner()
     blankLine = True if end == '\r' else False
     timeLeft = str(timedelta(seconds=seconds))
-    logger.info("timer.started", message=_strip_ansi(message), time_unit=timeUnit, seconds=seconds, in_place=blankLine)
+    logger.info("timer.started", message=stripAnsi(message), time_unit=timeUnit, seconds=seconds, in_place=blankLine)
     print(cyan(f"{message} {timeLeft}"))
     for left in range(seconds*spinner.tickXSec, 0, -1):
         spinnerStr = spinner.generate()
@@ -54,16 +48,16 @@ def _consoleTimerLocal(message: str, timeUnit: str, end='\r'):
         WakeableTimer().wait(1/spinner.tickXSec)
     if blankLine:
         print()
-    logger.info("timer.completed", message=_strip_ansi(message), time_unit=timeUnit, seconds=seconds)
+    logger.info("timer.completed", message=stripAnsi(message), time_unit=timeUnit, seconds=seconds)
 
 def consoleTimerDocker(message: str, timeUnit: str):
     """timeUnit: 30s|8m|2h"""
     seconds = getSeconds(timeUnit)
-    logger.info("timer.started", message=_strip_ansi(message), time_unit=timeUnit, seconds=seconds)
+    logger.info("timer.started", message=stripAnsi(message), time_unit=timeUnit, seconds=seconds)
     WakeableTimer().wait(seconds)
 
 def consoleTimer(message: str, timeUnit: str, end='\r'):
-    logger.debug("timer.requested", message=_strip_ansi(message), time_unit=timeUnit)
+    logger.debug("timer.requested", message=stripAnsi(message), time_unit=timeUnit)
     if isDocker():
         consoleTimerDocker(message, timeUnit)
     else:

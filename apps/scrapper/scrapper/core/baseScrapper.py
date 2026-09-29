@@ -6,9 +6,10 @@ from markdownify import MarkdownConverter
 
 from .utils import debug
 from commonlib.environmentUtil import getEnv
+from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.observability import get_logger
 from commonlib.stringUtil import hasLenAnyText
-from commonlib.terminalColor import green, printHR
+from commonlib.terminalColor import green, printHR, red, yellow
 from ..services.selenium.browser_service import sleep
 
 logger = get_logger("scrapper.baseScrapper")
@@ -29,19 +30,24 @@ def getAndCheckEnvVars(site: str, require_pwd: bool = True):
         missing.append(f'SCRAPPER_{site}_JOBS_SEARCH')
     if missing:
         logger.error("config.env_missing", site=site, missing_count=len(missing), missing_keys=missing,
-                     hint="Set up .env.secrets with the listed keys, see apps/scrapper/README.md")
+                     hint="Set up .env.secrets with the listed keys, see apps/scrapper/README.md",
+                     console="\n".join([yellow('Set up .venv file with the following keys:'), yellow(' '.join(missing)),
+                                         yellow('Please read README.md for more info')]))
         exit()
     return mail, pwd, search
 
 
 def printScrapperTitle(scrapper: str, preloadPage: bool):
     printHR(green)
-    logger.info("scraper.run_starting", scrapper=scrapper, preload=bool(preloadPage))
+    logger.info("scraper.run_starting", scrapper=scrapper, preload=bool(preloadPage),
+                console=yellow(f'{getDatetimeNowStr()} - PRELOADING {scrapper}: login & security filters') if preloadPage
+                else green(f'{getDatetimeNowStr()} - RUNNING {scrapper} scrapper'))
     printHR(green)
 
 
 def printPage(webPage, page, totalPages, keywords):
-    logger.debug("scraper.page_loaded", web_page=webPage, page=page, total_pages=totalPages, keywords=keywords)
+    logger.info("scraper.page_loaded", web_page=webPage, page=page, total_pages=totalPages, keywords=keywords,
+                console=green(f'{getDatetimeNowStr()}- {webPage} Starting page {page} of {totalPages} ', f'search={keywords}'))
     printHR(green)
 
 class CustomConverter(MarkdownConverter):
@@ -80,6 +86,7 @@ def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool)
     validations = hasLenAnyText(title, url, company, markdown)
     if 0 in validations:
         for i, v in enumerate(validations):
+            debug(debugFlag, "validate -> " + red(f'ERROR: empty required field {fields[i]}, ') + yellow(f' -> Url: {url} '))
             logger.error("job.field_invalid", field=fields[i], url=url, debug=debugFlag)
         return False
     return True
@@ -100,6 +107,7 @@ def removeUrlParameter(url: str, parameter: str) -> str:
 
 def summarize(keywords, totalResults, currentItem):
     printHR()
-    logger.debug("scraper.results_loaded", loaded=currentItem, total=totalResults, keywords=keywords)
+    logger.info("scraper.results_loaded", loaded=currentItem, total=totalResults, keywords=keywords,
+                console=f'{getDatetimeNowStr()} - Loaded {currentItem} of {totalResults} total results for search: {keywords}')
     printHR()
     print()

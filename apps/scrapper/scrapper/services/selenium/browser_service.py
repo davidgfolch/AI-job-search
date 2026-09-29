@@ -21,19 +21,19 @@ class BrowserService:
             if name and name in self.tabs:
                 self.tabs.pop(name)
         except Exception as ex:
-            logger.error("tab.close_failed", error=str(ex))
+            logger.error("tab.close_failed", error=str(ex), console=f'Error closing tab: {ex}')
 
     @seleniumSocketConnRetry()
     def tab(self, name: Optional[str] = None):
         """Switch or create to tab name. If no name specified switches to default tab."""
         if name is None:
-            logger.debug("tab.switch_default", tab=self.default_tab)
+            logger.info("tab.switch_default", tab=self.default_tab, console=f'SeleniumUtil switching to default tab={self.default_tab}')
             self.driver.switch_to.window(self.default_tab)
         elif self.tabs.get(name):
-            logger.debug("tab.switch_existing", tab=name)
+            logger.info("tab.switch_existing", tab=name, console=f'SeleniumUtil switching to existing tab: {name}')
             self.driver.switch_to.window(self.tabs[name])
         else:
-            logger.debug("tab.created", tab=name)
+            logger.info("tab.created", tab=name, console='SeleniumUtil creating new tab')
             self.driver.switch_to.new_window('tab')
             self.tabs[name] = self.driver.current_window_handle
             self.waitUntilPageIsLoaded(30)

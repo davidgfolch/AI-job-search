@@ -35,29 +35,29 @@ class IndeedAuthenticator:
         return wait_for_cloudflare_filter(self.selenium, CSS_SEL_LOGIN_EMAIL)
 
     def login(self):
-        logger.info("indeed.auth.login_started")
+        logger.info("indeed.auth.login_started", console="Navigating to Indeed login page...")
         self.selenium.loadPage(LOGIN_PAGE)
         self.selenium.waitUntilPageIsLoaded()
         sleep(3, 3)
         self.waitForCloudflareFilterInLogin()
         if self.selenium.waitUntil_presenceLocatedElement_noError('#AccountMenu'):
             return
-        logger.debug("indeed.auth.form_filling")
+        logger.info("indeed.auth.form_filling", console="Filling login form...")
         self.selenium.sendKeys(CSS_SEL_LOGIN_EMAIL, self.USER_EMAIL)
         self.accept_cookies()
-        logger.debug("indeed.auth.form_submitting")
+        logger.info("indeed.auth.form_submitting", console="Submitting login form...")
         self.selenium.waitAndClick(CSS_SEL_LOGIN_SUBMIT)
-        logger.info("indeed.auth.cloudflare_waiting")
+        logger.info("indeed.auth.cloudflare_waiting", console="Waiting for Cloudflare filter...")
         sleep(5, 5)
         if not self.selenium.waitAndClick_noError(CSS_SEL_LOGIN_SUBMIT,
             "Could not resubmit login form after cloudflare filter...",
             showException=False):
             sleep(3, 3)
-        logger.debug("indeed.auth.otp_fallback_handling")
+        logger.info("indeed.auth.otp_fallback_handling", console="Handling Google OTP fallback...")
         self.click_google_otp_fallback()
-        logger.info("indeed.auth.otp_retrieving")
+        logger.info("indeed.auth.otp_retrieving", console="Get email 2FA code...")
         self.getEmail2faCode()
-        logger.debug("indeed.auth.access_key_form_ignored")
+        logger.info("indeed.auth.access_key_form_ignored", console="Ignore Access key form question")
         sleep(2, 3)
         self.ignore_access_key_form()
         sleep(2, 3)

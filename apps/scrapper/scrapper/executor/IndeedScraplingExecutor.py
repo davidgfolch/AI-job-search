@@ -1,5 +1,6 @@
 import math
 from commonlib.observability import get_logger
+from commonlib.terminalColor import green, yellow, red
 from commonlib.decorator.retry import retry
 from ..core import baseScrapper
 from ..core.utils import debug
@@ -23,7 +24,8 @@ class IndeedScraplingExecutor(BaseExecutor):
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
         proxies_str = getEnv('SCRAPPER_INDEED_PROXIES')
         proxies_list = [p.strip() for p in proxies_str.split(',')] if proxies_str and proxies_str.strip() else None
-        logger.info("indeed.scrapling.enabled", proxies_count=len(proxies_list) if proxies_list else 0)
+        logger.info("indeed.scrapling.enabled", proxies_count=len(proxies_list) if proxies_list else 0,
+                    console=f"Using scrapling implementation (proxies={proxies_list})")
         self.navigator = IndeedScraplingNavigator(proxies_list, self.debug)
 
     def _preload_action(self):
@@ -36,7 +38,7 @@ class IndeedScraplingExecutor(BaseExecutor):
 
     def _checkNoResults(self, keyword):
         if self.navigator.checkNoResults():
-            logger.info("indeed.scrapling.no_results", keyword=keyword)
+            logger.info("indeed.scrapling.no_results", keyword=keyword, console=yellow(f"No results for search={keyword}"))
             return False
         return True
 
@@ -49,7 +51,7 @@ class IndeedScraplingExecutor(BaseExecutor):
     def _process_keyword(self, keyword: str, start_page: int):
         import time, random
         time.sleep(random.uniform(5, 10))
-        logger.debug("indeed.scrapling.search.started", keyword=keyword)
+        logger.info("indeed.scrapling.search.started", keyword=keyword, console=f"Search keyword={keyword} using Scrapling")
         
         # Ensure our session gets this search running
         self.navigator.search(keyword, self.location, self.remote, self.days_old, start_page)
@@ -65,10 +67,11 @@ class IndeedScraplingExecutor(BaseExecutor):
         
         if totalResults == 0:
             if not job_links:
-                logger.info("indeed.scrapling.no_results_detail", keyword=keyword)
+                logger.info("indeed.scrapling.no_results_detail", keyword=keyword, console=yellow(f"No results found for {keyword}"))
                 return
             else:
-                logger.warning("indeed.scrapling.total_unknown_using_links", job_links=len(job_links))
+                logger.warning("indeed.scrapling.total_unknown_using_links", job_links=len(job_links),
+                                 console=yellow(f"Total results count not found, but {len(job_links)} links discovered. Proceeding..."))
                 totalResults = len(job_links) # fallback estimate
             
         page = self.navigator.fast_forward_page(start_page, totalResults, self.jobs_x_page) - 1
@@ -81,13 +84,15 @@ class IndeedScraplingExecutor(BaseExecutor):
             foundNewJobInPage = False
             job_links = self.navigator.get_page_job_links()
             while idx < min(len(job_links), self.jobs_x_page):
-                logger.debug("indeed.scrapling.job.processing", page=page, idx=idx + 1)
+                logger.info("indeed.scrapling.job.processing", page=page, idx=idx + 1, console=green(f"pg {page} job {idx + 1} - "), end="")
                 if self._load_and_process_row(job_links[idx]):
                     foundNewJobInPage = True
                 currentItem += 1
+                print()
                 idx += 1
             if not foundNewJobInPage and (page > start_page + 1 or (start_page < 2 and page > 2)):
-                logger.info("indeed.scrapling.pagination.no_new_jobs", keyword=keyword, page=page)
+                logger.info("indeed.scrapling.pagination.no_new_jobs", keyword=keyword, page=page,
+                            console=yellow("No new jobs found in this page, stopping keyword processing."))
                 break
             if self.navigator.click_next_page():
                 self.service.update_state(keyword, page + 1)
@@ -101,7 +106,7 @@ class IndeedScraplingExecutor(BaseExecutor):
         try:
             jobId, jobExists = self.service.job_exists_in_db(initial_url)
             if jobExists:
-                logger.info("indeed.scrapling.job.already_exists", job_id=jobId)
+                logger.info("indeed.scrapling.job.already_exists", job_id=jobId, console=yellow(f"Job id={jobId} already exists in DB, IGNORED."), end="")
                 return False
             self.navigator.load_job_detail(initial_url)
             url = self.navigator.get_current_job_url()
@@ -111,7 +116,7 @@ class IndeedScraplingExecutor(BaseExecutor):
 
         if not ignore:
             if not self._process_row(url):
-                logger.error("indeed.scrapling.job.validation_failed")
+                logger.error("indeed.scrapling.job.validation_failed", console=red("Validation failed"))
                 return False
             return True
         return False

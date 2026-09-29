@@ -64,6 +64,34 @@ Records carry `event`, `module` (the `get_logger` name), `logger` (the app name)
 
 The in-place redraw only applies on an interactive terminal. When the helper runs in a container (`commonlib.terminalUtil.consoleTimerDocker`, i.e. `isDocker()`), the static countdown line is skipped and the wait is collapsed to a single `timer.started` record (no `timer.completed`): `docker-compose logs` is not an interactive console, so one line per idle cycle is enough. ANSI escape codes passed into the helpers are stripped before a `message` lands in a record.
 
+### Two console modes
+
+A record can carry two halves: the structured fields the JSONL stores, and the human line a person reads. The `console` field holds the human line, so an app can keep its old console wording without giving up queryable records:
+
+```python
+logger.info("linkedin.job.processed", job_id=job_id, insert_id=id,
+            console=green(f"{job_id}, {title}, {cyan(company)} - "), end="")
+```
+
+| Mode | Console | File |
+|---|---|---|
+| `CONSOLE_RECORD` (default) | the `console=` text if present, otherwise the rendered record | every record |
+| `CONSOLE_MESSAGE` | the `console=` text only, with no timestamp, level, or event name | every record |
+
+`CONSOLE_MESSAGE` is how an app keeps a quiet, old-style console: a record without `console=` is written to the JSONL and never reaches stdout, which also mutes the chatter of the shared `commonlib` modules the app imports. The scrapper is the reference implementation (`apps/scrapper/README.md`).
+
+| Field | Effect |
+|---|---|
+| `console=` | The text to print. Anything non-string is coerced; the raw text (colors included) never reaches the file, only the ANSI-stripped `message` |
+| `end=` | Terminator for the console text, `"\n"` by default. `end=""` rebuilds a `print(..., end='')` progress prefix. It is ignored in `CONSOLE_RECORD` mode, which always ends the rendered record with a newline, and it never reaches the file |
+
+The mode is resolved per record instead of when structlog is configured, so an entrypoint can select it after a shared module already logged (`commonlib.sql.query_executor` and `commonlib.ollama_client` build their loggers at import time). An entrypoint selects it with `configure_logging("<app>", console=CONSOLE_MESSAGE)`.
+
+Two rules follow from the split:
+
+- A record that prints something a person needed before `LOG_LEVEL=20` became the default is logged at `info`, even if the wording says "DEBUG". Keep the level meaningful, not the old severity.
+- The console text is still a log line, so it obeys the same rules: no secrets, no blobs, and no query strings that carry tracking parameters.
+
 ### Configuration
 
 All apps share these variables. They can be set in `.env` (bind-mounted into every container, so a restart is enough — no rebuild) or per service in `docker-compose.yml`.
@@ -72,12 +100,13 @@ All apps share these variables. They can be set in `.env` (bind-mounted into eve
 |---|---|---|
 | `LOG_LEVEL` | `20` | 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR |
 | `LOG_COLOR` | `True` | Colored console output instead of raw JSON on stdout |
+| `LOG_CONSOLE_MODE` | `record` | `record` renders each record, `message` prints only the `console=` text |
 | `LOG_DIR` | `data/logs` | Directory holding the JSONL files |
 | `LOG_APP_NAME` | `app` | Provisional app name, used until an entrypoint sets one |
 | `LOG_FILE_MAX_BYTES` | `10485760` | Rotate the file once it grows past this |
 | `LOG_FILE_BACKUP_COUNT` | `5` | Rotated files to keep (`<app>.jsonl.1` … `.N`) |
 
-`AI_ENRICH_LOG_*` names predate the modules that share this library and are still read as deprecated aliases; prefer the generic names for new configuration.
+`AI_ENRICH_LOG_*` names predate the modules that share this library and are still read as deprecated aliases; prefer the generic names for new configuration. `LOG_CONSOLE_MODE` is what an entrypoint passes as `console=` to `configure_logging`; an app such as the scrapper hard-codes its mode and only reads the variable when no entrypoint has selected one.
 
 ### Output layout
 

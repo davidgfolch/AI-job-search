@@ -138,7 +138,8 @@ class TestTabLogging:
         switch = _events(records, "tab.switch_default")
         assert len(switch) == 1
         assert switch[0]["tab"] == "window_handle_1"
-        assert switch[0]["log_level"] == "debug"
+        assert switch[0]["log_level"] == "info"
+        assert "switching to default tab=window_handle_1" in switch[0]["console"]
 
     def test_logs_existing_switch(self, mock_driver):
         service = BrowserService(mock_driver)

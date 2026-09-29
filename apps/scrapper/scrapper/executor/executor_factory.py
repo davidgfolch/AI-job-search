@@ -1,5 +1,6 @@
 from urllib.parse import urlsplit
 from commonlib.observability import get_logger
+from commonlib.terminalColor import cyan
 from ..core.scrapper_config import SCRAPPERS, get_debug
 from ..util.persistence_manager import PersistenceManager
 from ..services.selenium.seleniumService import SeleniumService
@@ -37,7 +38,8 @@ def process_page_url(url: str):
     for name, _ in SCRAPPERS.items():
         if url.find(name.lower()) != -1:
             parsed = urlsplit(url)
-            logger.info("executor.page_url_requested", scrapper=name, url_host=parsed.netloc, url_path=parsed.path)
+            logger.info("executor.page_url_requested", scrapper=name, url_host=parsed.netloc, url_path=parsed.path,
+                        console=cyan(f'Running scrapper for pageUrl: {parsed.netloc}{parsed.path}'))
             from ..executor.LinkedinExecutor import LinkedinExecutor
             match name.lower():
                 case 'linkedin':

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from scrapper.services.IndeedService import IndeedService
 from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
+from scrapper.test.log_capture import assert_console_text, assert_logged
 
 @pytest.fixture
 def mock_mysql():
@@ -152,8 +153,10 @@ class TestIndeedService:
         mock_mysql.insert.return_value = 100
         with patch('scrapper.services.IndeedService.logger') as log:
             service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", True)
-        log.debug.assert_any_call('indeed.job.scraped', job_id='1', title='Title', company='Company', easy_apply=True)
-        log.info.assert_called_once_with('indeed.job.inserted', job_id='1', insert_id=100)
+        assert_logged(log, 'info', 'indeed.job.scraped', job_id='1', title='Title', company='Company', easy_apply=True)
+        assert_console_text(log, 'info', 'indeed.job.scraped', '1, Title,', end='')
+        assert_logged(log, 'info', 'indeed.job.inserted', job_id='1', insert_id=100)
+        assert_console_text(log, 'info', 'indeed.job.inserted', 'INSERTED 100!', end='')
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     def test_process_job_logs_already_exists(self, mock_html2md, service, mock_mysql):
@@ -162,4 +165,5 @@ class TestIndeedService:
         with patch('scrapper.services.IndeedService.logger') as log:
             result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
         assert result is True
-        log.info.assert_called_once_with('indeed.job.already_exists', job_id='1')
+        assert_logged(log, 'info', 'indeed.job.already_exists', job_id='1')
+        assert_console_text(log, 'info', 'indeed.job.already_exists', 'already exists in DB (late check)', end='')

@@ -44,13 +44,13 @@ class SeleniumService:
         
     @seleniumSocketConnRetry()
     def exit(self):
-        logger.info("selenium.driver_closing")
+        logger.info("selenium.driver_closing", console='Exiting SeleniumUtil, close driver...')
         try:
             self.driver.quit()
             # Monkey patch quit to avoid double closing in __del__ (undetected_chromedriver issue on Windows)
             self.driver.quit = lambda: None
         except Exception:
-            logger.error("selenium.driver_close_failed")
+            logger.error("selenium.driver_close_failed", console='Error closing driver')
             debug(debugFlag=False, exception=True)
 
     def tabClose(self, name: Optional[str] = None):

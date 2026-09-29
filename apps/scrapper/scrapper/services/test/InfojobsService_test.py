@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from scrapper.services.InfojobsService import InfojobsService, REMOVE_IN_MARKDOWN
+from scrapper.services.InfojobsService import InfojobsService
+from scrapper.services.InfojobsService import REMOVE_IN_MARKDOWN
+from scrapper.test.log_capture import assert_console_text, assert_logged, structured_fields
 from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
 
@@ -65,7 +67,8 @@ class TestInfojobsService:
              patch('scrapper.services.InfojobsService.logger') as log:
             mock_mysql.insert.return_value = 1
             service.process_job("Title", "Company", "Location", "https://www.infojobs.net/of-123", "<html>")
-        log.debug.assert_any_call('infojobs.job.scraped', job_id='123', title='Title', company='Company', location='Location')
+        assert_logged(log, 'info', 'infojobs.job.scraped', job_id='123', title='Title', company='Company', location='Location')
+        assert_console_text(log, 'info', 'infojobs.job.scraped', '123, Title,', end='')
 
     def test_process_job_logs_inserted_and_duplicated(self, service, mock_mysql):
         with patch('scrapper.services.InfojobsService.htmlToMarkdown', return_value="MD"), \
@@ -74,6 +77,7 @@ class TestInfojobsService:
              patch('scrapper.services.InfojobsService.logger') as log:
             mock_mysql.insert.return_value = 8
             service.process_job("Title", "Company", "Location", "https://www.infojobs.net/of-123", "<html>")
-        events = {c.args[0]: c.kwargs for c in log.info.call_args_list}
+        events = {c.args[0]: structured_fields(c.kwargs) for c in log.info.call_args_list}
         assert events['infojobs.job.inserted'] == {'job_id': '123', 'insert_id': 8}
         assert events['infojobs.job.duplicated'] == {'job_id': '123', 'duplicated_id': 42}
+        assert_console_text(log, 'info', 'infojobs.job.inserted', 'INSERTED 8!', end='')

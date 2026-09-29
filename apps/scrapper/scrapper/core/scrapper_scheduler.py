@@ -2,6 +2,7 @@ from typing import Optional
 
 from commonlib.terminalUtil import consoleTimer
 from commonlib.observability import get_logger
+from commonlib.terminalColor import red, yellow
 from commonlib.fileSystemUtil import getSrcPath
 from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, BROWSER, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
@@ -24,8 +25,9 @@ class ScrapperScheduler:
     def validScrapperName(self, name: str):
         if self.getProperties(name) is not None:
             return True
-        logger.error("scheduler.invalid_scrapper", scrapper=name)
-        logger.info("scheduler.available_scrappers", scrappers=list(SCRAPPERS.keys()))
+        logger.error("scheduler.invalid_scrapper", scrapper=name, console=red(f"Invalid scrapper web page name {name}"))
+        logger.info("scheduler.available_scrappers", scrappers=list(SCRAPPERS.keys()),
+                    console=yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
         return False
 
 
@@ -67,7 +69,8 @@ class ScrapperScheduler:
                 properties = scrapper['properties']
                 debug = get_debug(name)
                 browser = properties.get(BROWSER, 'chrome')
-                logger.info("scraper.starting", scrapper=name, debug=debug, browser=browser)
+                logger.info("scraper.starting", scrapper=name, debug=debug, browser=browser,
+                            console=f'{name} DEBUG: {debug}, BROWSER: {browser}')
                 with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
                     seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
                     executor = create_executor(name, seleniumUtil, self.persistenceManager)
@@ -75,7 +78,8 @@ class ScrapperScheduler:
                         if not executor.execute_preload(properties):
                             return False, executed_startingAt
                         if not properties.get('preloaded', True): 
-                            logger.error("scheduler.preload_failed_skip", scrapper=name)
+                            logger.error("scheduler.preload_failed_skip", scrapper=name,
+                                         console=red(f"Skipping execution for {name} due to preload failure."))
                             if hasattr(executor, 'navigator') and executor.navigator:
                                 executor.navigator.close()
                             continue
@@ -87,9 +91,10 @@ class ScrapperScheduler:
         return True, executed_startingAt
 
     def runAllScrappers(self, waitBeforeFirstRuns, starting, startingAt, loops=99999999999):
-        logger.info("scheduler.started", scrappers=list(SCRAPPERS.keys()), loops=loops, wait_before_first_runs=bool(waitBeforeFirstRuns))
+        logger.info("scheduler.started", scrappers=list(SCRAPPERS.keys()), loops=loops, wait_before_first_runs=bool(waitBeforeFirstRuns),
+                    console=f'Executing all scrappers: {list(SCRAPPERS.keys())}')
         if starting:
-            logger.info("scheduler.starting_at", scrapper=startingAt)
+            logger.info("scheduler.starting_at", scrapper=startingAt, console=f'Starting at : {startingAt}')
         count = 0
         while loops == 99999999999 or count < loops:
             count += 1
@@ -104,13 +109,14 @@ class ScrapperScheduler:
                 starting = False
 
     def runSpecifiedScrappers(self, scrappersList: list):
-        logger.info("scheduler.specified_started", scrappers=scrappersList)
+        logger.info("scheduler.specified_started", scrappers=scrappersList, console=f'Executing specified scrappers: {scrappersList}')
         for arg in scrappersList:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
                 debug = get_debug(arg)
                 browser = properties.get(BROWSER, 'chrome')
-                logger.info("scraper.starting", scrapper=arg, debug=debug, browser=browser)
+                logger.info("scraper.starting", scrapper=arg, debug=debug, browser=browser,
+                            console=f'{arg} DEBUG: {debug}, BROWSER: {browser}')
                 with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
                     seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
                     executor = create_executor(arg.capitalize(), seleniumUtil, self.persistenceManager)

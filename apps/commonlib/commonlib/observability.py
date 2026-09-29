@@ -25,12 +25,32 @@ library and are read as deprecated aliases.
 | `LOG_COLOR` | `True` | Colored console output instead of raw JSON on stdout |
 | `LOG_DIR` | `data/logs` | Directory holding the JSONL files |
 | `LOG_APP_NAME` | `app` | Provisional app name, used until an entrypoint sets one |
+| `LOG_CONSOLE_MODE` | `record` | `record` renders each record, `message` prints only `console=` text |
+
+## Two console modes
+
+An app that wants a human console keeps the structured records for its JSONL and
+passes the text to print through the `console` field:
+
+    logger.info("scraper.page_loaded", page=3, total=10,
+                console=green(f"{timestamp} - Starting page 3 of 10"))
+
+`CONSOLE_RECORD` (the default) renders every record on stdout, while
+`CONSOLE_MESSAGE` prints only the `console=` text and keeps the rest file-only, which
+is how the scrapper shows its old-style output while the JSONL keeps every structured
+record. Both live in `commonlib.console_render`; see that module for the details.
+
+The mode is resolved on every record, not when structlog is configured, so an
+entrypoint can select it after a shared module already logged. `LOG_LEVEL` is read when
+structlog is configured and structlog freezes it on the first log call of each logger,
+so an entrypoint must call `configure_logging()` before any other module logs.
 """
 import os
 
 import structlog
 
-from commonlib.environmentUtil import getEnv, getEnvBool
+from commonlib.console_render import CONSOLE_MESSAGE, CONSOLE_RECORD, color_enabled, console_mode, render_console, set_console_mode, split_console_text
+from commonlib.environmentUtil import getEnv
 from commonlib.log_writer import get_log_dir, make_jsonl_writer
 
 DEFAULT_LOG_LEVEL = 20
@@ -59,25 +79,21 @@ def _stamp_app_name(event_dict: dict) -> None:
     event_dict["logger"] = get_app_name()
 
 
-def _color_enabled() -> bool:
-    return getEnvBool("LOG_COLOR", getEnvBool("AI_ENRICH_LOG_COLOR", True))
-
-
-def configure_logging(app_name: str | None = None) -> str:
+def configure_logging(app_name: str | None = None, console: str | None = None) -> str:
     """Configure structlog once and name the JSONL output after `app_name`.
 
     Safe to call repeatedly and safe to call after shared modules have already built
     their loggers: only the first call configures structlog, later calls just re-point
-    the writer, and the writer reads the app name per record. Returns the effective
-    app name.
+    the writer and the console mode, and both are read per record. Returns the
+    effective app name.
 
-    `LOG_LEVEL` and `LOG_COLOR` are read here, not per record, and structlog freezes
-    them on the first log call of each logger. An entrypoint must therefore call this
-    before any other module logs, which is why every app calls it first thing.
+    `console` selects the mode, `CONSOLE_RECORD` (default) or `CONSOLE_MESSAGE`.
     """
     global _app_name, _configured
     if app_name:
         _app_name = app_name
+    if console:
+        set_console_mode(console)
     if _configured:
         return get_app_name()
     _configured = True
@@ -89,8 +105,9 @@ def configure_logging(app_name: str | None = None) -> str:
             structlog.processors.TimeStamper(fmt="iso", key="timestamp"),
             structlog.processors.format_exc_info,
             structlog.processors.dict_tracebacks,
+            split_console_text,
             make_jsonl_writer(log_file_path, _stamp_app_name),
-            structlog.dev.ConsoleRenderer() if _color_enabled() else structlog.processors.JSONRenderer(),
+            render_console,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),
         context_class=dict,

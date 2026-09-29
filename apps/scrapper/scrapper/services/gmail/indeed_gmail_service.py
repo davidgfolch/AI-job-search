@@ -1,6 +1,7 @@
 from .generic_gmail_service import GmailService
 from .email_exceptions import GmailConnectionError
 from commonlib.observability import get_logger
+from commonlib.terminalColor import green
 
 logger = get_logger("scrapper.indeed_gmail_service")
 
@@ -20,11 +21,11 @@ class IndeedGmailService(GmailService):
             if not self._is_connected:
                 if not self.connect():
                     raise GmailConnectionError("Failed to connect to Gmail")
-            logger.info("indeed.otp.waiting", timeout=timeout)
+            logger.info("indeed.otp.waiting", timeout=timeout, console="Waiting for Indeed verification code...")
             code = self.email_reader.get_latest_verification_code(
                 self.INDEED_SENDER, timeout
             )
-            logger.info("indeed.otp.received", code_length=len(code))
+            logger.info("indeed.otp.received", code_length=len(code), console=green("Indeed verification code received"))
             return code
         except GmailConnectionError:
             raise

@@ -43,6 +43,7 @@ This is a monorepo containing several applications and packages:
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
 - **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes its own `data/logs/<app>.jsonl` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)); scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
+- **Dual console & log output**: a record can carry both its structured fields and the human line to print (`console=`, `end=""`), so the scrapper keeps its classic console transcript while `scrapper.jsonl` stays complete and queryable (see [Scrapper — Console Output](apps/scrapper/README.md#console-output--structured-logging))
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 

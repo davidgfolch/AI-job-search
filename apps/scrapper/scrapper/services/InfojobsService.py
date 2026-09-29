@@ -3,6 +3,7 @@ from typing import Tuple
 from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
+from commonlib.terminalColor import green, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, removeLinks, debug as baseDebug
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
@@ -28,14 +29,15 @@ class InfojobsService(BaseService):
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
 
-            logger.debug("infojobs.job.scraped", job_id=job_id, title=title, company=company, location=location)
+            logger.info("infojobs.job.scraped", job_id=job_id, title=title, company=company, location=location,
+                          console=f'{job_id}, {title}, {cyan(company)}, {location} - ', end="")
 
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)
                 if id := self.mysql.insert((job_id, title, company, location, None, url, md, None, self.web_page, duplicated_id)):
-                    logger.info("infojobs.job.inserted", job_id=job_id, insert_id=id)
+                    logger.info("infojobs.job.inserted", job_id=job_id, insert_id=id, console=green(f'INSERTED {id}!'), end="")
                     if duplicated_id:
-                        logger.info("infojobs.job.duplicated", job_id=job_id, duplicated_id=duplicated_id)
+                        logger.info("infojobs.job.duplicated", job_id=job_id, duplicated_id=duplicated_id, console=cyan(f' DUPLICATED {duplicated_id}'), end="")
                     return True
             else:
                 raise ValueError('Validation failed')

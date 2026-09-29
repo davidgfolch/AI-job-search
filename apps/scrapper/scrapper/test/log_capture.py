@@ -9,6 +9,7 @@ from commonlib.observability import configure_logging, log_file_path
 
 APP_NAME = "scrapper"
 DEBUG_LEVEL = 10
+CONSOLE_ONLY_FIELDS = ("console", "end")
 
 
 @contextlib.contextmanager
@@ -49,3 +50,34 @@ def jsonl_records(tmp_path, monkeypatch, app_name: str = APP_NAME):
     monkeypatch.setenv("LOG_DIR", str(tmp_path))
     configure_logging(app_name)
     yield lambda: read_records(app_name)
+
+
+def structured_fields(kwargs: dict) -> dict:
+    """Drop the presentational `console=`/`end=` fields from a recorded call."""
+    return {key: value for key, value in kwargs.items() if key not in CONSOLE_ONLY_FIELDS}
+
+
+def logged_calls(mock_logger, level: str, event: str) -> list:
+    """Return the `mock_logger.<level>(event, ...)` calls recorded for `event`."""
+    return [call for call in getattr(mock_logger, level).call_args_list if call.args and call.args[0] == event]
+
+
+def assert_logged(mock_logger, level: str, event: str, **fields):
+    """Assert a logger call carries exactly these structured fields.
+
+    The restored console text is asserted separately with `assert_console_text`, so a
+    change to the human wording does not hide a change to the machine fields.
+    """
+    calls = logged_calls(mock_logger, level, event)
+    assert calls, f"{level}('{event}') was never called"
+    recorded = [structured_fields(call.kwargs) for call in calls]
+    assert fields in recorded, f"{level}('{event}') fields {recorded} do not include {fields}"
+
+
+def assert_console_text(mock_logger, level: str, event: str, contains: str = "", end: str = "\n"):
+    """Assert the console half of a record: its wording and whether the line stays open."""
+    calls = logged_calls(mock_logger, level, event)
+    assert calls, f"{level}('{event}') was never called"
+    kwargs = calls[-1].kwargs
+    assert contains in kwargs.get("console", ""), f"console={kwargs.get('console')!r} does not contain {contains!r}"
+    assert kwargs.get("end", "\n") == end, f"end={kwargs.get('end')!r}, expected {end!r}"

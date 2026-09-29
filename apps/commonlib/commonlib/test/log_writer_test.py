@@ -158,6 +158,13 @@ class TestWriterFactory:
         assert _events(path) == [{"event": "after_rotate"}]
         assert os.path.exists(f"{path}.1")
 
+    def test_private_keys_are_dropped_from_the_file(self, log_dir):
+        path = str(log_dir / "w.jsonl")
+        writer = make_jsonl_writer(lambda: path, lambda record: None)
+        result = writer(None, "info", {"event": "scraper.started", "_console": "RUNNING Linkedin"})
+        assert _events(path) == [{"event": "scraper.started"}]
+        assert result["_console"] == "RUNNING Linkedin"
+
 
 def test_resolve_read_path_prefers_per_app_name(log_dir):
     app = log_dir / "cron.jsonl"

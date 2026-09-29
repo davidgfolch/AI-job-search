@@ -2,7 +2,8 @@ from typing import Tuple, Optional
 from commonlib.decorator.retry import retry
 from commonlib.exceptionUtil import try_or_warn
 from commonlib.observability import get_logger
-from commonlib.terminalColor import yellow
+from commonlib.stringUtil import join
+from commonlib.terminalColor import green, yellow, printHR
 from selenium.common.exceptions import NoSuchElementException
 
 from ..services.selenium.seleniumService import SeleniumService
@@ -76,7 +77,7 @@ class LinkedinNavigator(BaseNavigator):
     def uncheck_remember_me(self):
         elms = self.selenium.getElms(CSS_SEL_LOGIN_REMEMBER_ME)
         if not elms:
-            logger.debug("linkedin.login.remember_me_absent")
+            logger.info("linkedin.login.remember_me_absent", console=yellow('"Remember me" checkbox not found or already unchecked'))
             return
         try_or_warn(lambda: self.selenium.checkboxUnselect(elms.pop()), 'Could not uncheck "remember me" checkbox')
 
@@ -94,7 +95,7 @@ class LinkedinNavigator(BaseNavigator):
     def check_redirected_to_login(self, login_callback) -> bool:
         current_url = self.selenium.getUrl()
         if any(p in current_url for p in ['linkedin.com/login', 'linkedin.com/uas/login', 'linkedin.com/authwall']):
-            logger.warning("linkedin.auth.redirect_to_login")
+            logger.warning("linkedin.auth.redirect_to_login", console=yellow("Detected redirect to login page, re-logging in..."))
             login_callback()
             return True
         return False
@@ -106,7 +107,8 @@ class LinkedinNavigator(BaseNavigator):
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElm) == 0:
             return True
-        logger.info("linkedin.no_results", keywords=keywords, remote=remote, location=location, last=f_TPR, url=url)
+        logger.info("linkedin.no_results", keywords=keywords, remote=remote, location=location, last=f_TPR, url=url,
+                    console=yellow(join('No results for job search on linkedIn for', f'keywords={keywords}', f'remote={remote}', f'location={location}', f'old={f_TPR}', f'URL {url}')))
         return False
 
     def replace_index(self, cssSelector: str, idx: int):
@@ -115,7 +117,10 @@ class LinkedinNavigator(BaseNavigator):
     @retry(exception=NoSuchElementException)
     def get_total_results(self, keywords: str, remote, location, f_TPR, sortBy) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')
-        logger.info("linkedin.results_found", total=total, keywords=keywords, remote=remote, location=location, last=f_TPR, sort_by=sortBy)
+        printHR(green)
+        logger.info("linkedin.results_found", total=total, keywords=keywords, remote=remote, location=location, last=f_TPR, sort_by=sortBy,
+                    console=green(join(f'{total} total results for search: {keywords}', f'(remote={remote}, location={location}, last={f_TPR}, sortBy={sortBy})')))
+        printHR(green)
         return int(total.replace('+', ''))
 
     def scroll_jobs_list(self, idx):
@@ -189,7 +194,7 @@ class LinkedinNavigator(BaseNavigator):
         if len(elms) > 0:
             self.selenium.waitAndClick_noError(elms[-1], 'Could not collapse messages')
         else:
-            logger.debug("linkedin.messages.none")
+            logger.info("linkedin.messages.none", console=yellow('No messages found to collapse'))
 
     def wait_until_page_url_contains(self, url, timeout):
         self.selenium.waitUntilPageUrlContains(url, timeout)

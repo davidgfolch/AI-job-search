@@ -5,6 +5,7 @@ from scrapper.core.baseScrapper import (
     getAndCheckEnvVars, htmlToMarkdown, removeInvalidScapes,
     removeLinks, validate, join, printScrapperTitle, printPage, removeUrlParameter
 )
+from commonlib.terminalColor import stripAnsi
 from scrapper.test.log_capture import captured_records
 
 class TestGetAndCheckEnvVars:
@@ -99,11 +100,12 @@ def test_print_page(mock_hr):
     with captured_records(baseScrapper, "scrapper.baseScrapper") as records:
         printPage('LinkedIn', 1, 10, 'python developer')
     assert [r["event"] for r in records] == ["scraper.page_loaded"]
-    assert records[0]["log_level"] == "debug"
+    assert records[0]["log_level"] == "info"
     assert records[0]["web_page"] == "LinkedIn"
     assert records[0]["page"] == 1
     assert records[0]["total_pages"] == 10
     assert records[0]["keywords"] == "python developer"
+    assert "Starting page 1 of 10" in stripAnsi(records[0]["console"])
     mock_hr.assert_called()
 
 def test_summarize_logs_loaded_count():
@@ -137,11 +139,13 @@ def test_get_env_vars_missing_logs_error_without_secret_values(mock_get_env):
 def test_validate_logs_field_invalid(args, invalid_field):
     with captured_records(baseScrapper, "scrapper.baseScrapper") as records:
         assert validate(*args) is False
-    assert [r["event"] for r in records] == ["job.field_invalid"] * 4
-    assert [r["log_level"] for r in records] == ["error"] * 4
-    assert invalid_field in [r["field"] for r in records]
-    assert {r["url"] for r in records} == {args[1]}
-    assert {r["debug"] for r in records} == {args[4]}
+    invalid = [r for r in records if r["event"] == "job.field_invalid"]
+    assert len(invalid) == 4
+    assert [r["log_level"] for r in invalid] == ["error"] * 4
+    assert invalid_field in [r["field"] for r in invalid]
+    assert {r["url"] for r in invalid} == {args[1]}
+    assert {r["debug"] for r in invalid} == {args[4]}
+    assert {r["event"] for r in records} - {"job.field_invalid"} == {"debug.message"}
 
 
 @pytest.mark.parametrize("url, param, expected_not_in, expected_in", [

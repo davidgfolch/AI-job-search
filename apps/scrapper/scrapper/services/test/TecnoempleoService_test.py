@@ -4,6 +4,7 @@ from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.TecnoempleoService import TecnoempleoService
+from scrapper.test.log_capture import assert_console_text, assert_logged, structured_fields
 
 class TestTecnoempleoService:
     @pytest.fixture
@@ -44,7 +45,8 @@ class TestTecnoempleoService:
              patch('scrapper.services.TecnoempleoService.logger') as log:
             mock_mysql.insert.return_value = 1
             service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
-        log.debug.assert_any_call('tecnoempleo.job.scraped', job_id='rf-123', title='Title', company='Company', location='Location', easy_apply=False)
+        assert_logged(log, 'info', 'tecnoempleo.job.scraped', job_id='rf-123', title='Title', company='Company', location='Location', easy_apply=False)
+        assert_console_text(log, 'info', 'tecnoempleo.job.scraped', 'rf-123, Title,', end='')
 
     def test_process_job_logs_inserted_and_duplicated(self, service, mock_mysql):
         with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="MD"), \
@@ -52,6 +54,7 @@ class TestTecnoempleoService:
              patch('scrapper.services.TecnoempleoService.logger') as log:
             mock_mysql.insert.return_value = 4
             service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
-        events = {c.args[0]: c.kwargs for c in log.info.call_args_list}
+        events = {c.args[0]: structured_fields(c.kwargs) for c in log.info.call_args_list}
         assert events['tecnoempleo.job.inserted'] == {'job_id': 'rf-123', 'insert_id': 4}
         assert events['tecnoempleo.job.duplicated'] == {'job_id': 'rf-123', 'duplicated_id': 11}
+        assert_console_text(log, 'info', 'tecnoempleo.job.inserted', 'INSERTED 4!', end='')

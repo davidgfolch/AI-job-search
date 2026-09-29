@@ -1,4 +1,5 @@
 import pytest
+from scrapper.test.log_capture import assert_console_text, assert_logged
 from unittest.mock import MagicMock, patch
 from scrapper.services.gmail.email_exceptions import GmailConnectionError
 
@@ -71,6 +72,8 @@ class TestIndeedGmailService:
         service.email_reader.get_latest_verification_code.return_value = "654321"
         with patch('scrapper.services.gmail.indeed_gmail_service.logger') as log:
             service.get_indeed_verification_code_from_latest_email(timeout=120)
-        log.info.assert_any_call('indeed.otp.waiting', timeout=120)
-        log.info.assert_any_call('indeed.otp.received', code_length=6)
+        assert_logged(log, 'info', 'indeed.otp.waiting', timeout=120)
+        assert_console_text(log, 'info', 'indeed.otp.waiting', 'Waiting for Indeed verification code')
+        assert_logged(log, 'info', 'indeed.otp.received', code_length=6)
+        assert_console_text(log, 'info', 'indeed.otp.received', 'Indeed verification code received')
         assert not any('654321' in str(c) for c in log.info.call_args_list)

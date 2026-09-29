@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Tuple, Optional
 from urllib.parse import urlsplit
 from commonlib.observability import get_logger
+from commonlib.terminalColor import yellow
 from ..services.selenium.browser_service import sleep
 from ..core.utils import pageExists
 from ..services.selenium.seleniumService import SeleniumService
@@ -23,7 +24,7 @@ class BaseNavigator(ABC):
 
     def load_page(self, url: str):
         parsed = urlsplit(url)
-        logger.debug("page.loading", url_host=parsed.netloc, url_path=parsed.path)
+        logger.info("page.loading", url_host=parsed.netloc, url_path=parsed.path, console=f'Loading page {parsed.netloc}{parsed.path}')
         self.selenium.loadPage(url)
         self.selenium.waitUntilPageIsLoaded()
 
@@ -34,7 +35,8 @@ class BaseNavigator(ABC):
         """
         page = 1
         if start_page > 1 and pageExists(start_page, total_results, jobs_x_page):
-            logger.debug("page.fast_forwarding", start_page=start_page, total_results=total_results, jobs_x_page=jobs_x_page)
+            logger.info("page.fast_forwarding", start_page=start_page, total_results=total_results, jobs_x_page=jobs_x_page,
+                        console=yellow(f"Fast forwarding to page {start_page}..."))
             while page < start_page:
                 if self.click_next_page():
                     page += 1

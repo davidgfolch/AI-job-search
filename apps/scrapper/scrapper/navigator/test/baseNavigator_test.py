@@ -106,9 +106,10 @@ class TestStructuredLogging:
         with captured_records(baseNavigator, LOG_MODULE) as records:
             navigator.load_page(url)
         assert [r["event"] for r in records] == ["page.loading"]
-        assert records[0]["log_level"] == "debug"
+        assert records[0]["log_level"] == "info"
         assert records[0]["url_host"] == expected_host
         assert records[0]["url_path"] == expected_path
+        assert records[0]["console"] == f"Loading page {expected_host}{expected_path}"
         assert "SECRET" not in str(records)
         assert url not in str(records)
 
@@ -127,6 +128,7 @@ class TestStructuredLogging:
             assert records == []
         else:
             assert [r["event"] for r in records] == [expected_event]
+            assert "Fast forwarding to page 3..." in records[0]["console"]
             assert records[0]["start_page"] == start_page
             assert records[0]["total_results"] == total_results
             assert records[0]["jobs_x_page"] == jobs_x_page

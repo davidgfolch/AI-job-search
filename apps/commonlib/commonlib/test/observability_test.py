@@ -55,15 +55,15 @@ class TestConfiguration:
         assert any(isinstance(p, structlog.processors.ExceptionRenderer) for p in processors)
 
     def test_color_enabled_by_default(self, log_dir):
-        assert observability._color_enabled() is True
+        assert observability.color_enabled() is True
 
     def test_color_disabled_by_env(self, log_dir, monkeypatch):
         monkeypatch.setenv("LOG_COLOR", "False")
-        assert observability._color_enabled() is False
+        assert observability.color_enabled() is False
 
     def test_color_enabled_by_legacy_env(self, log_dir, monkeypatch):
         monkeypatch.setenv("AI_ENRICH_LOG_COLOR", "False")
-        assert observability._color_enabled() is False
+        assert observability.color_enabled() is False
 
     def test_log_level_defaults_to_info(self, log_dir, monkeypatch):
         monkeypatch.delenv("LOG_LEVEL", raising=False)

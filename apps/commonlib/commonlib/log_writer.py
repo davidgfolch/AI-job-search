@@ -4,6 +4,8 @@ Kept apart from `observability` so the structlog configuration does not own file
 handling. `observability` injects a `resolve_path` callable rather than this module
 importing back, which keeps the dependency one-way.
 
+Keys prefixed with `_` are treated as processor-private and never reach the file.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `LOG_DIR` | `data/logs` | Directory holding the JSONL files |
@@ -20,6 +22,7 @@ DEFAULT_LOG_DIR = "data/logs"
 DEFAULT_LOG_FILE_MAX_BYTES = 10 * 1024 * 1024
 DEFAULT_LOG_FILE_BACKUP_COUNT = 5
 LEGACY_LOG_FILE_NAME = "app.jsonl"
+PRIVATE_KEY_PREFIX = "_"
 
 
 def resolve_read_path(path: str) -> str | None:
@@ -77,6 +80,16 @@ def append_jsonl(filepath: str, record: dict) -> None:
         pass
 
 
+def public_record(event_dict: dict) -> dict:
+    """Drop the `_`-prefixed keys processors use to hand data to each other.
+
+    `observability` carries the raw console text under a private key so the JSONL
+    never receives the color escape sequences, while the console renderer still
+    receives the untouched text.
+    """
+    return {key: value for key, value in event_dict.items() if not key.startswith(PRIVATE_KEY_PREFIX)}
+
+
 def make_jsonl_writer(resolve_path: Callable[[], str], stamp: Callable[[dict], None]):
     """Build the structlog processor that mirrors every record to `resolve_path()`.
 
@@ -88,7 +101,7 @@ def make_jsonl_writer(resolve_path: Callable[[], str], stamp: Callable[[dict], N
         stamp(event_dict)
         filepath = resolve_path()
         rotate_if_needed(filepath)
-        append_jsonl(filepath, event_dict)
+        append_jsonl(filepath, public_record(event_dict))
         return event_dict
 
     return _writer

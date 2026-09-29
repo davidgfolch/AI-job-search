@@ -46,8 +46,9 @@ class TestDriverLogging:
                 DriverUtil("chrome")
         configured = _events(records, "driver.undetected_configured")
         assert len(configured) == 1
-        assert configured[0]["log_level"] == "debug"
+        assert configured[0]["log_level"] == "info"
         assert configured[0]["undetected"] is False
+        assert configured[0]["console"] == "seleniumUtil init (undetected=False)"
 
     def test_logs_undetected_unavailable(self, webdriver_mocks):
         with patch.object(driverUtil, "getEnvBool", return_value=True):

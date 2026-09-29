@@ -124,6 +124,8 @@ class PersistenceManager:
                     del self.state[site]['last_error_time']
             self.clear_state(site)
         else:
-            logger.warning("state.preserved_with_failures", site=site, failed_count=len(self.get_failed_keywords(site)))
+            from commonlib.terminalColor import yellow
+            logger.warning("state.preserved_with_failures", site=site, failed_count=len(self.get_failed_keywords(site)),
+                           console=yellow("Scrapper finished with failed keywords. State preserved for retry."))
         self.save()
 

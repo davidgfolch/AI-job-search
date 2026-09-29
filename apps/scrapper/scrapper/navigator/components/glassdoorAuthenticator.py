@@ -33,15 +33,15 @@ class GlassdoorAuthenticator:
 
     def login(self):
         """Handle the full Indeed OTP login flow via Glassdoor popup window."""
-        logger.debug("glassdoor.auth.indeed_button_click")
+        logger.info("glassdoor.auth.indeed_button_click", console="Clicking Indeed auth button on Glassdoor...")
         old_handles = self.selenium.driver.window_handles
         self.selenium.waitAndClick(CSS_SEL_INDEED_AUTH_BUTTON)
-        logger.debug("glassdoor.auth.popup_waiting")
+        logger.info("glassdoor.auth.popup_waiting", console="Waiting for popup window...")
         self._popup_handle = self.selenium.wait_for_new_window(old_handles)
         self.selenium.switch_to_window(self._popup_handle)
         self.selenium.set_window_size(1370, 1000)
         sleep(3, 3)
-        logger.debug("glassdoor.auth.email_filling")
+        logger.info("glassdoor.auth.email_filling", console="Filling email in popup...")
         self.selenium.sendKeys(CSS_SEL_EMAIL_INPUT, self.USER_EMAIL)
         self._accept_cookies_if_present()
         self._login_submit()
@@ -49,22 +49,22 @@ class GlassdoorAuthenticator:
         self._accept_cookies_if_present()
         _detect_captcha(self.selenium, CSS_SEL_GOOGLE_OTP_FALLBACK)
         self._fill_OTP_code()
-        logger.debug("glassdoor.auth.otp_retrieving")
+        logger.info("glassdoor.auth.otp_retrieving", console="Retrieving 2FA code from email...")
         self._get_otp_code()
-        logger.debug("glassdoor.auth.popup_closing")
+        logger.info("glassdoor.auth.popup_closing", console="Closing popup window...")
         self.selenium.close_and_switch_back(self._popup_handle)
         self._popup_handle = None
 
     @retry()
     def _login_submit(self):
-        logger.debug("glassdoor.auth.email_submitting")
+        logger.info("glassdoor.auth.email_submitting", console="Submitting email in popup...")
         self.selenium.waitAndClick(CSS_SEL_EMAIL_SUBMIT)
         self.selenium.waitUntilPageIsLoaded()
         sleep(2, 3)
     
     @retry()
     def _fill_OTP_code(self):
-        logger.debug("glassdoor.auth.otp_fallback_click")
+        logger.info("glassdoor.auth.otp_fallback_click", console="Clicking OTP fallback link...")
         self.selenium.waitAndClick(CSS_SEL_GOOGLE_OTP_FALLBACK)
         self.selenium.waitUntilPageIsLoaded()
         sleep(2, 3)
@@ -73,19 +73,19 @@ class GlassdoorAuthenticator:
         try:
             self.selenium.waitUntilVisible(CSS_SEL_COOKIE_ACCEPT, timeout=5)
             self.selenium.waitAndClick(CSS_SEL_COOKIE_ACCEPT)
-            logger.debug("glassdoor.auth.cookies_accepted")
+            logger.info("glassdoor.auth.cookies_accepted", console="Cookies accepted in popup window")
         except Exception:
-            logger.debug("glassdoor.auth.no_cookie_banner")
+            logger.info("glassdoor.auth.no_cookie_banner", console="No cookie consent banner found in popup, continuing...")
 
     @retry(delay=1)
     def _get_otp_code(self):
         sleep(5, 5)
-        logger.info("glassdoor.auth.gmail_connecting")
+        logger.info("glassdoor.auth.gmail_connecting", console="Connecting to Gmail IMAP to retrieve OTP code...")
         with GlassdoorGmailService() as gmail:
             code = gmail.wait_for_glassdoor_verification_code(120)
-        logger.info("glassdoor.auth.otp_received", code_length=len(code))
+        logger.info("glassdoor.auth.otp_received", code_length=len(code), console="OTP code received, entering in passcode field...")
         self.selenium.sendKeys(CSS_SEL_PASSCODE_INPUT, code)
         self.selenium.waitAndClick(CSS_SEL_OTP_VERIFY_SUBMIT)
         self.selenium.waitUntilPageIsLoaded()
         raise_if_otp_invalid(self.selenium)
-        logger.info("glassdoor.auth.otp_accepted")
+        logger.info("glassdoor.auth.otp_accepted", console="OTP code accepted")

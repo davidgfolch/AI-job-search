@@ -2,7 +2,8 @@ from selenium.common.exceptions import NoSuchElementException
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.decorator.retry import StackTrace, retry
 from commonlib.observability import get_logger
-from commonlib.terminalColor import yellow
+from commonlib.stringUtil import join
+from commonlib.terminalColor import green, yellow, printHR
 from .baseNavigator import BaseNavigator
 from ..core.utils import debug
 from ..services.selenium.browser_service import sleep
@@ -58,7 +59,8 @@ class TecnoempleoNavigator(BaseNavigator):
     def check_results(self, keywords: str, url: str, remote) -> bool:
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElm) > 0:
-            logger.info("tecnoempleo.no_results", keywords=keywords, remote=remote)
+            logger.info("tecnoempleo.no_results", keywords=keywords, remote=remote,
+                        console=join('No results for job search on Tecnoempleo for', f'keywords={keywords}', f'remote={remote}'))
             return False
         return True
 
@@ -67,7 +69,10 @@ class TecnoempleoNavigator(BaseNavigator):
 
     def get_total_results(self, keywords: str, remote) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0]
-        logger.info("tecnoempleo.results_found", total=total, keywords=keywords, remote=remote)
+        printHR(green)
+        logger.info("tecnoempleo.results_found", total=total, keywords=keywords, remote=remote,
+                    console=green(join(f'{total} total results for search: {keywords}', f'(remote={remote})')))
+        printHR(green)
         return int(total)
 
     def scroll_to_bottom(self):
