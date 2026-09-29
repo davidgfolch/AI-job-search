@@ -18,7 +18,7 @@ export const useViewer = () => {
     const apiError = data?.error; // Error returned from API (e.g., database errors)
     const [dismissedApiErrors, setDismissedApiErrors] = useState<Set<string>>(new Set());
     const displayedApiError = apiError && !dismissedApiErrors.has(apiError) ? apiError : null;
-    const hasMorePages = allJobs.length < (data?.total || 0) - 1;
+    const hasMorePages = allJobs.length < (data?.total || 0);
     const shouldAutoSelectNextPage = useRef(false);
     const handleLoadMoreWithAutoSelect = () => {
         shouldAutoSelectNextPage.current = true;

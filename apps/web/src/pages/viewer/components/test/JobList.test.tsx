@@ -16,6 +16,7 @@ describe('JobList', () => {
     onJobSelect: vi.fn(),
     onLoadMore: vi.fn(),
     hasMore: false,
+    isLoadingMore: false,
     selectedIds: new Set<number>(),
     selectionMode: 'none' as const,
     onToggleSelectJob: vi.fn(),
