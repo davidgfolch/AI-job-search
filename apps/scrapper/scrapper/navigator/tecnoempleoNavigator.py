@@ -1,11 +1,10 @@
 from selenium.common.exceptions import NoSuchElementException
-from commonlib.company_normalizer import UNSPECIFIED_COMPANY
-from commonlib.decorator.retry import StackTrace, retry
+from commonlib.decorator.retry import retry
 from commonlib.observability import get_logger
 from commonlib.stringUtil import join
 from commonlib.terminalColor import green, yellow, printHR
 from .baseNavigator import BaseNavigator
-from ..core.utils import debug
+from .components.tecnoempleoCompanyReader import TecnoempleoCompanyReader
 from ..services.selenium.browser_service import sleep
 from ..services.selenium.seleniumService import SeleniumService
 
@@ -128,16 +127,8 @@ class TecnoempleoNavigator(BaseNavigator):
         return title, company, location, url, html
 
     def get_company(self) -> str:
-        """Some tecnoempleo offers render no company, they are stored as unspecified instead of being discarded."""
-        try:
-            return self._read_company() or UNSPECIFIED_COMPANY
-        except Exception:
-            debug(self.debug, exception=True)
-            return UNSPECIFIED_COMPANY
-
-    @retry(retries=2, delay=1, exception=NoSuchElementException, raiseException=False, stackTrace=StackTrace.NEVER)
-    def _read_company(self) -> str:
-        return self.selenium.getText(CSS_SEL_COMPANY).strip()
+        """Offers with no company page still name the company as a header text node, the ones with no employer at all are stored as unspecified."""
+        return TecnoempleoCompanyReader(self.selenium, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, self.debug).read()
     
     def get_attribute(self, css_sel, attr):
         return self.selenium.getAttr(css_sel, attr)

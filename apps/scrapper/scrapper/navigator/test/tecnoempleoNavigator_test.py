@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, Mock, call, patch
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
-from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_COMPANY, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS
+from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS
 from selenium.common.exceptions import NoSuchElementException
 
 class TestTecnoempleoNavigator:
@@ -130,42 +130,24 @@ class TestTecnoempleoNavigator:
         mock_selenium.getText.return_value = "Everything is fine"
         assert navigator.check_rate_limit() is False
 
-    def test_get_company(self, navigator, mock_selenium):
-        mock_selenium.getText.return_value = "  Acme  "
-        assert navigator.get_company() == "Acme"
-        mock_selenium.getText.assert_called_with(CSS_SEL_COMPANY)
-
-    @pytest.mark.parametrize("text", ["", "   "])
-    def test_get_company_blank(self, navigator, mock_selenium, text):
-        mock_selenium.getText.return_value = text
-        assert navigator.get_company() == UNSPECIFIED_COMPANY
-
-    def test_get_company_element_not_found(self, navigator, mock_selenium):
-        """tecnoempleo sometimes renders no company, the job must not be discarded"""
-        mock_selenium.getText.side_effect = NoSuchElementException("no company")
-        with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
-            assert navigator.get_company() == UNSPECIFIED_COMPANY
-
-    def test_get_company_other_error(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = ValueError("stale page")
-        assert navigator.get_company() == UNSPECIFIED_COMPANY
-
-    def test_get_company_retries_before_fallback(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = [NoSuchElementException("not rendered yet"), "Acme"]
-        with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
-            assert navigator.get_company() == "Acme"
+    def test_get_company_delegates_to_the_company_reader(self, navigator, mock_selenium):
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoCompanyReader') as mock_reader:
+            mock_reader.return_value.read.return_value = "Sngular"
+            assert navigator.get_company() == "Sngular"
+        mock_reader.assert_called_once_with(mock_selenium, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, False)
 
     def test_get_job_data_company_unspecified(self, navigator, mock_selenium):
-        """A job with no company is still returned, with the unspecified sentinel"""
+        """A job whose offer names no employer at all is still returned, with the unspecified sentinel"""
         def getText(cssSel):
             if cssSel == CSS_SEL_COMPANY:
                 raise NoSuchElementException("no company")
             return "Title"
         mock_selenium.getText.side_effect = getText
         mock_selenium.getElms.return_value = ["elm1"]
+        mock_selenium.driver.execute_script.return_value = ''  # no company text node in the header
         mock_selenium.getUrl.return_value = "http://job-url"
         mock_selenium.getHtml.return_value = "<div>Description</div>"
-        with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
+        with patch('commonlib.decorator.retry.sleep'):
             title, company, location, url, html = navigator.get_job_data()
         assert title == "Title"
         assert company == UNSPECIFIED_COMPANY
