@@ -13,6 +13,10 @@
 ![cron](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/cron/coverage.svg)
 ![e2e](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/e2e/coverage.svg)
 
+> The `e2e` badge is the **frontend union** (web unit + e2e), the metric the 90% floor is
+> enforced on; `web` is the unit run alone. See
+> [Coverage Gates](READMEs/README_DEVELOPMENT.md#coverage-gates).
+
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI job offer structured data extraction, skills/technologies description inference, etc.
 
 ## Project Structure

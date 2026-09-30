@@ -164,7 +164,7 @@ cd apps/commonlib && poetry run pytest test/architecture_test.py
 
 ## Testing Requirements
 
-- **Coverage**: Minimum 85% for all apps, generate badges with `--coverage`
+- **Coverage**: 90% floor on statements and lines (functions/branches are reported only). The frontend is gated on the union of web unit + e2e coverage via `scripts/coverage/frontend-coverage-gate.mjs`; the scrapper via `scripts/coverage/scrapper_coverage_gate.py`. Generate badges with `--coverage`
 - **Test Order**: commonlib tests run first, then other apps, then E2E
 - **Windows Compatibility**: Use appropriate conditional blocks for OS-specific code
 

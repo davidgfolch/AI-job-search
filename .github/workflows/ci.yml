@@ -112,7 +112,7 @@ jobs:
           if [ -f "package.json" ]; then
             npm install
             npm test -- run --coverage
-            npx coverage-badges --label "${MODULE}"
+            npx coverage-badges --label "${MODULE}" --source coverage/coverage-summary.json
             mkdir -p coverage_artifacts
             cp coverage/badges.svg coverage_artifacts/coverage.svg
           elif [ "${MODULE}" == "apps/backend" ] || [ "${MODULE}" == "apps/aiEnrich" ] || [ "${MODULE}" == "apps/aiEnrichNew" ] || [ "${MODULE}" == "apps/aiEnrichSkill" ] || [ "${MODULE}" == "apps/aiEnrich3" ] || [ "${MODULE}" == "apps/aiCvMatcher" ] || [ "${MODULE}" == "apps/aiFormFiller" ] || [ "${MODULE}" == "apps/cron" ]; then
@@ -120,7 +120,7 @@ jobs:
             uv run coverage run -m pytest
             uv run coverage xml
             uv run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-            uv run coverage report -m || true
+            uv run coverage report -m || echo "::warning::${MODULE} is below the coverage floor declared in its pyproject.toml"
           else
             # apps/commonlib, apps/scrapper
             poetry lock
@@ -128,7 +128,12 @@ jobs:
             poetry run coverage run -m pytest
             poetry run coverage xml
             poetry run genbadge coverage -i coverage.xml -o coverage.svg -n "${MODULE}"
-            poetry run coverage report -m || true
+            poetry run coverage report -m || echo "::warning::${MODULE} is below the coverage floor declared in its pyproject.toml"
+            if [ "${MODULE}" == "apps/scrapper" ]; then
+              # coverage.py's fail_under only compares the branch-inclusive total, so the
+              # 90% floor on production statements/lines is enforced by this script instead.
+              poetry run python "${GITHUB_WORKSPACE}/scripts/coverage/scrapper_coverage_gate.py" --min 90 --xml "${MODULE}/coverage.xml" --worst 10
+            fi
           fi
           
       - name: Upload coverage badge
@@ -139,6 +144,13 @@ jobs:
           path: |
             ${{ matrix.module }}/coverage.svg
             ${{ matrix.module }}/coverage_artifacts/coverage.svg
+
+      - name: Upload web unit coverage summary
+        if: matrix.module == 'apps/web'
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-unit-coverage
+          path: apps/web/coverage/coverage-summary.json
 
   e2e:
     needs: changes
@@ -168,22 +180,12 @@ jobs:
         run: npm test
         working-directory: apps/e2e
 
-      - name: Generate coverage badge
-        if: success()
-        run: |
-          npx coverage-badges --label "apps/e2e"
-          mkdir -p coverage_artifacts
-          cp coverage/badges.svg coverage_artifacts/coverage.svg
-        working-directory: apps/e2e
-
-      - name: Upload coverage badge
+      - name: Upload e2e coverage summary
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: badge-apps-e2e
-          path: |
-            apps/e2e/coverage.svg
-            apps/e2e/coverage_artifacts/coverage.svg
+          name: e2e-coverage-summary
+          path: apps/e2e/coverage/coverage-summary.json
 
       - name: Upload Playwright report
         if: failure()
@@ -193,10 +195,64 @@ jobs:
           path: apps/e2e/playwright-report/
           retention-days: 7
 
-  update-badges:
-    needs: [test, e2e]
+  frontend-coverage:
+    needs: [changes, e2e]
+    if: needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging') && needs.test.result != 'failure' && needs.e2e.result != 'failure'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: apps/web
+
+      # The union needs both feeds measured against the same denominator. The e2e
+      # summary comes from the e2e job; the web unit feed is produced here so the gate
+      # does not depend on apps/web happening to be part of the changed-module matrix.
+      - name: Run web unit tests with coverage
+        run: npm test -- run --coverage
+        working-directory: apps/web
+
+      - name: Download e2e coverage summary
+        uses: actions/download-artifact@v7
+        with:
+          name: e2e-coverage-summary
+          path: artifacts/e2e
+
+      - name: Gate frontend coverage (web unit + e2e union)
+        run: |
+          WEB_UNIT_COVERAGE="apps/web/coverage/coverage-summary.json" \
+          E2E_COVERAGE="artifacts/e2e/coverage-summary.json" \
+          FRONTEND_COVERAGE_OUT="apps/e2e/coverage/coverage-frontend-summary.json" \
+          node scripts/coverage/frontend-coverage-gate.mjs --min 90
+
+      - name: Generate frontend coverage badge
+        run: |
+          cd apps/web
+          npx coverage-badges --label "apps/e2e" \
+            --source ../e2e/coverage/coverage-frontend-summary.json \
+            --output ../e2e/coverage/badges.svg
+          mkdir -p ../e2e/coverage_artifacts
+          cp ../e2e/coverage/badges.svg ../e2e/coverage_artifacts/coverage.svg
+
+      - name: Upload coverage badge
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: badge-apps-e2e
+          path: |
+            apps/e2e/coverage/badges.svg
+            apps/e2e/coverage_artifacts/coverage.svg
+
+  update-badges:
+    needs: [test, e2e, frontend-coverage]
+    runs-on: ubuntu-latest
+    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging') && needs.test.result != 'failure' && needs.e2e.result != 'failure' && needs.frontend-coverage.result != 'failure'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -283,13 +339,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   ci-gate:
-    needs: [changes, test, e2e]
+    needs: [changes, test, e2e, frontend-coverage]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Fail on upstream failure
         run: |
-          if [ "${{ needs.changes.result }}" == "failure" ] || [ "${{ needs.test.result }}" == "failure" ] || [ "${{ needs.e2e.result }}" == "failure" ]; then
+          if [ "${{ needs.changes.result }}" == "failure" ] || [ "${{ needs.test.result }}" == "failure" ] || [ "${{ needs.e2e.result }}" == "failure" ] || [ "${{ needs.frontend-coverage.result }}" == "failure" ]; then
             echo "One or more CI jobs failed" >&2
             exit 1
           fi

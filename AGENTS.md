@@ -95,9 +95,11 @@ Always use the centralized test script to run tests. Never run `poetry run pytes
 # Run commonlib + specific modified apps (Windows)
 .\scripts\test.bat commonlib scrapper web e2e
 
-# With coverage
+# With coverage (also runs the web+scrapper coverage gates)
 ./scripts/test.sh --coverage
 ```
+
+Coverage floors are 90% on **statements and lines** (functions and branches are reported only). The frontend gate runs on the union of web unit and e2e coverage; the scrapper gate on production statements only. See [READMEs/README_DEVELOPMENT.md](READMEs/README_DEVELOPMENT.md#coverage-gates).
 
 ### Running Individual Apps
 ```bash

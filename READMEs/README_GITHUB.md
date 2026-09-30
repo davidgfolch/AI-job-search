@@ -11,7 +11,17 @@ The CI workflow (`.github/workflows/ci.yml`) only tests the modules affected by 
 1. A `changes` job uses [`dorny/paths-filter`](https://github.com/dorny/paths-filter) to detect which `apps/*` modules were modified in the push/PR.
 2. It builds a dynamic test matrix containing exactly those modules, so unchanged apps are never executed.
 3. The `test` job runs the matrix (`npm test`, `uv run pytest`, or `poetry run pytest` depending on the module) and uploads a coverage badge artifact per module.
-4. On `master`/`staging`, an `update-badges` job downloads the artifacts and commits any changed coverage badges to a dedicated `badges` branch (not the protected `master`), which the README badge images load from.
+4. The `e2e` job runs Playwright when `apps/e2e` or `apps/web` changed, and uploads its monocart coverage summary.
+5. A `frontend-coverage` job enforces the frontend floor on the **union** of web unit + e2e coverage with `scripts/coverage/frontend-coverage-gate.mjs --min 90`, and publishes the union as the `apps/e2e` badge. It re-runs the web unit suite itself, so the gate does not depend on `apps/web` happening to be in the changed-module matrix.
+6. The scrapper floor is enforced inside the matrix by `scripts/coverage/scrapper_coverage_gate.py`; a module below the `fail_under` declared in its own `pyproject.toml` raises a CI warning annotation instead of a hard failure.
+7. `ci-gate` fails if any of `changes`, `test`, `e2e` or `frontend-coverage` failed.
+8. On `master`/`staging`, an `update-badges` job downloads the artifacts and commits any changed coverage badges to a dedicated `badges` branch (not the protected `master`), which the README badge images load from.
+
+### Coverage gates
+
+- The floor is **90% on statements and lines**; functions and branches are reported only.
+- `coverage-badges` is always called with an explicit `--source`, because `coverage-badges-cli@2.x` does not read `.coveragebadgesrc`.
+- The frontend gate fails on *denominator drift*: if the vitest and monocart runs did not measure the same set of production files, the union would silently shrink.
 
 ### Change detection rules
 

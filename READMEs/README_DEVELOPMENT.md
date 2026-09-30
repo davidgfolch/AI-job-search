@@ -25,6 +25,51 @@ Run specific app tests (single or multiple):
 - **Linux**: `./scripts/test.sh commonlib` or `./scripts/test.sh commonlib web e2e`
 - **Windows**: `.\scripts\test.bat commonlib` or `.\scripts\test.bat commonlib web e2e`
 
+## Coverage Gates
+
+`--coverage` does not only produce reports and badges: it enforces two floors on
+**statements and lines only** (functions and branches are reported, never gated).
+The coverage floor is 90% for the web frontend and for the scrapper.
+
+### Frontend: web unit + e2e union
+
+`scripts/coverage/frontend-coverage-gate.mjs` gates the **union** of the two frontend
+suites, because neither number alone is meaningful: a lazily-routed page is invisible
+to the unit run and barely touched by e2e.
+
+```bash
+# Both reports must exist; both suites include every production file under apps/web/src
+(cd apps/web && npm test -- run --coverage)
+(cd apps/e2e && npm test)
+node scripts/coverage/frontend-coverage-gate.mjs --min 90
+```
+
+- Per file, `total` and `covered` are the max of the two reports. Both tools count the
+  same source lines, so max is the standard approximation for a union of covered-line
+  sets (an exact union is not derivable from counts alone, since the two suites may
+  cover the same line).
+- There is deliberately **no separate e2e floor**: the e2e badge shows the union.
+- Vitest keys are absolute and monocart keys are entry-URL relative (`src/...`); the
+  gate canonicalises both to `apps/web/src/...` and **fails on denominator drift**, i.e.
+  when the two suites did not measure the same file set.
+- Test files, CSS and `node_modules` are excluded from both feeds, so the denominator
+  is production code only.
+- Outputs the merged report to `apps/e2e/coverage/coverage-frontend-summary.json`.
+
+### Scrapper: production statements
+
+```bash
+cd apps/scrapper
+poetry run coverage run -m pytest
+poetry run coverage xml
+python ../../scripts/coverage/scrapper_coverage_gate.py --min 90
+```
+
+Tests live inside the package, so `[tool.coverage.run] omit` keeps `*/test/*` and
+`*/conftest.py` out of the denominator — without it, near-perfectly covered test files
+inflated the badge by ~8.8 points. `fail_under` is intentionally **not** set: coverage.py
+only compares the branch-inclusive total, which this project does not gate on.
+
 ## Structured Logging
 
 Every Python app in `apps/*` logs through one shared `structlog` configuration in `commonlib.observability`. Records are JSON lines with a dotted `domain.action` event name and `key=value` fields, written to stdout *and* mirrored to a per-app JSONL file. The backend dashboard and the Prometheus exporter in `commonlib.prometheus_exporter` read those files, so keeping the event names and fields stable is a contract, not a style preference.
