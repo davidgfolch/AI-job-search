@@ -108,6 +108,20 @@ The application will be available at `http://localhost:5173`.
 - `npm test`: Run unit tests using Vitest.
 - `npm run preview`: Preview the production build locally.
 
+### Coverage
+
+`npm test -- run --coverage` measures **production code only**: `vite.config.ts` includes
+every `src` file (so lazily-routed pages still count) and excludes `**/test/**`, CSS,
+`node_modules` and `dist`. The Vitest threshold is 90% on **statements and lines**;
+functions and branches are reported only.
+
+The enforced frontend floor is the **union** of this unit coverage and the e2e coverage
+(see `apps/e2e/coverage.config.ts`), gated by `scripts/coverage/frontend-coverage-gate.mjs`:
+
+```bash
+node scripts/coverage/frontend-coverage-gate.mjs --min 90
+```
+
 ## Project Structure
 
 - `src/components`: Reusable UI components.

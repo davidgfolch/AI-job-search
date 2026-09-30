@@ -174,6 +174,27 @@ Run tests with the centralized script, from the repository root (`commonlib` is 
 .\scripts\test.bat commonlib scrapper   # Windows
 ```
 
+### Coverage
+
+Tests live inside the package, so `[tool.coverage.run] omit` keeps `*/test/*` and
+`*/conftest.py` out of the denominator. Without it, near-perfectly covered test files
+were measured as production code and inflated the badge by ~8.8 points (80.8% real).
+
+`fail_under` is intentionally **not** set in `pyproject.toml`: coverage.py only compares
+the branch-inclusive total, and the project gates statements and lines only. The 90%
+floor is enforced by `scripts/coverage/scrapper_coverage_gate.py`, which `scripts/test.sh`
+and `scripts/test.bat` run automatically in `--coverage` mode:
+
+```bash
+cd apps/scrapper
+poetry run coverage run -m pytest
+poetry run coverage xml
+python ../../scripts/coverage/scrapper_coverage_gate.py --min 90
+```
+
+It exits non-zero when production statements drop below the floor and lists the
+least-covered files. Branch coverage stays enabled for information only.
+
 ## Troubleshooting
 
 - **Rate Limits**: If you get 429 errors or captchas, increase delays or stop scraping for a while.
