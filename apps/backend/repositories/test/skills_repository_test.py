@@ -20,6 +20,23 @@ def test_list_skills(mock_get_connection, mock_mysql_util):
 
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')
+def test_list_skills_logs_unparseable_learning_path(mock_get_connection, mock_mysql_util, log_records):
+    mock_db = create_mock_db(fetchAll=[
+        ('Python', 'Programming language', 'not-json', 0, 0, 'Language'),
+    ])
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    skills = repo.list_skills()
+    assert skills[0].learning_path == []
+    records = log_records(event="skills.parse_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "warning"
+    assert records[0]["skill"] == 'Python'
+    assert records[0]["field"] == 'learning_path'
+    assert records[0]["source"] == 'list_skills'
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
 def test_create_skill(mock_get_connection, mock_mysql_util):
     mock_db = create_mock_db()
     mock_mysql_util.return_value = mock_db

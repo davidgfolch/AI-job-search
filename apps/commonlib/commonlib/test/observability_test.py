@@ -1,117 +1,152 @@
-import os
 import json
-import structlog
+import os
+
+import pytest
 
 from commonlib import observability
-from commonlib.observability import configure_logging, get_logger, LOG_DIR, LOG_FILE_BACKUP_COUNT
+from commonlib.observability import configure_logging, get_app_name, get_logger, log_file_path
+
+APP_NAME_ENV = "LOG_APP_NAME"
+LEGACY_APP_NAME_ENV = "AI_ENRICH_LOG_APP_NAME"
 
 
-def _reset():
-    observability._configured = False
+@pytest.fixture
+def log_dir(tmp_path, monkeypatch):
+    """Redirect the JSONL output to a temp dir and reset the app name."""
+    target = tmp_path / "logs"
+    monkeypatch.setenv("LOG_DIR", str(target))
+    monkeypatch.delenv(APP_NAME_ENV, raising=False)
+    monkeypatch.delenv(LEGACY_APP_NAME_ENV, raising=False)
+    observability._app_name = None
+    yield target
+    observability._app_name = None
 
 
-def test_configure_logging_idempotent():
-    _reset()
-    configure_logging("test")
-    configure_logging("test")
-    assert True
+def _read(path):
+    with open(path, encoding="utf-8") as f:
+        return f.readline().strip()
 
 
-def test_get_logger_returns_bound_logger():
-    _reset()
-    logger = get_logger("test")
-    assert hasattr(logger, "info")
-    assert hasattr(logger, "error")
-    assert hasattr(logger, "debug")
+def _events(path):
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f]
 
 
-def test_get_logger_with_name():
-    _reset()
-    logger = get_logger("my.module")
-    assert logger is not None
+class TestConfiguration:
+    def test_configure_logging_is_idempotent(self, log_dir):
+        assert configure_logging("test") == "test"
+        assert configure_logging("test") == "test"
+        assert get_app_name() == "test"
+
+    def test_get_logger_returns_bound_logger(self, log_dir):
+        logger = get_logger("test")
+        for level in ("info", "error", "debug", "warning", "exception"):
+            assert hasattr(logger, level)
+
+    def test_get_logger_binds_module_name(self, log_dir):
+        assert get_logger("my.module")._context["module"] == "my.module"
+
+    def test_structlog_configured(self, log_dir):
+        import structlog
+
+        configure_logging("test")
+        processors = structlog.get_config()["processors"]
+        assert any("add_log_level" in str(p) for p in processors)
+        assert any(isinstance(p, structlog.processors.ExceptionRenderer) for p in processors)
+
+    def test_color_enabled_by_default(self, log_dir):
+        assert observability.color_enabled() is True
+
+    def test_color_disabled_by_env(self, log_dir, monkeypatch):
+        monkeypatch.setenv("LOG_COLOR", "False")
+        assert observability.color_enabled() is False
+
+    def test_color_enabled_by_legacy_env(self, log_dir, monkeypatch):
+        monkeypatch.setenv("AI_ENRICH_LOG_COLOR", "False")
+        assert observability.color_enabled() is False
+
+    def test_log_level_defaults_to_info(self, log_dir, monkeypatch):
+        monkeypatch.delenv("LOG_LEVEL", raising=False)
+        monkeypatch.delenv("AI_ENRICH_LOG_LEVEL", raising=False)
+        assert observability._env("LOG_LEVEL", "AI_ENRICH_LOG_LEVEL", 20) == 20
+
+    def test_log_level_read_from_env(self, log_dir, monkeypatch):
+        monkeypatch.setenv("LOG_LEVEL", "30")
+        assert observability._env("LOG_LEVEL", "AI_ENRICH_LOG_LEVEL", 20) == "30"
+
+    def test_log_level_legacy_alias(self, log_dir, monkeypatch):
+        monkeypatch.setenv("AI_ENRICH_LOG_LEVEL", "40")
+        assert observability._env("LOG_LEVEL", "AI_ENRICH_LOG_LEVEL", 20) == "40"
 
 
-def test_structlog_configured():
-    _reset()
-    configure_logging("test")
-    processors = structlog.get_config()["processors"]
-    assert any("add_log_level" in str(p) for p in processors)
+class TestAppNameResolution:
+    def test_explicit_app_name_wins(self, log_dir):
+        assert configure_logging("scrapper") == "scrapper"
+        assert get_app_name() == "scrapper"
+
+    def test_default_app_name_without_configuration(self, log_dir):
+        assert configure_logging() == "app"
+
+    def test_get_logger_before_configure_uses_env_default(self, log_dir, monkeypatch):
+        monkeypatch.setenv(APP_NAME_ENV, "fromenv")
+        observability._app_name = None
+        assert configure_logging() == "fromenv"
+
+    def test_legacy_env_alias_still_read(self, log_dir, monkeypatch):
+        monkeypatch.setenv(LEGACY_APP_NAME_ENV, "legacy")
+        observability._app_name = None
+        assert configure_logging() == "legacy"
+
+    def test_late_configure_overrides_import_time_default(self, log_dir):
+        """A shared module importing first must not win over the entrypoint."""
+        assert configure_logging() == "app"
+        assert configure_logging("cron") == "cron"
+        get_logger("cron.scheduler").info("cron.tick", tick=1)
+        entry = json.loads(_read(log_file_path("cron")))
+        assert entry["logger"] == "cron"
+
+    def test_file_path_follows_current_app_name(self, log_dir):
+        configure_logging("first")
+        assert log_file_path() == os.path.join(str(log_dir), "first.jsonl")
+        configure_logging("second")
+        assert log_file_path() == os.path.join(str(log_dir), "second.jsonl")
+
+    def test_file_path_accepts_explicit_app_name(self, log_dir):
+        configure_logging("current")
+        assert log_file_path("other") == os.path.join(str(log_dir), "other.jsonl")
 
 
-def test_log_writes_to_jsonl_file():
-    _reset()
-    configure_logging("test_jsonl")
-    logger = get_logger("test_jsonl.case")
-    log_file = os.path.join(LOG_DIR, "test_jsonl.jsonl")
-    logger.info("test.event", key="value", num=42)
-    assert os.path.exists(log_file)
-    with open(log_file, encoding="utf-8") as f:
-        line = f.readline().strip()
-    entry = json.loads(line)
-    assert entry["event"] == "test.event"
-    assert entry["key"] == "value"
-    assert entry["num"] == 42
-    assert entry["level"] == "info"
-    assert entry["logger"] == "test_jsonl"
-    assert "timestamp" in entry
-    os.remove(log_file)
+class TestJsonlRecords:
+    def test_log_writes_expected_record(self, log_dir):
+        configure_logging("test_jsonl")
+        get_logger("test_jsonl.case").info("test.event", key="value", num=42)
+        entry = json.loads(_read(log_file_path("test_jsonl")))
+        assert entry["event"] == "test.event"
+        assert entry["key"] == "value"
+        assert entry["num"] == 42
+        assert entry["level"] == "info"
+        assert entry["logger"] == "test_jsonl"
+        assert entry["module"] == "test_jsonl.case"
+        assert "timestamp" in entry
 
+    def test_creates_missing_log_dir(self, log_dir):
+        assert not log_dir.exists()
+        configure_logging("mkdir_test")
+        get_logger("mkdir_test.case").info("test.event")
+        assert os.path.exists(log_file_path("mkdir_test"))
 
-def test_log_rotation():
-    _reset()
-    configure_logging("test_rotation")
-    logger = get_logger("test_rotation.case")
-    log_file = os.path.join(LOG_DIR, "test_rotation.jsonl")
-    with open(log_file, "w", encoding="utf-8") as f:
-        f.write("x" * 101)
-    orig_max = observability.LOG_FILE_MAX_BYTES
-    try:
-        observability.LOG_FILE_MAX_BYTES = 100
-        logger.info("after_rotate")
-        assert os.path.exists(f"{log_file}.1")
-    finally:
-        observability.LOG_FILE_MAX_BYTES = orig_max
-    if os.path.exists(f"{log_file}.1"):
-        os.remove(f"{log_file}.1")
-    if os.path.exists(log_file):
-        os.remove(log_file)
+    def test_exception_records_traceback(self, log_dir):
+        configure_logging("exc_test")
+        logger = get_logger("exc_test.case")
+        try:
+            raise ValueError("boom")
+        except ValueError:
+            logger.exception("test.failed")
+        entry = json.loads(_read(log_file_path("exc_test")))
+        assert entry["level"] == "error"
+        assert "ValueError" in entry["exception"]
 
-
-def test_log_rotation_oserror():
-    _reset()
-    configure_logging("test_rotation_err")
-    logger = get_logger("test_rotation_err.case")
-    log_file = os.path.join(LOG_DIR, "test_rotation_err.jsonl")
-    orig_max = observability.LOG_FILE_MAX_BYTES
-    orig_backup = observability.LOG_FILE_BACKUP_COUNT
-    try:
-        observability.LOG_FILE_MAX_BYTES = 10
-        observability.LOG_FILE_BACKUP_COUNT = 2
-        with open(log_file, "w", encoding="utf-8") as f:
-            f.write("x" * 20)
-        with patch("os.replace", side_effect=OSError("permission denied")):
-            logger.info("rotation_error_test")
-    finally:
-        observability.LOG_FILE_MAX_BYTES = orig_max
-        observability.LOG_FILE_BACKUP_COUNT = orig_backup
-    if os.path.exists(log_file):
-        os.remove(log_file)
-
-
-def test_log_jsonl_write_oserror():
-    _reset()
-    configure_logging("test_write_err")
-    logger = get_logger("test_write_err.case")
-    log_file = os.path.join(LOG_DIR, "test_write_err.jsonl")
-    orig_max = observability.LOG_FILE_MAX_BYTES
-    try:
-        observability.LOG_FILE_MAX_BYTES = 999999999
-        with patch("builtins.open", side_effect=OSError("disk full")):
-            logger.info("write_error_test")
-    finally:
-        observability.LOG_FILE_MAX_BYTES = orig_max
-    if os.path.exists(log_file):
-        os.remove(log_file)
-
-
-from unittest.mock import patch
+    def test_unserializable_values_do_not_raise(self, log_dir):
+        configure_logging("obj_test")
+        get_logger("obj_test.case").info("test.event", payload=object())
+        assert json.loads(_read(log_file_path("obj_test")))["event"] == "test.event"

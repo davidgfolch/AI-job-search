@@ -1,16 +1,18 @@
 import time
-from datetime import datetime
 
 from cron import config
 from cron.scheduler import Scheduler
 from commonlib.mongodb_provider import get_mongo_provider
+from commonlib.observability import configure_logging, get_logger
 from commonlib.repositories.cron_state_repository import CronStateRepository
-from commonlib.terminalColor import green, yellow, cyan
 from cron.jobs.company_salary_history.job import CompanySalaryHistoryJob
+
+logger = get_logger("cron.main")
 
 
 def run():
-    print(cyan(f"[cron] starting at {datetime.utcnow().isoformat()}"))
+    configure_logging("cron")
+    logger.info("cron.started")
 
     provider = get_mongo_provider(config.MONGO_READ_URI, config.MONGO_WRITE_URI, config.MONGO_DATABASE)
     cron_state = CronStateRepository(provider)
@@ -21,14 +23,14 @@ def run():
 
     scheduler = Scheduler(cron_state, jobs)
 
-    print(green(f"[cron] {len(jobs)} job(s) registered, checking every {config.CHECK_INTERVAL_SECONDS}s"))
+    logger.info("cron.jobs_registered", jobs=len(jobs), check_interval_seconds=config.CHECK_INTERVAL_SECONDS)
     for j in jobs:
-        print(green(f"[cron]   -> {j.name} (cadency={j.cadency})"))
+        logger.debug("cron.job_registered", job=j.name, cadency=j.cadency)
 
     tick = 0
     while True:
         tick += 1
-        print(yellow(f"[cron] tick #{tick} at {datetime.utcnow().isoformat()}"))
+        logger.info("cron.tick", tick=tick)
         scheduler.tick()
         time.sleep(config.CHECK_INTERVAL_SECONDS)
 

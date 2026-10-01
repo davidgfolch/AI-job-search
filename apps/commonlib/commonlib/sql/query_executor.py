@@ -121,7 +121,7 @@ class QueryExecutor:
         """Get cursor from pool connection, closing is handled by connection context."""
         with self._get_connection_ctx() as conn:
             if not conn.is_connected():
-                print(f'Reconnecting to DB conn: {conn}', flush=True)
+                logger.info("db.reconnecting", conn=str(conn))
                 conn.reconnect()
             cursor = conn.cursor()
             cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')

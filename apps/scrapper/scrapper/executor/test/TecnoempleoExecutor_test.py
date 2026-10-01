@@ -86,13 +86,13 @@ class TestTecnoempleoExecutor:
             mock_nav.get_attribute.return_value = "http://job.url"
             mock_svc.job_exists_in_db.return_value = ("123", False)
             mock_nav.load_detail.return_value = True
-            mock_nav.get_job_data.return_value = ("Title", "Company", "Location", "URL", "HTML")
+            mock_nav.get_job_data.return_value = ("Title", "Company", "Location", "URL", "30.000 € - 36.000 € Bruto/año", "HTML")
             mock_svc.process_job.return_value = True
             
             ok, exists = executor._load_and_process_row(0, 0)
             assert ok is True
             assert exists is False
-            mock_svc.process_job.assert_called()
+            mock_svc.process_job.assert_called_with("Title", "Company", "Location", "URL", "30.000 € - 36.000 € Bruto/año", "HTML")
             mock_nav.go_back.assert_called()
 
 class TestTecnoempleoService:
@@ -106,7 +106,7 @@ class TestTecnoempleoService:
              patch('scrapper.services.TecnoempleoService.find_last_duplicated'):
              
              mock_mysql.insert.return_value = 1
-             result = service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
+             result = service.process_job("Title", "Company", "Location", "http://url/rf-123", None, "<html>")
              
              assert result is True
              mock_mysql.insert.assert_called_once()

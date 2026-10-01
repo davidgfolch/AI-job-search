@@ -1,7 +1,7 @@
 import { test, expect } from './coverage.fixtures';
 import { Page } from '@playwright/test';
 import { BASE_URL, setupPageLogging } from './viewer.helpers';
-import { setupConfigurationsMocks, openConfigDropdown } from './configurations.helpers';
+import { setupConfigurationsMocks, openConfigDropdown, type JobListRequests } from './configurations.helpers';
 
 test.use({
     bypassCSP: true,
@@ -11,10 +11,15 @@ const CONFIG_PUT = (req: { method(): string; url(): string }) => req.method() ==
 const CONFIG_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/filter-configurations$/.test(req.url());
 const CONFIG_DELETE = (req: { method(): string; url(): string }) => req.method() === 'DELETE' && /\/api\/filter-configurations\/\d+/.test(req.url());
 
+const clickConfig = (page: Page, name: string) =>
+    openConfigDropdown(page).then(() => page.locator('.config-suggestion-item').filter({ hasText: name }).locator('.config-name').click());
+
 test.describe('Filter Configurations E2E', () => {
+    let jobListRequests: JobListRequests;
+
     test.beforeEach(async ({ page }) => {
         setupPageLogging(page);
-        await setupConfigurationsMocks(page);
+        jobListRequests = await setupConfigurationsMocks(page);
     });
 
     test('should list configurations in dropdown', async ({ page }) => {
@@ -30,6 +35,40 @@ test.describe('Filter Configurations E2E', () => {
         await page.locator('.config-suggestion-item').filter({ hasText: 'Backend Filter' }).locator('.config-name').click();
         await expect(page.locator('#job-row-1')).not.toBeVisible();
         await expect(page.locator('#job-row-2')).toBeVisible();
+    });
+
+    test('should reload the list when the configuration already in effect is applied again', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await clickConfig(page, 'Backend Filter');
+        await expect(page.locator('#job-row-2')).toBeVisible();
+
+        // The watcher badge reports jobs this configuration has not seen yet, so applying it again has to ask the
+        // backend for the page again: the filters are unchanged, so the query key is too and nothing would refetch.
+        const backendPageOneRequests = () => jobListRequests.filter(url => {
+            const params = new URL(url).searchParams;
+            return params.get('search') === 'Backend' && (params.get('page') ?? '1') === '1';
+        });
+        expect(backendPageOneRequests()).toHaveLength(1);
+
+        await clickConfig(page, 'Backend Filter');
+
+        await expect.poll(() => backendPageOneRequests().length).toBe(2);
+        await expect(page.locator('#job-row-2')).toBeVisible();
+    });
+
+    test('should not reload the list when a different configuration is applied', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await clickConfig(page, 'Backend Filter');
+        await expect(page.locator('#job-row-2')).toBeVisible();
+        const backendRequests = () => jobListRequests.filter(url => new URL(url).searchParams.get('search') === 'Backend').length;
+        expect(backendRequests()).toBe(1);
+
+        await clickConfig(page, 'React Filter');
+        await expect(page.locator('#job-row-1')).toBeVisible();
+
+        // A different filter set is a different query, so it is fetched once and the previous one is left alone
+        expect(jobListRequests.filter(url => new URL(url).searchParams.get('search') === 'React')).toHaveLength(1);
+        expect(backendRequests()).toBe(1);
     });
 
     test('should toggle pin on a configuration', async ({ page }) => {

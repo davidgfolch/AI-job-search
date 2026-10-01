@@ -14,26 +14,30 @@ docker-compose down
 
 ## With AI Services (AI Enrichment + Ollama)
 
-**Ollama CPU/GPU:** `aienrich` service uses Ollama by default (runs by default). Set `AI_ENRICH_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
+**Ollama CPU/GPU:** `aienrich` service uses Ollama by default (profile: `aienrich`). Set `AI_ENRICH_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
 **New CPU:** `aienrich3` service uses local fast CPU models (profile: `aiEnrich3`).
 **New GPU:** `aienrichnew` service uses transformers pipeline (profile: `aiEnrichNew`).
 **CV Matcher:** `aicvmatcher` service uses sentence transformers to rapidly match your cv (runs by default if configured in .env).
 
-> Note: even when `aienrich` uses OpenRouter, the Ollama service still starts because `aienrichskill` depends on it (`AI_ENRICHSKILL_BACKEND=ollama`).
+> Note: the `ollama` service is **opt-in** (`--profile ollama`) and no module hard-depends on it, so it is never started implicitly - useful when Ollama already runs on your host. The Ollama-backed modules probe the configured URL, then `host.docker.internal`, `localhost` and `ollama:11434`, and use the first one that answers.
 
 ```bash
-# Start core services (now includes aiEnrich)
+# Start core services
 docker-compose up -d
 
-# If you want to use the alternative enrichment engines:
+# Add the AI enrichment module you want
+docker-compose --profile aienrich up -d aienrich
 docker-compose --profile aiEnrich3 up -d aienrich3
 docker-compose --profile aiEnrichNew up -d aienrichnew
+
+# Only if you want Ollama containerized too (skip it if Ollama runs on the host):
+docker-compose --profile ollama --profile aienrich up -d
 
 # Ollama uses models from your host (defaults to ~/.ollama)
 # For Windows, set in .env: OLLAMA_MODELS_PATH=C:/Users/YOUR_USERNAME/.ollama
 
 # Pull the models required by aiEnrich / aiEnrichSkill.
-# Non-dockerized (host Ollama, shared via the OLLAMA_MODELS_PATH volume):
+# Non-dockerized (host Ollama):
 ollama pull qwen2.5:3b # required default
 # ollama pull phi3.5:3b  # optional faster alternative
 # ollama pull llama3.2:1b # optional fastest alternative
@@ -48,7 +52,7 @@ docker exec ai-job-search-ollama ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF
 docker exec ai-job-search-ollama ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
 docker exec ai-job-search-ollama ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m   # temp tag shares the same files
 
-# Test Ollama connection (URL defaults to centralized `OLLAMA_DEFAULT_BASE_URL` in commonlib)
+# Test Ollama connection (URL defaults to centralized `OLLAMA_HOST_BASE_URL` in commonlib; unreachable configured URLs fall back to the host server)
 curl <Ollama-URL>/api/tags
 ```
 
@@ -75,7 +79,7 @@ docker-compose --profile ai-services --profile scrapper up -d
 - **Backend (FastAPI)**: http://localhost:8000/docs
 - **Viewer (Streamlit)**: http://localhost:8501
 - **MySQL**: localhost:3306
-- **Ollama**: `OLLAMA_DEFAULT_BASE_URL` (centralized in `commonlib`)
+- **Ollama**: `OLLAMA_HOST_BASE_URL` (centralized in `commonlib`; modules fall back from the containerized `ollama:11434` to the host server)
 
 ## Development Tips
 - Code changes are automatically detected (hot-reload enabled)

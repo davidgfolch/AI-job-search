@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
+from structlog.testing import capture_logs
 from commonlib.terminalUtil import consoleTimer, Spinner, consoleTimerDocker
 
 
@@ -59,7 +60,27 @@ class TestTerminalFunctions:
         assert mock_wakeable_timer.return_value.wait.called
 
     @patch('commonlib.terminalUtil.WakeableTimer')
+    def test_console_timer_docker_emits_single_timer_record(self, mock_wakeable_timer):
+        with capture_logs() as records:
+            consoleTimerDocker('All jobs enriched. ', '1s')
+        timer_records = [r for r in records if r['event'].startswith('timer.')]
+        assert [r['event'] for r in timer_records] == ['timer.started']
+        assert 'in_place' not in timer_records[0]
+        assert timer_records[0]['message'] == 'All jobs enriched. '
+
+    @patch('commonlib.terminalUtil.WakeableTimer')
     def test_console_timer_custom_end(self, mock_wakeable_timer):
         with patch('commonlib.terminalUtil.isDocker', return_value=False):
             consoleTimer('Test', '1s', end='\n')
             assert mock_wakeable_timer.return_value.wait.called
+
+    @patch('commonlib.terminalUtil.WakeableTimer')
+    def test_timer_events_strip_ansi(self, mock_wakeable_timer):
+        with patch('commonlib.terminalUtil.isDocker', return_value=False), \
+             capture_logs() as records:
+            consoleTimer('\x1b[96mAll jobs enriched. \x1b[0m', '1s')
+        timer_records = [r for r in records if r['event'].startswith('timer.')]
+        assert timer_records
+        for record in timer_records:
+            assert '\x1b' not in record['message']
+            assert record['message'] == 'All jobs enriched. '

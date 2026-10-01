@@ -1,8 +1,6 @@
 import sys
 import time
-import traceback
 
-from commonlib.json_helpers import rawToJson
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.ai_helpers import (
@@ -15,43 +13,54 @@ from commonlib.ai_helpers import (
 )
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger
-from commonlib.aiEnrich_config import (
+from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
-    get_backend, get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model,
+    get_max_validation_retries, get_backend, get_openrouter_base_url, get_openrouter_model,
+    get_openrouter_fallback_model,
 )
 from commonlib.services.metrics_collector import MetricsCollector
-from .ollama_client import query_ollama, ping_ollama
+from commonlib.ollama_client import query_ollama, resolve_ollama_url
+from .extraction_contract import COMPANY_SCHEMA, EXTRACTION_SCHEMA, build_extraction_prompt, query_and_parse
 from .openrouter_client import query_openrouter, ping_openrouter
+from .companyExtractor import resolve_unspecified_company
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
 
-PROMPT_TEMPLATE = """Analyze the following job offer and extract structured information.
+_resolved_ollama_url: str | None = None
 
-Job Offer:
-{markdown}
 
-Extract the following information:
-- Required technologies (comma-separated list)
-- Optional technologies (comma-separated list)
-- Salary information (if available)
-- Modality (must be exactly REMOTE, HYBRID, or ON_SITE)
+def _get_ollama_base_url() -> str:
+    return _resolved_ollama_url or get_ollama_base_url()
 
-A valid JSON object with the extracted information. Include all fields even if empty.
-IMPORTANT: Use JSON ARRAYS for technology lists (e.g., ["technology1", "technology2"]). Do NOT use comma-separated strings inside quotes.
-The json output must have the following fields and structure:
-{{
-  "required_technologies": ["technology1", "technology2"],
-  "optional_technologies": ["technology3", "technology4"],
-  "salary": "...",
-  "modality": "..."
-}}"""
+
+def _query_job(prompt: str, backend: str, model: str, response_schema: dict | None = None):
+    if backend == "openrouter":
+        return query_openrouter(
+            prompt=prompt, model=model, base_url=get_openrouter_base_url(), timeout=get_timeout_job(), json_mode=False,
+            fallback_model=get_openrouter_fallback_model(),
+        )
+    return query_ollama(
+        prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True,
+        response_schema=response_schema or EXTRACTION_SCHEMA, return_metadata=True, log=logger,
+    )
+
+
+def _query_company(prompt: str, backend: str, model: str):
+    """Company-only request, constrained with COMPANY_SCHEMA.
+
+    EXTRACTION_SCHEMA must never be reused here: Ollama grammar-constrains the reply to it and its
+    additionalProperties=false forbids `company`, so every response failed with "missing fields: company".
+    """
+    return _query_job(prompt, backend, model, COMPANY_SCHEMA)
 
 
 def ping_backend() -> bool:
+    global _resolved_ollama_url
     if get_backend() == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
-    return ping_ollama(base_url=get_ollama_base_url())
+    _resolved_ollama_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
+    return _resolved_ollama_url is not None
 
 
 def _check_backend_available() -> bool:
@@ -82,7 +91,7 @@ def dataExtractor() -> int:
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
-        return 0
+        return -1
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         total = repo.count_pending_enrichment()
@@ -101,7 +110,7 @@ def retry_failed_jobs() -> int:
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
-        return 0
+        return -1
     with MysqlUtil() as mysql:
         repo = AiEnrichRepository(mysql)
         error_id = repo.get_enrichment_error_id_retry()
@@ -134,32 +143,22 @@ def _process_job_safe(
             backend = get_backend()
             model = get_openrouter_model() if backend == "openrouter" else get_model()
             logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx, backend=backend, model=model)
-            prompt = PROMPT_TEMPLATE.format(markdown=f"# {title} \n {markdown}")
-            if get_backend() == "openrouter":
-                raw = query_openrouter(
-                    prompt=prompt,
-                    model=get_openrouter_model(),
-                    base_url=get_openrouter_base_url(),
-                    timeout=get_timeout_job(),
-                    json_mode=False,
-                    fallback_model=get_openrouter_fallback_model(),
-                )
-            else:
-                raw = query_ollama(
-                    prompt=prompt,
-                    model=get_model(),
-                    base_url=get_ollama_base_url(),
-                    timeout=get_timeout_job(),
-                    json_mode=True,
-                )
-            if raw is None:
+            prompt = build_extraction_prompt(title, markdown)
+            result, response = query_and_parse(
+                lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
+                max_attempts=get_max_validation_retries() + 1, log=logger,
+            )
+            if response is None:
                 logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
             else:
-                result = rawToJson(raw)
                 if result is not None:
                     _save(repo, id, result)
                     success = True
-                logger.info("job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend, model=model)
+                    resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
+                logger.info(
+                    "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
+                    model=model, done_reason=getattr(response, "done_reason", None),
+                )
         except (Exception, KeyboardInterrupt) as ex:
             _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:
@@ -179,7 +178,7 @@ def _save(repo: AiEnrichRepository, id, result: dict):
 
 
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):
-    logger.error("job.failed", job_id=id, title=title, company=company, error=str(ex), traceback=traceback.format_exc())
+    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex))
     jobErrors.add((id, f"{title} - {company}: {ex}"))
     prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
     error_msg = f"{prefix}{ex}"

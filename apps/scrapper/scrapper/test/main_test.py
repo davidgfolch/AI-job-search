@@ -1,3 +1,4 @@
+import os
 import pytest
 from unittest.mock import MagicMock, patch, call
 from scrapper.main import main, hasArgument
@@ -68,3 +69,12 @@ def test_has_argument(args, target, expected):
     else:
         assert result is None
         assert args_copy == args
+
+def test_main_prints_resolved_log_file_path(mocks):
+    with patch('scrapper.main.log_file_path', return_value='data/logs/scrapper.jsonl'), \
+         patch('scrapper.main.logger') as log:
+        main(['scrapper.py', 'url', 'http://example.com'])
+    path_event = log.info.call_args_list[0]
+    assert path_event.args == ('logging.file_opened',)
+    assert path_event.kwargs['path'] == os.path.abspath('data/logs/scrapper.jsonl')
+    assert str(path_event.kwargs['path']) in path_event.kwargs['console']

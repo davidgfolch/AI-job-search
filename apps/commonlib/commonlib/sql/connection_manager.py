@@ -6,7 +6,9 @@ import time
 import mysql.connector as mysqlConnector
 from mysql.connector import MySQLConnection
 
-from commonlib.terminalColor import green, yellow, red
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.sql.connection_manager")
 
 DEBUG = False
 
@@ -124,7 +126,7 @@ def _resolve_db_host(e2e_tests: bool = False) -> str:
         resolved = auto_discover_host()
 
     if resolved:
-        print(green(f"MySQL at {resolved}"), flush=True)
+        logger.info("db.host_resolved", host=resolved)
         return resolved
 
     reason = "Could not connect to MySQL via configured hosts or LAN discovery"
@@ -174,14 +176,15 @@ def get_connection(e2e_tests: bool = False) -> MySQLConnection:
         try:
             conn = mysqlConnector.connect(pool_name='jobsPool')
             if DEBUG:
-                print(conn.__repr__())
+                logger.debug("db.connection_opened", conn=repr(conn))
             return conn
         except queue.Empty:
             if attempt < POOL_GET_RETRIES - 1:
                 delay = POOL_GET_DELAY * (attempt + 1)
                 if DEBUG:
-                    print(yellow(f"Pool exhausted, retrying in {delay:.1f}s (attempt {attempt + 1}/{POOL_GET_RETRIES})"), flush=True)
+                    logger.debug("db.pool_retry", delay_secs=round(delay, 1), attempt=attempt + 1, retries=POOL_GET_RETRIES)
                 time.sleep(delay)
+    logger.error("db.pool_exhausted", attempts=POOL_GET_RETRIES, pool_name='jobsPool')
     raise queue.Empty("All pool connections are in use")
 
 

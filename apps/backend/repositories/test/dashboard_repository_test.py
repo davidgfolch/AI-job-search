@@ -4,11 +4,38 @@ import tempfile
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-from repositories.dashboard_repository import DashboardRepository, LOG_SOURCES
+from repositories.dashboard_repository import DashboardRepository, LOG_SOURCES, resolve_log_path
 
 
 def test_log_sources_include_aicvmatcher():
-    assert LOG_SOURCES["aicvmatcher"] == "/logs/aicvmatcher/app.jsonl"
+    assert LOG_SOURCES["aicvmatcher"] == "/logs/aicvmatcher/aiCvMatcher.jsonl"
+
+
+def test_log_sources_name_each_jsonl_after_its_app():
+    for module, path in LOG_SOURCES.items():
+        assert path.endswith(".jsonl")
+        assert not path.endswith("/app.jsonl")
+
+
+def test_resolve_log_path_prefers_per_app_file(tmp_path):
+    log_dir = tmp_path / "aicvmatcher"
+    _write_log(str(log_dir / "aiCvMatcher.jsonl"), [{"timestamp": "2026-09-03T10:00:00", "event": "job.result", "level": "info"}])
+    _write_log(str(log_dir / "app.jsonl"), [{"timestamp": "2026-01-01T00:00:00", "event": "job.result", "level": "info"}])
+    with patch("repositories.dashboard_repository.LOG_SOURCES", {"aicvmatcher": str(log_dir / "aiCvMatcher.jsonl")}):
+        assert resolve_log_path("aicvmatcher") == str(log_dir / "aiCvMatcher.jsonl")
+
+
+def test_resolve_log_path_falls_back_to_legacy_app_jsonl(tmp_path):
+    log_dir = tmp_path / "aicvmatcher"
+    _write_log(str(log_dir / "app.jsonl"), [{"timestamp": "2026-01-01T00:00:00", "event": "job.result", "level": "info"}])
+    with patch("repositories.dashboard_repository.LOG_SOURCES", {"aicvmatcher": str(log_dir / "aiCvMatcher.jsonl")}):
+        assert resolve_log_path("aicvmatcher") == str(log_dir / "app.jsonl")
+        repo = DashboardRepository()
+        assert repo.read_last_activity("aicvmatcher") == "2026-01-01T00:00:00"
+
+
+def test_resolve_log_path_unknown_module():
+    assert resolve_log_path("nonexistent") is None
 
 
 def _write_log(path, entries):

@@ -83,7 +83,7 @@ Every PR whose diff touchs a module that runs in the compose stack **must** be b
 - **MySQL data clone**: the script dumps the live `jobs` DB (`scripts/mysql/backup.*`) into `scripts/mysql/backups/`, then restores it into the sandbox mysql container. Skip with `--no-db-clone`. The sandbox mysql is initialized only from the schema SQL files (`ddl.sql`, `skills_data.sql`), never from the maintenance `backup.*`/`restore.*` scripts (they break the MySQL entrypoint on fresh boots due to CRLF) nor the scratch `mysql_queries.sql` (it has a SQL syntax error). The override uses a strict authenticated TCP healthcheck and the script waits for `SELECT 1` before restoring, so the clone never races the mysqld entrypoint restart.
 - **Mongo**: the sandbox spins a fresh, empty Mongo seeded by `scripts/mongo/init.js` (full isolation) — the base full-stack Mongo is never touched.
 - **Ollama/prometheus/grafana are never duplicated**: they are not defined in the override.
-- **Ollama-dependent services** (`aienrich`, `aienrichskill`, `scrapper`): their dependency graph includes ollama, so they cannot `up` in the sandbox — do a **build-only** check (which still must succeed):
+- **Ollama-dependent services** (`aienrich`, `aienrichskill`, `scrapper`): no longer hard-depend on the `ollama` service (it is opt-in via `--profile ollama`), but they are still validated **build-only** in the sandbox because the sandbox does not provide a reachable Ollama for them to do real work against. Do a **build-only** check (which still must succeed):
   ```bash
   docker compose -f docker-compose.yml -f docker-compose.test.override.yml -p dependabot-test build <service>
   ```

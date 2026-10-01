@@ -1,5 +1,6 @@
 import math
 from urllib.parse import quote
+from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow
 from ..core import baseScrapper
 from ..core.utils import debug
@@ -7,6 +8,8 @@ from ..core.baseScrapper import getAndCheckEnvVars, join, printPage
 from ..navigator.tecnoempleoNavigator import TecnoempleoNavigator
 from ..services.TecnoempleoService import TecnoempleoService
 from .BaseExecutor import BaseExecutor
+
+logger = get_logger("scrapper.TecnoempleoExecutor")
 
 class TecnoempleoExecutor(BaseExecutor):
     def _init_scrapper(self):
@@ -19,7 +22,7 @@ class TecnoempleoExecutor(BaseExecutor):
     def _preload_action(self):
         self.navigator.load_page('https://www.tecnoempleo.com')
         self.navigator.login(self.user_email, self.user_pwd)
-        print(yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
+        logger.info("tecnoempleo.auth.jobs_redirect_waiting", console=yellow('Waiting for Tecnoempleo to redirect to jobs page...'))
         self.navigator.selenium.waitUntilPageUrlContains('https://www.tecnoempleo.com/profesionales/candidat.php', 60)
 
     def _create_service(self, mysql):
@@ -27,9 +30,9 @@ class TecnoempleoExecutor(BaseExecutor):
 
     def _process_keyword(self, keyword: str, start_page: int):
         try:
-            print(f'Search keyword={keyword}')
+            logger.info("tecnoempleo.search.started", keyword=keyword, console=f'Search keyword={keyword}')
             url = self._get_url(keyword)
-            print(f'Loading page {url}')
+            logger.info("tecnoempleo.search.page_loading", url=url, console=f'Loading page {url}')
             self.navigator.load_page(url)
             if not self.navigator.check_results(keyword, url, self.remote):
                 return
@@ -48,7 +51,7 @@ class TecnoempleoExecutor(BaseExecutor):
                     if currentItem >= totalResults:
                         break
                     currentItem += 1
-                    print(green(f'pg {page} job {idx} - '), end='')
+                    logger.info("tecnoempleo.job.processing", page=page, idx=idx, console=green(f'pg {page} job {idx} - '), end='')
                     liIdx = 3 + (idx - 1) * 2  # li starts at 3 & step 2
                     ok, jobExistsInDb = self._load_and_process_row(liIdx, errors)
                     
@@ -74,7 +77,8 @@ class TecnoempleoExecutor(BaseExecutor):
                     break
                 
                 if not foundNewJobInPage and (page > start_page + 1 or (start_page < 2 and page > 2)):
-                    print(yellow('No new jobs found in this page, stopping keyword processing.'))
+                    logger.info("tecnoempleo.pagination.no_new_jobs", keyword=keyword, page=page,
+                                console=yellow('No new jobs found in this page, stopping keyword processing.'))
                     break
                 
                 if not self.navigator.click_next_page():
@@ -105,14 +109,14 @@ class TecnoempleoExecutor(BaseExecutor):
             url = self.navigator.get_attribute(cssSelLink, 'href')
             job_id, job_exists = self.service.job_exists_in_db(url)
             if job_exists:
-                print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='')
+                logger.info("tecnoempleo.job.already_exists", job_id=job_id, console=yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='')
                 return True, True
             print(yellow('loading...'), end='')
             pageLoaded = self.navigator.load_detail(cssSelLink)
             try:
                 self._process_row()
             except Exception as e:
-                print(f' {e}')
+                logger.warning("tecnoempleo.job.processing_failed", error_type=type(e).__name__, console=f' {e}')
                 return True, False
             return True, False
         except Exception:
@@ -124,5 +128,5 @@ class TecnoempleoExecutor(BaseExecutor):
                 self.navigator.go_back()
 
     def _process_row(self):
-        title, company, location, url, html = self.navigator.get_job_data()
-        return self.service.process_job(title, company, location, url, html)
+        title, company, location, url, salary, html = self.navigator.get_job_data()
+        return self.service.process_job(title, company, location, url, salary, html)

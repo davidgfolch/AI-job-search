@@ -131,3 +131,64 @@ class TestIndeedExecutor:
         service = IndeedService(mock_mysql, mock_persistence_manager, False)
         processed = service.post_process_markdown("Check [this](/ofertas-trabajo/123)")
         assert "this" in processed and "/ofertas-trabajo/123" not in processed
+
+class TestCheckNoResults:
+    @pytest.mark.parametrize("no_results, expected", [(True, False), (False, True)], ids=["empty", "has_results"])
+    def test_reports_whether_the_search_returned_rows(self, indeed_executor, indeed_navigator, no_results, expected):
+        indeed_navigator.checkNoResults.return_value = no_results
+        assert indeed_executor._checkNoResults('python') is expected
+        indeed_navigator.wait_until_page_is_loaded.assert_called_once()
+
+class TestLoadAndProcessRow:
+    @pytest.mark.parametrize("outcome, existing", [('scroll_failed', False), ('stored', True), ('truncated', False), ('crashed', False)], ids=["scroll_failed", "already_stored", "list_truncated", "unexpected_error"])
+    def test_returns_false_without_opening_a_job(self, indeed_executor, indeed_navigator, outcome, existing):
+        indeed_navigator.scroll_jobs_list.return_value = outcome != 'scroll_failed'
+        if outcome == 'truncated':
+            indeed_navigator.scroll_jobs_list.side_effect = IndexError('list index out of range')
+        elif outcome == 'crashed':
+            indeed_navigator.scroll_jobs_list.side_effect = RuntimeError('stale')
+        indeed_executor.service.job_exists_in_db.return_value = (7, existing)
+        with patch('scrapper.executor.IndeedExecutor.debug'):
+            assert indeed_executor._load_and_process_row(0) is False
+        indeed_navigator.load_job_detail.assert_not_called()
+
+    @pytest.mark.parametrize("process", [[True], [False, True]], ids=["validated", "retried"])
+    def test_opens_the_job_and_persists_its_state(self, indeed_executor, indeed_navigator, process):
+        indeed_navigator.scroll_jobs_list.return_value = True
+        indeed_executor.service.job_exists_in_db.return_value = (7, False)
+        indeed_navigator.selenium.getUrl.return_value = 'https://indeed.com/job/1'
+        with patch.object(IndeedExecutor, '_process_row', side_effect=process) as mock_process:
+            assert indeed_executor._load_and_process_row(0) is True
+        assert indeed_navigator.load_job_detail.call_count == len(process)
+        assert mock_process.call_count == len(process)
+
+    def test_closes_the_modal_before_scrolling(self, indeed_executor, indeed_navigator):
+        indeed_navigator.scroll_jobs_list.return_value = False
+        indeed_executor._load_and_process_row(0)
+        indeed_navigator.close_modal.assert_called_once()
+
+class TestProcessKeyword:
+    def test_stops_when_the_first_result_check_fails(self, indeed_executor, indeed_navigator):
+        indeed_navigator.checkNoResults.return_value = True
+        indeed_executor._process_keyword('python', 1)
+        indeed_navigator.selectFilters.assert_not_called()
+        indeed_navigator.get_total_results.assert_not_called()
+
+    def test_stops_when_the_result_check_fails_after_filtering(self, indeed_executor, indeed_navigator):
+        indeed_navigator.checkNoResults.side_effect = [False, True]
+        indeed_executor._process_keyword('python', 1)
+        indeed_navigator.selectFilters.assert_called_once()
+        indeed_navigator.clickSortByDate.assert_not_called()
+
+    @pytest.mark.parametrize("next_page, pages, state_persisted", [(True, 2, True), (False, 1, False)], ids=["more_pages", "last_page"])
+    def test_walks_pages_until_there_is_nothing_left_to_read(self, indeed_executor, indeed_navigator, next_page, pages, state_persisted):
+        indeed_navigator.checkNoResults.return_value = False
+        indeed_navigator.get_total_results.return_value = 48
+        indeed_navigator.fast_forward_page.return_value = 1
+        indeed_navigator.click_next_page.return_value = next_page
+        with patch.object(IndeedExecutor, '_load_and_process_row', return_value=False):
+            indeed_executor._process_keyword('python', 1)
+        assert indeed_navigator.click_next_page.call_count == pages
+        assert indeed_executor.service.update_state.called is state_persisted
+        if state_persisted:
+            assert indeed_executor.service.update_state.call_args_list[-1].args == ('python', 3)
