@@ -1,3 +1,5 @@
+import re
+
 HEADER = '\033[95m'
 BLUE = '\033[94m'
 CYAN = '\033[96m'
@@ -10,6 +12,13 @@ BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 RESET = '\033[0m'
 __RESET = RESET
+
+ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
+
+
+def stripAnsi(text: str) -> str:
+    """Remove the color escape sequences added by the helpers in this module."""
+    return ANSI_ESCAPE.sub('', text)
 
 
 def green(*text: str):

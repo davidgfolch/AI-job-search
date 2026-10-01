@@ -1,6 +1,5 @@
 import time
 import json
-import traceback
 from typing import List, Dict, Any
 
 from commonlib.sql.mysqlUtil import MysqlUtil
@@ -13,7 +12,7 @@ from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
 
 from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_batch_size, get_enrich_limit, get_gpu_cleanup
-from ..ollama_client import query_ollama
+from commonlib.ollama_client import query_ollama
 from ..domain.mappers import build_skill_prompt_messages
 from ..domain.parsers import parse_skill_enrichment_result
 
@@ -21,7 +20,7 @@ logger = get_logger("aiEnrichSkill.enrichment")
 collector = MetricsCollector()
 
 
-def generate_skill_description_ollama(skill_name, context="") -> tuple[str, str]:
+def generate_skill_description_ollama(skill_name, context="", ollama_base_url=None) -> tuple[str, str]:
     logger.info("skill.started", skill=skill_name, has_context=bool(context))
     messages = build_skill_prompt_messages(skill_name, context)
     system = messages[0]["content"]
@@ -31,9 +30,10 @@ def generate_skill_description_ollama(skill_name, context="") -> tuple[str, str]
     raw = query_ollama(
         prompt=prompt,
         model=get_ollama_model(),
-        base_url=get_ollama_base_url(),
+        primary_url=ollama_base_url or get_ollama_base_url(),
         timeout=int(get_timeout()),
         json_mode=False,
+        log=logger,
     )
     if raw is None:
         logger.error("skill.failed", skill=skill_name)
@@ -45,16 +45,16 @@ def generate_skill_description_ollama(skill_name, context="") -> tuple[str, str]
     return parsed
 
 
-def _enrich_ollama(mysql: MysqlUtil) -> int:
+def _enrich_ollama(mysql: MysqlUtil, ollama_base_url=None) -> int:
     def timed_generate(name, context):
         start = time.time()
         try:
-            result = generate_skill_description_ollama(name, context)
+            result = generate_skill_description_ollama(name, context, ollama_base_url)
             duration = time.time() - start
             description = result[0] if isinstance(result, tuple) and len(result) == 2 else (result if isinstance(result, str) else "")
             success = bool(description) and "Error" not in description
             collector.record_job("aiEnrichSkill", duration, success)
-            logger.info("job.result", duration=duration, skill=name, success=success)
+            logger.info("skill.result", duration=duration, skill=name, success=success)
             return result
         except Exception as e:
             duration = time.time() - start
@@ -155,7 +155,7 @@ def _process_skill_batch(
         description, category = parse_skill_enrichment_result(generated_text)
         success = bool(description) and "Error" not in description
         collector.record_job("aiEnrichSkill", duration, success)
-        logger.info("job.result", duration=duration, skill=name, success=success)
+        logger.info("skill.result", duration=duration, skill=name, success=success)
         if success:
             _save_skill_result(mysql, name, description, category)
             success_count += 1
@@ -169,8 +169,8 @@ def _process_skill_batch(
         _timing["last"] = now
         collector.record_job("aiEnrichSkill", duration, False)
         collector.record_error("aiEnrichSkill", str(ex))
-        logger.info("job.result", duration=duration, skill=name, success=False)
-        logger.error("skill.failed", skill=name, error=str(ex), traceback=traceback.format_exc())
+        logger.info("skill.result", duration=duration, skill=name, success=False)
+        logger.exception("skill.failed", skill=name, error=str(ex))
 
     process_batch(
         pipeline,
@@ -187,10 +187,10 @@ def _process_skill_batch(
     return success_count
 
 
-def enrich_skills(mysql: MysqlUtil) -> int:
+def enrich_skills(mysql: MysqlUtil, ollama_base_url=None) -> int:
     backend = get_backend()
     if backend == "ollama":
-        return _enrich_ollama(mysql)
+        return _enrich_ollama(mysql, ollama_base_url)
     elif backend == "huggingface":
         return _enrich_huggingface(mysql)
     else:

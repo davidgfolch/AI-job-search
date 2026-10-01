@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, call, patch
-from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
+from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_LOGIN_BUTTON_LEGACY, CSS_SEL_LOGIN_REMEMBER_ME, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
 from selenium.common.exceptions import NoSuchElementException
 TEST_URL = "http://url"
 
@@ -32,39 +32,42 @@ class TestLinkedinNavigator:
         mock_selenium.sendKeys.assert_not_called()
 
     @patch('scrapper.navigator.linkedinNavigator.sleep')
-    @pytest.mark.parametrize("checkbox_raises_error", [False, True])
-    def test_login(self, mock_sleep, navigator, mock_selenium, checkbox_raises_error):
+    @pytest.mark.parametrize("remember_me, checkbox_raises_error", [(True, False), (True, True), (False, False)])
+    def test_login(self, mock_sleep, navigator, mock_selenium, remember_me, checkbox_raises_error):
         mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
         if checkbox_raises_error:
             mock_selenium.checkboxUnselect.side_effect = Exception("error")
-        user_elm = MagicMock()
-        pwd_elm = MagicMock()
-        mock_selenium.getElms.side_effect = [[user_elm], [pwd_elm]]
-        navigator.login("user", "pass")
-        if not checkbox_raises_error:
-            mock_selenium.sendKeys.assert_any_call(user_elm, 'user')
-            mock_selenium.sendKeys.assert_any_call(pwd_elm, 'pass')
-            mock_selenium.checkboxUnselect.assert_called_with('div.remember_me__opt_in input')
-        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_LOGIN_BUTTON)
-
-    @patch('scrapper.navigator.linkedinNavigator.sleep')
-    def test_login_calls_wait_for_both_fields(self, mock_sleep, navigator, mock_selenium):
-        mock_selenium.getUrl.return_value = 'https://www.linkedin.com/login'
-        mock_selenium.getElms.return_value = [MagicMock(), MagicMock()]
+        user_elm, pwd_elm, remember_elm, submit_elm = MagicMock(), MagicMock(), MagicMock(), MagicMock()
+        mock_selenium.getElms.side_effect = [[user_elm], [pwd_elm], [remember_elm] if remember_me else [], [], [submit_elm]]
         navigator.login("user", "pass")
         mock_selenium.waitUntil_presenceLocatedElement.assert_any_call(CSS_SEL_LOGIN_USER)
         mock_selenium.waitUntil_presenceLocatedElement.assert_any_call(CSS_SEL_LOGIN_PWD)
         assert mock_selenium.waitUntil_presenceLocatedElement.call_count == 2
+        mock_selenium.sendKeys.assert_any_call(user_elm, 'user')
+        mock_selenium.sendKeys.assert_any_call(pwd_elm, 'pass')
+        if remember_me: # a failing uncheck is warned about but must not abort the login
+            mock_selenium.checkboxUnselect.assert_called_with(remember_elm)
+        else: # no toggle on the page, or already unchecked
+            mock_selenium.checkboxUnselect.assert_not_called()
+        mock_selenium.waitAndClick.assert_called_once_with(submit_elm)
 
-    def test_loginSubmit(self, navigator, mock_selenium):
+    @pytest.mark.parametrize("legacy_elms, button_elms, clicked_from", [
+        ([MagicMock()], [], CSS_SEL_LOGIN_BUTTON_LEGACY),  # old linkedin markup
+        ([], [MagicMock()], CSS_SEL_LOGIN_BUTTON),  # current markup, submit is the last button of the last form copy
+    ])
+    def test_loginSubmit(self, navigator, mock_selenium, legacy_elms, button_elms, clicked_from):
+        expected_elm = (legacy_elms or button_elms)[-1]
+        mock_selenium.getElms.side_effect = [list(legacy_elms), list(button_elms)] # loginSubmit pops from the returned list
         navigator.loginSubmit()
-        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_LOGIN_BUTTON)
+        mock_selenium.getElms.assert_called_with(clicked_from) # resolution stops on the first selector that matches
+        mock_selenium.waitAndClick.assert_called_once_with(expected_elm)
 
-    @patch('scrapper.navigator.linkedinNavigator.sleep')
-    def test_loginSubmit_fallback(self, mock_sleep, navigator, mock_selenium):
-        mock_selenium.waitAndClick.side_effect = [Exception("err"), None]
-        navigator.loginSubmit()
-        assert mock_selenium.waitAndClick.call_count == 2
+    @patch('commonlib.decorator.retry.sleep')
+    def test_loginSubmit_not_found(self, mock_retry_sleep, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = []
+        with pytest.raises(Exception, match='Login submit button not found'):
+            navigator.loginSubmit()
+        mock_selenium.waitAndClick.assert_not_called()
 
     @pytest.mark.parametrize("getElms_return, expected", [
         ([], True),

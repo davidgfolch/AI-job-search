@@ -1,8 +1,9 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from commonlib.terminalColor import cyan
+from commonlib.observability import get_logger
 from .base import AIProvider, AnswerResult
 
+logger = get_logger("aiFormFiller.local_hf")
 
 _PIPELINE = None
 _MODEL_ID = None
@@ -11,7 +12,7 @@ _MODEL_ID = None
 def get_pipeline(model_id: str):
     global _PIPELINE, _MODEL_ID
     if _PIPELINE is None or _MODEL_ID != model_id:
-        print(cyan(f"Loading local HF model: {model_id}..."))
+        logger.info("model.loading", provider="local", model=model_id)
         tokenizer = AutoTokenizer.from_pretrained(model_id, padding_side='left')
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
@@ -28,7 +29,7 @@ def get_pipeline(model_id: str):
             batch_size=1
         )
         _MODEL_ID = model_id
-        print(cyan("Local HF model loaded."))
+        logger.info("model.loaded", provider="local", model=model_id)
     return _PIPELINE
 
 

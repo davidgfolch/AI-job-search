@@ -46,6 +46,9 @@ services:
       - ./apps/aiEnrichNew/data/logs:/logs/aienrichnew:ro
       - ./apps/aiEnrichSkill/data/logs:/logs/aienrichskill:ro
       - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
+      - ./apps/scrapper/data/logs:/logs/scrapper:ro
+      - ./apps/cron/data/logs:/logs/cron:ro
+      - ./apps/aiFormFiller/data/logs:/logs/aiformfiller:ro
     ports:
       - "8000:8000"
     environment:
@@ -62,6 +65,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       start_period: 15s
@@ -98,10 +105,14 @@ services:
     networks:
       - ai-job-search
 
-  # Ollama - LLM Service for AI Enrichment
+  # Ollama - LLM Service for AI Enrichment. Opt-in via `--profile ollama`; the workers
+  # auto-detect a host-installed Ollama through the shared fallback chain, so the container
+  # is only needed when you want Ollama itself containerized.
   ollama:
     image: ollama/ollama:latest
     container_name: ai-job-search-ollama
+    profiles:
+      - ollama
     restart: unless-stopped
     ports:
       - "11434:11434"
@@ -136,13 +147,12 @@ services:
       - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
       - AI_ENRICH_OLLAMA_BASE_URL=http://ollama:11434
+      - AI_ENRICH_NUM_CTX=${AI_ENRICH_NUM_CTX:-16384}
+      - AI_ENRICH_MAX_VALIDATION_RETRIES=${AI_ENRICH_MAX_VALIDATION_RETRIES:-1}
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
-      - OLLAMA_BASE_URL=http://ollama:11434
       - HEALTHCHECK_BACKEND=${AI_ENRICH_BACKEND:-ollama}
     depends_on:
       mysql_db:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "/app/apps/aiEnrich/.venv/bin/python", "/app/healthcheck.py" ]
@@ -153,6 +163,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
 
   # AI Enrichment New - Hugging Face Local Models
   aienrichnew:
@@ -210,12 +224,9 @@ services:
       - TZ=${GLOBAL_TZ}
       - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
-      - OLLAMA_BASE_URL=http://ollama:11434
       - HEALTHCHECK_BACKEND=${AI_ENRICHSKILL_BACKEND:-ollama}
     depends_on:
       mysql_db:
-        condition: service_healthy
-      ollama:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "/app/apps/aiEnrichSkill/.venv/bin/python", "/app/healthcheck.py" ]
@@ -226,6 +237,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
 
   # AI CV Matcher - Local CV Matching extracted from AiEnrichNew
   aicvmatcher:
@@ -394,8 +409,6 @@ services:
     depends_on:
       mysql_db:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
     healthcheck:
       test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
       start_period: 15s
@@ -405,6 +418,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
+    # native Linux uses host-gateway to map it to the Docker host.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
     profiles:
       - scrapper # Optional service, enable with --profile scrapper
     # Note: Scrapper runs as a batch job, not a long-running service

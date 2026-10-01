@@ -51,7 +51,7 @@ def test_get_watcher_stats_string_dates(mock_repo):
         assert results[1]["total"] == 2
         assert results[1]["new_items"] == 1
 
-def test_get_watcher_stats_error_handling(mock_repo):
+def test_get_watcher_stats_error_handling(mock_repo, log_records):
     with patch('services.watcher_service.WatcherRepository', return_value=mock_repo):
         service = WatcherService()
         
@@ -62,6 +62,12 @@ def test_get_watcher_stats_error_handling(mock_repo):
         # Should return default initialized structure (0s)
         assert results[1]["total"] == 0
         assert results[1]["new_items"] == 0
+        records = log_records(event="watcher.stats_failed")
+        assert len(records) == 1
+        assert records[0]["level"] == "error"
+        assert records[0]["error"] == "DB Error"
+        assert records[0]["config_count"] == 1
+        assert "Exception" in records[0]["exception"]
 
 def test_get_watcher_stats_timezone_mismatch(mock_repo):
     """

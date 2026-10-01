@@ -13,12 +13,12 @@ export const useViewer = () => {
     const [activeTab, setActiveTab] = useState<TabType>('list');
     const { data: modalityValues = [] } = useModalityValues();
     const {
-        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, isPlaceholderData, error: queryError, handleLoadMore, setIsLoadingMore, hardRefresh
+        filters, setFilters, allJobs, setAllJobs, isLoadingMore, data, isLoading, isPlaceholderData, error: queryError, handleLoadMore, setIsLoadingMore, hardRefresh, reloadCurrentPage
     } = useJobsData();
     const apiError = data?.error; // Error returned from API (e.g., database errors)
     const [dismissedApiErrors, setDismissedApiErrors] = useState<Set<string>>(new Set());
     const displayedApiError = apiError && !dismissedApiErrors.has(apiError) ? apiError : null;
-    const hasMorePages = allJobs.length < (data?.total || 0) - 1;
+    const hasMorePages = allJobs.length < (data?.total || 0);
     const shouldAutoSelectNextPage = useRef(false);
     const handleLoadMoreWithAutoSelect = () => {
         shouldAutoSelectNextPage.current = true;
@@ -178,6 +178,9 @@ export const useViewer = () => {
                 setActiveTab('list'); setFilters(f => ({ ...f, page: 1 })); setCreationSessionId(p => p + 1);
             },
             refreshJobs: async () => filters.page !== 1 ? (setShouldSelectFirst(true), setFilters(f => ({ ...f, page: 1 }))) : (setShouldSelectFirst(true), await hardRefresh()),
+            // Re-applying the filter configuration that is already active leaves the query key untouched, so the
+            // list would keep the jobs it already has. Refetch the page in place instead, keeping the selection.
+            reloadJobList: reloadCurrentPage,
             openDuplicatedJob, closeDuplicatedJob: () => setDuplicatedJob(null), closeSelectedJob: () => { setSelectedJob(null); setSelectionMode('none'); setSelectedIds(new Set()); },
         },
     };

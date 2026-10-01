@@ -1,6 +1,9 @@
 from unittest.mock import MagicMock, ANY
 from datetime import datetime, timezone
+import json
+from pathlib import Path
 import pytest
+from commonlib.observability import log_file_path
 from cron.scheduler import Scheduler, CronJob, _parse_cadency
 
 
@@ -120,3 +123,45 @@ def test_scheduler_job_failure_updates_error_state():
 def test_cron_job_base_run_raises():
     with pytest.raises(NotImplementedError):
         CronJob().run(None)
+
+
+def _log_events():
+    path = Path(log_file_path())
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8") as f:
+        return [json.loads(line) for line in f]
+
+
+def test_scheduler_logs_error_level_event_with_traceback_on_failure(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOG_DIR", str(tmp_path))
+    cron_state = MagicMock()
+    cron_state.get_state.return_value = None
+    job = _MockJob(name="fail_job")
+    job.should_fail = True
+    sut = Scheduler(cron_state, [job])
+
+    sut.tick()
+
+    events = _log_events()
+    assert [e["event"] for e in events] == ["cron.job_started", "cron.job_failed"]
+    failed = events[1]
+    assert failed["level"] == "error"
+    assert failed["job"] == "fail_job"
+    assert failed["error"] == "job failed"
+    assert "RuntimeError" in failed["exception"]
+    assert failed["module"] == "cron.scheduler"
+
+def test_scheduler_logs_lifecycle_events_for_successful_job(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOG_DIR", str(tmp_path))
+    cron_state = MagicMock()
+    cron_state.get_state.return_value = None
+    sut = Scheduler(cron_state, [_MockJob(name="ok_job")])
+
+    sut.tick()
+
+    events = _log_events()
+    assert [e["event"] for e in events] == ["cron.job_started", "cron.job_completed"]
+    assert events[0]["job"] == "ok_job"
+    assert events[1]["level"] == "info"
+

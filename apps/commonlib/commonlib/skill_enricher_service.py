@@ -1,10 +1,9 @@
-import traceback
 from typing import Callable
 from commonlib.sql.mysqlUtil import MysqlUtil
-from commonlib.dateUtil import getDatetimeNowStr
-from commonlib.terminalColor import green
 from commonlib.skill_context import get_skill_context
-from commonlib.terminalColor import yellow, magenta, cyan, red
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.skill_enricher_service")
 
 def process_skill_enrichment(
     mysql: MysqlUtil,
@@ -22,7 +21,6 @@ def process_skill_enrichment(
                                          If False, only filters by ai_enriched = 0.
     """
     from commonlib.stopWatch import StopWatch
-    import json
     from datetime import datetime
 
     where_clause = "ai_enriched = 0"
@@ -34,9 +32,9 @@ def process_skill_enrichment(
     query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
     rows = mysql.fetchAll(query_find)
     if not rows:
-        print(magenta("No skills to enrich. "), end='')
+        logger.info("skill.enrich_skipped", reason="no_pending_skills", limit=limit)
         return 0
-    print(cyan(f"Found {len(rows)} skills to enrich..."))
+    logger.info("skill.enrich_started", count=len(rows), limit=limit, check_empty_description_only=check_empty_description_only)
     
     count = 0
     stop_watch = StopWatch()
@@ -54,7 +52,7 @@ def process_skill_enrichment(
         except Exception:
             pass # context fetching fail shouldn't stop flow
             
-        print(green(f"AI enrich skill {current_idx}/{total} - {getDatetimeNowStr()} -> name={name} -> input length={len(context) + len(name)}"))
+        logger.debug("skill.enriching", index=current_idx, total=total, name=name, input_length=len(context) + len(name))
 
         try:
             # Re-fetch context inside try block to be safe, though duplicate
@@ -68,7 +66,7 @@ def process_skill_enrichment(
                 description = result
                 category = None
             else:
-                print(yellow(f"Invalid result format for {name}: {type(result)}"))
+                logger.warning("skill.invalid_result", name=name, result_type=type(result).__name__)
                 continue
             if description and "Error" not in description:
                 # Log Result
@@ -76,18 +74,18 @@ def process_skill_enrichment(
                     "description": description[:100] + "..." if len(description) > 100 else description,
                     "category": category
                 }
-                print(f"Result:\n {json.dumps(result_log, indent=2)}")
-                print(f"Updated database: description, category")
+                logger.debug("skill.enriched", name=name, result=result_log)
+                logger.debug("skill.persisting", name=name, fields=["description", "category"])
                 update_query = "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1 WHERE name = %s"
                 mysql.executeAndCommit(update_query, [description, category, name])
                 count += 1
             else:
-                print(yellow(f"Failed to generate description for {name}"))
-        except Exception as e:
-            print(yellow(f"Error enriching skill {name}"))
-            print(red(traceback.format_exc()))
+                logger.warning("skill.description_failed", name=name)
+        except Exception:
+            logger.exception("skill.enrich_failed", name=name)
         stop_watch.end()
-        print("-" * 50) # Separator
+        logger.debug("skill.iteration_completed", index=current_idx, total=total)
+    logger.info("skill.enrich_completed", updated=count, count=len(rows))
     return count
 
 def parse_skill_llm_output(result: str) -> tuple[str, str]:
