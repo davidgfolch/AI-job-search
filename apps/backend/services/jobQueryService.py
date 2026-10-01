@@ -1,7 +1,10 @@
 from typing import Optional, Dict, Any, List
+from commonlib.observability import get_logger
 from repositories.jobQueryRepository import JobQueryRepository
 from commonlib.company_matcher import search_partial_company
 from services.company_synonym_service import CompanySynonymService
+
+logger = get_logger("backend.services.jobQueryService")
 
 
 class JobQueryService:
@@ -19,7 +22,8 @@ class JobQueryService:
         try:
             synonyms = self.synonym_service.get_synonyms(company_raw)
             return [company_raw] + synonyms
-        except Exception:
+        except Exception as e:
+            logger.warning("synonyms.lookup_failed", error=str(e))
             return [company_raw]
 
     def get_applied_jobs_by_company_name(
@@ -45,7 +49,8 @@ class JobQueryService:
             if regexes:
                 try:
                     rows = self.query_repo.find_applied_jobs_by_regex(regexes)
-                except Exception:
+                except Exception as e:
+                    logger.warning("jobs.regex_search_failed", error=str(e), regex_count=len(regexes))
                     rows = []
         return [
             {"id": row[0], "created": row[1].isoformat() if row[1] else None}

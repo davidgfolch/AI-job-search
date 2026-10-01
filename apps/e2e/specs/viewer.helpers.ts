@@ -1,5 +1,5 @@
 import { Page } from '@playwright/test';
-import { MOCK_JOB_1, MOCK_JOB_2, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND } from './viewer.mocks';
+import { MOCK_JOB_1, MOCK_JOB_2, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND, PAGINATED_JOBS, paginatedJobsResponse } from './viewer.mocks';
 import { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks, setupApiSafetyNet, setupAppBootstrapMocks } from './common.helpers';
 
 export { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks, setupApiSafetyNet };
@@ -47,6 +47,36 @@ export async function setupDefaultJobsRoute(page: Page) {
         console.log('UNHANDLED REQUEST:', url);
         await route.fallback();
     });
+}
+
+export async function setupPaginatedJobsRoute(page: Page) {
+    const requestedPages: number[] = [];
+    await page.route(/.*\/api\/jobs.*/, async (route) => {
+        const url = route.request().url();
+        if (url.includes('/applied-by-company')) {
+            await route.fulfill({ json: [] });
+            return;
+        }
+        if (/\/api\/jobs\/\d+$/.test(url)) {
+            const jobId = Number(url.split('/').pop());
+            await route.fulfill({ json: PAGINATED_JOBS.find(job => job.id === jobId) ?? MOCK_JOB_1 });
+            return;
+        }
+        if (url.includes('/history')) {
+            await route.fulfill({ json: [] });
+            return;
+        }
+        if (/\/api\/jobs(\?|$)/.test(url)) {
+            const params = new URL(url).searchParams;
+            const requestedPage = Number(params.get('page') || 1);
+            requestedPages.push(requestedPage);
+            await route.fulfill({ json: paginatedJobsResponse(requestedPage, Number(params.get('size') || 20)) });
+            return;
+        }
+        console.log('UNHANDLED REQUEST:', url);
+        await route.fallback();
+    });
+    return { requestedPages };
 }
 
 export async function setupStateChangeJobsRoute(page: Page) {

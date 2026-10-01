@@ -1,5 +1,7 @@
 from pathlib import Path
-from commonlib.terminalColor import yellow, red, cyan
+from commonlib.observability import get_logger
+
+logger = get_logger("aiFormFiller.context_loader")
 
 
 class ContextLoader:
@@ -13,12 +15,12 @@ class ContextLoader:
 
     def _read_file(self, path: Path) -> str | None:
         if not path.exists():
-            print(red(f"File not found: {path}"))
+            logger.warning("context.file_not_found", path=str(path))
             return None
         with open(path, "r", encoding="utf-8") as f:
             content = f.read().strip()
         if not content:
-            print(yellow(f"File is empty: {path}"))
+            logger.warning("context.file_empty", path=str(path))
             return None
         return content
 
@@ -27,12 +29,12 @@ class ContextLoader:
         if cv is not None:
             self._cv_content = cv
             self._cv_mtime = self.cv_path.stat().st_mtime
-            print(cyan(f"CV loaded: {self.cv_path} ({len(cv)} chars)"))
+            logger.info("context.cv_loaded", path=str(self.cv_path), chars=len(cv))
         lf = self._read_file(self.looking_for_path)
         if lf is not None:
             self._looking_for_content = lf
             self._looking_for_mtime = self.looking_for_path.stat().st_mtime
-            print(cyan(f"Looking-for loaded: {self.looking_for_path} ({len(lf)} chars)"))
+            logger.info("context.looking_for_loaded", path=str(self.looking_for_path), chars=len(lf))
         return self._cv_content is not None or self._looking_for_content is not None
 
     def reload_if_changed(self):
@@ -41,13 +43,13 @@ class ContextLoader:
             if cv is not None:
                 self._cv_content = cv
                 self._cv_mtime = self.cv_path.stat().st_mtime
-                print(cyan(f"CV reloaded ({len(cv)} chars)"))
+                logger.info("context.cv_reloaded", path=str(self.cv_path), chars=len(cv))
         if self.looking_for_path.exists() and self.looking_for_path.stat().st_mtime != self._looking_for_mtime:
             lf = self._read_file(self.looking_for_path)
             if lf is not None:
                 self._looking_for_content = lf
                 self._looking_for_mtime = self.looking_for_path.stat().st_mtime
-                print(cyan(f"Looking-for reloaded ({len(lf)} chars)"))
+                logger.info("context.looking_for_reloaded", path=str(self.looking_for_path), chars=len(lf))
 
     @property
     def cv_content(self) -> str | None:

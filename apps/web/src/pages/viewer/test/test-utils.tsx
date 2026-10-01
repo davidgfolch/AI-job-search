@@ -123,6 +123,19 @@ export function cleanupFakeTimers() {
 }
 
 // ============================================================================
+// DOM Geometry Utilities
+// ============================================================================
+
+/** Publishes the geometry of an element, since jsdom reports every rect as empty. A real rect is consistent,
+ * so it is described by its edges and the size is derived from them, which also lets tests place an element
+ * outside the visible frame of its scroll container. */
+export function stubElementRect(element: Element, { top = 0, left = 0, bottom = top, right = left }: Partial<DOMRect> = {}) {
+    element.getBoundingClientRect = () => ({
+        top, left, bottom, right, width: right - left, height: bottom - top, x: left, y: top, toJSON: () => ({}),
+    }) as DOMRect;
+}
+
+// ============================================================================
 // LocalStorage Utilities
 // ============================================================================
 

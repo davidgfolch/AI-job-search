@@ -1,6 +1,10 @@
 import pytest
 from unittest.mock import patch
+from scrapper.util import persistence_manager
 from scrapper.util.persistence_manager import PersistenceManager
+from scrapper.test.log_capture import captured_records
+
+LOG_MODULE = "scrapper.persistence_manager"
 
 def test_load_from_repository(manager, mock_repo):
     assert manager.state == {"Site": {"keyword": "python"}}
@@ -188,3 +192,20 @@ def test_finalize_scrapper(state, expect_cleared, manager, mock_repo):
             assert "last_error" not in manager.state["Site"]
             assert "last_error_time" not in manager.state["Site"]
             assert "keyword" not in manager.state["Site"]
+
+
+class TestFinalizeScrapperLogging:
+    def test_logs_preserved_state_with_failure_count(self, manager, mock_repo):
+        manager.state["Site"] = {"failed_keywords": ["kw1", "kw2"]}
+        with captured_records(persistence_manager, LOG_MODULE) as records:
+            manager.finalize_scrapper("Site")
+        assert [r["event"] for r in records] == ["state.preserved_with_failures"]
+        assert records[0]["log_level"] == "warning"
+        assert records[0]["site"] == "Site"
+        assert records[0]["failed_count"] == 2
+
+    def test_logs_nothing_when_state_is_cleared(self, manager, mock_repo):
+        manager.state["Site"] = {"keyword": "python"}
+        with captured_records(persistence_manager, LOG_MODULE) as records:
+            manager.finalize_scrapper("Site")
+        assert records == []

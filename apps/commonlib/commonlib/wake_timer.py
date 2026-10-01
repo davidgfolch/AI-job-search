@@ -3,6 +3,10 @@ import math
 import platform
 import time
 
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.wake_timer")
+
 if platform.system() == 'Windows':
     from ctypes import wintypes
 else:
@@ -54,7 +58,7 @@ class WakeableTimer:
             # We use manual reset (TRUE) and no name (None)
             hTimer = kernel32.CreateWaitableTimerW(None, True, None)
             if not hTimer:
-                print(f"Failed to create waitable timer. Error: {ctypes.GetLastError()}")
+                logger.warning("timer.create_failed", error_code=ctypes.GetLastError())
                 time.sleep(seconds)
                 return
             try:
@@ -73,13 +77,13 @@ class WakeableTimer:
                     True
                 )
                 if not success:
-                    print(f"Failed to set waitable timer. Error: {ctypes.GetLastError()}")
+                    logger.warning("timer.set_failed", error_code=ctypes.GetLastError())
                     time.sleep(seconds)
                     return
                 # Wait for the timer to signal
                 result = kernel32.WaitForSingleObject(hTimer, INFINITE)
                 if result != WAIT_OBJECT_0:
-                    print(f"WaitForSingleObject failed with result: {result}. Error: {ctypes.GetLastError()}")
+                    logger.warning("timer.wait_failed", result=result, error_code=ctypes.GetLastError())
             finally:
                 kernel32.CloseHandle(hTimer)
         else:

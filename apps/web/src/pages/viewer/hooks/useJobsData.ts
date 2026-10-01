@@ -58,14 +58,28 @@ export const useJobsData = () => {
         ]);
     }, [queryClient]);
 
+    /** Refetches the page the list is currently showing, keeping the filters and the selection untouched.
+     *
+     * Used when a filter set is applied again unchanged: the query key does not change, so React Query would keep
+     * serving the cached page and the list would never pick up jobs added since it was fetched. Unlike
+     * `hardRefresh` this only refetches the observed query, so no other filter set in the cache is reset and none
+     * of them can come back as stale data. */
+    const reloadCurrentPage = useCallback(async () => {
+        requestedPages.current.clear();
+        await refetch();
+    }, [refetch]);
+
     const handleLoadMore = useCallback(() => {
         const nextPage = (filters.page || 1) + 1;
-        if (!isLoadingMore && !isPlaceholderData && !isFetching && allJobs.length < (data?.total || 0) && !requestedPages.current.has(nextPage)) {
+        // Hard cap from the server total: if a page comes back with only rows already loaded (deduped away
+        // by useViewer) the list never grows, and auto-fill would keep requesting pages forever.
+        const lastPage = Math.max(1, Math.ceil((data?.total || 0) / (filters.size ?? DEFAULT_FILTERS.size ?? 20)));
+        if (!isLoadingMore && !isPlaceholderData && !isFetching && nextPage <= lastPage && allJobs.length < (data?.total || 0) && !requestedPages.current.has(nextPage)) {
             requestedPages.current.add(nextPage);
             setIsLoadingMore(true);
             setFilters(prev => ({ ...prev, page: nextPage }));
         }
-    }, [isLoadingMore, isPlaceholderData, isFetching, allJobs.length, data?.total, filters.page]);
+    }, [isLoadingMore, isPlaceholderData, isFetching, allJobs.length, data?.total, filters.page, filters.size]);
 
     return {
         filters,
@@ -80,6 +94,7 @@ export const useJobsData = () => {
         handleLoadMore,
         setIsLoadingMore,
         refetch,
-        hardRefresh
+        hardRefresh,
+        reloadCurrentPage
     };
 };

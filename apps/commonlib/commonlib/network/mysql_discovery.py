@@ -2,6 +2,10 @@ import ipaddress
 import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.network.mysql_discovery")
+
 DEFAULT_MYSQL_PORT = 3306
 SCAN_TIMEOUT = 0.5
 MAX_WORKERS = 100
@@ -58,7 +62,7 @@ def _scan_port(ip, port, timeout):
 def _scan_hosts(hosts, port, timeout):
     """Scan a list of hosts on the given port. Returns list of responsive IPs."""
     found = []
-    print(f"Scanning {len(hosts)} hosts for MySQL on port {port}...", flush=True)
+    logger.info("mysql.scan_started", hosts=len(hosts), port=port, timeout=timeout)
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
         fut_map = {ex.submit(_scan_port, h, port, timeout): h for h in hosts}
         for f in as_completed(fut_map):
@@ -81,14 +85,14 @@ def discover_mysql_hosts(subnets=None, targets=None, port=None, timeout=None):
     timeout = timeout or SCAN_TIMEOUT
 
     if targets is not None:
-        print(f"Scanning targets: {', '.join(targets)} for MySQL on port {port}", flush=True)
+        logger.info("mysql.scan_targets", targets=targets, port=port)
         return _scan_hosts(targets, port, timeout)
 
     if subnets is None:
         subnets = get_local_subnets()
 
     found = []
-    print(f"Scanning subnets: {', '.join(subnets)}", flush=True)
+    logger.info("mysql.scan_subnets", subnets=subnets)
     for subnet_str in subnets:
         try:
             network = ipaddress.IPv4Network(subnet_str, strict=False)

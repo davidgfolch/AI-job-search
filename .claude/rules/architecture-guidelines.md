@@ -17,7 +17,8 @@ trigger: always_on
    - Each module use a package manager, check test.* or install.* in scripts folder to know wich to use.
       - for npm tests use `npx vitest run`.
       - always implement parameterized tests when applies.
-   - Always run module full suite tests after any change in code.
+   - Run module full suite tests when the change touches **test code, production code, or the test runner scripts** (`scripts/test.sh`, `scripts/test.bat`). Always include `commonlib`.
+   - Do **not** run the suites when the change is limited to **documentation or non-test scripts/config** (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills): those files are not exercised by the unit or e2e suites, so a run proves nothing. State in the summary that the suites were skipped for that reason.
 
 ## Best practices
 

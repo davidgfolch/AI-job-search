@@ -1,7 +1,8 @@
 from typing import Optional
 
 from commonlib.terminalUtil import consoleTimer
-from commonlib.terminalColor import cyan, red, yellow
+from commonlib.observability import get_logger
+from commonlib.terminalColor import red, yellow
 from commonlib.fileSystemUtil import getSrcPath
 from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, BROWSER, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
@@ -10,6 +11,8 @@ from scrapper.core.utils import runPreload
 from scrapper.executor.executor_factory import create_executor
 from scrapper.core.scrapper_state_calculator import ScrapperStateCalculator
 from scrapper.util.terminalTableUtil import print_failed_info_table
+
+logger = get_logger("scrapper.scrapper_scheduler")
 
 class ScrapperScheduler:
     
@@ -22,8 +25,9 @@ class ScrapperScheduler:
     def validScrapperName(self, name: str):
         if self.getProperties(name) is not None:
             return True
-        print(red(f"Invalid scrapper web page name {name}"))
-        print(yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
+        logger.error("scheduler.invalid_scrapper", scrapper=name, console=red(f"Invalid scrapper web page name {name}"))
+        logger.info("scheduler.available_scrappers", scrappers=list(SCRAPPERS.keys()),
+                    console=yellow(f"Available web page scrapper names: {SCRAPPERS.keys()}"))
         return False
 
 
@@ -40,6 +44,7 @@ class ScrapperScheduler:
                 continue
             calculator = ScrapperStateCalculator(name, properties, self.persistenceManager)
             seconds, status, next_exec, time_range, cadency = calculator.calculate(starting, startingAt)
+            logger.debug("scheduler.scrapper_status", scrapper=name, status=status, next_execution=next_exec, time_range=time_range, cadency=cadency, seconds_remaining=seconds)
             print(f"{name:<20} | {status:<15} | {next_exec:<16} | {time_range:<12} | {cadency:<10}")
             is_starting_mode = starting
             is_starting_target = starting and startingAt == name.capitalize()
@@ -64,7 +69,8 @@ class ScrapperScheduler:
                 properties = scrapper['properties']
                 debug = get_debug(name)
                 browser = properties.get(BROWSER, 'chrome')
-                print(f'{name} DEBUG: {debug}, BROWSER: {browser}')
+                logger.info("scraper.starting", scrapper=name, debug=debug, browser=browser,
+                            console=f'{name} DEBUG: {debug}, BROWSER: {browser}')
                 with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
                     seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
                     executor = create_executor(name, seleniumUtil, self.persistenceManager)
@@ -72,7 +78,8 @@ class ScrapperScheduler:
                         if not executor.execute_preload(properties):
                             return False, executed_startingAt
                         if not properties.get('preloaded', True): 
-                            print(red(f"Skipping execution for {name} due to preload failure."))
+                            logger.error("scheduler.preload_failed_skip", scrapper=name,
+                                         console=red(f"Skipping execution for {name} due to preload failure."))
                             if hasattr(executor, 'navigator') and executor.navigator:
                                 executor.navigator.close()
                             continue
@@ -84,9 +91,10 @@ class ScrapperScheduler:
         return True, executed_startingAt
 
     def runAllScrappers(self, waitBeforeFirstRuns, starting, startingAt, loops=99999999999):
-        print(f'Executing all scrappers: {list(SCRAPPERS.keys())}')
+        logger.info("scheduler.started", scrappers=list(SCRAPPERS.keys()), loops=loops, wait_before_first_runs=bool(waitBeforeFirstRuns),
+                    console=f'Executing all scrappers: {list(SCRAPPERS.keys())}')
         if starting:
-            print(f'Starting at : {startingAt}')
+            logger.info("scheduler.starting_at", scrapper=startingAt, console=f'Starting at : {startingAt}')
         count = 0
         while loops == 99999999999 or count < loops:
             count += 1
@@ -101,13 +109,14 @@ class ScrapperScheduler:
                 starting = False
 
     def runSpecifiedScrappers(self, scrappersList: list):
-        print(f'Executing specified scrappers: {scrappersList}')
+        logger.info("scheduler.specified_started", scrappers=scrappersList, console=f'Executing specified scrappers: {scrappersList}')
         for arg in scrappersList:
             if self.validScrapperName(arg):
                 properties = SCRAPPERS[arg.capitalize()]
                 debug = get_debug(arg)
                 browser = properties.get(BROWSER, 'chrome')
-                print(f'{arg} DEBUG: {debug}, BROWSER: {browser}')
+                logger.info("scraper.starting", scrapper=arg, debug=debug, browser=browser,
+                            console=f'{arg} DEBUG: {debug}, BROWSER: {browser}')
                 with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
                     seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
                     executor = create_executor(arg.capitalize(), seleniumUtil, self.persistenceManager)

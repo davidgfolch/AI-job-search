@@ -2,10 +2,13 @@ from typing import List, Tuple
 import re
 from urllib.parse import quote, parse_qs, urlparse
 
+from commonlib.observability import get_logger
+from commonlib.stringUtil import join
 from commonlib.terminalColor import green, yellow, red, printHR
-from commonlib.stringUtil import join as str_join
 from .baseNavigator import BaseNavigator
 from ..services.scrapling.scraplingService import ScraplingService
+
+logger = get_logger("scrapper.indeedScraplingNavigator")
 
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = ".jobsearch-JobCountAndSortPane-jobCount > span:nth-child(1)"
 CSS_SEL_JOB_COUNT = ".jobsearch-JobCountAndSortPane-jobCount"
@@ -48,26 +51,28 @@ class IndeedScraplingNavigator(BaseNavigator):
         pass
 
     def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):
-        print(f'Searching for "{keyword}" in "{location}" (Scrapling)')
+        logger.info("indeed.scrapling.search.started", keyword=keyword, location=location,
+                    console=f'Searching for "{keyword}" in "{location}" (Scrapling)')
         encoded_keyword, encoded_location = quote(keyword), quote(location)
         url = f"https://es.indeed.com/jobs?q={encoded_keyword}&l={encoded_location}&fromage={daysOld}"
-        print(f"Scrapling: Navigating to {url}")
+        logger.info("indeed.scrapling.navigating", url=url, console=f"Scrapling: Navigating to {url}")
         self.current_page = self.scrapling_service.fetch_with_retry(url)
         if self.current_page.status == 429 or "Just a moment" in (self.current_page.css('title::text').get() or ""):
-            print(red("Detected 429 or Captcha block. Resetting session..."))
+            logger.warning("indeed.scrapling.block_detected", status=429, console=red("Detected 429 or Captcha block. Resetting session..."))
             self.scrapling_service.reset_session()
             self.current_page = self.scrapling_service.fetch_with_retry(url)
         if "from=gnav-jobsearch" in self.current_page.url or self.current_page.url == "https://es.indeed.com/":
-            print(yellow("Detected redirect to home page, retrying search with direct parameters..."))
+            logger.warning("indeed.scrapling.redirect_to_home_detected", console=yellow("Detected redirect to home page, retrying search with direct parameters..."))
             url = f"https://es.indeed.com/jobs?q={encoded_keyword}&l={encoded_location}"
             self.current_page = self.scrapling_service.fetch_with_retry(url)
             if "from=gnav-jobsearch" in self.current_page.url:
-                print(yellow("Still redirected. Resetting session..."))
+                logger.warning("indeed.scrapling.redirect_persisted", action="session_reset", console=yellow("Still redirected. Resetting session..."))
                 self.scrapling_service.reset_session()
                 self.current_page = self.scrapling_service.fetch_with_retry(url)
         if self.debug:
-            print(f"DEBUG: Current URL after search: {self.current_page.url}")
-            print(f"DEBUG: Page title: {self.current_page.css('title::text').get()}")
+            logger.debug("indeed.scrapling.search_context", url=self.current_page.url, page_title=self.current_page.css('title::text').get(),
+                          console=f'DEBUG: Current URL after search: {self.current_page.url}\n'
+                          f'DEBUG: Page title: {self.current_page.css("title::text").get()}')
 
     def get_total_results(self, keywords: str) -> int:
         if not self.current_page:
@@ -77,18 +82,20 @@ class IndeedScraplingNavigator(BaseNavigator):
             total_text = self.current_page.css(f"{sel}::text").get()
             if total_text:
                 if self.debug:
-                    print(f"DEBUG: Found total text with selector {sel}: {total_text}")
+                    logger.debug("indeed.scrapling.total_text_found", selector=sel, total_text=total_text,
+                                  console=f"DEBUG: Found total text with selector {sel}: {total_text}")
                 break
         if not total_text:
             if self.debug:
-                print(yellow("DEBUG: Could not find total results text. Checking for job links..."))
+                logger.debug("indeed.scrapling.total_text_not_found", fallback="job_links",
+                              console=yellow("DEBUG: Could not find total results text. Checking for job links..."))
             return 0
         nums = re.findall(r'[0-9.,]+', total_text)
         if not nums:
             return 0
         total = nums[0]
         printHR()
-        print(green(str_join(f"{total} total results for search: {keywords}")))
+        logger.info("indeed.scrapling.results_found", total=total, keywords=keywords, console=green(join(f"{total} total results for search: {keywords}")))
         printHR()
         return int(total.replace(".", "").replace(",", ""))
 
@@ -131,7 +138,7 @@ class IndeedScraplingNavigator(BaseNavigator):
     def load_job_detail(self, url: str):
         if self.current_page and self.current_page.url == url:
             return
-        print(yellow(f"loading detail: {url}...") if self.debug else yellow("loading..."), end="")
+        logger.info("indeed.scrapling.detail_loading", url=url, console=yellow(f"loading detail: {url}...") if self.debug else yellow("loading..."))
         self.current_page = self.scrapling_service.fetch(url)
 
     def get_current_job_url(self) -> str:
@@ -154,7 +161,8 @@ class IndeedScraplingNavigator(BaseNavigator):
             if not company and 'cmp' in query:
                 company = query['cmp'][0]
         if self.debug:
-            print(f"DEBUG: Scraped detail -> Title: {title[:30] if title else 'EMPTY'}, Company: {company}, Location: {location}")
+            logger.debug("indeed.scrapling.detail_scraped", title=title[:30] if title else 'EMPTY', company=company, location=location,
+                          console=f"DEBUG: Scraped detail -> Title: {title[:30] if title else 'EMPTY'}, Company: {company}, Location: {location}")
         return title or "", company or "", location or "", salary or "", url, html
 
     def check_easy_apply(self) -> bool:

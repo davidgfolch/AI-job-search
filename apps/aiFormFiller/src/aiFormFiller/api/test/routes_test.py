@@ -87,3 +87,63 @@ class TestApiRoutes(unittest.TestCase):
         client = TestClient(new_app)
         response = client.get("/api/health")
         self.assertFalse(response.json()["cv_loaded"])
+
+    @patch("aiFormFiller.api.routes.logger")
+    @patch("aiFormFiller.api.routes._service")
+    def test_answer_logs_success(self, mock_service, mock_logger):
+        question, answer = "¿Años de Java?", "Tengo 5 años"
+        mock_service.answer.return_value = MagicMock(text=answer, is_clarification=False, provider="local")
+        response = self.client.post("/api/answer", json={"question": question})
+        self.assertEqual(response.status_code, 200)
+        mock_logger.debug.assert_called_once_with("form.answered", endpoint="answer", provider="local", is_clarification=False, question_length=len(question), answer_length=len(answer))
+
+    @patch("aiFormFiller.api.routes.logger")
+    @patch("aiFormFiller.api.routes._service")
+    def test_answer_logs_rejected_provider(self, mock_service, mock_logger):
+        mock_service.answer.side_effect = ValueError("OPENAI_API_KEY not configured")
+        response = self.client.post("/api/answer", json={"question": "Q?", "provider": "openai"})
+        self.assertEqual(response.status_code, 400)
+        mock_logger.warning.assert_called_once_with("provider.rejected", endpoint="answer", provider="openai", error="OPENAI_API_KEY not configured")
+
+    @patch("aiFormFiller.api.routes.logger")
+    @patch("aiFormFiller.api.routes._service")
+    def test_answer_logs_provider_failure(self, mock_service, mock_logger):
+        mock_service.answer.side_effect = RuntimeError("provider down")
+        response = self.client.post("/api/answer", json={"question": "Q?", "provider": "local"})
+        self.assertEqual(response.status_code, 500)
+        mock_logger.exception.assert_called_once_with("provider.failed", endpoint="answer", provider="local")
+
+    @patch("aiFormFiller.api.routes.logger")
+    @patch("aiFormFiller.api.routes._service")
+    def test_follow_up_logs_provider_failure(self, mock_service, mock_logger):
+        mock_service.follow_up.side_effect = RuntimeError("provider down")
+        response = self.client.post("/api/answer/follow-up", json={"original_question": "Q?", "clarification_answer": "Sí"})
+        self.assertEqual(response.status_code, 500)
+        mock_logger.exception.assert_called_once_with("provider.failed", endpoint="follow_up", provider="auto")
+
+    @patch("aiFormFiller.api.routes.logger")
+    @patch("aiFormFiller.api.routes._service")
+    def test_batch_logs_summary(self, mock_service, mock_logger):
+        mock_service.answer_batch.return_value = [
+            MagicMock(text="5 años", is_clarification=False, provider="local"),
+            MagicMock(text="CLARIFICACIÓN: No se menciona", is_clarification=True, provider="local"),
+        ]
+        response = self.client.post("/api/answer/batch", json={"questions": ["Q1?", "Q2?"]})
+        self.assertEqual(response.status_code, 200)
+        mock_logger.debug.assert_called_once_with("form.answered", endpoint="answer_batch", count=2, clarifications=1, question_length=len("Q1?") + len("Q2?"))
+
+    @patch("aiFormFiller.api.routes.logger")
+    @patch("aiFormFiller.api.routes._service")
+    def test_batch_logs_rejected_provider(self, mock_service, mock_logger):
+        mock_service.answer_batch.side_effect = ValueError("Unknown provider: nope")
+        response = self.client.post("/api/answer/batch", json={"questions": ["Q1?"], "provider": "nope"})
+        self.assertEqual(response.status_code, 400)
+        mock_logger.warning.assert_called_once_with("provider.rejected", endpoint="answer_batch", provider="nope", error="Unknown provider: nope")
+
+    @patch("aiFormFiller.api.routes.logger")
+    @patch("aiFormFiller.api.routes._service")
+    def test_batch_logs_provider_failure(self, mock_service, mock_logger):
+        mock_service.answer_batch.side_effect = RuntimeError("provider down")
+        response = self.client.post("/api/answer/batch", json={"questions": ["Q1?"]})
+        self.assertEqual(response.status_code, 500)
+        mock_logger.exception.assert_called_once_with("provider.failed", endpoint="answer_batch", provider="auto")

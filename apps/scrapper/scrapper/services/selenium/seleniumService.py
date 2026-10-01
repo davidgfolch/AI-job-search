@@ -1,4 +1,5 @@
 from typing import List, Optional
+from commonlib.observability import get_logger
 from scrapper.core.utils import debug
 from scrapper.services.selenium.driverUtil import DriverUtil
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
@@ -7,6 +8,8 @@ from selenium.webdriver.remote.webelement import WebElement
 
 from scrapper.services.selenium.browser_service import BrowserService
 from scrapper.services.selenium.element_service import ElementService
+
+logger = get_logger("scrapper.seleniumService")
 
 class SeleniumService:
 
@@ -41,13 +44,13 @@ class SeleniumService:
         
     @seleniumSocketConnRetry()
     def exit(self):
-        print('Exiting SeleniumUtil, close driver...')
+        logger.info("selenium.driver_closing", console='Exiting SeleniumUtil, close driver...')
         try:
             self.driver.quit()
             # Monkey patch quit to avoid double closing in __del__ (undetected_chromedriver issue on Windows)
             self.driver.quit = lambda: None
         except Exception:
-            print(f'Error closing driver')
+            logger.error("selenium.driver_close_failed", console='Error closing driver')
             debug(debugFlag=False, exception=True)
 
     def tabClose(self, name: Optional[str] = None):

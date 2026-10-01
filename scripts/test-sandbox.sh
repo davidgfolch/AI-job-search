@@ -111,7 +111,7 @@ echo "--- Logs for $TARGET (last 100 lines) ---"
 docker compose $FILES $PROFILE_ARGS -p "$PROJECT" logs "$TARGET" --tail=100
 
 echo "Checking sandbox logs for errors..."
-if docker compose $FILES $PROFILE_ARGS -p "$PROJECT" logs "$TARGET" 2>&1 | grep -E 'ERROR|CRITICAL|Traceback' > /dev/null; then
+if docker compose $FILES $PROFILE_ARGS -p "$PROJECT" logs "$TARGET" 2>&1 | grep -iE 'ERROR|CRITICAL|Traceback' > /dev/null; then
     echo "Sandbox log check FAILED: ERROR/CRITICAL/Traceback found in '$TARGET' logs." >&2
     exit 1
 fi

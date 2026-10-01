@@ -17,6 +17,19 @@ export const setupIntersectionObserverMock = () => {
   return mockIntersectionObserver;
 };
 
+export const setupResizeObserverMock = () => {
+  const mockResizeObserver = vi.fn(function(this: ResizeObserver, callback: ResizeObserverCallback) {
+    return {
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+    };
+  }) as any;
+
+  globalThis.ResizeObserver = mockResizeObserver;
+  return mockResizeObserver;
+};
+
 export const setupScrollIntoViewMock = () => {
   Element.prototype.scrollIntoView = vi.fn();
 };
@@ -35,6 +48,7 @@ export const setupElementSizeMocks = () => {
 
 export const setupDOMMocks = () => {
   setupIntersectionObserverMock();
+  setupResizeObserverMock();
   setupScrollIntoViewMock();
   setupElementSizeMocks();
 };

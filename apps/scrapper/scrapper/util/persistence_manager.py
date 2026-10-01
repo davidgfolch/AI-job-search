@@ -2,8 +2,11 @@ import json
 import os
 from typing import Dict, Any, Optional
 from commonlib.dateUtil import getDatetimeNowStr, getDatetimeNow, parseDatetime
+from commonlib.observability import get_logger
 from commonlib.sql.scrapper_state_repository import ScrapperStateRepository
 from scrapper.core.scrapper_config import STALE_THRESHOLD_HOURS
+
+logger = get_logger("scrapper.persistence_manager")
 
 class PersistenceManager:
     def __init__(self, repository: Optional[ScrapperStateRepository] = None):
@@ -114,7 +117,6 @@ class PersistenceManager:
         self.save()
 
     def finalize_scrapper(self, site: str):
-        from commonlib.terminalColor import yellow
         if not self.get_failed_keywords(site):
             if 'last_error' in self.state.get(site, {}):
                 del self.state[site]['last_error']
@@ -122,6 +124,8 @@ class PersistenceManager:
                     del self.state[site]['last_error_time']
             self.clear_state(site)
         else:
-            print(yellow(f"Scrapper finished with failed keywords. State preserved for retry."))
+            from commonlib.terminalColor import yellow
+            logger.warning("state.preserved_with_failures", site=site, failed_count=len(self.get_failed_keywords(site)),
+                           console=yellow("Scrapper finished with failed keywords. State preserved for retry."))
         self.save()
 

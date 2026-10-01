@@ -38,6 +38,20 @@ def test_find_all_empty(repo_with_mock):
     assert repo.find_all() == []
 
 
+def test_find_all_logs_unparseable_filters(repo_with_mock, log_records):
+    repo, mock_db = repo_with_mock
+    mock_db.fetchAll.return_value = [
+        (1, 'Config 1', 'not-json', 1, 1, 0, '2024-01-01', None),
+    ]
+    result = repo.find_all()
+    assert result[0]['filters'] == {}
+    records = log_records(event="filters.parse_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "warning"
+    assert records[0]["config_id"] == 1
+    assert records[0]["source"] == "find_all"
+
+
 def test_find_by_id(repo_with_mock):
     repo, mock_db = repo_with_mock
     mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, 1, '2024-01-01', None)

@@ -48,7 +48,7 @@ services:
 
   aienrich:
     container_name: ai-job-search-test-aienrich
-    depends_on:
+    depends_on: !override
       mysql_db:
         condition: service_healthy
     environment:

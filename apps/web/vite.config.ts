@@ -71,9 +71,16 @@ export default defineConfig(async ({ mode }) => {
     coverage: {
       reporter: ['text', 'json-summary', 'json'],
       reportOnFailure: true,
+      // Without `include`, V8 only reports modules a test actually imported, so a
+      // lazily-routed page that no test imports (dashboard, company synonyms)
+      // vanishes from the denominator instead of counting as 0%.
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      // Test code lives in `test/` folders; keeping it out of the denominator is
+      // what makes the number reflect production code.
+      exclude: ['**/node_modules/**', '**/dist/**', '**/test/**', '**/*.css'],
       thresholds: {
-        lines: 85,
-        statements: 85,
+        lines: 90,
+        statements: 90,
       },
     }
   },

@@ -1,8 +1,8 @@
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException, WebDriverException
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry, StackTrace
+from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow, printHR
-from commonlib.stringUtil import join
 from ..core import baseScrapper
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
@@ -10,6 +10,8 @@ import re
 
 from .baseNavigator import BaseNavigator
 from .components.indeedAuthenticator import IndeedAuthenticator
+
+logger = get_logger("scrapper.indeedNavigator")
 
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = ".jobsearch-JobCountAndSortPane-jobCount > span:nth-child(1)"
 CSS_SEL_GLOBAL_ALERT_HIDE = "div.ij-SearchListingPageContent-heading h1"
@@ -51,7 +53,7 @@ class IndeedNavigator(BaseNavigator):
         self.authenticator.login()
 
     def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):
-        print(f'Searching for "{keyword}" in "{location}"')
+        logger.info("indeed.search.started", keyword=keyword, location=location, console=f'Searching for "{keyword}" in "{location}"')
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_SEARCH_WHAT)
         self.selenium.setFocus(CSS_SEL_SEARCH_WHAT)
         self.selenium.waitAndClick_noError('button[aria-label="Clear what input"]', "Could not clear keyword input", showException=False)
@@ -89,7 +91,7 @@ class IndeedNavigator(BaseNavigator):
         total = self.selenium.getText(CSS_SEL_JOB_COUNT)
         total = re.findall(r'[0-9.,]+', total)[0]
         printHR()
-        print(green(join(f"{total} total results for search: {keywords}")))
+        logger.info("indeed.results_found", total=total, keywords=keywords, console=green(f"{total} total results for search: {keywords}"))
         printHR()
         return int(total.replace(".", "").replace(",", ""))
 

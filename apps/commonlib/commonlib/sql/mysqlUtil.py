@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from typing import Any, Callable
 from mysql.connector import MySQLConnection
 
+from ..observability import get_logger
 from .connection_manager import get_connection, getConnection
 from .transaction_manager import TransactionManager
 from .query_executor import QueryExecutor
@@ -29,6 +30,8 @@ from .job_queries import (
 )
 # Re-export for backward compatibility
 from ..sqlUtil import getColumnTranslated
+
+logger = get_logger("commonlib.sql.mysqlUtil")
 
 
 class MysqlUtil:
@@ -90,7 +93,7 @@ class MysqlUtil:
 
         conn = self._connection
         if not conn.is_connected():
-            print(f'Reconnecting to DB conn: {conn}', flush=True)
+            logger.info("db.reconnecting", conn=str(conn))
             conn.reconnect()
 
         cursor = conn.cursor()

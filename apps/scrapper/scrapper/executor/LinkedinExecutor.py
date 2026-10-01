@@ -1,6 +1,7 @@
 import math
 from selenium.common.exceptions import NoSuchElementException
-from commonlib.terminalColor import yellow, green
+from commonlib.observability import get_logger
+from commonlib.terminalColor import green, yellow
 from commonlib.decorator.retry import retry
 from ..core import baseScrapper
 from ..core.utils import debug
@@ -9,6 +10,8 @@ from ..services.selenium.browser_service import sleep
 from ..navigator.linkedinNavigator import LinkedinNavigator
 from ..services.LinkedinService import LinkedinService
 from .BaseExecutor import BaseExecutor
+
+logger = get_logger("scrapper.LinkedinExecutor")
 
 class LinkedinExecutor(BaseExecutor):
     def _init_scrapper(self):
@@ -23,7 +26,8 @@ class LinkedinExecutor(BaseExecutor):
 
     def _preload_action(self):
         self.navigator.login(self.user_email, self.user_pwd)
-        print(yellow('Waiting for LinkedIn to redirect to feed page... (Maybe you need to solve a security filter first)'))
+        logger.warning("linkedin.auth.feed_redirect_waiting",
+                       console=yellow('Waiting for LinkedIn to redirect to feed page... (Maybe you need to solve a security filter first)'))
         self.navigator.wait_until_page_url_contains('https://www.linkedin.com/feed/', 60)
 
     def _create_service(self, mysql):
@@ -40,7 +44,7 @@ class LinkedinExecutor(BaseExecutor):
 
     def _load_page(self, keywords: str) -> str:
         from urllib.parse import quote
-        print(f'Search keyword={keywords}')
+        logger.info("linkedin.search.started", keywords=keywords, console=f'Search keyword={keywords}')
         url = f'https://www.linkedin.com/jobs/search/?keywords={quote(keywords)}&f_WT={self.remote}' + \
             f'&geoId={self.location}&f_TPR={self.f_TPR}&sortBy={self.sortBy}'
         self.navigator.load_page(url)
@@ -63,22 +67,23 @@ class LinkedinExecutor(BaseExecutor):
                     if currentItem >= totalResults:
                         break
                     currentItem += 1
-                    print(green(f'pg {page} job {idx} - '), end='', flush=True)
+                    logger.info("linkedin.job.processing", page=page, idx=idx, console=green(f'pg {page} job {idx} - '), end='')
                     result = self._load_and_process_row(idx)
                     if result == "ERROR":
                         rowErrors += 1
-                    
+
                     if rowErrors > 1:
                         break
-                    
-                    if result is False: 
+
+                    if result is False:
                         foundNewJobInPage = True
 
                 if currentItem >= totalResults or page >= totalPages:
                     break
-                
+
                 if not foundNewJobInPage and (page > startPage + 1 or (startPage < 2 and page > 2)):
-                    print(yellow('No new jobs found in this page, stopping keyword processing.'))
+                    logger.info("linkedin.pagination.no_new_jobs", keywords=keywords, page=page,
+                                console=yellow('No new jobs found in this page, stopping keyword processing.'))
                     break
                 
                 if not self.navigator.click_next_page():
@@ -100,7 +105,7 @@ class LinkedinExecutor(BaseExecutor):
             jobId, jobExists = self.service.job_exists_in_db(url)
             self.navigator.load_job_detail(jobExists, idx, cssSel)
             if jobExists:
-                print(yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
+                logger.info("linkedin.job.already_exists", job_id=jobId, console=yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
                 return True
             self._process_row(idx)
             print()

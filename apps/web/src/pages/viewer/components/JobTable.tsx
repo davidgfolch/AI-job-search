@@ -1,7 +1,9 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useRef } from 'react';
 import type { Job } from '../api/ViewerApi';
 import './JobTable.css';
 import { STATE_BASE_FIELDS } from '../constants';
+import { useAutoLoadMore } from '../hooks/useAutoLoadMore';
+import { useScrollSelectedIntoView } from '../hooks/useScrollSelectedIntoView';
 import { calculateLapsedTime, calculateLapsedTimeDetail } from '../../common/utils/dateUtils';
 
 interface JobTableProps {
@@ -10,6 +12,7 @@ interface JobTableProps {
     onJobSelect: (job: Job) => void;
     onLoadMore?: () => void;
     hasMore?: boolean;
+    isLoadingMore?: boolean;
     selectedIds: Set<number>;
     selectionMode: 'none' | 'manual' | 'all';
     onToggleSelectJob: (id: number) => void;
@@ -23,94 +26,32 @@ export default function JobTable({
     onJobSelect, 
     onLoadMore, 
     hasMore,
+    isLoadingMore,
     selectedIds,
     selectionMode,
     onToggleSelectJob,
     onToggleSelectAll,
     containerRef,
 }: JobTableProps) {
-    const observerTarget = useRef<HTMLTableRowElement>(null);
-    const isLoadingRef = useRef(false);
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLTableElement>(null);
 
-    const debouncedOnLoadMore = useCallback(() => {
-        if (!isLoadingRef.current) {
-            isLoadingRef.current = true;
-            onLoadMore();
-            setTimeout(() => {
-                isLoadingRef.current = false;
-            }, 1000);
-        }
-    }, [onLoadMore]);
-
-    useEffect(() => {
-        if (!onLoadMore || !hasMore) return;
-        
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const entry = entries[0];
-                if (entry.isIntersecting && !isLoadingRef.current) {
-                    const container = containerRef.current;
-                    if (container) {
-                        const hasScrollbar = container.scrollHeight > container.clientHeight;
-                        if (hasScrollbar) {
-                            debouncedOnLoadMore();
-                        }
-                    }
-                }
-            },
-            { threshold: 0.1, rootMargin: '50px' }
-        );
-        const currentTarget = observerTarget.current;
-        if (currentTarget) {
-            observer.observe(currentTarget);
-        }
-        return () => {
-            if (currentTarget) {
-                observer.unobserve(currentTarget);
-            }
-        };
-    }, [onLoadMore, hasMore, debouncedOnLoadMore]);
-
-    // Reset loading state when jobs change (new data loaded)
-    useEffect(() => {
-        isLoadingRef.current = false;
-    }, [jobs]);
-
-    // Fallback scroll listener as backup for IntersectionObserver
-    useEffect(() => {
-        if (!onLoadMore || !hasMore || isLoadingRef.current) return;
-        const container = containerRef.current;
-        if (!container) return;
-        const handleScroll = () => {
-            if (isLoadingRef.current) return;
-            const { scrollTop, scrollHeight, clientHeight } = container;
-            const scrollThreshold = 100; // pixels from bottom
-            const isNearBottom = scrollTop + clientHeight >= scrollHeight - scrollThreshold;
-            if (isNearBottom && scrollHeight > clientHeight) {
-                debouncedOnLoadMore();
-            }
-        };
-        container.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            container.removeEventListener('scroll', handleScroll);
-        };
-    }, [onLoadMore, hasMore, debouncedOnLoadMore]);
+    useAutoLoadMore({
+        contentRef,
+        sentinelRef,
+        itemCount: jobs.length,
+        hasMore,
+        isLoading: isLoadingMore,
+        onLoadMore,
+    });
 
     const selectedRowRef = useRef<HTMLTableRowElement>(null);
 
-    useEffect(() => {
-        if (selectedJob && selectedRowRef.current) {
-            selectedRowRef.current.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'nearest',
-                inline: 'nearest'
-            });
-        }
-    }, [selectedJob?.id]);
+    useScrollSelectedIntoView({ containerRef, rowRef: selectedRowRef, selectedId: selectedJob?.id });
 
     return (
         <div className="job-table-container" ref={containerRef} tabIndex={-1}>
-            <table className="job-table">
+            <table className="job-table" ref={contentRef}>
                 <thead>
                     <tr>
                         <th className="checkbox-column">
@@ -131,14 +72,13 @@ export default function JobTable({
                     </tr>
                 </thead>
                 <tbody>
-                    {jobs.map((job, index) => {
+                    {jobs.map((job) => {
                         const isSelected = selectedJob?.id === job.id;
-                        const isLastRow = index === jobs.length - 1;
                         return (
                             <tr
                                 id={`job-row-${job.id}`}
                                 key={job.id}
-                                ref={isSelected ? selectedRowRef : (isLastRow ? observerTarget : undefined)}
+                                ref={isSelected ? selectedRowRef : undefined}
                                 className={isSelected ? 'selected' : ''}
                                 onClick={() => onJobSelect(job)}>
                             <td className="checkbox-column" onClick={(e) => e.stopPropagation()}>
@@ -175,6 +115,9 @@ export default function JobTable({
                     })}
                 </tbody>
             </table>
+            {/* Stable bottom-of-list marker. It must not be a table row: a row that gets replaced when a
+                page is appended would leave the IntersectionObserver watching a mid-list element. */}
+            <div ref={sentinelRef} className="job-table-sentinel" aria-hidden="true" />
         </div>
     );
 }

@@ -19,7 +19,6 @@ collector = MetricsCollector()
 
 def run():
     logger.info("startup", version=_v('aiEnrich3'))
-    print(cyan(f"AI Enrich3 v{_v('aiEnrich3')}"))
     pipeline: Optional[ExtractionPipeline] = None
     while True:
         if get_job_enabled():

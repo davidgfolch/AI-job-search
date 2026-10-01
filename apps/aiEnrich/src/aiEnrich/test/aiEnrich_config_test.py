@@ -1,15 +1,17 @@
 import os
 import pytest
-from commonlib.aiEnrich_config import (
+
+from aiEnrich.aiEnrich_config import (
     OPENROUTER_DEFAULT_BASE_URL, OPENROUTER_DEFAULT_MODEL, OPENROUTER_DEFAULT_FALLBACK_MODEL,
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
-    get_backend, get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model,
+    get_max_validation_retries, get_backend, get_openrouter_base_url, get_openrouter_model,
+    get_openrouter_fallback_model,
 )
 
 CONFIG_ENV_VARS = [
     "AI_ENRICH_BACKEND", "AI_ENRICH_OPENROUTER_BASE_URL", "AI_ENRICH_OPENROUTER_MODEL",
     "AI_ENRICH_OPENROUTER_FALLBACK_MODEL", "AI_ENRICH_OLLAMA_BASE_URL", "AI_ENRICH_OLLAMA_MODEL",
-    "AI_ENRICH_MAX_OLLAMA_FAILURES", "AI_ENRICH_TIMEOUT_JOB", "AI_ENRICH_JOB",
+    "AI_ENRICH_MAX_OLLAMA_FAILURES", "AI_ENRICH_MAX_VALIDATION_RETRIES", "AI_ENRICH_TIMEOUT_JOB", "AI_ENRICH_JOB",
 ]
 
 
@@ -77,6 +79,7 @@ def _set_or_unset(key: str, value):
 def test_other_getters_defaults():
     assert get_job_enabled() is True
     assert get_ollama_base_url() == "http://localhost:11434"
-    assert get_timeout_job() == 90
+    assert get_timeout_job() == 300
     assert get_model() == "ollama/qwen2.5:3b"
     assert get_max_ollama_failures() == 3
+    assert get_max_validation_retries() == 1
