@@ -1,6 +1,8 @@
 import os
 import pytest
 from unittest.mock import patch, MagicMock
+
+from commonlib.ollama_client import OllamaResponse
 from ..dataExtractor import dataExtractor, _save, _getJobIdsList
 
 @pytest.fixture
@@ -9,7 +11,7 @@ def mock_deps():
          patch('aiEnrich.dataExtractor._save') as save_chk, \
          patch('aiEnrich.dataExtractor.printJob'), \
          patch('aiEnrich.dataExtractor.footer'), patch('aiEnrich.dataExtractor.StopWatch'), \
-         patch('aiEnrich.dataExtractor.rawToJson'), patch('aiEnrich.dataExtractor.mapJob'), \
+         patch('aiEnrich.dataExtractor.mapJob'), \
          patch('aiEnrich.dataExtractor.AiEnrichRepository') as repo_cls, \
          patch('aiEnrich.dataExtractor.query_ollama') as mock_ollama, \
          patch('aiEnrich.dataExtractor.ping_backend', return_value=True) as mock_ping, \
@@ -25,7 +27,7 @@ def mock_deps():
 
 @pytest.fixture(autouse=True)
 def clean_env():
-    env_vars = ["AI_ENRICH_BACKEND", "AI_ENRICH_OPENROUTER_BASE_URL", "AI_ENRICH_OPENROUTER_MODEL", "AI_ENRICH_OPENROUTER_FALLBACK_MODEL"]
+    env_vars = ["AI_ENRICH_BACKEND", "AI_ENRICH_OPENROUTER_BASE_URL", "AI_ENRICH_OPENROUTER_MODEL", "AI_ENRICH_OPENROUTER_FALLBACK_MODEL", "AI_ENRICH_MAX_VALIDATION_RETRIES"]
     original = {k: os.environ.get(k) for k in env_vars}
     yield
     for k, v in original.items():
@@ -42,20 +44,19 @@ class TestDataExtractor:
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
 
-        with patch('aiEnrich.dataExtractor.rawToJson', return_value={'salary': '100k'}), \
-             patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')):
-            mock_deps['ollama'].return_value = '{"salary": "100k"}'
+        with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')):
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
             assert dataExtractor() == 1
             mock_deps['save'].assert_called()
             mock_deps['ollama'].assert_called_once()
 
     @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
     def test_skips_when_ollama_down(self, mock_ids, mock_deps):
-        """Skips pre-check and returns 0 when Ollama is unreachable"""
+        """Returns -1 when Ollama is unreachable"""
         mock_deps['ping'].return_value = False
         mock_deps['repo'].count_pending_enrichment.return_value = 1
 
-        assert dataExtractor() == 0
+        assert dataExtractor() == -1
         mock_deps['ollama'].assert_not_called()
         mock_deps['save'].assert_not_called()
 
@@ -132,20 +133,20 @@ class TestPingBackend:
     def test_routes_to_ollama(self):
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         from aiEnrich import dataExtractor
-        with patch.object(dataExtractor, "ping_ollama", return_value=True) as mock_ping, \
+        with patch.object(dataExtractor, "resolve_ollama_url", return_value="http://host:11434") as mock_resolve, \
              patch.object(dataExtractor, "ping_openrouter") as mock_ping_or:
             assert dataExtractor.ping_backend() is True
-        mock_ping.assert_called_once()
+        mock_resolve.assert_called_once()
         mock_ping_or.assert_not_called()
 
     def test_routes_to_openrouter(self):
         os.environ["AI_ENRICH_BACKEND"] = "openrouter"
         from aiEnrich import dataExtractor
-        with patch.object(dataExtractor, "ping_ollama") as mock_ping, \
+        with patch.object(dataExtractor, "resolve_ollama_url", return_value=None) as mock_resolve, \
              patch.object(dataExtractor, "ping_openrouter", return_value=True) as mock_ping_or:
             assert dataExtractor.ping_backend() is True
         mock_ping_or.assert_called_once()
-        mock_ping.assert_not_called()
+        mock_resolve.assert_not_called()
 
 
 class TestProcessJobSafeBackend:
@@ -155,9 +156,8 @@ class TestProcessJobSafeBackend:
         repo = MagicMock()
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
-             patch("aiEnrich.dataExtractor.query_openrouter", return_value='{"salary": "100k"}') as mock_or, \
+             patch("aiEnrich.dataExtractor.query_openrouter", return_value='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}') as mock_or, \
              patch("aiEnrich.dataExtractor.query_ollama") as mock_ollama, \
-             patch("aiEnrich.dataExtractor.rawToJson", return_value={"salary": "100k"}), \
              patch("aiEnrich.dataExtractor._save") as mock_save, \
              patch("aiEnrich.dataExtractor.validateResult"), \
              patch("aiEnrich.dataExtractor.footer"), \
@@ -172,15 +172,22 @@ class TestProcessJobSafeBackend:
         from aiEnrich.dataExtractor import _process_job_safe
         repo = MagicMock()
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
+        response = OllamaResponse(
+            text='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}',
+            url="http://ollama", done=True, done_reason="stop",
+        )
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
              patch("aiEnrich.dataExtractor.query_openrouter") as mock_or, \
-             patch("aiEnrich.dataExtractor.query_ollama", return_value='{"salary": "100k"}') as mock_ollama, \
-             patch("aiEnrich.dataExtractor.rawToJson", return_value={"salary": "100k"}), \
+             patch("aiEnrich.dataExtractor.query_ollama", return_value=response) as mock_ollama, \
              patch("aiEnrich.dataExtractor._save") as mock_save, \
              patch("aiEnrich.dataExtractor.validateResult"), \
              patch("aiEnrich.dataExtractor.footer"), \
              patch("aiEnrich.dataExtractor.stopWatch"):
             _process_job_safe(repo, 1, 1, 0, "enrich")
         mock_ollama.assert_called_once()
+        assert mock_ollama.call_args.kwargs["return_metadata"] is True
+        assert mock_ollama.call_args.kwargs["response_schema"]["required"] == [
+            "required_technologies", "optional_technologies", "salary", "modality",
+        ]
         mock_or.assert_not_called()
         mock_save.assert_called_once()

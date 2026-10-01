@@ -35,10 +35,16 @@ genbadge = {extras = ["coverage"], version = "1.1.3"}
 [tool.coverage.run]
 branch = true
 source = ["scrapper"]
+# Tests live inside the package, so without omit they are measured as if they
+# were production code: 2981 of 6215 measured lines (48%) at 99% coverage, which
+# inflated the badge by ~8.8 points over the real 80.8% of production code.
+omit = ["*/test/*", "*/conftest.py"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 85
+# No fail_under here on purpose: coverage.py only compares the branch-inclusive
+# total, and the project gates statements/lines only. scripts/coverage/scrapper_coverage_gate.py
+# enforces the 90% floor on production statements and lines; branches stay informational.
 
 [build-system]
 requires = ["poetry-core"]

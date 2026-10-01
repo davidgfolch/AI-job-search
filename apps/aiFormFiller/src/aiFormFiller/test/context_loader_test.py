@@ -2,6 +2,7 @@ import os
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 from ..context_loader import ContextLoader
 
 
@@ -77,3 +78,42 @@ class TestContextLoader(unittest.TestCase):
         result = self.loader.load()
         self.assertFalse(result)
         self.assertIsNone(self.loader.cv_content)
+
+    def test_missing_file_logs_warning(self):
+        with patch("aiFormFiller.context_loader.logger") as log:
+            self.assertFalse(self.loader.load())
+        log.warning.assert_any_call("context.file_not_found", path=self.cv_path)
+        log.warning.assert_any_call("context.file_not_found", path=self.lf_path)
+
+    def test_empty_file_logs_warning(self):
+        with open(self.cv_path, "w") as f:
+            f.write("   ")
+        with patch("aiFormFiller.context_loader.logger") as log:
+            self.loader.load()
+        log.warning.assert_any_call("context.file_empty", path=self.cv_path)
+
+    def test_load_logs_lengths_only(self):
+        with open(self.cv_path, "w") as f:
+            f.write("CV content")
+        with open(self.lf_path, "w") as f:
+            f.write("Salary: 80k")
+        with patch("aiFormFiller.context_loader.logger") as log:
+            self.loader.load()
+        log.info.assert_any_call("context.cv_loaded", path=self.cv_path, chars=len("CV content"))
+        log.info.assert_any_call("context.looking_for_loaded", path=self.lf_path, chars=len("Salary: 80k"))
+
+    def test_reload_logs_reloaded_events(self):
+        with open(self.cv_path, "w") as f:
+            f.write("Original")
+        with open(self.lf_path, "w") as f:
+            f.write("Salary: 80k")
+        self.loader.load()
+        time.sleep(0.1)
+        with open(self.cv_path, "w") as f:
+            f.write("Modified")
+        with open(self.lf_path, "w") as f:
+            f.write("Salary: 90k")
+        with patch("aiFormFiller.context_loader.logger") as log:
+            self.loader.reload_if_changed()
+        log.info.assert_any_call("context.cv_reloaded", path=self.cv_path, chars=len("Modified"))
+        log.info.assert_any_call("context.looking_for_reloaded", path=self.lf_path, chars=len("Salary: 90k"))

@@ -1,6 +1,8 @@
 import re
 import time
 
+from structlog.testing import capture_logs
+
 from commonlib.stopWatch import StopWatch
 
 
@@ -20,11 +22,16 @@ def test_elapsed(capsys):
     captured = capsys.readouterr()
     assert isinstance(re.search('Time elapsed: 0.5[0-9]+ secs[.]',captured.out), re.Match)
 
-def test_end(capsys):
+def test_end():
     sut = StopWatch()
     sut.start()
     time.sleep(0.5)
-    sut.end()
-    captured = capsys.readouterr()
-    assert isinstance(re.search('Time elapsed: 0.5[0-9]* secs[.] [(]Media: 0.5[0-9]*[)]',captured.out), re.Match)
+    with capture_logs() as records:
+        sut.end()
+    elapsed = [r for r in records if r["event"] == "timer.elapsed"]
+    assert len(elapsed) == 1
+    assert elapsed[0]["elapsed_secs"] >= 0.5
+    assert elapsed[0]["samples"] == 1
+    assert "median_secs" in elapsed[0]
+    assert elapsed[0]["module"] == "commonlib.stopWatch"
 

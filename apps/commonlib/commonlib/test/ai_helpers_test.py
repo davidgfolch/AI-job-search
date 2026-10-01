@@ -1,3 +1,5 @@
+from structlog.testing import capture_logs
+
 import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.ai_helpers import (
@@ -142,14 +144,29 @@ def test_validateResult_clears_invalid_modality():
     validateResult(result)
     assert result["modality"] is None
 
-@pytest.mark.parametrize("job_errors, expected_output", [
-    (set(), "Processed jobs this run: 1/10"),
-    ({"error1"}, "Total job errors: 1"),
+@pytest.mark.parametrize("job_errors, expected_errors", [
+    (set(), 0),
+    ({"error1"}, 1),
 ])
-def test_footer(capsys, job_errors, expected_output):
-    footer(10, 0, 100, job_errors)
-    captured = capsys.readouterr()
-    assert expected_output in captured.out
+def test_footer(job_errors, expected_errors):
+    with capture_logs() as records:
+        footer(10, 0, 100, job_errors)
+    completed = [r for r in records if r["event"] == "ai.batch_completed"]
+    assert len(completed) == 1
+    assert completed[0]["processed"] == 1
+    assert completed[0]["total"] == 10
+    assert completed[0]["total_processed"] == 100
+    assert completed[0]["job_errors"] == expected_errors
+    assert "elapsed" not in completed[0]
+
+
+def test_footer_includes_elapsed():
+    with capture_logs() as records:
+        footer(10, 0, 100, set(), elapsed_time=12.0)
+    completed = [r for r in records if r["event"] == "ai.batch_completed"]
+    assert len(completed) == 1
+    assert "elapsed" in completed[0]
+    assert "elapsed_per_job" in completed[0]
 @pytest.mark.parametrize("value, expected", [
     ("Java (Spring, Hibernate)", "Java, Spring, Hibernate"),
     ("React (Hooks, Context), Node.js (Express)", "React, Hooks, Context, Node.js, Express"),

@@ -3,26 +3,37 @@ import os
 from collections import deque
 from datetime import datetime
 
+from commonlib.log_writer import resolve_read_path
+from commonlib.observability import get_logger
+
+logger = get_logger("backend.repositories.dashboard_repository")
+
 LOG_SOURCES = {
-    "aienrich": "/logs/aienrich/app.jsonl",
-    "aienrich3": "/logs/aienrich3/app.jsonl",
-    "aienrichnew": "/logs/aienrichnew/app.jsonl",
-    "aienrichskill": "/logs/aienrichskill/app.jsonl",
-    "aicvmatcher": "/logs/aicvmatcher/app.jsonl",
+    "aienrich": "/logs/aienrich/aiEnrich.jsonl",
+    "aienrich3": "/logs/aienrich3/aiEnrich3.jsonl",
+    "aienrichnew": "/logs/aienrichnew/aiEnrichNew.jsonl",
+    "aienrichskill": "/logs/aienrichskill/aiEnrichSkill.jsonl",
+    "aicvmatcher": "/logs/aicvmatcher/aiCvMatcher.jsonl",
 }
 
 ERROR_LEVELS = {"error", "warning", "critical"}
 
 
+def resolve_log_path(module: str) -> str | None:
+    path = LOG_SOURCES.get(module)
+    return resolve_read_path(path) if path else None
+
+
 class DashboardRepository:
     def read_recent_errors(self, module: str, count: int = 10) -> list[dict]:
-        path = LOG_SOURCES.get(module)
-        if not path or not os.path.isfile(path):
+        path = resolve_log_path(module)
+        if not path:
             return []
         try:
             with open(path) as f:
                 lines = deque(f, count * 3)
-        except OSError:
+        except OSError as e:
+            logger.debug("logs.read_failed", error=str(e), module=module, source="recent_errors")
             return []
         errors = []
         for line in reversed(lines):
@@ -38,18 +49,20 @@ class DashboardRepository:
                         "level": level,
                         "message": self._format_error(entry),
                     })
-            except (json.JSONDecodeError, ValueError):
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.debug("logs.line_skipped", error=str(e), module=module, source="recent_errors")
                 continue
         return errors
 
     def read_last_activity(self, module: str) -> str | None:
-        path = LOG_SOURCES.get(module)
-        if not path or not os.path.isfile(path):
+        path = resolve_log_path(module)
+        if not path:
             return None
         try:
             with open(path) as f:
                 lines = deque(f, 50)
-        except OSError:
+        except OSError as e:
+            logger.debug("logs.read_failed", error=str(e), module=module, source="last_activity")
             return None
         for line in reversed(lines):
             try:
@@ -57,7 +70,8 @@ class DashboardRepository:
                 ts = entry.get("timestamp")
                 if ts:
                     return ts
-            except (json.JSONDecodeError, ValueError):
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.debug("logs.line_skipped", error=str(e), module=module, source="last_activity")
                 continue
         return None
 
@@ -66,13 +80,14 @@ class DashboardRepository:
         errors = []
         now = datetime.now()
         for module in LOG_SOURCES:
-            path = LOG_SOURCES.get(module)
-            if not path or not os.path.isfile(path):
+            path = resolve_log_path(module)
+            if not path:
                 continue
             try:
                 with open(path) as f:
                     lines = deque(f, 100)
-            except OSError:
+            except OSError as e:
+                logger.debug("logs.read_failed", error=str(e), module=module, source="ollama_errors")
                 continue
             for line in reversed(lines):
                 if len(errors) >= count:
@@ -90,7 +105,8 @@ class DashboardRepository:
                         "module": module,
                         "message": self._format_error(entry),
                     })
-                except (json.JSONDecodeError, ValueError):
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.debug("logs.line_skipped", error=str(e), module=module, source="ollama_errors")
                     continue
             if len(errors) >= count:
                 break
@@ -102,7 +118,8 @@ class DashboardRepository:
             return True
         try:
             dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        except ValueError:
+        except ValueError as e:
+            logger.debug("logs.timestamp_unparsed", error=str(e))
             return True
         if dt.tzinfo is not None:
             dt = dt.astimezone().replace(tzinfo=None)

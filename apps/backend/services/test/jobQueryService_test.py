@@ -79,3 +79,31 @@ def test_joppy_special_case_ignores_synonyms(service, mock_repo, mock_synonym_se
     assert len(result) == 1
     mock_repo.find_applied_by_company.assert_called_once_with("RealClient", "RealClient")
     mock_synonym_service.get_synonyms.assert_not_called()
+
+
+def test_synonym_lookup_failure_is_logged(service, mock_repo, mock_synonym_service, log_records):
+    mock_synonym_service.get_synonyms.side_effect = Exception("synonym table down")
+    mock_repo.find_applied_by_companies.return_value = [(1, None)]
+
+    result = service.get_applied_jobs_by_company_name("Original Corp")
+
+    assert len(result) == 1
+    mock_repo.find_applied_by_companies.assert_called_once_with(["original corp"])
+    records = log_records(event="synonyms.lookup_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "warning"
+    assert records[0]["error"] == "synonym table down"
+
+
+def test_regex_fallback_failure_is_logged(service, mock_repo, log_records):
+    mock_repo.find_applied_by_companies.return_value = []
+    mock_repo.find_applied_jobs_by_regex.side_effect = Exception("regex timeout")
+
+    result = service.get_applied_jobs_by_company_name("Original Corp")
+
+    assert result == []
+    records = log_records(event="jobs.regex_search_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "warning"
+    assert records[0]["error"] == "regex timeout"
+    assert records[0]["regex_count"] >= 1

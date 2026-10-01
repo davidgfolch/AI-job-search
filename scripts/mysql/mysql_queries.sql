@@ -44,25 +44,32 @@ from jobs where jobs.web_page='Infojobs' and DATE(created) > DATE_SUB(CURDATE(),
 update jobs set web_page='Linkedin' where url like '%linkedin%';
 
 
-select id, ai_enriched, title, ai_enrich_error, modified from jobs where ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY) and not (discarded or ignored);
+select id, ai_enriched, title, ai_enrich_error, modified from jobs where ai_enrich_error is null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY) and not (discarded or ignored) order by modified desc limit 10;
 
-update jobs set ai_enriched=False, ai_enrich_error = NULL
-where ai_enrich_error is not null and DATE(modified) > DATE_SUB(CURDATE(), INTERVAL 1 day) and not (discarded or ignored) limit 10;
+update jobs set ai_enriched=False, cv_match_percentage=null, salary=null, required_technologies=null, optional_technologies=null, modality=null
+where ai_enrich_error is not null and DATE(modified) > DATE_SUB(CURDATE(), INTERVAL 1 day) and not (discarded or ignored or applied);
 
-update jobs set ai_enriched=False, cv_match_percentage=null, salary=null, required_technologies=null, optional_technologies=null
-where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 5 hour) and not (discarded or ignored)
+update jobs set ai_enriched=False, cv_match_percentage=null, salary=null, required_technologies=null, optional_technologies=null, modality=null
+where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 5 hour) and not (discarded or ignored or applied) order by created limit 3;
 
 select id, cv_match_percentage, title, ai_enriched, ai_enrich_error, modified from jobs where cv_match_percentage = -1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
 
 SELECT url FROM jobs WHERE web_page='Indeed';
 update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY);
 
+-- Re-enrich the rows written while the repeat_penalty=1.3 regression was live (since 2026-09-18).
+-- ai_enriched=NULL puts them back in the pending queue and the aiEnrich worker repopulates every field.
+-- Only ai_enriched/ai_enrich_error are reset: update_enrichment() writes with COALESCE, so a freshly
+-- extracted non-null value overwrites the thin one and nothing is lost when the new run finds none.
+update jobs set ai_enriched=null, ai_enrich_error=null
+where ai_enriched=1 and created >= '2026-09-18' and not (ignored or discarded or closed);
+
 select id, company from jobs where applied order by created desc
 
 select title, created, ai_enriched, ai_enrich_error, salary, required_technologies, optional_technologies
 from jobs
 /*update jobs set ai_enriched =0, ai_enrich_error=NULL, salary=NULL, required_technologies =null, optional_technologies =null*/
-where DATE(created) > DATE_SUB(CURDATE(), INTERVAL 12 HOUR) and ai_enriched and salary is not null;
+where DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 HOUR) and ai_enriched and salary is not null order by created desc;
 
 select * from jobs where not (required_technologies like '%Java%' or required_technologies like '%Python%' or required_technologies like '%Scala%' or required_technologies like '%Clojure%');
 

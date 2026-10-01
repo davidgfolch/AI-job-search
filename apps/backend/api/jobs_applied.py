@@ -1,7 +1,10 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
+from commonlib.observability import get_logger
 from models.job import AppliedCompanyJob
 from services.jobs_service import JobsService
+
+logger = get_logger("backend.api.jobs_applied")
 
 router = APIRouter()
 
@@ -17,5 +20,6 @@ def get_applied_jobs_by_company(
     try:
         results = service.get_applied_jobs_by_company_name(company, client)
     except ValueError as e:
+        logger.warning("api.request_rejected", operation="applied_by_company", status_code=400, has_client=bool(client), error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     return [AppliedCompanyJob(**r) for r in results]

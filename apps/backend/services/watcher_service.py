@@ -1,7 +1,9 @@
 from typing import Optional, Dict, Any, List
 from repositories.watcher_repository import WatcherRepository
 from datetime import datetime
-from commonlib.terminalColor import red
+from commonlib.observability import get_logger
+
+logger = get_logger("backend.services.watcher_service")
 
 class WatcherService:
     
@@ -19,7 +21,8 @@ class WatcherService:
             if dt.tzinfo is None:
                 dt = dt.astimezone()
             return dt
-        except:
+        except Exception as e:
+            logger.debug("watcher.cutoff_unparsed", error=str(e))
             return None
 
     def get_watcher_stats(self, config_ids: List[int],
@@ -39,7 +42,7 @@ class WatcherService:
                         if self._is_new(cutoff_str, job_created):
                             stats["new_items"] += 1
         except Exception as e:
-            print(red(f"Error fetching watcher stats from view: {e}"))
+            logger.exception("watcher.stats_failed", error=str(e), config_count=len(config_ids))
             pass
         return results
 
@@ -55,7 +58,7 @@ class WatcherService:
             job_created_aware = job_created if job_created.tzinfo else job_created.astimezone()
             return job_created_aware > cutoff_dt
         except Exception as e:
-            print(red(f"Error comparing dates for {cutoff_str}: {e}"))
+            logger.debug("watcher.comparison_failed", error=str(e))
             return False
 
 

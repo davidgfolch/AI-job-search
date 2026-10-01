@@ -147,3 +147,32 @@ def test_build_log_metrics_without_duration():
          patch("builtins.open", mock_open(read_data=log_data)):
         result = build_log_metrics()
     assert isinstance(result, bytes)
+
+
+def test_build_log_metrics_survives_record_without_job_id():
+    """aiEnrichSkill emits skill records; a foreign record must not 500 /metrics."""
+    log_data = (
+        '{"event": "job.result", "duration": 1.25, "skill": "Java", "success": true}\n'
+        '{"event": "job.result", "job_id": "job-2", "duration": 2.5}\n'
+    )
+    with patch("os.path.isfile", return_value=True), \
+         patch("builtins.open", mock_open(read_data=log_data)):
+        result = build_log_metrics()
+    output = result.decode()
+    assert 'ai_enrich_job_duration_seconds{job_id="job-2"' in output
+
+
+def test_build_log_metrics_survives_null_job_id():
+    log_data = '{"event": "job.result", "job_id": null, "duration": 4.0}\n'
+    with patch("os.path.isfile", return_value=True), \
+         patch("builtins.open", mock_open(read_data=log_data)):
+        result = build_log_metrics()
+    assert 'ai_enrich_job_duration_seconds{' not in result.decode()
+
+
+def test_build_log_metrics_survives_non_object_lines():
+    log_data = '["a", "list"]\n"a bare string"\n42\n{"event": "job.result", "job_id": 7, "duration": 3}\n'
+    with patch("os.path.isfile", return_value=True), \
+         patch("builtins.open", mock_open(read_data=log_data)):
+        result = build_log_metrics()
+    assert 'ai_enrich_job_duration_seconds{job_id="7"' in result.decode()

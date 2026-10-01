@@ -13,6 +13,10 @@
 ![cron](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/cron/coverage.svg)
 ![e2e](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/e2e/coverage.svg)
 
+> The `e2e` badge is the **frontend union** (web unit + e2e), the metric the 90% floor is
+> enforced on; `web` is the unit run alone. See
+> [Coverage Gates](READMEs/README_DEVELOPMENT.md#coverage-gates).
+
 A comprehensive system to search, aggregate, and manage job offers from multiple platforms (LinkedIn, Infojobs, Glassdoor, etc.), enriched with AI job offer structured data extraction, skills/technologies description inference, etc.
 
 ## Project Structure
@@ -38,10 +42,13 @@ This is a monorepo containing several applications and packages:
 - Scrapping jobs from multiple platforms
 - UI to manage job offers (& skills)
 - AI enrichment of job offers (salary, skills, work modality)
+- Deterministic salary scraping for the job boards that publish one (Indeed, Tecnoempleo), so the range is read from the offer instead of being left to the AI
 - AI enrichment of skills
+- AI enrichment of the company when a job board publishes the offer without one (stored as `unspecified` until inferred)
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
-- **Observability**: Structured logging + Prometheus metrics via `commonlib`; scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
+- **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes its own `data/logs/<app>.jsonl` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)); scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
+- **Dual console & log output**: a record can carry both its structured fields and the human line to print (`console=`, `end=""`), so the scrapper keeps its classic console transcript while `scrapper.jsonl` stays complete and queryable (see [Scrapper — Console Output](apps/scrapper/README.md#console-output--structured-logging))
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
@@ -124,19 +131,32 @@ The `docker-compose.yml` defines several service profiles to control which conta
 
 | Profile        | Services                          | Description                      |
 | -------------- | --------------------------------- | -------------------------------- |
-| _(default)_    | `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
+| _(default)_    | `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
+| `ollama`       | `ollama`                          | Containerized Ollama server (opt-in; see [Ollama: host vs container](#ollama-host-vs-container)) |
 | `aienrich`     | `aienrich`                        | Ollama AI enrichment             |
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
 | `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
 
-**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `ollama`, `aicvmatcher`, `aiformfiller`.
+**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`.
 Use `--profile` to run alternative AI enrichment services:
 
 ```bash
 docker-compose --profile aiEnrich3 up -d
 docker-compose --profile aiEnrichNew up -d
+```
+
+#### Ollama: host vs container
+
+The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) auto-detect the server at startup: they try the configured URL, then `host.docker.internal`, `localhost`, and finally the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`). No module hard-depends on the `ollama` container, so it is never started implicitly.
+
+```bash
+# Ollama already installed on the host (nothing extra to start)
+docker-compose --profile aienrich up -d aienrich
+
+# Ollama containerized as well
+docker-compose --profile ollama --profile aienrich up -d
 ```
 
 The **scrapper** runs as a batch job (not long-running). Start it manually:
@@ -156,7 +176,7 @@ docker-compose --profile scrapper run scrapper
   - Run `aiEnrich3` (local fast CPU models) with `docker-compose --profile aiEnrich3 up -d`.
   - Alternatively, `docker-compose --profile aiEnrichNew up -d` for the transformers-based engine.
 - Run `aiCvMatcher` (local fast CV matching):
-  - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CV_MATCH=True` is in your `.env`.
+  - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CVMATCHER_ENABLED=True` is in your `.env`.
 - Run `aiFormFiller` (AI-powered form question answerer):
   - Auto-starts with Docker by default. Alternatively run manually with `.\apps\aiFormFiller\run.bat`.
   - Load the `apps/aiFormFiller/extension/` folder as an unpacked extension in Chrome.
@@ -316,3 +336,5 @@ Inter-module relationships are defined in `graphify-out/cross-module-edges.json`
 - **Contributing**: [README_CONTRIBUTE.md](READMEs/README_CONTRIBUTE.md)
 - **Docker**: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md)
 - **GitHub Automation (CI & Dependabot)**: [README_GITHUB.md](READMEs/README_GITHUB.md)
+- **Metrics & Grafana**: [README_METRICS.md](READMEs/README_METRICS.md)
+- **Structured Logging** (events, conventions, `LOG_*` config): [README_DEVELOPMENT.md#structured-logging](READMEs/README_DEVELOPMENT.md#structured-logging)

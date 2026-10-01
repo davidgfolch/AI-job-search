@@ -20,7 +20,6 @@ collector = MetricsCollector()
 
 def run():
     logger.info("startup", version=_v('aiEnrichNew'))
-    print(cyan(f"AI Enrich New v{_v('aiEnrichNew')}"))
 
     while True:
         if get_job_enabled() and dataExtractor() > 0:

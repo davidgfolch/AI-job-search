@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.findLastDuplicated import find_last_duplicated
 
 def test_find_last_duplicated_found():
@@ -35,3 +36,21 @@ def test_find_last_duplicated_empty_args():
     assert find_last_duplicated(mock_mysql, "", "Tech Corp") is None
     assert find_last_duplicated(mock_mysql, "Title", "") is None
     mock_mysql.fetchAll.assert_not_called()
+
+@pytest.mark.parametrize("company", [None, UNSPECIFIED_COMPANY, "Unspecified"])
+def test_find_last_duplicated_unspecified_company(company):
+    """Duplicate detection is deferred while the company is generic"""
+    mock_mysql = MagicMock()
+    assert find_last_duplicated(mock_mysql, "Software Engineer", company) is None
+    mock_mysql.fetchAll.assert_not_called()
+
+def test_find_last_duplicated_exclude_id():
+    mock_mysql = MagicMock()
+    mock_mysql.fetchAll.return_value = [(123,)]
+
+    result = find_last_duplicated(mock_mysql, "Software Engineer", "Tech Corp", exclude_id=7)
+
+    assert result == 123
+    query, params = mock_mysql.fetchAll.call_args[0]
+    assert "id != %s" in query
+    assert params == ["Software Engineer", "Tech Corp", 7]

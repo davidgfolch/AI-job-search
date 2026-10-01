@@ -5,7 +5,10 @@ from typing import Callable, Any
 from time import sleep
 
 from ..exceptionUtil import getProjectTraceItems
+from ..observability import get_logger
 from ..terminalColor import red, yellow
+
+logger = get_logger("commonlib.decorator.retry")
 
 
 class StackTrace(Enum):
@@ -42,6 +45,7 @@ def retry(retries: int = 5,
                     raise e
                 except exception as e:
                     if i == retries + 1:
+                        logger.error("retry.exhausted", function=fnc.__name__, attempt=i, retries=retries, raise_exception=raiseException, stack_trace=stackTrace.name, error=e.__class__.__name__)
                         if raiseException:
                             raise e
                         if stackTrace != StackTrace.NEVER:
@@ -54,6 +58,7 @@ def retry(retries: int = 5,
                     print(yellow(f' Retry {i}/{retries}... '), end='', flush=True)
                     if stackTrace == StackTrace.ALWAYS:
                         print(red(traceback.format_exc()), flush=True)
+                    logger.warning("retry.attempt", function=fnc.__name__, attempt=i, retries=retries, delay=delay, error=e.__class__.__name__)
                     if exceptionFnc is not None:
                         try:
                             exceptionFnc(*args, **kwargs)

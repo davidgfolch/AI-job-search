@@ -1,6 +1,5 @@
 import time
 import torch
-import traceback
 from typing import List, Callable, Dict, Any, TypeVar
 
 from commonlib.observability import get_logger
@@ -57,8 +56,7 @@ def process_batch(
                 handle_error_fn(item, e)
 
     except Exception as e:
-        logger.error("batch.inference_failed", type=batch_description, error=str(e))
-        traceback.print_exc()
+        logger.exception("batch.inference_failed", type=batch_description, error=str(e))
         for i in valid_indices:
             handle_error_fn(items[i], Exception(f"Batch Inference Failed: {e}"))
 

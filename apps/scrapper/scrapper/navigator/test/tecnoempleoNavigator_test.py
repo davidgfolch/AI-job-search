@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, Mock, call, patch
-from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS
+from commonlib.company_normalizer import UNSPECIFIED_COMPANY
+from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE
 from selenium.common.exceptions import NoSuchElementException
 
 class TestTecnoempleoNavigator:
@@ -110,16 +111,35 @@ class TestTecnoempleoNavigator:
         mock_selenium.getElms.return_value = ["elm1", "elm2"] # for CSS_SEL_JOB_DATA
         mock_selenium.getUrl.return_value = "http://job-url"
         mock_selenium.getHtml.return_value = "<div>Description</div>"
-        
-        title, company, location, url, html = navigator.get_job_data()
-        
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoSalaryReader') as mock_reader:
+            mock_reader.return_value.read.return_value = "30.000 € - 36.000 € Bruto/año"
+            title, company, location, url, salary, html = navigator.get_job_data()
+
         assert title == "Title"
         assert company == "Company"
         assert location == ""
         assert url == "http://job-url"
+        assert salary == "30.000 € - 36.000 € Bruto/año"
         assert "Data1" in html
         assert "Data2" in html
         assert "<div>Description</div>" in html
+
+    def test_get_job_data_without_salary(self, navigator, mock_selenium):
+        """An offer stating no pay range is inserted with salary=None instead of the AI having to infer one"""
+        mock_selenium.getText.side_effect = ["Title", "Company", "Data1"]
+        mock_selenium.getElms.return_value = ["elm1"]
+        mock_selenium.getUrl.return_value = "http://job-url"
+        mock_selenium.getHtml.return_value = "<div>Description</div>"
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoSalaryReader') as mock_reader:
+            mock_reader.return_value.read.return_value = None
+            _, _, _, _, salary, _ = navigator.get_job_data()
+        assert salary is None
+
+    def test_get_salary_delegates_to_the_salary_reader(self, navigator, mock_selenium):
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoSalaryReader') as mock_reader:
+            mock_reader.return_value.read.return_value = "30.000 €"
+            assert navigator.get_salary() == "30.000 €"
+        mock_reader.assert_called_once_with(mock_selenium, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE, False)
 
     def test_check_rate_limit(self, navigator, mock_selenium):
         mock_selenium.getText.return_value = "You are being rate limited by Cloudflare"
@@ -128,3 +148,26 @@ class TestTecnoempleoNavigator:
     def test_check_rate_limit_no(self, navigator, mock_selenium):
         mock_selenium.getText.return_value = "Everything is fine"
         assert navigator.check_rate_limit() is False
+
+    def test_get_company_delegates_to_the_company_reader(self, navigator, mock_selenium):
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoCompanyReader') as mock_reader:
+            mock_reader.return_value.read.return_value = "Sngular"
+            assert navigator.get_company() == "Sngular"
+        mock_reader.assert_called_once_with(mock_selenium, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, False)
+
+    def test_get_job_data_company_unspecified(self, navigator, mock_selenium):
+        """A job whose offer names no employer at all is still returned, with the unspecified sentinel"""
+        def getText(cssSel):
+            if cssSel == CSS_SEL_COMPANY:
+                raise NoSuchElementException("no company")
+            return "Title"
+        mock_selenium.getText.side_effect = getText
+        mock_selenium.getElms.return_value = ["elm1"]
+        mock_selenium.driver.execute_script.return_value = ''  # no company text node in the header
+        mock_selenium.getUrl.return_value = "http://job-url"
+        mock_selenium.getHtml.return_value = "<div>Description</div>"
+        with patch('commonlib.decorator.retry.sleep'):
+            title, company, location, url, salary, html = navigator.get_job_data()
+        assert title == "Title"
+        assert company == UNSPECIFIED_COMPANY
+        assert url == "http://job-url"

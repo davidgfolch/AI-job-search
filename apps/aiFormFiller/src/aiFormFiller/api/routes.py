@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from commonlib.observability import get_logger
 from .schemas import AnswerRequest, FollowUpRequest, AnswerResponse, HealthResponse, BatchAnswerRequest, BatchAnswerItem, BatchAnswerResponse
 from ..services.question_answering_service import QuestionAnsweringService
 from ..context_loader import ContextLoader
@@ -6,6 +7,8 @@ from .. import config as cfg
 
 router = APIRouter()
 _service: QuestionAnsweringService | None = None
+
+logger = get_logger("aiFormFiller.routes")
 
 
 def init_routes(context_loader: ContextLoader):
@@ -19,6 +22,7 @@ async def answer(req: AnswerRequest):
         raise HTTPException(status_code=503, detail="Service not initialized")
     try:
         result = _service.answer(req.question, req.provider)
+        logger.debug("form.answered", endpoint="answer", provider=result.provider, is_clarification=result.is_clarification, question_length=len(req.question), answer_length=len(result.text))
         return AnswerResponse(
             type="clarification" if result.is_clarification else "answer",
             text=result.text,
@@ -26,8 +30,10 @@ async def answer(req: AnswerRequest):
             confidence="high" if not result.is_clarification else "low",
         )
     except ValueError as e:
+        logger.warning("provider.rejected", endpoint="answer", provider=req.provider, error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("provider.failed", endpoint="answer", provider=req.provider)
         raise HTTPException(status_code=500, detail=f"AI provider error: {str(e)}")
 
 
@@ -37,6 +43,7 @@ async def follow_up(req: FollowUpRequest):
         raise HTTPException(status_code=503, detail="Service not initialized")
     try:
         result = _service.follow_up(req.original_question, req.clarification_answer)
+        logger.debug("form.answered", endpoint="follow_up", provider=result.provider, is_clarification=result.is_clarification, question_length=len(req.original_question), answer_length=len(result.text))
         return AnswerResponse(
             type="answer",
             text=result.text,
@@ -44,6 +51,7 @@ async def follow_up(req: FollowUpRequest):
             confidence="high",
         )
     except Exception as e:
+        logger.exception("provider.failed", endpoint="follow_up", provider="auto")
         raise HTTPException(status_code=500, detail=f"Follow-up error: {str(e)}")
 
 
@@ -63,10 +71,15 @@ async def answer_batch(req: BatchAnswerRequest):
             )
             for i, r in enumerate(results)
         ]
+        clarifications = sum(1 for r in results if r.is_clarification)
+        question_length = sum(len(q) for q in req.questions)
+        logger.debug("form.answered", endpoint="answer_batch", count=len(items), clarifications=clarifications, question_length=question_length)
         return BatchAnswerResponse(answers=items)
     except ValueError as e:
+        logger.warning("provider.rejected", endpoint="answer_batch", provider=req.provider, error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("provider.failed", endpoint="answer_batch", provider=req.provider)
         raise HTTPException(status_code=500, detail=f"AI provider error: {str(e)}")
 
 

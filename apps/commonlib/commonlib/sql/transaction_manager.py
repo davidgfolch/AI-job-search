@@ -4,7 +4,9 @@ from mysql.connector import MySQLConnection
 from contextlib import contextmanager
 
 from commonlib.sqlUtil import error
-from ..terminalColor import red, yellow
+from ..observability import get_logger
+
+logger = get_logger("commonlib.sql.transaction_manager")
 
 
 class TransactionManager:
@@ -53,12 +55,12 @@ class TransactionManager:
         """Rollback on the given connection and re-raise."""
         try:
             if conn.in_transaction:
-                print(red(f'Rolling back transaction due to error: {ex}'))
+                logger.error("db.rollback_started", reason=str(ex))
                 cursor.execute('SHOW ENGINE INNODB STATUS\\G;')
-                print(yellow(str(cursor.fetchone())), flush=True)
+                logger.debug("db.innodb_status", status=str(cursor.fetchone()))
                 conn.rollback()
         except mysqlConnector.Error as rollback_ex:
-            print(red(f'Rollback error: {rollback_ex}'))
+            logger.error("db.rollback_failed", error=str(rollback_ex))
         raise ex
 
     @contextmanager
@@ -66,7 +68,7 @@ class TransactionManager:
         """Get cursor from pool connection context."""
         with self._get_connection_ctx() as conn:
             if not conn.is_connected():
-                print(f'Reconnecting to DB conn: {conn}', flush=True)
+                logger.info("db.reconnecting", conn=str(conn))
                 conn.reconnect()
             cursor = conn.cursor()
             cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;')

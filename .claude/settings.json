@@ -6,11 +6,40 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/graphify-reminder.py"
+            "command": "python .claude/hooks/docker-build.py"
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/docker-build.py"
+            "command": "python .claude/hooks/db-mutation.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|MultiEdit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/docs-sync.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-guard search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-guard read",
+            "timeout": 10
           }
         ]
       }

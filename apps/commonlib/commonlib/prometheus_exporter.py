@@ -5,10 +5,12 @@ from datetime import datetime
 
 from prometheus_client import CollectorRegistry, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
+from commonlib.log_writer import resolve_read_path
+
 LOG_SOURCES = {
-    "aiEnrich": "/logs/aienrich/app.jsonl",
-    "aiEnrich3": "/logs/aienrich3/app.jsonl",
-    "aiEnrichNew": "/logs/aienrichnew/app.jsonl",
+    "aiEnrich": "/logs/aienrich/aiEnrich.jsonl",
+    "aiEnrich3": "/logs/aienrich3/aiEnrich3.jsonl",
+    "aiEnrichNew": "/logs/aienrichnew/aiEnrichNew.jsonl",
     "aiEnrichSkill": "/logs/aienrichskill/aiEnrichSkill.jsonl",
 }
 MAX_LOG_ENTRIES = 50
@@ -77,8 +79,9 @@ def build_log_metrics() -> bytes:
         registry=registry,
     )
 
-    for module, path in LOG_SOURCES.items():
-        if not os.path.isfile(path):
+    for module, source in LOG_SOURCES.items():
+        path = resolve_read_path(source)
+        if not path:
             continue
         try:
             with open(path) as f:
@@ -91,10 +94,13 @@ def build_log_metrics() -> bytes:
                 break
             try:
                 entry = json.loads(line)
-                if entry.get("event") == "job.result" and "duration" in entry:
-                    gauge.labels(module=module, job_id=str(entry["job_id"])).set(float(entry["duration"]))
-                    count += 1
-            except (json.JSONDecodeError, ValueError, TypeError):
+                if not isinstance(entry, dict):
+                    continue
+                if entry.get("event") != "job.result" or "duration" not in entry or entry.get("job_id") is None:
+                    continue
+                gauge.labels(module=module, job_id=str(entry["job_id"])).set(float(entry["duration"]))
+                count += 1
+            except (json.JSONDecodeError, ValueError, TypeError, KeyError, AttributeError):
                 continue
 
     return generate_latest(registry)

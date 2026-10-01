@@ -86,6 +86,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onFiltersChange={handleFiltersChange}
                             onMessage={handleMessage} 
                             onConfigNameChange={actions.setActiveConfigName}
+                            onReloadConfig={actions.reloadJobList}
                             configCount={configCount}
                             onConfigsLoaded={setConfigCount}
                             onPinnedShortcutReady={handlePinnedShortcutReady}
@@ -144,6 +145,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                                 onJobSelect={actions.selectJob}
                                                 onLoadMore={actions.loadMore}
                                                 hasMore={state.allJobs.length < (state.data?.total || 0)}
+                                                isLoadingMore={status.isLoadingMore}
                                                 selectedIds={state.selectedIds}
                                                 selectionMode={state.selectionMode}
                                                 onToggleSelectJob={actions.toggleSelectJob}

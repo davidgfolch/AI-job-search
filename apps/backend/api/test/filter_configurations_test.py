@@ -26,12 +26,18 @@ def test_create_configuration(mock_create, client):
     assert response.json()['pinned'] is True
 
 @patch('services.filter_configurations_service.FilterConfigurationsService.create')
-def test_create_duplicate_name(mock_create, client):
+def test_create_duplicate_name(mock_create, client, log_records):
     mock_create.side_effect = ValueError("already exists")
     response = client.post("/api/filter-configurations", json={
         'name': 'Duplicate', 'filters': {}, 'watched': False
     })
     assert response.status_code == 400
+    records = log_records(event="api.request_rejected")
+    assert len(records) == 1
+    assert records[0]["level"] == "warning"
+    assert records[0]["operation"] == "create"
+    assert records[0]["status_code"] == 400
+    assert records[0]["error"] == "already exists"
 
 @patch('services.filter_configurations_service.FilterConfigurationsService.get_by_id')
 def test_get_configuration_by_id(mock_get, client):
@@ -55,3 +61,37 @@ def test_delete_configuration(mock_delete, client):
     mock_delete.return_value = True
     response = client.delete("/api/filter-configurations/1")
     assert response.status_code == 204
+
+@patch('services.filter_configurations_service.FilterConfigurationsService.get_by_id')
+def test_get_missing_configuration_logs_rejection(mock_get, client, log_records):
+    mock_get.side_effect = ValueError("Configuration with id 1 not found")
+    response = client.get("/api/filter-configurations/1")
+    assert response.status_code == 404
+    records = log_records(event="api.request_rejected")
+    assert len(records) == 1
+    assert records[0]["operation"] == "get"
+    assert records[0]["config_id"] == 1
+    assert records[0]["status_code"] == 404
+
+@patch('services.filter_configurations_service.FilterConfigurationsService.update')
+def test_update_duplicate_name_logs_rejection(mock_update, client, log_records):
+    mock_update.side_effect = ValueError("Configuration with name 'X' already exists")
+    response = client.put("/api/filter-configurations/1", json={'name': 'X'})
+    assert response.status_code == 400
+    records = log_records(event="api.request_rejected")
+    assert len(records) == 1
+    assert records[0]["level"] == "warning"
+    assert records[0]["operation"] == "update"
+    assert records[0]["config_id"] == 1
+    assert records[0]["status_code"] == 400
+
+@patch('services.filter_configurations_service.FilterConfigurationsService.delete')
+def test_delete_missing_configuration_logs_rejection(mock_delete, client, log_records):
+    mock_delete.side_effect = ValueError("Configuration with id 9 not found")
+    response = client.delete("/api/filter-configurations/9")
+    assert response.status_code == 404
+    records = log_records(event="api.request_rejected")
+    assert len(records) == 1
+    assert records[0]["operation"] == "delete"
+    assert records[0]["config_id"] == 9
+    assert records[0]["status_code"] == 404

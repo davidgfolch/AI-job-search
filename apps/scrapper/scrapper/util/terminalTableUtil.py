@@ -1,10 +1,14 @@
 from tabulate import tabulate
+from commonlib.observability import get_logger
 from commonlib.terminalColor import yellow, red
+
+logger = get_logger("scrapper.terminalTableUtil")
 
 def print_failed_info_table(persistence_manager):
     data = _collect_failed_info(persistence_manager)
     if not data:
         return
+    logger.warning("scraper.failed_summary_rendered", scrapper_count=len(data))
     print("\n" + yellow("=" * 100))
     print(yellow("FAILED INFORMATION SUMMARY"))
     print(yellow("=" * 100))

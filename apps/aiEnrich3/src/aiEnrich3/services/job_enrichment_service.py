@@ -1,5 +1,4 @@
 import time
-import traceback
 from typing import List, Dict, Any, Tuple, Set
 
 from commonlib.aiEnrichRepository import AiEnrichRepository
@@ -173,7 +172,7 @@ def _process_job_batch_local(
             footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed)
 
         except Exception as ex:
-            logger.error("job.failed", job_id=job_id, title=title, company=company, error=str(ex), traceback=traceback.format_exc())
+            logger.exception("job.failed", job_id=job_id, title=title, company=company, error=str(ex))
             job_errors.add((job_id, f'{title} - {company}: {ex}'))
             prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
             error_msg = f"{prefix}{ex}"

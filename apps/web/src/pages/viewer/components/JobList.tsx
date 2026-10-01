@@ -10,6 +10,7 @@ interface JobListProps {
     onJobSelect: (job: Job) => void;
     onLoadMore: () => void;
     hasMore: boolean;
+    isLoadingMore: boolean;
     selectedIds: Set<number>;
     selectionMode: 'none' | 'manual' | 'all';
     onToggleSelectJob: (id: number) => void;
@@ -25,6 +26,7 @@ const JobList: React.FC<JobListProps> = ({
     onJobSelect,
     onLoadMore,
     hasMore,
+    isLoadingMore,
     selectedIds,
     selectionMode,
     onToggleSelectJob,
@@ -53,6 +55,7 @@ const JobList: React.FC<JobListProps> = ({
                 onJobSelect={onJobSelect}
                 onLoadMore={onLoadMore}
                 hasMore={hasMore}
+                isLoadingMore={isLoadingMore}
                 selectedIds={selectedIds}
                 selectionMode={selectionMode}
                 onToggleSelectJob={onToggleSelectJob}
