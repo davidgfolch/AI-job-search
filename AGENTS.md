@@ -244,6 +244,12 @@ The rule is defined once in `.claude/rules/documentation-update.md` (always-on, 
 
 Before reporting done: open every listed doc, fix only what the change made inaccurate, and list the updated docs in the final summary (or state that none were needed). `graphify-out/` is generated output — refresh it with the wrapper, never hand-edit it, and never count it as documentation.
 
+## Database Safety (ask before any write)
+
+The `jobs` MySQL database is live production data. **Never execute a data or schema mutation on your own initiative.** Measure the current state with read-only SQL, state the exact statement and the expected row count, then wait for the user's explicit "yes". This covers `INSERT`/`UPDATE`/`DELETE`/`DROP`/`TRUNCATE`/`ALTER`/`CREATE`/`GRANT`, piping a `.sql` file into a client, mongo/redis writes, and volume-destroying commands such as `docker compose down -v`. Read-only access (`SELECT`, `SHOW`, `EXPLAIN`, logs, `.env`, `docker compose restart`) is always fine.
+
+Enforced by `.claude/rules/db-mutation-permission.md` + `.claude/hooks/db-mutation.py` (Claude Code) and `.opencode/plugins/db-mutation.js` (opencode), which **block the tool call**. After the user approves a specific statement, re-run it with the `AI_DB_WRITE_APPROVED` token in the command. Details: [READMEs/AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md#database-changes-require-user-permission-enforced-guardrail).
+
 ## Skills
 
 Agent skills are located in `.claude/skills/`:

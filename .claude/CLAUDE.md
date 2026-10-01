@@ -189,6 +189,10 @@ docker-compose --profile ollama --profile aienrich up -d
 
 Documentation is updated in the same session as every plan implementation, feature, fix, refactor, config change, or dependency bump — never as a follow-up task, never only when the user asks. The rule lives in `.claude/rules/documentation-update.md` (change → docs map + definition-of-done checklist) and is reinforced by `.claude/hooks/docs-sync.py` and `.opencode/plugins/docs-sync.js`. Module behavior → `apps/<module>/README.md`; new module → root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`; env var → root `README.md`; compose change → `READMEs/DOCKER_DEV.md`; command change → `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md`; new host tool → `READMEs/README_INSTALL.md`; API/DB → `apps/backend/README.md`; UI flow → root `README.md`; CI → `READMEs/README_GITHUB.md`; skill/rule/hook/plugin → `READMEs/AGENTIC_SDLC.md`; plan → the plan file + `READMZs/TODO.md`.
 
+## Database Safety (ask before any write)
+
+The `jobs` MySQL database is live production data: **never execute a data or schema mutation on your own initiative.** Measure first with read-only SQL (`SELECT`/`SHOW`/`EXPLAIN`), state the exact statement and the expected row count, then wait for the user's explicit "yes". Blocked without permission: `INSERT`/`UPDATE`/`DELETE`/`DROP`/`TRUNCATE`/`ALTER`/`CREATE`/`GRANT`, piping a `.sql` file into a client, mongo/redis writes, and volume-destroying commands (`docker compose down -v`, `docker volume rm`). The policy lives in `.claude/rules/db-mutation-permission.md` and is enforced in the tool call by `.claude/hooks/db-mutation.py` (Claude Code) and `.opencode/plugins/db-mutation.js` (opencode), which block it. After the user approves a specific statement, re-run it with the `AI_DB_WRITE_APPROVED` token in the command. Details: [READMEs/AGENTIC_SDLC.md](../READMEs/AGENTIC_SDLC.md#database-changes-require-user-permission-enforced-guardrail).
+
 ## Skills
 
 Agent skills are located in `.claude/skills/`:
