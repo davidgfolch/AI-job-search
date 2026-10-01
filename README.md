@@ -42,6 +42,7 @@ This is a monorepo containing several applications and packages:
 - Scrapping jobs from multiple platforms
 - UI to manage job offers (& skills)
 - AI enrichment of job offers (salary, skills, work modality)
+- Deterministic salary scraping for the job boards that publish one (Indeed, Tecnoempleo), so the range is read from the offer instead of being left to the AI
 - AI enrichment of skills
 - AI enrichment of the company when a job board publishes the offer without one (stored as `unspecified` until inferred)
 - AI CV matching

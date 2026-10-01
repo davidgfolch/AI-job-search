@@ -128,5 +128,5 @@ class TecnoempleoExecutor(BaseExecutor):
                 self.navigator.go_back()
 
     def _process_row(self):
-        title, company, location, url, html = self.navigator.get_job_data()
-        return self.service.process_job(title, company, location, url, html)
+        title, company, location, url, salary, html = self.navigator.get_job_data()
+        return self.service.process_job(title, company, location, url, salary, html)

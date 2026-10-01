@@ -5,6 +5,7 @@ from commonlib.stringUtil import join
 from commonlib.terminalColor import green, yellow, printHR
 from .baseNavigator import BaseNavigator
 from .components.tecnoempleoCompanyReader import TecnoempleoCompanyReader
+from .components.tecnoempleoSalaryReader import TecnoempleoSalaryReader
 from ..services.selenium.browser_service import sleep
 from ..services.selenium.seleniumService import SeleniumService
 
@@ -28,6 +29,10 @@ CSS_SEL_COMPANY = f'{CSS_JOB_DETAIL_HEADER} > a > span[itemprop=name]'
 CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div[itemprop=description] > div'
 # Datos principales de la oferta
 CSS_SEL_JOB_DATA = '#wrapper > section.m-0.pt-5 > div:nth-child(1) > div > div.col-12.col-md-5.col-lg-4.mb-5 > div > ul > li > span:nth-child(1)'
+# Cada fila de "Datos principales" es un <li> con un span de caption ("Salario", "Jornada"...) y otro con el valor
+CSS_SEL_JOB_DATA_ITEM = '#wrapper > section.m-0.pt-5 > div:nth-child(1) > div > div.col-12.col-md-5.col-lg-4.mb-5 > div > ul > li'
+CSS_SEL_JOB_DATA_CAPTION = 'span.d-inline-block.px-2'
+CSS_SEL_JOB_DATA_VALUE = 'span.float-end'
 # CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content button.jobs-apply-button svg[data-test-icon="linkedin-bug-xxsmall"]'
 # CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'  # No longer accepting applications
 
@@ -122,9 +127,14 @@ class TecnoempleoNavigator(BaseNavigator):
         company = self.get_company()
         location = ''
         url = self.selenium.getUrl()
+        salary = self.get_salary()
         html = '\n'.join(['- '+self.selenium.getText(elm) for elm in self.selenium.getElms(CSS_SEL_JOB_DATA)]) + '\n' * 2
         html += self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        return title, company, location, url, html
+        return title, company, location, url, salary, html
+
+    def get_salary(self) -> str | None:
+        """Reads the pay range from its labeled row; offers without one return None instead of leaving the AI to guess."""
+        return TecnoempleoSalaryReader(self.selenium, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE, self.debug).read()
 
     def get_company(self) -> str:
         """Offers with no company page still name the company as a header text node, the ones with no employer at all are stored as unspecified."""

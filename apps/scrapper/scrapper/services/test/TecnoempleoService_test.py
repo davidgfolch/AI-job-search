@@ -33,19 +33,27 @@ class TestTecnoempleoService:
         """A job without company is inserted, and not linked as duplicated, while the company is unspecified"""
         mock_mysql.insert.return_value = 1
         with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="Markdown"):
-            result = service.process_job("Title", UNSPECIFIED_COMPANY, "Location", "http://url/rf-123", "<html>")
+            result = service.process_job("Title", UNSPECIFIED_COMPANY, "Location", "http://url/rf-123", None, "<html>")
         assert result is True
         params = mock_mysql.insert.call_args[0][0]
         assert params[2] == UNSPECIFIED_COMPANY
         assert params[-1] is None
         mock_mysql.fetchAll.assert_not_called()
 
+    @pytest.mark.parametrize("salary", ["30.000 € - 36.000 € Bruto/año", None])
+    def test_process_job_inserts_the_scraped_salary(self, service, mock_mysql, salary):
+        """The pay range read from the offer row reaches the salary column, so the AI never has to infer it"""
+        mock_mysql.insert.return_value = 1
+        with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="Markdown"):
+            service.process_job("Title", "Company", "Location", "http://url/rf-123", salary, "<html>")
+        assert mock_mysql.insert.call_args[0][0][4] == salary
+
     def test_process_job_logs_scraped_fields(self, service, mock_mysql):
         with patch('scrapper.services.TecnoempleoService.htmlToMarkdown', return_value="MD"), \
              patch('scrapper.services.TecnoempleoService.logger') as log:
             mock_mysql.insert.return_value = 1
-            service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
-        assert_logged(log, 'info', 'tecnoempleo.job.scraped', job_id='rf-123', title='Title', company='Company', location='Location', easy_apply=False)
+            service.process_job("Title", "Company", "Location", "http://url/rf-123", "30.000 € - 36.000 € Bruto/año", "<html>")
+        assert_logged(log, 'info', 'tecnoempleo.job.scraped', job_id='rf-123', title='Title', company='Company', location='Location', salary='30.000 € - 36.000 € Bruto/año', easy_apply=False)
         assert_console_text(log, 'info', 'tecnoempleo.job.scraped', 'rf-123, Title,', end='')
 
     def test_process_job_logs_inserted_and_duplicated(self, service, mock_mysql):
@@ -53,7 +61,7 @@ class TestTecnoempleoService:
              patch('scrapper.services.TecnoempleoService.find_last_duplicated', return_value=11), \
              patch('scrapper.services.TecnoempleoService.logger') as log:
             mock_mysql.insert.return_value = 4
-            service.process_job("Title", "Company", "Location", "http://url/rf-123", "<html>")
+            service.process_job("Title", "Company", "Location", "http://url/rf-123", None, "<html>")
         events = {c.args[0]: structured_fields(c.kwargs) for c in log.info.call_args_list}
         assert events['tecnoempleo.job.inserted'] == {'job_id': 'rf-123', 'insert_id': 4}
         assert events['tecnoempleo.job.duplicated'] == {'job_id': 'rf-123', 'duplicated_id': 11}
