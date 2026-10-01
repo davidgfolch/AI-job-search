@@ -32,6 +32,16 @@ Moving to the next or previous job — with the ⏮ / ⏭ buttons, the `Alt+P` /
 
 Because the scroll happens in a layout effect on the row that React has just committed, it also covers the job a newly loaded page starts at: stepping past the last loaded job appends the next page, selects its first job, and scrolls down to it.
 
+## Reloading the Active Filter Configuration
+
+The job list query is keyed by its filters (`['jobs', filters]` in `src/pages/viewer/hooks/useJobsData.ts`), so applying the configuration that is already in effect produces the same query key. React Query then keeps serving the cached page for `staleTime` (30 s) and nothing refetches, which left the list showing the jobs it already had while the `+N` watcher badge was counting the new ones. Applying a *different* configuration changes the key, so it fetches — which is why switching away and back used to be the only way to see the new jobs.
+
+`Filters.tsx` therefore compares what the configuration would produce against the filters already applied, and reloads the current page when nothing changes. The comparison is done on the merged result rather than on the stored configuration, because a configuration only saves the filters that differ from the defaults and inherits the rest from the current ones.
+
+The reload is `useJobsData.reloadCurrentPage`, which calls `refetch()` on the observed query. It deliberately does **not** use `refreshJobs` / `hardRefresh`, whose `queryClient.resetQueries({ queryKey: ['jobs'] })` resets *every* filter set in the cache: the previously active configuration gets refetched too and can come back as the visible list. `refetch()` touches one query, so no other configuration can be resurrected.
+
+The selected job is kept: reloading is not a reset, so the detail panel stays on the job it had. The watcher badge for the configuration is cleared at the same time by `useFilterWatcher.resetWatcher`, which keeps the badge and the refreshed list consistent. Loading a configuration from a page deeper than the first already changes the query key, so no reload is triggered there.
+
 ## Settings Page
 
 The Settings page (`/settings`) allows you to manage application configuration without restarting services.

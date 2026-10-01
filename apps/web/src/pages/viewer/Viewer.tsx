@@ -86,6 +86,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onFiltersChange={handleFiltersChange}
                             onMessage={handleMessage} 
                             onConfigNameChange={actions.setActiveConfigName}
+                            onReloadConfig={actions.reloadJobList}
                             configCount={configCount}
                             onConfigsLoaded={setConfigCount}
                             onPinnedShortcutReady={handlePinnedShortcutReady}

@@ -6,19 +6,21 @@ import FilterConfigurations from './FilterConfigurations';
 import SqlEditor from "../../common/components/core/SqlEditor";
 import { useFilterExpanded } from '../hooks/useFilterExpanded';
 import { GeneralFilters, BooleanFilterGroups, ModalityFilter } from './filters/components';
+import { isSameFilterSet } from './configurations/utils/filterNormalization';
 
 interface BooleanFiltersProps {
     filters: JobListParams;
     onFiltersChange: (filters: Partial<JobListParams>) => void;
     onMessage?: (text: string, type: 'success' | 'error') => void;
     onConfigNameChange?: (name: string) => void;
+    onReloadConfig?: () => void;
     configCount?: number;
     onConfigsLoaded?: (count: number) => void;
     modalityValues?: string[];
     onPinnedShortcutReady?: (handler: (index: number) => void, pinnedShortcuts: { name: string; index: number }[]) => void;
 }
 
-export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange, configCount, onConfigsLoaded, modalityValues, onPinnedShortcutReady }: BooleanFiltersProps) {
+export default function BooleanFilters({ filters, onFiltersChange, onMessage, onConfigNameChange, onReloadConfig, configCount, onConfigsLoaded, modalityValues, onPinnedShortcutReady }: BooleanFiltersProps) {
     const { isExpanded, setIsExpanded } = useFilterExpanded({ configCount });
     const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
 
@@ -31,7 +33,13 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                     <FilterConfigurations
                         currentFilters={filters}
                         onLoadConfig={(loadedFilters, name) => {
+                            // Mirrors what Viewer.handleFiltersChange ends up with, so a configuration that only
+                            // stores part of the filters is still recognised as the one already in effect. Compared
+                            // against the filters as they are: a deeper page already changes the query key, and the
+                            // page reset makes it refetch on its own.
+                            const isReload = isSameFilterSet({ ...filters, ...loadedFilters, page: 1 }, filters);
                             onFiltersChange({ ...loadedFilters, page: 1 });
+                            if (isReload) onReloadConfig?.();
                             if (onConfigNameChange && name) {
                                 onConfigNameChange(name);
                             }
