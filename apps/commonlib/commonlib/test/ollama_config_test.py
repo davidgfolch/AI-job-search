@@ -89,7 +89,7 @@ def test_repeat_penalty_env_override(monkeypatch, env_name):
 
 
 def test_repeat_penalty_default():
-    assert get_repeat_penalty() == 1.3
+    assert get_repeat_penalty() == 1.0
 
 
 @pytest.mark.parametrize("model, expected", [

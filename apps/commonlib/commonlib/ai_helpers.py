@@ -61,6 +61,8 @@ def validateResult(result: dict[str, str]):
             if hasLen(re.finditer(regex, salary, flags=re.I)):
                 result.update({'salary': re.sub(regex, r'\2', salary, flags=re.I)})
     listsToString(result, ['required_technologies', 'optional_technologies'])
+    if not result.get('required_technologies') and not result.get('optional_technologies'):
+        logger.warning("ai.no_technologies", reason="both_technology_fields_empty")
     _normalizeModality(result)
     # Validate cv_match_percentage
     cv_match = result.get('cv_match_percentage')

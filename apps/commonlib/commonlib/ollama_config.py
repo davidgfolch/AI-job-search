@@ -21,7 +21,11 @@ _MODULE_OLLAMA_URL_ENVS = (
 MAX_NEW_TOKENS_ENVS = ("AI_ENRICH_MAX_NEW_TOKENS", "AI_ENRICHSKILL_MAX_NEW_TOKENS")
 NUM_CTX_ENVS = ("AI_ENRICH_NUM_CTX", "AI_ENRICHSKILL_NUM_CTX")
 REPEAT_PENALTY_ENVS = ("AI_ENRICH_REPEAT_PENALTY", "AI_ENRICHSKILL_REPEAT_PENALTY")
-DEFAULT_REPEAT_PENALTY = 1.3
+# Ollama's repeat_penalty also penalizes tokens already present in the prompt, so any value above 1.0
+# suppresses repeating the very technologies named in the job offer: at 1.3 the extraction collapsed to
+# the shortest schema-valid output (empty technology lists, null salary) instead of degenerating into
+# loops. Degenerate loops are already bounded by num_predict and detected through done_reason="length".
+DEFAULT_REPEAT_PENALTY = 1.0
 MAX_NUM_CTX = 32768
 
 

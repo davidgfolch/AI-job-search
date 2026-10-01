@@ -44,7 +44,7 @@ Set these in your `.env` or `.env.secrets`:
 - `AI_ENRICHSKILL_OLLAMA_MODEL` — Model name (default: `ollama/qwen2.5:3b`)
 - `AI_ENRICHSKILL_MAX_NEW_TOKENS` — Max output tokens (default: `2048`)
 - `AI_ENRICHSKILL_NUM_CTX` — Context window sent to Ollama per request (default: auto-bucketed from prompt length, capped at `32768`)
-- `AI_ENRICHSKILL_REPEAT_PENALTY` — Repetition penalty for Ollama (default: `1.3`, higher than server default `1.1` to avoid degenerate loops)
+- `AI_ENRICHSKILL_REPEAT_PENALTY` — Repetition penalty for Ollama (default: `1.0`, disabled. Ollama's `repeat_penalty` penalizes prompt tokens too, so a value above `1.0` suppresses repeating the skills named in the offer)
 
 The three knobs above are shared with `aiEnrich` through `commonlib/ollama_config.py` and are not module-scoped: the first one set in `AI_ENRICH_*` → `AI_ENRICHSKILL_*` order wins, so an `AI_ENRICH_NUM_CTX` in `.env` also applies here.
 
