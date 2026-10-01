@@ -152,7 +152,7 @@ npm test -- apps/web/src/test/architecture.test.ts
 
 Before marking any task as complete, always verify:
 1. **No architecture violations**: Run architecture tests to ensure no files exceed 200 lines
-2. **Tests pass**: Ensure all related tests pass after changes
+2. **Tests pass**: Ensure all related tests pass after changes — required when the change touches test code, production code, or `scripts/test.sh`/`scripts/test.bat`. Skip it when the change is only docs or non-test scripts/config (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills) and say why in the summary.
 3. **Lint/TypeScript clean**: Run linting and type checking commands
 4. **Docs synced**: Apply the change → docs map in `.claude/rules/documentation-update.md` and list the updated docs in your summary (or state that none were needed)
 

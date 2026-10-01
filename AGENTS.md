@@ -101,6 +101,8 @@ Always use the centralized test script to run tests. Never run `poetry run pytes
 
 Coverage floors are 90% on **statements and lines** (functions and branches are reported only). The frontend gate runs on the union of web unit and e2e coverage; the scrapper gate on production statements only. See [READMEs/README_DEVELOPMENT.md](READMEs/README_DEVELOPMENT.md#coverage-gates).
 
+Run the suites when the change touches test code, production code, or the test runner scripts (`scripts/test.sh`, `scripts/test.bat`). Skip them when the change is limited to documentation or non-test scripts/config (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills) - those are not exercised by the unit or e2e suites, so state in the summary that the suites were skipped for that reason.
+
 ### Running Individual Apps
 ```bash
 # Backend API

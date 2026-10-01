@@ -25,6 +25,17 @@ Run specific app tests (single or multiple):
 - **Linux**: `./scripts/test.sh commonlib` or `./scripts/test.sh commonlib web e2e`
 - **Windows**: `.\scripts\test.bat commonlib` or `.\scripts\test.bat commonlib web e2e`
 
+### When to run the suites
+
+Run them when the change touches **test code, production code, or the test runner
+scripts** (`scripts/test.sh`, `scripts/test.bat`) — always include `commonlib`, and every
+other modified `apps/*` module.
+
+Skip them when the change is limited to **documentation or non-test scripts/config**: CI
+workflows, coverage gates, install/sandbox helpers, agent rules and skills. Those files are
+not exercised by the unit or e2e suites, so a run proves nothing; say so in the summary
+instead.
+
 ## Coverage Gates
 
 `--coverage` does not only produce reports and badges: it enforces two floors on
