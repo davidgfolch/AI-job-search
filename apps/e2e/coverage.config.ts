@@ -2,6 +2,24 @@ import path from 'path';
 import type { CoverageReportOptions } from 'monocart-coverage-reports';
 
 /**
+ * Root of the measured app. Absolute on purpose: Playwright runs global setup
+ * and teardown with cwd = apps/e2e, so a relative path would resolve against
+ * the wrong root.
+ */
+const WEB_SRC_DIR = path.resolve(__dirname, '../web/src');
+
+/** The only extensions that carry executable frontend code. */
+const isSourceFile = (filePath: string) => /\.(ts|tsx)$/.test(filePath);
+
+/**
+ * Test code lives in `test/` folders. Keeping it out of the denominator is what
+ * makes the number reflect production code, and it mirrors the `coverage.exclude`
+ * list in apps/web/vite.config.ts so both feeds share one denominator.
+ */
+const isProductionFile = (filePath: string) =>
+  isSourceFile(filePath) && !/(^|[\\/])test[\\/]/.test(filePath);
+
+/**
  * Shared monocart-coverage-reports options used by the Playwright global
  * setup/teardown and the per-test fixture that feeds V8 coverage into the
  * shared on-disk cache.
@@ -29,4 +47,20 @@ export const coverageOptions: CoverageReportOptions = {
     const match = dist.match(/src\/.+$/);
     return (match ? match[0] : filePath).replace(/[?].*$/, '');
   },
+  /**
+   * By default monocart only reports files a browser actually loaded, which
+   * flatters the total: a lazily-routed page no spec visits simply disappears.
+   * `all` adds every production source under web/src as empty coverage so the
+   * denominator is the whole frontend.
+   */
+  all: {
+    dir: WEB_SRC_DIR,
+    filter: filePath => (isProductionFile(filePath) ? 'js' : false),
+  },
+  /**
+   * Called with the source-map source path (`src/pages/...` or a relative
+   * variant), not an absolute path, so this has to be a plain predicate: a
+   * pattern-based filter would never match and drop every source.
+   */
+  sourceFilter: sourcePath => isProductionFile(sourcePath),
 };

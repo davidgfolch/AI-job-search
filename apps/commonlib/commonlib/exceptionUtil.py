@@ -4,7 +4,9 @@ import sys
 import traceback
 from typing import Callable, List, Union
 
-from .terminalColor import yellow
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.exceptionUtil")
 
 
 def try_or_warn(fn: Callable, warning_msg: str, show_exception: bool = False) -> bool:
@@ -12,9 +14,10 @@ def try_or_warn(fn: Callable, warning_msg: str, show_exception: bool = False) ->
         fn()
         return True
     except Exception:
-        print(yellow(warning_msg))
         if show_exception:
-            traceback.print_exc()
+            logger.exception("op.warned", message=warning_msg)
+        else:
+            logger.warning("op.warned", message=warning_msg)
         return False
 
 

@@ -19,7 +19,7 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 
 - **LinkedIn**: Works fine. Careful with rate limits.
 - **Infojobs**: Works fine.
-- **Tecnoempleo**: Works fine.
+- **Tecnoempleo**: Works fine. The company is read by `TecnoempleoCompanyReader`, which first tries the company link and then falls back to the bare text node tecnoempleo renders in the job header for the offers published without a company page. Only the offers that name no employer at all are stored with the company set to `unspecified` instead of being discarded, and the company is inferred later by `aiEnrich` (see [aiEnrich README](../aiEnrich/README.md)). While the company is unspecified the job is not linked to a duplicate; the duplicate check runs again once the company is known. The pay range is read by `TecnoempleoSalaryReader`, which matches the `Salario` caption of the "Datos principales" rows and stores the value in the `salary` column; offers stating no range are stored with `salary=NULL`. Matching the caption instead of a fixed row position matters because tecnoempleo renders a variable number of rows (`Imprescindible Residir`, `Otras Provincias` and `Salario` are all optional), and because the generic markdown scrape keeps the row values without their captions — the AI then receives the range as an unlabeled bullet and frequently answers `salary=null`. The page also exposes a schema.org `baseSalary` block, but it is missing on a noticeable share of salary-bearing offers, so it is not used.
 - **Glassdoor**: Prone to strict bot detection. Uses Indeed OTP login (email+code via Gmail IMAP). `SCRAPPER_GLASSDOOR_EMAIL` is not used — GlassdoorAuthenticator reads `SCRAPPER_INDEED_EMAIL` instead.
 - **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login.
 
@@ -69,6 +69,35 @@ location = '105646813' # Spain (or other country code)
 f_TPR = 'r86400'  # last 24 hours
 DEBUG = False # Set to True to stop selenium driver on error
 ```
+
+## Console Output & Structured Logging
+
+The scrapper is the reference implementation of the dual-output logging in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging): the console is a human transcript and `apps/scrapper/data/logs/scrapper.jsonl` is the machine record.
+
+`main.py` configures the app with `configure_logging("scrapper", console=CONSOLE_MESSAGE)`, so:
+
+- A record with `console=` prints only that text — no timestamp, level, or event name — and the text is ANSI-stripped into the record's `message` in the JSONL.
+- A record without `console=` is written to the JSONL only. This is what keeps `commonlib` chatter (`sql.query_executed`, `ollama.client.*`) off the console.
+- `end=""` rebuilds a `print(..., end='')` progress prefix, so a job line such as `pg 1 job 1 - 42, Python Dev, Acme - INSERTED 99!` still assembles on one line. In JSONL each part is its own record.
+- `LOG_CONSOLE_MODE` does not affect the scrapper: the mode is chosen in code, not from the environment.
+
+The first line of every run is the resolved absolute path of the JSONL file, printed as a `logging.file_opened` record (with `path`), so the location is never a guess:
+
+```text
+Log file: /home/user/ai_job_search/apps/scrapper/data/logs/scrapper.jsonl
+Scrapper v0.1.0
+```
+
+The path is resolved against the working directory of the process — `apps/scrapper` on the host, `/app` in the container — and honours `LOG_DIR`.
+
+```python
+logger.info("linkedin.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy,
+            console=f"{job_id}, {title}, {cyan(company)}, {location}, easy_apply={easy} - ", end="")
+logger.info("linkedin.job.inserted", job_id=job_id, insert_id=insert_id, console=green(f"INSERTED {insert_id}!"), end="")
+logger.info("linkedin.job.duplicated", job_id=job_id, duplicated_id=duplicated_id, console=cyan(f" DUPLICATED {duplicated_id}"), end="")
+```
+
+Console text obeys the logging rules: OTP codes, email subjects, and URL query strings are never printed (only host + path, and `*_length` for codes), and `LinkedinService` prints the HTML/markdown lengths rather than the documents.
 
 ## Gmail Configuration
 
@@ -138,11 +167,33 @@ Implemented for LinkedIn only:
 
 ## Testing
 
-Run tests with pytest:
+Run tests with the centralized script, from the repository root (`commonlib` is always included because it holds the architecture tests):
 
 ```bash
-poetry run pytest
+./scripts/test.sh commonlib scrapper   # Linux/Mac
+.\scripts\test.bat commonlib scrapper   # Windows
 ```
+
+### Coverage
+
+Tests live inside the package, so `[tool.coverage.run] omit` keeps `*/test/*` and
+`*/conftest.py` out of the denominator. Without it, near-perfectly covered test files
+were measured as production code and inflated the badge by ~8.8 points (80.8% real).
+
+`fail_under` is intentionally **not** set in `pyproject.toml`: coverage.py only compares
+the branch-inclusive total, and the project gates statements and lines only. The 90%
+floor is enforced by `scripts/coverage/scrapper_coverage_gate.py`, which `scripts/test.sh`
+and `scripts/test.bat` run automatically in `--coverage` mode:
+
+```bash
+cd apps/scrapper
+poetry run coverage run -m pytest
+poetry run coverage xml
+python ../../scripts/coverage/scrapper_coverage_gate.py --min 90
+```
+
+It exits non-zero when production statements drop below the floor and lists the
+least-covered files. Branch coverage stays enabled for information only.
 
 ## Troubleshooting
 

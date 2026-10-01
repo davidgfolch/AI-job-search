@@ -1,6 +1,5 @@
 import time
 import json
-import traceback
 from typing import List, Dict, Any, Tuple, Optional, Set
 
 from commonlib.sql.mysqlUtil import MysqlUtil
@@ -154,7 +153,7 @@ def _process_job_batch_pipeline(
         title = item['title']
         company = item['company']
 
-        logger.error("job.failed", job_id=job_id, title=title, company=company, error=str(ex), traceback=traceback.format_exc())
+        logger.exception("job.failed", job_id=job_id, title=title, company=company, error=str(ex))
         job_errors.add((job_id, f'{title} - {company}: {ex}'))
 
         prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""

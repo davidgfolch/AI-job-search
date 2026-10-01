@@ -1,8 +1,9 @@
 from typing import Tuple, Optional
 from commonlib.decorator.retry import retry
 from commonlib.exceptionUtil import try_or_warn
-from commonlib.terminalColor import green, yellow, printHR
+from commonlib.observability import get_logger
 from commonlib.stringUtil import join
+from commonlib.terminalColor import green, yellow, printHR
 from selenium.common.exceptions import NoSuchElementException
 
 from ..services.selenium.seleniumService import SeleniumService
@@ -10,11 +11,15 @@ from ..services.selenium.browser_service import sleep
 
 from .baseNavigator import BaseNavigator
 
+logger = get_logger("scrapper.linkedinNavigator")
+
 
 CSS_SEL_LOGIN_USER = 'input[type=email]'
 CSS_SEL_LOGIN_PWD = 'input[type=password]'
-CSS_SEL_LOGIN_BUTTON = 'button[type=submit]'
-CSS_SEL_LOGIN_BUTTON_ES = 'button[type=button]'
+CSS_SEL_LOGIN_BUTTON = 'button[type=button]'  # login form is rendered twice, the submit is the last button of the last copy
+CSS_SEL_LOGIN_BUTTON_LEGACY = 'button[type=submit]'
+# "keep me signed in" is a custom ARIA toggle: classes are hashed, aria-label is localized, so match on role/aria-checked
+CSS_SEL_LOGIN_REMEMBER_ME = 'div[role=checkbox][aria-checked="true"]'
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
 CSS_SEL_MESSAGES_HIDE = 'aside#msg-overlay div.msg-overlay-bubble-header__controls button:last-child'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'section.artdeco-global-alert__body button:first-child'
@@ -66,27 +71,31 @@ class LinkedinNavigator(BaseNavigator):
             raise Exception('Login form elements not found')
         self.selenium.sendKeys(user_elms.pop(), user_email)
         self.selenium.sendKeys(pwd_elms.pop(), user_pwd)
-        try_or_warn(lambda: self.selenium.checkboxUnselect('div.remember_me__opt_in input'), 'Could not click on "remember me" checkbox')
+        self.uncheck_remember_me()
         self.loginSubmit()
-    
+
+    def uncheck_remember_me(self):
+        elms = self.selenium.getElms(CSS_SEL_LOGIN_REMEMBER_ME)
+        if not elms:
+            logger.info("linkedin.login.remember_me_absent", console=yellow('"Remember me" checkbox not found or already unchecked'))
+            return
+        try_or_warn(lambda: self.selenium.checkboxUnselect(elms.pop()), 'Could not uncheck "remember me" checkbox')
+
     @retry()
     def loginSubmit(self):
-        """Login in english is a button[type=submit], in spanish is a button[type=button]"""
-        try:
-            self.selenium.waitAndClick(CSS_SEL_LOGIN_BUTTON)
-        except Exception as e:
-            print(yellow('Could not click on login button'))
-            try:
-                self.selenium.waitAndClick(self.selenium.getElms(CSS_SEL_LOGIN_BUTTON_ES).pop())
-            except Exception as e:
-                print(yellow('Could not click on login button 2'))
-                raise e
+        """LinkedIn used to submit with button[type=submit], nowadays the whole form is a JS widget whose last button submits"""
+        for cssSel in (CSS_SEL_LOGIN_BUTTON_LEGACY, CSS_SEL_LOGIN_BUTTON):
+            elms = self.selenium.getElms(cssSel)
+            if elms:
+                self.selenium.waitAndClick(elms.pop())
+                return
+        raise Exception('Login submit button not found')
 
 
     def check_redirected_to_login(self, login_callback) -> bool:
         current_url = self.selenium.getUrl()
         if any(p in current_url for p in ['linkedin.com/login', 'linkedin.com/uas/login', 'linkedin.com/authwall']):
-            print(yellow("Detected redirect to login page, re-logging in..."))
+            logger.warning("linkedin.auth.redirect_to_login", console=yellow("Detected redirect to login page, re-logging in..."))
             login_callback()
             return True
         return False
@@ -98,10 +107,8 @@ class LinkedinNavigator(BaseNavigator):
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElm) == 0:
             return True
-        print(yellow(
-            join('No results for job search on linkedIn for',
-                    f'keywords={keywords}', f'remote={remote}',
-                    f'location={location}', f'old={f_TPR}', f'URL {url}')))
+        logger.info("linkedin.no_results", keywords=keywords, remote=remote, location=location, last=f_TPR, url=url,
+                    console=yellow(join('No results for job search on linkedIn for', f'keywords={keywords}', f'remote={remote}', f'location={location}', f'old={f_TPR}', f'URL {url}')))
         return False
 
     def replace_index(self, cssSelector: str, idx: int):
@@ -111,8 +118,8 @@ class LinkedinNavigator(BaseNavigator):
     def get_total_results(self, keywords: str, remote, location, f_TPR, sortBy) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')
         printHR(green)
-        print(green(join(f'{total} total results for search: {keywords}',
-                        f'(remote={remote}, location={location}, last={f_TPR}, sortBy={sortBy})')))
+        logger.info("linkedin.results_found", total=total, keywords=keywords, remote=remote, location=location, last=f_TPR, sort_by=sortBy,
+                    console=green(join(f'{total} total results for search: {keywords}', f'(remote={remote}, location={location}, last={f_TPR}, sortBy={sortBy})')))
         printHR(green)
         return int(total.replace('+', ''))
 
@@ -187,7 +194,7 @@ class LinkedinNavigator(BaseNavigator):
         if len(elms) > 0:
             self.selenium.waitAndClick_noError(elms[-1], 'Could not collapse messages')
         else:
-            print(yellow('No messages found to collapse'))
+            logger.info("linkedin.messages.none", console=yellow('No messages found to collapse'))
 
     def wait_until_page_url_contains(self, url, timeout):
         self.selenium.waitUntilPageUrlContains(url, timeout)

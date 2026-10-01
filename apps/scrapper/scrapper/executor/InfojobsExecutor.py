@@ -1,4 +1,5 @@
 import math
+from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow
 from commonlib.decorator.retry import retry
 from ..core import baseScrapper
@@ -7,6 +8,8 @@ from ..core.baseScrapper import getAndCheckEnvVars
 from ..navigator.infojobsNavigator import InfojobsNavigator
 from ..services.InfojobsService import InfojobsService
 from .BaseExecutor import BaseExecutor
+
+logger = get_logger("scrapper.InfojobsExecutor")
 
 class InfojobsExecutor(BaseExecutor):
     def _init_scrapper(self):
@@ -26,7 +29,7 @@ class InfojobsExecutor(BaseExecutor):
         return InfojobsService(mysql, self.persistence_manager, self.debug)
 
     def _process_keyword(self, keyword: str, start_page: int):
-        print(f'Search keyword={keyword}')
+        logger.info("infojobs.search.started", keyword=keyword, console=f'Search keyword={keyword}')
         self.navigator.load_search_page()
         if not self.navigator.load_filtered_search_results(keyword):
             return
@@ -39,14 +42,15 @@ class InfojobsExecutor(BaseExecutor):
             baseScrapper.printPage(self.site_name, page, totalPages, keyword)
             idx = 0
             while idx < self.jobs_x_page and currentItem < totalResults:
-                print(green(f'pg {page} job {idx+1} - '), end='', flush=True)
+                logger.info("infojobs.job.processing", page=page, idx=idx + 1, console=green(f'pg {page} job {idx+1} - '), end='')
                 jobExistsInDb = self._load_and_process_row(idx)
                 if not jobExistsInDb:
                     foundNewJobInPage = True
                 currentItem += 1
                 idx += 1
             if not foundNewJobInPage and (page > start_page + 1 or (start_page < 2 and page > 2)):
-                print(yellow('No new jobs found in this page, stopping keyword processing.'))
+                logger.info("infojobs.pagination.no_new_jobs", keyword=keyword, page=page,
+                            console=yellow('No new jobs found in this page, stopping keyword processing.'))
                 break
             if currentItem < totalResults:
                 if self.navigator.click_next_page():
@@ -63,13 +67,13 @@ class InfojobsExecutor(BaseExecutor):
             try:
                 self.navigator.scroll_jobs_list(idx)
             except Exception:
-                print(yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
+                logger.warning("infojobs.scroll_failed", idx=idx + 1, action="ignored", console=yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
                 return None
         job_link_elm = self.navigator.get_job_link_element(idx)
         url = self.navigator.get_job_url(job_link_elm)
         job_id, job_exists = self.service.job_exists_in_db(url)
         if job_exists:
-            print(yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='', flush=True)
+            logger.info("infojobs.job.already_exists", job_id=job_id, console=yellow(f'Job id={job_id} already exists in DB, IGNORED.'), end='')
             return True
         print(yellow('loading...'), end='')
         self.navigator.click_job_link(job_link_elm)

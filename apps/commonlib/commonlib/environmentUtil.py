@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv, dotenv_values, set_key
-from .terminalColor import yellow
 
 import threading
 
@@ -20,22 +19,39 @@ def getEnvModified() -> float | None:
     mtime = max(_get_mtime(ENV_PATH), _get_mtime(ENV_SECRETS_PATH))
     return mtime if mtime > 0 else None
 
+def _logEvent(method: str, event: str, **fields):
+    from commonlib.observability import get_logger
+    getattr(get_logger("commonlib.environmentUtil"), method)(event, **fields)
+
+_envLoadedLogged = False
+_envReloading = False
+
+def _logEnvLoaded():
+    global _envLoadedLogged
+    if _envLoadedLogged or _envReloading:
+        return
+    _envLoadedLogged = True
+    _logEvent('debug', 'env.loaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
+
 # Initialize module-level state
-print(yellow(f'Loading env from {ENV_PATH}'))
 load_dotenv(dotenv_path=ENV_PATH)
-print(yellow(f'Loading env from {ENV_SECRETS_PATH}'))
 load_dotenv(dotenv_path=ENV_SECRETS_PATH)
 envLastModified = getEnvModified()
 
 def checkEnvReload():
-    global envLastModified
+    global envLastModified, _envReloading
+    _logEnvLoaded()
     modified = envLastModified == getEnvModified()
-    if modified:
+    if modified or _envReloading:
         return
-    print(yellow('Reloading .env and .env.secrets'))
-    load_dotenv(dotenv_path=ENV_PATH, override=True)
-    load_dotenv(dotenv_path=ENV_SECRETS_PATH, override=True)
-    envLastModified = getEnvModified()
+    _envReloading = True
+    try:
+        load_dotenv(dotenv_path=ENV_PATH, override=True)
+        load_dotenv(dotenv_path=ENV_SECRETS_PATH, override=True)
+        envLastModified = getEnvModified()
+        _logEvent('info', 'env.reloaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
+    finally:
+        _envReloading = False
 
 def getEnv(key: str, default: str = None, required: bool = False) -> str:
     checkEnvReload()

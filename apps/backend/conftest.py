@@ -1,4 +1,5 @@
 """Pytest configuration and shared fixtures"""
+import json
 import pytest
 
 import sys
@@ -15,6 +16,36 @@ sys.path.insert(0, str(Path(__file__).parent))
 def client():
     """Shared test client fixture"""
     return TestClient(app)
+
+
+def _read_jsonl(path):
+    if not path.exists():
+        return []
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+@pytest.fixture(autouse=True)
+def log_records(tmp_path, monkeypatch):
+    """Redirect structlog JSONL output to a temp dir and expose a record reader.
+
+    Autouse so a test run never writes into `data/logs`, and so any test can assert on
+    the structured records produced by the code under test.
+    """
+    from commonlib.observability import log_file_path
+
+    monkeypatch.setenv("LOG_DIR", str(tmp_path))
+    path = Path(log_file_path())
+
+    def read(event=None, level=None, module=None):
+        records = _read_jsonl(path)
+        for key, value in (("event", event), ("level", level), ("module", module)):
+            if value is not None:
+                records = [record for record in records if record.get(key) == value]
+        return records
+
+    read.path = path
+    return read
 
 
 from commonlib.test.db_mock_util import create_mock_db

@@ -1,20 +1,19 @@
-import json
-import traceback
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
-from commonlib.terminalColor import yellow, red, cyan, green
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.stringUtil import removeExtraEmptyLines
-from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.cv_loader import CVLoader
 from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.observability import get_logger
 
 CV_LOCATION = './cv/cv.txt'
+
+logger = get_logger("aiCvMatcher.cvMatcher")
 
 
 class FastCVMatcher:
@@ -35,9 +34,9 @@ class FastCVMatcher:
         return cls._instance
 
     def _initialize(self):
-        print("Loading embedding model (this may take a while significantly on first run)...")
+        logger.info("model.loading", model='all-MiniLM-L6-v2')
         self._model = SentenceTransformer('all-MiniLM-L6-v2') 
-        print(cyan("Embedding model loaded."))
+        logger.info("model.loaded", model='all-MiniLM-L6-v2')
         self._cv_loader = CVLoader(cv_location=CV_LOCATION, enabled=getEnvBool('AI_CVMATCHER_ENABLED'))
 
     @classmethod
@@ -56,10 +55,9 @@ class FastCVMatcher:
             total = repo.count_pending_cv_match()
             if total == 0:
                 return total
-            print()
             limit = int(getEnv('AI_CVMATCHER_LIMIT', '100'))
             job_ids = repo.get_pending_cv_match_ids(limit)
-            print(yellow(f'{job_ids}'))
+            logger.info("jobs.batch_started", total=total, limit=limit, count=len(job_ids))
             for idx, id in enumerate(job_ids):
                 self.stopWatch.start()
                 try:
@@ -69,9 +67,9 @@ class FastCVMatcher:
                     title = job[1]
                     company = job[3]
                     markdown = removeExtraEmptyLines(job[2].decode("utf-8") if isinstance(job[2], bytes) else job[2])
-                    print(green(f'AI CV match job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={len(markdown)}'), end='')
+                    logger.debug("job.started", job_id=id, index=idx+1, total=total, title=title, company=company, input_length=len(markdown))
                     result = self.match(f'# {title} \n {markdown}')
-                    print(f' -> Result: {cyan(json.dumps(result))}', end='')
+                    logger.debug("job.result", job_id=id, index=idx+1, total=total, cv_match_percentage=result.get('cv_match_percentage'))
                     self._save_result(repo, id, result)
                 except (Exception, KeyboardInterrupt) as ex:
                     self._save_error(repo, id, title, company, ex)
@@ -86,6 +84,7 @@ class FastCVMatcher:
         if self._cv_loader.load_cv_content():
             self._cv_content = self._cv_loader.get_content()
             self._cv_embedding = self._model.encode([self._cv_content])
+            logger.info("cv.context_loaded", location=CV_LOCATION, chars=len(self._cv_content))
             return True
         return False
 
@@ -97,21 +96,20 @@ class FastCVMatcher:
             similarity = cosine_similarity(self._cv_embedding, job_embedding)[0][0]
             percentage = int(max(0, similarity) * 100)
             return {"cv_match_percentage": percentage}
-        except Exception as e:
-            print(red(f"Error in fast match: {e}"))
-            traceback.print_exc()
+        except Exception:
+            logger.exception("match.failed")
             return {"cv_match_percentage": 0}
 
     def _save_result(self, repo: AiEnrichRepository, id, result: dict):
         repo.update_cv_match(id, result.get('cv_match_percentage'))
 
     def _save_error(self, repo: AiEnrichRepository, id, title, company, ex):
-        print(red(traceback.format_exc()))
+        logger.exception("job.failed", job_id=id, title=title, company=company)
         self.jobErrors.add((id, f'{title} - {company}: {ex}'))
         repo.update_enrichment_error(id, str(ex), False)
-        print(yellow(f"cv_match_percentage set to -1 (error), id={id}"))
+        logger.warning("job.error_saved", job_id=id, cv_match_percentage=-1)
 
     def _print_footer(self, total, idx):
-        print(yellow(f'Processed jobs this run: {idx+1}/{total}, total processed jobs: {self.totalCount}'), end=' ')
+        logger.info("jobs.batch_completed", processed=idx+1, total=total, total_processed=self.totalCount)
         if self.jobErrors:
-            print(red(f'Total job errors: {len(self.jobErrors)}'), end=' ')
+            logger.warning("jobs.batch_errors", job_errors=len(self.jobErrors))

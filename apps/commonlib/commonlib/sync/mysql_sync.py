@@ -7,7 +7,10 @@ from datetime import datetime
 from pathlib import Path
 
 from commonlib.network.mysql_discovery import resolve_mysql_host
-from commonlib.terminalColor import green, red, yellow
+from commonlib.terminalColor import yellow
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.sync.mysql_sync")
 
 CONTAINER = os.getenv('MYSQL_SYNC_CONTAINER', 'ai-job-search-mysql')
 MYSQL_PWD = os.getenv('MYSQL_SYNC_PASSWORD', 'rootPass')
@@ -63,27 +66,29 @@ def make_dump_path(dump_dir=None):
 
 def dump_local(dump_file, container=CONTAINER, db=DB_NAME, pwd=MYSQL_PWD):
     """Dump local DB to dump_file; returns a summary dict."""
-    print(green(f"Dumping local '{db}' DB to {dump_file}..."))
+    logger.info("db.dump_started", db=db, dump_file=str(dump_file))
     with open(dump_file, 'w') as fh:
         code, _, err = _run(build_dump_cmd(container, db, pwd), stdout_file=fh)
     if code != 0:
         raise RuntimeError(f"mysqldump failed: {err.strip()}")
     tables = dump_tables(dump_file)
     size_mb = dump_file.stat().st_size / (1024 * 1024)
+    logger.info("db.dump_completed", db=db, dump_file=str(dump_file), tables=len(tables), size_mb=round(size_mb, 1))
     return {'file': str(dump_file), 'tables': tables, 'size_mb': round(size_mb, 1)}
 
 
 def restore_target(dump_file, host, container=CONTAINER, db=DB_NAME, pwd=MYSQL_PWD):
     """Apply the dump onto the target host (full replace of the DB)."""
-    print(green(f"Restoring {db} onto {host} (full replace)..."))
+    logger.info("db.restore_started", db=db, host=host)
     with open(dump_file) as fh:
         code, _, err = _run(build_restore_cmd(host, container, db, pwd), stdin_file=fh)
     if code != 0:
         raise RuntimeError(f"restore onto {host} failed: {err.strip()}")
-    print(green(f"Restore onto {host} completed successfully."))
+    logger.info("db.restore_completed", db=db, host=host)
 
 
 def summarize(target, summary, db):
+    logger.info("db.restore_planned", target=target, db=db, dump_file=summary['file'], size_mb=summary['size_mb'], tables=len(summary['tables']))
     print(yellow("Dry-run summary"))
     print(f"  Target:   {target}")
     print(f"  Database: {db}")
@@ -108,9 +113,9 @@ def main(argv=None):
     parser.add_argument('--yes', action='store_true', help="skip the confirmation prompt")
     args = parser.parse_args(argv)
 
-    print(yellow(f"Resolving target MySQL (spec: {args.target})..."))
+    logger.info("db.target_resolving", spec=args.target)
     target = resolve_mysql_host(args.target)
-    print(green(f"Target MySQL at {target}"))
+    logger.info("db.target_resolved", host=target)
     preflight_target(target, db=args.db)
 
     dump_file = make_dump_path()
@@ -119,9 +124,10 @@ def main(argv=None):
 
     if args.dry_run:
         print(yellow("Dry run: not restoring."))
+        logger.info("db.dry_run_completed", target=target, db=args.db)
         return 0
     if not confirm(target, args.db, yes=args.yes):
-        print(red("Restore aborted by user."))
+        logger.warning("db.restore_aborted", target=target, db=args.db, reason="declined_by_user")
         return 1
 
     restore_target(dump_file, target, db=args.db)

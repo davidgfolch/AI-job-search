@@ -1,3 +1,5 @@
+from structlog.testing import capture_logs
+
 import pytest
 from unittest.mock import patch, MagicMock
 from commonlib.exceptionUtil import try_or_warn, getProjectTraceItems, cleanUnresolvedTrace, filter_trace_by_paths
@@ -93,25 +95,27 @@ def fail_fn():
     raise ValueError("test error")
 
 
-@patch('commonlib.exceptionUtil.traceback.print_exc')
-def test_try_or_warn_success(mock_print_exc, capsys):
-    assert try_or_warn(ok_fn, "warning") is True
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    mock_print_exc.assert_not_called()
+def test_try_or_warn_success():
+    with capture_logs() as records:
+        assert try_or_warn(ok_fn, "warning") is True
+    assert [r for r in records if r["event"] == "op.warned"] == []
 
 
-@patch('commonlib.exceptionUtil.traceback.print_exc')
-def test_try_or_warn_failure_no_exception(mock_print_exc, capsys):
-    assert try_or_warn(fail_fn, "test warning") is False
-    captured = capsys.readouterr()
-    assert "\033[93mtest warning\033[0m\n" in captured.out
-    mock_print_exc.assert_not_called()
+def test_try_or_warn_failure_no_exception():
+    with capture_logs() as records:
+        assert try_or_warn(fail_fn, "test warning") is False
+    warned = [r for r in records if r["event"] == "op.warned"]
+    assert len(warned) == 1
+    assert warned[0]["log_level"] == "warning"
+    assert warned[0]["message"] == "test warning"
+    assert not warned[0].get("exc_info")
 
 
-@patch('commonlib.exceptionUtil.traceback.print_exc')
-def test_try_or_warn_failure_with_exception(mock_print_exc, capsys):
-    assert try_or_warn(fail_fn, "test warning", show_exception=True) is False
-    captured = capsys.readouterr()
-    assert "\033[93mtest warning\033[0m\n" in captured.out
-    mock_print_exc.assert_called_once()
+def test_try_or_warn_failure_with_exception():
+    with capture_logs() as records:
+        assert try_or_warn(fail_fn, "test warning", show_exception=True) is False
+    warned = [r for r in records if r["event"] == "op.warned"]
+    assert len(warned) == 1
+    assert warned[0]["log_level"] == "error"
+    assert warned[0]["message"] == "test warning"
+    assert warned[0]["exc_info"] is True

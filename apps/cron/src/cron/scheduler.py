@@ -2,8 +2,10 @@ from datetime import datetime, timedelta, timezone
 import re
 
 from cron import config
+from commonlib.observability import get_logger
 from commonlib.repositories.cron_state_repository import CronStateRepository
-from commonlib.terminalColor import green, yellow, red
+
+logger = get_logger("cron.scheduler")
 
 
 def _parse_cadency(cadency: str) -> int:
@@ -47,18 +49,18 @@ class Scheduler:
                 should_run = (now - last_run).total_seconds() >= cadency_seconds
 
             if should_run:
-                print(green(f"[scheduler] running job '{job.name}'"))
+                logger.info("cron.job_started", job=job.name)
                 try:
                     job.run(self._cron_state)
                 except Exception as e:
-                    print(red(f"[scheduler] job '{job.name}' FAILED: {e}"))
+                    logger.exception("cron.job_failed", job=job.name, error=str(e))
                     self._cron_state.update_state(job.name, {
                         "last_run_at": now,
                         "status": "error",
                         "error": str(e),
                     })
                 else:
-                    print(green(f"[scheduler] job '{job.name}' completed OK"))
+                    logger.info("cron.job_completed", job=job.name)
                     self._cron_state.update_state(job.name, {
                         "last_run_at": now,
                         "status": "ok",

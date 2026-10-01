@@ -68,6 +68,21 @@ def test_bulk_create_skills(mock_repo_class):
     assert result == 2
     assert mock_repo.create_skill.call_count == 2
 
+
+@patch('services.skills_service.SkillsRepository')
+def test_bulk_create_skills_logs_failures(mock_repo_class, log_records):
+    mock_repo = MagicMock()
+    mock_repo_class.return_value = mock_repo
+    mock_repo.update_skill.side_effect = [Exception("DB error"), None]
+    service = SkillsService()
+    result = service.bulk_create_skills([Skill(name="Python", description="Lang1"), Skill(name="Java", description="Lang2")])
+    assert result == 1
+    records = log_records(event="skills.save_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "error"
+    assert records[0]["skill"] == "Python"
+    assert records[0]["error"] == "DB error"
+
 @patch('services.skills_service.SkillsRepository')
 def test_normalize_skill_name(mock_repo_class):
     mock_repo = MagicMock()

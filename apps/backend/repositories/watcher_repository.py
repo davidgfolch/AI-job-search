@@ -1,8 +1,10 @@
 import json
 from typing import List, Optional, Dict, Any
+from commonlib.observability import get_logger
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
-from commonlib.terminalColor import red
 from repositories.queries.view_generator import generate_config_view_sql
+
+logger = get_logger("backend.repositories.watcher_repository")
 
 class WatcherRepository:
 
@@ -33,8 +35,8 @@ class WatcherRepository:
         if isinstance(filters_json, str):
             try:
                 return json.loads(filters_json)
-            except:
-                print(red(f"Error parsing filters for config {configId}: {filters_json}"))
+            except Exception as e:
+                logger.warning("watcher.filters_parse_failed", error=str(e), config_id=configId)
                 return {}
         return filters_json if isinstance(filters_json, dict) else {}
 
@@ -43,5 +45,5 @@ class WatcherRepository:
             db.executeAndCommit(sql, []) 
             return True
         except Exception as e:
-            print(red(f"Error creating view {view_name} for config {configId}: {e}"))
+            logger.exception("db.view_creation_failed", error=str(e), view_name=view_name, config_id=configId)
             return False

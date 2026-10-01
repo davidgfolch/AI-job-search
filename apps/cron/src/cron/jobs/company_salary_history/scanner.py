@@ -1,7 +1,9 @@
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from commonlib.repositories.salary_history_repository import SalaryHistoryRepository
 from commonlib.company_normalizer import normalize_company_name
-from commonlib.terminalColor import green, yellow, cyan
+from commonlib.observability import get_logger
+
+logger = get_logger("cron.jobs.company_salary_history.scanner")
 
 
 class CompanySalaryHistoryScanner:
@@ -15,7 +17,7 @@ class CompanySalaryHistoryScanner:
         with MysqlUtil(getConnection()) as mysql:
             new_rows = self._fetch_jobs(mysql, last_job_id)
             if new_rows:
-                print(cyan(f"[scanner] fetched {len(new_rows)} new jobs (id > {last_job_id})"))
+                logger.info("cron.scanner.jobs_fetched", rows=len(new_rows), after_job_id=last_job_id)
                 records = []
                 for row in new_rows:
                     job_id, title, company, salary, changed_at = row
@@ -31,19 +33,19 @@ class CompanySalaryHistoryScanner:
                     max_id = max(max_id, job_id)
                 saved = self._salary_repo.save_records(records)
                 total += saved
-                print(green(f"[scanner] saved {saved}/{len(records)} salary records (backfill={last_job_id == 0})"))
+                logger.info("cron.scanner.records_saved", saved=saved, records=len(records), backfill=last_job_id == 0)
             else:
-                print(yellow(f"[scanner] no new jobs found (id > {last_job_id})"))
+                logger.debug("cron.scanner.no_new_jobs", after_job_id=last_job_id)
 
             if last_run_at:
                 updated_rows = self._fetch_updated(mysql, last_run_at, max_id)
                 if updated_rows:
-                    print(cyan(f"[scanner] checking {len(updated_rows)} updated jobs since {last_run_at}"))
+                    logger.info("cron.scanner.updates_checked", rows=len(updated_rows), since=last_run_at)
                     for row in updated_rows:
                         job_id, title, company, salary, changed_at = row
                         last_rec = self._salary_repo.get_last_record(job_id)
                         if last_rec is None or last_rec.get("salary") != salary:
-                            action = "new" if last_rec is None else f"changed '{last_rec.get('salary')}' -> '{salary}'"
+                            action = "new" if last_rec is None else "changed"
                             self._salary_repo.save_record({
                                 "job_id": job_id,
                                 "company_raw": company,
@@ -54,8 +56,8 @@ class CompanySalaryHistoryScanner:
                                 "source": "incremental",
                             })
                             total += 1
-                            print(green(f"[scanner]   job_id={job_id}: salary {action}"))
-                    print(green(f"[scanner] saved {total} updated salary records"))
+                            logger.debug("cron.scanner.salary_recorded", job_id=job_id, action=action, salary=salary, previous_salary=None if last_rec is None else last_rec.get("salary"))
+                    logger.info("cron.scanner.updates_saved", records=total)
 
         return {
             "last_job_id": max_id,

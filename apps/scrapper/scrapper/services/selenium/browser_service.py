@@ -2,8 +2,11 @@ from typing import Optional, List
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
+from commonlib.observability import get_logger
 from scrapper.core.utils import sleep
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
+
+logger = get_logger("scrapper.browser_service")
 
 class BrowserService:
     def __init__(self, driver: webdriver.Remote):
@@ -18,19 +21,19 @@ class BrowserService:
             if name and name in self.tabs:
                 self.tabs.pop(name)
         except Exception as ex:
-            print(f'Error closing tab: {ex}')
+            logger.error("tab.close_failed", error=str(ex), console=f'Error closing tab: {ex}')
 
     @seleniumSocketConnRetry()
     def tab(self, name: Optional[str] = None):
         """Switch or create to tab name. If no name specified switches to default tab."""
         if name is None:
-            print(f'SeleniumUtil switching to default tab={self.default_tab}')
+            logger.info("tab.switch_default", tab=self.default_tab, console=f'SeleniumUtil switching to default tab={self.default_tab}')
             self.driver.switch_to.window(self.default_tab)
         elif self.tabs.get(name):
-            print(f'SeleniumUtil switching to existing tab: {name}')
+            logger.info("tab.switch_existing", tab=name, console=f'SeleniumUtil switching to existing tab: {name}')
             self.driver.switch_to.window(self.tabs[name])
         else:
-            print(f'SeleniumUtil creating new tab')
+            logger.info("tab.created", tab=name, console='SeleniumUtil creating new tab')
             self.driver.switch_to.new_window('tab')
             self.tabs[name] = self.driver.current_window_handle
             self.waitUntilPageIsLoaded(30)

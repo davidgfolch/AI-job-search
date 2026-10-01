@@ -2,6 +2,9 @@ import re
 from typing import Any, Optional, Tuple
 
 from commonlib.terminalColor import red
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.sqlUtil")
 
 ERROR_PREFIX = 'MysqlError: '
 
@@ -62,6 +65,7 @@ def deleteJobsQuery(ids: list[str]):
 
 def error(ex, suffix='', end='\n'):
     print(red(f'{ERROR_PREFIX}{ex}{suffix}'), end=end, flush=True)
+    logger.error("db.error", error=str(ex), suffix=suffix)
 
 
 def emptyToNone(params: tuple[Any]):

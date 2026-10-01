@@ -64,6 +64,25 @@ export const MOCK_SEARCH_BACKEND = {
     size: 20,
 };
 
+// Enough jobs for the default page size (20) to leave a second page, so pagination can be exercised.
+export const PAGE_SIZE = 20;
+export const PAGINATED_JOB_COUNT = 25;
+export const PAGINATED_JOBS = Array.from({ length: PAGINATED_JOB_COUNT }, (_, index) => ({
+    ...MOCK_JOB_1,
+    id: index + 1,
+    title: `Paginated Job ${index + 1}`,
+    company: `Paginated Company ${index + 1}`,
+    salary: `${100 + index}k`,
+    created: `2023-01-${String((index % 28) + 1).padStart(2, '0')}`,
+}));
+
+export const paginatedJobsResponse = (page: number, size: number) => ({
+    items: PAGINATED_JOBS.slice((page - 1) * size, page * size),
+    total: PAGINATED_JOB_COUNT,
+    page,
+    size,
+});
+
 export const SALARY_CALC_COMMENT = '<!-- SALARY_CALC_DATA:{"calcMode":"classic","calcRate":40,"calcRateType":"Hourly","calcFreelanceRate":80,"calcHoursPerWeek":40,"calcDaysPerMonth":20} -->';
 
 export const MOCK_JOB_WITH_CALC_COMMENTS = {

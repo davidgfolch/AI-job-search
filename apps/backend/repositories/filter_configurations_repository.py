@@ -1,7 +1,10 @@
 import json
 from typing import List, Optional, Dict, Any
+from commonlib.observability import get_logger
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from repositories.queries.view_generator import drop_config_view_sql
+
+logger = get_logger("backend.repositories.filter_configurations_repository")
 
 class FilterConfigurationsRepository:
 
@@ -34,7 +37,8 @@ class FilterConfigurationsRepository:
                 if item['filters']:
                     try:
                         item['filters'] = json.loads(item['filters'])
-                    except:
+                    except Exception as e:
+                        logger.warning("filters.parse_failed", error=str(e), config_id=item.get('id'), source="find_all")
                         item['filters'] = {}
                 result.append(item)
             return result
@@ -50,7 +54,8 @@ class FilterConfigurationsRepository:
             if item['filters']:
                 try:
                     item['filters'] = json.loads(item['filters'])
-                except:
+                except Exception as e:
+                    logger.warning("filters.parse_failed", error=str(e), config_id=item.get('id'), source="find_by_id")
                     item['filters'] = {}
             return item
     
@@ -65,7 +70,8 @@ class FilterConfigurationsRepository:
             if item['filters']:
                 try:
                     item['filters'] = json.loads(item['filters'])
-                except:
+                except Exception as e:
+                    logger.warning("filters.parse_failed", error=str(e), config_id=item.get('id'), source="find_by_name")
                     item['filters'] = {}
             return item
     

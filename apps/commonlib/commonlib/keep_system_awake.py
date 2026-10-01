@@ -3,6 +3,10 @@ import platform
 import sys
 from contextlib import AbstractContextManager
 
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.keep_system_awake")
+
 if platform.system() == 'Windows':
     from ctypes import wintypes
 
@@ -56,14 +60,14 @@ class KeepSystemAwake(AbstractContextManager):
 
     def __enter__(self):
         if platform.system() == 'Windows':
-            print("Preventing Windows system sleep...")
+            logger.info("power.sleep_prevented", reason=self.reason)
             if not self._try_power_request():
                 self._use_legacy_api(enable=True)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if platform.system() == 'Windows':
-            print("Allowing Windows system sleep...")
+            logger.info("power.sleep_allowed", reason=self.reason)
             if self.power_request_handle:
                 self._clear_power_request()
             else:
@@ -91,7 +95,7 @@ class KeepSystemAwake(AbstractContextManager):
                 self.power_request_handle = kernel32.PowerCreateRequest(ctypes.byref(reason_context))
                 
                 if not self.power_request_handle or self.power_request_handle == -1:
-                    print(f"PowerCreateRequest failed. Error: {ctypes.GetLastError()}")
+                    logger.warning("power.create_request_failed", error_code=ctypes.GetLastError())
                     self.power_request_handle = None
                     return False
 
@@ -104,14 +108,14 @@ class KeepSystemAwake(AbstractContextManager):
                 success_disp = kernel32.PowerSetRequest(self.power_request_handle, PowerRequestDisplayRequired)
                 
                 if not success_sys and not success_disp:
-                     print(f"PowerSetRequest failed. Error: {ctypes.GetLastError()}")
+                     logger.warning("power.set_request_failed", error_code=ctypes.GetLastError())
                      self._close_handle()
                      return False
                 
                 return True
 
-            except Exception as e:
-                print(f"Error using Power Request API: {e}")
+            except Exception:
+                logger.exception("power.request_api_error")
                 self._close_handle()
                 return False
 

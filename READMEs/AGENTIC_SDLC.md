@@ -9,11 +9,12 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 | Directory | Purpose |
 |-----------|---------|
 | `.claude/skills/` | Canonical home for all agent skills |
-| `.claude/rules/` | Shared rule files (e.g. `architecture-guidelines.md`) |
+| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `docker-build.md`, `documentation-update.md`, `db-mutation-permission.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
+| `.claude/hooks/` | Claude Code `PreToolUse` hooks (`docker-build.py`, `docs-sync.py`, `db-mutation.py`) |
 | `.claude/CLAUDE.md` | Agent guidance for Claude Code (repo overview, build/test commands, code style, graphify rules) |
 | `.claude/settings.json` | Project-shared Claude Code settings (hooks) |
 | `.claude/settings.local.json` | Local Claude Code permissions (not committed) |
-| `.opencode/` | opencode-specific config only: `plugins/graphify.js`, `opencode.json`, and `plans/`. opencode plugins must live here (`issue #8158`) |
+| `.opencode/` | opencode-specific config only: `plugins/graphify.js`, `plugins/docker-build.js`, `plugins/docs-sync.js`, `plugins/db-mutation.js`, `opencode.json`, and `plans/`. opencode plugins must live here (`issue #8158`) |
 
 > **Note:** `.agent/` is retired. Skills and rules that previously lived in `.agent/` and the now-consolidated `.opencode/skills/` all live under `.claude/skills/` / `.claude/rules/` today.
 
@@ -51,6 +52,54 @@ Rules:
 - If `graphify-out/wiki/index.md` exists, use it for broad navigation.
 - Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review.
 - After modifying code, run the wrapper `update` subcommand to keep the graph current (AST-only, no API cost).
+
+## Documentation Sync (automatic, mandatory)
+
+Documentation is updated **in the same session** as every plan implementation, feature, fix, refactor, config change, or dependency bump — it is never a follow-up task, and it is never left for the user to ask for.
+
+The workflow is defined once in `.claude/rules/documentation-update.md` (an always-on rule, loaded by opencode through `instructions` and by any harness that reads `.claude/rules/`), and it is reinforced automatically by:
+
+| Mechanism | Harness | What it does |
+|-----------|---------|--------------|
+| `.claude/rules/documentation-update.md` | all | Canonical rule: when the doc sync applies, the change → docs map, and the definition-of-done checklist |
+| `.claude/hooks/docs-sync.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit`) | Injects a reminder the first time a source/config file is edited in the session |
+| `.opencode/plugins/docs-sync.js` | opencode | Tracks source edits and prints the same reminder once on the next bash call |
+
+Every task ends with the same five steps: pick the doc-map rows that match the change, open each listed doc, fix only what became inaccurate, keep snippets copy-pasteable, and report the updated docs in the final summary (or state that none were needed).
+
+Rows of the map worth remembering: module behavior → `apps/<module>/README.md`; new/removed module → root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`; env var → root `README.md` (Settings); compose service/profile/port → `READMEs/DOCKER_DEV.md`; build/test/install command → `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md`; new host tool → `READMEs/README_INSTALL.md`; API/DB schema → `apps/backend/README.md`; user-facing UI → root `README.md` (Features/Screenshots); CI/Dependabot → `READMEs/README_GITHUB.md`; skill/rule/hook/plugin → this file plus the Skills lists; plan implementation → the plan file (`Status:` + outcome) and `READMZs/TODO.md`.
+
+`graphify-out/` is generated output: refresh it with the wrapper (`scripts\graphify\graphify.bat update .`) after code changes, but never hand-edit it and never count it as documentation.
+
+## Database changes require user permission (enforced guardrail)
+
+The `jobs` MySQL database is **live production data** — scraping, enrichment, applications, and manual curation write to it continuously. A data or schema mutation is therefore never the agent's own initiative: measure the current state with read-only SQL, state the exact statement and the expected row count, then wait for the user to say yes. The policy is defined once in `.claude/rules/db-mutation-permission.md` and is **enforced in the tool call itself**, so it does not depend on the agent remembering it:
+
+| Mechanism | Harness | What it does |
+|-----------|---------|--------------|
+| `.claude/rules/db-mutation-permission.md` | all | Canonical policy: what is blocked, what stays allowed, and how to ask |
+| `.claude/hooks/db-mutation.py` | Claude Code (`PreToolUse` on `Bash`) | Exits 2 and denies the call, printing the reason and the remediation on stderr |
+| `.opencode/plugins/db-mutation.js` | opencode | Throws from `tool.execute.before`, aborting the `bash` call with the same message |
+
+Both are registered automatically: the hook in `.claude/settings.json` (`PreToolUse` → `Bash`), the plugin in the `plugin` array of `.opencode/opencode.json`. Both mirror each other and share the same detection logic, verified by an identical 31-case allow/block matrix.
+
+What it blocks: a database client (`mysql`, `mariadb`, `psql`, `mongosh`, `sqlite3`, `redis-cli`, …) combined with a mutating statement (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, `ALTER`, `CREATE`, `GRANT`, `CALL`, `LOAD DATA`, `… INTO OUTFILE`), a `.sql` file piped or sourced into a client (contents are not reviewable), mongo mutators (`drop`, `updateMany`, `deleteMany`, `bulkWrite`), redis writes (`SET`, `DEL`, `FLUSHALL`), and data-volume destruction (`docker compose down -v`, `docker volume rm`, `docker system prune --volumes`).
+
+What stays allowed, and is expected in normal work: `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN`, `COUNT`, `WITH … SELECT`, `SELECT ROW_COUNT()`, reading container logs and `.env`, and `docker compose restart/up/logs/ps`.
+
+**Approving a mutation.** Only after the user approves that exact statement, re-run it with the `AI_DB_WRITE_APPROVED` token in the command; the guardrail then passes it through:
+
+```bash
+AI_DB_WRITE_APPROVED=1 docker exec ai-job-search-mysql mysql -uroot -prootPass jobs -e "UPDATE ..."
+```
+
+```powershell
+$env:AI_DB_WRITE_APPROVED=1; docker exec ai-job-search-mysql mysql -uroot -prootPass jobs -e "UPDATE ..."
+```
+
+Adding the token is itself a permission decision: never add it to a statement the user has not approved, and re-confirm when the scope grows (approved for 100 rows is not approval for 6000).
+
+Honest limits: the guardrail matches clients, SQL keywords, and destructive volume commands by pattern. It cannot see inside an arbitrary script that builds SQL dynamically, and it cannot verify that the user actually consented. When a mutation is genuinely warranted and runs with the token, say so explicitly in the summary.
 
 ## Dependabot PR workflow
 

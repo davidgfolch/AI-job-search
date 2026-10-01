@@ -2,7 +2,11 @@ import os
 import glob
 import pytest
 from unittest.mock import MagicMock, patch
+from .. import executor_factory
 from ..executor_factory import create_executor
+from scrapper.test.log_capture import captured_records
+
+LOG_MODULE = "scrapper.executor_factory"
 
 def _get_executor_names():
     executor_dir = os.path.dirname(os.path.dirname(__file__))
@@ -54,3 +58,16 @@ class TestProcessPageUrl:
         url = "https://www.google.com"
         process_page_url(url)
         mock_process.assert_not_called()
+
+    @patch('scrapper.executor.LinkedinExecutor.LinkedinExecutor.process_specific_url')
+    def test_page_url_log_keeps_only_host_and_path(self, mock_process):
+        from ..executor_factory import process_page_url
+        url = "https://www.linkedin.com/jobs/view/123?trackingId=SECRET_TOKEN"
+        with captured_records(executor_factory, LOG_MODULE) as records:
+            process_page_url(url)
+        assert [r["event"] for r in records] == ["executor.page_url_requested"]
+        assert records[0]["log_level"] == "info"
+        assert records[0]["scrapper"] == "Linkedin"
+        assert records[0]["url_host"] == "www.linkedin.com"
+        assert records[0]["url_path"] == "/jobs/view/123"
+        assert "SECRET_TOKEN" not in str(records)

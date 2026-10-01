@@ -8,7 +8,7 @@ Extracted from `aiEnrich` and `aiEnrichNew` — provides AI-based enrichment of 
 
 | Backend | Env Value | Requirements |
 |---------|-----------|-------------|
-| Ollama (default) | `ollama` | Ollama server running (default URL centralized as `OLLAMA_DEFAULT_BASE_URL` in `commonlib`) |
+| Ollama (default) | `ollama` | Ollama server running (default URL centralized as `OLLAMA_HOST_BASE_URL` in `commonlib`; configured URL falls back to the host server when unreachable) |
 | HuggingFace | `huggingface` | Local transformers, GPU recommended |
 
 ## Usage
@@ -40,8 +40,13 @@ Set these in your `.env` or `.env.secrets`:
 - `AI_ENRICHSKILL_TIMEOUT` — Timeout per item in seconds (default: `90`)
 
 ### Ollama Backend
-- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_DEFAULT_BASE_URL` in `commonlib`)
+- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_HOST_BASE_URL` in `commonlib`)
 - `AI_ENRICHSKILL_OLLAMA_MODEL` — Model name (default: `ollama/qwen2.5:3b`)
+- `AI_ENRICHSKILL_MAX_NEW_TOKENS` — Max output tokens (default: `2048`)
+- `AI_ENRICHSKILL_NUM_CTX` — Context window sent to Ollama per request (default: auto-bucketed from prompt length, capped at `32768`)
+- `AI_ENRICHSKILL_REPEAT_PENALTY` — Repetition penalty for Ollama (default: `1.0`, disabled. Ollama's `repeat_penalty` penalizes prompt tokens too, so a value above `1.0` suppresses repeating the skills named in the offer)
+
+The three knobs above are shared with `aiEnrich` through `commonlib/ollama_config.py` and are not module-scoped: the first one set in `AI_ENRICH_*` → `AI_ENRICHSKILL_*` order wins, so an `AI_ENRICH_NUM_CTX` in `.env` also applies here.
 
 Pull the default model before running:
 
@@ -77,9 +82,11 @@ docker exec ai-job-search-ollama ollama pull qwen2.5:3b
 ```
 main.py → enrich_skills() loop
   └─ services/enrichment_service.py
-       ├─ backend == "ollama"      → ollama_client.py + commonlib.process_skill_enrichment
+       ├─ backend == "ollama"      → commonlib.ollama_client (resolve once, reuse) + commonlib.process_skill_enrichment
        └─ backend == "huggingface" → llm_client.py + llm_utils.py batch processing
 ```
+
+Each idle cycle logs a single `skill.enrich_skipped` record (`reason=no_pending_skills`) and then waits. In containers the wait is silent (`WakeableTimer`); on interactive terminals it shows the in-place countdown. When Ollama is unreachable, `ollama.unreachable` is logged and the retry countdown runs on both paths (up to `AI_ENRICHSKILL_MAX_OLLAMA_FAILURES`, then exit).
 
 ## Dependencies
 

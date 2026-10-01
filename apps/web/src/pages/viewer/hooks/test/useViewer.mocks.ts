@@ -13,6 +13,7 @@ export const mockJobsData = {
     setIsLoadingMore: vi.fn(),
     hardRefresh: vi.fn(),
     refetch: vi.fn(),
+    reloadCurrentPage: vi.fn(),
 };
 
 export const mockJobSelection = {

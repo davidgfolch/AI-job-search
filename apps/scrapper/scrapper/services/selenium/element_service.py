@@ -12,6 +12,9 @@ from commonlib.terminalColor import yellow
 from commonlib.systemUtil import isMacOS
 
 SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end',  behavior: 'smooth' });"
+ARIA_ROLE_ATTR = 'role'
+ARIA_CHECKED_ATTR = 'aria-checked'
+ARIA_CHECKBOX_ROLE = 'checkbox'
 
 class ElementService:
     def __init__(self, driver: webdriver.Remote):
@@ -68,11 +71,23 @@ class ElementService:
         return len(elm_text) == 0
         
     @seleniumSocketConnRetry()
-    def checkboxUnselect(self, cssSel: str):
+    def checkboxUnselect(self, cssSel: str | WebElement):
         checkbox = self.getElm(cssSel)
+        if not self._isCheckboxChecked(checkbox):
+            return
         self.moveToElement(checkbox)
-        if checkbox.is_selected():
+        if self._isAriaCheckbox(checkbox):
+            checkbox.click() # custom toggle: only a real click fires the handler that updates aria-checked
+        else:
             self.driver.execute_script("arguments[0].click();", checkbox)
+
+    def _isAriaCheckbox(self, elm: WebElement) -> bool:
+        return (elm.get_attribute(ARIA_ROLE_ATTR) or '').lower() == ARIA_CHECKBOX_ROLE
+
+    def _isCheckboxChecked(self, elm: WebElement) -> bool:
+        if self._isAriaCheckbox(elm):
+            return (elm.get_attribute(ARIA_CHECKED_ATTR) or '').lower() == 'true'
+        return elm.is_selected()
 
     @seleniumSocketConnRetry()
     def scrollIntoView(self, cssSel: str | WebElement):

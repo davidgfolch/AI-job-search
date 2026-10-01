@@ -17,6 +17,16 @@ cp scripts/.env.secrets.example .env.secrets
 docker-compose up -d
 ```
 
+### Ollama: host vs container
+The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434` — first reachable wins, reused for the whole batch.
+```bash
+# Ollama on the host (nothing extra to start)
+docker-compose --profile aienrich up -d aienrich
+# Ollama containerized as well
+docker-compose --profile ollama --profile aienrich up -d
+```
+Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`, `scrapper`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
+
 ### Sandboxed Docker Verification (dependabot-agent)
 Brings a service up in an isolated `dependabot-test` project so the live `ai-job-search-*` stack and its data are never touched. Uses `docker-compose.test.override.yml` (renamed `-test` containers, remapped ports, data under `.docker-sandbox/`), and tears the sandbox down on exit.
 ```bash
@@ -85,9 +95,13 @@ Always use the centralized test script to run tests. Never run `poetry run pytes
 # Run commonlib + specific modified apps (Windows)
 .\scripts\test.bat commonlib scrapper web e2e
 
-# With coverage
+# With coverage (also runs the web+scrapper coverage gates)
 ./scripts/test.sh --coverage
 ```
+
+Coverage floors are 90% on **statements and lines** (functions and branches are reported only). The frontend gate runs on the union of web unit and e2e coverage; the scrapper gate on production statements only. See [READMEs/README_DEVELOPMENT.md](READMEs/README_DEVELOPMENT.md#coverage-gates).
+
+Run the suites when the change touches test code, production code, or the test runner scripts (`scripts/test.sh`, `scripts/test.bat`). Skip them when the change is limited to documentation or non-test scripts/config (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills) - those are not exercised by the unit or e2e suites, so state in the summary that the suites were skipped for that reason.
 
 ### Running Individual Apps
 ```bash
@@ -197,7 +211,7 @@ Environment variables are split across two files:
 - `SCRAPPER_*_RUN_CADENCY`: Scraping frequency (e.g., `2h`, `40m`)
 - `SCRAPPER_*_RUN_CADENCY_7-19=40m`: Time-based cadency override for specific hours
 - `SCRAPPER_JOBS_SEARCH`: Comma-separated job search terms
-- `AI_CV_MATCH=True`: Enable CV matching (requires `apps/aiEnrich/cv/cv.txt`)
+- `AI_CVMATCHER_ENABLED=True`: Enable CV matching (uses the CV in `apps/aiCvMatcher/cv/cv.txt`)
 - `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=True`: Bypass bot detection
 
 ## Code Style
@@ -206,6 +220,35 @@ Environment variables are split across two files:
 - **Method signatures**: Keep parameters on the same line when possible, avoid line-per-parameter
 - **Closing braces/parens**: Keep on the same line as last content, not on their own line
 - **Method bodies**: Avoid extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`. Avoid empty lines inside method bodies.
+- **Logging**: Structured events via `commonlib.observability` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)). Bare `print()` is only allowed for presentational output listed in `PRINT_ALLOWLIST` in `apps/commonlib/commonlib/test/architecture/architecture_logging.py` — a commonlib architecture test enforces this.
+
+## Documentation Sync (mandatory, automatic)
+
+Documentation is part of the implementation, never a follow-up task. After **every** plan implementation, feature, fix, refactor, config change, or dependency bump, update the affected docs in the same session, before reporting the work as done. Never wait for the user to ask for it.
+
+The rule is defined once in `.claude/rules/documentation-update.md` (always-on, auto-loaded via `instructions` in `.opencode/opencode.json`) and reinforced by `.claude/hooks/docs-sync.py` (Claude Code) and `.opencode/plugins/docs-sync.js` (opencode). Change → docs map, in short:
+
+| Change | Docs to update |
+|--------|-----------------|
+| Behavior/feature/bug fix in `apps/<module>/` | `apps/<module>/README.md` |
+| New/renamed/removed module in `apps/` | root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/AGENTIC_SDLC.md` |
+| Env var added/renamed/removed | root `README.md` (Settings), affected `apps/<module>/README.md` |
+| Docker service, profile, port, volume | `READMEs/DOCKER_DEV.md`, root `README.md` (Docker Compose Profiles), `AGENTS.md` |
+| Build/test/install/run command | `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md` |
+| New host tool (Docker, `gh`, Ollama model) | `READMEs/README_INSTALL.md` |
+| Backend endpoint / DB schema | `apps/backend/README.md` |
+| User-visible UI flow | root `README.md` (Features, Screenshots) |
+| CI / Dependabot behavior | `READMEs/README_GITHUB.md` |
+| Agent skill/rule/hook/plugin | `READMEs/AGENTIC_SDLC.md`, `AGENTS.md` + `.claude/CLAUDE.md` (Skills) |
+| Plan implementation | the plan file (`Status:` + outcome), `READMZs/TODO.md` |
+
+Before reporting done: open every listed doc, fix only what the change made inaccurate, and list the updated docs in the final summary (or state that none were needed). `graphify-out/` is generated output — refresh it with the wrapper, never hand-edit it, and never count it as documentation.
+
+## Database Safety (ask before any write)
+
+The `jobs` MySQL database is live production data. **Never execute a data or schema mutation on your own initiative.** Measure the current state with read-only SQL, state the exact statement and the expected row count, then wait for the user's explicit "yes". This covers `INSERT`/`UPDATE`/`DELETE`/`DROP`/`TRUNCATE`/`ALTER`/`CREATE`/`GRANT`, piping a `.sql` file into a client, mongo/redis writes, and volume-destroying commands such as `docker compose down -v`. Read-only access (`SELECT`, `SHOW`, `EXPLAIN`, logs, `.env`, `docker compose restart`) is always fine.
+
+Enforced by `.claude/rules/db-mutation-permission.md` + `.claude/hooks/db-mutation.py` (Claude Code) and `.opencode/plugins/db-mutation.js` (opencode), which **block the tool call**. After the user approves a specific statement, re-run it with the `AI_DB_WRITE_APPROVED` token in the command. Details: [READMEs/AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md#database-changes-require-user-permission-enforced-guardrail).
 
 ## Skills
 

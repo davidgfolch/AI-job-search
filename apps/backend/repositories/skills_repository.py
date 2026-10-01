@@ -1,7 +1,10 @@
 import json
 from typing import List, Optional, Dict, Any
+from commonlib.observability import get_logger
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from models.skill import Skill
+
+logger = get_logger("backend.repositories.skills_repository")
 
 class SkillsRepository:
     def get_db(self):
@@ -17,7 +20,8 @@ class SkillsRepository:
                 if row[2]:
                     try:
                         learning_path = json.loads(row[2])
-                    except:
+                    except Exception as e:
+                        logger.warning("skills.parse_failed", error=str(e), skill=row[0], field="learning_path", source="list_skills")
                         learning_path = []
                         
                 skills.append(Skill(
@@ -40,7 +44,8 @@ class SkillsRepository:
             if row[2]:
                 try:
                     learning_path = json.loads(row[2])
-                except:
+                except Exception as e:
+                    logger.warning("skills.parse_failed", error=str(e), skill=row[0], field="learning_path", source="find_by_name")
                     learning_path = []
             return {
                 'name': row[0],

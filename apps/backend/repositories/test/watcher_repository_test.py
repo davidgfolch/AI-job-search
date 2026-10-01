@@ -61,3 +61,24 @@ def test_get_watcher_stats_empty_ids(mock_get_db):
     results = repo.get_watcher_stats_from_view([])
     assert results == []
     mock_get_db.assert_not_called()
+
+def test_parse_json_filters_returns_empty_on_invalid_json(log_records):
+    repo = WatcherRepository()
+    assert repo._parseJsonFilters(7, "not-json") == {}
+    records = log_records(event="watcher.filters_parse_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "warning"
+    assert records[0]["config_id"] == 7
+    assert "not-json" not in str(records[0])
+
+def test_create_view_failure_is_logged(mock_db, log_records):
+    repo = WatcherRepository()
+    mock_db.executeAndCommit.side_effect = Exception("view already exists")
+    assert repo._createView(mock_db, "CREATE VIEW v1", "v1", 3) is False
+    records = log_records(event="db.view_creation_failed")
+    assert len(records) == 1
+    assert records[0]["level"] == "error"
+    assert records[0]["view_name"] == "v1"
+    assert records[0]["config_id"] == 3
+    assert records[0]["error"] == "view already exists"
+    assert "CREATE VIEW v1" not in str(records[0])
