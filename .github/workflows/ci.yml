@@ -132,7 +132,8 @@ jobs:
             if [ "${MODULE}" == "apps/scrapper" ]; then
               # coverage.py's fail_under only compares the branch-inclusive total, so the
               # 90% floor on production statements/lines is enforced by this script instead.
-              poetry run python "${GITHUB_WORKSPACE}/scripts/coverage/scrapper_coverage_gate.py" --min 90 --xml "${MODULE}/coverage.xml" --worst 10
+              # The step cd'ed into ${MODULE}, so the xml is resolved from the repo root.
+              poetry run python "${GITHUB_WORKSPACE}/scripts/coverage/scrapper_coverage_gate.py" --min 90 --xml "${GITHUB_WORKSPACE}/${MODULE}/coverage.xml" --worst 10
             fi
           fi
           
