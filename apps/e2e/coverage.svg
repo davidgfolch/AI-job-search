@@ -1,20 +1,20 @@
-<svg width="115.3" height="20" viewBox="0 0 1153 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="apps/e2e: 74.09%">
-  <title>apps/e2e: 74.09%</title>
-  <linearGradient id="HRINx" x2="0" y2="100%">
+<svg width="97.3" height="20" viewBox="0 0 973 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="apps/e2e: 90%">
+  <title>apps/e2e: 90%</title>
+  <linearGradient id="KPGhV" x2="0" y2="100%">
     <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
     <stop offset="1" stop-opacity=".1"/>
   </linearGradient>
-  <mask id="REOjz"><rect width="1153" height="200" rx="30" fill="#FFF"/></mask>
-  <g mask="url(#REOjz)">
+  <mask id="NbggT"><rect width="973" height="200" rx="30" fill="#FFF"/></mask>
+  <g mask="url(#NbggT)">
     <rect width="613" height="200" fill="#555"/>
-    <rect width="540" height="200" fill="#cba317" x="613"/>
-    <rect width="1153" height="200" fill="url(#HRINx)"/>
+    <rect width="360" height="200" fill="#97c40f" x="613"/>
+    <rect width="973" height="200" fill="url(#KPGhV)"/>
   </g>
   <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
     <text x="60" y="148" textLength="513" fill="#000" opacity="0.25">apps/e2e</text>
     <text x="50" y="138" textLength="513">apps/e2e</text>
-    <text x="668" y="148" textLength="440" fill="#000" opacity="0.25">74.09%</text>
-    <text x="658" y="138" textLength="440">74.09%</text>
+    <text x="668" y="148" textLength="260" fill="#000" opacity="0.25">90%</text>
+    <text x="658" y="138" textLength="260">90%</text>
   </g>
   
 </svg>
