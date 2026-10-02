@@ -101,7 +101,25 @@ def run():
 
 The order matters. `LOG_LEVEL` and `LOG_COLOR` are read once, when structlog is first configured, and frozen on each logger's first call. The app *name* is resolved per record, so a later `configure_logging()` still re-points the JSONL file; the level cannot change that late.
 
-`get_logger(name)` binds `name` to the `module` field explicitly, because `structlog.get_logger(name)` hands the name to the logger factory and `PrintLoggerFactory` discards it.
+`module` is stamped from the **caller**, so a record names the app module that produced it even when a shared `commonlib` helper logged it: `commonlib.terminalUtil.consoleTimer` called from `aiEnrich.pipeline` records `aiEnrich.pipeline`. The processor walks past the `structlog`, `commonlib` and test-runner frames and takes the first frame outside them, stopping at `__main__`. The name given to `get_logger(name)` is only the fallback for a record with no app frame above it, and it is still bound explicitly because `structlog.get_logger(name)` hands the name to the logger factory and `PrintLoggerFactory` discards it.
+
+Because the processor owns `module`, no call site may pass it: `logger.info("job.done", module="x")` is rejected by the architecture test in `commonlib.test.architecture.architecture_logging`. A record that carries the stamped value as data uses `source_module` instead.
+
+### Per-job context
+
+A worker that handles one job at a time binds the id once, so every record emitted inside the block — including the shared helpers it calls — carries `job_id`, instead of each call site repeating it:
+
+```python
+from commonlib.observability import get_logger, job_log_context
+
+with job_log_context(id):
+    result = query_and_parse(...)
+    _save(repo, id, result)
+```
+
+`job_id` is unbound when the block ends, also on an exception. A record can still pass `job_id=` explicitly, which wins over the context — useful for a loop whose id is not the job being processed. `job_log_context(None)` binds nothing, so a caller can wrap a job that may not have been fetched.
+
+This is what makes the per-job duration gauge work: `job.result` carries the same `job_id` as the `job.started` that precedes it.
 
 ### Conventions
 
@@ -114,11 +132,11 @@ The order matters. `LOG_LEVEL` and `LOG_COLOR` are read once, when structlog is 
 | Never log secrets, env values, SQL bind values, CV text, or model prompts/answers | log lengths, ids, names, counts, durations instead |
 | Never log whole documents or large blobs | pass ids and counts as fields |
 
-Records carry `event`, `module` (the `get_logger` name), `logger` (the app name), `level`, and an ISO `timestamp`, plus whatever fields the call site passes.
+Records carry `event`, `module` (the calling app module), `logger` (the app name), `level`, and an ISO `timestamp`, plus whatever fields the call site passes.
 
-**Progress bars, countdowns, tables, and banners stay `print`.** They are presentational output that a person reads in a terminal, not signals to scrape. Anything using `end=`, `flush=True`, or `\r` for in-place updates stays as `print`; wrap those phases in structured lifecycle events (`job.started` / `job.completed`) so the sequence is still observable. Colors from `commonlib.terminalColor` are only for these presentational prints — drop the import when the last colored print goes.
+**Batch progress and idle countdowns are records, not prints.** `commonlib.ai_helpers.footer()` ends a batch: it logs `ai.batch_completed` with the `n/m` counters and fields, and puts the human progress line in `console=`, so the counters stay queryable and `docker-compose logs` still reads as a progress line. The line is printed once per job, so it is suited to a batch of thousands, not a per-item loop; a per-item loop belongs to `printJob()`.
 
-The in-place redraw only applies on an interactive terminal. When the helper runs in a container (`commonlib.terminalUtil.consoleTimerDocker`, i.e. `isDocker()`), the static countdown line is skipped and the wait is collapsed to a single `timer.started` record (no `timer.completed`): `docker-compose logs` is not an interactive console, so one line per idle cycle is enough. ANSI escape codes passed into the helpers are stripped before a `message` lands in a record.
+`commonlib.ai_helpers.logIdleWait(text, duration, event, **fields)` is the same idea for the wait between cycles: one record carrying the human `console=` text, then a `WakeableTimer` so a shutdown signal cuts the sleep short. It only logs in a container (`isDocker()`); on an interactive terminal it keeps the in-place countdown, because a person is watching it. Prompts a person acts on, tables, and banners stay `print`.
 
 ### Two console modes
 
@@ -133,6 +151,8 @@ logger.info("linkedin.job.processed", job_id=job_id, insert_id=id,
 |---|---|---|
 | `CONSOLE_RECORD` (default) | the `console=` text if present, otherwise the rendered record | every record |
 | `CONSOLE_MESSAGE` | the `console=` text only, with no timestamp, level, or event name | every record |
+
+In `CONSOLE_RECORD` the rendered record leads with the `message` field, because the sentence is what a person reads first; the timestamp, level, event name, and the remaining fields follow it. A record without `message` renders exactly as before.
 
 `CONSOLE_MESSAGE` is how an app keeps a quiet, old-style console: a record without `console=` is written to the JSONL and never reaches stdout, which also mutes the chatter of the shared `commonlib` modules the app imports. The scrapper is the reference implementation (`apps/scrapper/README.md`).
 

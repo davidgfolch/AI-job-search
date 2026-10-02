@@ -56,6 +56,16 @@ To run the enrichment in a continuous loop (monitoring the database for new jobs
 uv run aienrich
 ```
 
+## Logs
+
+Structured logging via `commonlib.observability`; records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the backend dashboard and the Prometheus exporter read.
+
+**Progress**: every enriched job ends with `footer()`, which logs one `ai.batch_completed` record carrying the `n/m` counters (`processed`, `total`, `total_processed`, `job_errors`) as fields *and* the human line in `console=` ("Processed jobs this run: n/m … Time elapsed: … /job"). So the batch reads as a progress line in `docker-compose logs` while the counters stay queryable in the JSONL. `job.started` counts from 1 (`index`) so it agrees with `processed`.
+
+**Idle**: with nothing pending, or while the backend is unreachable, the pipeline calls `logIdleWait()` rather than sleeping. It logs one record — `jobs.skipped` (`reason=no_pending_jobs`) or `ai.retry_wait` (`reason=backend_unavailable`) — with the human line in `console=`, then waits on a `WakeableTimer` that a shutdown signal cuts short. Interactive terminals keep the in-place countdown.
+
+**Attribution**: each job runs inside `job_log_context(id)`, so `job.started` / `job.result` and every database record in between carry the same `job_id`, and `module` is stamped from the calling module rather than from a shared helper. See [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
+
 ## Configuration
 
 

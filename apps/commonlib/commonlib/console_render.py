@@ -31,6 +31,10 @@ The mode is resolved per record instead of when structlog is configured, so an
 entrypoint can select it after a shared module already logged:
 `commonlib.sql.query_executor` and `commonlib.ollama_client` build their loggers at
 import time, before the entrypoint runs.
+
+`CONSOLE_RECORD` renders `message` in its own leading column when the record has one, so
+a human phrase is not buried in the middle of the field list; records without `message`
+render exactly as before. The renderer only affects stdout, never the JSONL.
 """
 import sys
 
@@ -48,7 +52,11 @@ RAW_CONSOLE_END_KEY = "_console_end"
 DEFAULT_CONSOLE_MODE = CONSOLE_RECORD
 
 _console_mode: str | None = None
-_CONSOLE_RENDERER = structlog.dev.ConsoleRenderer()
+# `message` is the human half of a record, so it leads the console line instead of being
+# buried between fields. `key_style=None` drops the key and the default `prefix`/`postfix`
+# are empty, which renders a bare message with nothing around it.
+_MESSAGE_COLUMN = structlog.dev.Column("message", structlog.dev.KeyValueColumnFormatter(key_style=None, value_style="", reset_style="", value_repr=str))
+_CONSOLE_RENDERER = structlog.dev.ConsoleRenderer(columns=[_MESSAGE_COLUMN, *structlog.dev.ConsoleRenderer().columns])
 _JSON_RENDERER = structlog.processors.JSONRenderer()
 
 

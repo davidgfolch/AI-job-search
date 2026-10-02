@@ -1,15 +1,23 @@
 import pytest
+from structlog.testing import capture_logs
 from unittest.mock import MagicMock, patch
 from commonlib.skill_enricher_service import process_skill_enrichment, parse_skill_llm_output
 
 
+@pytest.mark.parametrize("limit", [10], ids=["default_limit"])
 @patch("commonlib.sql.mysqlUtil.MysqlUtil")
 @patch("commonlib.skill_enricher_service.get_skill_context")
-def test_process_skill_enrichment_no_skills(mock_context, mock_mysql_cls):
+def test_process_skill_enrichment_no_skills(mock_context, mock_mysql_cls, limit):
     mysql = MagicMock()
     mysql.fetchAll.return_value = []
-    count = process_skill_enrichment(mysql, lambda n, c: "desc")
+    with capture_logs() as records:
+        count = process_skill_enrichment(mysql, lambda n, c: "desc", limit=limit)
     assert count == 0
+    skipped = [r for r in records if r["event"] == "skill.enrich_skipped"]
+    assert len(skipped) == 1
+    assert skipped[0]["message"] == "No skills pending."
+    assert skipped[0]["reason"] == "no_pending_skills"
+    assert skipped[0]["limit"] == limit
 
 
 def test_process_skill_enrichment_success():

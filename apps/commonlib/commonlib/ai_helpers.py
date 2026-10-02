@@ -1,10 +1,13 @@
 import re
 
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
-from commonlib.dateUtil import getDatetimeNowStr, getTimeUnits
+from commonlib.dateUtil import getDatetimeNowStr, getSeconds, getTimeUnits
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
+from commonlib.systemUtil import isDocker
 from commonlib.terminalColor import green
+from commonlib.terminalUtil import consoleTimer
+from commonlib.wake_timer import WakeableTimer
 from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.ai_helpers")
@@ -117,12 +120,39 @@ def listsToString(result: dict[str, str], fields: list[str]):
 
 
 def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):
+    """Log the running progress of a batch and print the `n/m` line.
+
+    The console text is the human half of the record: without it a worker in
+    `CONSOLE_RECORD` mode shows `docker logs` as raw records and the progress is only
+    readable in the JSONL.
+    """
     fields = dict(processed=idx + 1, total=total, total_processed=totalCount, job_errors=len(jobErrors))
+    console = green(f"Processed jobs this run: {idx + 1}/{total}, total processed jobs: {totalCount}  Total job errors: {len(jobErrors)}")
     if elapsed_time is not None and (idx + 1) > 0:
         media = elapsed_time / (idx + 1)
         fields['elapsed'] = getTimeUnits(elapsed_time)
         fields['elapsed_per_job'] = getTimeUnits(media)
-    logger.info("ai.batch_completed", **fields)
+        console += f", Time elapsed: {fields['elapsed']} (Media: {fields['elapsed_per_job']}/job)"
+    logger.info("ai.batch_completed", console=console, **fields)
+
+
+def logIdleWait(console_text: str, timeUnit: str, event: str, **fields):
+    """Log that there was nothing to process, then wait before polling again.
+
+    An idle loop is not a timer, so it does not emit `timer.started`: the caller names the
+    event (`jobs.skipped`, `ai.retry_wait`, `skill.enrich_skipped`) and `wait_seconds`
+    travels on that one record instead of on a separate timer line.
+
+    In a container only the message prints, which keeps a 10s poll loop from filling the
+    log with rendered records. On a terminal `consoleTimer` keeps its countdown, which is
+    the progress a person watching locally wants.
+    """
+    if not isDocker():
+        consoleTimer(console_text, timeUnit)
+        return
+    seconds = getSeconds(timeUnit)
+    logger.info(event, console=console_text, wait_seconds=seconds, **fields)
+    WakeableTimer().wait(seconds)
 
 
 def combineTaskResults(crewOutput, debug) -> dict:

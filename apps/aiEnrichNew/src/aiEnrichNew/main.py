@@ -6,12 +6,11 @@ from importlib.metadata import version as _v
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.observability import configure_logging, get_logger
+from commonlib.ai_helpers import logIdleWait
 from commonlib.terminalColor import cyan
 from commonlib.services.metrics_collector import MetricsCollector
 
 configure_logging("aiEnrichNew")
-from commonlib.terminalUtil import consoleTimer
-import time
 from .dataExtractor import dataExtractor, retry_failed_jobs
 from .config import get_job_enabled
 
@@ -28,4 +27,4 @@ def run():
         if retry_failed_jobs() > 0:
             collector.persist()
             continue
-        consoleTimer(cyan('All jobs enriched. '), '10s', end='\r')
+        logIdleWait(cyan('All jobs enriched.'), '10s', "jobs.skipped", reason="no_pending_jobs")

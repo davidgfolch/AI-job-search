@@ -6,13 +6,12 @@ from commonlib.stopWatch import StopWatch
 from commonlib.ai_helpers import (
     footer,
     mapJob,
-    printJob,
     validateResult,
     RETRY_ERROR_PREFIX,
     MAX_AI_ENRICH_ERROR_LEN,
 )
 from commonlib.aiEnrichRepository import AiEnrichRepository
-from commonlib.observability import get_logger
+from commonlib.observability import get_logger, job_log_context
 from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
     get_max_validation_retries, get_backend, get_openrouter_base_url, get_openrouter_model,
@@ -70,7 +69,7 @@ def _check_backend_available() -> bool:
         return True
     ollama_consecutive_failures += 1
     max_failures = get_max_ollama_failures()
-    logger.error("ai.unreachable", backend=get_backend(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+    logger.error("ai.unreachable", backend=get_backend(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
     if ollama_consecutive_failures >= max_failures:
         logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
         sys.exit(1)
@@ -84,10 +83,11 @@ totalCount = 0
 total = 0
 jobErrors = set[tuple[int, str]]()
 ollama_consecutive_failures = 0
+_batch_start = 0.0
 
 
 def dataExtractor() -> int:
-    global totalCount, jobErrors
+    global totalCount, jobErrors, _batch_start
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
@@ -97,16 +97,17 @@ def dataExtractor() -> int:
         total = repo.count_pending_enrichment()
         if total is None or total == 0:
             return 0
-        logger.info("jobs.found", total=total, module="aiEnrich")
+        logger.info("jobs.found", total=total)
         collector.set_pending("aiEnrich", total)
         stopWatch.start()
+        _batch_start = time.time()
         for idx, id in enumerate(_getJobIdsList(repo)):
             _process_job_safe(repo, id, total, idx, "enrich")
         return total
 
 
 def retry_failed_jobs() -> int:
-    global totalCount, jobErrors
+    global totalCount, jobErrors, _batch_start
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
@@ -118,6 +119,7 @@ def retry_failed_jobs() -> int:
             return 0
         logger.info("job.retry", job_id=error_id)
         stopWatch.start()
+        _batch_start = time.time()
         _process_job_safe(repo, error_id, 1, 0, "retry")
         return 1
 
@@ -134,33 +136,35 @@ def _process_job_safe(
     success = False
     title, company = "Unknown", "Unknown"
     try:
-        job = repo.get_job_to_enrich(id) if process_name == "enrich" else repo.get_job_to_retry(id)
-        if job is None:
-            logger.warning("job.not_found", job_id=id)
-            return
-        title, company, markdown = mapJob(job)
-        try:
-            backend = get_backend()
-            model = get_openrouter_model() if backend == "openrouter" else get_model()
-            logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx, backend=backend, model=model)
-            prompt = build_extraction_prompt(title, markdown)
-            result, response = query_and_parse(
-                lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
-                max_attempts=get_max_validation_retries() + 1, log=logger,
-            )
-            if response is None:
-                logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
-            else:
-                if result is not None:
-                    _save(repo, id, result)
-                    success = True
-                    resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
-                logger.info(
-                    "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
-                    model=model, done_reason=getattr(response, "done_reason", None),
+        with job_log_context(id):
+            job = repo.get_job_to_enrich(id) if process_name == "enrich" else repo.get_job_to_retry(id)
+            if job is None:
+                logger.warning("job.not_found", job_id=id)
+                return
+            title, company = "Unknown", "Unknown"
+            title, company, markdown = mapJob(job)
+            try:
+                backend = get_backend()
+                model = get_openrouter_model() if backend == "openrouter" else get_model()
+                logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx + 1, backend=backend, model=model)
+                prompt = build_extraction_prompt(title, markdown)
+                result, response = query_and_parse(
+                    lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
+                    max_attempts=get_max_validation_retries() + 1, log=logger,
                 )
-        except (Exception, KeyboardInterrupt) as ex:
-            _handle_error(repo, id, title, company, ex, process_name)
+                if response is None:
+                    logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
+                else:
+                    if result is not None:
+                        _save(repo, id, result)
+                        success = True
+                        resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
+                    logger.info(
+                        "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
+                        model=model, done_reason=getattr(response, "done_reason", None),
+                    )
+            except (Exception, KeyboardInterrupt) as ex:
+                _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:
         logger.error("job.critical_error", job_id=id, error=str(e))
     totalCount += 1
@@ -168,7 +172,7 @@ def _process_job_safe(
     collector.record_job("aiEnrich", duration, success)
     collector.persist_if_due(60)
     stopWatch.end()
-    footer(total, idx, totalCount, jobErrors)
+    footer(total, idx, totalCount, jobErrors, time.time() - _batch_start)
 
 
 def _save(repo: AiEnrichRepository, id, result: dict):

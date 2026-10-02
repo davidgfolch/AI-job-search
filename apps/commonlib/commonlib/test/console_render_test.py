@@ -185,3 +185,22 @@ class TestFileOnlyRecords:
         configure_logging("json", console=CONSOLE_RECORD)
         get_logger("json.case").info("sql.query_executed", rows=1)
         assert json.loads(capsys.readouterr().out)["event"] == "sql.query_executed"
+
+
+class TestMessageColumn:
+    def test_message_leads_the_line_and_is_not_repeated(self, console, capsys):
+        """`message` is the sentence to read; rendering it first is the whole point of the column."""
+        configure_logging("lead", console=CONSOLE_RECORD)
+        get_logger("lead.case").info("timer.started", message="All jobs enriched.", wait_seconds=10)
+        out = stripAnsi(capsys.readouterr().out)
+        assert out.startswith("All jobs enriched.")
+        assert out.count("All jobs enriched.") == 1
+        assert "message=" not in out
+        assert "wait_seconds=10" in out
+
+    def test_record_without_message_is_unchanged(self, console, capsys):
+        configure_logging("nomessage", console=CONSOLE_RECORD)
+        get_logger("nomessage.case").info("job.started", job_id=7, total=5653)
+        out = stripAnsi(capsys.readouterr().out)
+        assert "job.started" in out
+        assert "job_id=7" in out

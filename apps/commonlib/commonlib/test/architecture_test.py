@@ -96,6 +96,35 @@ def test_console_field_contract():
             message += f"{RED}{violation}{RESET}\n"
         pytest.fail(message)
 
+def test_module_field_is_rejected_on_log_calls(tmp_path):
+    """`module` is stamped from the caller, so a call must not pass it as its own data."""
+    app = tmp_path / "apps" / "fakeapp"
+    app.mkdir(parents=True)
+    (app / "worker.py").write_text(
+        "from commonlib.observability import get_logger\n"
+        "logger = get_logger('fakeapp.worker')\n"
+        "logger.info('job.done', module='fakeapp.worker')\n",
+        encoding="utf-8",
+    )
+
+    violations = get_console_violations(root=tmp_path)
+
+    assert len(violations) == 1
+    assert "module= is reserved" in violations[0]
+
+def test_source_module_is_allowed_on_log_calls(tmp_path):
+    """The reader of the stamped value is named `source_module`, so it is not rejected."""
+    app = tmp_path / "apps" / "fakeapp"
+    app.mkdir(parents=True)
+    (app / "worker.py").write_text(
+        "from commonlib.observability import get_logger\n"
+        "logger = get_logger('fakeapp.worker')\n"
+        "logger.info('job.done', source_module='fakeapp.worker')\n",
+        encoding="utf-8",
+    )
+
+    assert get_console_violations(root=tmp_path) == []
+
 def test_test_file_location_and_correspondence():
     violations = get_test_location_violations()
     if violations:

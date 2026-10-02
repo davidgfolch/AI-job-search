@@ -1,16 +1,17 @@
 import os
 import pytest
+from contextlib import contextmanager
 from unittest.mock import patch, MagicMock
 
 from commonlib.ollama_client import OllamaResponse
+from .. import dataExtractor as dataExtractor_module
 from ..dataExtractor import dataExtractor, _save, _getJobIdsList
 
 @pytest.fixture
 def mock_deps():
     with patch('aiEnrich.dataExtractor.MysqlUtil') as mysql_util, \
          patch('aiEnrich.dataExtractor._save') as save_chk, \
-         patch('aiEnrich.dataExtractor.printJob'), \
-         patch('aiEnrich.dataExtractor.footer'), patch('aiEnrich.dataExtractor.StopWatch'), \
+         patch('aiEnrich.dataExtractor.footer') as footer_chk, patch('aiEnrich.dataExtractor.StopWatch'), \
          patch('aiEnrich.dataExtractor.mapJob'), \
          patch('aiEnrich.dataExtractor.AiEnrichRepository') as repo_cls, \
          patch('aiEnrich.dataExtractor.query_ollama') as mock_ollama, \
@@ -23,7 +24,11 @@ def mock_deps():
         repo = MagicMock()
         repo_cls.return_value = repo
 
-        yield {'mysql': mysql, 'save': save_chk, 'repo': repo, 'ollama': mock_ollama, 'ping': mock_ping}
+        # `totalCount` and `jobErrors` are module globals that survive between calls, so the
+        # footer assertions of one test would otherwise read another test's leftovers.
+        dataExtractor_module.totalCount = 0
+        dataExtractor_module.jobErrors = set()
+        yield {'mysql': mysql, 'save': save_chk, 'repo': repo, 'ollama': mock_ollama, 'ping': mock_ping, 'footer': footer_chk}
 
 @pytest.fixture(autouse=True)
 def clean_env():
@@ -78,6 +83,60 @@ class TestDataExtractor:
         with patch('aiEnrich.dataExtractor.validateResult'):
             _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': 'REMOTE'})
             repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', 'REMOTE')
+
+    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1, 2])
+    def test_job_started_index_is_one_based(self, mock_ids, mock_deps):
+        """`job.started` counts from 1 so it agrees with `processed` in the footer."""
+        mock_deps['repo'].count_pending_enrichment.return_value = 2
+        mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
+
+        with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')), \
+             patch('aiEnrich.dataExtractor.logger') as mock_logger:
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
+            assert dataExtractor() == 2
+
+        started = [c.kwargs for c in mock_logger.info.call_args_list if c.args and c.args[0] == "job.started"]
+        assert [entry['index'] for entry in started] == [1, 2]
+
+    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
+    def test_footer_receives_batch_elapsed(self, mock_ids, mock_deps):
+        """The footer gets the batch elapsed time so it can report media per job."""
+        mock_deps['repo'].count_pending_enrichment.return_value = 1
+        mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
+
+        with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')):
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
+            assert dataExtractor() == 1
+
+        assert mock_deps['footer'].call_count == 1
+        args = mock_deps['footer'].call_args.args
+        assert args[:3] == (1, 0, 1)
+        assert args[4] >= 0
+
+    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
+    def test_job_work_runs_inside_the_job_context(self, mock_ids, mock_deps):
+        """Saving must happen inside the context, or its `db.updated` record has no `job_id`."""
+        order = []
+        mock_deps['repo'].count_pending_enrichment.return_value = 1
+        mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
+
+        @contextmanager
+        def spy(job_id):
+            order.append(('enter', job_id))
+            yield
+            order.append(('exit', job_id))
+
+        mock_deps['save'].side_effect = lambda *a, **k: order.append(('save', None))
+
+        with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')), \
+             patch('aiEnrich.dataExtractor.job_log_context', spy):
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
+            assert dataExtractor() == 1
+
+        assert order[0] == ('enter', 1)
+        assert ('save', None) in order
+        assert order.index(('save', None)) < order.index(('exit', 1))
+
 
 @pytest.mark.parametrize("env_val, expected", [
     pytest.param(None, "ollama", id="default_ollama"),

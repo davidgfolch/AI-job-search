@@ -3,7 +3,7 @@ from structlog.testing import capture_logs
 import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.ai_helpers import (
-    validateResult, listsToString, mapJob, combineTaskResults, footer,
+    validateResult, listsToString, mapJob, combineTaskResults, footer, logIdleWait,
     _expand_parenthesized_skills, flatten_skill_groups, _normalizeModality, VALID_MODALITIES
 )
 import json
@@ -144,29 +144,7 @@ def test_validateResult_clears_invalid_modality():
     validateResult(result)
     assert result["modality"] is None
 
-@pytest.mark.parametrize("job_errors, expected_errors", [
-    (set(), 0),
-    ({"error1"}, 1),
-])
-def test_footer(job_errors, expected_errors):
-    with capture_logs() as records:
-        footer(10, 0, 100, job_errors)
-    completed = [r for r in records if r["event"] == "ai.batch_completed"]
-    assert len(completed) == 1
-    assert completed[0]["processed"] == 1
-    assert completed[0]["total"] == 10
-    assert completed[0]["total_processed"] == 100
-    assert completed[0]["job_errors"] == expected_errors
-    assert "elapsed" not in completed[0]
 
-
-def test_footer_includes_elapsed():
-    with capture_logs() as records:
-        footer(10, 0, 100, set(), elapsed_time=12.0)
-    completed = [r for r in records if r["event"] == "ai.batch_completed"]
-    assert len(completed) == 1
-    assert "elapsed" in completed[0]
-    assert "elapsed_per_job" in completed[0]
 @pytest.mark.parametrize("value, expected", [
     ("Java (Spring, Hibernate)", "Java, Spring, Hibernate"),
     ("React (Hooks, Context), Node.js (Express)", "React, Hooks, Context, Node.js, Express"),
@@ -178,3 +156,95 @@ def test_footer_includes_elapsed():
 ])
 def test__expand_parenthesized_skills(value, expected):
     assert _expand_parenthesized_skills(value) == expected
+
+
+def _completed(records):
+    return [r for r in records if r["event"] == "ai.batch_completed"][0]
+
+
+@pytest.mark.parametrize("job_errors, expected_errors", [
+    (set(), 0),
+    ({"error1"}, 1),
+])
+def test_footer(job_errors, expected_errors):
+    with capture_logs() as records:
+        footer(10, 0, 100, job_errors)
+
+    completed = _completed(records)
+    assert completed["processed"] == 1
+    assert completed["total"] == 10
+    assert completed["total_processed"] == 100
+    assert completed["job_errors"] == expected_errors
+    assert "elapsed" not in completed
+
+
+def test_footer_includes_elapsed():
+    with capture_logs() as records:
+        footer(10, 0, 100, set(), elapsed_time=12.0)
+
+    completed = _completed(records)
+    assert "elapsed" in completed
+    assert "elapsed_per_job" in completed
+
+
+def test_footer_prints_the_progress_line():
+    """The n/m line is the human half of the record; without it a container shows only fields."""
+    with capture_logs() as records:
+        footer(5653, 1448, 1449, set())
+
+    console = _completed(records)["console"]
+    assert "Processed jobs this run: 1449/5653" in console
+    assert "total processed jobs: 1449" in console
+    assert "Total job errors: 0" in console
+    assert "Time elapsed" not in console
+
+
+def test_footer_progress_line_includes_elapsed():
+    with capture_logs() as records:
+        footer(5653, 1448, 1449, set(), elapsed_time=3600.0)
+
+    console = _completed(records)["console"]
+    assert "Processed jobs this run: 1449/5653" in console
+    assert "Time elapsed:" in console
+    assert "/job)" in console
+
+
+class TestLogIdleWait:
+    def test_docker_logs_one_record_then_waits(self):
+        with patch("commonlib.ai_helpers.isDocker", return_value=True), \
+             patch("commonlib.ai_helpers.WakeableTimer") as mock_timer, \
+             patch("commonlib.ai_helpers.consoleTimer") as mock_console_timer, \
+             capture_logs() as records:
+            logIdleWait("All jobs enriched.", "10s", "jobs.skipped", reason="no_pending_jobs")
+
+        assert len(records) == 1
+        assert records[0]["event"] == "jobs.skipped"
+        assert records[0]["console"] == "All jobs enriched."
+        assert records[0]["wait_seconds"] == 10
+        assert records[0]["reason"] == "no_pending_jobs"
+        mock_timer.return_value.wait.assert_called_once_with(10)
+        mock_console_timer.assert_not_called()
+
+    def test_docker_does_not_emit_a_separate_timer_event(self):
+        with patch("commonlib.ai_helpers.isDocker", return_value=True), \
+             patch("commonlib.ai_helpers.WakeableTimer"), \
+             capture_logs() as records:
+            logIdleWait("Backend unavailable", "10s", "ai.retry_wait", reason="backend_unavailable")
+
+        assert [r["event"] for r in records] == ["ai.retry_wait"]
+
+    @pytest.mark.parametrize("event, reason", [
+        pytest.param("jobs.skipped", "no_pending_jobs", id="no_pending_jobs"),
+        pytest.param("ai.retry_wait", "backend_unavailable", id="backend_unavailable"),
+        pytest.param("skill.enrich_skipped", "no_pending_skills", id="no_pending_skills"),
+    ])
+    def test_terminal_keeps_the_countdown_and_logs_nothing(self, event, reason):
+        with patch("commonlib.ai_helpers.isDocker", return_value=False), \
+             patch("commonlib.ai_helpers.consoleTimer") as mock_timer, \
+             patch("commonlib.ai_helpers.WakeableTimer") as mock_wake, \
+             capture_logs() as records:
+            logIdleWait("All jobs enriched.", "10s", event, reason=reason)
+
+        mock_timer.assert_called_once_with("All jobs enriched.", "10s")
+        mock_wake.assert_not_called()
+        assert records == []

@@ -8,9 +8,8 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.environmentUtil import getEnvBool
 from commonlib.observability import configure_logging, get_logger
+from commonlib.ai_helpers import logIdleWait
 from commonlib.terminalColor import cyan
-from commonlib.terminalUtil import consoleTimer
-import time
 from .cvMatcher import FastCVMatcher
 
 logger = get_logger("aiCvMatcher.main")
@@ -27,7 +26,7 @@ def run():
     while True:
         if cvMatcher.process_db_jobs() > 0:
             continue
-        consoleTimer(cyan('All CV matches calculated. '), '10s', end='\r')
+        logIdleWait(cyan('All CV matches calculated.'), '10s', "jobs.skipped", reason="no_pending_jobs")
 
 if __name__ == "__main__":
     run()

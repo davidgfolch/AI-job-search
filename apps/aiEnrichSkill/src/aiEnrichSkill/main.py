@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 import sys
-import time
 import warnings
 from importlib.metadata import version as _v
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.observability import configure_logging, get_logger
+from commonlib.ai_helpers import logIdleWait
 from commonlib.terminalColor import cyan
 from commonlib.sql.mysqlUtil import MysqlUtil
-from commonlib.terminalUtil import consoleTimer, getSeconds, isDocker, WakeableTimer
 from commonlib.services.metrics_collector import MetricsCollector
 from .config import get_enabled, get_backend, get_ollama_base_url, get_max_ollama_failures
 from .services.enrichment_service import enrich_skills
@@ -41,7 +40,7 @@ def run():
                 if ollama_consecutive_failures >= max_failures:
                     logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
                     sys.exit(1)
-                consoleTimer(cyan('Ollama unreachable, retrying... '), '10s', end='\r')
+                logIdleWait(cyan('Ollama unreachable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
                 continue
             ollama_consecutive_failures = 0
         with MysqlUtil() as mysql:
@@ -50,7 +49,4 @@ def run():
                 collector.persist()
                 continue
         collector.persist()
-        if isDocker():
-            WakeableTimer().wait(getSeconds('10s'))
-        else:
-            consoleTimer(cyan('All skills enriched. '), '10s', end='\r')
+        logIdleWait(cyan('All skills enriched.'), '10s', "skill.enrich_skipped", reason="no_pending_skills")

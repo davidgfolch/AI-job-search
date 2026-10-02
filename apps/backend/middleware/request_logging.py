@@ -11,6 +11,10 @@ adds a `http.request_failed` warning, and an unhandled exception produces a sing
 `http.request_failed` error record before the exception keeps propagating untouched -
 so a 500 raised by Starlette's outer `ServerErrorMiddleware` is recorded as the error
 it is, without a duplicate completed record.
+
+`module` is stamped from the caller, so these records read as this module rather than as
+whichever shared helper they passed through. The `get_logger()` name below is only a
+fallback for records with no app frame above them.
 """
 import time
 from contextlib import suppress

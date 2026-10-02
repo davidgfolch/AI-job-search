@@ -48,7 +48,8 @@ This is a monorepo containing several applications and packages:
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
 - **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes its own `data/logs/<app>.jsonl` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)); scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
-- **Dual console & log output**: a record can carry both its structured fields and the human line to print (`console=`, `end=""`), so the scrapper keeps its classic console transcript while `scrapper.jsonl` stays complete and queryable (see [Scrapper — Console Output](apps/scrapper/README.md#console-output--structured-logging))
+- **Dual console & log output**: a record can carry both its structured fields and the human line to print (`console=`, `end=""`), so the scrapper keeps its classic console transcript while `scrapper.jsonl` stays complete and queryable (see [Scrapper — Console Output](apps/scrapper/README.md#console-output--structured-logging)). Workers also use this for batch progress (`footer()` → `ai.batch_completed`) and for the wait between cycles (`logIdleWait()` → `jobs.skipped` / `ai.retry_wait`), so a container log still reads as a progress line instead of a field dump
+- **Per-record attribution**: `module` is stamped from the calling app module and `job_id` from `job_log_context()`, so a record stays attributable to the worker and the job even when a shared helper logged it
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 

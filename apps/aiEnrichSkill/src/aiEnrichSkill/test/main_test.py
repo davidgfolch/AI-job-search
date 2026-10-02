@@ -1,15 +1,16 @@
+import pytest
 from unittest.mock import patch, MagicMock
 
 from ..main import run
 
 
 @patch("aiEnrichSkill.main.collector")
-@patch("aiEnrichSkill.main.consoleTimer")
+@patch("aiEnrichSkill.main.logIdleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_disabled(mock_cyan, mock_enabled, mock_mysql, mock_enrich, mock_timer, mock_collector):
+def test_run_disabled(mock_cyan, mock_enabled, mock_mysql, mock_enrich, mock_idle, mock_collector):
     mock_enabled.return_value = False
 
     run()
@@ -22,12 +23,12 @@ def test_run_disabled(mock_cyan, mock_enabled, mock_mysql, mock_enrich, mock_tim
 @patch("aiEnrichSkill.main.collector")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
 @patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
-@patch("aiEnrichSkill.main.consoleTimer")
+@patch("aiEnrichSkill.main.logIdleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_resolve, mock_backend, mock_collector):
+def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_idle, mock_resolve, mock_backend, mock_collector):
     mock_enabled.return_value = True
     mysql = MagicMock()
     mock_mysql_cls.return_value.__enter__.return_value = mysql
@@ -46,13 +47,12 @@ def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_
 @patch("aiEnrichSkill.main.collector")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
 @patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
-@patch("aiEnrichSkill.main.isDocker", return_value=False)
-@patch("aiEnrichSkill.main.consoleTimer")
+@patch("aiEnrichSkill.main.logIdleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_docker, mock_resolve, mock_backend, mock_collector):
+def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_idle, mock_resolve, mock_backend, mock_collector):
     mock_enabled.return_value = True
     mysql = MagicMock()
     mock_mysql_cls.return_value.__enter__.return_value = mysql
@@ -64,46 +64,43 @@ def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enric
         if str(e) != "BreakLoop":
             raise e
 
-    mock_timer.assert_called_once()
+    mock_idle.assert_called_once()
+    assert mock_idle.call_args.args[1:] == ("10s", "skill.enrich_skipped")
+    assert mock_idle.call_args.kwargs == {"reason": "no_pending_skills"}
     mock_collector.persist.assert_called_once()
     mock_collector.record_heartbeat.assert_called_with("aiEnrichSkill")
 
 
 @patch("aiEnrichSkill.main.collector")
-@patch("aiEnrichSkill.main.WakeableTimer")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
-@patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
-@patch("aiEnrichSkill.main.isDocker", return_value=True)
-@patch("aiEnrichSkill.main.consoleTimer")
-@patch("aiEnrichSkill.main.enrich_skills")
+@patch("aiEnrichSkill.main.resolve_ollama_url", return_value=None)
+@patch("aiEnrichSkill.main.logIdleWait")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
+@patch("aiEnrichSkill.main.get_max_ollama_failures", return_value=2)
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_no_skills_waits_silent_in_docker(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_docker, mock_resolve, mock_backend, mock_wakeable, mock_collector):
+def test_run_unreachable_backend_waits_before_enriching(mock_cyan, mock_max, mock_enabled, mock_mysql_cls, mock_idle, mock_resolve, mock_backend, mock_collector):
     mock_enabled.return_value = True
-    mysql = MagicMock()
-    mock_mysql_cls.return_value.__enter__.return_value = mysql
-    mock_enrich.side_effect = [0, Exception("BreakLoop")]
+    mock_mysql_cls.return_value.__enter__.return_value = MagicMock()
 
-    try:
+    # The second unreachable poll trips the exit threshold, which ends the loop.
+    with pytest.raises(SystemExit):
         run()
-    except Exception as e:
-        if str(e) != "BreakLoop":
-            raise e
 
-    mock_timer.assert_not_called()
-    mock_wakeable.return_value.wait.assert_called()
+    mock_idle.assert_called_once()
+    assert mock_idle.call_args.args[1:] == ("10s", "ai.retry_wait")
+    assert mock_idle.call_args.kwargs == {"reason": "backend_unavailable"}
 
 
 @patch("aiEnrichSkill.main.collector")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
 @patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
-@patch("aiEnrichSkill.main.consoleTimer")
+@patch("aiEnrichSkill.main.logIdleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
 @patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x)
-def test_run_persists_after_each_enrich_cycle(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_timer, mock_resolve, mock_backend, mock_collector):
+def test_run_persists_after_each_enrich_cycle(mock_cyan, mock_enabled, mock_mysql_cls, mock_enrich, mock_idle, mock_resolve, mock_backend, mock_collector):
     mock_enabled.return_value = True
     mysql = MagicMock()
     mock_mysql_cls.return_value.__enter__.return_value = mysql

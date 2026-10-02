@@ -4,7 +4,7 @@ import os
 import pytest
 
 from commonlib import observability
-from commonlib.observability import configure_logging, get_app_name, get_logger, log_file_path
+from commonlib.observability import configure_logging, get_app_name, get_logger, job_log_context, log_file_path, stamp_caller_module
 
 APP_NAME_ENV = "LOG_APP_NAME"
 LEGACY_APP_NAME_ENV = "AI_ENRICH_LOG_APP_NAME"
@@ -150,3 +150,103 @@ class TestJsonlRecords:
         configure_logging("obj_test")
         get_logger("obj_test.case").info("test.event", payload=object())
         assert json.loads(_read(log_file_path("obj_test")))["event"] == "test.event"
+
+@pytest.fixture
+def fake_app(tmp_path, monkeypatch):
+    """A non-commonlib module that emits a record, standing in for a worker's own code."""
+    package = tmp_path / "helperpkg"
+    package.mkdir()
+    (package / "fake_app.py").write_text(
+        "from commonlib.observability import stamp_caller_module\n"
+        "\n"
+        "def emit(event_dict):\n"
+        "    return stamp_caller_module(None, 'info', event_dict)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(package))
+
+    import fake_app as module
+
+    yield module
+
+
+class TestStampCallerModule:
+    def test_shared_helper_frame_is_skipped(self, fake_app):
+        """The app frame wins over the shared helper the record was logged through."""
+        result = fake_app.emit({"module": "commonlib.ai_helpers", "event": "jobs.skipped"})
+
+        assert result["module"] == "fake_app"
+
+    def test_bound_name_is_kept_without_an_app_frame(self, log_dir):
+        """This test module is skipped like a helper, so the logger's own name survives."""
+        configure_logging("fallback")
+        get_logger("fallback.case").info("test.event")
+
+        assert _events(log_file_path("fallback"))[0]["module"] == "fallback.case"
+
+    def test_shared_helper_name_is_kept_without_an_app_frame(self, log_dir):
+        """A helper called from a test still reports itself, not the test runner."""
+        configure_logging("helper_case")
+        get_logger("commonlib.stopWatch").info("job.result", duration=1.0)
+
+        assert _events(log_file_path("helper_case"))[0]["module"] == "commonlib.stopWatch"
+
+    def test_entry_script_does_not_win(self, fake_app):
+        """`__main__` above an app frame must not become the module."""
+        assert observability.STACK_STOP_MODULES == frozenset({"__main__"})
+        result = fake_app.emit({"module": "commonlib.ai_helpers"})
+
+        assert result["module"] != "__main__"
+
+
+class TestJobLogContext:
+    def test_binds_job_id_only_inside_the_block(self, log_dir):
+        configure_logging("ctx_bind")
+        logger = get_logger("ctx_bind.case")
+
+        with job_log_context(582714):
+            logger.info("job.result", duration=1.0)
+        logger.info("jobs.skipped", wait_seconds=10)
+
+        records = _events(log_file_path("ctx_bind"))
+        assert records[0]["job_id"] == 582714
+        assert "job_id" not in records[1]
+
+    def test_explicit_job_id_wins(self, log_dir):
+        configure_logging("ctx_explicit")
+        logger = get_logger("ctx_explicit.case")
+
+        with job_log_context(582714):
+            logger.info("job.retry", job_id=42)
+
+        assert _events(log_file_path("ctx_explicit"))[0]["job_id"] == 42
+
+    def test_none_job_id_does_not_bind(self, log_dir):
+        configure_logging("ctx_none")
+        logger = get_logger("ctx_none.case")
+
+        with job_log_context(None):
+            logger.info("job.not_found")
+
+        assert "job_id" not in _events(log_file_path("ctx_none"))[0]
+
+    def test_job_id_is_unbound_after_an_error(self, log_dir):
+        configure_logging("ctx_error")
+        logger = get_logger("ctx_error.case")
+
+        with pytest.raises(ValueError):
+            with job_log_context(7):
+                raise ValueError("boom")
+        logger.info("job.critical_error")
+
+        assert "job_id" not in _events(log_file_path("ctx_error"))[0]
+
+    def test_nested_blocks_inherit_the_inner_id(self, log_dir):
+        configure_logging("ctx_nested")
+        logger = get_logger("ctx_nested.case")
+
+        with job_log_context(1):
+            with job_log_context(2):
+                logger.info("job.result")
+
+        assert _events(log_file_path("ctx_nested"))[0]["job_id"] == 2

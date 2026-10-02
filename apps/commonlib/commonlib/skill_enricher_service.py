@@ -32,7 +32,7 @@ def process_skill_enrichment(
     query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
     rows = mysql.fetchAll(query_find)
     if not rows:
-        logger.info("skill.enrich_skipped", reason="no_pending_skills", limit=limit)
+        logger.info("skill.enrich_skipped", message="No skills pending.", reason="no_pending_skills", limit=limit)
         return 0
     logger.info("skill.enrich_started", count=len(rows), limit=limit, check_empty_description_only=check_empty_description_only)
     
