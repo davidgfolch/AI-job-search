@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useConfigOperations } from '../useConfigOperations';
 import type { FilterConfig } from '../useFilterConfigurations';
@@ -37,7 +37,27 @@ describe('useConfigOperations - exportToDefaults', () => {
         vi.clearAllMocks();
     });
 
+    // jsdom does not implement the Blob URL API, so exportToDefaults would always take
+    // its catch branch. Stubbed per-test rather than in the shared setup so only the
+    // tests that exercise the download path need it.
+    const withBlobUrlApi = () => {
+        const createObjectURLMock = vi.fn().mockReturnValue('blob:defaultFilterConfigurations.json');
+        const revokeObjectURLMock = vi.fn();
+        vi.stubGlobal('URL', {
+            ...URL,
+            createObjectURL: createObjectURLMock,
+            revokeObjectURL: revokeObjectURLMock
+        });
+        return { createObjectURLMock, revokeObjectURLMock };
+    };
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.stubGlobal('console', { ...console, error: vi.fn() });
+    });
+
     it('exports configurations successfully', async () => {
+        const { createObjectURLMock, revokeObjectURLMock } = withBlobUrlApi();
         const configs = [{ name: 'Test', filters: {} }];
         const props = createProps({ export: vi.fn().mockResolvedValue(configs) });
         
@@ -48,6 +68,8 @@ describe('useConfigOperations - exportToDefaults', () => {
         });
 
         expect(props.service.export).toHaveBeenCalled();
+        expect(createObjectURLMock).toHaveBeenCalled();
+        expect(revokeObjectURLMock).toHaveBeenCalled();
         expect(props.notify).toHaveBeenCalledWith('Configuration downloaded!', 'success');
     });
 
