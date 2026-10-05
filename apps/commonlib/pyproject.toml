@@ -12,7 +12,7 @@ from = "."
 dependencies = [
     "mysql-connector-python==26.7.0",
     "requests>=2.31.0",
-    "python-dotenv>=1.2.3",
+    "python-dotenv>=1.2.4",
     "mathparse>=0.2.9,<0.3.0",
     "pdfplumber>=0.11.10",
     "pandas>=2.3.3",
