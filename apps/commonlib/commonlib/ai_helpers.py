@@ -119,20 +119,23 @@ def listsToString(result: dict[str, str], fields: list[str]):
                 result[f] = None
 
 
-def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None):
-    """Log the running progress of a batch and print the `n/m` line.
-
-    The console text is the human half of the record: without it a worker in
-    `CONSOLE_RECORD` mode shows `docker logs` as raw records and the progress is only
-    readable in the JSONL.
+def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None, job_elapsed: float = None):
+    """Log the running progress of a batch: the `n/m` line is the human half of the record, the fields the queryable half.
+    `elapsed_time` is the batch wall time behind the per-job media; `job_elapsed`, when given, is the current job's
+    inference total and is what `Time elapsed:` prints, so a progress line reports how long the job just finished took.
     """
     fields = dict(processed=idx + 1, total=total, total_processed=totalCount, job_errors=len(jobErrors))
     console = green(f"Processed jobs this run: {idx + 1}/{total}, total processed jobs: {totalCount}  Total job errors: {len(jobErrors)}")
+    if job_elapsed is not None:
+        fields['job_elapsed'] = getTimeUnits(job_elapsed)
     if elapsed_time is not None and (idx + 1) > 0:
         media = elapsed_time / (idx + 1)
         fields['elapsed'] = getTimeUnits(elapsed_time)
         fields['elapsed_per_job'] = getTimeUnits(media)
-        console += f", Time elapsed: {fields['elapsed']} (Media: {fields['elapsed_per_job']}/job)"
+        shown = fields['job_elapsed'] if job_elapsed is not None else fields['elapsed']
+        console += f", Time elapsed: {shown} (Media: {fields['elapsed_per_job']}/job)"
+    elif job_elapsed is not None:
+        console += f", Time elapsed: {fields['job_elapsed']}"
     logger.info("ai.batch_completed", console=console, **fields)
 
 

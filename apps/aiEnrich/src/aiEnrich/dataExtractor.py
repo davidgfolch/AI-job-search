@@ -172,7 +172,7 @@ def _process_job_safe(
     collector.record_job("aiEnrich", duration, success)
     collector.persist_if_due(60)
     stopWatch.end()
-    footer(total, idx, totalCount, jobErrors, time.time() - _batch_start)
+    footer(total, idx, totalCount, jobErrors, time.time() - _batch_start, duration)
 
 
 def _save(repo: AiEnrichRepository, id, result: dict):

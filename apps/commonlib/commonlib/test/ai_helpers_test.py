@@ -210,6 +210,26 @@ def test_footer_progress_line_includes_elapsed():
     assert "/job)" in console
 
 
+@pytest.mark.parametrize("elapsed_time, console_suffix, batch_fields", [
+    (1668.0, "Time elapsed: 41s (Media: 40s/job)", {"elapsed": "27m 48s", "elapsed_per_job": "40s"}),
+    (None, "Time elapsed: 41s", None),
+])
+def test_footer_job_elapsed(elapsed_time, console_suffix, batch_fields):
+    """`Time elapsed` reports the job just finished; the media stays a batch average."""
+    with capture_logs() as records:
+        footer(146, 40, 41, set(), elapsed_time=elapsed_time, job_elapsed=41.0)
+
+    completed = _completed(records)
+    assert console_suffix in completed["console"]
+    assert completed["job_elapsed"] == "41s"
+    if batch_fields is None:
+        assert "Media" not in completed["console"]
+        assert "elapsed" not in completed
+    else:
+        for key, value in batch_fields.items():
+            assert completed[key] == value
+
+
 class TestLogIdleWait:
     def test_docker_logs_one_record_then_waits(self):
         with patch("commonlib.ai_helpers.isDocker", return_value=True), \

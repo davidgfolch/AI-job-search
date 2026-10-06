@@ -99,8 +99,8 @@ class TestDataExtractor:
         assert [entry['index'] for entry in started] == [1, 2]
 
     @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
-    def test_footer_receives_batch_elapsed(self, mock_ids, mock_deps):
-        """The footer gets the batch elapsed time so it can report media per job."""
+    def test_footer_receives_batch_and_job_elapsed(self, mock_ids, mock_deps):
+        """The footer gets the batch elapsed (media) plus the current job's inference total."""
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
 
@@ -111,7 +111,7 @@ class TestDataExtractor:
         assert mock_deps['footer'].call_count == 1
         args = mock_deps['footer'].call_args.args
         assert args[:3] == (1, 0, 1)
-        assert args[4] >= 0
+        assert 0 <= args[5] <= args[4]
 
     @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
     def test_job_work_runs_inside_the_job_context(self, mock_ids, mock_deps):
