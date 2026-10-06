@@ -13,7 +13,7 @@ def test_process_skill_enrichment_no_skills(mock_context, mock_mysql_cls, limit)
     with capture_logs() as records:
         count = process_skill_enrichment(mysql, lambda n, c: "desc", limit=limit)
     assert count == 0
-    skipped = [r for r in records if r["event"] == "skill.enrich_skipped"]
+    skipped = [r for r in records if r["event"] == "jobs.skipped"]
     assert len(skipped) == 1
     assert skipped[0]["message"] == "No skills pending."
     assert skipped[0]["reason"] == "no_pending_skills"

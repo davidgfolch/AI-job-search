@@ -5,7 +5,7 @@ from commonlib.dateUtil import getDatetimeNowStr, getSeconds, getTimeUnits
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.systemUtil import isDocker
-from commonlib.terminalColor import green
+from commonlib.terminalColor import green, stripAnsi
 from commonlib.terminalUtil import consoleTimer
 from commonlib.wake_timer import WakeableTimer
 from commonlib.observability import get_logger
@@ -140,19 +140,32 @@ def logIdleWait(console_text: str, timeUnit: str, event: str, **fields):
     """Log that there was nothing to process, then wait before polling again.
 
     An idle loop is not a timer, so it does not emit `timer.started`: the caller names the
-    event (`jobs.skipped`, `ai.retry_wait`, `skill.enrich_skipped`) and `wait_seconds`
+    event (`jobs.skipped`, `ai.retry_wait`) and `wait_seconds`
     travels on that one record instead of on a separate timer line.
 
-    In a container only the message prints, which keeps a 10s poll loop from filling the
-    log with rendered records. On a terminal `consoleTimer` keeps its countdown, which is
-    the progress a person watching locally wants.
+    In a container the cycle is one rendered record: the human sentence travels as
+    `message=`, so `docker-compose logs` shows the `*_skipped` event with its reason and
+    wait as fields instead of a bare sentence. On a terminal `consoleTimer` keeps its
+    countdown, which is the progress a person watching locally wants.
     """
     if not isDocker():
         consoleTimer(console_text, timeUnit)
         return
     seconds = getSeconds(timeUnit)
-    logger.info(event, console=console_text, wait_seconds=seconds, **fields)
+    logger.info(event, message=stripAnsi(console_text), wait_seconds=seconds, **fields)
     WakeableTimer().wait(seconds)
+
+
+def idleWait(console_text: str, timeUnit: str):
+    """Wait for the next poll without logging: this cycle's record was already logged.
+
+    `aiEnrichSkill` uses it when the enrichment service has already emitted
+    `jobs.skipped`, so a cycle stays one line in the container.
+    """
+    if not isDocker():
+        consoleTimer(console_text, timeUnit)
+        return
+    WakeableTimer().wait(getSeconds(timeUnit))
 
 
 def combineTaskResults(crewOutput, debug) -> dict:

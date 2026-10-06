@@ -5,7 +5,7 @@ from ..main import run
 
 
 @patch("aiEnrichSkill.main.collector")
-@patch("aiEnrichSkill.main.logIdleWait")
+@patch("aiEnrichSkill.main.idleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
@@ -23,7 +23,7 @@ def test_run_disabled(mock_cyan, mock_enabled, mock_mysql, mock_enrich, mock_idl
 @patch("aiEnrichSkill.main.collector")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
 @patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
-@patch("aiEnrichSkill.main.logIdleWait")
+@patch("aiEnrichSkill.main.idleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
@@ -47,7 +47,7 @@ def test_run_enriched_some_skills(mock_cyan, mock_enabled, mock_mysql_cls, mock_
 @patch("aiEnrichSkill.main.collector")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
 @patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
-@patch("aiEnrichSkill.main.logIdleWait")
+@patch("aiEnrichSkill.main.idleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")
@@ -65,8 +65,8 @@ def test_run_no_skills_waits(mock_cyan, mock_enabled, mock_mysql_cls, mock_enric
             raise e
 
     mock_idle.assert_called_once()
-    assert mock_idle.call_args.args[1:] == ("10s", "skill.enrich_skipped")
-    assert mock_idle.call_args.kwargs == {"reason": "no_pending_skills"}
+    assert mock_idle.call_args.args == ("All skills enriched.", "10s")
+    assert mock_idle.call_args.kwargs == {}
     mock_collector.persist.assert_called_once()
     mock_collector.record_heartbeat.assert_called_with("aiEnrichSkill")
 
@@ -95,7 +95,7 @@ def test_run_unreachable_backend_waits_before_enriching(mock_cyan, mock_max, moc
 @patch("aiEnrichSkill.main.collector")
 @patch("aiEnrichSkill.main.get_backend", return_value="ollama")
 @patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434")
-@patch("aiEnrichSkill.main.logIdleWait")
+@patch("aiEnrichSkill.main.idleWait")
 @patch("aiEnrichSkill.main.enrich_skills")
 @patch("aiEnrichSkill.main.MysqlUtil")
 @patch("aiEnrichSkill.main.get_enabled")

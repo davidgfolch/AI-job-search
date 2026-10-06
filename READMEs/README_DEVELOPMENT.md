@@ -136,7 +136,7 @@ Records carry `event`, `module` (the calling app module), `logger` (the app name
 
 **Batch progress and idle countdowns are records, not prints.** `commonlib.ai_helpers.footer()` ends a batch: it logs `ai.batch_completed` with the `n/m` counters and fields, and puts the human progress line in `console=`, so the counters stay queryable and `docker-compose logs` still reads as a progress line. The line is printed once per job, so it is suited to a batch of thousands, not a per-item loop; a per-item loop belongs to `printJob()`.
 
-`commonlib.ai_helpers.logIdleWait(text, duration, event, **fields)` is the same idea for the wait between cycles: one record carrying the human `console=` text, then a `WakeableTimer` so a shutdown signal cuts the sleep short. It only logs in a container (`isDocker()`); on an interactive terminal it keeps the in-place countdown, because a person is watching it. Prompts a person acts on, tables, and banners stay `print`.
+`commonlib.ai_helpers.logIdleWait(text, duration, event, **fields)` is the same idea for the wait between cycles: one rendered record carrying the human sentence as `message=` (with `wait_seconds` and the caller's `reason`), then a `WakeableTimer` so a shutdown signal cuts the sleep short. It only logs in a container (`isDocker()`); on an interactive terminal it keeps the in-place countdown, because a person is watching it. `ai_helpers.idleWait(text, duration)` is the same wait without a record, for a cycle whose event was already logged (aiEnrichSkill's service logs `jobs.skipped` itself). Prompts a person acts on, tables, and banners stay `print`.
 
 ### Two console modes
 
@@ -152,7 +152,7 @@ logger.info("linkedin.job.processed", job_id=job_id, insert_id=id,
 | `CONSOLE_RECORD` (default) | the `console=` text if present, otherwise the rendered record | every record |
 | `CONSOLE_MESSAGE` | the `console=` text only, with no timestamp, level, or event name | every record |
 
-In `CONSOLE_RECORD` the rendered record leads with the `message` field, because the sentence is what a person reads first; the timestamp, level, event name, and the remaining fields follow it. A record without `message` renders exactly as before.
+In `CONSOLE_RECORD` the rendered record carries `message=...` as the first named field, right after the timestamp, level, event name and `[logger]`, because the sentence is what a person reads first; the remaining fields follow it. The position comes from the column, so it holds wherever the call placed `message`. A record without `message` renders exactly as before.
 
 `CONSOLE_MESSAGE` is how an app keeps a quiet, old-style console: a record without `console=` is written to the JSONL and never reaches stdout, which also mutes the chatter of the shared `commonlib` modules the app imports. The scrapper is the reference implementation (`apps/scrapper/README.md`).
 

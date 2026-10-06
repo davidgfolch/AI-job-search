@@ -11,7 +11,9 @@ Follow-up (after `da0a1842` dropped the human half of the records):
 - `job_log_context(id)` binds `job_id` for the per-job work of aiEnrich, aiEnrich3,
   aiEnrichNew and aiCvMatcher, which also repairs the per-job duration gauge.
 - `ai_helpers.footer()` is wired back with the batch elapsed time, and `ai_helpers.logIdleWait()`
-  replaced the per-worker idle sleeps; the console renderer leads with `message`.
+  replaced the per-worker idle sleeps; the console renderer carries `message=...` as the
+  first named field, right after the timestamp/level/event/`[logger]` prefix, wherever
+  the call placed it (records without `message` render unchanged).
 
 ## Problem
 

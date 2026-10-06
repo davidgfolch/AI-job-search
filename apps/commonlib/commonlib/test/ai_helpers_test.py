@@ -3,9 +3,10 @@ from structlog.testing import capture_logs
 import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.ai_helpers import (
-    validateResult, listsToString, mapJob, combineTaskResults, footer, logIdleWait,
+    validateResult, listsToString, mapJob, combineTaskResults, footer, logIdleWait, idleWait,
     _expand_parenthesized_skills, flatten_skill_groups, _normalizeModality, VALID_MODALITIES
 )
+from commonlib.terminalColor import cyan
 import json
 
 
@@ -219,11 +220,21 @@ class TestLogIdleWait:
 
         assert len(records) == 1
         assert records[0]["event"] == "jobs.skipped"
-        assert records[0]["console"] == "All jobs enriched."
+        assert records[0]["message"] == "All jobs enriched."
+        assert "console" not in records[0]
         assert records[0]["wait_seconds"] == 10
         assert records[0]["reason"] == "no_pending_jobs"
         mock_timer.return_value.wait.assert_called_once_with(10)
         mock_console_timer.assert_not_called()
+
+    def test_docker_strips_color_from_the_message(self):
+        with patch("commonlib.ai_helpers.isDocker", return_value=True), \
+             patch("commonlib.ai_helpers.WakeableTimer"), \
+             capture_logs() as records:
+            logIdleWait(cyan("All jobs enriched."), "10s", "jobs.skipped", reason="no_pending_jobs")
+
+        assert records[0]["message"] == "All jobs enriched."
+        assert "\x1b" not in records[0]["message"]
 
     def test_docker_does_not_emit_a_separate_timer_event(self):
         with patch("commonlib.ai_helpers.isDocker", return_value=True), \
@@ -236,7 +247,7 @@ class TestLogIdleWait:
     @pytest.mark.parametrize("event, reason", [
         pytest.param("jobs.skipped", "no_pending_jobs", id="no_pending_jobs"),
         pytest.param("ai.retry_wait", "backend_unavailable", id="backend_unavailable"),
-        pytest.param("skill.enrich_skipped", "no_pending_skills", id="no_pending_skills"),
+        pytest.param("jobs.skipped", "no_pending_skills", id="no_pending_skills"),
     ])
     def test_terminal_keeps_the_countdown_and_logs_nothing(self, event, reason):
         with patch("commonlib.ai_helpers.isDocker", return_value=False), \
@@ -247,4 +258,25 @@ class TestLogIdleWait:
 
         mock_timer.assert_called_once_with("All jobs enriched.", "10s")
         mock_wake.assert_not_called()
+        assert records == []
+
+
+class TestIdleWait:
+    def test_docker_waits_without_logging(self):
+        """The service already logged the cycle, so the wait adds no second line."""
+        with patch("commonlib.ai_helpers.isDocker", return_value=True), \
+             patch("commonlib.ai_helpers.WakeableTimer") as mock_timer, \
+             capture_logs() as records:
+            idleWait("All skills enriched.", "10s")
+
+        assert records == []
+        mock_timer.return_value.wait.assert_called_once_with(10)
+
+    def test_terminal_keeps_the_countdown_without_logging(self):
+        with patch("commonlib.ai_helpers.isDocker", return_value=False), \
+             patch("commonlib.ai_helpers.consoleTimer") as mock_timer, \
+             capture_logs() as records:
+            idleWait("All skills enriched.", "10s")
+
+        mock_timer.assert_called_once_with("All skills enriched.", "10s")
         assert records == []

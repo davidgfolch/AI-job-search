@@ -188,15 +188,23 @@ class TestFileOnlyRecords:
 
 
 class TestMessageColumn:
-    def test_message_leads_the_line_and_is_not_repeated(self, console, capsys):
+    def test_message_is_the_first_named_field(self, console, capsys):
         """`message` is the sentence to read; rendering it first is the whole point of the column."""
         configure_logging("lead", console=CONSOLE_RECORD)
         get_logger("lead.case").info("timer.started", message="All jobs enriched.", wait_seconds=10)
         out = stripAnsi(capsys.readouterr().out)
-        assert out.startswith("All jobs enriched.")
+        assert "timer.started" in out
+        assert "message='All jobs enriched.'" in out
         assert out.count("All jobs enriched.") == 1
-        assert "message=" not in out
-        assert "wait_seconds=10" in out
+        assert out.index("message=") < out.index("wait_seconds=10")
+
+    def test_message_renders_first_even_when_passed_last(self, console, capsys):
+        """The position comes from the column, not from the call-site keyword order."""
+        configure_logging("late", console=CONSOLE_RECORD)
+        get_logger("late.case").info("jobs.skipped", limit=10, message="No skills pending.")
+        out = stripAnsi(capsys.readouterr().out)
+        assert "message='No skills pending.'" in out
+        assert out.index("message=") < out.index("limit=10")
 
     def test_record_without_message_is_unchanged(self, console, capsys):
         configure_logging("nomessage", console=CONSOLE_RECORD)

@@ -1,4 +1,5 @@
 import pytest
+from structlog.testing import capture_logs
 from unittest.mock import patch, MagicMock
 
 from ..enrichment_service import enrich_skills, generate_skill_description_ollama
@@ -85,8 +86,14 @@ def test_enrich_huggingface_no_skills(mock_fetch, mock_backend):
     mock_backend.return_value = "huggingface"
     mysql = MagicMock()
     mock_fetch.return_value = []
-    result = enrich_skills(mysql)
+    with capture_logs() as records:
+        result = enrich_skills(mysql)
     assert result == 0
+    skipped = [r for r in records if r["event"] == "jobs.skipped"]
+    assert len(skipped) == 1
+    assert skipped[0]["message"] == "No skills pending."
+    assert skipped[0]["reason"] == "no_pending_skills"
+    assert skipped[0]["limit"]
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")

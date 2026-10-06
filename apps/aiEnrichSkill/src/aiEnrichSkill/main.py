@@ -6,7 +6,7 @@ from importlib.metadata import version as _v
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 from commonlib.observability import configure_logging, get_logger
-from commonlib.ai_helpers import logIdleWait
+from commonlib.ai_helpers import logIdleWait, idleWait
 from commonlib.terminalColor import cyan
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.services.metrics_collector import MetricsCollector
@@ -49,4 +49,4 @@ def run():
                 collector.persist()
                 continue
         collector.persist()
-        logIdleWait(cyan('All skills enriched.'), '10s', "skill.enrich_skipped", reason="no_pending_skills")
+        idleWait(cyan('All skills enriched.'), '10s')
