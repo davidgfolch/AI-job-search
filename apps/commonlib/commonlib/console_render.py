@@ -32,10 +32,12 @@ entrypoint can select it after a shared module already logged:
 `commonlib.sql.query_executor` and `commonlib.ollama_client` build their loggers at
 import time, before the entrypoint runs.
 
-`CONSOLE_RECORD` renders `message` as the first named field, right after the
-timestamp/level/event/`[logger]` prefix, so a human phrase is never buried in the middle
-of the field list no matter where the call put it; records without `message` render
-exactly as before. The renderer only affects stdout, never the JSONL.
+`CONSOLE_RECORD` renders `timestamp [app] [level] event message=... fields...`: the
+app tag (`logger`, bracketed) sits right after the timestamp so a container line names
+the app before anything else, `message` is the first named field so a human phrase is
+never buried in the middle of the field list no matter where the call put it, and
+records without `message` render exactly as before with the remaining fields last. The
+renderer only affects stdout, never the JSONL.
 """
 import sys
 
@@ -53,11 +55,18 @@ RAW_CONSOLE_END_KEY = "_console_end"
 DEFAULT_CONSOLE_MODE = CONSOLE_RECORD
 
 _console_mode: str | None = None
-# `message` is the human half of a record: keep it as the first named field, right after
-# the timestamp/level/event/[logger] prefix, wherever the call placed it.
 _BASE_RENDERER = structlog.dev.ConsoleRenderer()
+# structlog renders timestamp/level/event/`[logger]`; the app tag moves in front of the
+# level so a line names the app first, and `message` stays the first named field right
+# after the prefix. The default column (`key=""`) is what structlog requires to fall back
+# on for every remaining field, rendered after the columns below in sorted key order.
+_DEFAULT_COLUMN = structlog.dev.Column("", _BASE_RENDERER._default_column_formatter)
 _MESSAGE_COLUMN = structlog.dev.Column("message", _BASE_RENDERER._default_column_formatter)
-_CONSOLE_RENDERER = structlog.dev.ConsoleRenderer(columns=[*_BASE_RENDERER.columns, _MESSAGE_COLUMN])
+_PREFIX_ORDER = ("timestamp", "logger", "logger_name", "level", "event")
+_BY_KEY = {col.key: col for col in _BASE_RENDERER.columns if col.key}
+_PREFIX_COLUMNS = [_BY_KEY.pop(key) for key in _PREFIX_ORDER if key in _BY_KEY]
+_REST_COLUMNS = [col for col in _BASE_RENDERER.columns if col.key in _BY_KEY]
+_CONSOLE_RENDERER = structlog.dev.ConsoleRenderer(columns=[_DEFAULT_COLUMN, *_PREFIX_COLUMNS, *_REST_COLUMNS, _MESSAGE_COLUMN])
 _JSON_RENDERER = structlog.processors.JSONRenderer()
 
 

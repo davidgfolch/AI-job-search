@@ -152,7 +152,7 @@ logger.info("linkedin.job.processed", job_id=job_id, insert_id=id,
 | `CONSOLE_RECORD` (default) | the `console=` text if present, otherwise the rendered record | every record |
 | `CONSOLE_MESSAGE` | the `console=` text only, with no timestamp, level, or event name | every record |
 
-In `CONSOLE_RECORD` the rendered record carries `message=...` as the first named field, right after the timestamp, level, event name and `[logger]`, because the sentence is what a person reads first; the remaining fields follow it. The position comes from the column, so it holds wherever the call placed `message`. A record without `message` renders exactly as before.
+In `CONSOLE_RECORD` a rendered record reads `timestamp [app] [level] event message=... fields...`: the `[app]` tag sits right after the timestamp so a container line names the app before anything else, `message=...` is the first named field, right after the prefix, because the sentence is what a person reads first; the remaining fields follow in sorted order. The positions come from the columns, so they hold wherever the call placed `message`. A record without `message` renders exactly as before.
 
 `CONSOLE_MESSAGE` is how an app keeps a quiet, old-style console: a record without `console=` is written to the JSONL and never reaches stdout, which also mutes the chatter of the shared `commonlib` modules the app imports. The scrapper is the reference implementation (`apps/scrapper/README.md`).
 

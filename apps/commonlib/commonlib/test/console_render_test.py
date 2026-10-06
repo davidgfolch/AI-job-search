@@ -212,3 +212,17 @@ class TestMessageColumn:
         out = stripAnsi(capsys.readouterr().out)
         assert "job.started" in out
         assert "job_id=7" in out
+
+
+class TestColumnOrder:
+    def test_app_tag_precedes_level_event_and_message(self, console, capsys):
+        configure_logging("order", console=CONSOLE_RECORD)
+        get_logger("order.case").info("jobs.skipped", message="All CV matches calculated.", reason="no_pending_jobs", wait_seconds=10)
+        out = stripAnsi(capsys.readouterr().out)
+        assert out.index("[order]") < out.index("[info") < out.index("jobs.skipped") < out.index("message=") < out.index("reason=") < out.index("wait_seconds=")
+
+    def test_app_tag_precedes_level_without_message(self, console, capsys):
+        configure_logging("tagno", console=CONSOLE_RECORD)
+        get_logger("tagno.case").info("job.started", job_id=7)
+        out = stripAnsi(capsys.readouterr().out)
+        assert out.index("[tagno]") < out.index("[info") < out.index("job.started") < out.index("job_id=7")

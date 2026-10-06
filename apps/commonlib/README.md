@@ -65,7 +65,7 @@ Conventions:
 
 `console_render.py` implements the two console modes an app can select with `configure_logging(app, console=...)`:
 
-- `CONSOLE_RECORD` (default): every record is rendered on stdout.
+- `CONSOLE_RECORD` (default): every record is rendered on stdout as `timestamp [app] [level] event message=... fields...` — the `[app]` tag (`logger`) is bracketed right after the timestamp, `message` is the first named field, and the rest follow.
 - `CONSOLE_MESSAGE`: only the text of the `console=` field is printed; records without it go to the JSONL alone. This is how a host app keeps a human console and a silent library.
 
 `split_console_text()` moves `console=` into the record's `message` and `end=` into the private `_console_end`, so neither the raw ANSI text nor the terminator reaches the file; `log_writer.public_record()` drops the private keys. Both helpers are also what strips ANSI from a `message`. `color_enabled()`, `console_mode()`, `set_console_mode()` and `render_console()` are re-exported from `observability.py`.

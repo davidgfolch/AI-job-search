@@ -12,7 +12,7 @@ Follow-up (after `da0a1842` dropped the human half of the records):
   aiEnrichNew and aiCvMatcher, which also repairs the per-job duration gauge.
 - `ai_helpers.footer()` is wired back with the batch elapsed time, and `ai_helpers.logIdleWait()`
   replaced the per-worker idle sleeps; the console renderer carries `message=...` as the
-  first named field, right after the timestamp/level/event/`[logger]` prefix, wherever
+  first named field, right after the `timestamp [app] [level] event` prefix, wherever
   the call placed it (records without `message` render unchanged).
 
 ## Problem
