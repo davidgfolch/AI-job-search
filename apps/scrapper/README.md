@@ -45,6 +45,8 @@ See [README INSTALL](../../READMEs/README_INSTALL.md)
 poetry install
 ```
 
+`scrapling` is declared as `scrapling[fetchers]`: `scrapper/services/scrapling/scraplingService.py` imports `scrapling.fetchers`, and scrapling only declares that extra's runtime deps (`browserforge`, `apify-fingerprint-datapoints`, `protego`, `curl-cffi`, `playwright`, `patchright`, `msgspec`) behind the `fetchers` extra. Installing plain `scrapling` collects fine but crashes the test suite at import with `ModuleNotFoundError: No module named 'browserforge'`.
+
 ### Configuration
 
 Scraper behavior is configured via environment variables and configuration files (`scrapper_config.py`).
