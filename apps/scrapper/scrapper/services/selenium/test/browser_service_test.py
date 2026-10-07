@@ -76,6 +76,13 @@ class TestGetUrl:
         assert result == "https://example.com"
 
 
+class TestGetTitle:
+    def test_get_title(self, browser_service, mock_driver):
+        mock_driver.title = "Job Title - Indeed.com"
+        result = browser_service.getTitle()
+        assert result == "Job Title - Indeed.com"
+
+
 class TestWaitUntilPageUrlContains:
     def test_wait_until_page_url_contains(self, browser_service, mock_driver):
         with patch('scrapper.services.selenium.browser_service.WebDriverWait') as mock_wait:

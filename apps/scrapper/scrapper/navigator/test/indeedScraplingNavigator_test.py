@@ -14,6 +14,9 @@ class MockSelector:
     def css(self, selector):
         return MockSelector(self._text)
 
+    def __bool__(self):
+        return bool(self._text)
+
 
 def create_mock_scrapling_service():
     mock_service = MagicMock()
@@ -29,6 +32,29 @@ def create_mock_scrapling_service():
     mock_service.session = mock_response
     
     return mock_service
+
+
+def _make_navigator():
+    mock_service = create_mock_scrapling_service()
+    with pytest.MonkeyPatch.context() as m:
+        m.setattr("scrapper.navigator.indeedScraplingNavigator.ScraplingService", lambda proxies, debug: mock_service)
+        return IndeedScraplingNavigator(proxies=[])
+
+
+def _new_dom_page(easy=True, location="Madrid, Madrid provincia"):
+    def css(sel):
+        if 'company-info-metadata"] div[dir="ltr"]' in sel:
+            return [MagicMock(get_all_text=MagicMock(return_value=location), css=MagicMock(return_value=[]))]
+        values = {"vj-job-title": "Title", 'a[href*="/cmp/"]': "Company", "simple-job-description-html": "<p>Description</p>",
+                  "viewjob-indeed-apply": "Easy apply" if easy else "", "title::text": "25 empleos de Ingeniero java | Indeed"}
+        for key, value in values.items():
+            if key in sel:
+                return MockSelector(value)
+        return MockSelector("")
+    page = MagicMock()
+    page.url = "https://es.indeed.com/viewjob?jk=abc"
+    page.css = MagicMock(side_effect=css)
+    return page
 
 
 class TestIndeedScraplingNavigator:
@@ -112,7 +138,7 @@ class TestIndeedScraplingNavigator:
                 "TechCorp" if "company" in sel and "Location" not in sel else
                 "Remote" if "Location" in sel or "location" in sel else
                 "60k - 70k" if "Salario" in sel else
-                "<b>Description</b>" if "Description" in sel else ""
+                "<b>Description</b>" if "description" in sel.lower() else ""
             ))
             navigator.current_page = mock_selector
             
@@ -141,9 +167,30 @@ class TestIndeedScraplingNavigator:
                 "Python Dev" if "title" in sel and "company" not in sel else
                 "TechCorp" if "company" in sel and "Location" not in sel else
                 "Remote" if "Location" in sel or "location" in sel else
-                "<b>Description</b>" if "Description" in sel else ""
+                "<b>Description</b>" if "description" in sel.lower() else ""
             ))
             navigator.current_page = mock_selector
 
             title, company, location, salary, url, html = navigator.get_job_data()
             assert salary == ""
+
+    def test_get_job_data_new_detail_dom(self):
+        navigator = _make_navigator()
+        navigator.current_page = _new_dom_page()
+        assert navigator.get_job_data() == ("Title", "Company", "Madrid, Madrid provincia", "", "https://es.indeed.com/viewjob?jk=abc", "<p>Description</p>")
+
+    @pytest.mark.parametrize("easy,expected", [(True, True), (False, False)])
+    def test_check_easy_apply(self, easy, expected):
+        navigator = _make_navigator()
+        navigator.current_page = _new_dom_page(easy=easy)
+        assert navigator.check_easy_apply() is expected
+
+    def test_get_job_data_without_location(self):
+        navigator = _make_navigator()
+        navigator.current_page = _new_dom_page(location="")
+        assert navigator.get_job_data()[2] == ""
+
+    def test_get_total_results_from_title_fallback(self):
+        navigator = _make_navigator()
+        navigator.current_page = _new_dom_page()
+        assert navigator.get_total_results("java") == 25

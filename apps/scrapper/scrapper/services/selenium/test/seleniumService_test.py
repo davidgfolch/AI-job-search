@@ -8,6 +8,7 @@ BROWSER_DELEGATIONS = [
     ('tab', (None,)),
     ('loadPage', ('https://example.com',)),
     ('getUrl', ()),
+    ('getTitle', ()),
     ('waitUntilPageUrlContains', ('https://example.com', 5)),
     ('sendEscapeKey', ()),
     ('waitUntilPageIsLoaded', (7,)),

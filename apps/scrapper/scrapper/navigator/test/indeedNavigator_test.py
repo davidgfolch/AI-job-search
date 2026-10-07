@@ -65,7 +65,9 @@ class TestIndeedNavigator:
             mock_selenium.waitAndClick.assert_any_call("#opt")
 
     def test_get_total_results(self, navigator, mock_selenium):
-        mock_selenium.getText.return_value = "1.234 empleos"
+        elm = MagicMock()
+        elm.text = "1.234 empleos"
+        mock_selenium.getElms.return_value = [elm]
         assert navigator.get_total_results("Python") == 1234
 
     @patch('scrapper.navigator.indeedNavigator.sleep')
@@ -95,12 +97,23 @@ class TestIndeedNavigator:
         with patch('scrapper.navigator.indeedNavigator.baseScrapper.removeUrlParameter', return_value="https://indeed.com/job?jk=123"):
             assert navigator.get_job_url(mock_elm) == "https://indeed.com/job?jk=123"
 
+    @staticmethod
+    def _detail_elms(texts):
+        def get_elms(sel, driverOverride=None):
+            for key, value in texts.items():
+                if key in sel:
+                    elm = MagicMock()
+                    elm.text = value
+                    elm.get_attribute.return_value = value
+                    return [elm]
+            return []
+        return get_elms
+
     def test_get_job_data(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = ["Title\n- job post", "Company", "Location"]
-        mock_salary = MagicMock()
-        mock_salary.text = "60k - 70k"
-        mock_selenium.getElms.return_value = [mock_salary]
-        mock_selenium.getHtml.return_value = "<html>Description</html>"
+        mock_selenium.getElms.side_effect = self._detail_elms({
+            "vj-job-title": "Title\n- job post", 'a[href*="/cmp/"]': "Company",
+            "inlineHeader-companyLocation": "Location", "salary-snippet-container": "60k - 70k",
+            "simple-job-description-html": "<html>Description</html>"})
         mock_selenium.getUrl.return_value = "http://job-url"
         t, c, l, s, u, h = navigator.get_job_data()
         assert t == "Title"
@@ -111,12 +124,47 @@ class TestIndeedNavigator:
         assert h == "<html>Description</html>"
 
     def test_get_job_data_no_salary(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = ["Title\n- job post", "Company", "Location"]
-        mock_selenium.getElms.return_value = []
-        mock_selenium.getHtml.return_value = "<html>Description</html>"
+        mock_selenium.getElms.side_effect = self._detail_elms({
+            "vj-job-title": "Title\n- job post", 'a[href*="/cmp/"]': "Company",
+            "inlineHeader-companyLocation": "Location",
+            "simple-job-description-html": "<html>Description</html>"})
         mock_selenium.getUrl.return_value = "http://job-url"
         t, c, l, s, u, h = navigator.get_job_data()
         assert s == ""
+
+    def test_get_total_results_from_title(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = []
+        mock_selenium.getTitle.return_value = "25 empleos de Ingeniero java en Madrid provincia | Bolsa de Indeed"
+        assert navigator.get_total_results("java") == 25
+
+    def test_get_total_results_missing_count(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = []
+        mock_selenium.getTitle.return_value = "Bolsa de Indeed"
+        assert navigator.get_total_results("java") == 0
+
+    def test_get_job_data_location_from_metadata(self, navigator, mock_selenium):
+        def get_elms(sel, driverOverride=None):
+            elm = MagicMock()
+            if "vj-job-title" in sel:
+                elm.text = "Title"
+                return [elm]
+            if 'a[href*="/cmp/"]' in sel:
+                elm.text = "Company"
+                return [elm]
+            if "simple-job-description-html" in sel:
+                elm.get_attribute.return_value = "<p>Description</p>"
+                return [elm]
+            if "company-info-metadata" in sel and 'div[dir="ltr"]' in sel:
+                leaf = MagicMock()
+                leaf.text = "Madrid, Madrid provincia"
+                leaf.find_elements.return_value = []
+                return [leaf]
+            return []
+        mock_selenium.getElms.side_effect = get_elms
+        mock_selenium.getUrl.return_value = "https://es.indeed.com/viewjob?jk=abc"
+        t, c, l, s, u, h = navigator.get_job_data()
+        assert (t, c, l) == ("Title", "Company", "Madrid, Madrid provincia")
+        assert h == "<p>Description</p>"
 
     def test_clickSortByDate(self, navigator, mock_selenium):
         navigator.clickSortByDate()

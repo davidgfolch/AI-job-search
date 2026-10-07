@@ -65,6 +65,9 @@ class SeleniumService:
     def getUrl(self):
         return self.browser_service.getUrl()
 
+    def getTitle(self):
+        return self.browser_service.getTitle()
+
     def waitUntilPageUrlContains(self, url: str, timeout: int = 10):
         self.browser_service.waitUntilPageUrlContains(url, timeout)
 

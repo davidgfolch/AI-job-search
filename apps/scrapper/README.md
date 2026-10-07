@@ -14,6 +14,7 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 - **Undetected ChromeDriver**: Option to use `undetected-chromedriver` to bypass strict protections (Cloudflare).
 - **Duplicate Management**: Automatically merges duplicate job listings (`mergeDuplicates.py` from `commonlib`).
 - **Resilience**: Retry mechanisms for network failures and element loading issues.
+- **Targeted validation errors**: `validate()` reports `job.field_invalid` only for the required fields that are actually empty, instead of flagging every field when a single one is missing.
 
 ## Supported Sites
 
@@ -21,13 +22,15 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 - **Infojobs**: Works fine.
 - **Tecnoempleo**: Works fine. The company is read by `TecnoempleoCompanyReader`, which first tries the company link and then falls back to the bare text node tecnoempleo renders in the job header for the offers published without a company page. Only the offers that name no employer at all are stored with the company set to `unspecified` instead of being discarded, and the company is inferred later by `aiEnrich` (see [aiEnrich README](../aiEnrich/README.md)). While the company is unspecified the job is not linked to a duplicate; the duplicate check runs again once the company is known. The pay range is read by `TecnoempleoSalaryReader`, which matches the `Salario` caption of the "Datos principales" rows and stores the value in the `salary` column; offers stating no range are stored with `salary=NULL`. Matching the caption instead of a fixed row position matters because tecnoempleo renders a variable number of rows (`Imprescindible Residir`, `Otras Provincias` and `Salario` are all optional), and because the generic markdown scrape keeps the row values without their captions — the AI then receives the range as an unlabeled bullet and frequently answers `salary=null`. The page also exposes a schema.org `baseSalary` block, but it is missing on a noticeable share of salary-bearing offers, so it is not used.
 - **Glassdoor**: Prone to strict bot detection. Uses Indeed OTP login (email+code via Gmail IMAP). `SCRAPPER_GLASSDOOR_EMAIL` is not used — GlassdoorAuthenticator reads `SCRAPPER_INDEED_EMAIL` instead.
-- **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login.
+- **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login. Both paths read the redesigned viewjob DOM (Indeed moved the detail page to React Native Web markup): the current `data-testid` selectors are tried first and the legacy class-based selectors work as fallback, so title, company, location, description markdown, salary and the easy-apply flag keep working after the frontend rewrite.
 
 ## Dual Architecture (Selenium vs Scrapling)
 The project initially relies heavily on Selenium + Undetected ChromeDriver. Recently, **Scrapling** framework has been introduced to bypass hard bot protections seamlessly, specifically Cloudflare Turnstiles.
 Indeed scraper features a dual implementation:
 - `IndeedExecutor`: Legacy architecture requiring Gmail/2FA login.
-- `IndeedScraplingExecutor`: New architecture leveraging `scrapling` (`StealthyFetcher` + `ProxyRotator` + `solve_cloudflare=True`) to scrape jobs publicly without relying on authentication, which makes it faster and less error-prone when blocked. Controlled via ``.
+- `IndeedScraplingExecutor`: New architecture leveraging `scrapling` (`StealthyFetcher` + `ProxyRotator` + `solve_cloudflare=True`) to scrape jobs publicly without relying on authentication, which makes it faster and less error-prone when blocked. Controlled via `SCRAPPER_INDEED_SCRAPLING=true`.
+
+Both implementations share the same selector strategy for the detail page (`vj-job-title`, `company-info-metadata`, `simple-job-description-html`, `viewjob-indeed-apply` first, previous markup second). Indeed also removed the SERP job-count pane, so `get_total_results` falls back to the `NN empleos` count in the page `<title>` when no count selector matches. The Scrapling session registers a `page_setup` callback that resizes the browser window through CDP (`Browser.setWindowBounds`) to the same geometry the Selenium path sets (1200 wide × `avail_height - 90`, right-aligned), so both implementations behave the same on screen.
 
 ## Setup & Running
 
@@ -58,7 +61,7 @@ See `.env` and `scripts/.env.secrets.example`.
 - `SCRAPPER_INDEED_EMAIL`: Indeed/Glassdoor login email (Glassdoor uses this for OTP login via Indeed popup).
 - `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed Selenium and Glassdoor OTP).
 - `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed Selenium and Glassdoor OTP).
-- `=true`: Switches execution of Indeed scraper to use the lightweight, Cloudflare-bypassing Scrapling implementation.
+- `SCRAPPER_INDEED_SCRAPLING=true`: Switches execution of Indeed scraper to use the lightweight, Cloudflare-bypassing Scrapling implementation.
 - `SCRAPPER_INDEED_PROXIES`: Comma delimited list of proxy servers for `ProxyRotator` (e.g., `http://username:pass@ip:port,http://...`).
 
 ## Specific Scraper Parameters

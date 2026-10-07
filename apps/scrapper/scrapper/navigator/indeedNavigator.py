@@ -1,4 +1,5 @@
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException, WebDriverException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry, StackTrace
 from commonlib.observability import get_logger
@@ -32,13 +33,13 @@ CSS_SEL_NEXT_PAGE_BUTTON = 'a[data-testid="pagination-page-next"]'
 CSS_SEL_PAGINATION = ".css-1i78dwh, .pagination"
 
 # JOB DETAIL
-CSS_SEL_JOB_TITLE = "div.jobsearch-JobInfoHeader-title-container h2"
-CSS_SEL_COMPANY = 'div[data-testid="inlineHeader-companyName"]'
-CSS_SEL_LOCATION = 'div[data-testid="inlineHeader-companyLocation"]'
-CSS_SEL_JOB_REQUIREMENTS = "#jobDescriptionText"
-CSS_SEL_JOB_DESCRIPTION = "#jobDescriptionText"
-CSS_SEL_JOB_EASY_APPLY = "#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button"
-CSS_SEL_JOB_SALARY = "div[aria-label=Salario] span"
+CSS_SEL_JOB_TITLE = ["[data-testid='vj-job-title']", "[data-testid='company-info-title-row'] h5", "div.jobsearch-JobInfoHeader-title-container h2"]
+CSS_SEL_COMPANY = ['[data-testid="company-info-metadata"] a[href*="/cmp/"]', 'div[data-testid="inlineHeader-companyName"]']
+CSS_SEL_LOCATION = ['div[data-testid="inlineHeader-companyLocation"]', "[data-testid='jobsearch-JobInfoHeader-companyLocation']"]
+CSS_SEL_JOB_REQUIREMENTS = ".simple-job-description-html"
+CSS_SEL_JOB_DESCRIPTION = [".simple-job-description-html", ".react-native-html-content", "#jobDescriptionText"]
+CSS_SEL_JOB_EASY_APPLY = ["[data-testid='viewjob-indeed-apply']", "#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button"]
+CSS_SEL_JOB_SALARY = ["[data-testid='salary-snippet-container']", "div[aria-label=Salario] span"]
 CSS_SEL_JOB_CLOSED = ""
 
 class IndeedNavigator(BaseNavigator):
@@ -88,8 +89,13 @@ class IndeedNavigator(BaseNavigator):
         self.selenium.waitAndClick(CSS_SEL_SORT_BY_DATE)
 
     def get_total_results(self, keywords: str) -> int:
-        total = self.selenium.getText(CSS_SEL_JOB_COUNT)
-        total = re.findall(r'[0-9.,]+', total)[0]
+        elms = self.selenium.getElms(CSS_SEL_JOB_COUNT)
+        total = elms[0].text if elms else str(self.selenium.getTitle() or "")
+        nums = re.findall(r'[0-9.,]+', total)
+        if not nums:
+            logger.warning("indeed.total_results_not_found", keywords=keywords, console=yellow("Could not find total results count"))
+            return 0
+        total = nums[0]
         printHR()
         logger.info("indeed.results_found", total=total, keywords=keywords, console=green(f"{total} total results for search: {keywords}"))
         printHR()
@@ -136,18 +142,40 @@ class IndeedNavigator(BaseNavigator):
         url = element.get_attribute("href")
         return baseScrapper.removeUrlParameter(url, 'cf-turnstile-response')
 
+    def _first_text(self, selectors) -> str:
+        for sel in selectors:
+            for elm in self.selenium.getElms(sel):
+                if text := (elm.text or "").strip():
+                    return text
+        return ""
+
+    def _first_html(self, selectors) -> str:
+        for sel in selectors:
+            for elm in self.selenium.getElms(sel):
+                if html := elm.get_attribute("innerHTML"):
+                    return html
+        return ""
+
+    def _extract_location(self) -> str:
+        if text := self._first_text(CSS_SEL_LOCATION):
+            return text
+        for elm in self.selenium.getElms('[data-testid="company-info-metadata"] div[dir="ltr"]'):
+            text = (elm.text or "").strip()
+            if "," in text and not elm.find_elements(By.CSS_SELECTOR, "a"):
+                return text
+        return ""
+
     def get_job_data(self):
-        title = self.selenium.getText(CSS_SEL_JOB_TITLE).removesuffix("\n- job post")
-        company = self.selenium.getText(CSS_SEL_COMPANY)
-        location = self.selenium.getText(CSS_SEL_LOCATION)
-        salaryElms = self.selenium.getElms(CSS_SEL_JOB_SALARY)
-        salary = salaryElms[0].text if salaryElms else ""
+        title = self._first_text(CSS_SEL_JOB_TITLE).removesuffix("\n- job post")
+        company = self._first_text(CSS_SEL_COMPANY)
+        location = self._extract_location()
+        salary = self._first_text(CSS_SEL_JOB_SALARY)
         url = self.selenium.getUrl()
-        html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
+        html = self._first_html(CSS_SEL_JOB_DESCRIPTION)
         return title, company, location, salary, url, html
 
     def check_easy_apply(self):
-        return len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
+        return any(self.selenium.getElms(sel) for sel in CSS_SEL_JOB_EASY_APPLY)
 
 
 

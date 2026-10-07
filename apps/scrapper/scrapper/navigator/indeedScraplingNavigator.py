@@ -16,24 +16,39 @@ CSS_SEL_JOB_LI = ".job_seen_beacon"
 CSS_SEL_JOB_LINK = ".jobTitle a, .jobTitle > a, h2.jobTitle > a, td.resultContent > div > h2 > a"
 CSS_SEL_NEXT_PAGE_BUTTON = 'a[data-testid="pagination-page-next"]'
 
-CSS_SEL_JOB_TITLE = ["h1.jobsearch-JobInfoHeader-title", "h2.jobsearch-JobInfoHeader-title", "div.jobsearch-JobInfoHeader-title-container h2", "[data-testid='jobsearch-JobInfoHeader-title']", ".jobsearch-JobInfoHeader-title", "h1"]
-CSS_SEL_COMPANY = ['div[data-testid="inlineHeader-companyName"]', "[data-testid='jobsearch-JobInfoHeader-companyName']", ".jobsearch-InlineCompanyRating div", ".jobsearch-CompanyReview--inline-rating div", ".jobsearch-InlineCompanyRating-companyName", "div.jobsearch-JobInfoHeader-subtitle > div > div > div:first-child"]
+CSS_SEL_JOB_TITLE = ["[data-testid='vj-job-title']", "[data-testid='company-info-title-row'] h5", "h1.jobsearch-JobInfoHeader-title", "h2.jobsearch-JobInfoHeader-title", "div.jobsearch-JobInfoHeader-title-container h2", "[data-testid='jobsearch-JobInfoHeader-title']", ".jobsearch-JobInfoHeader-title", "h1", "h5"]
+CSS_SEL_COMPANY = ['[data-testid="company-info-metadata"] a[href*="/cmp/"]', 'div[data-testid="inlineHeader-companyName"]', "[data-testid='jobsearch-JobInfoHeader-companyName']", ".jobsearch-InlineCompanyRating div", ".jobsearch-CompanyReview--inline-rating div", ".jobsearch-InlineCompanyRating-companyName", "div.jobsearch-JobInfoHeader-subtitle > div > div > div:first-child"]
 CSS_SEL_LOCATION = ['div[data-testid="inlineHeader-companyLocation"]', "[data-testid='jobsearch-JobInfoHeader-companyLocation']", ".jobsearch-JobInfoHeader-subtitle div:last-child", ".jobsearch-JobInfoHeader-subtitle > div > div", ".jobsearch-JobInfoHeader-subtitle > div"]
-CSS_SEL_JOB_SALARY = ["div[aria-label=Salario] span", "#salaryInfoAndJobType"]
-CSS_SEL_JOB_DESCRIPTION = ["#jobDescriptionText", ".jobsearch-jobDescriptionText", ".jobsearch-JobComponent-description", ".jobsearch-ViewJobLayout-jobDescription"]
-CSS_SEL_JOB_EASY_APPLY = ["#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button", "button.indeed-apply-button", ".indeed-apply-button", "[data-testid='jobsearch-ViewJobButtons-container'] button"]
+CSS_SEL_JOB_SALARY = ["[data-testid='salary-snippet-container']", "div[aria-label=Salario] span", "#salaryInfoAndJobType"]
+CSS_SEL_JOB_DESCRIPTION = [".simple-job-description-html", ".react-native-html-content", "#jobDescriptionText", ".jobsearch-jobDescriptionText", ".jobsearch-JobComponent-description", ".jobsearch-ViewJobLayout-jobDescription"]
+CSS_SEL_JOB_EASY_APPLY = ["[data-testid='viewjob-indeed-apply']", "#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button", "button.indeed-apply-button", ".indeed-apply-button", "[data-testid='jobsearch-ViewJobButtons-container'] button"]
 
 _TOTAL_RESULT_SELECTORS = [CSS_SEL_JOB_COUNT, ".jobsearch-JobCountAndSortPane-jobCount span", ".jobsearch-DesktopJobCount", "div[class*='jobCount']"]
 
 
 def _extract_text(page, selectors: List[str], suffix: str = "") -> str:
     for sel in selectors:
-        text = page.css(f"{sel}::text").get()
+        text = page.css(f"{sel} ::text").get()
         if not text:
             text = page.css(f"{sel} *::text").get()
         if text:
             return str(text).strip() + suffix
     return ""
+
+
+def _extract_location(page) -> str:
+    if text := _extract_text(page, CSS_SEL_LOCATION):
+        return text
+    for el in page.css('[data-testid="company-info-metadata"] div[dir="ltr"]'):
+        text = (el.get_all_text() or "").strip()
+        if "," in text and not el.css("a"):
+            return text
+    return ""
+
+
+def _extract_total_from_title(page) -> int:
+    match = re.match(r"([\d.,]+)\s+empleos", str(page.css("title::text").get() or "").strip())
+    return int(match.group(1).replace(".", "").replace(",", "")) if match else 0
 
 
 class IndeedScraplingNavigator(BaseNavigator):
@@ -86,10 +101,13 @@ class IndeedScraplingNavigator(BaseNavigator):
                                   console=f"DEBUG: Found total text with selector {sel}: {total_text}")
                 break
         if not total_text:
-            if self.debug:
-                logger.debug("indeed.scrapling.total_text_not_found", fallback="job_links",
-                              console=yellow("DEBUG: Could not find total results text. Checking for job links..."))
-            return 0
+            if total_from_title := _extract_total_from_title(self.current_page):
+                total_text = f"{total_from_title} empleos"
+            else:
+                if self.debug:
+                    logger.debug("indeed.scrapling.total_text_not_found", fallback="job_links",
+                                  console=yellow("DEBUG: Could not find total results text. Checking for job links..."))
+                return 0
         nums = re.findall(r'[0-9.,]+', total_text)
         if not nums:
             return 0
@@ -147,10 +165,9 @@ class IndeedScraplingNavigator(BaseNavigator):
     def get_job_data(self) -> Tuple[str, str, str, str, str, str]:
         title = _extract_text(self.current_page, CSS_SEL_JOB_TITLE, "\n- job post").removesuffix("\n- job post")
         if not title:
-            h1, h2 = self.current_page.css("h1 *::text").get(), self.current_page.css("h2 *::text").get()
-            title = (h1 or h2 or "").strip()
+            title = next((t for sel in ("h1", "h2", "h5") if (t := self.current_page.css(f"{sel} *::text").get())), "").strip()
         company = _extract_text(self.current_page, CSS_SEL_COMPANY)
-        location = _extract_text(self.current_page, CSS_SEL_LOCATION)
+        location = _extract_location(self.current_page)
         html = next((str(desc_el.get()) for sel in CSS_SEL_JOB_DESCRIPTION if (desc_el := self.current_page.css(sel))), "")
         salary = _extract_text(self.current_page, CSS_SEL_JOB_SALARY)
         url = self.get_current_job_url()

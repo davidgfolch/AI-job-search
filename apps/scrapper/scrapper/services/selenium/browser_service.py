@@ -47,6 +47,10 @@ class BrowserService:
         return self.driver.current_url
 
     @seleniumSocketConnRetry()
+    def getTitle(self):
+        return self.driver.title
+
+    @seleniumSocketConnRetry()
     def waitUntilPageUrlContains(self, url: str, timeout: int = 10):
         WebDriverWait(self.driver, timeout).until(
             lambda d: str(d.current_url).find(url) >= 0)

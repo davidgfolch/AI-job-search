@@ -140,11 +140,11 @@ def test_validate_logs_field_invalid(args, invalid_field):
     with captured_records(baseScrapper, "scrapper.baseScrapper") as records:
         assert validate(*args) is False
     invalid = [r for r in records if r["event"] == "job.field_invalid"]
-    assert len(invalid) == 4
-    assert [r["log_level"] for r in invalid] == ["error"] * 4
-    assert invalid_field in [r["field"] for r in invalid]
-    assert {r["url"] for r in invalid} == {args[1]}
-    assert {r["debug"] for r in invalid} == {args[4]}
+    assert len(invalid) == 1
+    assert invalid[0]["log_level"] == "error"
+    assert invalid[0]["field"] == invalid_field
+    assert invalid[0]["url"] == args[1]
+    assert invalid[0]["debug"] == args[4]
     assert {r["event"] for r in records} - {"job.field_invalid"} == {"debug.message"}
 
 
