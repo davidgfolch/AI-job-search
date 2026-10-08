@@ -35,6 +35,9 @@ test-results
 scripts/mysql/*_backup.*
 data/**
 
+# Crawlee runtime data (crawlee-page-analyst)
+storage/
+
 # Dependabot sandbox (scripts/test-sandbox.*)
 .docker-sandbox/
 

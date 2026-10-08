@@ -66,6 +66,9 @@ graphify install --project --platform opencode
 graphify . --backend ollama
 git add .claude/ .opencode/ AGENTS.md
 
+echo ""
+echo "Installing Crawlee..."
+uv tool install "crawlee[all]"
 
 echo ""
 echo "Installing commonlib..."

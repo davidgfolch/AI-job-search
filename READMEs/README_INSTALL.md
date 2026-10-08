@@ -110,7 +110,17 @@ For the Dockerized server, prefix each command with `docker exec ai-job-search-o
 
 The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable, then removes the temporary tag. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`.
 
-### 6. Install Project Dependencies
+### 6. Install Crawlee (source-page analysis)
+
+Required by the `crawlee-page-analyst` agent skill to analyze a source page after a site/DOM redesign and produce scrapper-change requirements before selectors are edited (see [AGENTIC_SDLC.md](AGENTIC_SDLC.md)).
+
+```bash
+uv tool install "crawlee[all]"
+```
+
+> `scripts/install.sh` / `scripts/install.bat` install it automatically. If you use `PlaywrightCrawler` and the browser binaries are missing, run `playwright install chromium` once.
+
+### 7. Install Project Dependencies
 
 You can use the helper script in the project root:
 
