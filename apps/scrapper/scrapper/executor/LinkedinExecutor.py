@@ -100,10 +100,10 @@ class LinkedinExecutor(BaseExecutor):
     def _load_and_process_row(self, idx, rowErrors=0) -> bool | str:
         # Returns True (exists), False (new), or "ERROR"
         try:
-            cssSel = self.navigator.scroll_jobs_list(idx)
-            url = self.navigator.get_job_url_from_element(cssSel)
+            cardElm = self.navigator.scroll_jobs_list(idx)
+            url = self.navigator.get_job_url_from_element(cardElm)
             jobId, jobExists = self.service.job_exists_in_db(url)
-            self.navigator.load_job_detail(jobExists, idx, cssSel)
+            self.navigator.load_job_detail(jobExists, cardElm)
             if jobExists:
                 logger.info("linkedin.job.already_exists", job_id=jobId, console=yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
                 return True

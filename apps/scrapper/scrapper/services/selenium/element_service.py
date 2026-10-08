@@ -11,7 +11,8 @@ from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketCon
 from commonlib.terminalColor import yellow
 from commonlib.systemUtil import isMacOS
 
-SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end',  behavior: 'smooth' });"
+# instant scroll: a smooth animation is still running when the caller clicks and the click lands mid-flight, intercepted by whatever passes over
+SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end' });"
 ARIA_ROLE_ATTR = 'role'
 ARIA_CHECKED_ATTR = 'aria-checked'
 ARIA_CHECKBOX_ROLE = 'checkbox'

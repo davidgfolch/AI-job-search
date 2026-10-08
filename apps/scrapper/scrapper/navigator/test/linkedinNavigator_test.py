@@ -1,13 +1,14 @@
 import pytest
-from unittest.mock import MagicMock, call, patch
-from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_LOGIN_BUTTON_LEGACY, CSS_SEL_LOGIN_REMEMBER_ME, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_JOB_FIT_PREFERENCES
-from selenium.common.exceptions import NoSuchElementException
+from unittest.mock import MagicMock, patch
+from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_LOGIN_BUTTON_LEGACY, CSS_SEL_LOGIN_REMEMBER_ME, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_CARD, CSS_SEL_NEXT_PAGE_BUTTON
+from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
 TEST_URL = "http://url"
 
 class TestLinkedinNavigator:
 
     def test_init(self, navigator, mock_selenium):
         assert navigator.selenium == mock_selenium
+        assert navigator.detail_reader.selenium == mock_selenium
 
     def test_load_page(self, navigator, mock_selenium):
         navigator.load_page(TEST_URL)
@@ -69,12 +70,17 @@ class TestLinkedinNavigator:
             navigator.loginSubmit()
         mock_selenium.waitAndClick.assert_not_called()
 
-    @pytest.mark.parametrize("getElms_return, expected", [
-        ([], True),
-        (['element'], False),
+    @pytest.mark.parametrize("header_text, header_absent, expected", [
+        ('99+ results', False, True),
+        ('12 results', False, True),
+        ('0 results', False, False),  # empty searches now render a "0 results" header instead of a banner
+        (None, True, True),  # header not rendered yet: the loop retries and fails loudly if the layout changed
     ])
-    def test_check_results(self, navigator, mock_selenium, getElms_return, expected):
-        mock_selenium.getElms.return_value = getElms_return
+    def test_check_results(self, navigator, mock_selenium, header_text, header_absent, expected):
+        if header_absent:
+            mock_selenium.getText.side_effect = NoSuchElementException('missing')
+        else:
+            mock_selenium.getText.return_value = header_text
         result = navigator.check_results("key", "url", False, "loc", "tpr")
         assert result is expected
 
@@ -84,78 +90,92 @@ class TestLinkedinNavigator:
         assert result == 100
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 
-    def test_scroll_jobs_list_success(self, navigator, mock_selenium):
-        navigator.scroll_jobs_list(1)
-        mock_selenium.scrollIntoView.assert_called()
-        mock_selenium.moveToElement.assert_called()
-        mock_selenium.waitUntilClickable.assert_called()
+    @pytest.mark.parametrize("idx, expected_pos", [(1, 0), (3, 2)])
+    def test_scroll_jobs_list(self, navigator, mock_selenium, idx, expected_pos):
+        cards = [MagicMock(), MagicMock(), MagicMock()]
+        mock_selenium.getElms.return_value = cards
+        elm = navigator.scroll_jobs_list(idx)
+        assert elm is cards[expected_pos]
+        mock_selenium.getElms.assert_called_with(CSS_SEL_JOB_CARD)
+        mock_selenium.scrollIntoView.assert_called_with(cards[expected_pos])
+        mock_selenium.moveToElement.assert_called_with(cards[expected_pos])
+        mock_selenium.waitUntilClickable.assert_called_with(cards[expected_pos])
 
-    def test_scroll_jobs_list_retry(self, navigator, mock_selenium):
-        mock_selenium.scrollIntoView.side_effect = [NoSuchElementException("err"), None]
-        with patch.object(navigator, 'scroll_jobs_list_retry') as mock_retry:
-             navigator.scroll_jobs_list(1)
-             mock_retry.assert_called_once()
-             assert mock_selenium.scrollIntoView.call_count == 2
+    @patch('scrapper.navigator.linkedinNavigator.sleep')
+    def test_scroll_jobs_list_not_found(self, mock_sleep, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = []
+        with pytest.raises(NoSuchElementException, match='Job card 3'):
+            navigator.scroll_jobs_list(3)
 
-    def test_scroll_jobs_list_retry_execution(self, navigator, mock_selenium):
-        navigator.scroll_jobs_list_retry(1)
-        mock_selenium.scrollIntoView.assert_called()
-        mock_selenium.moveToElement.assert_called()
-        mock_selenium.waitUntilClickable.assert_called()
+    @patch('commonlib.decorator.retry.sleep')
+    def test_click_next_page(self, mock_sleep, navigator, mock_selenium):
+        assert navigator.click_next_page() is True
+        mock_selenium.scrollIntoView.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON)
+        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON)
 
-        result = navigator.click_next_page()
-        assert result is True
-        mock_selenium.waitAndClick.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
+    @patch('commonlib.decorator.retry.sleep')
+    def test_click_next_page_gives_up_when_intercepted(self, mock_sleep, navigator, mock_selenium):
+        # a persistent overlay must not abort the whole run: the loop breaks and the keyword finishes
+        mock_selenium.waitAndClick.side_effect = ElementClickInterceptedException('blocked')
+        assert navigator.click_next_page() is False
+        assert mock_selenium.scrollIntoView.call_count > 1  # re-scrolled on every retry
 
-    @pytest.mark.parametrize("already_exists, idx, should_click", [
-        (True, 1, False),
-        (False, 1, False),
-        (False, 2, True),
-    ])
-    def test_load_job_detail(self, navigator, mock_selenium, already_exists, idx, should_click):
-        navigator.load_job_detail(already_exists, idx, "css")
-        if should_click:
-            mock_selenium.waitAndClick.assert_called_with("css")
-        else:
-            mock_selenium.waitAndClick.assert_not_called()
+    def test_load_job_detail_skips_existing(self, navigator, mock_selenium):
+        navigator.load_job_detail(True, MagicMock())
+        mock_selenium.waitAndClick.assert_not_called()
 
-    def test_job_fit_preference_found(self, navigator, mock_selenium):
-        # Test fit preference
-        mock_selenium.getElms.return_value = ["fit_pref_element"]
-        # getText is called for the button, then for title, company, location. 
-        # We need to provide enough side effects or valid return values.
-        # calls: getText(title_sel) -> "Title", getText(company_sel) -> "Company", getText(location_sel) -> "Location", getText(button) -> "Preference"
-        mock_selenium.getText.side_effect = ["Title", "Company", "Location", "Preference"]
-        mock_selenium.getAttr.return_value = TEST_URL
-        mock_selenium.getHtml.return_value = "job_html"
-        
-        t, c, l, u, h = navigator.getJobInList(0)
-        # fit html will be "Preference", job html is "job_html"
-        assert h == "Preferencejob_html"
+    def test_load_job_detail_clicks_and_waits(self, navigator, mock_selenium):
+        elm = MagicMock()
+        mock_selenium.getAttr.return_value = 'job-card-component-ref-42'
+        with patch.object(navigator.detail_reader, 'wait_for_job', return_value=True) as wait_for_job:
+            navigator.load_job_detail(False, elm)
+        mock_selenium.scrollIntoView.assert_called_with(elm)
+        mock_selenium.waitAndClick.assert_called_once_with(elm)
+        wait_for_job.assert_called_once_with('42')
 
-    @pytest.mark.parametrize("current_idx, expected_method", [
-        (1, 'getJobInList'),
-        (None, 'getJobInList_directUrl'),
-    ])
-    def test_get_job_data(self, navigator, mock_selenium, current_idx, expected_method):
-        navigator.current_idx = current_idx
-        with patch.object(navigator, expected_method) as mock_method:
-            navigator.get_job_data()
-            mock_method.assert_called_once()
+    def test_load_job_detail_reclicks_on_mismatch(self, navigator, mock_selenium):
+        # linkedin overwrites a fresh click with its delayed auto-selection, a re-click must recover
+        elm, fresh_elm = MagicMock(), MagicMock()
+        mock_selenium.getAttr.return_value = 'job-card-component-ref-42'
+        mock_selenium.getElm.return_value = fresh_elm
+        with patch.object(navigator.detail_reader, 'wait_for_job', side_effect=[False, True]):
+            navigator.load_job_detail(False, elm)
+        assert mock_selenium.waitAndClick.call_count == 2
+        mock_selenium.waitAndClick.assert_called_with(fresh_elm)
 
-    def test_getJobInList(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
-        mock_selenium.getAttr.return_value = TEST_URL
-        mock_selenium.getHtml.return_value = "html"
-        
-        t, c, l, u, h = navigator.getJobInList(0)
-        
-        assert t == "Title"
-        assert c == "Company"
-        assert l == "Location"
-        assert u == TEST_URL
-        assert h == "html"
-        mock_selenium.getAttr.assert_called()
+    def test_load_job_detail_retries_intercepted_clicks(self, navigator, mock_selenium):
+        elm = MagicMock()
+        mock_selenium.getAttr.return_value = 'job-card-component-ref-42'
+        mock_selenium.waitAndClick.side_effect = [ElementClickInterceptedException('blocked'), None]
+        with patch.object(navigator.detail_reader, 'wait_for_job', return_value=True):
+            navigator.load_job_detail(False, elm)
+        assert mock_selenium.waitAndClick.call_count == 2
+        assert mock_selenium.scrollIntoView.call_count == 2  # re-scrolled before the second attempt
+
+    def test_load_job_detail_raises_when_never_loads(self, navigator, mock_selenium):
+        mock_selenium.getAttr.return_value = 'job-card-component-ref-42'
+        with patch.object(navigator.detail_reader, 'wait_for_job', return_value=False):
+            with pytest.raises(NoSuchElementException, match='never showed job 42'):
+                navigator.load_job_detail(False, MagicMock())
+        assert mock_selenium.waitAndClick.call_count == 3
+
+    def test_load_job_detail_bad_componentkey(self, navigator, mock_selenium):
+        mock_selenium.getAttr.return_value = 'broken-key'
+        with pytest.raises(NoSuchElementException, match='No job id'):
+            navigator.load_job_detail(False, MagicMock())
+
+    def test_get_job_data(self, navigator, mock_selenium):
+        navigator.detail_reader.read = MagicMock(return_value=('T', 'C', 'L', 'U', 'H'))
+        assert navigator.get_job_data() == ('T', 'C', 'L', 'U', 'H')
+
+    def test_get_job_url_from_element(self, navigator, mock_selenium):
+        mock_selenium.getAttr.return_value = 'job-card-component-ref-123'
+        assert navigator.get_job_url_from_element(MagicMock()) == 'https://www.linkedin.com/jobs/view/123/'
+
+    def test_get_job_url_from_element_bad_componentkey(self, navigator, mock_selenium):
+        mock_selenium.getAttr.return_value = 'broken-key'
+        with pytest.raises(NoSuchElementException, match='No job id'):
+            navigator.get_job_url_from_element(MagicMock())
 
     @pytest.mark.parametrize("getElms_return, expected", [
         (["yes"], True),
@@ -169,24 +189,6 @@ class TestLinkedinNavigator:
         mock_selenium.getElms.return_value = [MagicMock()]
         navigator.collapse_messages()
         mock_selenium.waitAndClick_noError.assert_called()
-
-    def test_getJobInList_directUrl(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
-        mock_selenium.getAttr.return_value = TEST_URL
-        mock_selenium.getHtml.return_value = "html"
-        
-        t, c, l, u, h = navigator.getJobInList_directUrl()
-        
-        assert t == "Title"
-        assert c == "Company"
-        assert l == "Location"
-        assert u == TEST_URL
-        assert h == "html"
-        mock_selenium.getAttr.assert_called()
-
-    def test_get_job_url_from_element(self, navigator, mock_selenium):
-        navigator.get_job_url_from_element("css")
-        mock_selenium.getAttr.assert_called_with("css", 'href')
 
     def test_wait_until_page_url_contains(self, navigator, mock_selenium):
         navigator.wait_until_page_url_contains("url", 10)

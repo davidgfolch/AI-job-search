@@ -1,18 +1,29 @@
-from typing import Tuple, Optional
+import re
+from typing import Tuple
 from commonlib.decorator.retry import retry
 from commonlib.exceptionUtil import try_or_warn
 from commonlib.observability import get_logger
 from commonlib.stringUtil import join
 from commonlib.terminalColor import green, yellow, printHR
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
+from selenium.webdriver.remote.webelement import WebElement
 
 from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 
 from .baseNavigator import BaseNavigator
+from .components.linkedinDetailReader import LinkedinDetailReader
 
 logger = get_logger("scrapper.linkedinNavigator")
 
+JOB_CARD_CK_RE = r'job-card-component-ref-(\d+)'  # componentkey carries the job id
+
+
+def job_id_from_componentkey(componentkey: str) -> str:
+    match = re.search(JOB_CARD_CK_RE, componentkey or '')
+    if not match:
+        raise NoSuchElementException(f'No job id in componentkey {componentkey}')
+    return match.group(1)
 
 CSS_SEL_LOGIN_USER = 'input[type=email]'
 CSS_SEL_LOGIN_PWD = 'input[type=password]'
@@ -20,34 +31,18 @@ CSS_SEL_LOGIN_BUTTON = 'button[type=button]'  # login form is rendered twice, th
 CSS_SEL_LOGIN_BUTTON_LEGACY = 'button[type=submit]'
 # "keep me signed in" is a custom ARIA toggle: classes are hashed, aria-label is localized, so match on role/aria-checked
 CSS_SEL_LOGIN_REMEMBER_ME = 'div[role=checkbox][aria-checked="true"]'
-CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'div.scaffold-layout__list header div.jobs-search-results-list__title-heading small.jobs-search-results-list__text'
+CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'main header div[componentkey=searchResultsHeaderComponent] p'
 CSS_SEL_MESSAGES_HIDE = 'aside#msg-overlay div.msg-overlay-bubble-header__controls button:last-child'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'section.artdeco-global-alert__body button:first-child'
-# LIST
-CSS_SEL_NO_RESULTS = 'div.jobs-search-no-results-banner'
-CSS_SEL_JOB_LI = 'div.scaffold-layout__list > div > ul > li'
-CSS_SEL_JOB_LI_IDX = f'{CSS_SEL_JOB_LI}:nth-child(##idx##)'
-CSS_SEL_COMPANY = 'div.artdeco-entity-lockup__subtitle'
-CSS_SEL_LOCATION = 'div.artdeco-entity-lockup__caption'
-LI_JOB_TITLE_CSS_SUFFIX = 'div.artdeco-entity-lockup__title > a > span > strong'
-CSS_SEL_JOB_LINK = f'{CSS_SEL_JOB_LI_IDX} > div > div > div > div > div > div > a'
-CSS_SEL_NEXT_PAGE_BUTTON = 'div.jobs-search-pagination > button.jobs-search-pagination__button--next'
-# JOB DETAIL (IN LIST CLICK)
-CSS_SEL_JOB_DETAIL = 'main'
-CSS_SEL_JOB_HEADER = f'{CSS_SEL_JOB_DETAIL} h1 a'
-CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content article div.mt4'
-CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content button.jobs-apply-button svg[data-test-icon="linkedin-bug-xxsmall"]'
-CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'  # No longer accepting applications
-# JOB DETAIL IN SEARCH VIEW (DIRECT URL)
-CSS_SEL_DETAIL_COMPANY = f'{CSS_SEL_JOB_DETAIL} .job-details-jobs-unified-top-card__company-name'
-CSS_SEL_DETAIL_LOCATION = f'{CSS_SEL_JOB_DETAIL} .job-details-jobs-unified-top-card__primary-description-container'
-CSS_SEL_JOB_FIT_PREFERENCES = f'{CSS_SEL_JOB_DETAIL} .job-details-fit-level-preferences button strong'
+# LIST: cards are role=button divs, listed in visual order
+CSS_SEL_JOB_CARD = 'div[role=button][componentkey^=job-card-component-ref-]'
+CSS_SEL_NEXT_PAGE_BUTTON = 'div[componentkey=SearchResultsMainContent] > div:has(> ul > li > button[aria-label]) > button:last-child'
 
 class LinkedinNavigator(BaseNavigator):
 
     def __init__(self, selenium: SeleniumService, debug: bool):
         super().__init__(selenium, debug)
-        self.current_idx = None
+        self.detail_reader = LinkedinDetailReader(selenium)
 
     def check_login_popup(self, login_callback) -> bool:
         sleep(2, 3)
@@ -104,15 +99,16 @@ class LinkedinNavigator(BaseNavigator):
         self.selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE, 'Could not close cookies banner')
 
     def check_results(self, keywords: str, url: str, remote, location, f_TPR) -> bool:
-        noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
-        if len(noResultElm) == 0:
-            return True
-        logger.info("linkedin.no_results", keywords=keywords, remote=remote, location=location, last=f_TPR, url=url,
-                    console=yellow(join('No results for job search on linkedIn for', f'keywords={keywords}', f'remote={remote}', f'location={location}', f'old={f_TPR}', f'URL {url}')))
-        return False
-
-    def replace_index(self, cssSelector: str, idx: int):
-        return cssSelector.replace('##idx##', str(idx))
+        # LinkedIn dropped the no-results banner: an empty search serves a "0 results" header instead
+        try:
+            total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).strip()
+        except NoSuchElementException:
+            return True  # header not rendered yet: get_total_results retries and fails loudly if the layout changed
+        if total.startswith('0'):
+            logger.info("linkedin.no_results", keywords=keywords, remote=remote, location=location, last=f_TPR, url=url,
+                        console=yellow(join('No results for job search on linkedIn for', f'keywords={keywords}', f'remote={remote}', f'location={location}', f'old={f_TPR}', f'URL {url}')))
+            return False
+        return True
 
     @retry(exception=NoSuchElementException)
     def get_total_results(self, keywords: str, remote, location, f_TPR, sortBy) -> int:
@@ -123,72 +119,58 @@ class LinkedinNavigator(BaseNavigator):
         printHR(green)
         return int(total.replace('+', ''))
 
-    def scroll_jobs_list(self, idx):
-        self.current_idx = idx
-        cssSel = self.replace_index(CSS_SEL_JOB_LINK, idx)
-        try:
-            self.selenium.scrollIntoView(cssSel)
-        except NoSuchElementException:
-            self.scroll_jobs_list_retry(idx)
-            self.selenium.scrollIntoView(cssSel)
-        self.selenium.moveToElement(self.selenium.getElm(cssSel))
-        self.selenium.waitUntilClickable(cssSel)
-        return cssSel
+    def scroll_jobs_list(self, idx) -> WebElement:
+        cards = self._get_cards(idx)
+        elm = cards[idx - 1]
+        self.selenium.scrollIntoView(elm)
+        self.selenium.moveToElement(elm)
+        self.selenium.waitUntilClickable(elm)
+        return elm
 
-    @retry()
-    def scroll_jobs_list_retry(self, idx):
-        for i in range(idx, idx+1):
-            cssSelI = self.replace_index(CSS_SEL_JOB_LI_IDX, i)
-            self.selenium.scrollIntoView(cssSelI)
-            self.selenium.moveToElement(self.selenium.getElm(cssSelI))
-            self.selenium.waitUntilClickable(self.replace_index(CSS_SEL_JOB_LINK, i))
+    def _get_cards(self, idx: int) -> list[WebElement]:
+        cards = []
+        for _ in range(10):  # list may still be rendering after a page load / pagination click
+            cards = self.selenium.getElms(CSS_SEL_JOB_CARD)
+            if len(cards) >= idx:
+                return cards
+            sleep(0.5, 0.8)
+        raise NoSuchElementException(f'Job card {idx} not found (page has {len(cards)})')
 
-    @retry(exception=NoSuchElementException, raiseException=False)
+    @retry(exception=(NoSuchElementException, ElementClickInterceptedException), raiseException=False)
     def click_next_page(self):
-        self.selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON, scrollIntoView=True)
+        self.selenium.scrollIntoView(CSS_SEL_NEXT_PAGE_BUTTON)
+        self.selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
         return True
 
-    def load_job_detail(self, jobExists: bool, idx: int, cssSel):
-        if jobExists or idx == 1:
+    def load_job_detail(self, jobExists: bool, elm: WebElement):
+        if jobExists:
             return
         print(yellow('loading...'), end='', flush=True)
-        self.selenium.waitAndClick(cssSel)
-
-    def _get_job_fit_preferences_html(self) -> str:
-        buttons = self.selenium.getElms(CSS_SEL_JOB_FIT_PREFERENCES)
-        return ', '.join(map(lambda b: self.selenium.getText(b), buttons))
+        componentkey = self.selenium.getAttr(elm, 'componentkey')
+        expected_job_id = job_id_from_componentkey(componentkey)
+        last_interception = None
+        for attempt in range(3):
+            card = elm if attempt == 0 else self.selenium.getElm(f'{CSS_SEL_JOB_CARD}[componentkey="{componentkey}"]')  # list can re-render between attempts
+            self.selenium.scrollIntoView(card)
+            try:
+                self.selenium.waitAndClick(card)
+            except ElementClickInterceptedException as e:
+                last_interception = e  # something overlapped the card: re-scroll and retry
+                continue
+            if self.detail_reader.wait_for_job(expected_job_id):
+                return
+        raise NoSuchElementException(f'Job detail pane never showed job {expected_job_id}') from last_interception
 
     def get_job_data(self) -> Tuple[str, str, str, str, str]:
-        if self.current_idx is None:
-            return self.getJobInList_directUrl()
-        return self.getJobInList(self.current_idx)
+        return self.detail_reader.read()
 
-    def getJobInList_directUrl(self) -> Tuple[str, str, str, str, str]:
-        title = self.selenium.getText(CSS_SEL_JOB_HEADER)
-        company = self.selenium.getText(CSS_SEL_DETAIL_COMPANY)
-        location = self.selenium.getText(CSS_SEL_DETAIL_LOCATION)
-        url = self.selenium.getAttr(CSS_SEL_JOB_HEADER, 'href')
-        fit_prefs_html = self._get_job_fit_preferences_html() # salary, location, remote,...
-        html = fit_prefs_html + self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        return title, company, location, url, html
-
-    def getJobInList(self, idx: int) -> Tuple[str, str, str, str, str]:
-        liPrefix = self.replace_index(CSS_SEL_JOB_LI_IDX, idx)
-        title = self.selenium.getText(f'{liPrefix} {LI_JOB_TITLE_CSS_SUFFIX}')
-        company = self.selenium.getText(f'{liPrefix} {CSS_SEL_COMPANY}')
-        location = self.selenium.getText(f'{liPrefix} {CSS_SEL_LOCATION}')
-        self.selenium.waitUntilClickable(CSS_SEL_JOB_HEADER)
-        url = self.selenium.getAttr(CSS_SEL_JOB_HEADER, 'href')
-        fit_prefs_html = self._get_job_fit_preferences_html()
-        html = fit_prefs_html + self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
-        return title, company, location, url, html
-
-    def get_job_url_from_element(self, cssSel):
-        return self.selenium.getAttr(cssSel, 'href')
+    def get_job_url_from_element(self, elm: WebElement) -> str:
+        componentkey = self.selenium.getAttr(elm, 'componentkey')
+        return f'https://www.linkedin.com/jobs/view/{job_id_from_componentkey(componentkey)}/'
 
     def check_easy_apply(self):
-        return len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
-    
+        return self.detail_reader.check_easy_apply()
+
     def collapse_messages(self):
         elms = self.selenium.getElms(CSS_SEL_MESSAGES_HIDE)
         if len(elms) > 0:
