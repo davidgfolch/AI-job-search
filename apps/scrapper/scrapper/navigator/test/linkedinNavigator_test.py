@@ -97,7 +97,7 @@ class TestLinkedinNavigator:
         elm = navigator.scroll_jobs_list(idx)
         assert elm is cards[expected_pos]
         mock_selenium.getElms.assert_called_with(CSS_SEL_JOB_CARD)
-        mock_selenium.scrollIntoView.assert_called_with(cards[expected_pos])
+        mock_selenium.scrollIntoView.assert_called_with(cards[expected_pos], block='center')
         mock_selenium.moveToElement.assert_called_with(cards[expected_pos])
         mock_selenium.waitUntilClickable.assert_called_with(cards[expected_pos])
 
@@ -111,6 +111,7 @@ class TestLinkedinNavigator:
     def test_click_next_page(self, mock_sleep, navigator, mock_selenium):
         assert navigator.click_next_page() is True
         mock_selenium.scrollIntoView.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON)
+        mock_selenium.scrollContainerToBottom.assert_called_once_with(CSS_SEL_NEXT_PAGE_BUTTON)
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON)
 
     @patch('commonlib.decorator.retry.sleep')
@@ -118,7 +119,7 @@ class TestLinkedinNavigator:
         # a persistent overlay must not abort the whole run: the loop breaks and the keyword finishes
         mock_selenium.waitAndClick.side_effect = ElementClickInterceptedException('blocked')
         assert navigator.click_next_page() is False
-        assert mock_selenium.scrollIntoView.call_count > 1  # re-scrolled on every retry
+        assert mock_selenium.scrollContainerToBottom.call_count > 1  # re-scrolled on every retry
 
     def test_load_job_detail_skips_existing(self, navigator, mock_selenium):
         navigator.load_job_detail(True, MagicMock())
@@ -129,7 +130,7 @@ class TestLinkedinNavigator:
         mock_selenium.getAttr.return_value = 'job-card-component-ref-42'
         with patch.object(navigator.detail_reader, 'wait_for_job', return_value=True) as wait_for_job:
             navigator.load_job_detail(False, elm)
-        mock_selenium.scrollIntoView.assert_called_with(elm)
+        mock_selenium.scrollIntoView.assert_called_with(elm, block='center')
         mock_selenium.waitAndClick.assert_called_once_with(elm)
         wait_for_job.assert_called_once_with('42')
 

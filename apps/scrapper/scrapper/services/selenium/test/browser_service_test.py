@@ -121,6 +121,12 @@ class TestScrollProgressive:
             assert mock_driver.execute_script.call_count >= 1
 
 
+class TestScrollToBottom:
+    def test_scroll_to_bottom(self, browser_service, mock_driver):
+        browser_service.scroll_to_bottom()
+        mock_driver.execute_script.assert_called_once_with("window.scrollTo(0, document.documentElement.scrollHeight);")
+
+
 class TestBack:
     def test_back(self, browser_service, mock_driver):
         browser_service.back()

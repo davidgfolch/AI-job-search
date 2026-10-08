@@ -122,7 +122,7 @@ class LinkedinNavigator(BaseNavigator):
     def scroll_jobs_list(self, idx) -> WebElement:
         cards = self._get_cards(idx)
         elm = cards[idx - 1]
-        self.selenium.scrollIntoView(elm)
+        self.selenium.scrollIntoView(elm, block='center')  # the fixed div covers the viewport bottom: a block=end card would sit under it
         self.selenium.moveToElement(elm)
         self.selenium.waitUntilClickable(elm)
         return elm
@@ -139,6 +139,7 @@ class LinkedinNavigator(BaseNavigator):
     @retry(exception=(NoSuchElementException, ElementClickInterceptedException), raiseException=False)
     def click_next_page(self):
         self.selenium.scrollIntoView(CSS_SEL_NEXT_PAGE_BUTTON)
+        self.selenium.scrollContainerToBottom(CSS_SEL_NEXT_PAGE_BUTTON)  # the list is a nested scrollbox the document never scrolls: its own container must hit bottom so a position:fixed div clears the button
         self.selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
         return True
 
@@ -151,7 +152,7 @@ class LinkedinNavigator(BaseNavigator):
         last_interception = None
         for attempt in range(3):
             card = elm if attempt == 0 else self.selenium.getElm(f'{CSS_SEL_JOB_CARD}[componentkey="{componentkey}"]')  # list can re-render between attempts
-            self.selenium.scrollIntoView(card)
+            self.selenium.scrollIntoView(card, block='center')
             try:
                 self.selenium.waitAndClick(card)
             except ElementClickInterceptedException as e:

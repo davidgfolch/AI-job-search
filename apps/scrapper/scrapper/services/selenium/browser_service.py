@@ -78,6 +78,10 @@ class BrowserService:
         self.driver.execute_script(f"window.scrollTo(0, {targetPos});")
 
     @seleniumSocketConnRetry()
+    def scroll_to_bottom(self):
+        self.driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
+
+    @seleniumSocketConnRetry()
     def back(self):
         self.driver.back()
 

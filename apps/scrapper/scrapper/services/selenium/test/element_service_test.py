@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 from scrapper.services.selenium import element_service as element_service_module
-from scrapper.services.selenium.element_service import ElementService, SCROLL_INTO_VIEW_SCRIPT
+from scrapper.services.selenium.element_service import ElementService, SCROLL_INTO_VIEW_SCRIPT, SCROLL_CONTAINER_TO_BOTTOM_SCRIPT
 
 ARIA_CHECKBOX_SEL = 'div[role=checkbox][aria-checked="true"]'
 NATIVE_CHECKBOX_SEL = 'input[type=checkbox]'
@@ -143,14 +143,21 @@ class TestClearInputbox:
         elm.send_keys.assert_not_called()
 
 class TestScrollAndClick:
-    def test_scroll_into_view_runs_the_script_then_waits_and_moves(self, service, driver, make_element, action_chains):
+    @pytest.mark.parametrize("block", ['end', 'center'])
+    def test_scroll_into_view_runs_the_script_then_waits_and_moves(self, service, driver, make_element, action_chains, block):
         elm = make_element()
         driver.find_element.return_value = elm
         with patch.object(service, 'waitUntilVisible') as mock_visible:
-            service.scrollIntoView(SEL)
-        driver.execute_script.assert_called_once_with(SCROLL_INTO_VIEW_SCRIPT, elm)
+            service.scrollIntoView(SEL, block=block)
+        driver.execute_script.assert_called_once_with(SCROLL_INTO_VIEW_SCRIPT.format(block=block), elm)
         mock_visible.assert_called_once_with(elm)
         assert action_chains.call_count == 1
+
+    def test_scroll_container_to_bottom_runs_the_walk_on_the_resolved_element(self, service, driver, make_element):
+        elm = make_element()
+        driver.find_element.return_value = elm
+        service.scrollContainerToBottom(SEL)
+        driver.execute_script.assert_called_once_with(SCROLL_CONTAINER_TO_BOTTOM_SCRIPT, elm)
 
     @pytest.mark.parametrize("failure, expected", [(None, True), (RuntimeError('gone'), False)], ids=["ok", "fails"])
     def test_scroll_into_view_no_error_reports_the_outcome(self, service, failure, expected):

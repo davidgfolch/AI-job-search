@@ -101,8 +101,14 @@ class SeleniumService:
     def scrollProgressive(self, distance: int):
         self.browser_service.scrollProgressive(distance)
 
-    def scrollIntoView(self, cssSel: str | WebElement):
-        self.element_service.scrollIntoView(cssSel)
+    def scrollIntoView(self, cssSel: str | WebElement, block: str = 'end'):
+        self.element_service.scrollIntoView(cssSel, block)
+
+    def scroll_to_bottom(self):
+        self.browser_service.scroll_to_bottom()
+
+    def scrollContainerToBottom(self, cssSel: str | WebElement):
+        self.element_service.scrollContainerToBottom(cssSel)
     
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
         self.element_service.waitUntilClickable(cssSel, timeout)

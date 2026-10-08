@@ -11,8 +11,17 @@ from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketCon
 from commonlib.terminalColor import yellow
 from commonlib.systemUtil import isMacOS
 
-# instant scroll: a smooth animation is still running when the caller clicks and the click lands mid-flight, intercepted by whatever passes over
-SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({ block: 'end' });"
+# instant scroll: a smooth animation is still running when the caller clicks and the click lands mid-flight, intercepted by whatever passes over.
+# The block moves the element away from the viewport edges, where position:fixed overlays cover the list end
+SCROLL_INTO_VIEW_SCRIPT = "arguments[0].scrollIntoView({{ block: '{block}' }});"
+# LinkedIn is a full-height app: the document never scrolls and the job list lives in its own scrollbox, so the list container (not the window) owns the bottom band
+SCROLL_CONTAINER_TO_BOTTOM_SCRIPT = """let el = arguments[0].parentElement;
+while (el && el !== document.documentElement) {
+  if (el.scrollHeight > el.clientHeight && ['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) {
+    el.scrollTop = el.scrollHeight;
+  }
+  el = el.parentElement;
+}"""
 ARIA_ROLE_ATTR = 'role'
 ARIA_CHECKED_ATTR = 'aria-checked'
 ARIA_CHECKBOX_ROLE = 'checkbox'
@@ -91,11 +100,16 @@ class ElementService:
         return elm.is_selected()
 
     @seleniumSocketConnRetry()
-    def scrollIntoView(self, cssSel: str | WebElement):
+    def scrollIntoView(self, cssSel: str | WebElement, block: str = 'end'):
         elm = self._getElmFromOpSelector(cssSel)
-        self.driver.execute_script(SCROLL_INTO_VIEW_SCRIPT, elm)
+        self.driver.execute_script(SCROLL_INTO_VIEW_SCRIPT.format(block=block), elm)
         self.waitUntilVisible(elm)
         self.moveToElement(elm)
+
+    @seleniumSocketConnRetry()
+    def scrollContainerToBottom(self, cssSel: str | WebElement):
+        elm = self._getElmFromOpSelector(cssSel)
+        self.driver.execute_script(SCROLL_CONTAINER_TO_BOTTOM_SCRIPT, elm)
     
     @seleniumSocketConnRetry()
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
