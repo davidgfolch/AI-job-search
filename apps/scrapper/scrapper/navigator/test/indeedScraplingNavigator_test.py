@@ -45,7 +45,7 @@ def _new_dom_page(easy=True, location="Madrid, Madrid provincia"):
     def css(sel):
         if 'company-info-metadata"] div[dir="ltr"]' in sel:
             return [MagicMock(get_all_text=MagicMock(return_value=location), css=MagicMock(return_value=[]))]
-        values = {"vj-job-title": "Title", 'a[href*="/cmp/"]': "Company", "simple-job-description-html": "<p>Description</p>",
+        values = {"vj-job-title": "Title", "vj-company-name": "Company", 'a[href*="/cmp/"]': "Company", "simple-job-description-html": "<p>Description</p>",
                   "viewjob-indeed-apply": "Easy apply" if easy else "", "title::text": "25 empleos de Ingeniero java | Indeed"}
         for key, value in values.items():
             if key in sel:
@@ -194,3 +194,22 @@ class TestIndeedScraplingNavigator:
         navigator = _make_navigator()
         navigator.current_page = _new_dom_page()
         assert navigator.get_total_results("java") == 25
+
+    @pytest.mark.parametrize("status,expected", [(404, True), (200, False), (None, False)])
+    def test_is_delisted_by_status(self, status, expected):
+        navigator = _make_navigator()
+        navigator.current_page = _new_dom_page()
+        navigator.current_page.status = status
+        assert navigator.is_delisted() is expected
+
+    def test_is_delisted_by_title(self):
+        navigator = _make_navigator()
+        page = _new_dom_page()
+        page.css = MagicMock(side_effect=lambda sel: MagicMock(get=MagicMock(return_value="No podemos encontrar esta página")) if "h1" in sel else MockSelector(""))
+        navigator.current_page = page
+        assert navigator.is_delisted() is True
+
+    def test_is_delisted_false_on_valid_page(self):
+        navigator = _make_navigator()
+        navigator.current_page = _new_dom_page()
+        assert navigator.is_delisted() is False

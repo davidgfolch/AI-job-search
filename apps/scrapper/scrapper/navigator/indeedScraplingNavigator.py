@@ -17,7 +17,8 @@ CSS_SEL_JOB_LINK = ".jobTitle a, .jobTitle > a, h2.jobTitle > a, td.resultConten
 CSS_SEL_NEXT_PAGE_BUTTON = 'a[data-testid="pagination-page-next"]'
 
 CSS_SEL_JOB_TITLE = ["[data-testid='vj-job-title']", "[data-testid='company-info-title-row'] h5", "h1.jobsearch-JobInfoHeader-title", "h2.jobsearch-JobInfoHeader-title", "div.jobsearch-JobInfoHeader-title-container h2", "[data-testid='jobsearch-JobInfoHeader-title']", ".jobsearch-JobInfoHeader-title", "h1", "h5"]
-CSS_SEL_COMPANY = ['[data-testid="company-info-metadata"] a[href*="/cmp/"]', 'div[data-testid="inlineHeader-companyName"]', "[data-testid='jobsearch-JobInfoHeader-companyName']", ".jobsearch-InlineCompanyRating div", ".jobsearch-CompanyReview--inline-rating div", ".jobsearch-InlineCompanyRating-companyName", "div.jobsearch-JobInfoHeader-subtitle > div > div > div:first-child"]
+CSS_SEL_COMPANY = ["[data-testid='vj-company-name']", '[data-testid="company-info-metadata"] a[href*="/cmp/"]', 'div[data-testid="inlineHeader-companyName"]', "[data-testid='jobsearch-JobInfoHeader-companyName']", ".jobsearch-InlineCompanyRating div", ".jobsearch-CompanyReview--inline-rating div", ".jobsearch-InlineCompanyRating-companyName", "div.jobsearch-JobInfoHeader-subtitle > div > div > div:first-child"]
+DELISTED_TITLE = "No podemos encontrar esta página"
 CSS_SEL_LOCATION = ['div[data-testid="inlineHeader-companyLocation"]', "[data-testid='jobsearch-JobInfoHeader-companyLocation']", ".jobsearch-JobInfoHeader-subtitle div:last-child", ".jobsearch-JobInfoHeader-subtitle > div > div", ".jobsearch-JobInfoHeader-subtitle > div"]
 CSS_SEL_JOB_SALARY = ["[data-testid='salary-snippet-container']", "div[aria-label=Salario] span", "#salaryInfoAndJobType"]
 CSS_SEL_JOB_DESCRIPTION = [".simple-job-description-html", ".react-native-html-content", "#jobDescriptionText", ".jobsearch-jobDescriptionText", ".jobsearch-JobComponent-description", ".jobsearch-ViewJobLayout-jobDescription"]
@@ -61,6 +62,13 @@ class IndeedScraplingNavigator(BaseNavigator):
         if not self.current_page:
             return True
         return len(self.current_page.css(".jobsearch-NoResult-messageContainer")) > 0
+
+    def is_delisted(self) -> bool:
+        if not self.current_page:
+            return False
+        if getattr(self.current_page, "status", None) == 404:
+            return True
+        return _extract_text(self.current_page, ["h1"], "") == DELISTED_TITLE
 
     def clickSortByDate(self):
         pass
