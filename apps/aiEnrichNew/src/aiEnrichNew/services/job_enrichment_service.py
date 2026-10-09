@@ -147,7 +147,7 @@ def _process_job_batch_pipeline(
         elapsed = time.time() - start_time
         idx = batch_items.index(item)
         printJob(process_name, total, start_idx + idx, job_id, item['title'], company, item['length'])
-        footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed)
+        footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed, config=repo.config_for_job(job_id) or "NONE")
 
     def on_error(item: Dict[str, Any], ex: Exception):
         job_id = item['id']

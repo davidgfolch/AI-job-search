@@ -9,6 +9,8 @@ class MockMysqlUtil:
     def __init__(self):
         self.count_result = 0
         self.fetch_all_result = []
+        self.configs_result = []
+        self.priority_result = []
         self.fetch_one_result = None
         self.update_called = False
         self.updates = []
@@ -24,6 +26,10 @@ class MockMysqlUtil:
         self.last_query = query
         self.last_params = params
         self.fetch_all_calls.append((query, params))
+        if "filter_configurations" in query:
+            return self.configs_result
+        if "created DESC, id DESC" in query:
+            return self.priority_result
         return self.fetch_all_result
         
     def fetchOne(self, query, *args):
@@ -57,6 +63,33 @@ def test_get_pending_enrichment_ids():
     mock_mysql.fetch_all_result = [(1,), (2,)]
     assert repo.get_pending_enrichment_ids() == [1, 2]
     assert "ai_enrich_error" in mock_mysql.last_query
+
+
+def test_get_pending_enrichment_ids_priority_first_and_deduped():
+    mock_mysql, repo = mockRepo()
+    mock_mysql.configs_result = [(1, "Python", '{"search": "python"}')]
+    mock_mysql.priority_result = [(5,), (1,)]
+    mock_mysql.fetch_all_result = [(1,), (2,), (3,)]
+    assert repo.get_pending_enrichment_ids() == [5, 1, 2, 3]
+
+
+def test_get_pending_enrichment_ids_priority_excludes_ai_enriched_filter():
+    mock_mysql, repo = mockRepo()
+    mock_mysql.configs_result = [(1, "Backend", '{"ai_enriched": true, "applied": true}')]
+    repo.get_pending_enrichment_ids()
+    match_query = next(q for q, _ in mock_mysql.fetch_all_calls if "created DESC, id DESC" in q)
+    assert "`ai_enriched` =" not in match_query
+    assert "`applied` = 1" in match_query
+
+
+def test_config_for_job_exposes_priority_config():
+    mock_mysql, repo = mockRepo()
+    mock_mysql.configs_result = [(1, "Python", '{}')]
+    mock_mysql.priority_result = [(5,)]
+    mock_mysql.fetch_all_result = [(5,), (2,)]
+    assert repo.get_pending_enrichment_ids() == [5, 2]
+    assert repo.config_for_job(5) == "Python"
+    assert repo.config_for_job(2) is None
 
 def test_get_job_to_enrich():
     mock_mysql, repo = mockRepo()

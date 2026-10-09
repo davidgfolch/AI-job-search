@@ -92,6 +92,18 @@ class TestExtractBooleanFilters:
         result = extract_boolean_filters(filters)
         assert result == {}
 
+    def test_extract_skips_none_values(self):
+        """Test that null boolean values are not included in the SQL filter."""
+        filters = {
+            'flagged': True,
+            'easy_apply': None,
+            'interview': None,
+        }
+
+        result = extract_boolean_filters(filters)
+
+        assert result == {'flagged': True}
+
 
 class TestExtractFilterParams:
     """Tests for extract_filter_params function."""
@@ -132,16 +144,16 @@ class TestExtractFilterParams:
         assert result['boolean_filters'] == {}
 
     def test_extract_with_none_values(self):
-        """Test that None values are preserved if key exists."""
+        """Test that None values are not carried into the boolean filters."""
         filters = {
             'search': None,
             'flagged': None,
+            'easy_apply': None,
         }
 
         result = extract_filter_params(filters)
         assert result['search'] is None
-        # None values are included if the key exists (not filtered out)
-        assert result['boolean_filters'] == {'flagged': None}
+        assert result['boolean_filters'] == {}
 
 
 class TestBooleanFilterKeys:

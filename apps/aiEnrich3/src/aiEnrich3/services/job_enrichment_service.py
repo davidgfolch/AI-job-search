@@ -177,7 +177,7 @@ def _process_job_batch_local(
         else:
             elapsed = time.time() - start_time
             printJob(process_name, total, start_idx + idx, job_id, title, company, item.get('length', 0))
-            footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed)
+            footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed, config=repo.config_for_job(job_id) or "NONE")
 
         duration = time.time() - job_start
         collector.record_job("aiEnrich3", duration, success)

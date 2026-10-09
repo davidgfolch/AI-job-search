@@ -1,13 +1,25 @@
 from commonlib.sql.mysqlUtil import MysqlUtil
+from commonlib.sql.filter_config_selector import FilterConfigSelector
 from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
 from commonlib.environmentUtil import getEnv
 from commonlib.ai_helpers import MAX_AI_ENRICH_ERROR_LEN, RETRY_ERROR_PREFIX
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.findLastDuplicated import find_last_duplicated
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.aiEnrichRepository")
 
 class AiEnrichRepository:
+    PENDING_ENRICHMENT_QUERY = """SELECT id 
+                   FROM jobs
+                   WHERE (ai_enriched IS NULL OR not ai_enriched) and
+                   (ai_enrich_error IS NULL OR ai_enrich_error = '') and
+                   not (ignored or discarded or closed)
+                   ORDER BY created desc"""
+
     def __init__(self, mysql: MysqlUtil):
         self.mysql = mysql
+        self._job_configs: dict[int, str] = {}
 
     # Enrichment Queries
     def count_pending_enrichment(self) -> int:
@@ -20,15 +32,22 @@ class AiEnrichRepository:
         return self.mysql.count(query)
 
     def get_pending_enrichment_ids(self) -> list[int]:
-        query = """SELECT id 
-                   FROM jobs
-                   WHERE (ai_enriched IS NULL OR not ai_enriched) and
-                   (ai_enrich_error IS NULL OR ai_enrich_error = '') and
-                   not (ignored or discarded or closed)
-                   ORDER BY created desc"""
-        return [row[0] for row in self.mysql.fetchAll(query)]
+        """Pending job ids, pinned filter-configuration matches first, then the rest."""
+        selector = FilterConfigSelector(self.mysql)
+        priority = selector.priority_ids()
+        self._job_configs = selector.job_configs
+        rest = [row[0] for row in self.mysql.fetchAll(self.PENDING_ENRICHMENT_QUERY)]
+        if not priority:
+            return rest
+        seen = set(priority)
+        return priority + [job_id for job_id in rest if job_id not in seen]
+
+    def config_for_job(self, id: int) -> str | None:
+        """Name of the pinned configuration that prioritised this job, if any."""
+        return self._job_configs.get(id)
         
     def get_job_to_enrich(self, id: int):
+        logger.info("job.filter_config", job_id=id, config=self._job_configs.get(id) or "NONE")
         query = """
             SELECT id, title, markdown, company
             FROM jobs

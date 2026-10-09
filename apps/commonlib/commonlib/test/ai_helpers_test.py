@@ -210,6 +210,24 @@ def test_footer_progress_line_includes_elapsed():
     assert "/job)" in console
 
 
+def test_footer_progress_line_includes_config():
+    with capture_logs() as records:
+        footer(10, 0, 1, set(), config="JVM Spring")
+
+    completed = _completed(records)
+    assert completed["config"] == "JVM Spring"
+    assert "Config: JVM Spring" in completed["console"]
+
+
+def test_footer_omits_config_when_absent():
+    with capture_logs() as records:
+        footer(10, 0, 1, set())
+
+    completed = _completed(records)
+    assert "config" not in completed
+    assert "Config:" not in completed["console"]
+
+
 @pytest.mark.parametrize("elapsed_time, console_suffix, batch_fields", [
     (1668.0, "Time elapsed: 41s (Media: 40s/job)", {"elapsed": "27m 48s", "elapsed_per_job": "40s"}),
     (None, "Time elapsed: 41s", None),

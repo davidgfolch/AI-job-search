@@ -9,6 +9,10 @@ This application enriches job data (e.g., extracting salary, technologies, modal
 - **Ollama** (`ollama`, default): local models, free, no API key required. Communicates over Ollama's `/api/generate` HTTP API.
 - **OpenRouter** (`openrouter`): cloud models via the OpenAI-compatible API at openrouter.ai. Requires an API key, no local model/server needed.
 
+## Job selection
+
+Each cycle enriches pending jobs in this priority order: first the pending jobs matching the stored **pinned filter configurations** (the same filters used by the web UI), processing the configurations in `ordering ASC` and honoring each configuration's `order` (falling back to `created desc`), then every other pending job in `created desc`. The `ai_enriched` condition is always removed from a configuration, because this module is what sets that flag, and every candidate must still be unenriched and free of a previous `ai_enrich_error` (and not ignored/discarded/closed). When no pinned configurations exist, the module falls back to the plain pending query. The selection lives in the shared `commonlib.aiEnrichRepository`, so `aiEnrichNew` and `aiEnrich3` follow the same order. The selector logs the pinned configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` when it comes from the fallback queue).
+
 ## Installation
 
 ### 1. Install `uv` Package Manager
@@ -60,7 +64,7 @@ uv run aienrich
 
 Structured logging via `commonlib.observability`; records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the backend dashboard and the Prometheus exporter read.
 
-**Progress**: every enriched job ends with `footer()`, which logs one `ai.batch_completed` record carrying the `n/m` counters (`processed`, `total`, `total_processed`, `job_errors`) as fields *and* the human line in `console=` ("Processed jobs this run: n/m … Time elapsed: … (Media: …/job)"). `Time elapsed:` is the current job's inference total (query + validation retries + save), also stored as `job_elapsed`, while `elapsed` / `elapsed_per_job` stay the batch wall time and its average, so the media keeps meaning "how long a job takes in this run". So the batch reads as a progress line in `docker-compose logs` while the counters stay queryable in the JSONL. `job.started` counts from 1 (`index`) so it agrees with `processed`.
+**Progress**: every enriched job ends with `footer()`, which logs one `ai.batch_completed` record carrying the `n/m` counters (`processed`, `total`, `total_processed`, `job_errors`, `config`) as fields *and* the human line in `console=` ("Processed jobs this run: n/m … Config: … Time elapsed: … (Media: …/job)"). `config` is the pinned filter configuration the job came from (`NONE` for the fallback queue). `Time elapsed:` is the current job's inference total (query + validation retries + save), also stored as `job_elapsed`, while `elapsed` / `elapsed_per_job` stay the batch wall time and its average, so the media keeps meaning "how long a job takes in this run". So the batch reads as a progress line in `docker-compose logs` while the counters stay queryable in the JSONL. `job.started` counts from 1 (`index`) so it agrees with `processed`.
 
 **Idle**: with nothing pending, or while the backend is unreachable, the pipeline calls `logIdleWait()` rather than sleeping. It renders one record — `jobs.skipped` (`reason=no_pending_jobs`) or `ai.retry_wait` (`reason=backend_unavailable`) — with the human sentence as `message=`, then waits on a `WakeableTimer` that a shutdown signal cuts short. Interactive terminals keep the in-place countdown.
 

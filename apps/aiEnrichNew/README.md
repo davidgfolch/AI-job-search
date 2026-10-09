@@ -4,6 +4,10 @@ This module performs AI-based enrichment of job data (extracting technologies, s
 
 It is designed to be a lightweight, free alternative to the `aiEnrich` module (which uses Ollama).
 
+## Job selection
+
+Jobs are enriched through the shared `commonlib.aiEnrichRepository`: first the pending jobs matching the stored **pinned filter configurations** (configurations in `ordering ASC`, each honoring its `order` and falling back to `created desc`), then every other pending job in `created desc`. The `ai_enriched` condition is stripped from the configurations and every candidate must be unenriched, free of `ai_enrich_error`, and not ignored/discarded/closed. With no pinned configurations it falls back to the plain pending query. The selector logs the pinned configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` for the fallback queue).
+
 ## Prerequisites
 
 - [uv](https://github.com/astral-sh/uv) installed.
