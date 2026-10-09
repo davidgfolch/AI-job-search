@@ -56,11 +56,11 @@ def test_priority_ids_follows_config_order_and_dedups():
     assert FilterConfigSelector(mysql).priority_ids() == [5, 1, 7]
 
 
-def test_configs_query_only_pinned_ordered_by_ordering_asc():
+def test_configs_query_only_watched_ordered_by_ordering_asc():
     mysql = FakeMysql()
     FilterConfigSelector(mysql).priority_ids()
     config_query = next(q for q, _ in mysql.calls if "filter_configurations" in q)
-    assert config_query.endswith("WHERE pinned = 1 ORDER BY ordering ASC")
+    assert config_query.endswith("WHERE watched = 1 ORDER BY ordering ASC")
 
 
 def test_priority_ids_maps_jobs_to_first_matching_config():

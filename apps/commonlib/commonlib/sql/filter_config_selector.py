@@ -14,17 +14,16 @@ logger = get_logger("commonlib.sql.filter_config_selector")
 
 
 class FilterConfigSelector:
-    """Selects enrichment candidates matching the stored pinned filter configurations.
+    """Selects enrichment candidates matching the stored watched filter configurations.
 
-    Only pinned configurations are considered, iterated in `ordering ASC` (the
-    same order the UI pinned list uses). Jobs matching any configuration are
-    returned first, following that order and the `order` field of each
-    configuration (falling back to `created desc`). The ai_enriched filter is
-    always removed from the configuration, because the enrichment worker is what
-    sets it.
+    Only watched configurations are considered, iterated in `ordering ASC`. Jobs
+    matching any configuration are returned first, following that order and the
+    `order` field of each configuration (falling back to `created desc`). The
+    ai_enriched filter is always removed from the configuration, because the
+    enrichment worker is what sets it.
     """
 
-    QUERY_CONFIGS = "SELECT id, name, filters FROM filter_configurations WHERE pinned = 1 ORDER BY ordering ASC"
+    QUERY_CONFIGS = "SELECT id, name, filters FROM filter_configurations WHERE watched = 1 ORDER BY ordering ASC"
 
     def __init__(self, mysql):
         self.mysql = mysql

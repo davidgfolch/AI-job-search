@@ -32,7 +32,7 @@ class AiEnrichRepository:
         return self.mysql.count(query)
 
     def get_pending_enrichment_ids(self) -> list[int]:
-        """Pending job ids, pinned filter-configuration matches first, then the rest."""
+        """Pending job ids, watched filter-configuration matches first, then the rest."""
         selector = FilterConfigSelector(self.mysql)
         priority = selector.priority_ids()
         self._job_configs = selector.job_configs
@@ -43,7 +43,7 @@ class AiEnrichRepository:
         return priority + [job_id for job_id in rest if job_id not in seen]
 
     def config_for_job(self, id: int) -> str | None:
-        """Name of the pinned configuration that prioritised this job, if any."""
+        """Name of the watched configuration that prioritised this job, if any."""
         return self._job_configs.get(id)
         
     def get_job_to_enrich(self, id: int):
