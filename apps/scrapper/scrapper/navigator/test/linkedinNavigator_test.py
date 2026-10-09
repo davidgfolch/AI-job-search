@@ -90,6 +90,14 @@ class TestLinkedinNavigator:
         assert result == 100
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 
+    @patch('commonlib.decorator.retry.sleep')
+    def test_get_total_results_missing_header_returns_false(self, mock_retry_sleep, navigator, mock_selenium):
+        """A slow/missing results header must not fail the keyword: it returns False so the cycle is skipped and retried next cadency"""
+        mock_selenium.getText.side_effect = NoSuchElementException('missing')
+        result = navigator.get_total_results("key", False, "loc", "tpr", "d")
+        assert result is False
+        mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
+
     @pytest.mark.parametrize("idx, expected_pos", [(1, 0), (3, 2)])
     def test_scroll_jobs_list(self, navigator, mock_selenium, idx, expected_pos):
         cards = [MagicMock(), MagicMock(), MagicMock()]

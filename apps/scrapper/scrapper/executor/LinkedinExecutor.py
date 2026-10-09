@@ -55,6 +55,10 @@ class LinkedinExecutor(BaseExecutor):
         try:
             self.navigator.collapse_messages()
             totalResults = self.navigator.get_total_results(keywords, self.remote, self.location, self.f_TPR, self.sortBy)
+            if not totalResults:
+                logger.warning("linkedin.total_results_unavailable", keywords=keywords,
+                               console=yellow(f'Results header not found for {keywords}, skipping this cycle (retry next cadency).'))
+                return
             totalPages = math.ceil(totalResults / self.jobs_x_page)
             page = self.navigator.fast_forward_page(startPage, totalResults, self.jobs_x_page)
             currentItem = (page - 1) * self.jobs_x_page

@@ -168,6 +168,22 @@ def test_should_skip_no_resume(manager):
     assert skip is False
     assert page == 1
 
+def test_should_skip_keyword_never_skips_failed_keyword(manager):
+    manager.state["Site"] = {"keyword": "python", "page": 3, "last_ran_at": "2099-01-01 00:00:00"}
+    manager.prepare_resume("Site")
+    manager.add_failed_keyword("Site", "java")
+    skip, page = manager.should_skip_keyword("java")
+    assert skip is False
+    assert page == 1
+
+def test_should_skip_keyword_keeps_skipping_non_failed_before_resume(manager):
+    manager.state["Site"] = {"keyword": "python", "page": 3, "last_ran_at": "2099-01-01 00:00:00"}
+    manager.prepare_resume("Site")
+    manager.add_failed_keyword("Site", "java")
+    skip, page = manager.should_skip_keyword("other")
+    assert skip is True
+    assert page == 1
+
 @pytest.mark.parametrize("site,expected", [
     ("NewSite", "error msg"), ("Site", "new error"),
 ], ids=["new_site", "existing_site"])

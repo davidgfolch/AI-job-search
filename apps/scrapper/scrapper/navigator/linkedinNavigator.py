@@ -110,7 +110,7 @@ class LinkedinNavigator(BaseNavigator):
             return False
         return True
 
-    @retry(exception=NoSuchElementException)
+    @retry(exception=NoSuchElementException, retries=6, delay=3, raiseException=False)
     def get_total_results(self, keywords: str, remote, location, f_TPR, sortBy) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')
         printHR(green)

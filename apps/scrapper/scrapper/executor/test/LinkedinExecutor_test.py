@@ -94,6 +94,16 @@ class TestLinkedinExecutor:
                 # Page updates happen
                 assert mocks['svc'].update_state.call_count >= 1
 
+    def test_search_jobs_loop_skips_cycle_when_results_header_missing(self, mocks, mock_selenium, mock_pm):
+        """0/False from get_total_results means the header never rendered: skip the cycle instead of failing the keyword"""
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
+        executor.service = mocks['svc']
+        mocks['nav'].get_total_results.return_value = 0
+        with patch.object(executor, '_load_and_process_row') as pr:
+            executor._search_jobs_loop('k', 1)
+        pr.assert_not_called()
+        mocks['nav'].fast_forward_page.assert_not_called()
+
     @pytest.mark.parametrize("exists, expected_result", [
         ((1, True), True), ((None, False), False)
     ])
