@@ -1,8 +1,14 @@
 import pytest
 import gc
 import torch
+from unittest.mock import patch
 from aiEnrich3.services.extractors.modality_extractor import ModalityExtractor
 from aiEnrich3.domain.entities import ModalityType
+
+def test_default_pipeline_is_pinned_to_cpu():
+    with patch("aiEnrich3.services.extractors.modality_extractor.pipeline") as mock_pipeline:
+        ModalityExtractor()
+        assert mock_pipeline.call_args.kwargs["device"] == -1
 
 @pytest.fixture(scope="module")
 def extractor():

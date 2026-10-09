@@ -2,7 +2,8 @@
 
 ## System Requirements
 
-- **Python**: 3.10 required.
+- **Python**: 3.10 required, except `apps/aiEnrich3`, which requires 3.11 (its locked `onnxruntime` has no 3.10 wheels).
+  - `apps/aiEnrich3/.python-version` pins `3.11.14`; `uv` downloads and uses that interpreter automatically on `uv sync`.
   - Python 3.12 has incompatibilities with some libraries used.
 - **Node.js**: LTS version (for `apps/web`).
 - **Docker**: For running services in containers.

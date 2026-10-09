@@ -8,7 +8,8 @@ class ModalityExtractor:
             # Load the zero-shot classification pipeline specifically for mDeBERTa
             self.classifier = pipeline(
                 "zero-shot-classification",
-                model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli")
+                model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+                device=-1)
         else:
             self.classifier = classifier
         # Using simplified singular words helps the zero-shot model generalize across languages perfectly

@@ -1,6 +1,10 @@
 # aiEnrich3
 CPU-optimized multilingual data extraction service for job offers using GLiNER, mDeBERTa, and Regex.
 
+## Setup
+Requires Python 3.11 (its locked `onnxruntime` has no 3.10 wheels). `.python-version` pins `3.11.14`, and `uv sync` installs that interpreter automatically.
+All extractors run on CPU: GLiNER defaults to CPU and the mDeBERTa zero-shot pipeline is pinned to CPU (`device=-1`), matching the service's CPU-optimized design.
+
 ## Job selection
 Jobs are enriched through the shared `commonlib.aiEnrichRepository`: first the pending jobs matching the stored **watched filter configurations** (configurations in `ordering ASC`, each honoring its `order` and falling back to `created desc`), then every other pending job in `created desc`. The `ai_enriched` condition is stripped from the configurations and every candidate must be unenriched, free of `ai_enrich_error`, and not ignored/discarded/closed. With no watched configurations it falls back to the plain pending query. The selector logs the watched configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` for the fallback queue).
 
