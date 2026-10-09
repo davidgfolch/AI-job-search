@@ -30,9 +30,9 @@ class JobRepository:
             return self._execute_transaction(
                 lambda c: (c.execute(QRY_INSERT, params), c.lastrowid)[1]
             )
-        except Exception:
+        except Exception as e:
             from commonlib.sqlUtil import error
-            error(Exception('Insert failed'))
+            error(e)
             return None
 
     def job_exists(self, job_id: str) -> bool:

@@ -77,7 +77,7 @@ class TestIndeedService:
         result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
         
         assert result is True
-        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "60k", "http://url?jk=1", "markdown", False, "Indeed", None))
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "60k", "https://es.indeed.com/viewjob?jk=1", "markdown", False, "Indeed", None))
         mock_merge.assert_called()
 
     @pytest.mark.parametrize("salary, expected_salary", [
@@ -98,7 +98,7 @@ class TestIndeedService:
         result = service.process_job("Title", "Company", "Loc", salary, "http://url?jk=1", "html", False)
 
         assert result is True
-        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", expected_salary, "http://url?jk=1", "markdown", False, "Indeed", None))
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", expected_salary, "https://es.indeed.com/viewjob?jk=1", "markdown", False, "Indeed", None))
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     def test_process_job_exists(self, mock_html2md, service, mock_mysql):
@@ -124,23 +124,42 @@ class TestIndeedService:
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     @patch("scrapper.services.IndeedService.validate")
     @patch("scrapper.services.IndeedService.find_last_duplicated")
-    def test_process_job_removes_turnstile(self, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
+    def test_process_job_uses_canonical_url(self, mock_merge, mock_validate, mock_html2md, service, mock_mysql):
         mock_html2md.return_value = "markdown"
         mock_validate.return_value = True
         mock_mysql.fetchOne.return_value = None # Job not in DB
         mock_mysql.insert.return_value = 101 # Inserted ID
         
-        url = "https://es.indeed.com/viewjob?jk=123&cf-turnstile-response=remove_me&other=keep"
+        url = "https://es.indeed.com/viewjob?jk=123&cf-turnstile-response=remove_me&q=java&tk=abc&ad=longtracking"
         
         result = service.process_job("Title", "Company", "Loc", "60k", url, "html", False)
         
         assert result is True
         args = mock_mysql.insert.call_args[0][0]
-        cleaned_url_arg = args[5]
-        assert "cf-turnstile-response" not in cleaned_url_arg
-        # Check presence of other params (order may vary)
-        assert "jk=123" in cleaned_url_arg
-        assert "other=keep" in cleaned_url_arg
+        assert args[5] == "https://es.indeed.com/viewjob?jk=123"
+
+    @patch("scrapper.services.IndeedService.htmlToMarkdown")
+    @patch("scrapper.services.IndeedService.validate")
+    def test_process_job_skips_pagead_without_job_id(self, mock_validate, mock_html2md, service, mock_mysql):
+        mock_html2md.return_value = "markdown"
+        mock_mysql.fetchOne.return_value = None
+        
+        url = "https://es.indeed.com/pagead/clk?mo=r&camk=A&xkcb=B&ad=verylong"
+        result = service.process_job("Title", "Company", "Loc", "60k", url, "html", False)
+        
+        assert result is False
+        mock_validate.assert_not_called()
+        mock_mysql.insert.assert_not_called()
+
+    @pytest.mark.parametrize("url, expected", [
+        ("https://es.indeed.com/viewjob?jk=abc123&other=param", "abc123"),
+        ("https://es.indeed.com/viewjob?vjk=vxyz789&other=param", "vxyz789"),
+        ("https://es.indeed.com/pagead/clk?mo=r&jk=pageadid&ad=1", "pageadid"),
+        ("https://es.indeed.com/rc/clk?jk=rcid&bb=x", "rcid"),
+        ("https://es.indeed.com/no-id", None),
+    ])
+    def test_canonical_job_id(self, service, url, expected):
+        assert service._canonical_job_id(url) == expected
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     @patch("scrapper.services.IndeedService.validate")

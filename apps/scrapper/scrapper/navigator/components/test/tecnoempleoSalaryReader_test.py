@@ -20,14 +20,22 @@ class TestTecnoempleoSalaryReader:
         items = []
         for caption, value in rows:
             item = MagicMock()
-            contents[item] = {CAPTION_CSS: caption, VALUE_CSS: value}
+            caption_elm = MagicMock(text=caption) if caption is not None else None
+            contents[item] = {CAPTION_CSS: caption_elm, VALUE_CSS: value}
             items.append(item)
+        def getElms(css, driverOverride=None):
+            if css == ITEM_CSS:
+                return items
+            if css == CAPTION_CSS:
+                caption_elm = contents[driverOverride][CAPTION_CSS]
+                return [caption_elm] if caption_elm is not None else []
+            raise AssertionError(f"unexpected selector {css}")
+        selenium.getElms.side_effect = getElms
         def getElmOf(elm, css):
             if contents[elm][css] is None:
                 raise NoSuchElementException(f"no {css}")
             return contents[elm][css]
         selenium.getElmOf.side_effect = getElmOf
-        selenium.getElms.return_value = items
         selenium.getText.side_effect = lambda elm: elm
         return items
 

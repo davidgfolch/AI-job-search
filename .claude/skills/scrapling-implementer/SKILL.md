@@ -10,6 +10,7 @@ https://scrapling.readthedocs.io/en/latest/index.html
 Follow these steps to implement a new scrapper using Scrapling.
 
 1.  **Understand the Target**: Identify the target website, the data to be extracted, and the expected output format.
+    - **Log timestamps are UTC, not the host's local time**: `apps/scrapper/data/logs/scrapper.jsonl` records use ISO-8601 `Z` timestamps. When reproducing a failure from the logs, add the host offset (CEST is UTC+2) before comparing against wall-clock time.
 
 2.  **Environment Setup**:
     - Ensure `scrapling` is installed in the appropriate module environment (`pip install scrapling` or via Poetry).

@@ -47,6 +47,18 @@ class TestJobRepository:
 
         assert result is None
 
+    def test_insert_logs_original_exception(self, job_repository, mock_execute_transaction):
+        """insert should surface the real database error instead of a generic placeholder."""
+        cause = Exception('Data too long for column url at row 1')
+        mock_execute_transaction.side_effect = cause
+
+        params = ('job123', 'Title', 'Company', 'Location', 'url', 'md', False, 'web', None)
+        with patch('commonlib.sqlUtil.error') as mock_error:
+            result = job_repository.insert(params)
+
+        assert result is None
+        mock_error.assert_called_once_with(cause)
+
     def test_job_exists_returns_true_when_found(self, job_repository, mock_execute_query):
         """job_exists should return True when job is found."""
         mock_execute_query.return_value = {'id': 1, 'jobId': 'job123'}

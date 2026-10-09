@@ -10,6 +10,7 @@ https://crawlee.dev/python/docs/quick-start
 Follow these steps when a scrapper broke because the source page changed its DOM structure, markup, or URL layout. Analyze the live page with Crawlee **before** editing any scrapper code, and turn the findings into requirements.
 
 1.  **Confirm the Trigger**: Use this skill when a scrapper fails after a source-page change (selectors return nothing, fields are empty, the page redirects to a new URL pattern, or the site moved to a new frontend). Reproduce the failure first (run the scrapper once, check the structured logs) so the analysis targets a concrete symptom.
+    - **Log timestamps are UTC**, not the host's local time: every `apps/scrapper/data/logs/scrapper.jsonl` record carries an ISO-8601 `Z` timestamp. The host may run in CEST (UTC+2), so add the offset before correlating a log line with wall-clock time (e.g. `06:47:52Z` is `08:47:52` local). Filter by the date prefix in UTC or you will miss the tail of the previous local day.
 
 2.  **Environment Setup**:
     - Ensure the Crawlee CLI is installed: `uv tool install "crawlee[all]"` (done automatically by `scripts/install.sh` / `scripts/install.bat`).

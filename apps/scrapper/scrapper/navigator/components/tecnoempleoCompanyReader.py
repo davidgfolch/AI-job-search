@@ -1,6 +1,4 @@
-from selenium.common.exceptions import NoSuchElementException
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
-from commonlib.decorator.retry import StackTrace, retry
 from commonlib.observability import get_logger
 from ...core.utils import debug
 
@@ -28,9 +26,9 @@ class TecnoempleoCompanyReader:
         logger.info("tecnoempleo.company.missing", company=UNSPECIFIED_COMPANY)
         return UNSPECIFIED_COMPANY
 
-    @retry(retries=2, delay=1, exception=NoSuchElementException, raiseException=False, stackTrace=StackTrace.NEVER)
     def _read_link(self) -> str:
-        return self.selenium.getText(self.company_link_css).strip()
+        links = self.selenium.getElms(self.company_link_css)
+        return links[0].text.strip() if links else ''
 
     def _read_text_node(self) -> str:
         headerElm = self.selenium.getElm(self.header_css)

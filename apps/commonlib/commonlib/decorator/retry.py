@@ -45,7 +45,8 @@ def retry(retries: int = 5,
                     raise e
                 except exception as e:
                     if i == retries + 1:
-                        logger.error("retry.exhausted", function=fnc.__name__, attempt=i, retries=retries, raise_exception=raiseException, stack_trace=stackTrace.name, error=e.__class__.__name__)
+                        log = logger.error if raiseException else logger.warning
+                        log("retry.exhausted", function=fnc.__name__, attempt=i, retries=retries, raise_exception=raiseException, stack_trace=stackTrace.name, error=e.__class__.__name__, exc_info=True)
                         if raiseException:
                             raise e
                         if stackTrace != StackTrace.NEVER:

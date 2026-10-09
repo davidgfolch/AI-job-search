@@ -1,4 +1,4 @@
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
 from commonlib.decorator.retry import retry
 from commonlib.observability import get_logger
 from commonlib.stringUtil import join
@@ -21,6 +21,9 @@ CSS_SEL_JOB_LI = f'{CSS_SEL_MAIN_CONTAINER} > div'
 CSS_SEL_JOB_LI_IDX = f'{CSS_SEL_JOB_LI}:nth-child(##idx##) > div > div:nth-child(3)'
 CSS_SEL_JOB_LI_IDX_LINK = f'{CSS_SEL_JOB_LI_IDX} > h3 > a'
 CSS_SEL_PAGINATION_LINKS = f'{CSS_SEL_MAIN_CONTAINER} > nav > ul > li > a'
+# Tecnoempleo shows a Bootstrap toast (cookie/notice) that stays fixed over the bottom band and intercepts the pagination click
+TOAST_CLOSE_SELECTORS = ('#wrapper_toast_br button', 'div.toast-body button', 'div.toast-body .btn-close')
+TOAST_REMOVE_SCRIPT = "document.querySelectorAll('#wrapper_toast_br, .toast').forEach(e => e.remove())"
 # JOB DETAIL
 CSS_SEL_JOB_DETAIL = '#wrapper > section.m-0.pt-5 > div:nth-child(1) > div > div.col-12.col-md-7.col-lg-8.mb-5'
 CSS_JOB_DETAIL_HEADER = f'{CSS_SEL_JOB_DETAIL} > div.row > div:nth-child(2)'
@@ -93,7 +96,15 @@ class TecnoempleoNavigator(BaseNavigator):
         self.selenium.waitUntilClickable(cssSel)
         return cssSel
 
-    @retry(exception=NoSuchElementException, raiseException=False)
+    def dismiss_toast(self):
+        """The fixed toast covers the pagination links; a stuck one aborts the keyword unless it is removed before the click."""
+        for cssSel in TOAST_CLOSE_SELECTORS:
+            if len(self.selenium.getElms(cssSel)) > 0:
+                self.selenium.waitAndClick_noError(cssSel, 'dismiss tecnoempleo toast')
+                return
+        self.selenium.driver.execute_script(TOAST_REMOVE_SCRIPT)
+
+    @retry(retries=3, delay=1, exception=(NoSuchElementException, ElementClickInterceptedException), raiseException=False)
     def click_next_page(self):
         nextPageElms = self.selenium.getElms(CSS_SEL_PAGINATION_LINKS)
         if len(nextPageElms) == 0:
@@ -101,6 +112,7 @@ class TecnoempleoNavigator(BaseNavigator):
         nextPageElm = nextPageElms[-1]
         if self.selenium.getText(nextPageElm).isnumeric():
             return False
+        self.dismiss_toast()
         self.selenium.waitAndClick(nextPageElm, scrollIntoView=True)
         return True
 

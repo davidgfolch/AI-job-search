@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, Mock, call, patch
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
-from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE
-from selenium.common.exceptions import NoSuchElementException
+from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE, TOAST_REMOVE_SCRIPT
+from selenium.common.exceptions import ElementClickInterceptedException
 
 class TestTecnoempleoNavigator:
 
@@ -90,6 +90,38 @@ class TestTecnoempleoNavigator:
         assert navigator.click_next_page() is True
         mock_selenium.waitAndClick.assert_called()
 
+    def test_dismiss_toast_clicks_close_button(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = ["close"]
+        navigator.dismiss_toast()
+        mock_selenium.waitAndClick_noError.assert_called_once()
+
+    def test_dismiss_toast_removes_overlay_when_no_button(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = []
+        navigator.dismiss_toast()
+        mock_selenium.driver.execute_script.assert_called_with(TOAST_REMOVE_SCRIPT)
+
+    def test_click_next_page_dismisses_toast(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = [MagicMock()]
+        mock_selenium.getText.return_value = ">"
+        with patch.object(navigator, 'dismiss_toast') as mock_dismiss:
+            assert navigator.click_next_page() is True
+        mock_dismiss.assert_called_once()
+
+    def test_click_next_page_retries_when_intercepted(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = [MagicMock()]
+        mock_selenium.getText.return_value = ">"
+        mock_selenium.waitAndClick.side_effect = [ElementClickInterceptedException("toast"), None]
+        with patch('commonlib.decorator.retry.sleep'):
+            assert navigator.click_next_page() is True
+        assert mock_selenium.waitAndClick.call_count == 2
+
+    def test_click_next_page_returns_false_when_always_intercepted(self, navigator, mock_selenium):
+        mock_selenium.getElms.return_value = [MagicMock()]
+        mock_selenium.getText.return_value = ">"
+        mock_selenium.waitAndClick.side_effect = ElementClickInterceptedException("toast")
+        with patch('commonlib.decorator.retry.sleep'):
+            assert navigator.click_next_page() is False
+
     def test_accept_cookies(self, navigator, mock_selenium):
         mock_selenium.getElms.return_value = ["cookie_button"]
         with patch('scrapper.navigator.tecnoempleoNavigator.sleep'):
@@ -107,11 +139,13 @@ class TestTecnoempleoNavigator:
         mock_selenium.waitAndClick.assert_called_with("link_css")
 
     def test_get_job_data(self, navigator, mock_selenium):
-        mock_selenium.getText.side_effect = ["Title", "Company", "Data1", "Data2"]
+        mock_selenium.getText.side_effect = ["Title", "Data1", "Data2"]
         mock_selenium.getElms.return_value = ["elm1", "elm2"] # for CSS_SEL_JOB_DATA
         mock_selenium.getUrl.return_value = "http://job-url"
         mock_selenium.getHtml.return_value = "<div>Description</div>"
-        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoSalaryReader') as mock_reader:
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoCompanyReader') as mock_company,\
+                patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoSalaryReader') as mock_reader:
+            mock_company.return_value.read.return_value = "Company"
             mock_reader.return_value.read.return_value = "30.000 € - 36.000 € Bruto/año"
             title, company, location, url, salary, html = navigator.get_job_data()
 
@@ -126,11 +160,13 @@ class TestTecnoempleoNavigator:
 
     def test_get_job_data_without_salary(self, navigator, mock_selenium):
         """An offer stating no pay range is inserted with salary=None instead of the AI having to infer one"""
-        mock_selenium.getText.side_effect = ["Title", "Company", "Data1"]
+        mock_selenium.getText.side_effect = ["Title", "Data1"]
         mock_selenium.getElms.return_value = ["elm1"]
         mock_selenium.getUrl.return_value = "http://job-url"
         mock_selenium.getHtml.return_value = "<div>Description</div>"
-        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoSalaryReader') as mock_reader:
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoCompanyReader') as mock_company,\
+                patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoSalaryReader') as mock_reader:
+            mock_company.return_value.read.return_value = "Company"
             mock_reader.return_value.read.return_value = None
             _, _, _, _, salary, _ = navigator.get_job_data()
         assert salary is None
@@ -157,16 +193,13 @@ class TestTecnoempleoNavigator:
 
     def test_get_job_data_company_unspecified(self, navigator, mock_selenium):
         """A job whose offer names no employer at all is still returned, with the unspecified sentinel"""
-        def getText(cssSel):
-            if cssSel == CSS_SEL_COMPANY:
-                raise NoSuchElementException("no company")
-            return "Title"
-        mock_selenium.getText.side_effect = getText
+        mock_selenium.getText.side_effect = ["Title", "Data1"]
         mock_selenium.getElms.return_value = ["elm1"]
         mock_selenium.driver.execute_script.return_value = ''  # no company text node in the header
         mock_selenium.getUrl.return_value = "http://job-url"
         mock_selenium.getHtml.return_value = "<div>Description</div>"
-        with patch('commonlib.decorator.retry.sleep'):
+        with patch('scrapper.navigator.tecnoempleoNavigator.TecnoempleoCompanyReader') as mock_company:
+            mock_company.return_value.read.return_value = UNSPECIFIED_COMPANY
             title, company, location, url, salary, html = navigator.get_job_data()
         assert title == "Title"
         assert company == UNSPECIFIED_COMPANY
