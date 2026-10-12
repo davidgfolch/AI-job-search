@@ -3,16 +3,9 @@ from unittest.mock import MagicMock, Mock, call, patch
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE, TOAST_REMOVE_SCRIPT
 from selenium.common.exceptions import ElementClickInterceptedException
+from scrapper.navigator.test.tecnoempleoNavigator_fixtures import mock_selenium, navigator
 
 class TestTecnoempleoNavigator:
-
-    @pytest.fixture
-    def mock_selenium(self):
-        return MagicMock()
-
-    @pytest.fixture
-    def navigator(self, mock_selenium):
-        return TecnoempleoNavigator(mock_selenium, False)
 
     def test_init(self, navigator, mock_selenium):
         assert navigator.selenium == mock_selenium

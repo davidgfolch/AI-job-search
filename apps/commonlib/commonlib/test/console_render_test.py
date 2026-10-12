@@ -2,38 +2,10 @@ import json
 
 import pytest
 
-from commonlib import console_render, observability
 from commonlib.console_render import CONSOLE_MESSAGE, CONSOLE_RECORD, console_mode
 from commonlib.observability import configure_logging, get_logger, log_file_path
 from commonlib.terminalColor import green, stripAnsi
-
-LEGACY_ENV = ("AI_ENRICH_LOG_CONSOLE_MODE",)
-
-
-@pytest.fixture
-def console(log_dir, monkeypatch):
-    """Redirect the JSONL output, reset the app name and the console mode."""
-    for name in ("LOG_CONSOLE_MODE", *LEGACY_ENV):
-        monkeypatch.delenv(name, raising=False)
-    monkeypatch.delenv("LOG_COLOR", raising=False)
-    observability._app_name = None
-    console_render.set_console_mode(None)
-    yield log_dir
-    observability._app_name = None
-    console_render.set_console_mode(None)
-
-
-@pytest.fixture
-def log_dir(tmp_path, monkeypatch):
-    target = tmp_path / "logs"
-    monkeypatch.setenv("LOG_DIR", str(target))
-    monkeypatch.delenv("AI_ENRICH_LOG_DIR", raising=False)
-    return target
-
-
-def _events(path):
-    with open(path, encoding="utf-8") as f:
-        return [json.loads(line) for line in f]
+from commonlib.test.console_render_fixtures import _events, console
 
 
 class TestConsoleModeResolution:
@@ -44,12 +16,9 @@ class TestConsoleModeResolution:
         configure_logging("scrapper", console=CONSOLE_MESSAGE)
         assert console_mode() == CONSOLE_MESSAGE
 
-    def test_env_selects_mode(self, console, monkeypatch):
-        monkeypatch.setenv("LOG_CONSOLE_MODE", CONSOLE_MESSAGE)
-        assert console_mode() == CONSOLE_MESSAGE
-
-    def test_legacy_env_alias_still_read(self, console, monkeypatch):
-        monkeypatch.setenv("AI_ENRICH_LOG_CONSOLE_MODE", CONSOLE_MESSAGE)
+    @pytest.mark.parametrize("env", ["LOG_CONSOLE_MODE", "AI_ENRICH_LOG_CONSOLE_MODE"])
+    def test_env_selects_mode(self, console, monkeypatch, env):
+        monkeypatch.setenv(env, CONSOLE_MESSAGE)
         assert console_mode() == CONSOLE_MESSAGE
 
     def test_late_configure_repoints_mode(self, console):

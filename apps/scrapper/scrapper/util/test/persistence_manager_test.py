@@ -3,8 +3,11 @@ from unittest.mock import patch
 from scrapper.util import persistence_manager
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.test.log_capture import captured_records
-
-LOG_MODULE = "scrapper.persistence_manager"
+from scrapper.util.test.persistence_manager_data import (
+    LOG_MODULE, UPDATE_STATE, GET_STATE, CLEAR_STATE, GET_LAST_EXECUTION, UPDATE_LAST_EXECUTION,
+    UPDATE_LAST_RAN_AT, IS_STATE_STALE, GET_FAILED_KEYWORDS, ADD_FAILED_KEYWORD, REMOVE_FAILED_KEYWORD,
+    PREPARE_RESUME, SET_ERROR, FINALIZE,
+)
 
 def test_load_from_repository(manager, mock_repo):
     assert manager.state == {"Site": {"keyword": "python"}}
@@ -28,25 +31,18 @@ def test_save_empty_state(mock_repo):
     pm.save()
     mock_repo.upsert.assert_not_called()
 
-@pytest.mark.parametrize("site,keyword,page", [
-    ("Site", "new_kw", 5), ("NewSite", "kw", 1),
-], ids=["existing_site", "new_site"])
+@pytest.mark.parametrize("site,keyword,page", UPDATE_STATE)
 def test_update_state(site, keyword, page, manager, mock_repo):
     manager.update_state(site, keyword, page)
     assert mock_repo.upsert.called
     assert manager.state[site]["keyword"] == keyword
     assert manager.state[site]["page"] == page
 
-@pytest.mark.parametrize("site,expected", [
-    ("Site", {"keyword": "python"}), ("Missing", {}),
-], ids=["existing_site", "missing_site"])
+@pytest.mark.parametrize("site,expected", GET_STATE)
 def test_get_state(site, expected, manager):
     assert manager.get_state(site) == expected
 
-@pytest.mark.parametrize("site,state", [
-    ("Site", {"keyword": "python", "page": 3, "last_execution": "2024-01-01"}),
-    ("Missing", {}),
-], ids=["existing_site", "missing_site"])
+@pytest.mark.parametrize("site,state", CLEAR_STATE)
 def test_clear_state(site, state, manager, mock_repo):
     manager.state = state
     manager.clear_state(site)
@@ -56,35 +52,27 @@ def test_clear_state(site, state, manager, mock_repo):
         assert manager.state[site]["last_execution"] == "2024-01-01"
         mock_repo.upsert.assert_called()
 
-@pytest.mark.parametrize("site,expected", [
-    ("Site", "2024-01-01"), ("Missing", None),
-], ids=["existing_site", "missing_site"])
+@pytest.mark.parametrize("site,expected", GET_LAST_EXECUTION)
 def test_get_last_execution(site, expected, manager):
     if expected is not None:
         manager.state[site]["last_execution"] = expected
     assert manager.get_last_execution(site) == expected
 
-@pytest.mark.parametrize("site", ["Site", "NewSite"], ids=["existing_site", "new_site"])
+@pytest.mark.parametrize("site", UPDATE_LAST_EXECUTION)
 def test_update_last_execution(site, manager, mock_repo):
     result = manager.update_last_execution(site, "2024-06-01")
     assert result == "2024-06-01"
     assert manager.state[site]["last_execution"] == "2024-06-01"
     mock_repo.upsert.assert_called()
 
-@pytest.mark.parametrize("site,expected", [
-    ("NewSite", "2024-06-01 10:00:00"), ("Site", "2024-06-01 12:00:00"),
-], ids=["new_site", "existing_site"])
+@pytest.mark.parametrize("site,expected", UPDATE_LAST_RAN_AT)
 def test_update_last_ran_at(site, expected, manager, mock_repo):
     with patch('scrapper.util.persistence_manager.getDatetimeNowStr', return_value=expected):
         manager.update_last_ran_at(site)
         assert manager.state[site]["last_ran_at"] == expected
         mock_repo.upsert.assert_called()
 
-@pytest.mark.parametrize("last_ran_at,now,parsed,expected", [
-    (None, None, None, True),
-    ("2024-06-01T10:00:00", 1000000, 999999, False),
-    ("2020-01-01T00:00:00", 2000000, 1000000, True),
-], ids=["no_last_ran_at", "fresh", "stale"])
+@pytest.mark.parametrize("last_ran_at,now,parsed,expected", IS_STATE_STALE)
 def test_is_state_stale(last_ran_at, now, parsed, expected, manager):
     with patch('scrapper.util.persistence_manager.getDatetimeNow', return_value=now):
         with patch('scrapper.util.persistence_manager.parseDatetime', return_value=parsed):
@@ -92,19 +80,13 @@ def test_is_state_stale(last_ran_at, now, parsed, expected, manager):
                 manager.state["Site"]["last_ran_at"] = last_ran_at
             assert manager.is_state_stale("Site") is expected
 
-@pytest.mark.parametrize("site,failed,expected", [
-    ("Site", [], []), ("Site", ["kw1", "kw2"], ["kw1", "kw2"]), ("Missing", None, []),
-], ids=["empty", "with_values", "missing_site"])
+@pytest.mark.parametrize("site,failed,expected", GET_FAILED_KEYWORDS)
 def test_get_failed_keywords(site, failed, expected, manager):
     if failed is not None:
         manager.state[site]["failed_keywords"] = failed
     assert manager.get_failed_keywords(site) == expected
 
-@pytest.mark.parametrize("site,initial,keyword,expected,upsert_called", [
-    ("Site", None, "failed_kw", ["failed_kw"], True),
-    ("Site", ["existing"], "existing", ["existing"], False),
-    ("NewSite", None, "kw", ["kw"], True),
-], ids=["new_keyword", "duplicate", "new_site"])
+@pytest.mark.parametrize("site,initial,keyword,expected,upsert_called", ADD_FAILED_KEYWORD)
 def test_add_failed_keyword(site, initial, keyword, expected, upsert_called, manager, mock_repo):
     if initial:
         manager.state[site]["failed_keywords"] = initial
@@ -112,11 +94,7 @@ def test_add_failed_keyword(site, initial, keyword, expected, upsert_called, man
     assert manager.state[site]["failed_keywords"] == expected
     assert mock_repo.upsert.called is upsert_called
 
-@pytest.mark.parametrize("site,initial,keyword,expected,upsert_called", [
-    ("Site", ["kw1", "kw2"], "kw1", ["kw2"], True),
-    ("Site", ["kw1"], "kw2", ["kw1"], False),
-    ("Missing", [], "kw", [], False),
-], ids=["keyword_exists", "keyword_not_exists", "missing_site"])
+@pytest.mark.parametrize("site,initial,keyword,expected,upsert_called", REMOVE_FAILED_KEYWORD)
 def test_remove_failed_keyword(site, initial, keyword, expected, upsert_called, manager, mock_repo):
     if site in manager.state:
         manager.state[site]["failed_keywords"] = initial
@@ -124,12 +102,7 @@ def test_remove_failed_keyword(site, initial, keyword, expected, upsert_called, 
     assert manager.get_failed_keywords(site) == expected
     assert mock_repo.upsert.called is upsert_called
 
-@pytest.mark.parametrize("site,state,resume_keyword,resume_page,is_skipping,clears", [
-    ("Site", {"keyword": "python", "page": 3, "last_ran_at": "2099-01-01 00:00:00"}, "python", 3, True, False),
-    ("Missing", {}, None, 1, False, False),
-    ("Site", {"keyword": "python", "page": 3, "last_ran_at": "2020-01-01 00:00:00"}, None, 1, False, True),
-    ("Site", {"keyword": "python", "page": 3}, None, 1, False, True),
-], ids=["with_state", "no_state", "stale_clears", "no_last_ran_at_clears"])
+@pytest.mark.parametrize("site,state,resume_keyword,resume_page,is_skipping,clears", PREPARE_RESUME)
 def test_prepare_resume(site, state, resume_keyword, resume_page, is_skipping, clears, manager, mock_repo):
     manager.state = {site: state}
     manager.prepare_resume(site)
@@ -184,9 +157,7 @@ def test_should_skip_keyword_keeps_skipping_non_failed_before_resume(manager):
     assert skip is True
     assert page == 1
 
-@pytest.mark.parametrize("site,expected", [
-    ("NewSite", "error msg"), ("Site", "new error"),
-], ids=["new_site", "existing_site"])
+@pytest.mark.parametrize("site,expected", SET_ERROR)
 def test_set_error(site, expected, manager, mock_repo):
     with patch('scrapper.util.persistence_manager.getDatetimeNowStr', return_value="2024-01-01T00:00:00"):
         manager.set_error(site, expected)
@@ -194,11 +165,7 @@ def test_set_error(site, expected, manager, mock_repo):
         assert manager.state[site]["last_error_time"] == "2024-01-01T00:00:00"
         mock_repo.upsert.assert_called()
 
-@pytest.mark.parametrize("state,expect_cleared", [
-    ({"keyword": "python", "last_error": "err", "last_error_time": "t"}, True),
-    ({"failed_keywords": ["kw"], "last_error": "err", "last_error_time": "t"}, False),
-    ({"keyword": "python"}, True),
-], ids=["clears_errors", "preserves_failed_keywords", "no_errors"])
+@pytest.mark.parametrize("state,expect_cleared", FINALIZE)
 def test_finalize_scrapper(state, expect_cleared, manager, mock_repo):
     manager.state["Site"] = state
     with patch('scrapper.util.persistence_manager.getDatetimeNowStr'):

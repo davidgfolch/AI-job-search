@@ -1,60 +1,9 @@
 import pytest
 from unittest.mock import MagicMock
 from scrapper.navigator.indeedScraplingNavigator import IndeedScraplingNavigator
-
-
-class MockSelector:
-    def __init__(self, text="", html=""):
-        self._text = text
-        self._html = html
-    
-    def get(self, default=None):
-        return self._text or default
-    
-    def css(self, selector):
-        return MockSelector(self._text)
-
-    def __bool__(self):
-        return bool(self._text)
-
-
-def create_mock_scrapling_service():
-    mock_service = MagicMock()
-    mock_service._run_in_thread = MagicMock(side_effect=lambda fn, *args, **kwargs: fn(*args, **kwargs))
-    mock_service._init_session = MagicMock()
-    
-    mock_response = MagicMock()
-    mock_response.status = 200
-    mock_response.url = "https://es.indeed.com/jobs?q=Python&l=Barcelona"
-    
-    mock_service.fetch.return_value = mock_response
-    mock_service.fetch_with_retry.return_value = mock_response
-    mock_service.session = mock_response
-    
-    return mock_service
-
-
-def _make_navigator():
-    mock_service = create_mock_scrapling_service()
-    with pytest.MonkeyPatch.context() as m:
-        m.setattr("scrapper.navigator.indeedScraplingNavigator.ScraplingService", lambda proxies, debug: mock_service)
-        return IndeedScraplingNavigator(proxies=[])
-
-
-def _new_dom_page(easy=True, location="Madrid, Madrid provincia"):
-    def css(sel):
-        if 'company-info-metadata"] div[dir="ltr"]' in sel:
-            return [MagicMock(get_all_text=MagicMock(return_value=location), css=MagicMock(return_value=[]))]
-        values = {"vj-job-title": "Title", "vj-company-name": "Company", 'a[href*="/cmp/"]': "Company", "simple-job-description-html": "<p>Description</p>",
-                  "viewjob-indeed-apply": "Easy apply" if easy else "", "title::text": "25 empleos de Ingeniero java | Indeed"}
-        for key, value in values.items():
-            if key in sel:
-                return MockSelector(value)
-        return MockSelector("")
-    page = MagicMock()
-    page.url = "https://es.indeed.com/viewjob?jk=abc"
-    page.css = MagicMock(side_effect=css)
-    return page
+from scrapper.navigator.test.indeedScraplingNavigator_fixtures import (
+    MockSelector, _make_navigator, _new_dom_page, create_mock_scrapling_service,
+)
 
 
 class TestIndeedScraplingNavigator:
@@ -64,7 +13,7 @@ class TestIndeedScraplingNavigator:
             m.setattr("scrapper.navigator.indeedScraplingNavigator.ScraplingService", lambda proxies, debug: mock_service)
             navigator = IndeedScraplingNavigator(proxies=[], debug=False)
             assert navigator.scrapling_service is mock_service
-        
+
     def test_init_with_proxies(self):
         mock_service = create_mock_scrapling_service()
         with pytest.MonkeyPatch.context() as m:
@@ -92,7 +41,7 @@ class TestIndeedScraplingNavigator:
             mock_selector = MagicMock()
             mock_selector.css = MagicMock(return_value=MockSelector(text="534 empleos"))
             navigator.current_page = mock_selector
-            
+
             assert navigator.get_total_results("Python") == 534
 
     def test_get_page_job_links(self):
@@ -100,23 +49,23 @@ class TestIndeedScraplingNavigator:
         with pytest.MonkeyPatch.context() as m:
             m.setattr("scrapper.navigator.indeedScraplingNavigator.ScraplingService", lambda proxies, debug: mock_service)
             navigator = IndeedScraplingNavigator(proxies=[])
-            
+
             mock_link1 = MagicMock()
             mock_link1.attrib = {"href": "/test-job-1"}
-            
+
             mock_link2 = MagicMock()
             mock_link2.attrib = {"href": "/test-job-2"}
-            
+
             mock_li1 = MagicMock()
             mock_li1.css = MagicMock(return_value=[mock_link1])
-            
+
             mock_li2 = MagicMock()
             mock_li2.css = MagicMock(return_value=[mock_link2])
-            
+
             mock_selector = MagicMock()
             mock_selector.css = MagicMock(return_value=[mock_li1, mock_li2])
             navigator.current_page = mock_selector
-            
+
             links = navigator.get_page_job_links()
             assert links == ["https://es.indeed.com/test-job-1", "https://es.indeed.com/test-job-2"]
 
@@ -125,12 +74,12 @@ class TestIndeedScraplingNavigator:
         with pytest.MonkeyPatch.context() as m:
             m.setattr("scrapper.navigator.indeedScraplingNavigator.ScraplingService", lambda proxies, debug: mock_service)
             navigator = IndeedScraplingNavigator(proxies=[])
-            
+
             def create_mock_selector(text):
                 mock_sel = MockSelector(text=text)
                 mock_sel.css = MagicMock(return_value=MockSelector(text=text))
                 return mock_sel
-            
+
             mock_selector = MagicMock()
             mock_selector.url = "https://example.com/job"
             mock_selector.css = MagicMock(side_effect=lambda sel: create_mock_selector(
@@ -141,7 +90,7 @@ class TestIndeedScraplingNavigator:
                 "<b>Description</b>" if "description" in sel.lower() else ""
             ))
             navigator.current_page = mock_selector
-            
+
             title, company, location, salary, url, html = navigator.get_job_data()
             assert title == "Python Dev"
             assert company == "TechCorp"

@@ -2,6 +2,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_LOGIN_BUTTON_LEGACY, CSS_SEL_LOGIN_REMEMBER_ME, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_CARD, CSS_SEL_NEXT_PAGE_BUTTON
 from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
+from scrapper.navigator.test.linkedinNavigator_data import CHECK_RESULTS_CASES, EASY_APPLY_CASES, LOGIN_SUBMIT_CASES
+
 TEST_URL = "http://url"
 
 class TestLinkedinNavigator:
@@ -52,10 +54,7 @@ class TestLinkedinNavigator:
             mock_selenium.checkboxUnselect.assert_not_called()
         mock_selenium.waitAndClick.assert_called_once_with(submit_elm)
 
-    @pytest.mark.parametrize("legacy_elms, button_elms, clicked_from", [
-        ([MagicMock()], [], CSS_SEL_LOGIN_BUTTON_LEGACY),  # old linkedin markup
-        ([], [MagicMock()], CSS_SEL_LOGIN_BUTTON),  # current markup, submit is the last button of the last form copy
-    ])
+    @pytest.mark.parametrize("legacy_elms, button_elms, clicked_from", LOGIN_SUBMIT_CASES)
     def test_loginSubmit(self, navigator, mock_selenium, legacy_elms, button_elms, clicked_from):
         expected_elm = (legacy_elms or button_elms)[-1]
         mock_selenium.getElms.side_effect = [list(legacy_elms), list(button_elms)] # loginSubmit pops from the returned list
@@ -70,12 +69,7 @@ class TestLinkedinNavigator:
             navigator.loginSubmit()
         mock_selenium.waitAndClick.assert_not_called()
 
-    @pytest.mark.parametrize("header_text, header_absent, expected", [
-        ('99+ results', False, True),
-        ('12 results', False, True),
-        ('0 results', False, False),  # empty searches now render a "0 results" header instead of a banner
-        (None, True, True),  # header not rendered yet: the loop retries and fails loudly if the layout changed
-    ])
+    @pytest.mark.parametrize("header_text, header_absent, expected", CHECK_RESULTS_CASES)
     def test_check_results(self, navigator, mock_selenium, header_text, header_absent, expected):
         if header_absent:
             mock_selenium.getText.side_effect = NoSuchElementException('missing')
@@ -186,10 +180,7 @@ class TestLinkedinNavigator:
         with pytest.raises(NoSuchElementException, match='No job id'):
             navigator.get_job_url_from_element(MagicMock())
 
-    @pytest.mark.parametrize("getElms_return, expected", [
-        (["yes"], True),
-        ([], False),
-    ])
+    @pytest.mark.parametrize("getElms_return, expected", EASY_APPLY_CASES)
     def test_check_easy_apply(self, navigator, mock_selenium, getElms_return, expected):
         mock_selenium.getElms.return_value = getElms_return
         assert navigator.check_easy_apply() is expected
