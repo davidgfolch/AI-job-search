@@ -18,15 +18,15 @@ COPY apps/commonlib /app/apps/commonlib
 WORKDIR /app/apps/commonlib
 RUN pip install -e .
 
+# Copy dependency manifests only, so the dependency install stays cached until
+# pyproject.toml/uv.lock change (the application source is copied after it).
+WORKDIR /app/apps/aiEnrichNew
+COPY apps/aiEnrichNew/pyproject.toml apps/aiEnrichNew/uv.lock* apps/aiEnrichNew/README.md ./
+RUN uv sync --no-install-project
+
 # Copy application files
 COPY apps/aiEnrichNew /app/apps/aiEnrichNew
-
-# Install dependencies
-WORKDIR /app/apps/aiEnrichNew
 RUN uv sync
-
-# Copy environment file
-COPY .env* /app/
 
 # Note: AI Enrichment typically runs as a scheduled/batch job
 CMD ["uv", "run", "aienrichnew"]

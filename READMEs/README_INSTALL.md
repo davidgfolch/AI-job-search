@@ -121,6 +121,30 @@ uv tool install "crawlee[all]"
 
 > `scripts/install.sh` / `scripts/install.bat` install it automatically. If you use `PlaywrightCrawler` and the browser binaries are missing, run `playwright install chromium` once.
 
+### 6.1 Install Google Chrome & system libraries (scrapper)
+
+The scrapper runs natively on the host — it is **not** a Docker service. Launch it with
+`apps/scrapper/run.sh` (Linux/Mac) or `apps/scrapper/run.bat` (Windows), which run
+`python -m scrapper.main` through Poetry. It therefore needs Google Chrome on the host;
+ChromeDriver itself is downloaded automatically by `undetected-chromedriver`.
+
+**Windows:** install Google Chrome from https://www.google.com/chrome/.
+
+**Linux (Debian/Ubuntu):** install Chrome and the libraries it needs to run headless:
+
+```bash
+wget -q -O /tmp/google-chrome-key.pub https://dl-ssl.google.com/linux/linux_signing_key.pub
+sudo gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg /tmp/google-chrome-key.pub
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+sudo apt-get update
+sudo apt-get install -y google-chrome-stable \
+    gcc wget gnupg unzip curl ca-certificates \
+    fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 \
+    libcups2 libdbus-1-3 libdrm2 libgbm1 libgtk-3-0 libnspr4 libnss3 \
+    libwayland-client0 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 \
+    libxrandr2 xdg-utils
+```
+
 ### 7. Install Project Dependencies
 
 You can use the helper script in the project root:

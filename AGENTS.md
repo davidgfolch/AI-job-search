@@ -18,14 +18,14 @@ docker-compose up -d
 ```
 
 ### Ollama: host vs container
-The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434` — first reachable wins, reused for the whole batch.
+The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434` — first reachable wins, reused for the whole batch. The `scrapper` (run natively on the host) uses the same `commonlib/ollama_config.py` chain.
 ```bash
 # Ollama on the host (nothing extra to start)
 docker-compose --profile aienrich up -d aienrich
 # Ollama containerized as well
 docker-compose --profile ollama --profile aienrich up -d
 ```
-Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`, `scrapper`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
+Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
 
 ### Sandboxed Docker Verification (dependabot-agent)
 Brings a service up in an isolated `dependabot-test` project so the live `ai-job-search-*` stack and its data are never touched. Uses `docker-compose.test.override.yml` (renamed `-test` containers, remapped ports, data under `.docker-sandbox/`), and tears the sandbox down on exit.
@@ -42,7 +42,7 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 - `backend` auto-clones the live MySQL `jobs` DB into the sandbox (via `scripts/mysql/backup.*`); skip with `--no-db-clone`.
 - Mongo boots fresh/empty from `scripts/mongo/init.js`; ollama/prometheus/grafana are never duplicated.
 - Profile-gated ai workers need their profile (`--profile aienrich|aiEnrichNew|aiEnrichSkill|aiEnrich3`).
-- Ollama-dependent services (`aienrich`, `aienrichskill`, `scrapper`) are validated build-only + unit tests + ci-gate, not `up`.
+- Ollama-dependent services (`aienrich`, `aienrichskill`) are validated build-only + unit tests + ci-gate, not `up`.
 
 ### Python Apps (commonlib, scrapper)
 ```bash

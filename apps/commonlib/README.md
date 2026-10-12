@@ -9,11 +9,27 @@ This package provides utility modules for:
 - **Database**: MySQL connection with LAN auto-discovery (`connection_manager.py`, `network/mysql_discovery.py`).
 - **Enrichment selection**: shared job filters (`sql/job_filter_builder.py`) reused by the backend and the enrichment workers, plus `sql/filter_config_selector.py` / `aiEnrichRepository.py`, which return pending jobs matching the stored `filter_configurations` first (honoring each config's `order`, falling back to `created desc`) and then every other pending job in `created desc`.
 - **Persistence**: Shared data maintenance logic (`mergeDuplicates.py`).
+- **Configuration**: dotenv loading and precedence (`environmentUtil.py`).
 - **Utilities**: General purpose helpers (`util.py`, `decorator/`, `stopWatch.py`).
 - **System**: Power management utilities (`keep_system_awake.py`, `wake_timer.py`) to keep the system running during long scrap jobs.
 - **Terminal**: Console output coloring (`terminalColor.py`).
 - **Observability**: Structured logging via `structlog` (`observability.py`), runtime metrics collection (`services/metrics_collector.py`), and Prometheus text-format export (`prometheus_exporter.py` — converts the in-memory snapshot to `prometheus_client` format for the backend's `/metrics` endpoint).
 - **Ollama**: Centralized server URL config and fallback chain (`ollama_config.py`) plus the shared HTTP client (`ollama_client.py`) used by the Ollama-backed modules. `resolve_ollama_url()` returns the first reachable server (primary first, then `host.docker.internal`, `localhost`, and the containerized service), so a module resolves the server once and reuses it for `ping_ollama()`/`query_ollama()`. The request knobs (`get_num_predict()`, `get_num_ctx()`, `get_repeat_penalty()`) are shared by every Ollama-backed module and are not module-scoped: the first env var set in `AI_ENRICH_*` → `AI_ENRICHSKILL_*` order wins, so setting e.g. `AI_ENRICH_NUM_CTX` also applies to `aiEnrichSkill`.
+
+## Environment variables
+
+`environmentUtil.py` loads configuration from two dotenv files at the repo root: `.env` (non-sensitive settings) and `.env.secrets` (credentials). Hot-reload (`checkEnvReload`, called by every `getEnv*`) and the Settings UI writers (`setEnv` / `setEnvBulk`) re-read the files with `load_dotenv(override=True)` when the mtime changes.
+
+Values already present in the **process environment** (Docker Compose `environment:`, shell exports, systemd units) outrank the dotenv files. The module snapshots `os.environ` before the first load and re-asserts those entries (`_restoreProcessEnv`) after every override reload, so an edited `.env` can never clobber an injected key such as `COMMONLIB_DB_HOST` or `MONGO_URI`.
+
+Resolution order, highest first:
+
+1. Process environment (Compose `environment:`, shell exports) — restored after each reload.
+2. `.env.secrets`
+3. `.env`
+4. Code defaults.
+
+`getEnvAll()` (the Settings UI feed) merges `scripts/.env.secrets.example` defaults with the actual files, where `.env` wins over `.env.secrets` and both win over the example.
 
 ## MySQL connection
 

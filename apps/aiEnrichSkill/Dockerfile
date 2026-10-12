@@ -13,12 +13,14 @@ COPY apps/commonlib /app/apps/commonlib
 WORKDIR /app/apps/commonlib
 RUN pip install -e .
 
-COPY apps/aiEnrichSkill /app/apps/aiEnrichSkill
-
+# Copy dependency manifests only, so the dependency install stays cached until
+# pyproject.toml/uv.lock change (the application source is copied after it).
 WORKDIR /app/apps/aiEnrichSkill
-RUN uv sync
+COPY apps/aiEnrichSkill/pyproject.toml apps/aiEnrichSkill/uv.lock* apps/aiEnrichSkill/README.md ./
+RUN uv sync --no-install-project
 
-COPY .env* /app/
+COPY apps/aiEnrichSkill /app/apps/aiEnrichSkill
+RUN uv sync
 
 # Copy healthcheck script
 COPY scripts/healthcheck/ollama_healthcheck.py /app/healthcheck.py

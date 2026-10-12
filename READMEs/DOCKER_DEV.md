@@ -56,22 +56,20 @@ docker exec ai-job-search-ollama ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q
 curl <Ollama-URL>/api/tags
 ```
 
-## With Scrapper
+## Scrapper (runs on the host, not in Docker)
 
-NOT TESTED YET!!!
+The scrapper is **not** a Docker service. Run it natively in a terminal:
 
 ```bash
-# Start scrapper service
-docker-compose --profile scrapper up -d scrapper
-
-# Or run scrapper manually (one-time execution)
-docker-compose run --rm scrapper
+./apps/scrapper/run.sh   # or .\apps\scrapper\run.bat on Windows
 ```
+
+See [README_INSTALL.md](README_INSTALL.md#61-install-google-chrome--system-libraries-scrapper) for the required Chrome/system libraries.
 
 ## All Services
 ```bash
-# Start everything
-docker-compose --profile ai-services --profile scrapper up -d
+# Start the core services plus every AI enrichment profile
+docker-compose --profile aienrich --profile aiEnrichNew --profile aiEnrichSkill --profile aiEnrich3 up -d
 ```
 
 ## Service URLs

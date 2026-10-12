@@ -18,14 +18,14 @@ COPY apps/commonlib /app/apps/commonlib
 WORKDIR /app/apps/commonlib
 RUN pip install -e .
 
+# Copy dependency manifests only, so the dependency install stays cached until
+# pyproject.toml/uv.lock change (the application source is copied after it).
+WORKDIR /app/apps/aiCvMatcher
+COPY apps/aiCvMatcher/pyproject.toml apps/aiCvMatcher/uv.lock* apps/aiCvMatcher/README.md ./
+RUN uv sync --no-install-project
+
 # Copy application files
 COPY apps/aiCvMatcher /app/apps/aiCvMatcher
-
-# Install dependencies
-WORKDIR /app/apps/aiCvMatcher
 RUN uv sync
-
-# Copy environment file
-COPY .env* /app/
 
 CMD ["uv", "run", "aicvmatcher"]

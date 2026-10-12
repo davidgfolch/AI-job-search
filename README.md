@@ -138,7 +138,6 @@ The `docker-compose.yml` defines several service profiles to control which conta
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
-| `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
 
 **Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`.
 Use `--profile` to run alternative AI enrichment services:
@@ -150,7 +149,7 @@ docker-compose --profile aiEnrichNew up -d
 
 #### Ollama: host vs container
 
-The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) auto-detect the server at startup: they try the configured URL, then `host.docker.internal`, `localhost`, and finally the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`). No module hard-depends on the `ollama` container, so it is never started implicitly.
+The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they try the configured URL, then `host.docker.internal`, `localhost`, and finally the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`). No module hard-depends on the `ollama` container, so it is never started implicitly.
 
 ```bash
 # Ollama already installed on the host (nothing extra to start)
@@ -160,9 +159,10 @@ docker-compose --profile aienrich up -d aienrich
 docker-compose --profile ollama --profile aienrich up -d
 ```
 
-The **scrapper** runs as a batch job (not long-running). Start it manually:
+The **scrapper** runs natively on the host as a batch job (not a Docker service, not long-running). Start it in a terminal:
+
 ```bash
-docker-compose --profile scrapper run scrapper
+./apps/scrapper/run.sh   # or .\apps\scrapper\run.bat on Windows
 ```
 
 ### Quick Start
@@ -170,7 +170,7 @@ docker-compose --profile scrapper run scrapper
 - Copy `scripts/.env.secrets.example` to `.env.secrets` and set your credentials there.
 - Set your options in `.env` (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications `docker-compose up -d` (starts default services).
-- Run `apps/scrappers/run.(bat/sh)` in terminal.
+- Run `apps/scrapper/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
 - Run (optional) alternative AI Enrichment tools:
   - Default runs `aiEnrich`. If you want to use the others:
@@ -183,7 +183,7 @@ docker-compose --profile scrapper run scrapper
   - Load the `apps/aiFormFiller/extension/` folder as an unpacked extension in Chrome.
   - Right-click any form field → "Answer with AI".
 
-NOTE: scrapper is not tested in docker yet, so you usually need to run it manually.
+NOTE: the scrapper is not a Docker service; run it manually on the host (see below).
 
 ### Installation
 

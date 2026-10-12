@@ -93,7 +93,7 @@ Log file: /home/user/ai_job_search/apps/scrapper/data/logs/scrapper.jsonl
 Scrapper v0.1.0
 ```
 
-The path is resolved against the working directory of the process — `apps/scrapper` on the host, `/app` in the container — and honours `LOG_DIR`.
+The path is resolved against the working directory of the process (`apps/scrapper`) and honours `LOG_DIR`.
 
 ```python
 logger.info("linkedin.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy,

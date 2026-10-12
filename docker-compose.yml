@@ -36,7 +36,6 @@ services:
     volumes:
       - ./apps/backend:/app/apps/backend
       - ./apps/commonlib:/app/apps/commonlib
-      - ./apps/scrapper:/app/apps/scrapper
       - ./scripts:/app/scripts
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
@@ -46,7 +45,6 @@ services:
       - ./apps/aiEnrichNew/data/logs:/logs/aienrichnew:ro
       - ./apps/aiEnrichSkill/data/logs:/logs/aienrichskill:ro
       - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
-      - ./apps/scrapper/data/logs:/logs/scrapper:ro
       - ./apps/cron/data/logs:/logs/cron:ro
       - ./apps/aiFormFiller/data/logs:/logs/aiformfiller:ro
     ports:
@@ -282,7 +280,6 @@ services:
       - aiEnrich3
     volumes:
       - ./apps/aiEnrich3:/app/apps/aiEnrich3
-      - /app/apps/aiEnrich3/.venv # Anonymous volume to isolate container venv from host
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
@@ -389,43 +386,6 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
-
-  # Scrapper - Job Scraping Service
-  scrapper:
-    build:
-      context: .
-      dockerfile: apps/scrapper/Dockerfile
-    container_name: ai-job-search-scrapper
-    volumes:
-      - ./apps/scrapper:/app/apps/scrapper
-      - ./apps/commonlib:/app/apps/commonlib
-      - ./.env:/app/.env
-      - ./.env.secrets:/app/.env.secrets
-    environment:
-      - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db
-      - TZ=${GLOBAL_TZ}
-      - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
-      start_period: 15s
-      interval: 30s
-      timeout: 5s
-      retries: 1
-    restart: unless-stopped
-    networks:
-      - ai-job-search
-    # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
-    # native Linux uses host-gateway to map it to the Docker host.
-    extra_hosts:
-      - "host.docker.internal=host-gateway"
-    profiles:
-      - scrapper # Optional service, enable with --profile scrapper
-    # Note: Scrapper runs as a batch job, not a long-running service
-    # Use: docker-compose run scrapper to execute manually
 
   # Prometheus - Metrics Collection
   prometheus:
