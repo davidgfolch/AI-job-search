@@ -1,7 +1,7 @@
 import ast
 from pathlib import Path
 
-from commonlib.test.architecture.architecture_util import get_project_root, EXCLUDES
+from commonlib.test.architecture.architecture_util import get_project_root, iter_source_files
 
 LOG_METHODS = {"debug", "info", "warn", "warning", "error", "exception", "critical"}
 CONSOLE_FIELDS = ("console", "end")
@@ -43,9 +43,7 @@ def get_print_violations(root=None):
     root = Path(root).resolve() if root else get_project_root()
     apps_dir = root / "apps"
     violations = []
-    for path in sorted(apps_dir.rglob("*.py")):
-        if any(ex in path.parts for ex in EXCLUDES):
-            continue
+    for path in sorted(iter_source_files(apps_dir, extensions={'.py'})):
         if any(part in {"test", "tests"} for part in path.parts):
             continue
         rel = path.relative_to(root).as_posix()
@@ -88,9 +86,7 @@ def get_console_violations(root=None):
     root = Path(root).resolve() if root else get_project_root()
     apps_dir = root / "apps"
     violations = []
-    for path in sorted(apps_dir.rglob("*.py")):
-        if any(ex in path.parts for ex in EXCLUDES):
-            continue
+    for path in sorted(iter_source_files(apps_dir, extensions={'.py'})):
         if any(part in {"test", "tests"} for part in path.parts):
             continue
         rel = path.relative_to(root).as_posix()
