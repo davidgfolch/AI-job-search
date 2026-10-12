@@ -7,7 +7,7 @@ Shared Python library used across the AI Job Search monorepo components (`apps/b
 This package provides utility modules for:
 
 - **Database**: MySQL connection with LAN auto-discovery (`connection_manager.py`, `network/mysql_discovery.py`).
-- **Enrichment selection**: shared job filters (`sql/job_filter_builder.py`) reused by the backend and the enrichment workers, plus `sql/filter_config_selector.py` / `aiEnrichRepository.py`, which return pending jobs matching the stored `filter_configurations` first (honoring each config's `order`, falling back to `created desc`) and then every other pending job in `created desc`.
+- **Enrichment selection**: shared job filters (`sql/job_filter_builder.py`) reused by the backend and the enrichment workers, plus `sql/filter_config_selector.py` / `aiEnrichRepository.py`, which return pending jobs matching the stored `filter_configurations` first (each configuration drained in `AI_ENRICH_FILTER_BATCH_SIZE` chunks honoring its `order`, falling back to `created desc`) and then every other pending job in `created desc`.
 - **Persistence**: Shared data maintenance logic (`mergeDuplicates.py`).
 - **Configuration**: dotenv loading and precedence (`environmentUtil.py`).
 - **Utilities**: General purpose helpers (`util.py`, `decorator/`, `stopWatch.py`).
@@ -55,10 +55,12 @@ All attempts are logged at INFO/WARNING level. The resolved host is cached for t
 
 ## Job enrichment selection
 
-`aiEnrichRepository.AiEnrichRepository` selects the jobs an enrichment worker processes. `get_pending_enrichment_ids()` returns, in order:
+`aiEnrichRepository.AiEnrichRepository` selects the jobs an enrichment worker processes. `iter_pending_enrichment_batches(batch_size=None)` yields job-id chunks drained in order:
 
-1. Pending jobs matching the stored **watched** `filter_configurations` (`sql/filter_config_selector.py`), processing the configurations in their stored order (`WHERE watched = 1 ORDER BY ordering ASC`) and each config's own `order` (falling back to `created desc` when it is null or invalid), deduplicated across configurations.
-2. Every remaining pending job in `created desc`.
+1. Pending jobs matching the stored **watched** `filter_configurations` (`sql/filter_config_selector.py`), processing the configurations in their stored order (`WHERE watched = 1 ORDER BY ordering ASC`) and each config's own `order` (falling back to `created desc` when it is null or invalid), deduplicated across configurations. Each configuration is **drained in chunks**: after a chunk is enriched the jobs stop satisfying the base pending condition, so the next query returns the following chunk — the worker stays on one configuration until it yields nothing, then the next one is drained.
+2. Every remaining pending job in `created desc`, also in chunks of `batch_size`.
+
+The chunk size comes from `AI_ENRICH_FILTER_BATCH_SIZE` (default `10`, resolved by `get_filter_batch_size()`), forced per call via the `batch_size` argument.
 
 The `ai_enriched` condition is always stripped from a configuration (`job_filter_builder.strip_ai_enriched`), because the enrichment worker is the component that sets that flag. Every candidate must still satisfy the base pending condition: not enriched, no `ai_enrich_error`, and not ignored/discarded/closed. Null-valued filter fields (e.g. `"easy_apply": null`) are ignored instead of becoming SQL conditions. When no watched configurations exist (or they cannot be read) the selection falls back to the plain pending query. `sql/job_filter_builder.py` is the single source of truth for the filter → SQL conditions and job ordering, shared with the backend `repositories/queries/jobs_query_builder.py`.
 

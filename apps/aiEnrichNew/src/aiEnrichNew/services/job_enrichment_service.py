@@ -3,7 +3,7 @@ import json
 from typing import List, Dict, Any, Tuple, Optional, Set
 
 from commonlib.sql.mysqlUtil import MysqlUtil
-from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.aiEnrichRepository import AiEnrichRepository, get_filter_batch_size
 from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX
 from commonlib.terminalColor import yellow, magenta, cyan, red
 from commonlib.stopWatch import StopWatch
@@ -42,29 +42,29 @@ def enrich_jobs(repo: AiEnrichRepository, pipeline: Any, batch_size: int) -> int
         return 0
 
     logger.info("jobs.found", total=total, batch_size=batch_size)
-    job_ids = repo.get_pending_enrichment_ids()
-    logger.debug("job.pending_ids", ids=job_ids)
-
-    jobs_buffer = _fetch_and_sort_jobs(repo, job_ids, sort_by_length=True)
 
     total_count = 0
+    start_idx = 0
     job_errors: Set[Tuple[int, str]] = set()
     overall_start_time = time.time()
 
-    for i in range(0, len(jobs_buffer), batch_size):
-        batch_items = jobs_buffer[i:i + batch_size]
-        _process_job_batch_pipeline(
-            repo,
-            pipeline,
-            batch_items,
-            total,
-            i,
-            "enrich",
-            overall_start_time,
-            total_count,
-            job_errors
-        )
-        total_count += len(batch_items)
+    for chunk in repo.iter_pending_enrichment_batches(get_filter_batch_size()):
+        jobs_buffer = _fetch_and_sort_jobs(repo, chunk, sort_by_length=True)
+        for i in range(0, len(jobs_buffer), batch_size):
+            batch_items = jobs_buffer[i:i + batch_size]
+            _process_job_batch_pipeline(
+                repo,
+                pipeline,
+                batch_items,
+                total,
+                start_idx,
+                "enrich",
+                overall_start_time,
+                total_count,
+                job_errors
+            )
+            total_count += len(batch_items)
+            start_idx += len(batch_items)
 
     return total
 

@@ -74,7 +74,7 @@ def test_update_error_state_fail(mock_repo):
 @patch('aiEnrich3.services.job_enrichment_service._process_job_batch_local')
 def test_enrich_jobs(mock_process, mock_fetch, mock_repo, mock_pipeline):
     mock_repo.count_pending_enrichment.return_value = 2
-    mock_repo.get_pending_enrichment_ids.return_value = [1, 2]
+    mock_repo.iter_pending_enrichment_batches.return_value = [[1, 2]]
     mock_fetch.return_value = [{'id': 1}, {'id': 2}]
     
     total = enrich_jobs(mock_repo, mock_pipeline, 1)

@@ -1,55 +1,6 @@
-import pytest
-from unittest.mock import MagicMock
-from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.aiEnrichRepository import get_filter_batch_size
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
-from commonlib.sql.mysqlUtil import MysqlUtil
-
-# We mock MysqlUtil for unit testing
-class MockMysqlUtil:
-    def __init__(self):
-        self.count_result = 0
-        self.fetch_all_result = []
-        self.configs_result = []
-        self.priority_result = []
-        self.fetch_one_result = None
-        self.update_called = False
-        self.updates = []
-        self.fetch_all_calls = []
-        self.last_query = None
-        self.last_params = None
-        
-    def count(self, query):
-        self.last_query = query
-        return self.count_result
-        
-    def fetchAll(self, query, params=None):
-        self.last_query = query
-        self.last_params = params
-        self.fetch_all_calls.append((query, params))
-        if "filter_configurations" in query:
-            return self.configs_result
-        if "created DESC, id DESC" in query:
-            return self.priority_result
-        return self.fetch_all_result
-        
-    def fetchOne(self, query, *args):
-        return self.fetch_one_result
-        
-    def updateFromAI(self, query, params):
-        self.update_called = True
-        self.updates.append((query, params))
-        self.last_query = query
-        self.last_params = params
-        
-    def executeAndCommit(self, query, params):
-        self.last_query = query
-        self.last_params = params
-        return 1
-
-def mockRepo():
-    mock_mysql = MockMysqlUtil()
-    repo = AiEnrichRepository(mock_mysql)
-    return mock_mysql, repo
+from commonlib.test.aiEnrichRepository_fixtures import mockRepo
 
 
 def test_count_pending_enrichment():
@@ -58,36 +9,54 @@ def test_count_pending_enrichment():
     assert repo.count_pending_enrichment() == 5
     assert "ai_enrich_error" in mock_mysql.last_query
 
-def test_get_pending_enrichment_ids():
+def test_iter_pending_enrichment_batches_no_configs():
     mock_mysql, repo = mockRepo()
-    mock_mysql.fetch_all_result = [(1,), (2,)]
-    assert repo.get_pending_enrichment_ids() == [1, 2]
+    mock_mysql.fallback_batches = [[(1,), (2,)]]
+    assert list(repo.iter_pending_enrichment_batches()) == [[1, 2]]
     assert "ai_enrich_error" in mock_mysql.last_query
 
-
-def test_get_pending_enrichment_ids_priority_first_and_deduped():
+def test_iter_pending_enrichment_batches_configs_first_then_rest():
     mock_mysql, repo = mockRepo()
     mock_mysql.configs_result = [(1, "Python", '{"search": "python"}')]
-    mock_mysql.priority_result = [(5,), (1,)]
-    mock_mysql.fetch_all_result = [(1,), (2,), (3,)]
-    assert repo.get_pending_enrichment_ids() == [5, 1, 2, 3]
+    mock_mysql.match_batches = [[(5,), (1,)]]
+    mock_mysql.fallback_batches = [[(2,), (3,)]]
+    assert list(repo.iter_pending_enrichment_batches()) == [[5, 1], [2, 3]]
 
+def test_iter_pending_enrichment_batches_uses_explicit_batch_size():
+    mock_mysql, repo = mockRepo()
+    mock_mysql.fallback_batches = [[(1,)]]
+    list(repo.iter_pending_enrichment_batches(4))
+    _, params = next((q, p) for q, p in mock_mysql.fetch_all_calls if "created desc LIMIT %s" in q)
+    assert params == (4,)
 
-def test_get_pending_enrichment_ids_priority_excludes_ai_enriched_filter():
+def test_iter_pending_enrichment_batches_uses_env_batch_size(monkeypatch):
+    monkeypatch.setenv("AI_ENRICH_FILTER_BATCH_SIZE", "3")
+    mock_mysql, repo = mockRepo()
+    mock_mysql.fallback_batches = [[(1,)]]
+    list(repo.iter_pending_enrichment_batches())
+    _, params = next((q, p) for q, p in mock_mysql.fetch_all_calls if "created desc LIMIT %s" in q)
+    assert params == (3,)
+
+def test_get_filter_batch_size(monkeypatch):
+    monkeypatch.delenv("AI_ENRICH_FILTER_BATCH_SIZE", raising=False)
+    assert get_filter_batch_size() == 10
+    monkeypatch.setenv("AI_ENRICH_FILTER_BATCH_SIZE", "25")
+    assert get_filter_batch_size() == 25
+
+def test_iter_pending_enrichment_batches_priority_excludes_ai_enriched_filter():
     mock_mysql, repo = mockRepo()
     mock_mysql.configs_result = [(1, "Backend", '{"ai_enriched": true, "applied": true}')]
-    repo.get_pending_enrichment_ids()
+    list(repo.iter_pending_enrichment_batches())
     match_query = next(q for q, _ in mock_mysql.fetch_all_calls if "created DESC, id DESC" in q)
     assert "`ai_enriched` =" not in match_query
     assert "`applied` = 1" in match_query
 
-
 def test_config_for_job_exposes_priority_config():
     mock_mysql, repo = mockRepo()
     mock_mysql.configs_result = [(1, "Python", '{}')]
-    mock_mysql.priority_result = [(5,)]
-    mock_mysql.fetch_all_result = [(5,), (2,)]
-    assert repo.get_pending_enrichment_ids() == [5, 2]
+    mock_mysql.match_batches = [[(5,)]]
+    mock_mysql.fallback_batches = [[(2,)]]
+    assert list(repo.iter_pending_enrichment_batches()) == [[5], [2]]
     assert repo.config_for_job(5) == "Python"
     assert repo.config_for_job(2) is None
 

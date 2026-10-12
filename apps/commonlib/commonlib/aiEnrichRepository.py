@@ -9,6 +9,14 @@ from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.aiEnrichRepository")
 
+DEFAULT_FILTER_BATCH_SIZE = 10
+
+
+def get_filter_batch_size() -> int:
+    """Chunk size used when draining each watched filter configuration."""
+    return int(getEnv("AI_ENRICH_FILTER_BATCH_SIZE", str(DEFAULT_FILTER_BATCH_SIZE)))
+
+
 class AiEnrichRepository:
     PENDING_ENRICHMENT_QUERY = """SELECT id 
                    FROM jobs
@@ -31,16 +39,25 @@ class AiEnrichRepository:
                    ORDER BY created desc"""
         return self.mysql.count(query)
 
-    def get_pending_enrichment_ids(self) -> list[int]:
-        """Pending job ids, watched filter-configuration matches first, then the rest."""
+    def iter_pending_enrichment_batches(self, batch_size: int | None = None):
+        """Yield pending job-id batches, watched filter-configuration matches first.
+
+        Each watched configuration is drained in chunks of `batch_size`: after a chunk
+        is enriched it no longer satisfies the base pending condition, so the next query
+        returns the following chunk. Once every configuration is exhausted the remaining
+        pending jobs are yielded in `created desc`, also in chunks of `batch_size`.
+        """
+        batch_size = batch_size or get_filter_batch_size()
         selector = FilterConfigSelector(self.mysql)
-        priority = selector.priority_ids()
         self._job_configs = selector.job_configs
-        rest = [row[0] for row in self.mysql.fetchAll(self.PENDING_ENRICHMENT_QUERY)]
-        if not priority:
-            return rest
-        seen = set(priority)
-        return priority + [job_id for job_id in rest if job_id not in seen]
+        for _, ids in selector.iter_batches(batch_size):
+            yield ids
+        while True:
+            rows = self.mysql.fetchAll(f"{self.PENDING_ENRICHMENT_QUERY} LIMIT %s", (batch_size,))
+            ids = [row[0] for row in (rows or [])]
+            if not ids:
+                break
+            yield ids
 
     def config_for_job(self, id: int) -> str | None:
         """Name of the watched configuration that prioritised this job, if any."""

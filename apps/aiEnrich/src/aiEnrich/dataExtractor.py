@@ -10,7 +10,7 @@ from commonlib.ai_helpers import (
     RETRY_ERROR_PREFIX,
     MAX_AI_ENRICH_ERROR_LEN,
 )
-from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.aiEnrichRepository import AiEnrichRepository, get_filter_batch_size
 from commonlib.observability import get_logger, job_log_context
 from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
@@ -101,8 +101,11 @@ def dataExtractor() -> int:
         collector.set_pending("aiEnrich", total)
         stopWatch.start()
         _batch_start = time.time()
-        for idx, id in enumerate(_getJobIdsList(repo)):
-            _process_job_safe(repo, id, total, idx, "enrich")
+        idx = 0
+        for batch in _getJobBatches(repo):
+            for id in batch:
+                _process_job_safe(repo, id, total, idx, "enrich")
+                idx += 1
         return total
 
 
@@ -192,7 +195,5 @@ def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name
         logger.warning("job.error_set", job_id=id)
 
 
-def _getJobIdsList(repo: AiEnrichRepository) -> list[int]:
-    jobIds = repo.get_pending_enrichment_ids()
-    logger.debug("job.pending_ids", ids=jobIds)
-    return jobIds
+def _getJobBatches(repo: AiEnrichRepository):
+    return repo.iter_pending_enrichment_batches(get_filter_batch_size())

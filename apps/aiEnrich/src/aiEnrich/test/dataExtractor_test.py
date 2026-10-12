@@ -14,7 +14,7 @@ from .dataExtractor_fixtures import (
 
 
 class TestDataExtractor:
-    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
+    @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1]])
     def test_extractor_success(self, mock_ids, mock_deps):
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
@@ -24,7 +24,7 @@ class TestDataExtractor:
             mock_deps['save'].assert_called()
             mock_deps['ollama'].assert_called_once()
 
-    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
+    @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1]])
     def test_skips_when_ollama_down(self, mock_ids, mock_deps):
         mock_deps['ping'].return_value = False
         mock_deps['repo'].count_pending_enrichment.return_value = 1
@@ -32,7 +32,7 @@ class TestDataExtractor:
         mock_deps['ollama'].assert_not_called()
         mock_deps['save'].assert_not_called()
 
-    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
+    @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1]])
     def test_skips_job_when_ollama_returns_none(self, mock_ids, mock_deps):
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
@@ -48,7 +48,7 @@ class TestDataExtractor:
             _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': 'REMOTE'})
             repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', 'REMOTE')
 
-    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1, 2])
+    @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1, 2]])
     def test_job_started_index_is_one_based(self, mock_ids, mock_deps):
         mock_deps['repo'].count_pending_enrichment.return_value = 2
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
@@ -59,7 +59,7 @@ class TestDataExtractor:
         started = [c.kwargs for c in mock_logger.info.call_args_list if c.args and c.args[0] == "job.started"]
         assert [entry['index'] for entry in started] == [1, 2]
 
-    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
+    @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1]])
     def test_footer_receives_batch_and_job_elapsed(self, mock_ids, mock_deps):
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
@@ -71,7 +71,7 @@ class TestDataExtractor:
         assert args[:3] == (1, 0, 1)
         assert 0 <= args[5] <= args[4]
 
-    @patch('aiEnrich.dataExtractor._getJobIdsList', return_value=[1])
+    @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1]])
     def test_job_work_runs_inside_the_job_context(self, mock_ids, mock_deps):
         order = []
         mock_deps['repo'].count_pending_enrichment.return_value = 1
