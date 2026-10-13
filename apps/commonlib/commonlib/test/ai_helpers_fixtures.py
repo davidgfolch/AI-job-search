@@ -13,6 +13,12 @@ LISTS_TO_STRING_CASES = [
     ("Null", None),
 ]
 
+LISTS_TO_STRING_TYPES_CASES = [
+    ({"req": ["a", "b"], "opt": "c, d", "none": None}, {"req": "a,b", "opt": "c,d", "none": None}),
+    ({"tech": ["Java", "AWS (RDS, Cognito, ECS)", "Observability (Grafana, Sentry)"]},
+     {"tech": "Java,AWS,RDS,Cognito,ECS,Observability,Grafana,Sentry"}),
+]
+
 FLATTEN_STRING_CASES = [
     ("Java,Spring Boot,AWS (RDS, Cognito, ECS),Observability (Grafana, Sentry)",
      ["Java", "Spring Boot", "AWS", "RDS", "Cognito", "ECS", "Observability", "Grafana", "Sentry"]),

@@ -1,10 +1,10 @@
 from structlog.testing import capture_logs
 import pytest
 from unittest.mock import MagicMock, patch
-from commonlib.ai_helpers import validateResult, listsToString, mapJob, combineTaskResults, footer, logIdleWait, idleWait, _expand_parenthesized_skills, flatten_skill_groups, _normalizeModality
+from commonlib.ai_helpers import validateResult, listsToString, mapJob, combineTaskResults, footer, printJob, logIdleWait, idleWait, _expand_parenthesized_skills, flatten_skill_groups, _normalizeModality
 from commonlib.terminalColor import cyan
 from commonlib.test.ai_helpers_fixtures import (
-    LISTS_TO_STRING_CASES, FLATTEN_STRING_CASES, FLATTEN_LIST_CASES, SALARY_CASES, CV_MATCH_CASES, MAP_JOB_CASES,
+    LISTS_TO_STRING_CASES, LISTS_TO_STRING_TYPES_CASES, FLATTEN_STRING_CASES, FLATTEN_LIST_CASES, SALARY_CASES, CV_MATCH_CASES, MAP_JOB_CASES,
     MODALITY_CASES, EXPAND_CASES, FOOTER_ERROR_CASES, FOOTER_JOB_ELAPSED_CASES, LOG_IDLE_TERMINAL_CASES, completed,
 )
 
@@ -14,11 +14,7 @@ def test_listsToString(value, expected):
     listsToString(data, ["tech"])
     assert data["tech"] == expected
 
-@pytest.mark.parametrize("data, expected", [
-    ({"req": ["a", "b"], "opt": "c, d", "none": None}, {"req": "a,b", "opt": "c,d", "none": None}),
-    ({"tech": ["Java", "AWS (RDS, Cognito, ECS)", "Observability (Grafana, Sentry)"]},
-     {"tech": "Java,AWS,RDS,Cognito,ECS,Observability,Grafana,Sentry"}),
-])
+@pytest.mark.parametrize("data, expected", LISTS_TO_STRING_TYPES_CASES)
 def test_listsToString_types(data, expected):
     listsToString(data, list(data))
     assert data == expected
@@ -96,6 +92,11 @@ def test_footer(job_errors, expected_errors):
     c = completed(records)
     assert (c["processed"], c["total"], c["total_processed"], c["job_errors"]) == (1, 10, 100, expected_errors)
     assert "elapsed" not in c
+
+def test_footer_total_never_below_processed(capsys):
+    with capture_logs() as records: footer(1, 11, 12, set())
+    printJob("enrich", 1, 11, 589064, "T", "C", 100)
+    assert (c := completed(records))["total"] == c["processed"] == 12 and "job 12/12" in capsys.readouterr().out
 
 @pytest.mark.parametrize("elapsed, present, absent", [
     (None, ["Processed jobs this run: 1449/5653", "total processed jobs: 1449", "Total job errors: 0"], ["Time elapsed"]),

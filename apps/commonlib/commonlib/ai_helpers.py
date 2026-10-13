@@ -16,7 +16,7 @@ MAX_AI_ENRICH_ERROR_LEN = 500
 RETRY_ERROR_PREFIX = "RETRY ERROR: "
 
 def printJob(processName, total, idx, id, title, company, inputLen):
-    print(green(f'AI {processName} job {idx+1}/{total} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={inputLen}'))
+    print(green(f'AI {processName} job {idx+1}/{max(total, idx + 1)} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={inputLen}'))
 
 
 def mapJob(job):
@@ -122,9 +122,9 @@ def listsToString(result: dict[str, str], fields: list[str]):
 def footer(total, idx, totalCount, jobErrors:set, elapsed_time: float = None, job_elapsed: float = None, config: str = None):
     """Log the running progress of a batch: the `n/m` line is the human half of the record, the fields the queryable half.
     `elapsed_time` is the batch wall time behind the per-job media; `job_elapsed`, when given, is the current job's
-    inference total and is what `Time elapsed:` prints, so a progress line reports how long the job just finished took.
-    `config` is the filter configuration the current job came from, shown on the progress line.
-    """
+    inference total, printed by `Time elapsed:`; `config` is the filter configuration the current job came from.
+    `total` starts as the run's expected size and tracks the chunked drain, never dropping below the jobs processed."""
+    total = max(total, idx + 1)
     fields = dict(processed=idx + 1, total=total, total_processed=totalCount, job_errors=len(jobErrors), **({'config': config} if config else {}))
     console = green(f"Processed jobs this run: {idx + 1}/{total}, total processed jobs: {totalCount}  Total job errors: {len(jobErrors)}" + (f"  Config: {config}" if config else ""))
     if job_elapsed is not None:
