@@ -5,8 +5,14 @@
 - **Python**: 3.10 required, except `apps/aiEnrich3`, which requires 3.11 (its locked `onnxruntime` has no 3.10 wheels).
   - `apps/aiEnrich3/.python-version` pins `3.11.14`; `uv` downloads and uses that interpreter automatically on `uv sync`.
   - Python 3.12 has incompatibilities with some libraries used.
+  - **Install Python 3.11** — it is the only single version that satisfies both the 3.10 baseline and the 3.11 requirement of `apps/aiEnrich3` (all modules declare `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`backend`/`scrapper`/`cron`).
 - **Node.js**: LTS version (for `apps/web`).
 - **Docker**: For running services in containers.
+
+> **Prerequisites for the install scripts**: `scripts\install.bat` (Windows) and
+> `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need Python on `PATH`.
+> On a fresh Windows 11 or Linux machine, install Python 3.11, Poetry, and uv first
+> (steps 1-3 below), then run the script from a **new** terminal so `PATH` picks them up.
 
 ## Package Managers
 
@@ -20,13 +26,46 @@ This project uses different package managers for different components:
 
 > **Note**: For the best development experience in VS Code, open the `.vscode/AI-job-search.code-workspace` file after installation. This ensures the correct Python interpreters are selected for each app.
 
-### 1. Install Poetry (Python)
+### 1. Install Python 3.11
+
+`scripts\install.bat` (Windows) and `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need a Python interpreter on `PATH` — install Python **3.11** first (see System Requirements for why 3.11 and not 3.12).
+
+**Windows 11:**
+
+```powershell
+winget install Python.Python.3.11
+# or download the installer from https://www.python.org/downloads/ and tick
+# "Add python.exe to PATH" during setup
+```
+
+**Linux (Debian/Ubuntu):**
 
 ```bash
+sudo apt-get update
+sudo apt-get install -y python3.11 python3.11-venv python3-pip
+# or use your distro's package manager, pyenv, or the installer from python.org
+```
+
+Verify in a **new** terminal:
+
+```bash
+python --version    # Windows
+python3 --version   # Linux
+```
+
+### 2. Install Poetry (Python)
+
+Poetry is used by `apps/scrapper` and `apps/commonlib`.
+
+```bash
+# Windows (PowerShell)
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+
+# Linux/Mac
 curl -sSL https://install.python-poetry.org | python3 -
 ```
 
-### 2. Install uv (Python)
+### 3. Install uv (Python)
 
 Required for `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, and `apps/aiCvMatcher`.
 
@@ -38,11 +77,11 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 3. Install Node.js & npm
+### 4. Install Node.js & npm
 
 Download and install from [nodejs.org](https://nodejs.org/).
 
-### 4. Install GitHub CLI (recommended)
+### 5. Install GitHub CLI (recommended)
 
 Required by the agent tooling to process Dependabot PRs (see the `dependabot-agent` skill in `.claude/skills/`, [AGENTIC_SDLC.md](AGENTIC_SDLC.md), and [README_GITHUB.md](README_GITHUB.md)).
 
@@ -62,7 +101,7 @@ gh auth login
 
 Verify with `gh auth status`.
 
-### 5. Install Ollama & required models
+### 6. Install Ollama & required models
 
 > **Note**: If you are using Docker, you do not need to install Ollama manually — add the `ollama` profile to run it containerized: `docker-compose --profile ollama up -d` (see [DOCKER_DEV.md](DOCKER_DEV.md)). If Ollama is already installed on your host, skip that: the AI modules auto-detect it and the `ollama` container is opt-in.
 
@@ -89,7 +128,7 @@ If you are running the Dockerized Ollama server (`docker-compose up -d ollama`),
 docker exec ai-job-search-ollama ollama pull qwen2.5:3b
 ```
 
-### 5.1 ISP blocking the Ollama registry (e.g. Movistar)
+### 6.1 ISP blocking the Ollama registry (e.g. Movistar)
 
 Some ISPs (e.g. Movistar) block or time out the model download host `r2.cloudflarestorage.com` (Cloudflare R2), so `ollama pull` hangs and fails with `dial tcp ...:443: i/o timeout`. Pull the same models from HuggingFace instead and alias them to the expected names:
 
@@ -111,7 +150,7 @@ For the Dockerized server, prefix each command with `docker exec ai-job-search-o
 
 The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable, then removes the temporary tag. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`.
 
-### 6. Install Crawlee (source-page analysis)
+### 7. Install Crawlee (source-page analysis)
 
 Required by the `crawlee-page-analyst` agent skill to analyze a source page after a site/DOM redesign and produce scrapper-change requirements before selectors are edited (see [AGENTIC_SDLC.md](AGENTIC_SDLC.md)).
 
@@ -121,7 +160,7 @@ uv tool install "crawlee[all]"
 
 > `scripts/install.sh` / `scripts/install.bat` install it automatically. If you use `PlaywrightCrawler` and the browser binaries are missing, run `playwright install chromium` once.
 
-### 6.1 Install Google Chrome & system libraries (scrapper)
+### 7.1 Install Google Chrome & system libraries (scrapper)
 
 The scrapper runs natively on the host — it is **not** a Docker service. Launch it with
 `apps/scrapper/run.sh` (Linux/Mac) or `apps/scrapper/run.bat` (Windows), which run
@@ -145,7 +184,7 @@ sudo apt-get install -y google-chrome-stable \
     libxrandr2 xdg-utils
 ```
 
-### 7. Install Project Dependencies
+### 8. Install Project Dependencies
 
 You can use the helper script in the project root:
 
