@@ -86,7 +86,7 @@ The `jobs` MySQL database is **live production data** — scraping, enrichment, 
 | `.claude/hooks/db-mutation.py` | Claude Code (`PreToolUse` on `Bash`) | Exits 2 and denies the call, printing the reason and the remediation on stderr |
 | `.opencode/plugins/db-mutation.js` | opencode | Throws from `tool.execute.before`, aborting the `bash` call with the same message |
 
-Both are registered automatically: the hook in `.claude/settings.json` (`PreToolUse` → `Bash`), the plugin in the `plugin` array of `.opencode/opencode.json`. Both mirror each other and share the same detection logic, verified by an identical 31-case allow/block matrix.
+Both are registered automatically: the hook in `.claude/settings.json` (`PreToolUse` → `Bash`), the plugin auto-discovered from `.opencode/plugins/db-mutation.js` in opencode (V2 default export). Both mirror each other and share the same detection logic, verified by an identical 31-case allow/block matrix.
 
 What it blocks: a database client (`mysql`, `mariadb`, `psql`, `mongosh`, `sqlite3`, `redis-cli`, …) combined with a mutating statement (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, `ALTER`, `CREATE`, `GRANT`, `CALL`, `LOAD DATA`, `… INTO OUTFILE`), a `.sql` file piped or sourced into a client (contents are not reviewable), mongo mutators (`drop`, `updateMany`, `deleteMany`, `bulkWrite`), redis writes (`SET`, `DEL`, `FLUSHALL`), and data-volume destruction (`docker compose down -v`, `docker volume rm`, `docker system prune --volumes`).
 

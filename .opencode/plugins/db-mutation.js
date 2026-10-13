@@ -84,3 +84,22 @@ export const DbMutationPlugin = async () => {
     },
   };
 };
+export default {
+  id: "db-mutation",
+  async setup(ctx) {
+    await ctx.tool.hook("execute.before", async (event) => {
+      if (event.tool !== "shell") return;
+      const command = (event.input || {}).command;
+      const reason = findViolation(command);
+      if (!reason) return;
+      throw new Error(
+        `BLOCKED by .claude/rules/db-mutation-permission.md: ${reason}. ` +
+          "The `jobs` MySQL database is live production data, so a write needs the user's explicit " +
+          "permission first. Do this instead: run read-only SELECT/SHOW/EXPLAIN to measure the current " +
+          "state, then ask the user to approve the exact statement and the expected row count, and wait " +
+          `for a yes. Once approved, re-run it with the ${APPROVAL_TOKEN} token in the command.\n` +
+          `Offending command: ${command}`,
+      );
+    });
+  },
+};
