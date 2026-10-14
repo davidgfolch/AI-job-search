@@ -6,6 +6,9 @@ services:
   mysql_db:
     image: mysql:9 # MySQL 9 to match existing data version
     container_name: ai-job-search-mysql
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - /var/lib/mysql:/var/lib/mysql # Original bind mount to preserve existing data
       - ./scripts/mysql:/docker-entrypoint-initdb.d
@@ -33,6 +36,9 @@ services:
       context: .
       dockerfile: apps/backend/Dockerfile
     container_name: ai-job-search-backend
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/backend:/app/apps/backend
       - ./apps/commonlib:/app/apps/commonlib
@@ -52,6 +58,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
+      - COMMONLIB_DB_POOL_SIZE=10
       - MONGO_URI=mongodb://${MONGO_USERNAME:-root}:${MONGO_PASSWORD:-rootPass}@mongo_db:27017/
       - TZ=${GLOBAL_TZ}
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
@@ -80,6 +87,9 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     container_name: ai-job-search-web
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/web:/app
       - /app/node_modules # Anonymous volume for node_modules
@@ -114,6 +124,9 @@ services:
     restart: unless-stopped
     ports:
       - "11434:11434"
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ${OLLAMA_MODELS_PATH:-~/.ollama}:/root/.ollama # Ollama models from host (set OLLAMA_MODELS_PATH in .env for Windows)
     healthcheck:
@@ -133,6 +146,9 @@ services:
     container_name: ai-job-search-aienrich
     profiles:
       - aienrich
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/aiEnrich:/app/apps/aiEnrich
       - /app/apps/aiEnrich/.venv # Anonymous volume to isolate container venv from host
@@ -174,6 +190,9 @@ services:
     container_name: ai-job-search-aienrichnew
     profiles:
       - aiEnrichNew
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/aiEnrichNew:/app/apps/aiEnrichNew
       - /app/apps/aiEnrichNew/.venv # Anonymous volume to isolate container venv from host
@@ -208,6 +227,9 @@ services:
     container_name: ai-job-search-aienrichskill
     profiles:
       - aiEnrichSkill
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/aiEnrichSkill:/app/apps/aiEnrichSkill
       - /app/apps/aiEnrichSkill/.venv
@@ -246,6 +268,9 @@ services:
       context: .
       dockerfile: apps/aiCvMatcher/Dockerfile
     container_name: ai-job-search-aicvmatcher
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/aiCvMatcher:/app/apps/aiCvMatcher
       - /app/apps/aiCvMatcher/.venv # Anonymous volume to isolate container venv from host
@@ -278,6 +303,9 @@ services:
     container_name: ai-job-search-aienrich3
     profiles:
       - aiEnrich3
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/aiEnrich3:/app/apps/aiEnrich3
       - ./apps/commonlib:/app/apps/commonlib
@@ -309,6 +337,9 @@ services:
       context: .
       dockerfile: apps/aiFormFiller/Dockerfile
     container_name: ai-job-search-aiformfiller
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/aiFormFiller:/app/apps/aiFormFiller
       - /app/apps/aiFormFiller/.venv
@@ -344,6 +375,9 @@ services:
       TZ: ${GLOBAL_TZ}
     ports:
       - "27017:27017"
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - mongo_data:/data/db
       - ./scripts/mongo:/docker-entrypoint-initdb.d
@@ -361,6 +395,9 @@ services:
       context: .
       dockerfile: apps/cron/Dockerfile
     container_name: ai-job-search-cron
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./apps/cron:/app/apps/cron
       - /app/apps/cron/.venv # Anonymous volume to isolate container venv from host
@@ -391,6 +428,9 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: ai-job-search-prometheus
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -407,6 +447,9 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: ai-job-search-grafana
+    env_file:
+      - ./.env
+      - ./.env.secrets
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources

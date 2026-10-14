@@ -35,6 +35,8 @@ Resolution order, highest first:
 
 The connection pool is initialized once via `get_connection()` from `sql/connection_manager.py`. The host is resolved from the `COMMONLIB_DB_HOST` env var (default `127.0.0.1`).
 
+When the pool is temporarily exhausted, `get_connection()` retries `COMMONLIB_DB_POOL_RETRIES` times (default 3) with backoff, treating both the internal `queue.Empty` and mysql-connector's `mysql.connector.errors.PoolError` as temporary exhaustion.
+
 ### Supported host formats
 
 | Format | Example | Description |

@@ -25,6 +25,7 @@ LIMIT 20;
 /* and id=506471 */
 /* where id=XXXXXXXX */
 
+select title, markdown from jobs where web_page='Linkedin' and len(markdown)< 30 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 8 HOUR) and not (ignored or applied or closed or discarded or seen) ; 
 
 UPDATE jobs j
 JOIN jobs d ON j.duplicated_id = d.id
