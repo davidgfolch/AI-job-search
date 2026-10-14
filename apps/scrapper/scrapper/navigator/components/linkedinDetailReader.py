@@ -16,6 +16,7 @@ CSS_SEL_DETAIL_LOCATION = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/vi
 CSS_SEL_DETAIL_LOCATION_WIDE = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p'
 CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div[id^="JobDetails_AboutTheJob_"]'
 CSS_SEL_JOB_DESCRIPTION_FALLBACK = f'{CSS_SEL_JOB_DETAIL} > div:nth-child(2)'
+CSS_SEL_JOB_EXPAND_BUTTONS = f'{CSS_SEL_JOB_DETAIL} button[data-testid="expandable-text-button"]'
 # aria-label matches in both list-click and direct-url mode, the bug icon only exists in list-click mode
 CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} button[aria-label="Easy Apply to this job"]'
 CSS_SEL_JOB_FIT_PREFERENCES = f'{CSS_SEL_JOB_DETAIL} > div:first-child a[href*="currentJobId"]'
@@ -59,10 +60,45 @@ class LinkedinDetailReader:
         buttons = self.selenium.getElms(CSS_SEL_JOB_FIT_PREFERENCES)
         return ', '.join(map(lambda b: self.selenium.getText(b), buttons))
 
+    def _expand_description(self):
+        try:
+            self.selenium.driver.execute_script(
+                'const root = document.querySelector(\'[id^="JobDetails_AboutTheJob_"]\'); '
+                'if (root) root.querySelectorAll(\'button[data-testid="expandable-text-button"]\').forEach(b => { try { b.click(); } catch (e) {} });',
+            )
+        except Exception:
+            pass
+
+    def _all_html(self, cssSel: str) -> str:
+        # Querying the selector in the page keeps the extraction consistent with the live DOM
+        # and allows every matching container to contribute its HTML (instead of only the first one).
+        try:
+            result = self.selenium.driver.execute_script(
+                'return Array.from(document.querySelectorAll(arguments[0])).map(e => e.innerHTML);',
+                cssSel,
+            )
+        except Exception:
+            result = None
+        parts = []
+        if isinstance(result, list):
+            for html in result:
+                if isinstance(html, str) and html:
+                    parts.append(html)
+        if parts:
+            return '\n'.join(parts)
+        # Preserve compatibility for mocked/legacy paths where execute_script is not backed by a real browser.
+        try:
+            if html := self.selenium.getHtml(cssSel):
+                return html
+        except Exception:
+            pass
+        raise NoSuchElementException(f'No HTML from {cssSel}')
+
     def _description_html(self) -> str:
+        self._expand_description()
         for cssSel in (CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_DESCRIPTION_FALLBACK):
             try:
-                if html := self.selenium.getHtml(cssSel):
+                if html := self._all_html(cssSel):
                     return html
             except Exception:
                 continue
