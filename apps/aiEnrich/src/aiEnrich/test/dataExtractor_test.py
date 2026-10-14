@@ -156,6 +156,7 @@ class TestProcessJobSafeBackend:
         os.environ["AI_ENRICH_BACKEND"] = "openrouter"
         from aiEnrich.dataExtractor import _process_job_safe
         repo = MagicMock()
+        repo.count_pending_enrichment.return_value = 0
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
              patch("aiEnrich.dataExtractor.query_openrouter", return_value='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}') as mock_or, \
@@ -173,6 +174,7 @@ class TestProcessJobSafeBackend:
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         from aiEnrich.dataExtractor import _process_job_safe
         repo = MagicMock()
+        repo.count_pending_enrichment.return_value = 0
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
         response = OllamaResponse(text='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}',
                                  url="http://ollama", done=True, done_reason="stop")

@@ -176,8 +176,10 @@ def _process_job_batch_local(
                 _update_error_state(repo, job_id, error_msg, process_name == "retry")
         else:
             elapsed = time.time() - start_time
-            printJob(process_name, total, start_idx + idx, job_id, title, company, item.get('length', 0))
-            footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed, config=repo.config_for_job(job_id) or "NONE")
+            _remaining_pending_3 = repo.count_pending_enrichment()
+            live_total = max(total, start_idx + idx + 1 + _remaining_pending_3)
+            printJob(process_name, live_total, start_idx + idx, job_id, title, company, item.get('length', 0))
+            footer(live_total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed, config=repo.config_for_job(job_id) or "NONE")
 
         duration = time.time() - job_start
         collector.record_job("aiEnrich3", duration, success)

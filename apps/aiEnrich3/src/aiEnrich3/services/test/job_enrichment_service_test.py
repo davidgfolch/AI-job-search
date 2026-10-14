@@ -137,6 +137,7 @@ def test_process_job_batch_local_success(mock_sw, mock_footer, mock_printJob, mo
     batch = [{'id': 1, 'title': 'T', 'company': 'C', 'markdown': 'text', 'length': 4}]
     errors = set()
     mock_pipeline.process_job.return_value = {"salary": "100k"}
+    mock_repo.count_pending_enrichment.return_value = 0
     
     _process_job_batch_local(mock_repo, mock_pipeline, batch, 1, 0, "test", 0.0, 0, errors)
     

@@ -19,6 +19,7 @@ def mock_deps():
         mysql = MagicMock()
         mysql_util.return_value.__enter__.return_value = mysql
         repo = MagicMock()
+        repo.count_pending_enrichment.return_value = 0
         repo_cls.return_value = repo
         dataExtractor_module.totalCount = 0
         dataExtractor_module.jobErrors = set()

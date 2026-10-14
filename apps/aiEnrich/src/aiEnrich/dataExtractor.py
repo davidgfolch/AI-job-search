@@ -136,6 +136,8 @@ def _process_job_safe(
 ):
     global totalCount, jobErrors
     start_time = time.time()
+    _remaining_pending = repo.count_pending_enrichment()
+    live_total = max(total, idx + _remaining_pending, idx + 1)
     success = False
     title, company = "Unknown", "Unknown"
     try:
@@ -149,7 +151,7 @@ def _process_job_safe(
             try:
                 backend = get_backend()
                 model = get_openrouter_model() if backend == "openrouter" else get_model()
-                logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx + 1, backend=backend, model=model)
+                logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=live_total, index=idx + 1, backend=backend, model=model)
                 prompt = build_extraction_prompt(title, markdown)
                 result, response = query_and_parse(
                     lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
@@ -175,7 +177,7 @@ def _process_job_safe(
     collector.record_job("aiEnrich", duration, success)
     collector.persist_if_due(60)
     stopWatch.end()
-    footer(total, idx, totalCount, jobErrors, time.time() - _batch_start, duration, config=repo.config_for_job(id) or "NONE")
+    footer(live_total, idx, totalCount, jobErrors, time.time() - _batch_start, duration, config=repo.config_for_job(id) or "NONE")
 
 
 def _save(repo: AiEnrichRepository, id, result: dict):
