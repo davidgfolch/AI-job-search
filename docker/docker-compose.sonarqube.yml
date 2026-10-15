@@ -1,0 +1,38 @@
+services:
+  sonarqube:
+    image: sonarqube:26.8.0.126808-community
+    container_name: ai-job-search-sonarqube
+    environment:
+      SONAR_WEB_JAVAADDITIONALOPTS: "-Xmx1g -Xms512m"
+      SONAR_CE_JAVAADDITIONALOPTS: "-Xmx1g -Xms512m"
+      SONAR_SEARCH_JAVAADDITIONALOPTS: "-Xmx512m -Xms256m"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    ports:
+      - "${SONAR_PORT:-9000}:9000"
+    ulimits:
+      nofile:
+        soft: 131072
+        hard: 131072
+
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli:latest
+    container_name: ai-job-search-sonar-scanner
+    profiles:
+      - sonar
+    depends_on:
+      - sonarqube
+    volumes:
+      - ../:/usr/src
+    working_dir: /usr/src
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+      SONAR_TOKEN: ${SONAR_TOKEN}
+    command: ["-Dsonar.qualitygate.wait=true"]
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

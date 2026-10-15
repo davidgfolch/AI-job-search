@@ -11,6 +11,10 @@
           {
             "type": "command",
             "command": "python .claude/hooks/db-mutation.py"
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/sonar-quality-gate.py"
           }
         ]
       },
@@ -40,6 +44,17 @@
             "type": "command",
             "command": "graphify hook-guard read",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-gate.sh\" \"$CLAUDE_PROJECT_DIR\""
           }
         ]
       }
