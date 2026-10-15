@@ -77,7 +77,7 @@ class TestIndeedService:
         result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
         
         assert result is True
-        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "60k", "https://es.indeed.com/viewjob?jk=1", "markdown", False, "Indeed", None))
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", "60k", None, "https://es.indeed.com/viewjob?jk=1", "markdown", False, "Indeed", None))
         mock_merge.assert_called()
 
     @pytest.mark.parametrize("salary, expected_salary", [
@@ -98,7 +98,7 @@ class TestIndeedService:
         result = service.process_job("Title", "Company", "Loc", salary, "http://url?jk=1", "html", False)
 
         assert result is True
-        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", expected_salary, "https://es.indeed.com/viewjob?jk=1", "markdown", False, "Indeed", None))
+        mock_mysql.insert.assert_called_with(("1", "Title", "Company", "Loc", expected_salary, None, "https://es.indeed.com/viewjob?jk=1", "markdown", False, "Indeed", None))
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     def test_process_job_exists(self, mock_html2md, service, mock_mysql):
@@ -136,7 +136,7 @@ class TestIndeedService:
         
         assert result is True
         args = mock_mysql.insert.call_args[0][0]
-        assert args[5] == "https://es.indeed.com/viewjob?jk=123"
+        assert args[6] == "https://es.indeed.com/viewjob?jk=123"
 
     @patch("scrapper.services.IndeedService.htmlToMarkdown")
     @patch("scrapper.services.IndeedService.validate")

@@ -2,8 +2,8 @@ from typing import Any
 
 QRY_INSERT = """
 INSERT INTO jobs (
-    jobId,title,company,location,salary,url,markdown,easy_apply,web_page,duplicated_id)
-          values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    jobId,title,company,location,salary,modality,url,markdown,easy_apply,web_page,duplicated_id)
+          values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
 
 QRY_FIND_JOB_BY_JOB_ID = """
 SELECT id,jobId FROM jobs WHERE jobId = %s"""
@@ -58,6 +58,7 @@ class JobRepository:
             job_data.get('company', ''),
             job_data.get('location', ''),
             job_data.get('salary'),
+            job_data.get('modality'),
             job_data.get('url', ''),
             job_data.get('markdown', ''),
             job_data.get('easy_apply', False),

@@ -7,6 +7,7 @@ from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, debug, removeUrlParameter
+from commonlib.modality_extractor import extract_modality
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
@@ -72,6 +73,8 @@ class IndeedService(BaseService):
             url = f"https://es.indeed.com/viewjob?jk={job_id}"
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
+            md = self._append_modality_cue_from_location(md, location)
+            modality = extract_modality(title, location, md)
             # Use the actual URL from seleniumService.getUrl() directly
             logger.info("indeed.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy_apply,
                           console=f"{job_id}, {title}, {cyan(company)}, easy_apply={easy_apply} - ", end="")
@@ -82,7 +85,7 @@ class IndeedService(BaseService):
                 return True
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)
-                if id := self.mysql.insert((job_id, title, company, location, salary, url, md, easy_apply, self.web_page, duplicated_id)):
+                if id := self.mysql.insert((job_id, title, company, location, salary, modality, url, md, easy_apply, self.web_page, duplicated_id)):
                     logger.info("indeed.job.inserted", job_id=job_id, insert_id=id, console=green(f"INSERTED {id}!"), end="")
                     return True
                 else:
@@ -102,3 +105,23 @@ class IndeedService(BaseService):
         txt = re.sub(r"(\n[  ]*){3,}", "\n\n", txt)
         txt = re.sub(r"[-*] #", "#", txt)
         return txt
+
+    def _modality_cue_from_location(self, location: str) -> str | None:
+        loc = (location or "").lower()
+        if "teletrabajo" in loc or "remoto" in loc or "remote" in loc:
+            return "Teletrabajo (remoto)"
+        if "híbrido" in loc or "hibrido" in loc or "hybrid" in loc:
+            return "Trabajo híbrido"
+        if "presencial" in loc or "on-site" in loc or "onsite" in loc:
+            return "Trabajo presencial"
+        return None
+
+    def _append_modality_cue_from_location(self, md: str, location: str) -> str:
+        cue = self._modality_cue_from_location(location)
+        if not cue:
+            return md
+        marker = f"Modalidad: {cue}"
+        if marker in (md or ""):
+            return md
+        base = (md or "").rstrip()
+        return base + ("\n\n" if base else "") + marker

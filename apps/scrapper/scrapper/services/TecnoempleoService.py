@@ -4,6 +4,7 @@ from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
+from commonlib.modality_extractor import extract_modality
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
@@ -21,6 +22,7 @@ class TecnoempleoService(BaseService):
         try:
             job_id = self.get_job_id(url)
             md = htmlToMarkdown(html)
+            modality = extract_modality(title, location, md)
             easyApply = False
 
             logger.info("tecnoempleo.job.scraped", job_id=job_id, title=title, company=company, location=location, salary=salary, easy_apply=easyApply,
@@ -28,7 +30,7 @@ class TecnoempleoService(BaseService):
 
             if validate(title, url, company, md, self.debug):
                 duplicated_id = find_last_duplicated(self.mysql, title, company)
-                if id := self.mysql.insert((job_id, title, company, location, salary, url, md, easyApply, self.web_page, duplicated_id)):
+                if id := self.mysql.insert((job_id, title, company, location, salary, modality, url, md, easyApply, self.web_page, duplicated_id)):
                     logger.info("tecnoempleo.job.inserted", job_id=job_id, insert_id=id, console=green(f'INSERTED {id}!'), end="")
                     if duplicated_id:
                         logger.info("tecnoempleo.job.duplicated", job_id=job_id, duplicated_id=duplicated_id, console=cyan(f' DUPLICATED {duplicated_id}'), end="")

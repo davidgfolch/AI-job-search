@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Tuple, Optional, Set
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX
+from commonlib.modality_extractor import extract_modality
 from commonlib.terminalColor import yellow, magenta, cyan, red
 from commonlib.stopWatch import StopWatch
 from commonlib.observability import get_logger, job_log_context
@@ -141,6 +142,7 @@ def _process_job_batch_pipeline(
             logger.info("job.result", job_id=job_id, result=result, duration=round(job_duration, 3))
 
             if result is not None:
+                result['modality'] = extract_modality(title=item['title'], markdown=item.get('markdown', ''))
                 _save_job_result(repo, job_id, company, result)
                 collector.record_job("aiEnrichNew", time.time() - start_time, True)
 

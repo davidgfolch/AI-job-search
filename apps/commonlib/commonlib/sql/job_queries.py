@@ -9,8 +9,8 @@ SELECT id,jobId FROM jobs WHERE jobId = %s"""
 
 QRY_INSERT = """
 INSERT INTO jobs (
-    jobId,title,company,location,salary,url,markdown,easy_apply,web_page,duplicated_id)
-          values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
+    jobId,title,company,location,salary,modality,url,markdown,easy_apply,web_page,duplicated_id)
+          values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
 
 QRY_SELECT_JOBS_VIEWER = """
 SELECT {selectFields}
@@ -36,5 +36,5 @@ interview_rh,interview,interview_tech,interview_technical_test,interview_technic
 ai_enriched,easy_apply"""
 
 QRY_UPDATE_JOB_DIRECT_URL = """UPDATE jobs
-                   SET title=%s, company=%s, location=%s, url=%s, markdown=%s, easy_apply=%s
+                   SET title=%s, company=%s, location=%s, url=%s, markdown=%s, easy_apply=%s, modality=COALESCE(%s, modality)
                    WHERE jobId=%s and web_page=%s"""
