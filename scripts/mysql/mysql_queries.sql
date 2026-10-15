@@ -55,14 +55,14 @@ where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 5 hour) and n
 select id, cv_match_percentage, title, ai_enriched, ai_enrich_error, modified from jobs where cv_match_percentage = -1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
 
 SELECT url FROM jobs WHERE web_page='Indeed';
-update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY);
+update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) ;
 
 -- Re-enrich the rows written while the repeat_penalty=1.3 regression was live (since 2026-09-18).
 -- ai_enriched=NULL puts them back in the pending queue and the aiEnrich worker repopulates every field.
 -- Only ai_enriched/ai_enrich_error are reset: update_enrichment() writes with COALESCE, so a freshly
 -- extracted non-null value overwrites the thin one and nothing is lost when the new run finds none.
 update jobs set ai_enriched=null, ai_enrich_error=null
-where ai_enriched=1 and created >= '2026-09-18' and not (ignored or discarded or closed);
+where ai_enriched=1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) and not (ignored or discarded or closed) limit 20;
 
 select id, company from jobs where applied order by created desc
 
