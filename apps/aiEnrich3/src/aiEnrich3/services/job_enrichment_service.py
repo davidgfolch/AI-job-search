@@ -1,7 +1,7 @@
 import time
 from typing import List, Dict, Any, Tuple, Set
 
-from commonlib.aiEnrichRepository import AiEnrichRepository, get_filter_batch_size
+from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX, flatten_skill_groups
 from commonlib.terminalColor import yellow, magenta, cyan, red
 from commonlib.stopWatch import StopWatch
@@ -49,7 +49,7 @@ def enrich_jobs(repo: AiEnrichRepository, pipeline: ExtractionPipeline, batch_si
     job_errors: Set[Tuple[int, str]] = set()
     overall_start_time = time.time()
 
-    for chunk in repo.iter_pending_enrichment_batches(get_filter_batch_size()):
+    for chunk in repo.iter_pending_enrichment_batches():
         jobs_buffer = _fetch_and_sort_jobs(repo, chunk, sort_by_length=False)
         for i in range(0, len(jobs_buffer), batch_size):
             batch_items = jobs_buffer[i:i + batch_size]
@@ -163,7 +163,7 @@ def _process_job_batch_local(
         success = False
         try:
             with job_log_context(job_id):
-                result = pipeline.process_job(text)
+                result = pipeline.process_job(text, title=title)
                 logger.info("job.result", job_id=job_id, result=result, duration=round(time.time() - job_start, 3))
                 _save_job_result(repo, job_id, company, result)
                 success = True

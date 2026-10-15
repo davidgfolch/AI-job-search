@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+echo "[SonarQube] Running local quality gate before push..."
+if [ "${SKIP_SONAR:-0}" = "1" ]; then
+    echo "WARNING: SKIP_SONAR=1 provided; Sonar gate bypassed."
+    exit 0
+fi
+sh scripts/sonar.sh scan
+echo "[SonarQube] Quality gate passed."

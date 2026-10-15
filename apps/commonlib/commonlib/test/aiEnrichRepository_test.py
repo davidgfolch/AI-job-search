@@ -1,4 +1,4 @@
-from commonlib.aiEnrichRepository import get_filter_batch_size
+
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.test.aiEnrichRepository_fixtures import mockRepo
 
@@ -22,26 +22,14 @@ def test_iter_pending_enrichment_batches_configs_first_then_rest():
     mock_mysql.fallback_batches = [[(2,), (3,)]]
     assert list(repo.iter_pending_enrichment_batches()) == [[5, 1], [2, 3]]
 
-def test_iter_pending_enrichment_batches_uses_explicit_batch_size():
-    mock_mysql, repo = mockRepo()
-    mock_mysql.fallback_batches = [[(1,)]]
-    list(repo.iter_pending_enrichment_batches(4))
-    _, params = next((q, p) for q, p in mock_mysql.fetch_all_calls if "created desc LIMIT %s" in q)
-    assert params == (4,)
-
-def test_iter_pending_enrichment_batches_uses_env_batch_size(monkeypatch):
-    monkeypatch.setenv("AI_ENRICH_FILTER_BATCH_SIZE", "3")
+def test_iter_pending_enrichment_batches_uses_default_batch_size():
     mock_mysql, repo = mockRepo()
     mock_mysql.fallback_batches = [[(1,)]]
     list(repo.iter_pending_enrichment_batches())
     _, params = next((q, p) for q, p in mock_mysql.fetch_all_calls if "created desc LIMIT %s" in q)
-    assert params == (3,)
+    assert params == (10,)
 
-def test_get_filter_batch_size(monkeypatch):
-    monkeypatch.delenv("AI_ENRICH_FILTER_BATCH_SIZE", raising=False)
-    assert get_filter_batch_size() == 10
-    monkeypatch.setenv("AI_ENRICH_FILTER_BATCH_SIZE", "25")
-    assert get_filter_batch_size() == 25
+
 
 def test_iter_pending_enrichment_batches_priority_excludes_ai_enriched_filter():
     mock_mysql, repo = mockRepo()

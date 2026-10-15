@@ -1,12 +1,12 @@
 # aiEnrichNew
 
-This module performs AI-based enrichment of job data (extracting technologies, salary, modality, etc.) using **local Hugging Face models** directly via the `transformers` library.
+This module performs AI-based enrichment of job data (extracting technologies and salary); modality is determined deterministically. It uses **local Hugging Face models** directly via the `transformers` library.
 
 It is designed to be a lightweight, free alternative to the `aiEnrich` module (which uses Ollama).
 
 ## Job selection
 
-Jobs are enriched through the shared `commonlib.aiEnrichRepository`: first the pending jobs matching the stored **watched filter configurations** (configurations in `ordering ASC`, each honoring its `order` and falling back to `created desc`), each configuration drained in chunks of `AI_ENRICH_FILTER_BATCH_SIZE` (default `10`) — the worker stays on a configuration until it yields nothing — then every other pending job in `created desc` in the same chunked fashion. The `ai_enriched` condition is stripped from the configurations and every candidate must be unenriched, free of `ai_enrich_error`, and not ignored/discarded/closed. With no watched configurations it falls back to the plain pending query. The selector logs the watched configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` for the fallback queue).
+Jobs are enriched through the shared `commonlib.aiEnrichRepository`: first the pending jobs matching the stored **watched filter configurations** (configurations in `ordering ASC`, each honoring its `order` and falling back to `created desc`), each configuration drained: the first until it yields nothing, later ones one job at a time — the worker stays on a configuration until it yields nothing — then every other pending job in `created desc` (details in `apps/commonlib/README.md`). The `ai_enriched` condition is stripped from the configurations and every candidate must be unenriched, free of `ai_enrich_error`, and not ignored/discarded/closed. With no watched configurations it falls back to the plain pending query. The selector logs the watched configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` for the fallback queue).
 
 ## Prerequisites
 

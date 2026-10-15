@@ -141,7 +141,7 @@ def test_process_job_batch_local_success(mock_sw, mock_footer, mock_printJob, mo
     
     _process_job_batch_local(mock_repo, mock_pipeline, batch, 1, 0, "test", 0.0, 0, errors)
     
-    mock_pipeline.process_job.assert_called_once_with('text')
+    mock_pipeline.process_job.assert_called_once_with('text', title='T')
     mock_save.assert_called_once()
     mock_printJob.assert_called_once()
     mock_footer.assert_called_once()

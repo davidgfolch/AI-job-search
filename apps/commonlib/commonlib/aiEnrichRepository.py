@@ -1,21 +1,13 @@
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.sql.filter_config_selector import FilterConfigSelector
 from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
-from commonlib.environmentUtil import getEnv
+
 from commonlib.ai_helpers import MAX_AI_ENRICH_ERROR_LEN, RETRY_ERROR_PREFIX
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.aiEnrichRepository")
-
-DEFAULT_FILTER_BATCH_SIZE = 10
-
-
-def get_filter_batch_size() -> int:
-    """Chunk size used when draining each watched filter configuration."""
-    return int(getEnv("AI_ENRICH_FILTER_BATCH_SIZE", str(DEFAULT_FILTER_BATCH_SIZE)))
-
 
 class AiEnrichRepository:
     PENDING_ENRICHMENT_QUERY = """SELECT id 
@@ -39,21 +31,20 @@ class AiEnrichRepository:
                    ORDER BY created desc"""
         return self.mysql.count(query)
 
-    def iter_pending_enrichment_batches(self, batch_size: int | None = None):
+    def iter_pending_enrichment_batches(self):
         """Yield pending job-id batches, watched filter-configuration matches first.
 
-        Each watched configuration is drained in chunks of `batch_size`: after a chunk
-        is enriched it no longer satisfies the base pending condition, so the next query
-        returns the following chunk. Once every configuration is exhausted the remaining
-        pending jobs are yielded in `created desc`, also in chunks of `batch_size`.
+        The first watched configuration is drained until it yields nothing; every later
+        one is drained one job at a time, always re-checking the earlier configurations.
+        Once every configuration is exhausted the remaining pending jobs are yielded in
+        `created desc` in chunks of 10.
         """
-        batch_size = batch_size or get_filter_batch_size()
         selector = FilterConfigSelector(self.mysql)
         self._job_configs = selector.job_configs
-        for _, ids in selector.iter_batches(batch_size):
+        for _, ids in selector.iter_batches():
             yield ids
         while True:
-            rows = self.mysql.fetchAll(f"{self.PENDING_ENRICHMENT_QUERY} LIMIT %s", (batch_size,))
+            rows = self.mysql.fetchAll(f"{self.PENDING_ENRICHMENT_QUERY} LIMIT %s", (10,))
             ids = [row[0] for row in (rows or [])]
             if not ids:
                 break
@@ -64,7 +55,11 @@ class AiEnrichRepository:
         return self._job_configs.get(id)
         
     def get_job_to_enrich(self, id: int):
-        logger.info("job.filter_config", job_id=id, config=self._job_configs.get(id) or "NONE")
+        from commonlib.sql.filter_config_selector import FilterConfigSelector
+        selector = FilterConfigSelector(self.mysql)
+        configs = selector.load_configs()
+        fc_totals = [{"config": config["name"], "matched": len(selector.match_ids(config["filters"]))} for config in configs] if configs else []
+        logger.info("job.filter_config", job_id=id, config=self._job_configs.get(id) or "NONE", fc_totals=fc_totals)
         query = """
             SELECT id, title, markdown, company
             FROM jobs

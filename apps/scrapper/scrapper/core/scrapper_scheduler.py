@@ -71,23 +71,28 @@ class ScrapperScheduler:
                 browser = properties.get(BROWSER, 'chrome')
                 logger.info("scraper.starting", scrapper=name, debug=debug, browser=browser,
                             console=f'{name} DEBUG: {debug}, BROWSER: {browser}')
-                with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
-                    seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
-                    executor = create_executor(name, seleniumUtil, self.persistenceManager)
-                    if runPreload(properties):
-                        if not executor.execute_preload(properties):
+                try:
+                    with SeleniumService(debug=debug, browser=browser, scrapper=name) as seleniumUtil:
+                        seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
+                        executor = create_executor(name, seleniumUtil, self.persistenceManager)
+                        if runPreload(properties):
+                            if not executor.execute_preload(properties):
+                                return False, executed_startingAt
+                            if not properties.get('preloaded', True): 
+                                logger.error("scheduler.preload_failed_skip", scrapper=name,
+                                             console=red(f"Skipping execution for {name} due to preload failure."))
+                                if hasattr(executor, 'navigator') and executor.navigator:
+                                    executor.navigator.close()
+                                continue
+                        if not executor.execute(properties):
                             return False, executed_startingAt
-                        if not properties.get('preloaded', True): 
-                            logger.error("scheduler.preload_failed_skip", scrapper=name,
-                                         console=red(f"Skipping execution for {name} due to preload failure."))
-                            if hasattr(executor, 'navigator') and executor.navigator:
-                                executor.navigator.close()
-                            continue
-                    if not executor.execute(properties):
-                        return False, executed_startingAt
-                    properties['preloaded'] = False
-                    if starting and startingAt == name.capitalize():
-                        executed_startingAt = True
+                        properties['preloaded'] = False
+                        if starting and startingAt == name.capitalize():
+                            executed_startingAt = True
+                except Exception as e:
+                    logger.error("scheduler.scrapper_driver_failed", scrapper=name, error=str(e),
+                                 console=red(f'Failed to run scrapper {name} after retries: {e}'))
+                    continue
         return True, executed_startingAt
 
     def runAllScrappers(self, waitBeforeFirstRuns, starting, startingAt, loops=99999999999):
@@ -117,15 +122,20 @@ class ScrapperScheduler:
                 browser = properties.get(BROWSER, 'chrome')
                 logger.info("scraper.starting", scrapper=arg, debug=debug, browser=browser,
                             console=f'{arg} DEBUG: {debug}, BROWSER: {browser}')
-                with SeleniumService(debug=debug, browser=browser) as seleniumUtil:
-                    seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
-                    executor = create_executor(arg.capitalize(), seleniumUtil, self.persistenceManager)
-                    if runPreload(properties):
-                        if not executor.execute_preload(properties):
-                            if hasattr(executor, 'navigator') and executor.navigator:
-                                executor.navigator.close()
+                try:
+                    with SeleniumService(debug=debug, browser=browser, scrapper=arg) as seleniumUtil:
+                        seleniumUtil.loadPage(f"file://{getSrcPath()}/scrapper/index.html")
+                        executor = create_executor(arg.capitalize(), seleniumUtil, self.persistenceManager)
+                        if runPreload(properties):
+                            if not executor.execute_preload(properties):
+                                if hasattr(executor, 'navigator') and executor.navigator:
+                                    executor.navigator.close()
+                                return
+                        if not executor.execute(properties):
                             return
-                    if not executor.execute(properties):
-                        return
-                    properties['preloaded'] = False
+                        properties['preloaded'] = False
+                except Exception as e:
+                    logger.error("scheduler.scrapper_driver_failed", scrapper=arg, error=str(e),
+                                 console=red(f'Failed to run scrapper {arg} after retries: {e}'))
+                    return
         print_failed_info_table(self.persistenceManager)

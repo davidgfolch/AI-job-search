@@ -264,6 +264,7 @@ Agent skills are located in `.claude/skills/`:
 - `scrapling-implementer`: Scrapling library usage (fetching, parsing, spiders)
 - `crawlee-page-analyst`: Analyze a source page that changed (DOM/URL redesign) with Crawlee before changing `apps/scrapper`, producing selector-level requirements
 - `view-backend-logs`: How to view backend logs using docker-compose
+- `sonarqube-local`: Run and enforce the local SonarQube quality gate before git push
 
 ## graphify
 

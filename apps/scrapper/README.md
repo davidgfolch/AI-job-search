@@ -57,7 +57,7 @@ See `.env` and `scripts/.env.secrets.example`.
 
 ## Key Environment Variables
 
-- `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
+- `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor). Chrome driver startup is retried up to 3 times per scrapper before failing, and the scrapper name is logged before each instantiation.
 - `SCRAPPER_INDEED_EMAIL`: Indeed/Glassdoor login email (Glassdoor uses this for OTP login via Indeed popup).
 - `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed Selenium and Glassdoor OTP).
 - `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed Selenium and Glassdoor OTP).
