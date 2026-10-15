@@ -39,13 +39,13 @@ def _match_queries(mysql):
 
 def test_iter_batches_without_configs_yields_nothing():
     mysql = FakeMysql()
-    assert list(FilterConfigSelector(mysql).iter_batches(10)) == []
+    assert list(FilterConfigSelector(mysql).iter_batches()) == []
     assert len(_match_queries(mysql)) == 0
 
 
 def test_iter_batches_returns_nothing_on_config_read_failure():
     mysql = FakeMysql(raise_on_configs=True)
-    assert list(FilterConfigSelector(mysql).iter_batches(10)) == []
+    assert list(FilterConfigSelector(mysql).iter_batches()) == []
 
 
 def test_iter_batches_follows_config_order_and_chunks():
@@ -53,13 +53,13 @@ def test_iter_batches_follows_config_order_and_chunks():
         configs=[(1, "Python", '{"search": "python"}'), (2, "Java", '{"search": "java"}')],
         batches=[[(5,), (1,)], [], [(1,), (7,)], []],
     )
-    batches = list(FilterConfigSelector(mysql).iter_batches(10))
+    batches = list(FilterConfigSelector(mysql).iter_batches())
     assert batches == [("Python", [5, 1]), ("Java", [1, 7])]
 
 
 def test_configs_query_only_watched_ordered_by_ordering_asc():
     mysql = FakeMysql()
-    list(FilterConfigSelector(mysql).iter_batches(10))
+    list(FilterConfigSelector(mysql).iter_batches())
     config_query = next(q for q, _ in mysql.calls if "filter_configurations" in q)
     assert config_query.endswith("WHERE watched = 1 ORDER BY ordering ASC")
 
@@ -70,7 +70,7 @@ def test_iter_batches_maps_jobs_to_first_matching_config():
         batches=[[(5,), (1,)], [], [(1,), (7,)], []],
     )
     selector = FilterConfigSelector(mysql)
-    list(selector.iter_batches(10))
+    list(selector.iter_batches())
     assert selector.config_for(5) == "Python"
     assert selector.config_for(1) == "Python"
     assert selector.config_for(7) == "Java"
@@ -86,10 +86,15 @@ def test_match_query_keeps_base_pending_condition():
     assert "ignored OR discarded OR closed" in query
 
 
-def test_match_query_includes_limit():
+def test_match_query_omits_limit_for_first_config():
     mysql = FakeMysql(configs=[(1, "A", '{}')], batches=[[(1,)]])
-    list(FilterConfigSelector(mysql).iter_batches(2))
-    assert _match_queries(mysql)[0].endswith("LIMIT 2")
+    list(FilterConfigSelector(mysql).iter_batches())
+    assert "LIMIT" not in _match_queries(mysql)[0]
+
+def test_match_query_includes_limit_one_for_later_configs():
+    mysql = FakeMysql(configs=[(1, "A", '{}'), (2, "B", '{}')], batches=[[], [(1,)], []])
+    list(FilterConfigSelector(mysql).iter_batches())
+    assert _match_queries(mysql)[1].endswith("LIMIT 1")
 
 
 @pytest.mark.parametrize(
@@ -103,8 +108,48 @@ def test_match_query_includes_limit():
 )
 def test_match_query_ordering(config, expected):
     mysql = FakeMysql(configs=[(1, "A", config)], batches=[[(1,)]])
-    list(FilterConfigSelector(mysql).iter_batches(10))
+    list(FilterConfigSelector(mysql).iter_batches())
     assert expected in _match_queries(mysql)[0]
+
+
+def test_integration_priority_backtracking_with_new_jobs():
+    mysql = FakeMysql(
+        configs=[(1, "FC1", '{}'), (2, "FC2", '{}'), (3, "FC3", '{}')],
+        batches=[
+            [(1,), (2,)],
+            [],
+            [(3,)],
+            [(5,)],
+            [],
+            [(4,)],
+            [],
+            [],
+            [(6,)],
+            [], [], [], [],
+        ],
+    )
+    batches = list(FilterConfigSelector(mysql).iter_batches())
+    assert batches == [
+        ("FC1", [1, 2]),
+        ("FC2", [3]),
+        ("FC1", [5]),
+        ("FC2", [4]),
+        ("FC3", [6]),
+    ]
+
+
+def test_integration_first_fc_limitless_then_one_by_one_others():
+    mysql = FakeMysql(
+        configs=[(1, "FC1", '{}'), (2, "FC2", '{}')],
+        batches=[
+            [(10,), (11,), (12,)],
+            [],
+            [(20,)],
+            [], [], [], [],
+        ],
+    )
+    batches = list(FilterConfigSelector(mysql).iter_batches())
+    assert batches == [("FC1", [10, 11, 12]), ("FC2", [20])]
 
 
 def test_match_query_omits_null_filters():
@@ -112,7 +157,7 @@ def test_match_query_omits_null_filters():
         configs=[(1, "A", '{"easy_apply": null, "interview": null, "flagged": null, "search": null, "salary": null, "days_old": null, "sql_filter": null, "applied": true}')],
         batches=[[(1,)]],
     )
-    list(FilterConfigSelector(mysql).iter_batches(10))
+    list(FilterConfigSelector(mysql).iter_batches())
     query, _ = mysql.calls[-1]
     for null_key in ("easy_apply", "interview", "flagged"):
         assert f"`{null_key}`" not in query
@@ -143,7 +188,7 @@ def test_logs_selection_source_with_configs_before_match_query(monkeypatch):
     logger = FakeLogger()
     monkeypatch.setattr(filter_config_selector, "logger", logger)
     mysql = FakeMysql(configs=[(7, "Backend", "{}")], batches=[[(1,)]])
-    list(FilterConfigSelector(mysql).iter_batches(10))
+    list(FilterConfigSelector(mysql).iter_batches())
     event, fields = logger.events[0]
     assert event == "enrich.selection_source"
     assert fields["source"] == "filter_configs"
@@ -153,7 +198,7 @@ def test_logs_selection_source_with_configs_before_match_query(monkeypatch):
 def test_logs_default_selection_source_without_configs(monkeypatch):
     logger = FakeLogger()
     monkeypatch.setattr(filter_config_selector, "logger", logger)
-    list(FilterConfigSelector(FakeMysql()).iter_batches(10))
+    list(FilterConfigSelector(FakeMysql()).iter_batches())
     assert logger.events == [("enrich.selection_source", {"source": "default", "reason": "no_filter_configurations"})]
 
 
@@ -161,6 +206,6 @@ def test_logs_each_config_in_order_with_match_count(monkeypatch):
     logger = FakeLogger()
     monkeypatch.setattr(filter_config_selector, "logger", logger)
     mysql = FakeMysql(configs=[(1, "Python", '{}'), (2, "Java", '{}')], batches=[[(5,)]])
-    list(FilterConfigSelector(mysql).iter_batches(10))
+    list(FilterConfigSelector(mysql).iter_batches())
     working = [event for event in logger.events if event[0] == "enrich.config_working"]
     assert [(fields["position"], fields["config_name"], fields["matched"]) for _, fields in working] == [(1, "Python", 1), (2, "Java", 0)]

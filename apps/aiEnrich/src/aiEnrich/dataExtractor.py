@@ -10,7 +10,7 @@ from commonlib.ai_helpers import (
     RETRY_ERROR_PREFIX,
     MAX_AI_ENRICH_ERROR_LEN,
 )
-from commonlib.aiEnrichRepository import AiEnrichRepository, get_filter_batch_size
+from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger, job_log_context
 from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
@@ -151,7 +151,7 @@ def _process_job_safe(
             try:
                 backend = get_backend()
                 model = get_openrouter_model() if backend == "openrouter" else get_model()
-                logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=live_total, index=idx + 1, backend=backend, model=model)
+                logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=live_total, index=idx + 1, backend=backend, model=model, config=repo.config_for_job(id) or "NONE")
                 prompt = build_extraction_prompt(title, markdown)
                 result, response = query_and_parse(
                     lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
@@ -187,7 +187,7 @@ def _save(repo: AiEnrichRepository, id, result: dict):
 
 
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):
-    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex))
+    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex), config=repo.config_for_job(id) or "NONE")
     jobErrors.add((id, f"{title} - {company}: {ex}"))
     prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
     error_msg = f"{prefix}{ex}"
@@ -198,4 +198,4 @@ def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name
 
 
 def _getJobBatches(repo: AiEnrichRepository):
-    return repo.iter_pending_enrichment_batches(get_filter_batch_size())
+    return repo.iter_pending_enrichment_batches()

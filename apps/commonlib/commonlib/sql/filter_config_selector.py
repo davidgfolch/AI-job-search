@@ -31,27 +31,39 @@ class FilterConfigSelector:
         self.mysql = mysql
         self.job_configs: Dict[int, str] = {}
 
-    def iter_batches(self, batch_size: int) -> Iterator[Tuple[str, List[int]]]:
-        """Yield (config_name, job_ids) draining each watched configuration in chunks of batch_size."""
+    def iter_batches(self) -> Iterator[Tuple[str, List[int]]]:
+        """Yield (config_name, job_ids) draining each watched configuration in chunks of batch_size.
+
+        The first watched configuration keeps batch_size; every later one is
+        drained one job at a time."""
         self.job_configs.clear()
         configs = self.load_configs()
         if not configs:
             logger.info("enrich.selection_source", source="default", reason="no_filter_configurations")
             return
         logger.info("enrich.selection_source", source="filter_configs", configs=[{"position": position, "id": c["id"], "name": c["name"]} for position, c in enumerate(configs, 1)])
+        matched: dict[int, int] = {position: 0 for position in range(1, len(configs) + 1)}
         matched_any = False
-        for position, config in enumerate(configs, 1):
-            matched = 0
-            while True:
-                ids = self.match_ids(config["filters"], limit=batch_size)
-                if not ids:
+        # Drain in priority order, one chunk per pass. Higher-priority configurations
+        # are re-scanned before any further chunk, so newly arrived matches for an
+        # earlier configuration are processed before later configurations advance.
+        while True:
+            progressed = False
+            for position, config in enumerate(configs, 1):
+                effective_batch_size = None if position == 1 else 1
+                ids = self.match_ids(config["filters"], limit=effective_batch_size)
+                if ids:
+                    matched[position] += len(ids)
+                    matched_any = True
+                    progressed = True
+                    for job_id in ids:
+                        self.job_configs.setdefault(job_id, config["name"])
+                    yield config["name"], ids
                     break
-                matched += len(ids)
-                matched_any = True
-                for job_id in ids:
-                    self.job_configs.setdefault(job_id, config["name"])
-                yield config["name"], ids
-            logger.info("enrich.config_working", position=position, config_id=config["id"], config_name=config["name"], matched=matched)
+            if not progressed:
+                break
+        for position, config in enumerate(configs, 1):
+            logger.info("enrich.config_working", position=position, config_id=config["id"], config_name=config["name"], matched=matched[position])
         if not matched_any:
             logger.info("enrich.selection_source", source="default", reason="no_filter_config_matches")
 
