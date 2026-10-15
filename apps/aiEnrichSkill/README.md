@@ -40,7 +40,7 @@ Set these in your `.env` or `.env.secrets`:
 - `AI_ENRICHSKILL_TIMEOUT` — Timeout per item in seconds (default: `90`)
 
 ### Ollama Backend
-- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_HOST_BASE_URL` in `commonlib`)
+- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_HOST_BASE_URL` in `commonlib`). Set to `auto` to skip the fixed candidates and discover a server on the LAN
 - `AI_ENRICHSKILL_OLLAMA_MODEL` — Model name (default: `ollama/qwen2.5:3b`)
 - `AI_ENRICHSKILL_MAX_NEW_TOKENS` — Max output tokens (default: `2048`)
 - `AI_ENRICHSKILL_NUM_CTX` — Context window sent to Ollama per request (default: auto-bucketed from prompt length, capped at `32768`)

@@ -160,7 +160,9 @@ services:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
-      - AI_ENRICH_OLLAMA_BASE_URL=http://ollama:11434
+      # .env wins so the worker can be pointed at a host or LAN Ollama; the containerized
+      # service name is only the default (clients still fall back to it when it answers)
+      - AI_ENRICH_OLLAMA_BASE_URL=${AI_ENRICH_OLLAMA_BASE_URL:-http://ollama:11434}
       - AI_ENRICH_NUM_CTX=${AI_ENRICH_NUM_CTX:-16384}
       - AI_ENRICH_MAX_VALIDATION_RETRIES=${AI_ENRICH_MAX_VALIDATION_RETRIES:-1}
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
@@ -242,7 +244,7 @@ services:
       - PYTHONUNBUFFERED=1
       - COMMONLIB_DB_HOST=mysql_db
       - TZ=${GLOBAL_TZ}
-      - AI_ENRICHSKILL_OLLAMA_BASE_URL=http://ollama:11434
+      - AI_ENRICHSKILL_OLLAMA_BASE_URL=${AI_ENRICH_OLLAMA_BASE_URL:-http://ollama:11434}
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
       - HEALTHCHECK_BACKEND=${AI_ENRICHSKILL_BACKEND:-ollama}
     depends_on:

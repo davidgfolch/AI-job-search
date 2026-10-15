@@ -72,6 +72,10 @@ TODO: running in several machines AI services, Ollama, backend, etc.
 
 Set `BACKEND_DISCOVERY=True` in `.env` to enable automatic LAN discovery of the backend API (port 8000). When enabled, the web app scans local subnets and probes `/health` to find the backend. Falls back to `localhost:8000` if nothing is found. See [web docs](apps/web/README.md#backend-discovery) for details.
 
+### Ollama auto-discovery
+
+The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). From inside a container the sweep only covers the Docker subnets, so an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL`. See [commonlib docs](apps/commonlib/README.md) for details.
+
 Run only web in the client machine like this:
 
 ```bash
@@ -149,7 +153,7 @@ docker-compose --profile aiEnrichNew up -d
 
 #### Ollama: host vs container
 
-The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they try the configured URL, then `host.docker.internal`, `localhost`, and finally the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`). No module hard-depends on the `ollama` container, so it is never started implicitly.
+The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they probe the configured URL, then `host.docker.internal`, `localhost`, the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`), and finally the LAN on port 11434 (see [Ollama auto-discovery](#ollama-auto-discovery)). No module hard-depends on the `ollama` container, so it is never started implicitly.
 
 ```bash
 # Ollama already installed on the host (nothing extra to start)

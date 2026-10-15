@@ -4,9 +4,20 @@ Single implementation that both aiEnrich and aiEnrichSkill rely on. Each module
 passes its configured primary URL (from `get_ollama_base_url()`); fallback
 candidates are tried automatically when the primary server is unreachable, so a
 down containerized Ollama transparently falls back to the host server.
+
+Every candidate is pinged before the real job is sent: a liveness probe
+(`GET /api/tags`) picks the reachable server, then a one-token generation
+(`POST /api/generate`) confirms it can actually run inference, so a server that
+answers the API but has a wedged runner is skipped instead of blocking the whole
+generation timeout. When no configured candidate answers, the LAN is scanned for
+an Ollama server on port 11434 unless `COMMONLIB_OLLAMA_DISCOVERY` is disabled;
+passing `auto` (or `discover`) as the primary URL goes straight to it.
 """
+import os
+import socket
 import time
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 import requests
 
@@ -16,6 +27,14 @@ from commonlib.ollama_config import (
 )
 
 logger = get_logger("commonlib.ollama_client")
+
+OLLAMA_DISCOVERY_ENABLED = os.getenv("COMMONLIB_OLLAMA_DISCOVERY", "True").strip().lower() not in ("false", "0", "no")
+OLLAMA_DISCOVERY_PORT = 11434
+PROBE_TIMEOUT = 5
+INFERENCE_PROBE_TIMEOUT = int(os.getenv("COMMONLIB_OLLAMA_PROBE_TIMEOUT", "30"))
+PROBE_CACHE_SECONDS = int(os.getenv("COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS", "300"))
+AUTO_URL_SPECS = ("auto", "discover")
+RETRY_DELAYS = (0, 1, 3)
 
 
 @dataclass(frozen=True)
@@ -41,40 +60,122 @@ def _candidate_urls(primary_url: str | None) -> tuple[str, ...]:
     return ollama_candidate_urls(primary_url)
 
 
+def _is_auto_spec(primary_url: str | None) -> bool:
+    """True when the configured primary URL asks for LAN discovery instead of a host."""
+    return isinstance(primary_url, str) and primary_url.strip().lower() in AUTO_URL_SPECS
+
+
+def _host_ip(url: str) -> str:
+    """Identity of a server for deduplication: its IP, so one host reached under two names counts once."""
+    host = urlsplit(url).hostname or url
+    try:
+        return socket.gethostbyname(host)
+    except Exception:
+        return host
+
+
 _logged_fallback_urls: set[str] = set()
+_probed_servers: dict[str, float] = {}
+
+
+def _discover_ollama_lan_url(log=None) -> str | None:
+    """Scan the LAN for an Ollama server, or None when disabled / nothing is found."""
+    if not OLLAMA_DISCOVERY_ENABLED:
+        return None
+    log = log or logger
+    try:
+        from commonlib.network.ollama_discovery import auto_discover_host
+        host = auto_discover_host()
+    except Exception as e:
+        log.warning("ollama.discovery_failed", error=str(e))
+        return None
+    if not host:
+        return None
+    url = f"http://{host}:{OLLAMA_DISCOVERY_PORT}"
+    log.info("ollama.lan_discovered", base_url=url)
+    return url
+
+
+def _ping_url(url: str, timeout: int, log) -> bool:
+    try:
+        resp = requests.get(f"{url.rstrip('/')}/api/tags", timeout=timeout)
+        resp.raise_for_status()
+        return True
+    except Exception as e:
+        log.debug("ollama.probe_failed", error=str(e), base_url=url)
+        return False
 
 
 def resolve_ollama_url(
-    primary_url: str | None = None, timeout: int = 5, *, log=None
+    primary_url: str | None = None, timeout: int = PROBE_TIMEOUT, *, log=None
 ) -> str | None:
     """Return the URL of the first reachable Ollama server, or None if none respond."""
-    global _logged_fallback_urls
     log = log or logger
+    if _is_auto_spec(primary_url):
+        url = _discover_ollama_lan_url(log)
+        if url is None:
+            log.error("ollama.unreachable", candidates=(primary_url,))
+        return url
     candidates = _candidate_urls(primary_url)
-    for url in candidates:
-        try:
-            resp = requests.get(f"{url.rstrip('/')}/api/tags", timeout=timeout)
-            resp.raise_for_status()
-            if url != candidates[0] and url not in _logged_fallback_urls:
-                _logged_fallback_urls.add(url)
-                log.info("ollama.fallback_active", base_url=url)
-            return url
-        except Exception as e:
-            log.debug("ollama.probe_failed", error=str(e), base_url=url)
-    log.error("ollama.unreachable", candidates=candidates)
-    return None
+    tried = {_host_ip(url) for url in candidates}
+    resolved = next((url for url in candidates if _ping_url(url, timeout, log)), None)
+    if resolved is None:
+        discovered = _discover_ollama_lan_url(log)
+        resolved = discovered if discovered is not None and _host_ip(discovered) not in tried else None
+    if resolved is None:
+        log.error("ollama.unreachable", candidates=candidates)
+        return None
+    if resolved != candidates[0] and resolved not in _logged_fallback_urls:
+        _logged_fallback_urls.add(resolved)
+        log.info("ollama.fallback_active", base_url=resolved)
+    return resolved
 
 
-def ping_ollama(primary_url: str | None = None, timeout: int = 5, *, log=None) -> bool:
+def ping_ollama(primary_url: str | None = None, timeout: int = PROBE_TIMEOUT, *, log=None) -> bool:
     return resolve_ollama_url(primary_url=primary_url, timeout=timeout, log=log) is not None
 
 
+def _probe_inference(url: str, model: str, options: dict | None, log) -> bool:
+    """Ask for a single token before the real job: a server whose runner is stuck
+    answers `/api/tags` but never returns from `/api/generate`, so only this probe
+    can rule it out without paying the whole generation timeout.
+
+    The job's own options are reused and only `num_predict` shrinks: a different
+    `num_ctx` makes Ollama reload the model, once for the probe and again for the job."""
+    payload = {"model": model, "prompt": "ping", "stream": False, "options": {**(options or {}), "num_predict": 1}}
+    try:
+        resp = requests.post(f"{url.rstrip('/')}/api/generate", json=payload, timeout=INFERENCE_PROBE_TIMEOUT)
+        resp.raise_for_status()
+    except Exception as e:
+        log.warning("ollama.inference_probe_failed", error=str(e), base_url=url, timeout=INFERENCE_PROBE_TIMEOUT)
+        return False
+    log.info("ollama.inference_probe_ok", base_url=url, model=model)
+    return True
+
+
+def _server_ready(url: str, payload: dict, log) -> bool:
+    """Probe a server at most once per `PROBE_CACHE_SECONDS`: the first success is
+    remembered and every following job goes straight to inference instead of
+    re-connecting. A timeout or a failed probe drops it, so a wedged runner is
+    detected again by the next job rather than trusted forever."""
+    now = time.monotonic()
+    last_ok = _probed_servers.get(url)
+    if last_ok is not None and now - last_ok < PROBE_CACHE_SECONDS:
+        return True
+    if not _probe_inference(url, payload.get("model", ""), payload.get("options"), log):
+        _probed_servers.pop(url, None)
+        return False
+    _probed_servers[url] = now
+    return True
+
+
 def _query_url(url: str, payload: dict, timeout: int, log) -> OllamaResponse | None:
-    for attempt, delay in enumerate([0, 1, 3]):
+    for attempt, delay in enumerate(RETRY_DELAYS):
         if attempt > 0:
             log.warning("ollama.retry", attempt=attempt, delay=delay, base_url=url)
             time.sleep(delay)
         try:
+            log.info("ollama.dispatch", base_url=url, model=payload.get("model", ""))
             resp = requests.post(f"{url.rstrip('/')}/api/generate", json=payload, timeout=timeout)
             resp.raise_for_status()
             body = resp.json()
@@ -95,10 +196,36 @@ def _query_url(url: str, payload: dict, timeout: int, log) -> OllamaResponse | N
             )
         except requests.exceptions.ReadTimeout:
             log.warning("ollama.timeout", base_url=url, timeout=timeout)
+            _probed_servers.pop(url, None)
             return None
         except Exception as e:
             log.warning("ollama.error", attempt=attempt, error=str(e), base_url=url)
     return None
+
+
+def _generate_first_reachable(candidates, payload: dict, timeout: int, log) -> OllamaResponse | None:
+    """Ping each candidate, then send the job to the first one that can run inference."""
+    for url in candidates:
+        if not _server_ready(url, payload, log):
+            continue
+        result = _query_url(url, payload, timeout, log)
+        if result is not None:
+            return result
+    return None
+
+
+def _log_response(result: OllamaResponse, log):
+    log.info(
+        "ollama.response",
+        model=result.model,
+        base_url=result.url,
+        done=result.done,
+        done_reason=result.done_reason,
+        load_duration=result.load_duration,
+        prompt_eval_count=result.prompt_eval_count,
+        eval_count=result.eval_count,
+        total_duration=result.total_duration,
+    )
 
 
 def query_ollama(
@@ -130,20 +257,22 @@ def query_ollama(
         payload["format"] = response_schema or "json"
     log.info("ollama.request", model=model, prompt_length=len(prompt), num_predict=num_predict, num_ctx=num_ctx, schema=response_schema is not None)
 
-    for url in _candidate_urls(primary_url):
-        result = _query_url(url, payload, timeout, log)
-        if result is not None:
-            log.info(
-                "ollama.response",
-                model=result.model,
-                base_url=result.url,
-                done=result.done,
-                done_reason=result.done_reason,
-                prompt_eval_count=result.prompt_eval_count,
-                eval_count=result.eval_count,
-                total_duration=result.total_duration,
-            )
-            return result if return_metadata else result.text
-
-    log.error("ollama.failed", model=model)
-    return None
+    auto = _is_auto_spec(primary_url)
+    if auto:
+        discovered = _discover_ollama_lan_url(log)
+        candidates = (discovered,) if discovered else ()
+    else:
+        candidates = _candidate_urls(primary_url)
+    tried = {_host_ip(url) for url in candidates}
+    result = _generate_first_reachable(candidates, payload, timeout, log)
+    if result is None and not auto:
+        # Last resort: LAN discovery, unless it only leads back to an already-tried host
+        # (host.docker.internal and its gateway IP are the same server under two names).
+        discovered = _discover_ollama_lan_url(log)
+        if discovered is not None and _host_ip(discovered) not in tried:
+            result = _generate_first_reachable((discovered,), payload, timeout, log)
+    if result is None:
+        log.error("ollama.failed", model=model)
+        return None
+    _log_response(result, log)
+    return result if return_metadata else result.text
