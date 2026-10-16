@@ -14,6 +14,7 @@ Follow these steps when a scrapper broke because the source page changed its DOM
 
 2.  **Environment Setup**:
     - Ensure the Crawlee CLI is installed: `uv tool install "crawlee[all]"` (done automatically by `scripts/install.sh` / `scripts/install.bat`).
+    - It can be removed again with `scripts/uninstall.bat` / `scripts/uninstall.sh`.
     - Verify with `uv tool list | grep crawlee` or `crawlee --help`. Python 3.10+ required.
     - If `PlaywrightCrawler` fails on browser launch, run `playwright install chromium` once.
     - Crawlee runs outside the scrapper environment: use `uvx --with "crawlee[all]" python <script.py>` for ad-hoc analysis scripts so `apps/scrapper` dependencies stay untouched.

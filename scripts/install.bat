@@ -56,6 +56,10 @@ for /d %%a in (apps\*) do (
             pushd "%%~fa"
             call uv sync
             popd
+        ) else if "%%~nxa" == "aiEnrichSkill" (
+            pushd "%%~fa"
+            call uv sync
+            popd
         ) else (
             pushd "%%~fa"
             call poetry lock

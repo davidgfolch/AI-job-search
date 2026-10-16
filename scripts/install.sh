@@ -54,6 +54,13 @@ ollama_pull() {
     fi
 }
 
+is_uv_app() {
+    case "$(basename "$1")" in
+        aiEnrich|aiEnrichNew|aiEnrich3|backend|aiFormFiller|aiCvMatcher|cron|aiEnrichSkill) return 0 ;;
+    esac
+    return 1
+}
+
 echo ""
 echo "Installing graphify..."
 uv tool install graphifyy
@@ -84,7 +91,7 @@ for dir in apps/*; do
         echo "Installing $(basename "$dir")..."
         if [ -f "$dir/package.json" ]; then
             (cd "$dir" && npm install)
-        elif [ "$(basename "$dir")" == "aiEnrich" ] || [ "$(basename "$dir")" == "aiEnrichNew" ] || [ "$(basename "$dir")" == "aiEnrich3" ] || [ "$(basename "$dir")" == "backend" ] || [ "$(basename "$dir")" == "aiFormFiller" ] || [ "$(basename "$dir")" == "aiCvMatcher" ] || [ "$(basename "$dir")" == "cron" ]; then
+        elif is_uv_app "$dir"; then
             (cd "$dir" && uv sync)
         else
             (cd "$dir" && poetry lock && poetry install)

@@ -19,8 +19,8 @@
 This project uses different package managers for different components:
 
 - **Poetry**: Used by `apps/scrapper`, `apps/commonlib`.
-- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, and `apps/aiCvMatcher`.
-- **npm**: Used by `apps/web`.
+- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, `apps/aiEnrichSkill`, `apps/aiCvMatcher`, `apps/cron`, and `apps/aiFormFiller`.
+- **npm**: Used by `apps/web` and `apps/e2e`.
 
 ## Installation Steps
 
@@ -217,6 +217,24 @@ cd apps/web && npm install && cd ../..
 **AI Enrich and AI CV Matcher:**
 
 Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrich3/README.md](../apps/aiEnrich3/README.md), [apps/aiEnrichNew/README.md](../apps/aiEnrichNew/README.md), or [apps/aiCvMatcher/README.md](../apps/aiCvMatcher/README.md).
+
+### 8.1 Uninstall Project Dependencies
+
+`scripts/uninstall.bat` (Windows) and `scripts/uninstall.sh` (Linux) remove what
+`install.*` installed: virtual environments, `node_modules`, caches, and the
+gitignored lock files. The script shows an interactive menu and several items
+can be selected at once (only dependencies that are currently installed are
+shown); only the selected apps (or the root project, or the
+global Crawlee/graphify tools) are removed. No `git` command is run, and tracked
+files, `.env` / `.env.secrets`, and the `data/` folders are never touched.
+
+```bash
+./scripts/uninstall.sh # or .\scripts\uninstall.bat
+```
+
+Removing an app deletes its `.venv`, `node_modules` for the web apps, pytest
+coverage and bytecode caches, and the ignored lock files. Ollama models are **not**
+removed: they live inside the Ollama server, not the project.
 
 ## Configuration
 

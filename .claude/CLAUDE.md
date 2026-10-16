@@ -183,6 +183,10 @@ docker-compose --profile ollama --profile aienrich up -d
 # Install all dependencies
 ./scripts/install.sh   # Linux/Mac
 .\scripts\install.bat  # Windows
+
+# Remove installed dependencies (interactive menu)
+./scripts/uninstall.sh   # Linux/Mac
+.\scripts\uninstall.bat  # Windows
 ```
 
 ## Documentation Sync (mandatory, automatic)
