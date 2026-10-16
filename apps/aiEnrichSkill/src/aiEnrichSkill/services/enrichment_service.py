@@ -70,7 +70,7 @@ def _enrich_ollama(mysql: MysqlUtil, ollama_base_url=None) -> int:
 
 
 def _fetch_pending_skills(mysql: MysqlUtil, limit: int) -> List[Dict[str, str]]:
-    where_clause = "ai_enriched = 0"
+    where_clause = "COALESCE(ai_enriched, 0) = 0"
     query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
     rows = mysql.fetchAll(query_find)
     return [{'name': row[0]} for row in rows]

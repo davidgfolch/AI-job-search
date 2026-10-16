@@ -22,12 +22,12 @@ def process_skill_enrichment(
     :param generate_description_fn: Function that takes (skill_name, context) and returns (description, category)
     :param limit: limit of skills to process
     :param check_empty_description_only: if True, filters by description IS NULL OR description = ''. 
-                                         If False, only filters by ai_enriched = 0.
+                                         If False, only filters by ai_enriched (NULL treated as not enriched).
     """
     from commonlib.stopWatch import StopWatch
     from datetime import datetime
 
-    where_clause = "ai_enriched = 0"
+    where_clause = "COALESCE(ai_enriched, 0) = 0"
     if check_empty_description_only:
         where_clause += " AND (description IS NULL OR description = '')"
     else:

@@ -2,7 +2,7 @@ import pytest
 from structlog.testing import capture_logs
 from unittest.mock import patch, MagicMock
 
-from ..enrichment_service import enrich_skills, generate_skill_description_ollama
+from ..enrichment_service import enrich_skills, generate_skill_description_ollama, _fetch_pending_skills
 from .enrichment_service_fixtures import assert_failure_metric, make_ollama_mocks, run_enrich_ollama, run_process_skill_batch
 
 
@@ -94,6 +94,16 @@ def test_enrich_huggingface_no_skills(mock_fetch, mock_backend):
     assert skipped[0]["message"] == "No skills pending."
     assert skipped[0]["reason"] == "no_pending_skills"
     assert skipped[0]["limit"]
+
+
+def test_fetch_pending_skills_treats_null_ai_enriched_as_pending():
+    mysql = MagicMock()
+    mysql.fetchAll.return_value = [("Fix Protocol",)]
+    skills = _fetch_pending_skills(mysql, 10)
+    assert skills == [{"name": "Fix Protocol"}]
+    query = mysql.fetchAll.call_args[0][0]
+    # NULL ai_enriched never matches `ai_enriched = 0`, so COALESCE is required
+    assert "COALESCE(ai_enriched, 0) = 0" in query
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")

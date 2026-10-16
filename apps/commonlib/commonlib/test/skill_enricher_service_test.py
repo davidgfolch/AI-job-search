@@ -96,8 +96,21 @@ def test_process_skill_enrichment_check_empty_false():
         count = process_skill_enrichment(mysql, gen_fn, check_empty_description_only=False)
         assert count == 1
         call_args = mysql.fetchAll.call_args[0][0]
-        assert "ai_enriched = 0" in call_args
+        assert "COALESCE(ai_enriched, 0) = 0" in call_args
         assert "description IS NULL" not in call_args
+
+
+def test_process_skill_enrichment_null_ai_enriched_selected():
+    mysql = MagicMock()
+    mysql.fetchAll.return_value = [("Fix Protocol",)]
+    with patch("commonlib.skill_enricher_service.get_skill_context", return_value=""):
+        gen_fn = MagicMock(return_value=("Desc", "Other"))
+        count = process_skill_enrichment(mysql, gen_fn)
+        assert count == 1
+        call_args = mysql.fetchAll.call_args[0][0]
+        # NULL ai_enriched rows must be treated as pending (NULL = 0 never matches)
+        assert "COALESCE(ai_enriched, 0) = 0" in call_args
+        assert "description IS NULL" in call_args
 
 
 @pytest.mark.parametrize("input_text, expected_desc_contains, expected_category", [
