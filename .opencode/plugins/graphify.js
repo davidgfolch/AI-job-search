@@ -1,5 +1,5 @@
 // graphify OpenCode plugin
-// Injects a knowledge graph reminder before shell tool calls when the graph exists.
+// Injects a knowledge graph reminder before bash tool calls when the graph exists.
 //
 // IMPORTANT: keep the reminder string free of backticks and $(...) constructs.
 // The hook prepends `echo "<reminder>" && <cmd>` to the user's bash command;
@@ -15,7 +15,6 @@ export const GraphifyPlugin = async ({ directory }) => {
   return {
     "tool.execute.before": async (input, output) => {
       if (reminded) return;
-      if (input.tool !== "bash") return;
       if (!existsSync(join(directory, "graphify-out", "graph.json"))) return;
 
       if (input.tool === "bash") {
@@ -33,20 +32,23 @@ export const GraphifyPlugin = async ({ directory }) => {
 export default {
   id: "graphify",
   async setup(ctx) {
-    const directory = ctx.location.directory;
     let reminded = false;
+    const directory =
+      (ctx && ctx.location && typeof ctx.location.directory === "string" && ctx.location.directory) ||
+      (ctx && ctx.location && typeof ctx.location.path === "string" && ctx.location.path) ||
+      (ctx && typeof ctx.directory === "string" && ctx.directory) ||
+      (typeof process !== "undefined" && typeof process.cwd === "function" ? process.cwd() : ".");
 
     await ctx.tool.hook("execute.before", async (event) => {
       if (reminded) return;
-      if (event.tool !== "shell") return;
+      if (!event || event.tool !== "shell") return;
+      if (!event.input || typeof event.input.command !== "string") return;
       if (!existsSync(join(directory, "graphify-out", "graph.json"))) return;
-      const command = event.input && event.input.command;
-      if (typeof command !== "string") return;
       // ';' not '&&' — Windows PowerShell 5.1 rejects '&&' as a statement
       // separator, breaking the first bash command of the session (#1646).
       event.input.command =
         'echo "[graphify] knowledge graph at graphify-out/. For focused questions, run graphify query with your question (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context." ; ' +
-        command;
+        event.input.command;
       reminded = true;
     });
   },
