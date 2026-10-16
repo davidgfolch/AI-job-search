@@ -103,10 +103,23 @@ class MetricsCollector:
             }
 
     def persist(self):
-        os.makedirs(os.path.dirname(METRICS_FILE), exist_ok=True)
-        raw = {"modules": {name: dict(m) for name, m in self._modules.items()}}
-        with open(METRICS_FILE, "w") as f:
-            json.dump(raw, f, indent=2, default=str)
+        try:
+            _dir = os.path.dirname(METRICS_FILE)
+            if _dir:
+                os.makedirs(_dir, exist_ok=True)
+            raw = {"modules": {name: dict(m) for name, m in self._modules.items()}}
+            with open(METRICS_FILE, "w") as f:
+                json.dump(raw, f, indent=2, default=str)
+        except OSError as exc:
+            _target = os.path.dirname(METRICS_FILE) or "."
+            _parent = os.path.dirname(_target) or _target
+            try:
+                from commonlib.observability import get_logger
+                get_logger("commonlib.metrics_collector").warning(
+                    "metrics.persist_failed", path=METRICS_FILE, error=str(exc),
+                    hint=f"sudo chown -R $(id -u):$(id -g) {_parent} {_target}")
+            except Exception:
+                pass
 
     def persist_if_due(self, interval_seconds: int = 60) -> bool:
         with self._lock:

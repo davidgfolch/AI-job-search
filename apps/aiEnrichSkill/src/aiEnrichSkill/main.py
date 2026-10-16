@@ -27,22 +27,24 @@ def run():
         logger.info("disabled")
         return
 
-    ollama_consecutive_failures = 0
+    ollama_base_url = get_ollama_base_url()
+    if get_backend() == "ollama":
+        ollama_consecutive_failures = 0
+        while True:
+            resolved_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
+            if resolved_url is not None:
+                ollama_base_url = resolved_url
+                break
+            ollama_consecutive_failures += 1
+            max_failures = get_max_ollama_failures()
+            logger.error("ollama.unreachable", base_url=get_ollama_base_url(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+            if ollama_consecutive_failures >= max_failures:
+                logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
+                sys.exit(1)
+            logIdleWait(cyan('Ollama unreachable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+        ollama_consecutive_failures = 0
     while True:
         collector.record_heartbeat("aiEnrichSkill")
-        ollama_base_url = get_ollama_base_url()
-        if get_backend() == "ollama":
-            ollama_base_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
-            if ollama_base_url is None:
-                ollama_consecutive_failures += 1
-                max_failures = get_max_ollama_failures()
-                logger.error("ollama.unreachable", base_url=get_ollama_base_url(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-                if ollama_consecutive_failures >= max_failures:
-                    logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
-                    sys.exit(1)
-                logIdleWait(cyan('Ollama unreachable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
-                continue
-            ollama_consecutive_failures = 0
         with MysqlUtil() as mysql:
             count = enrich_skills(mysql, ollama_base_url=ollama_base_url)
             if count > 0:
