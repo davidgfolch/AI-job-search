@@ -2,6 +2,7 @@ import type { Job } from '../api/ViewerApi';
 import { useJobEditForm } from './hooks/useJobEditForm';
 import StatusButtons from './StatusButtons';
 import JobFormFields from './JobFormFields';
+import { useModalityValues } from '../../common/hooks/useModalityValues';
 import './JobEditForm.css';
 
 interface JobEditFormProps {
@@ -17,6 +18,7 @@ export default function JobEditForm({ job, onUpdate, onCreate, mode = 'edit' }: 
         setters, 
         actions 
     } = useJobEditForm({ job, onUpdate, onCreate, mode });
+    const { data: modalityValues = [] } = useModalityValues();
 
     const {
         statusState, showAllFields
@@ -26,7 +28,7 @@ export default function JobEditForm({ job, onUpdate, onCreate, mode = 'edit' }: 
         setShowAllFields
     } = setters;
 
-    const { handleStatusToggle, handleChange, handleCreate } = actions;
+    const { handleStatusToggle, handleChange, handleModalityChange, handleCreate } = actions;
 
     if (mode === 'edit' && !job) return <div className="job-edit-form"><div className="no-selection">Select a job to edit</div></div>;
 
@@ -54,6 +56,8 @@ export default function JobEditForm({ job, onUpdate, onCreate, mode = 'edit' }: 
                 setters={setters}
                 handleChange={handleChange}
                 handleCreate={handleCreate}
+                handleModalityChange={handleModalityChange}
+                modalityValues={modalityValues}
             />
         </div>
     );

@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import JobEditForm from "../JobEditForm";
 import { createMockJob, setupFakeTimers, cleanupFakeTimers } from '../../test/test-utils';
 
+vi.mock('../../../common/hooks/useModalityValues', () => ({
+    useModalityValues: vi.fn().mockReturnValue({ data: ['REMOTE', 'HYBRID', 'ON_SITE'] }),
+}));
+
 const mockJob = createMockJob();
 
 describe('JobEditForm', () => {
@@ -122,20 +126,48 @@ describe('JobEditForm', () => {
         expect(screen.queryByText('Edit Less')).toBeInTheDocument();
     });
 
-    it.each([
-        ['Required Skills', 'required_technologies'],
-        ['Optional Skills', 'optional_technologies']
-    ])('updates %s field correctly', (label, fieldKey) => {
+    it('updates Modality field correctly', () => {
         render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
-        
         fireEvent.click(screen.getByText('Edit All'));
 
-        const input = screen.getByLabelText(label);
-        expect(input).toBeInTheDocument();
+        const select = screen.getByLabelText('Modality');
+        expect(select).toBeInTheDocument();
 
-        fireEvent.change(input, { target: { value: 'New, Skills' } });
-        vi.runAllTimers();
-        
-        expect(onUpdateMock).toHaveBeenCalledWith({ [fieldKey]: 'New, Skills' });
+        fireEvent.change(select, { target: { value: 'REMOTE' } });
+
+        expect(onUpdateMock).toHaveBeenCalledWith({ modality: 'REMOTE' });
+    });
+
+    it('clears Modality to null', () => {
+        render(<JobEditForm job={{ ...mockJob, modality: 'REMOTE' }} onUpdate={onUpdateMock} />);
+        fireEvent.click(screen.getByText('Edit All'));
+
+        const select = screen.getByLabelText('Modality');
+        fireEvent.change(select, { target: { value: '' } });
+
+        expect(onUpdateMock).toHaveBeenCalledWith({ modality: null });
+    });
+
+    it('includes modality in create payload', () => {
+        const onCreateMock = vi.fn();
+        render(<JobEditForm job={null} onUpdate={onUpdateMock} onCreate={onCreateMock} mode="create" />);
+
+        const titleInput = screen.getByLabelText('Title *');
+        const companyInput = screen.getByLabelText('Company *');
+        fireEvent.change(titleInput, { target: { value: 'New Job Title' } });
+        fireEvent.change(companyInput, { target: { value: 'New Company' } });
+
+        const modalitySelect = screen.getByLabelText('Modality');
+        fireEvent.change(modalitySelect, { target: { value: 'HYBRID' } });
+
+        const createButton = screen.getByRole('button', { name: /Create Job/i });
+        fireEvent.click(createButton);
+
+        expect(onCreateMock).toHaveBeenCalled();
+        expect(onCreateMock).toHaveBeenCalledWith(expect.objectContaining({
+            title: 'New Job Title',
+            company: 'New Company',
+            modality: 'HYBRID',
+        }));
     });
 });
