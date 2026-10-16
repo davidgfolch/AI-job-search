@@ -170,7 +170,7 @@ def _process_job_safe(
                         "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
                         model=model, done_reason=getattr(response, "done_reason", None),
                     )
-            except (Exception, KeyboardInterrupt) as ex:
+            except Exception as ex:
                 _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:
         logger.error("job.critical_error", job_id=id, error=str(e))
