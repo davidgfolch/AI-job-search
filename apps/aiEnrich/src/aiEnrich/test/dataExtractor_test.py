@@ -33,14 +33,14 @@ class TestDataExtractor:
         mock_deps['save'].assert_not_called()
 
     @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1]])
-    def test_skips_job_when_ollama_returns_none(self, mock_ids, mock_deps):
+    def test_retries_job_when_ollama_returns_none(self, mock_ids, mock_deps):
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
-        mock_deps['ollama'].return_value = None
+        mock_deps['ollama'].side_effect = [None, '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}']
         with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')):
             assert dataExtractor() == 1
-            mock_deps['save'].assert_not_called()
-            mock_deps['ollama'].assert_called_once()
+            mock_deps['save'].assert_called_once()
+            assert mock_deps['ollama'].call_count == 2
 
     def test_save(self, mock_deps):
         repo = MagicMock()
@@ -135,6 +135,7 @@ class TestPingBackend:
     def test_routes_to_ollama(self):
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         from aiEnrich import dataExtractor
+        dataExtractor._resolved_ollama_url = None
         with patch.object(dataExtractor, "resolve_ollama_url", return_value="http://host:11434") as mock_resolve, \
              patch.object(dataExtractor, "ping_openrouter") as mock_ping_or:
             assert dataExtractor.ping_backend() is True

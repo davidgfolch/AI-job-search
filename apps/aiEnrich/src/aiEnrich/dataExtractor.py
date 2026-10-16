@@ -9,7 +9,9 @@ from commonlib.ai_helpers import (
     validateResult,
     RETRY_ERROR_PREFIX,
     MAX_AI_ENRICH_ERROR_LEN,
+    logIdleWait,
 )
+from commonlib.terminalColor import cyan
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.modality_extractor import extract_modality
 from commonlib.observability import get_logger, job_log_context
@@ -19,7 +21,7 @@ from .aiEnrich_config import (
     get_openrouter_fallback_model,
 )
 from commonlib.services.metrics_collector import MetricsCollector
-from commonlib.ollama_client import query_ollama, resolve_ollama_url
+from commonlib.ollama_client import query_ollama, resolve_ollama_url, _ping_url
 from .extraction_contract import COMPANY_SCHEMA, EXTRACTION_SCHEMA, build_extraction_prompt, query_and_parse
 from .openrouter_client import query_openrouter, ping_openrouter
 from .companyExtractor import resolve_unspecified_company
@@ -59,6 +61,11 @@ def ping_backend() -> bool:
     global _resolved_ollama_url
     if get_backend() == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
+    # Auto-discovery runs only on startup (when no server is cached yet). Normal
+    # liveness checks and retry waits must reuse the already resolved server
+    # instead of scanning the LAN again for every job.
+    if _resolved_ollama_url is not None:
+        return _ping_url(_resolved_ollama_url, 5, logger)
     _resolved_ollama_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
     return _resolved_ollama_url is not None
 
@@ -154,22 +161,27 @@ def _process_job_safe(
                 model = get_openrouter_model() if backend == "openrouter" else get_model()
                 logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=live_total, index=idx + 1, backend=backend, model=model, config=repo.config_for_job(id) or "NONE")
                 prompt = build_extraction_prompt(title, markdown)
-                result, response = query_and_parse(
-                    lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
-                    max_attempts=get_max_validation_retries() + 1, log=logger,
-                )
-                if response is None:
-                    logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
-                else:
-                    if result is not None:
-                        result['modality'] = extract_modality(title=title, markdown=markdown)
-                        _save(repo, id, result)
-                        success = True
-                        resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
-                    logger.info(
-                        "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
-                        model=model, done_reason=getattr(response, "done_reason", None),
+                result, response = None, None
+                while response is None:
+                    if not ping_backend():
+                        logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=get_max_ollama_failures())
+                        logIdleWait(cyan('Backend unavailable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+                        continue
+                    result, response = query_and_parse(
+                        lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
+                        max_attempts=get_max_validation_retries() + 1, log=logger,
                     )
+                    if response is None:
+                        logger.warning("job.ai_unreachable", job_id=id, title=title, company=company)
+                if result is not None:
+                    result['modality'] = extract_modality(title=title, markdown=markdown)
+                    _save(repo, id, result)
+                    success = True
+                    resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
+                logger.info(
+                    "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
+                    model=model, done_reason=getattr(response, "done_reason", None),
+                )
             except Exception as ex:
                 _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:

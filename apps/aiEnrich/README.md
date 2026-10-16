@@ -68,6 +68,8 @@ Structured logging via `commonlib.observability`; records go to stdout and are m
 
 **Idle**: with nothing pending, or while the backend is unreachable, the pipeline calls `logIdleWait()` rather than sleeping. It renders one record — `jobs.skipped` (`reason=no_pending_jobs`) or `ai.retry_wait` (`reason=backend_unavailable`) — with the human sentence as `message=`, then waits on a `WakeableTimer` that a shutdown signal cuts short. Interactive terminals keep the in-place countdown.
 
+**Provider failures mid-job**: when a single job cannot reach the provider (`query_and_parse` returns no response), the service logs `job.ai_unreachable`, waits for the backend (with `ai.unreachable` / `ai.retry_wait`) and retries the *same* job. A job is never counted as processed, and progress is not advanced, until it either succeeds or fails with a real error; the job stays pending and is retried on the next cycle.
+
 **Attribution**: each job runs inside `job_log_context(id)`, so `job.started` / `job.result` and every database record in between carry the same `job_id`, and `module` is stamped from the calling module rather than from a shared helper. See [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
 
 ## Configuration
