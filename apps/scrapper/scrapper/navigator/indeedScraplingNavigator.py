@@ -205,7 +205,7 @@ class IndeedScraplingNavigator(BaseNavigator):
         html = next((str(desc_el.get()) for sel in CSS_SEL_JOB_DESCRIPTION if (desc_el := self.current_page.css(sel))), "")
         badge = _modality_badge(self.current_page)
         if badge:
-            html = ((html or "") + "\n\nModalidad de trabajo: " + badge).strip()
+            html = ("Modalidad de trabajo: " + badge + "\n\n" + (html or "")).strip()
         salary = _extract_text(self.current_page, CSS_SEL_JOB_SALARY)
         url = self.get_current_job_url()
         if not title or not company:

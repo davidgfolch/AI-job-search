@@ -189,7 +189,7 @@ class IndeedNavigator(BaseNavigator):
         html = self._first_html(CSS_SEL_JOB_DESCRIPTION)
         modality = self._extract_job_modality()
         if modality:
-            html = (html or "") + "\n\nModalidad de trabajo: " + modality
+            html = "Modalidad de trabajo: " + modality + "\n\n" + (html or "")
         return title, company, location, salary, url, html
 
     def check_easy_apply(self):
