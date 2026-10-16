@@ -156,6 +156,21 @@ class IndeedNavigator(BaseNavigator):
                     return html
         return ""
 
+    def _extract_job_modality(self) -> str:
+        import unicodedata
+
+        def normalize(text):
+            normalized = unicodedata.normalize("NFKD", text or "")
+            return "".join(ch for ch in normalized if not unicodedata.combining(ch)).casefold().strip()
+
+        tokens = {"teletrabajo", "remoto", "remote", "trabajo hibrido", "hibrido", "hybrid", "trabajo presencial", "presencial", "on site", "onsite", "onsite remote"}
+        for elm in self.selenium.getElms('[data-testid="company-info-metadata"] div'):
+            text = (elm.text or "").strip()
+            if normalize(text) in tokens:
+                return text
+        return ""
+
+
     def _extract_location(self) -> str:
         if text := self._first_text(CSS_SEL_LOCATION):
             return text
@@ -172,6 +187,9 @@ class IndeedNavigator(BaseNavigator):
         salary = self._first_text(CSS_SEL_JOB_SALARY)
         url = self.selenium.getUrl()
         html = self._first_html(CSS_SEL_JOB_DESCRIPTION)
+        modality = self._extract_job_modality()
+        if modality:
+            html = (html or "") + "\n\nModalidad de trabajo: " + modality
         return title, company, location, salary, url, html
 
     def check_easy_apply(self):

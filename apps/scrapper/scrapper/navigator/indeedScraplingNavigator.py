@@ -47,6 +47,32 @@ def _extract_location(page) -> str:
     return ""
 
 
+def _modality_badge(page) -> str:
+    import unicodedata
+
+    def normalize(text):
+        normalized = unicodedata.normalize("NFKD", text or "")
+        return "".join(ch for ch in normalized if not unicodedata.combining(ch)).casefold().strip()
+
+    tokens = {"teletrabajo", "remoto", "remote", "trabajo hibrido", "hibrido", "hybrid", "trabajo presencial", "presencial", "on site", "onsite", "onsite remote"}
+    try:
+        candidates = page.css("[data-testid='company-info-metadata'] div")
+    except Exception:
+        return ""
+    try:
+        candidate_list = list(candidates)
+    except TypeError:
+        candidate_list = []
+    for el in candidate_list:
+        try:
+            text = (getattr(el, "get_all_text", lambda: "")() or "").strip()
+        except Exception:
+            text = str(el).strip()
+        if normalize(text) in tokens:
+            return text
+    return ""
+
+
 def _extract_total_from_title(page) -> int:
     match = re.match(r"([\d.,]+)\s+empleos", str(page.css("title::text").get() or "").strip())
     return int(match.group(1).replace(".", "").replace(",", "")) if match else 0
@@ -177,6 +203,9 @@ class IndeedScraplingNavigator(BaseNavigator):
         company = _extract_text(self.current_page, CSS_SEL_COMPANY)
         location = _extract_location(self.current_page)
         html = next((str(desc_el.get()) for sel in CSS_SEL_JOB_DESCRIPTION if (desc_el := self.current_page.css(sel))), "")
+        badge = _modality_badge(self.current_page)
+        if badge:
+            html = ((html or "") + "\n\nModalidad de trabajo: " + badge).strip()
         salary = _extract_text(self.current_page, CSS_SEL_JOB_SALARY)
         url = self.get_current_job_url()
         if not title or not company:

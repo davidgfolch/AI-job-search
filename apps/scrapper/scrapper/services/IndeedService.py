@@ -73,7 +73,6 @@ class IndeedService(BaseService):
             url = f"https://es.indeed.com/viewjob?jk={job_id}"
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
-            md = self._append_modality_cue_from_location(md, location)
             modality = extract_modality(title, location, md)
             # Use the actual URL from seleniumService.getUrl() directly
             logger.info("indeed.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy_apply,
@@ -106,22 +105,3 @@ class IndeedService(BaseService):
         txt = re.sub(r"[-*] #", "#", txt)
         return txt
 
-    def _modality_cue_from_location(self, location: str) -> str | None:
-        loc = (location or "").lower()
-        if "teletrabajo" in loc or "remoto" in loc or "remote" in loc:
-            return "Teletrabajo (remoto)"
-        if "híbrido" in loc or "hibrido" in loc or "hybrid" in loc:
-            return "Trabajo híbrido"
-        if "presencial" in loc or "on-site" in loc or "onsite" in loc:
-            return "Trabajo presencial"
-        return None
-
-    def _append_modality_cue_from_location(self, md: str, location: str) -> str:
-        cue = self._modality_cue_from_location(location)
-        if not cue:
-            return md
-        marker = f"Modalidad: {cue}"
-        if marker in (md or ""):
-            return md
-        base = (md or "").rstrip()
-        return base + ("\n\n" if base else "") + marker
