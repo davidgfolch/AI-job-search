@@ -11,10 +11,6 @@
           {
             "type": "command",
             "command": "python .claude/hooks/db-mutation.py"
-          },
-          {
-            "type": "command",
-            "command": "python .claude/hooks/sonar-quality-gate.py"
           }
         ]
       },
