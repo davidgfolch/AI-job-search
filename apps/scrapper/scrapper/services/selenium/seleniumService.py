@@ -18,9 +18,17 @@ class SeleniumService:
     browser_service: BrowserService
     element_service: ElementService
 
-    def __init__(self, debug: bool, browser: str = 'chrome'):
+    def __init__(self, debug: bool, browser: str = 'chrome', scrapper: str | None = None):
         self.debug = debug
-        self.driverUtil = DriverUtil(browser)
+        self.scrapper = scrapper
+        if scrapper is not None:
+            logger.info("selenium.scrapper_starting", scrapper=scrapper, browser=browser,
+                        console=f'Preparing Chrome driver for scrapper: {scrapper}')
+        if scrapper is None:
+            self.driverUtil = DriverUtil(browser)
+        else:
+            self.driverUtil = DriverUtil(browser, scrapper=scrapper)
+
         self.driver = self.driverUtil.driver
         self.browser_service = BrowserService(self.driver)
         self.element_service = ElementService(self.driver)
@@ -65,6 +73,9 @@ class SeleniumService:
     def getUrl(self):
         return self.browser_service.getUrl()
 
+    def getTitle(self):
+        return self.browser_service.getTitle()
+
     def waitUntilPageUrlContains(self, url: str, timeout: int = 10):
         self.browser_service.waitUntilPageUrlContains(url, timeout)
 
@@ -98,8 +109,14 @@ class SeleniumService:
     def scrollProgressive(self, distance: int):
         self.browser_service.scrollProgressive(distance)
 
-    def scrollIntoView(self, cssSel: str | WebElement):
-        self.element_service.scrollIntoView(cssSel)
+    def scrollIntoView(self, cssSel: str | WebElement, block: str = 'end'):
+        self.element_service.scrollIntoView(cssSel, block)
+
+    def scroll_to_bottom(self):
+        self.browser_service.scroll_to_bottom()
+
+    def scrollContainerToBottom(self, cssSel: str | WebElement):
+        self.element_service.scrollContainerToBottom(cssSel)
     
     def waitUntilClickable(self, cssSel: str | WebElement, timeout: int = 10):
         self.element_service.waitUntilClickable(cssSel, timeout)

@@ -50,6 +50,16 @@ class TestEnvironmentUtil:
         checkEnvReload()
         mock_load.assert_not_called()
 
+    @patch('commonlib.environmentUtil.load_dotenv')
+    @patch('commonlib.environmentUtil.getEnvModified')
+    def test_checkEnvReload_precedence(self, mock_get_mod, mock_load):
+        mock_load.side_effect = lambda *a, **k: os.environ.update(COMMONLIB_DB_HOST='127.0.0.1', A_NEW_SETTING='changed')
+        with patch.object(envUtil, '_processEnvSnapshot', {'COMMONLIB_DB_HOST': 'mysql_db'}):
+            envUtil.envLastModified, mock_get_mod.return_value = 100, 200
+            checkEnvReload()
+        assert os.environ['COMMONLIB_DB_HOST'] == 'mysql_db'
+        assert os.environ.pop('A_NEW_SETTING') == 'changed'
+
     def test_getEnvMultiline(self):
         def side_effect(key, required=False):
             mapping = {'KEY_1': 'Part1', 'KEY_2': 'Part2'}
@@ -160,3 +170,24 @@ class TestEnvironmentUtil:
             with patch('builtins.open', m_open):
                 setEnvBulk({'K1': 'V1', 'K2': 'V2'})
             m_open.assert_called_once()
+
+    @patch('commonlib.environmentUtil.set_key')
+    @patch('commonlib.environmentUtil.load_dotenv')
+    @patch('commonlib.environmentUtil.getEnvModified')
+    def test_setEnv_keeps_injected_value(self, mock_get_mod, mock_load, mock_set_key):
+        mock_load.side_effect = lambda *a, **k: os.environ.update(COMMONLIB_DB_HOST='127.0.0.1')
+        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path, patch.object(envUtil, '_processEnvSnapshot', {'COMMONLIB_DB_HOST': 'mysql_db'}):
+            mock_env_path.exists.return_value, mock_get_mod.return_value = True, 300
+            setEnv('COMMONLIB_DB_HOST', '127.0.0.1')
+        assert os.environ['COMMONLIB_DB_HOST'] == 'mysql_db'
+
+    @patch('commonlib.environmentUtil.set_key')
+    @patch('commonlib.environmentUtil.load_dotenv')
+    @patch('commonlib.environmentUtil.getEnvModified')
+    def test_setEnvBulk_keeps_injected_value(self, mock_get_mod, mock_load, mock_set_key):
+        mock_load.side_effect = lambda *a, **k: os.environ.update(MONGO_URI='mongodb://localhost:27017/')
+        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path, patch.object(envUtil, '_processEnvSnapshot', {'MONGO_URI': 'mongodb://mongo_db:27017/'}):
+            mock_env_path.exists.return_value, mock_get_mod.return_value = True, 500
+            setEnvBulk({'MONGO_URI': 'mongodb://localhost:27017/'})
+        assert os.environ['MONGO_URI'] == 'mongodb://mongo_db:27017/'
+

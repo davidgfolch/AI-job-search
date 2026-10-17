@@ -58,6 +58,17 @@ def ollama_probe_urls() -> tuple[str, ...]:
     return tuple(urls)
 
 
+def get_configured_ollama_url() -> str | None:
+    """The first Ollama URL any module configured, or None when none is set.
+
+    Shared by everything that has to reach the same server the AI modules use:
+    `resolve_ollama_url()` takes it as the primary candidate, and
+    `scripts/install.sh` asks for it before pulling models so the download lands
+    on the host that will actually serve them.
+    """
+    return next((url for env in _MODULE_OLLAMA_URL_ENVS if (url := getEnv(env))), None)
+
+
 def get_num_predict() -> int:
     for env in MAX_NEW_TOKENS_ENVS:
         value = getEnv(env)

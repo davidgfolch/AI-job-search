@@ -1,2 +1,12 @@
 # aiEnrich3
 CPU-optimized multilingual data extraction service for job offers using GLiNER, mDeBERTa, and Regex.
+
+## Setup
+Requires Python 3.11 (its locked `onnxruntime` has no 3.10 wheels). `.python-version` pins `3.11.14`, and `uv sync` installs that interpreter automatically.
+All extractors run on CPU: GLiNER defaults to CPU and the mDeBERTa zero-shot pipeline is pinned to CPU (`device=-1`), matching the service's CPU-optimized design.
+
+## Job selection
+Jobs are enriched through the shared `commonlib.aiEnrichRepository`: first the pending jobs matching the stored **watched filter configurations** (configurations in `ordering ASC`, each honoring its `order` and falling back to `created desc`), each configuration drained: the first until it yields nothing, later ones one job at a time — the worker stays on a configuration until it yields nothing — then every other pending job in `created desc` (details in `apps/commonlib/README.md`). The `ai_enriched` condition is stripped from the configurations and every candidate must be unenriched, free of `ai_enrich_error`, and not ignored/discarded/closed. With no watched configurations it falls back to the plain pending query. The selector logs the watched configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` for the fallback queue).
+
+## Logs
+Structured logging via `commonlib.observability`; records go to stdout and are mirrored to `data/logs/aiEnrich3.jsonl`. Each job is processed inside `job_log_context(id)`, so its `job.started` / `job.result` pair and every database record in between carry the same `job_id`. The wait between cycles in the main loop is `logIdleWait(cyan('All jobs enriched.'), '10s', "jobs.skipped", reason="no_pending_jobs")`: one record carrying that sentence as `message=`, then a `WakeableTimer` (interactive terminals keep the in-place countdown). See [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).

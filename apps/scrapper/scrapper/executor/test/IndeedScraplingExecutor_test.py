@@ -97,9 +97,22 @@ class TestIndeedScraplingExecutor:
             
             mock_nav.get_job_data.return_value = ("Title", "Company", "Location", "60k", "http://u", "<html></html>")
             mock_nav.check_easy_apply.return_value = False
+            mock_nav.is_delisted.return_value = False
             mock_svc.job_exists_in_db.return_value = (None, False)
             mock_svc.process_job.return_value = True
             
             assert executor._load_and_process_row("http://u") is True
             mock_nav.load_job_detail.assert_called_once_with("http://u")
+
+    def test_load_and_process_row_delisted(self, mock_selenium, mock_persistence_manager, mock_env_vars):
+        with patch('scrapper.executor.IndeedScraplingExecutor.IndeedScraplingNavigator'):
+            executor = IndeedScraplingExecutor(mock_selenium, mock_persistence_manager, False)
+            mock_nav = executor.navigator
+            mock_svc = MagicMock(spec=IndeedService)
+            executor.service = mock_svc
+            mock_nav.is_delisted.return_value = True
+            mock_svc.job_exists_in_db.return_value = (None, False)
+            assert executor._load_and_process_row("http://u") is False
+            mock_nav.load_job_detail.assert_called_once_with("http://u")
+            mock_nav.get_job_data.assert_not_called()
             

@@ -23,6 +23,17 @@ class ScraplingService:
             self._thread_pool = ThreadPoolExecutor(max_workers=1)
         return self._thread_pool.submit(fn, *args, **kwargs).result()
 
+    def _window_setup(self, page):
+        """Match the window size/position used by the Selenium scrappers (driverUtil._set_window_size_and_position)."""
+        try:
+            avail_width, avail_height = page.evaluate("() => [screen.availWidth, screen.availHeight]")
+            cdp = page.context.new_cdp_session(page)
+            window_id = cdp.send("Browser.getWindowForTarget")["windowId"]
+            cdp.send("Browser.setWindowBounds", {"windowId": window_id, "bounds": {"width": 1200, "height": avail_height - 90, "left": avail_width - 1200, "top": 0}})
+            cdp.detach()
+        except Exception as e:
+            logger.warning("scrapling.window_setup_failed", error=str(e), console=yellow(f"Could not resize browser window: {e}"))
+
     def _build_kwargs(self) -> dict:
         kwargs = {
             "solve_cloudflare": True,
@@ -35,7 +46,8 @@ class ScraplingService:
             "timeout": 60000,
             "headless": False,
             "max_pages": 1,
-            "new_context": False
+            "new_context": False,
+            "page_setup": self._window_setup
         }
         if self.proxies:
             if len(self.proxies) == 1:

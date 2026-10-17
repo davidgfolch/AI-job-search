@@ -18,14 +18,14 @@ docker-compose up -d
 ```
 
 ### Ollama: host vs container
-The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434` — first reachable wins, reused for the whole batch.
+The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434`, then a LAN scan for port 11434 (`COMMONLIB_OLLAMA_DISCOVERY`, default on; `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan) — first reachable wins, reused for the whole batch. Each job is only sent after a one-token generation probe on that server (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s, reusing the job's own `num_ctx` so Ollama does not reload the model twice), so a wedged runner is skipped instead of blocking the whole job timeout; the verdict is cached per server for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300) and dropped again on a failed probe or a job timeout. The workers take the URL from `.env` (`docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset), and because a container's LAN scan only covers the Docker subnets, an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL` rather than discovered.
 ```bash
 # Ollama on the host (nothing extra to start)
 docker-compose --profile aienrich up -d aienrich
 # Ollama containerized as well
 docker-compose --profile ollama --profile aienrich up -d
 ```
-Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`, `scrapper`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
+Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
 
 ### Sandboxed Docker Verification (dependabot-agent)
 Brings a service up in an isolated `dependabot-test` project so the live `ai-job-search-*` stack and its data are never touched. Uses `docker-compose.test.override.yml` (renamed `-test` containers, remapped ports, data under `.docker-sandbox/`), and tears the sandbox down on exit.
@@ -42,7 +42,7 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 - `backend` auto-clones the live MySQL `jobs` DB into the sandbox (via `scripts/mysql/backup.*`); skip with `--no-db-clone`.
 - Mongo boots fresh/empty from `scripts/mongo/init.js`; ollama/prometheus/grafana are never duplicated.
 - Profile-gated ai workers need their profile (`--profile aienrich|aiEnrichNew|aiEnrichSkill|aiEnrich3`).
-- Ollama-dependent services (`aienrich`, `aienrichskill`, `scrapper`) are validated build-only + unit tests + ci-gate, not `up`.
+- Ollama-dependent services (`aienrich`, `aienrichskill`) are validated build-only + unit tests + ci-gate, not `up`.
 
 ### Python Apps (commonlib, scrapper)
 ```bash
@@ -262,6 +262,7 @@ Agent skills are located in `.claude/skills/`:
 - `dependabot-agent`: Process open GitHub Dependabot PRs
 - `gh-actions-debug`: Debug GitHub Actions / Dependabot run failures with the gh CLI
 - `scrapling-implementer`: Scrapling library usage (fetching, parsing, spiders)
+- `crawlee-page-analyst`: Analyze a source page that changed (DOM/URL redesign) with Crawlee before changing `apps/scrapper`, producing selector-level requirements
 - `view-backend-logs`: How to view backend logs using docker-compose
 
 ## graphify
@@ -270,13 +271,10 @@ This project has a knowledge graph at graphify-out/ with god nodes, community st
 
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
-Always run graphify through the wrapper scripts — `scripts\graphify\graphify.bat` (Windows) or `scripts/graphify/graphify.sh` (Linux/Mac) — never the raw `graphify` binary. The wrapper owns the full pipeline (no args = rebuild, `--clean`, `--module <name>`) and delegates `query`/`path`/`explain` to the CLI; mutating subcommands (`update`, `cluster-only`, `add`, `export`, `extract`, `merge-graphs`, URLs) are delegated and then re-run the repo HTML generator.
-
-`graphify-out/graph.html` is repo-owned: it is generated ONLY by `python scripts/graphify/graphify-html-grouped.py` (module-grouped visualization). Never regenerate it with upstream CLI commands (`graphify export html`, bare `graphify update .`, `graphify cluster-only`, path builds) — they overwrite it with the default/aggregated output.
-
 Rules:
-- For codebase questions, first run the wrapper `query` subcommand (e.g. `scripts\graphify\graphify.bat query "<question>"`) when graphify-out/graph.json exists. Use `path` for relationships and `explain` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- When graphify-out/graph.json exists, run `graphify query "<question>"` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run the wrapper `update` subcommand (e.g. `scripts\graphify\graphify.bat update .`) to keep the graph current (AST-only, no API cost).
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.

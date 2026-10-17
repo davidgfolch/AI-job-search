@@ -5,7 +5,7 @@ from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX, flatten_skill_groups
 from commonlib.terminalColor import yellow, magenta, cyan, red
 from commonlib.stopWatch import StopWatch
-from commonlib.observability import get_logger
+from commonlib.observability import get_logger, job_log_context
 from commonlib.services.metrics_collector import MetricsCollector
 
 from ..pipeline import ExtractionPipeline
@@ -42,30 +42,30 @@ def enrich_jobs(repo: AiEnrichRepository, pipeline: ExtractionPipeline, batch_si
     if total == 0:
         return 0
 
-    logger.info("jobs.found", total=total, batch_size=batch_size, module="aiEnrich3")
-    job_ids = repo.get_pending_enrichment_ids()
-    logger.debug("job.pending_ids", ids=job_ids)
-
-    jobs_buffer = _fetch_and_sort_jobs(repo, job_ids, sort_by_length=False)
+    logger.info("jobs.found", total=total, batch_size=batch_size)
 
     total_count = 0
+    start_idx = 0
     job_errors: Set[Tuple[int, str]] = set()
     overall_start_time = time.time()
 
-    for i in range(0, len(jobs_buffer), batch_size):
-        batch_items = jobs_buffer[i:i + batch_size]
-        _process_job_batch_local(
-            repo,
-            pipeline,
-            batch_items,
-            total,
-            i,
-            "enrich",
-            overall_start_time,
-            total_count,
-            job_errors
-        )
-        total_count += len(batch_items)
+    for chunk in repo.iter_pending_enrichment_batches():
+        jobs_buffer = _fetch_and_sort_jobs(repo, chunk, sort_by_length=False)
+        for i in range(0, len(jobs_buffer), batch_size):
+            batch_items = jobs_buffer[i:i + batch_size]
+            _process_job_batch_local(
+                repo,
+                pipeline,
+                batch_items,
+                total,
+                start_idx,
+                "enrich",
+                overall_start_time,
+                total_count,
+                job_errors
+            )
+            total_count += len(batch_items)
+            start_idx += len(batch_items)
 
     return total
 
@@ -162,21 +162,24 @@ def _process_job_batch_local(
         job_start = time.time()
         success = False
         try:
-            result = pipeline.process_job(text)
-            logger.info("job.result", job_id=job_id, result=result, duration=round(time.time() - job_start, 3))
-            _save_job_result(repo, job_id, company, result)
-            success = True
-
-            elapsed = time.time() - start_time
-            printJob(process_name, total, start_idx + idx, job_id, title, company, item.get('length', 0))
-            footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed)
-
+            with job_log_context(job_id):
+                result = pipeline.process_job(text, title=title)
+                logger.info("job.result", job_id=job_id, result=result, duration=round(time.time() - job_start, 3))
+                _save_job_result(repo, job_id, company, result)
+                success = True
         except Exception as ex:
-            logger.exception("job.failed", job_id=job_id, title=title, company=company, error=str(ex))
-            job_errors.add((job_id, f'{title} - {company}: {ex}'))
-            prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
-            error_msg = f"{prefix}{ex}"
-            _update_error_state(repo, job_id, error_msg, process_name == "retry")
+            with job_log_context(job_id):
+                logger.exception("job.failed", job_id=job_id, title=title, company=company, error=str(ex))
+                job_errors.add((job_id, f'{title} - {company}: {ex}'))
+                prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
+                error_msg = f"{prefix}{ex}"
+                _update_error_state(repo, job_id, error_msg, process_name == "retry")
+        else:
+            elapsed = time.time() - start_time
+            _remaining_pending_3 = repo.count_pending_enrichment()
+            live_total = max(total, start_idx + idx + 1 + _remaining_pending_3)
+            printJob(process_name, live_total, start_idx + idx, job_id, title, company, item.get('length', 0))
+            footer(live_total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed, config=repo.config_for_job(job_id) or "NONE")
 
         duration = time.time() - job_start
         collector.record_job("aiEnrich3", duration, success)

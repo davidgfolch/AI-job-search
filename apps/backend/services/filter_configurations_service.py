@@ -2,10 +2,12 @@ import json
 import os
 from typing import List, Dict, Any
 from repositories.filter_configurations_repository import FilterConfigurationsRepository
+from repositories.watcher_repository import WatcherRepository
 
 class FilterConfigurationsService:
-    def __init__(self, repo: FilterConfigurationsRepository = None):
+    def __init__(self, repo: FilterConfigurationsRepository = None, watcher_repo: WatcherRepository = None):
         self.repo = repo or FilterConfigurationsRepository()
+        self.watcher_repo = watcher_repo or WatcherRepository()
     
     def get_all(self) -> List[Dict[str, Any]]:
         count = self.repo.count()
@@ -34,14 +36,20 @@ class FilterConfigurationsService:
             name_exists = self.repo.find_by_name(name)
             if name_exists:
                 raise ValueError(f"Configuration with name '{name}' already exists")
+        filters_changed = filters is not None
         self.repo.update(config_id, name, filters, watched, statistics, pinned, ordering)
+        if filters_changed and self.watcher_repo is not None:
+            self.watcher_repo.invalidate_view(config_id)
         return self.repo.find_by_id(config_id)
     
     def delete(self, config_id: int) -> bool:
         existing = self.repo.find_by_id(config_id)
         if not existing:
             raise ValueError(f"Configuration with id {config_id} not found")
-        return self.repo.delete(config_id)
+        result = self.repo.delete(config_id)
+        if self.watcher_repo is not None:
+            self.watcher_repo.invalidate_view(config_id)
+        return result
     
     def seed_defaults(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))

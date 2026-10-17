@@ -17,7 +17,7 @@ def dataExtractor() -> int:
         total = repo.count_pending_enrichment()
         if total == 0:
             return 0
-        logger.info("jobs.found", total=total, module="aiEnrichNew")
+        logger.info("jobs.found", total=total)
         collector.set_pending("aiEnrichNew", total)
         pipe = get_pipeline()
         return enrich_jobs(repo, pipe, get_batch_size())

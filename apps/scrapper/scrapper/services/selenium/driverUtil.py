@@ -1,4 +1,5 @@
 import os
+import time
 import tempfile
 import random
 import subprocess
@@ -11,6 +12,7 @@ from commonlib.observability import get_logger
 from commonlib.terminalColor import yellow
 from commonlib.environmentUtil import getEnvBool
 from commonlib.systemUtil import isWindowsOS
+from commonlib.decorator.retry import retry, StackTrace
 from .stealthScripts import STEALTH_SCRIPTS_JS
 
 logger = get_logger("scrapper.driverUtil")
@@ -40,63 +42,74 @@ class DriverUtil:
     useUndetected: bool
     driver: webdriver.Chrome | webdriver.Firefox
 
-    def __init__(self, browser: str = 'chrome'):
+    def __init__(self, browser: str = 'chrome', scrapper: str | None = None):
         self.browser = browser
-        logger.info("driver.starting", browser=self.browser, console=f'seleniumUtil init (browser={self.browser})')
+        self.scrapper = scrapper
+        logger.info("driver.starting", browser=self.browser, scrapper=self.scrapper, console=f'seleniumUtil init (browser={self.browser}, scrapper={self.scrapper})')
         if self.browser == 'firefox':
             self._init_firefox()
         else:
             self._init_chrome()
-        logger.info("driver.ready", browser=self.browser, driver_type=type(self.driver).__name__, console=f'seleniumUtil init driver={self.driver}')
+        logger.info("driver.ready", browser=self.browser, scrapper=self.scrapper, driver_type=type(self.driver).__name__, console=f'seleniumUtil init driver={self.driver}')
 
     def _init_chrome(self):
         self.useUndetected = getEnvBool('SCRAPPER_USE_UNDETECTED_CHROMEDRIVER', False)
-        logger.info("driver.undetected_configured", undetected=self.useUndetected,
+        logger.info("driver.undetected_configured", undetected=self.useUndetected, scrapper=self.scrapper,
                       console=f'seleniumUtil init (undetected={self.useUndetected})')
         if self.useUndetected:
             chromePath = self._findChrome()
             if chromePath is not None:
                 version_main = self._getChromeVersion(chromePath)
-                logger.info("driver.chrome_version_detected", major_version=version_main, console=f'Detected Chrome version: {version_main}')
-                if isWindowsOS():
-                    opts = uc.ChromeOptions()
-                    opts.add_argument('--disable-gpu')
-                    opts.add_argument('--no-sandbox')
-                    opts.add_argument('--disable-dev-shm-usage')
-                    temp_user_data_dir = tempfile.mkdtemp()
-                    opts.add_argument(f'--user-data-dir={temp_user_data_dir}')
-                    self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
-                    self._set_window_size_and_position()
-                else:
-                    opts = uc.ChromeOptions()
-                    opts.add_argument('--disable-gpu')
-                    opts.add_argument('--no-sandbox')
-                    opts.add_argument('--disable-dev-shm-usage')
-                    opts.add_argument('--disable-blink-features=AutomationControlled')
-                    opts.add_argument('--disable-notifications')
-                    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-                    self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
-                    self._set_window_size_and_position()
+                logger.info("driver.chrome_version_detected", major_version=version_main, scrapper=self.scrapper, console=f'Detected Chrome version: {version_main}')
+                self._init_undetected_driver(chromePath, version_main)
             else:
-                logger.warning("driver.undetected_unavailable", fallback="selenium",
+                logger.warning("driver.undetected_unavailable", fallback="selenium", scrapper=self.scrapper,
                                reason="undetected-chromedriver requires Chrome installed",
                                console=yellow('WARNING: undetected-chromedriver requires Chrome installed. Falling back to standard Selenium.'))
                 self.useUndetected = False
         if not self.useUndetected:
-            opts = webdriver.ChromeOptions()
-            opts.add_argument("--disable-blink-features=AutomationControlled")
-            opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-            opts.add_experimental_option("useAutomationExtension", False)
-            user_agent = random.choice(DESKTOP_USER_AGENTS)
-            opts.add_argument(f"--user-agent={user_agent}")
-            opts.add_argument("--disable-dev-shm-usage")
-            opts.add_argument("--no-sandbox")
-            opts.add_argument("--disable-gpu")
-            self.driver = webdriver.Chrome(options=opts)
+            self._init_standard_driver()
+
+    @retry(retries=2, delay=2, exception=Exception, stackTrace=StackTrace.LAST_RETRY)
+    def _init_undetected_driver(self, chromePath: str, version_main: int):
+        logger.info("driver.chrome_driver_instantiating", scrapper=self.scrapper, undetected=True, console=f'{self.scrapper or "scrapper"}: instantiating undetected Chrome driver')
+        if isWindowsOS():
+            opts = uc.ChromeOptions()
+            opts.add_argument('--disable-gpu')
+            opts.add_argument('--no-sandbox')
+            opts.add_argument('--disable-dev-shm-usage')
+            temp_user_data_dir = tempfile.mkdtemp()
+            opts.add_argument(f'--user-data-dir={temp_user_data_dir}')
+            self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
             self._set_window_size_and_position()
-            self.driver.set_page_load_timeout(180)
-            self.driver.set_script_timeout(180)
-            self._apply_stealth_scripts()
+        else:
+            opts = uc.ChromeOptions()
+            opts.add_argument('--disable-gpu')
+            opts.add_argument('--no-sandbox')
+            opts.add_argument('--disable-dev-shm-usage')
+            opts.add_argument('--disable-blink-features=AutomationControlled')
+            opts.add_argument('--disable-notifications')
+            opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+            self.driver = uc.Chrome(browser_executable_path=chromePath, chrome_options=opts, version_main=version_main)
+            self._set_window_size_and_position()
+
+    @retry(retries=2, delay=2, exception=Exception, stackTrace=StackTrace.LAST_RETRY)
+    def _init_standard_driver(self):
+        logger.info("driver.chrome_driver_instantiating", scrapper=self.scrapper, undetected=False, console=f'{self.scrapper or "scrapper"}: instantiating standard Chrome driver')
+        opts = webdriver.ChromeOptions()
+        opts.add_argument("--disable-blink-features=AutomationControlled")
+        opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+        opts.add_experimental_option("useAutomationExtension", False)
+        user_agent = random.choice(DESKTOP_USER_AGENTS)
+        opts.add_argument(f"--user-agent={user_agent}")
+        opts.add_argument("--disable-dev-shm-usage")
+        opts.add_argument("--no-sandbox")
+        opts.add_argument("--disable-gpu")
+        self.driver = webdriver.Chrome(options=opts)
+        self._set_window_size_and_position()
+        self.driver.set_page_load_timeout(180)
+        self.driver.set_script_timeout(180)
+        self._apply_stealth_scripts()
 
     def _init_firefox(self):
         opts = FirefoxOptions()

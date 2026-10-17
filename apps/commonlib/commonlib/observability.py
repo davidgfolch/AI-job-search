@@ -44,8 +44,21 @@ The mode is resolved on every record, not when structlog is configured, so an
 entrypoint can select it after a shared module already logged. `LOG_LEVEL` is read when
 structlog is configured and structlog freezes it on the first log call of each logger,
 so an entrypoint must call `configure_logging()` before any other module logs.
+
+## Which module a record belongs to
+
+`module` names the app module that logged, not the shared helper that emitted the
+record, so a helper in commonlib used by several workers stays attributable. A commonlib
+or structlog frame means a shared component logged, so the walk continues to the first
+frame outside both; the name bound by `get_logger()` is only the fallback for a record
+with no app frame above it. Passing `module=` as a log field is therefore a bug, since it
+overwrites the value (hence `source_module` in `dashboard_repository`). `job_id` is bound
+once per unit of work with `job_log_context`, so records emitted by shared helpers such as
+`commonlib.sql.query_executor` carry the same id as the call sites around them.
 """
 import os
+import sys
+from contextlib import contextmanager
 
 import structlog
 
@@ -55,6 +68,12 @@ from commonlib.log_writer import get_log_dir, make_jsonl_writer
 
 DEFAULT_LOG_LEVEL = 20
 DEFAULT_APP_NAME = "app"
+
+STACK_SKIP_PREFIXES = ("structlog", "commonlib.", "_pytest", "pluggy.", "unittest.", "pytest")
+# The entry script. Reached from a test runner above every skipped frame, and from an app
+# entrypoint when a record is logged at top level, where the `get_logger()` name is already
+# the right answer. Either way the walk ends here with no caller found.
+STACK_STOP_MODULES = frozenset({"__main__"})
 
 _app_name: str | None = None
 _configured = False
@@ -79,6 +98,56 @@ def _stamp_app_name(event_dict: dict) -> None:
     event_dict["logger"] = get_app_name()
 
 
+def _caller_module() -> str | None:
+    """Return the first frame outside `structlog` and `commonlib`, or None."""
+    frame = sys._getframe(1)
+    while frame is not None:
+        name = frame.f_globals.get("__name__", "")
+        if name in STACK_STOP_MODULES:
+            return None
+        if not name.startswith(STACK_SKIP_PREFIXES):
+            return name
+        frame = frame.f_back
+    return None
+
+
+def stamp_caller_module(logger, method_name, event_dict: dict) -> dict:
+    """Stamp the calling app module as `module`, overriding the logger's own name.
+
+    `commonlib.terminalUtil.consoleTimer` called from `aiEnrich.pipeline` stamps
+    `aiEnrich.pipeline`, so a record is attributable to the worker that produced it and
+    not to whichever shared helper happened to log it. A record with no app frame above
+    it (a helper called straight from a test) keeps the name bound by `get_logger()`,
+    because skipping the test-runner frames makes the walk fall through to it.
+    """
+    caller = _caller_module()
+    if caller:
+        event_dict["module"] = caller
+    return event_dict
+
+
+@contextmanager
+def job_log_context(job_id: int):
+    """Stamp `job_id` on every record logged inside the block.
+
+    `merge_contextvars` runs first in the chain, so binding once per unit of work covers
+    the records the call sites emit and the ones shared helpers emit on their behalf
+    (`commonlib.sql.query_executor`, `commonlib.ollama_client`), with no change at either
+    end. An explicit `job_id=` at a call site still wins over the bound value.
+
+    The id is unbound on exit so it cannot leak into the batch-level records that follow
+    the loop, which describe many jobs rather than one.
+    """
+    if job_id is None:
+        yield
+        return
+    structlog.contextvars.bind_contextvars(job_id=job_id)
+    try:
+        yield
+    finally:
+        structlog.contextvars.unbind_contextvars("job_id")
+
+
 def configure_logging(app_name: str | None = None, console: str | None = None) -> str:
     """Configure structlog once and name the JSONL output after `app_name`.
 
@@ -101,6 +170,7 @@ def configure_logging(app_name: str | None = None, console: str | None = None) -
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
+            stamp_caller_module,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso", key="timestamp"),
             structlog.processors.format_exc_info,
@@ -118,10 +188,12 @@ def configure_logging(app_name: str | None = None, console: str | None = None) -
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
-    """Return a logger that stamps every record with `name` in its `module` field.
+    """Return a logger that falls back to `name` in its `module` field.
 
     The name is bound explicitly because `structlog.get_logger(name)` passes it to the
-    logger factory, and `PrintLoggerFactory` discards it.
+    logger factory, and `PrintLoggerFactory` discards it. `stamp_caller_module` normally
+    replaces it with the calling app module, so this is the value used only when the
+    record has no app frame above it.
     """
     configure_logging()
     return structlog.get_logger().bind(module=name)

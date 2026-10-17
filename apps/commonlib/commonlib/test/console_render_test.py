@@ -2,38 +2,10 @@ import json
 
 import pytest
 
-from commonlib import console_render, observability
 from commonlib.console_render import CONSOLE_MESSAGE, CONSOLE_RECORD, console_mode
 from commonlib.observability import configure_logging, get_logger, log_file_path
 from commonlib.terminalColor import green, stripAnsi
-
-LEGACY_ENV = ("AI_ENRICH_LOG_CONSOLE_MODE",)
-
-
-@pytest.fixture
-def console(log_dir, monkeypatch):
-    """Redirect the JSONL output, reset the app name and the console mode."""
-    for name in ("LOG_CONSOLE_MODE", *LEGACY_ENV):
-        monkeypatch.delenv(name, raising=False)
-    monkeypatch.delenv("LOG_COLOR", raising=False)
-    observability._app_name = None
-    console_render.set_console_mode(None)
-    yield log_dir
-    observability._app_name = None
-    console_render.set_console_mode(None)
-
-
-@pytest.fixture
-def log_dir(tmp_path, monkeypatch):
-    target = tmp_path / "logs"
-    monkeypatch.setenv("LOG_DIR", str(target))
-    monkeypatch.delenv("AI_ENRICH_LOG_DIR", raising=False)
-    return target
-
-
-def _events(path):
-    with open(path, encoding="utf-8") as f:
-        return [json.loads(line) for line in f]
+from commonlib.test.console_render_fixtures import _events, console
 
 
 class TestConsoleModeResolution:
@@ -44,12 +16,9 @@ class TestConsoleModeResolution:
         configure_logging("scrapper", console=CONSOLE_MESSAGE)
         assert console_mode() == CONSOLE_MESSAGE
 
-    def test_env_selects_mode(self, console, monkeypatch):
-        monkeypatch.setenv("LOG_CONSOLE_MODE", CONSOLE_MESSAGE)
-        assert console_mode() == CONSOLE_MESSAGE
-
-    def test_legacy_env_alias_still_read(self, console, monkeypatch):
-        monkeypatch.setenv("AI_ENRICH_LOG_CONSOLE_MODE", CONSOLE_MESSAGE)
+    @pytest.mark.parametrize("env", ["LOG_CONSOLE_MODE", "AI_ENRICH_LOG_CONSOLE_MODE"])
+    def test_env_selects_mode(self, console, monkeypatch, env):
+        monkeypatch.setenv(env, CONSOLE_MESSAGE)
         assert console_mode() == CONSOLE_MESSAGE
 
     def test_late_configure_repoints_mode(self, console):
@@ -185,3 +154,44 @@ class TestFileOnlyRecords:
         configure_logging("json", console=CONSOLE_RECORD)
         get_logger("json.case").info("sql.query_executed", rows=1)
         assert json.loads(capsys.readouterr().out)["event"] == "sql.query_executed"
+
+
+class TestMessageColumn:
+    def test_message_is_the_first_named_field(self, console, capsys):
+        """`message` is the sentence to read; rendering it first is the whole point of the column."""
+        configure_logging("lead", console=CONSOLE_RECORD)
+        get_logger("lead.case").info("timer.started", message="All jobs enriched.", wait_seconds=10)
+        out = stripAnsi(capsys.readouterr().out)
+        assert "timer.started" in out
+        assert "message='All jobs enriched.'" in out
+        assert out.count("All jobs enriched.") == 1
+        assert out.index("message=") < out.index("wait_seconds=10")
+
+    def test_message_renders_first_even_when_passed_last(self, console, capsys):
+        """The position comes from the column, not from the call-site keyword order."""
+        configure_logging("late", console=CONSOLE_RECORD)
+        get_logger("late.case").info("jobs.skipped", limit=10, message="No skills pending.")
+        out = stripAnsi(capsys.readouterr().out)
+        assert "message='No skills pending.'" in out
+        assert out.index("message=") < out.index("limit=10")
+
+    def test_record_without_message_is_unchanged(self, console, capsys):
+        configure_logging("nomessage", console=CONSOLE_RECORD)
+        get_logger("nomessage.case").info("job.started", job_id=7, total=5653)
+        out = stripAnsi(capsys.readouterr().out)
+        assert "job.started" in out
+        assert "job_id=7" in out
+
+
+class TestColumnOrder:
+    def test_app_tag_precedes_level_event_and_message(self, console, capsys):
+        configure_logging("order", console=CONSOLE_RECORD)
+        get_logger("order.case").info("jobs.skipped", message="All CV matches calculated.", reason="no_pending_jobs", wait_seconds=10)
+        out = stripAnsi(capsys.readouterr().out)
+        assert out.index("[order]") < out.index("[info") < out.index("jobs.skipped") < out.index("message=") < out.index("reason=") < out.index("wait_seconds=")
+
+    def test_app_tag_precedes_level_without_message(self, console, capsys):
+        configure_logging("tagno", console=CONSOLE_RECORD)
+        get_logger("tagno.case").info("job.started", job_id=7)
+        out = stripAnsi(capsys.readouterr().out)
+        assert out.index("[tagno]") < out.index("[info") < out.index("job.started") < out.index("job_id=7")

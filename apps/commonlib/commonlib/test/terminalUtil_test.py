@@ -80,7 +80,4 @@ class TestTerminalFunctions:
              capture_logs() as records:
             consoleTimer('\x1b[96mAll jobs enriched. \x1b[0m', '1s')
         timer_records = [r for r in records if r['event'].startswith('timer.')]
-        assert timer_records
-        for record in timer_records:
-            assert '\x1b' not in record['message']
-            assert record['message'] == 'All jobs enriched. '
+        assert timer_records == []

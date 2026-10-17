@@ -13,7 +13,7 @@ class TestJobEnrichmentService(unittest.TestCase):
     def test_enrich_jobs_success(self, mock_fetch_sort, mock_process_batch):
         # Setup
         self.repo.count_pending_enrichment.return_value = 2
-        self.repo.get_pending_enrichment_ids.return_value = [1, 2]
+        self.repo.iter_pending_enrichment_batches.return_value = [[1, 2]]
         mock_fetch_sort.return_value = [{"id": 1, "length": 10}, {"id": 2, "length": 20}]
         
         # Execute
@@ -21,7 +21,7 @@ class TestJobEnrichmentService(unittest.TestCase):
         
         # Verify
         mock_process_batch.assert_called_once()
-        self.repo.get_pending_enrichment_ids.assert_called_once()
+        self.repo.iter_pending_enrichment_batches.assert_called_once()
         mock_fetch_sort.assert_called_with(self.repo, [1, 2], sort_by_length=True)
         
     def test_enrich_jobs_no_pending(self):

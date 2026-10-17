@@ -76,6 +76,13 @@ class TestGetUrl:
         assert result == "https://example.com"
 
 
+class TestGetTitle:
+    def test_get_title(self, browser_service, mock_driver):
+        mock_driver.title = "Job Title - Indeed.com"
+        result = browser_service.getTitle()
+        assert result == "Job Title - Indeed.com"
+
+
 class TestWaitUntilPageUrlContains:
     def test_wait_until_page_url_contains(self, browser_service, mock_driver):
         with patch('scrapper.services.selenium.browser_service.WebDriverWait') as mock_wait:
@@ -112,6 +119,12 @@ class TestScrollProgressive:
         with patch('scrapper.services.selenium.browser_service.sleep'):
             browser_service.scrollProgressive(-300)
             assert mock_driver.execute_script.call_count >= 1
+
+
+class TestScrollToBottom:
+    def test_scroll_to_bottom(self, browser_service, mock_driver):
+        browser_service.scroll_to_bottom()
+        mock_driver.execute_script.assert_called_once_with("window.scrollTo(0, document.documentElement.scrollHeight);")
 
 
 class TestBack:

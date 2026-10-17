@@ -33,7 +33,7 @@ class DashboardRepository:
             with open(path) as f:
                 lines = deque(f, count * 3)
         except OSError as e:
-            logger.debug("logs.read_failed", error=str(e), module=module, source="recent_errors")
+            logger.debug("logs.read_failed", error=str(e), source_module=module, source="recent_errors")
             return []
         errors = []
         for line in reversed(lines):
@@ -50,7 +50,7 @@ class DashboardRepository:
                         "message": self._format_error(entry),
                     })
             except (json.JSONDecodeError, ValueError) as e:
-                logger.debug("logs.line_skipped", error=str(e), module=module, source="recent_errors")
+                logger.debug("logs.line_skipped", error=str(e), source_module=module, source="recent_errors")
                 continue
         return errors
 
@@ -62,7 +62,7 @@ class DashboardRepository:
             with open(path) as f:
                 lines = deque(f, 50)
         except OSError as e:
-            logger.debug("logs.read_failed", error=str(e), module=module, source="last_activity")
+            logger.debug("logs.read_failed", error=str(e), source_module=module, source="last_activity")
             return None
         for line in reversed(lines):
             try:
@@ -71,7 +71,7 @@ class DashboardRepository:
                 if ts:
                     return ts
             except (json.JSONDecodeError, ValueError) as e:
-                logger.debug("logs.line_skipped", error=str(e), module=module, source="last_activity")
+                logger.debug("logs.line_skipped", error=str(e), source_module=module, source="last_activity")
                 continue
         return None
 
@@ -87,7 +87,7 @@ class DashboardRepository:
                 with open(path) as f:
                     lines = deque(f, 100)
             except OSError as e:
-                logger.debug("logs.read_failed", error=str(e), module=module, source="ollama_errors")
+                logger.debug("logs.read_failed", error=str(e), source_module=module, source="ollama_errors")
                 continue
             for line in reversed(lines):
                 if len(errors) >= count:
@@ -106,7 +106,7 @@ class DashboardRepository:
                         "message": self._format_error(entry),
                     })
                 except (json.JSONDecodeError, ValueError) as e:
-                    logger.debug("logs.line_skipped", error=str(e), module=module, source="ollama_errors")
+                    logger.debug("logs.line_skipped", error=str(e), source_module=module, source="ollama_errors")
                     continue
             if len(errors) >= count:
                 break

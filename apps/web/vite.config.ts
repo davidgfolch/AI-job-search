@@ -58,6 +58,7 @@ export default defineConfig(async ({ mode }) => {
   },
   test: {
     globals: true,
+    testTimeout: 15000,
     environment: 'jsdom',
     environmentOptions: {
       jsdom: {

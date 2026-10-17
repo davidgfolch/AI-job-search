@@ -86,6 +86,8 @@ def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool)
     validations = hasLenAnyText(title, url, company, markdown)
     if 0 in validations:
         for i, v in enumerate(validations):
+            if v:
+                continue
             debug(debugFlag, "validate -> " + red(f'ERROR: empty required field {fields[i]}, ') + yellow(f' -> Url: {url} '))
             logger.error("job.field_invalid", field=fields[i], url=url, debug=debugFlag)
         return False

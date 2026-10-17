@@ -5,9 +5,10 @@ from typing import List, Dict, Any, Tuple, Optional, Set
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.ai_helpers import footer, printJob, RETRY_ERROR_PREFIX
+from commonlib.modality_extractor import extract_modality
 from commonlib.terminalColor import yellow, magenta, cyan, red
 from commonlib.stopWatch import StopWatch
-from commonlib.observability import get_logger
+from commonlib.observability import get_logger, job_log_context
 from commonlib.services.metrics_collector import MetricsCollector
 
 from ..config import get_input_max_len, get_enrich_timeout_job
@@ -41,30 +42,30 @@ def enrich_jobs(repo: AiEnrichRepository, pipeline: Any, batch_size: int) -> int
     if total == 0:
         return 0
 
-    logger.info("jobs.found", total=total, batch_size=batch_size, module="aiEnrichNew")
-    job_ids = repo.get_pending_enrichment_ids()
-    logger.debug("job.pending_ids", ids=job_ids)
-
-    jobs_buffer = _fetch_and_sort_jobs(repo, job_ids, sort_by_length=True)
+    logger.info("jobs.found", total=total, batch_size=batch_size)
 
     total_count = 0
+    start_idx = 0
     job_errors: Set[Tuple[int, str]] = set()
     overall_start_time = time.time()
 
-    for i in range(0, len(jobs_buffer), batch_size):
-        batch_items = jobs_buffer[i:i + batch_size]
-        _process_job_batch_pipeline(
-            repo,
-            pipeline,
-            batch_items,
-            total,
-            i,
-            "enrich",
-            overall_start_time,
-            total_count,
-            job_errors
-        )
-        total_count += len(batch_items)
+    for chunk in repo.iter_pending_enrichment_batches():
+        jobs_buffer = _fetch_and_sort_jobs(repo, chunk, sort_by_length=True)
+        for i in range(0, len(jobs_buffer), batch_size):
+            batch_items = jobs_buffer[i:i + batch_size]
+            _process_job_batch_pipeline(
+                repo,
+                pipeline,
+                batch_items,
+                total,
+                start_idx,
+                "enrich",
+                overall_start_time,
+                total_count,
+                job_errors
+            )
+            total_count += len(batch_items)
+            start_idx += len(batch_items)
 
     return total
 
@@ -136,30 +137,35 @@ def _process_job_batch_pipeline(
         job_duration = now - _timing["last"]
         _timing["last"] = now
 
-        result = parse_job_enrichment_result(generated_text)
-        logger.info("job.result", job_id=job_id, result=result, duration=round(job_duration, 3))
+        with job_log_context(job_id):
+            result = parse_job_enrichment_result(generated_text)
+            logger.info("job.result", job_id=job_id, result=result, duration=round(job_duration, 3))
 
-        if result is not None:
-            _save_job_result(repo, job_id, company, result)
-            collector.record_job("aiEnrichNew", time.time() - start_time, True)
+            if result is not None:
+                result['modality'] = extract_modality(title=item['title'], markdown=item.get('markdown', ''))
+                _save_job_result(repo, job_id, company, result)
+                collector.record_job("aiEnrichNew", time.time() - start_time, True)
 
         elapsed = time.time() - start_time
         idx = batch_items.index(item)
-        printJob(process_name, total, start_idx + idx, job_id, item['title'], company, item['length'])
-        footer(total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed)
+        _remaining_pending_new = repo.count_pending_enrichment()
+        live_total = max(total, start_idx + idx + 1 + _remaining_pending_new)
+        printJob(process_name, live_total, start_idx + idx, job_id, item['title'], company, item['length'])
+        footer(live_total, start_idx + idx, current_total_count + idx + 1, job_errors, elapsed, config=repo.config_for_job(job_id) or "NONE")
 
     def on_error(item: Dict[str, Any], ex: Exception):
         job_id = item['id']
         title = item['title']
         company = item['company']
 
-        logger.exception("job.failed", job_id=job_id, title=title, company=company, error=str(ex))
-        job_errors.add((job_id, f'{title} - {company}: {ex}'))
+        with job_log_context(job_id):
+            logger.exception("job.failed", job_id=job_id, title=title, company=company, error=str(ex))
+            job_errors.add((job_id, f'{title} - {company}: {ex}'))
 
-        prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
-        error_msg = f"{prefix}{ex}"
+            prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
+            error_msg = f"{prefix}{ex}"
 
-        _update_error_state(repo, job_id, error_msg, process_name == "retry")
+            _update_error_state(repo, job_id, error_msg, process_name == "retry")
 
     process_batch(
         pipeline,

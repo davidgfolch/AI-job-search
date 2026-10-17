@@ -33,9 +33,20 @@ def _logEnvLoaded():
     _envLoadedLogged = True
     _logEvent('debug', 'env.loaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
 
-# Initialize module-level state
-load_dotenv(dotenv_path=ENV_PATH)
-load_dotenv(dotenv_path=ENV_SECRETS_PATH)
+# Real process environment (Docker Compose `environment:`, shell exports) captured
+# before the first dotenv load. It outranks the dotenv files, so it is re-asserted
+# after every override reload: hot-reload must apply edited .env values without
+# letting a stray .env key clobber an injected one (e.g. COMMONLIB_DB_HOST).
+_processEnvSnapshot = dict(os.environ)
+
+def _restoreProcessEnv():
+    os.environ.update(_processEnvSnapshot)
+
+# Initialize module-level state. Same order and precedence as the reload path:
+# `.env` then `.env.secrets` overlay, then the process environment is re-asserted.
+load_dotenv(dotenv_path=ENV_PATH, override=True)
+load_dotenv(dotenv_path=ENV_SECRETS_PATH, override=True)
+_restoreProcessEnv()
 envLastModified = getEnvModified()
 
 def checkEnvReload():
@@ -48,6 +59,7 @@ def checkEnvReload():
     try:
         load_dotenv(dotenv_path=ENV_PATH, override=True)
         load_dotenv(dotenv_path=ENV_SECRETS_PATH, override=True)
+        _restoreProcessEnv()
         envLastModified = getEnvModified()
         _logEvent('info', 'env.reloaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
     finally:
@@ -114,6 +126,7 @@ def setEnv(key: str, value: str):
                 f.write(f"{key}={value}\n")
     global envLastModified
     load_dotenv(dotenv_path=ENV_PATH, override=True)
+    _restoreProcessEnv()
     envLastModified = getEnvModified()
 
 def setEnvBulk(updates: dict[str, str]):
@@ -128,5 +141,6 @@ def setEnvBulk(updates: dict[str, str]):
                     f.write(f"{key}={value}\n")
     global envLastModified
     load_dotenv(dotenv_path=ENV_PATH, override=True)
+    _restoreProcessEnv()
     envLastModified = getEnvModified()
 

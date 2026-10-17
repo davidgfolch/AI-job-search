@@ -21,6 +21,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
     const [client, setClient] = useState('');
     const [requiredTechnologies, setRequiredTechnologies] = useState('');
     const [optionalTechnologies, setOptionalTechnologies] = useState('');
+    const [modality, setModality] = useState('');
     
     // Local state for status fields to handle optimistic updates
     const [statusState, setStatusState] = useState<Record<string, boolean>>({});
@@ -67,6 +68,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
         setClient('');
         setRequiredTechnologies('');
         setOptionalTechnologies('');
+        setModality('');
     };
 
     const populateForm = (job: Job) => {
@@ -81,6 +83,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
         setClient(job.client || '');
         setRequiredTechnologies(job.required_technologies || '');
         setOptionalTechnologies(job.optional_technologies || '');
+        setModality(job.modality || '');
     };
 
     const handleStatusToggle = (field: string) => {
@@ -90,6 +93,13 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
             onUpdate({ [field]: newValue });
         } else if (mode === 'create') {
              setStatusState(prev => ({ ...prev, [field]: !prev[field] }));
+        }
+    };
+
+    const handleModalityChange = (value: string) => {
+        setModality(value);
+        if (mode === 'edit' && job) {
+            onUpdate({ modality: value === '' ? null : value });
         }
     };
 
@@ -128,6 +138,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
                 markdown, comments, client,
                 required_technologies: requiredTechnologies,
                 optional_technologies: optionalTechnologies,
+                modality: modality || null,
                 ...booleanFields
             });
         }
@@ -136,15 +147,17 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
     return {
         formState: {
             title, location, url, webPage, markdown, comments, salary, company, client,
-            requiredTechnologies, optionalTechnologies, statusState, showAllFields
+            requiredTechnologies, optionalTechnologies, modality, statusState, showAllFields
         },
         setters: {
             setTitle, setLocation, setUrl, setWebPage, setMarkdown, setComments, setSalary, 
-            setCompany, setClient, setRequiredTechnologies, setOptionalTechnologies, setShowAllFields
+            setCompany, setClient, setRequiredTechnologies, setOptionalTechnologies,
+            setModality, setShowAllFields
         },
         actions: {
             handleStatusToggle,
             handleChange,
+            handleModalityChange,
             handleCreate
         }
     };

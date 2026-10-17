@@ -1,16 +1,19 @@
 import ast
 from pathlib import Path
 
-from commonlib.test.architecture.architecture_util import get_project_root, EXCLUDES
+from commonlib.test.architecture.architecture_util import get_project_root, iter_source_files
 
 LOG_METHODS = {"debug", "info", "warn", "warning", "error", "exception", "critical"}
 CONSOLE_FIELDS = ("console", "end")
+# commonlib.observability stamps the calling app module as `module`; passing it as a log
+# field silently overwrites that, so it is reserved. The log source a repository is
+# reading is a different thing and belongs in `source_module`.
+RESERVED_MODULE_FIELD = "module"
 
 PRINT_ALLOWLIST = {
     # Presentational UI helpers: progress lines, tables, banners, countdown
     # spinners, interactive browser prompts. Every other print() must become a
     # structured event via commonlib.observability (see READMEs/README_DEVELOPMENT.md).
-    "apps/aiEnrich3/src/aiEnrich3/main.py",
     "apps/aiEnrichSkill/src/aiEnrichSkill/services/enrichment_service.py",
     "apps/commonlib/commonlib/ai_helpers.py",
     "apps/commonlib/commonlib/decorator/retry.py",
@@ -40,9 +43,7 @@ def get_print_violations(root=None):
     root = Path(root).resolve() if root else get_project_root()
     apps_dir = root / "apps"
     violations = []
-    for path in sorted(apps_dir.rglob("*.py")):
-        if any(ex in path.parts for ex in EXCLUDES):
-            continue
+    for path in sorted(iter_source_files(apps_dir, extensions={'.py'})):
         if any(part in {"test", "tests"} for part in path.parts):
             continue
         rel = path.relative_to(root).as_posix()
@@ -79,14 +80,13 @@ def get_console_violations(root=None):
 
     The JSONL is queried by event name, so a call must keep a literal `domain.action`
     even when it prints human text. `end=` only means something next to `console=`, and
-    it must be a literal so a progress prefix stays predictable.
+    it must be a literal so a progress prefix stays predictable. `module=` is reserved for
+    the calling module, so a call that sets it as data is rejected too.
     """
     root = Path(root).resolve() if root else get_project_root()
     apps_dir = root / "apps"
     violations = []
-    for path in sorted(apps_dir.rglob("*.py")):
-        if any(ex in path.parts for ex in EXCLUDES):
-            continue
+    for path in sorted(iter_source_files(apps_dir, extensions={'.py'})):
         if any(part in {"test", "tests"} for part in path.parts):
             continue
         rel = path.relative_to(root).as_posix()
@@ -107,4 +107,6 @@ def get_console_violations(root=None):
             for kw in node.keywords:
                 if kw.arg == "end" and not (isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str)):
                     violations.append(f"{rel}:{node.lineno}: end= must be a string literal")
+                if kw.arg == RESERVED_MODULE_FIELD:
+                    violations.append(f"{rel}:{node.lineno}: {RESERVED_MODULE_FIELD}= is reserved for the calling module")
     return violations

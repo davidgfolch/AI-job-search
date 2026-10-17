@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.skill_context import get_skill_context
-from commonlib.skill_enricher_service import process_skill_enrichment
+from commonlib.skill_enricher_service import process_skill_enrichment, log_no_pending_skills
 from commonlib.terminalColor import yellow, magenta, cyan, red, green
 from commonlib.stopWatch import StopWatch
 from commonlib.dateUtil import getDatetimeNowStr
@@ -70,7 +70,7 @@ def _enrich_ollama(mysql: MysqlUtil, ollama_base_url=None) -> int:
 
 
 def _fetch_pending_skills(mysql: MysqlUtil, limit: int) -> List[Dict[str, str]]:
-    where_clause = "ai_enriched = 0"
+    where_clause = "COALESCE(ai_enriched, 0) = 0"
     query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
     rows = mysql.fetchAll(query_find)
     return [{'name': row[0]} for row in rows]
@@ -97,6 +97,7 @@ def _enrich_huggingface(mysql: MysqlUtil) -> int:
 
     skills = _fetch_pending_skills(mysql, limit)
     if not skills:
+        log_no_pending_skills(limit)
         return 0
 
     collector.set_pending("aiEnrichSkill", len(skills))

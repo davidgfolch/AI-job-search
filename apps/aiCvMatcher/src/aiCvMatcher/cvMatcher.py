@@ -9,7 +9,7 @@ from commonlib.stringUtil import removeExtraEmptyLines
 from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.cv_loader import CVLoader
 from commonlib.aiEnrichRepository import AiEnrichRepository
-from commonlib.observability import get_logger
+from commonlib.observability import get_logger, job_log_context
 
 CV_LOCATION = './cv/cv.txt'
 
@@ -60,19 +60,20 @@ class FastCVMatcher:
             logger.info("jobs.batch_started", total=total, limit=limit, count=len(job_ids))
             for idx, id in enumerate(job_ids):
                 self.stopWatch.start()
-                try:
-                    job = repo.get_job_to_match_cv(id)
-                    if job is None:
-                        continue
-                    title = job[1]
-                    company = job[3]
-                    markdown = removeExtraEmptyLines(job[2].decode("utf-8") if isinstance(job[2], bytes) else job[2])
-                    logger.debug("job.started", job_id=id, index=idx+1, total=total, title=title, company=company, input_length=len(markdown))
-                    result = self.match(f'# {title} \n {markdown}')
-                    logger.debug("job.result", job_id=id, index=idx+1, total=total, cv_match_percentage=result.get('cv_match_percentage'))
-                    self._save_result(repo, id, result)
-                except (Exception, KeyboardInterrupt) as ex:
-                    self._save_error(repo, id, title, company, ex)
+                with job_log_context(id):
+                    try:
+                        job = repo.get_job_to_match_cv(id)
+                        if job is None:
+                            continue
+                        title = job[1]
+                        company = job[3]
+                        markdown = removeExtraEmptyLines(job[2].decode("utf-8") if isinstance(job[2], bytes) else job[2])
+                        logger.debug("job.started", job_id=id, index=idx+1, total=total, title=title, company=company, input_length=len(markdown))
+                        result = self.match(f'# {title} \n {markdown}')
+                        logger.debug("job.result", job_id=id, index=idx+1, total=total, cv_match_percentage=result.get('cv_match_percentage'))
+                        self._save_result(repo, id, result)
+                    except (Exception, KeyboardInterrupt) as ex:
+                        self._save_error(repo, id, title, company, ex)
                 self.totalCount += 1
                 self.stopWatch.end()
             self._print_footer(total, idx)

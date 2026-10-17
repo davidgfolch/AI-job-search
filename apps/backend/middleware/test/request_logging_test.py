@@ -72,7 +72,9 @@ def test_success_status_logs_one_completed_record(log_records, status):
     assert records[0]["status_code"] == status
     assert records[0]["duration_ms"] >= 0
     assert records[0]["logger"] == "backend"
-    assert records[0]["module"] == "backend.middleware.request_logging"
+    # The middleware logs, so `module` is this file. Compared through `__name__` because
+    # pytest imports it as `middleware.request_logging` while uvicorn loads `backend.middleware...`.
+    assert records[0]["module"] == request_logging.__name__
     assert log_records(event="http.request_failed") == []
 
 

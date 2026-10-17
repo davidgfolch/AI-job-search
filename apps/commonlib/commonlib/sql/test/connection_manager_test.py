@@ -2,6 +2,7 @@
 import os
 import queue
 import pytest
+from mysql.connector.errors import PoolError
 from unittest.mock import patch, MagicMock
 from commonlib.sql import connection_manager
 
@@ -155,6 +156,42 @@ class TestGetConnection:
     def test_get_connection_legacy_delegates(self, mock_mysql_connect):
         connection_manager.getConnection(e2eTests=True)
         assert mock_mysql_connect.call_args_list[0][1].get('database') is None
+
+
+class TestGetConnectionPoolError:
+    def test_get_connection_retry_on_pool_exhausted(self, mock_mysql_connect):
+        call_count = [0]
+
+        def side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] <= 2:
+                raise PoolError("Pool exhausted")
+            return MagicMock()
+
+        mock_mysql_connect.side_effect = side_effect
+        connection_manager._pool_initialized = True
+        assert connection_manager.get_connection() is not None
+
+    def test_get_connection_all_retries_fail_raises(self, mock_mysql_connect):
+        mock_mysql_connect.side_effect = PoolError("Pool exhausted")
+        connection_manager._pool_initialized = True
+        with pytest.raises(queue.Empty, match="All pool connections"):
+            connection_manager.get_connection()
+
+    def test_get_connection_retry_on_mixed_errors(self, mock_mysql_connect):
+        call_count = [0]
+
+        def side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise queue.Empty("Pool exhausted")
+            if call_count[0] == 2:
+                raise PoolError("Pool exhausted")
+            return MagicMock()
+
+        mock_mysql_connect.side_effect = side_effect
+        connection_manager._pool_initialized = True
+        assert connection_manager.get_connection() is not None
 
 
 class TestProbeMysql:

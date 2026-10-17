@@ -31,7 +31,7 @@ class TestDebug:
         assert len(records) == 1
         assert records[0]["level"] == "error"
         assert "ValueError" in records[0]["exception"]
-        assert records[0]["module"] == "scrapper.utils"
+        assert records[0]["module"] == "scrapper.core.utils"
 
 
 class TestSleep:

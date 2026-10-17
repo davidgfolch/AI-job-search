@@ -6,6 +6,12 @@ importing back, which keeps the dependency one-way.
 
 Keys prefixed with `_` are treated as processor-private and never reach the file.
 
+A write that fails (an unwritable log directory, typically a `data/` folder owned by
+root because a container created it) is never fatal: `append_jsonl` logs
+`logs.write_failed` once per path with a chown hint and drops the record, and re-arms
+the warning after the next successful write. Losing a log line must never take down a
+worker, but the failure must not be invisible either.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `LOG_DIR` | `data/logs` | Directory holding the JSONL files |
@@ -23,6 +29,7 @@ DEFAULT_LOG_FILE_MAX_BYTES = 10 * 1024 * 1024
 DEFAULT_LOG_FILE_BACKUP_COUNT = 5
 LEGACY_LOG_FILE_NAME = "app.jsonl"
 PRIVATE_KEY_PREFIX = "_"
+_warned_write_failures: set[str] = set()
 
 
 def resolve_read_path(path: str) -> str | None:
@@ -72,12 +79,31 @@ def rotate_if_needed(filepath: str) -> None:
 
 
 def append_jsonl(filepath: str, record: dict) -> None:
+    """Append one record, warning once per path instead of failing the caller.
+
+    The warning's own record goes back through this writer, so the path is marked
+    before the `warning()` call: the recursive write fails again but stays silent,
+    which is what keeps the failure non-fatal without an infinite loop. A later
+    successful write clears the mark so a recurring failure is reported again.
+    """
     try:
         os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
         with open(filepath, "a", encoding="utf-8") as f:
             f.write(json.dumps(record, default=str, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
+        _warned_write_failures.discard(filepath)
+    except OSError as exc:
+        if filepath not in _warned_write_failures:
+            _warned_write_failures.add(filepath)
+            _warn_write_failure(filepath, exc)
+
+
+def _warn_write_failure(filepath: str, exc: OSError) -> None:
+    from commonlib.observability import get_logger  # local: `observability` imports this module back
+    target = os.path.dirname(filepath) or "."
+    parent = os.path.dirname(target) or target
+    get_logger("commonlib.log_writer").warning(
+        "logs.write_failed", path=filepath, error=str(exc),
+        hint=f"sudo chown -R $(id -u):$(id -g) {parent} {target}")
 
 
 def public_record(event_dict: dict) -> dict:

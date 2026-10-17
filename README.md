@@ -48,7 +48,8 @@ This is a monorepo containing several applications and packages:
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
 - **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes its own `data/logs/<app>.jsonl` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)); scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
-- **Dual console & log output**: a record can carry both its structured fields and the human line to print (`console=`, `end=""`), so the scrapper keeps its classic console transcript while `scrapper.jsonl` stays complete and queryable (see [Scrapper — Console Output](apps/scrapper/README.md#console-output--structured-logging))
+- **Dual console & log output**: a record can carry both its structured fields and the human line to print (`console=`, `end=""`), so the scrapper keeps its classic console transcript while `scrapper.jsonl` stays complete and queryable (see [Scrapper — Console Output](apps/scrapper/README.md#console-output--structured-logging)). Workers also use this for batch progress (`footer()` → `ai.batch_completed`) and for the wait between cycles (`logIdleWait()` → `jobs.skipped` / `ai.retry_wait`), so a container log still reads as a progress line instead of a field dump
+- **Per-record attribution**: `module` is stamped from the calling app module and `job_id` from `job_log_context()`, so a record stays attributable to the worker and the job even when a shared helper logged it
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
@@ -70,6 +71,10 @@ TODO: running in several machines AI services, Ollama, backend, etc.
 ### Web Backend API auto-discovery
 
 Set `BACKEND_DISCOVERY=True` in `.env` to enable automatic LAN discovery of the backend API (port 8000). When enabled, the web app scans local subnets and probes `/health` to find the backend. Falls back to `localhost:8000` if nothing is found. See [web docs](apps/web/README.md#backend-discovery) for details.
+
+### Ollama auto-discovery
+
+The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). From inside a container the sweep only covers the Docker subnets, so an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL`. See [commonlib docs](apps/commonlib/README.md) for details.
 
 Run only web in the client machine like this:
 
@@ -137,7 +142,6 @@ The `docker-compose.yml` defines several service profiles to control which conta
 | `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
 | `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
-| `scrapper`     | `scrapper`                        | Selenium-based job scraper       |
 
 **Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`.
 Use `--profile` to run alternative AI enrichment services:
@@ -149,7 +153,7 @@ docker-compose --profile aiEnrichNew up -d
 
 #### Ollama: host vs container
 
-The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`, `scrapper`) auto-detect the server at startup: they try the configured URL, then `host.docker.internal`, `localhost`, and finally the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`). No module hard-depends on the `ollama` container, so it is never started implicitly.
+The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they probe the configured URL, then `host.docker.internal`, `localhost`, the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`), and finally the LAN on port 11434 (see [Ollama auto-discovery](#ollama-auto-discovery)). No module hard-depends on the `ollama` container, so it is never started implicitly.
 
 ```bash
 # Ollama already installed on the host (nothing extra to start)
@@ -159,9 +163,10 @@ docker-compose --profile aienrich up -d aienrich
 docker-compose --profile ollama --profile aienrich up -d
 ```
 
-The **scrapper** runs as a batch job (not long-running). Start it manually:
+The **scrapper** runs natively on the host as a batch job (not a Docker service, not long-running). Start it in a terminal:
+
 ```bash
-docker-compose --profile scrapper run scrapper
+./apps/scrapper/run.sh   # or .\apps\scrapper\run.bat on Windows
 ```
 
 ### Quick Start
@@ -169,7 +174,7 @@ docker-compose --profile scrapper run scrapper
 - Copy `scripts/.env.secrets.example` to `.env.secrets` and set your credentials there.
 - Set your options in `.env` (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
 - Run dockerized applications `docker-compose up -d` (starts default services).
-- Run `apps/scrappers/run.(bat/sh)` in terminal.
+- Run `apps/scrapper/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
 - Run (optional) alternative AI Enrichment tools:
   - Default runs `aiEnrich`. If you want to use the others:
@@ -182,7 +187,7 @@ docker-compose --profile scrapper run scrapper
   - Load the `apps/aiFormFiller/extension/` folder as an unpacked extension in Chrome.
   - Right-click any form field → "Answer with AI".
 
-NOTE: scrapper is not tested in docker yet, so you usually need to run it manually.
+NOTE: the scrapper is not a Docker service; run it manually on the host (see below).
 
 ### Installation
 

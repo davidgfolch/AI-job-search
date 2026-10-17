@@ -2,6 +2,19 @@
 
 Status: completed
 
+Follow-up (after `da0a1842` dropped the human half of the records):
+
+- `module` is now stamped from the calling app module by `observability.stamp_caller_module`
+  (walk past `structlog`, `commonlib` and test-runner frames, stop at `__main__`); the
+  `get_logger(name)` argument is only the fallback, and `module=` is rejected as a log
+  field by the architecture test — a record carrying a stamped value uses `source_module`.
+- `job_log_context(id)` binds `job_id` for the per-job work of aiEnrich, aiEnrich3,
+  aiEnrichNew and aiCvMatcher, which also repairs the per-job duration gauge.
+- `ai_helpers.footer()` is wired back with the batch elapsed time, and `ai_helpers.logIdleWait()`
+  replaced the per-worker idle sleeps; the console renderer carries `message=...` as the
+  first named field, right after the `timestamp [app] [level] event` prefix, wherever
+  the call placed it (records without `message` render unchanged).
+
 ## Problem
 
 Logging is inconsistent across the monorepo. Four AI modules (`aiEnrich`, `aiEnrich3`,

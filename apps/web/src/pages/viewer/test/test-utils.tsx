@@ -41,6 +41,8 @@ export function createMockJob(overrides?: Partial<Job>): Job {
         comments: 'Test comment',
         cv_match_percentage: 90,
         ai_enrich_error: null,
+        duplicated_id: null,
+        modality: null,
         ...overrides,
     };
 }

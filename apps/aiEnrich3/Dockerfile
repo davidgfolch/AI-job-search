@@ -19,14 +19,19 @@ WORKDIR /app
 # The aiEnrich3 app depends on commonlib, so we need to copy both into the container
 # We assume the docker context is the mono-repo root `AI-job-search/`
 COPY apps/commonlib /app/apps/commonlib
-COPY apps/aiEnrich3 /app/apps/aiEnrich3
 
-# Move into the aiEnrich3 dir
+# Copy dependency manifests only, so the dependency install stays cached until
+# pyproject.toml/uv.lock change (the application source is copied after it).
 WORKDIR /app/apps/aiEnrich3
+COPY apps/aiEnrich3/pyproject.toml apps/aiEnrich3/uv.lock* apps/aiEnrich3/README.md ./
 
 # Create the virtual environment and install dependencies
 ENV UV_PROJECT_ENVIRONMENT="/app/venv"
 ENV PATH="/app/venv/bin:$PATH"
+RUN uv sync --no-install-project
+
+# Copy application files
+COPY apps/aiEnrich3 /app/apps/aiEnrich3
 RUN uv sync
 
 # Optional: Pre-download the Hugging Face models during the build step

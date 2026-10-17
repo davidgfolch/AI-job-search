@@ -6,20 +6,22 @@ from commonlib.stopWatch import StopWatch
 from commonlib.ai_helpers import (
     footer,
     mapJob,
-    printJob,
     validateResult,
     RETRY_ERROR_PREFIX,
     MAX_AI_ENRICH_ERROR_LEN,
+    logIdleWait,
 )
+from commonlib.terminalColor import cyan
 from commonlib.aiEnrichRepository import AiEnrichRepository
-from commonlib.observability import get_logger
+from commonlib.modality_extractor import extract_modality
+from commonlib.observability import get_logger, job_log_context
 from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
     get_max_validation_retries, get_backend, get_openrouter_base_url, get_openrouter_model,
     get_openrouter_fallback_model,
 )
 from commonlib.services.metrics_collector import MetricsCollector
-from commonlib.ollama_client import query_ollama, resolve_ollama_url
+from commonlib.ollama_client import query_ollama, resolve_ollama_url, _ping_url
 from .extraction_contract import COMPANY_SCHEMA, EXTRACTION_SCHEMA, build_extraction_prompt, query_and_parse
 from .openrouter_client import query_openrouter, ping_openrouter
 from .companyExtractor import resolve_unspecified_company
@@ -59,6 +61,11 @@ def ping_backend() -> bool:
     global _resolved_ollama_url
     if get_backend() == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
+    # Auto-discovery runs only on startup (when no server is cached yet). Normal
+    # liveness checks and retry waits must reuse the already resolved server
+    # instead of scanning the LAN again for every job.
+    if _resolved_ollama_url is not None:
+        return _ping_url(_resolved_ollama_url, 5, logger)
     _resolved_ollama_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
     return _resolved_ollama_url is not None
 
@@ -70,7 +77,7 @@ def _check_backend_available() -> bool:
         return True
     ollama_consecutive_failures += 1
     max_failures = get_max_ollama_failures()
-    logger.error("ai.unreachable", backend=get_backend(), module="aiEnrich", consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+    logger.error("ai.unreachable", backend=get_backend(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
     if ollama_consecutive_failures >= max_failures:
         logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
         sys.exit(1)
@@ -84,10 +91,11 @@ totalCount = 0
 total = 0
 jobErrors = set[tuple[int, str]]()
 ollama_consecutive_failures = 0
+_batch_start = 0.0
 
 
 def dataExtractor() -> int:
-    global totalCount, jobErrors
+    global totalCount, jobErrors, _batch_start
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
@@ -97,16 +105,20 @@ def dataExtractor() -> int:
         total = repo.count_pending_enrichment()
         if total is None or total == 0:
             return 0
-        logger.info("jobs.found", total=total, module="aiEnrich")
+        logger.info("jobs.found", total=total)
         collector.set_pending("aiEnrich", total)
         stopWatch.start()
-        for idx, id in enumerate(_getJobIdsList(repo)):
-            _process_job_safe(repo, id, total, idx, "enrich")
+        _batch_start = time.time()
+        idx = 0
+        for batch in _getJobBatches(repo):
+            for id in batch:
+                _process_job_safe(repo, id, total, idx, "enrich")
+                idx += 1
         return total
 
 
 def retry_failed_jobs() -> int:
-    global totalCount, jobErrors
+    global totalCount, jobErrors, _batch_start
     if not get_job_enabled():
         return 0
     if not _check_backend_available():
@@ -118,6 +130,7 @@ def retry_failed_jobs() -> int:
             return 0
         logger.info("job.retry", job_id=error_id)
         stopWatch.start()
+        _batch_start = time.time()
         _process_job_safe(repo, error_id, 1, 0, "retry")
         return 1
 
@@ -131,27 +144,37 @@ def _process_job_safe(
 ):
     global totalCount, jobErrors
     start_time = time.time()
+    _remaining_pending = repo.count_pending_enrichment()
+    live_total = max(total, idx + _remaining_pending, idx + 1)
     success = False
     title, company = "Unknown", "Unknown"
     try:
-        job = repo.get_job_to_enrich(id) if process_name == "enrich" else repo.get_job_to_retry(id)
-        if job is None:
-            logger.warning("job.not_found", job_id=id)
-            return
-        title, company, markdown = mapJob(job)
-        try:
-            backend = get_backend()
-            model = get_openrouter_model() if backend == "openrouter" else get_model()
-            logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=total, index=idx, backend=backend, model=model)
-            prompt = build_extraction_prompt(title, markdown)
-            result, response = query_and_parse(
-                lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
-                max_attempts=get_max_validation_retries() + 1, log=logger,
-            )
-            if response is None:
-                logger.warning("job.skipped_ai_unreachable", job_id=id, title=title, company=company)
-            else:
+        with job_log_context(id):
+            job = repo.get_job_to_enrich(id) if process_name == "enrich" else repo.get_job_to_retry(id)
+            if job is None:
+                logger.warning("job.not_found", job_id=id)
+                return
+            title, company = "Unknown", "Unknown"
+            title, company, markdown = mapJob(job)
+            try:
+                backend = get_backend()
+                model = get_openrouter_model() if backend == "openrouter" else get_model()
+                logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=live_total, index=idx + 1, backend=backend, model=model, config=repo.config_for_job(id) or "NONE")
+                prompt = build_extraction_prompt(title, markdown)
+                result, response = None, None
+                while response is None:
+                    if not ping_backend():
+                        logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=get_max_ollama_failures())
+                        logIdleWait(cyan('Backend unavailable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+                        continue
+                    result, response = query_and_parse(
+                        lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
+                        max_attempts=get_max_validation_retries() + 1, log=logger,
+                    )
+                    if response is None:
+                        logger.warning("job.ai_unreachable", job_id=id, title=title, company=company)
                 if result is not None:
+                    result['modality'] = extract_modality(title=title, markdown=markdown)
                     _save(repo, id, result)
                     success = True
                     resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
@@ -159,8 +182,8 @@ def _process_job_safe(
                     "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
                     model=model, done_reason=getattr(response, "done_reason", None),
                 )
-        except (Exception, KeyboardInterrupt) as ex:
-            _handle_error(repo, id, title, company, ex, process_name)
+            except Exception as ex:
+                _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:
         logger.error("job.critical_error", job_id=id, error=str(e))
     totalCount += 1
@@ -168,7 +191,7 @@ def _process_job_safe(
     collector.record_job("aiEnrich", duration, success)
     collector.persist_if_due(60)
     stopWatch.end()
-    footer(total, idx, totalCount, jobErrors)
+    footer(live_total, idx, totalCount, jobErrors, time.time() - _batch_start, duration, config=repo.config_for_job(id) or "NONE")
 
 
 def _save(repo: AiEnrichRepository, id, result: dict):
@@ -178,7 +201,7 @@ def _save(repo: AiEnrichRepository, id, result: dict):
 
 
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):
-    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex))
+    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex), config=repo.config_for_job(id) or "NONE")
     jobErrors.add((id, f"{title} - {company}: {ex}"))
     prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
     error_msg = f"{prefix}{ex}"
@@ -188,7 +211,5 @@ def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name
         logger.warning("job.error_set", job_id=id)
 
 
-def _getJobIdsList(repo: AiEnrichRepository) -> list[int]:
-    jobIds = repo.get_pending_enrichment_ids()
-    logger.debug("job.pending_ids", ids=jobIds)
-    return jobIds
+def _getJobBatches(repo: AiEnrichRepository):
+    return repo.iter_pending_enrichment_batches()

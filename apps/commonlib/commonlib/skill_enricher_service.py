@@ -5,6 +5,10 @@ from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.skill_enricher_service")
 
+def log_no_pending_skills(limit: int) -> None:
+    """The one record an idle skill cycle logs, shared by the ollama and huggingface paths."""
+    logger.info("jobs.skipped", message="No skills pending.", reason="no_pending_skills", limit=limit)
+
 def process_skill_enrichment(
     mysql: MysqlUtil,
     generate_description_fn: Callable[[str, str], tuple[str, str]],
@@ -18,12 +22,12 @@ def process_skill_enrichment(
     :param generate_description_fn: Function that takes (skill_name, context) and returns (description, category)
     :param limit: limit of skills to process
     :param check_empty_description_only: if True, filters by description IS NULL OR description = ''. 
-                                         If False, only filters by ai_enriched = 0.
+                                         If False, only filters by ai_enriched (NULL treated as not enriched).
     """
     from commonlib.stopWatch import StopWatch
     from datetime import datetime
 
-    where_clause = "ai_enriched = 0"
+    where_clause = "COALESCE(ai_enriched, 0) = 0"
     if check_empty_description_only:
         where_clause += " AND (description IS NULL OR description = '')"
     else:
@@ -32,7 +36,7 @@ def process_skill_enrichment(
     query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
     rows = mysql.fetchAll(query_find)
     if not rows:
-        logger.info("skill.enrich_skipped", reason="no_pending_skills", limit=limit)
+        log_no_pending_skills(limit)
         return 0
     logger.info("skill.enrich_started", count=len(rows), limit=limit, check_empty_description_only=check_empty_description_only)
     

@@ -2,7 +2,7 @@ import pytest
 
 from commonlib.ollama_config import (
     OLLAMA_HOST_BASE_URL, OLLAMA_DOCKER_BASE_URL, OLLAMA_HOST_FROM_DOCKER_BASE_URL,
-    ollama_candidate_urls, ollama_probe_urls, get_num_ctx, get_repeat_penalty, strip_provider_prefix,
+    get_configured_ollama_url, ollama_candidate_urls, ollama_probe_urls, get_num_ctx, get_repeat_penalty, strip_provider_prefix,
 )
 
 URLS = [
@@ -59,6 +59,17 @@ def test_ollama_probe_urls_deduplicates_shared_servers(monkeypatch):
         return mapping.get(key, default)
     monkeypatch.setattr("commonlib.ollama_config.getEnv", fake_get_env)
     assert ollama_probe_urls() == ("http://localhost:11434", "http://host.docker.internal:11434", "http://ollama:11434")
+
+
+@pytest.mark.parametrize("mapping, expected", [
+    pytest.param({}, None, id="nothing_configured"),
+    pytest.param({"OLLAMA_BASE_URL": "http://lan:11434"}, "http://lan:11434", id="only_last_env"),
+    pytest.param({"AI_ENRICH_OLLAMA_BASE_URL": "http://first:11434", "OLLAMA_BASE_URL": "http://second:11434"}, "http://first:11434", id="first_env_wins"),
+    pytest.param({"AI_ENRICHSKILL_OLLAMA_BASE_URL": "auto"}, "auto", id="auto_spec_is_kept"),
+])
+def test_get_configured_ollama_url(monkeypatch, mapping, expected):
+    monkeypatch.setattr("commonlib.ollama_config.getEnv", lambda key, default=None, **kw: mapping.get(key, default))
+    assert get_configured_ollama_url() == expected
 
 
 @pytest.mark.parametrize("prompt, num_predict, expected", [
