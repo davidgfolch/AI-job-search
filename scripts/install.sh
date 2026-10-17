@@ -82,13 +82,14 @@ echo "Installing commonlib..."
 (cd apps/commonlib && poetry lock && poetry install)
 
 for dir in apps/*; do
-    if [ -d "$dir" ] && [ "$(basename "$dir")" != "commonlib" ]; then
+    name="$(basename "$dir")"
+    if [ -d "$dir" ] && [ "$name" != "commonlib" ] && [ "$name" != "graphify-out" ]; then
         if [ ! -f "$dir/package.json" ] && [ ! -f "$dir/pyproject.toml" ]; then
-            echo "Skipping $(basename "$dir") (no package.json or pyproject.toml)"
+            echo "Skipping $name (no package.json or pyproject.toml)"
             continue
         fi
         echo ""
-        echo "Installing $(basename "$dir")..."
+        echo "Installing $name..."
         if [ -f "$dir/package.json" ]; then
             (cd "$dir" && npm install)
         elif is_uv_app "$dir"; then

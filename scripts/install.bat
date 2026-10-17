@@ -25,7 +25,7 @@ call poetry install
 popd
 
 for /d %%a in (apps\*) do (
-    if /i not "%%~nxa"=="commonlib" (
+    if /i not "%%~nxa"=="commonlib" if /i not "%%~nxa"=="graphify-out" (
         echo.
         echo Installing %%~na...
         if exist "%%~fa\package.json" (
@@ -57,6 +57,10 @@ for /d %%a in (apps\*) do (
             call uv sync
             popd
         ) else if "%%~nxa" == "aiEnrichSkill" (
+            pushd "%%~fa"
+            call uv sync
+            popd
+        ) else if "%%~nxa" == "cron" (
             pushd "%%~fa"
             call uv sync
             popd
