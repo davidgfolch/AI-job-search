@@ -8,12 +8,7 @@ services, repositories, and API handlers.
 
 from typing import Dict, Optional, List, Any, Tuple
 
-# Boolean filter keys - single source of truth
-BOOLEAN_FILTER_KEYS = [
-    'flagged', 'like', 'ignored', 'seen', 'applied', 'discarded', 'closed',
-    'interview_rh', 'interview', 'interview_tech', 'interview_technical_test',
-    'interview_technical_test_done', 'ai_enriched', 'easy_apply', 'duplicated'
-]
+from commonlib.sql.job_filter_builder import BOOLEAN_FILTER_KEYS, build_jobs_where_clause
 
 # Backward compatibility alias
 JOB_BOOLEAN_KEYS = BOOLEAN_FILTER_KEYS
@@ -35,7 +30,7 @@ def extract_boolean_filters(filters: Dict[str, Any], keys: Optional[List[str]] =
     if keys is None:
         keys = BOOLEAN_FILTER_KEYS
 
-    return {k: filters.get(k) for k in keys if k in filters}
+    return {k: filters[k] for k in keys if k in filters and filters[k] is not None}
 
 
 def extract_filter_params(filters: Dict[str, Any]) -> Dict[str, Any]:
@@ -94,9 +89,6 @@ def build_where_params(
     Returns:
         Tuple of (where_clauses, params) for use in SQL queries
     """
-    # Import here to avoid circular dependencies
-    from repositories.queries.jobs_query_builder import build_jobs_where_clause
-
     return build_jobs_where_clause(
         search=search,
         status=status,

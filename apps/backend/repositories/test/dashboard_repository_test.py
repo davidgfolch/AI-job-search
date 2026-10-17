@@ -99,6 +99,21 @@ def test_check_ollama_errors(tmp_path):
     assert errors[0]["module"] == "aienrich"
 
 
+def test_log_source_is_logged_as_source_module(tmp_path):
+    """`module` is reserved for the calling module, so the log source is `source_module`."""
+    repo = DashboardRepository()
+    missing = str(tmp_path / "missing.jsonl")
+    with patch("repositories.dashboard_repository.resolve_log_path", return_value=missing), \
+         patch("repositories.dashboard_repository.logger") as mock_logger:
+        assert repo.read_recent_errors("aienrich") == []
+
+    assert mock_logger.debug.call_count == 1
+    event, fields = mock_logger.debug.call_args.args[0], mock_logger.debug.call_args.kwargs
+    assert event == "logs.read_failed"
+    assert fields["source_module"] == "aienrich"
+    assert "module" not in fields
+
+
 def test_check_ollama_errors_no_matches(tmp_path):
     log_file = tmp_path / "app.jsonl"
     _write_log(str(log_file), [

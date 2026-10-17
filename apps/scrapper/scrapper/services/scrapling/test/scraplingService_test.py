@@ -173,3 +173,24 @@ class TestScraplingService:
         service, _ = _make_service(mock_session_cls)
         kwargs = service._build_kwargs()
         assert "proxy" not in kwargs
+
+    def test_build_kwargs_registers_page_setup(self, mock_session_cls):
+        service, _ = _make_service(mock_session_cls, proxies=[])
+        assert service._build_kwargs()["page_setup"] == service._window_setup
+
+    def test_window_setup_resizes_window(self, mock_session_cls):
+        service, _ = _make_service(mock_session_cls, proxies=[])
+        page, cdp = MagicMock(), MagicMock()
+        page.evaluate.return_value = [1920, 1080]
+        cdp.send.return_value = {"windowId": 42}
+        page.context.new_cdp_session.return_value = cdp
+        service._window_setup(page)
+        method, params = cdp.send.call_args_list[1][0]
+        assert (method, params) == ("Browser.setWindowBounds", {"windowId": 42, "bounds": {"width": 1200, "height": 990, "left": 720, "top": 0}})
+        cdp.detach.assert_called_once()
+
+    def test_window_setup_failure_is_swallowed(self, mock_session_cls):
+        service, _ = _make_service(mock_session_cls, proxies=[])
+        page = MagicMock()
+        page.evaluate.side_effect = RuntimeError("cdp unavailable")
+        service._window_setup(page)

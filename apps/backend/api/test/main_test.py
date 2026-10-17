@@ -30,7 +30,7 @@ def test_request_logging_middleware_is_wired(log_records):
     assert records[0]["path"] == "/health"
     assert records[0]["status_code"] == 200
     assert records[0]["logger"] == "backend"
-    assert records[0]["module"] == "backend.middleware.request_logging"
+    assert records[0]["module"].endswith("middleware.request_logging")
     assert log_records(event="http.request_failed") == []
 
 

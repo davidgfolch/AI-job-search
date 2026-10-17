@@ -17,7 +17,7 @@ select title, company, location, url, markdown , salary, required_technologies, 
 
 update jobs set ai_enriched=0, salary=NULL, required_technologies=NULL, optional_technologies=NULL, modality=null
 -- WHERE modality is null
--- LIMIT 20;
+LIMIT 20;
 
  AND DATE(created) >= '2026-03-18 15:50:00'
  -- AND DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 8 HOUR)
@@ -25,6 +25,7 @@ update jobs set ai_enriched=0, salary=NULL, required_technologies=NULL, optional
 /* and id=506471 */
 /* where id=XXXXXXXX */
 
+select title, markdown from jobs where web_page='Linkedin' and len(markdown)< 30 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 8 HOUR) and not (ignored or applied or closed or discarded or seen) ; 
 
 UPDATE jobs j
 JOIN jobs d ON j.duplicated_id = d.id
@@ -55,14 +56,14 @@ where ai_enriched and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 5 hour) and n
 select id, cv_match_percentage, title, ai_enriched, ai_enrich_error, modified from jobs where cv_match_percentage = -1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 7 DAY);
 
 SELECT url FROM jobs WHERE web_page='Indeed';
-update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY);
+update jobs set ai_enriched=0, ai_enrich_error=null WHERE ai_enrich_error is not null and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) ;
 
 -- Re-enrich the rows written while the repeat_penalty=1.3 regression was live (since 2026-09-18).
 -- ai_enriched=NULL puts them back in the pending queue and the aiEnrich worker repopulates every field.
 -- Only ai_enriched/ai_enrich_error are reset: update_enrichment() writes with COALESCE, so a freshly
 -- extracted non-null value overwrites the thin one and nothing is lost when the new run finds none.
 update jobs set ai_enriched=null, ai_enrich_error=null
-where ai_enriched=1 and created >= '2026-09-18' and not (ignored or discarded or closed);
+where ai_enriched=1 and DATE(created) > DATE_SUB(CURDATE(), INTERVAL 1 DAY) and not (ignored or discarded or closed) limit 20;
 
 select id, company from jobs where applied order by created desc
 
@@ -225,7 +226,7 @@ FROM config_view_1 where job_created > DATE_SUB(NOW(), INTERVAL 50 MINUTE) LIMIT
 SELECT config_id, job_created
 FROM config_view_1 WHERE job_created > DATE_SUB(NOW(), INTERVAL 1 DAY) LIMIT 100
 
-select * from filter_configurations;
+select * from filter_configurations order by ordering ASC;
     
 -- Statistics
 SELECT CONVERT(created,DATE) as createdDate, CONVERT(created,TIME) as createdTime from jobs order by created;

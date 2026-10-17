@@ -109,6 +109,9 @@ class IndeedScraplingExecutor(BaseExecutor):
                 logger.info("indeed.scrapling.job.already_exists", job_id=jobId, console=yellow(f"Job id={jobId} already exists in DB, IGNORED."), end="")
                 return False
             self.navigator.load_job_detail(initial_url)
+            if self.navigator.is_delisted():
+                logger.info("indeed.scrapling.job.delisted_skipped", url=initial_url, console=yellow("Delisted job page, skipping."))
+                return False
             url = self.navigator.get_current_job_url()
             ignore = False
         except Exception:

@@ -178,7 +178,7 @@ def get_connection(e2e_tests: bool = False) -> MySQLConnection:
             if DEBUG:
                 logger.debug("db.connection_opened", conn=repr(conn))
             return conn
-        except queue.Empty:
+        except (queue.Empty, mysqlConnector.errors.PoolError):
             if attempt < POOL_GET_RETRIES - 1:
                 delay = POOL_GET_DELAY * (attempt + 1)
                 if DEBUG:

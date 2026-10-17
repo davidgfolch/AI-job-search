@@ -115,6 +115,8 @@ jq -c 'select(.event == "http.request_failed")' apps/backend/data/logs/backend.j
 | `ollama.probe_failed` | `debug` | `services/dashboard_service.py`. |
 | `metrics.timestamp_unparsed` | `debug` | `services/dashboard_service.py`. |
 
+The request middleware emits `http.request_completed` (and `http.request_failed` for a non-2xx/3xx status or an unhandled exception) from `middleware/request_logging.py`. Its `module` is stamped from the caller like any other record. The dashboard repository reads other apps' records, so it re-emits the source app's stamped name as **`source_module`**, and the API keeps exposing it as `module`; the two names mean different things — `module` is always "the app module that logged this line", never "the app this line was about".
+
 ### Testing log output
 
 `conftest.py` provides an autouse `log_records` fixture that points `LOG_DIR` at a

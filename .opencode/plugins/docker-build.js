@@ -9,7 +9,6 @@ const OTHER_SUBCOMMANDS = new Set([
   "pause", "port", "ps", "pull", "push", "rename", "restart", "rm", "run",
   "start", "stats", "stop", "top", "unpause", "update", "version", "wait",
 ]);
-
 const MATCH = /\b(?:docker(?:-|\s+)compose)((?:[^&|;`"']|$)*?)\bup\b/;
 const SKIP = /--(?:no-)?build\b/;
 
@@ -32,4 +31,15 @@ export const DockerBuildPlugin = async () => {
       output.args.command = injectBuild(output.args.command);
     },
   };
+};
+
+export default {
+  id: "docker-build",
+  async setup(ctx) {
+    await ctx.tool.hook("execute.before", async (event) => {
+      if (event.tool !== "shell") return;
+      if (!event.input || typeof event.input.command !== "string") return;
+      event.input.command = injectBuild(event.input.command);
+    });
+  },
 };

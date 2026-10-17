@@ -37,7 +37,6 @@ def _consoleTimerLocal(message: str, timeUnit: str, end='\r'):
     spinner = Spinner()
     blankLine = True if end == '\r' else False
     timeLeft = str(timedelta(seconds=seconds))
-    logger.info("timer.started", message=stripAnsi(message), time_unit=timeUnit, seconds=seconds, in_place=blankLine)
     print(cyan(f"{message} {timeLeft}"))
     for left in range(seconds*spinner.tickXSec, 0, -1):
         spinnerStr = spinner.generate()
@@ -48,7 +47,6 @@ def _consoleTimerLocal(message: str, timeUnit: str, end='\r'):
         WakeableTimer().wait(1/spinner.tickXSec)
     if blankLine:
         print()
-    logger.info("timer.completed", message=stripAnsi(message), time_unit=timeUnit, seconds=seconds)
 
 def consoleTimerDocker(message: str, timeUnit: str):
     """timeUnit: 30s|8m|2h"""

@@ -93,6 +93,7 @@ class PersistenceManager:
             self._resume_page = 1
             self._is_skipping = False
             return
+        self._site = site
         state = self.get_state(site)
         self._resume_keyword = state.get('keyword')
         self._resume_page = state.get('page', 1)
@@ -101,6 +102,8 @@ class PersistenceManager:
     def should_skip_keyword(self, current_keyword: str) -> tuple[bool, int]:
         """Returns (should_skip, start_page)"""
         start_page = 1
+        if getattr(self, '_site', None) and current_keyword in self.get_failed_keywords(self._site):
+            return False, 1
         if hasattr(self, '_resume_keyword') and self._resume_keyword:
             if self._resume_keyword == current_keyword:
                 self._is_skipping = False

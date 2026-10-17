@@ -99,6 +99,7 @@ class TestCompanyRequestWiring:
     def test_resolves_unspecified_company(self, company):
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         repo = MagicMock()
+        repo.count_pending_enrichment.return_value = 0
         with patch("aiEnrich.companyExtractor.query_company", return_value=("Acme", None)) as mock_query:
             _process_unspecified_job(repo, company)
         mock_query.assert_called_once()
@@ -108,6 +109,7 @@ class TestCompanyRequestWiring:
     def test_does_not_resolve_known_company(self):
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         repo = MagicMock()
+        repo.count_pending_enrichment.return_value = 0
         with patch("aiEnrich.companyExtractor.query_company") as mock_query:
             _process_unspecified_job(repo, "Tech Corp")
         mock_query.assert_not_called()
@@ -124,6 +126,7 @@ class TestCompanyRequestWiring:
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         from aiEnrich.dataExtractor import _process_job_safe
         repo = MagicMock()
+        repo.count_pending_enrichment.return_value = 0
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", UNSPECIFIED_COMPANY)
         replies = [_ollama_reply(EXTRACTION_REPLY), _ollama_reply('{"company": "Acme"}')]
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", UNSPECIFIED_COMPANY, "Desc")), \

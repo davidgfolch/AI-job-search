@@ -5,11 +5,12 @@ from commonlib.observability import get_logger
 
 logger = get_logger("backend.services.watcher_service")
 
+
 class WatcherService:
-    
+
     def __init__(self):
         self.repo = WatcherRepository()
-    
+
     def _parse_cutoff(self, cutoff_str: str):
         from datetime import datetime
         try:
@@ -60,5 +61,3 @@ class WatcherService:
         except Exception as e:
             logger.debug("watcher.comparison_failed", error=str(e))
             return False
-
-

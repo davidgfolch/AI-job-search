@@ -47,6 +47,10 @@ class BrowserService:
         return self.driver.current_url
 
     @seleniumSocketConnRetry()
+    def getTitle(self):
+        return self.driver.title
+
+    @seleniumSocketConnRetry()
     def waitUntilPageUrlContains(self, url: str, timeout: int = 10):
         WebDriverWait(self.driver, timeout).until(
             lambda d: str(d.current_url).find(url) >= 0)
@@ -72,6 +76,10 @@ class BrowserService:
             self.driver.execute_script(f"window.scrollTo(0, {currentPos});")
             sleep(0.01, 0.03)
         self.driver.execute_script(f"window.scrollTo(0, {targetPos});")
+
+    @seleniumSocketConnRetry()
+    def scroll_to_bottom(self):
+        self.driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
 
     @seleniumSocketConnRetry()
     def back(self):

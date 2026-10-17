@@ -39,15 +39,15 @@ def test_run_logs_disabled_and_exits():
     assert events[1]["module"] == "aiCvMatcher.main"
 
 
-def test_run_polls_and_renders_countdown(enabled):
+def test_run_polls_and_logs_the_idle_wait(enabled):
     matcher = MagicMock()
     matcher.process_db_jobs.side_effect = [1, 0, SystemExit]
-    with patch("aiCvMatcher.main.FastCVMatcher") as factory, patch("aiCvMatcher.main.consoleTimer") as timer, capture_logs() as logs:
+    with patch("aiCvMatcher.main.FastCVMatcher") as factory, patch("aiCvMatcher.main.logIdleWait") as idle, capture_logs() as logs:
         factory.instance.return_value = matcher
         with pytest.raises(SystemExit):
             main.run()
     factory.instance.assert_called_once_with()
     assert matcher.process_db_jobs.call_count == 3
-    assert len(timer.call_args.args) == 2
-    assert timer.call_args.kwargs == {"end": "\r"}
+    assert idle.call_args.args[1:] == ("10s", "jobs.skipped")
+    assert idle.call_args.kwargs == {"reason": "no_pending_jobs"}
     assert set(app_events(logs)[0]) - {"event", "log_level", "module", "timestamp"} == {"version"}

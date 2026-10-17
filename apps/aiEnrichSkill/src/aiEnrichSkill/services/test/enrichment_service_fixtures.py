@@ -22,6 +22,25 @@ def make_ollama_mocks(mock_build, mock_query, mock_parse=None, query_result: str
         mock_parse.return_value = parse_result
 
 
+def run_enrich_ollama(mock_process, name="Python", context="context"):
+    from ..enrichment_service import _enrich_ollama
+    generator_called = []
+    def side_effect(mysql, generate_fn, limit, check_empty_description_only):
+        generator_called.append(generate_fn(name, context))
+        return 1
+    mock_process.side_effect = side_effect
+    return _enrich_ollama(MagicMock()), generator_called
+
+
+def assert_failure_metric(mock_collector, check_duration=False):
+    mock_collector.record_job.assert_called_once()
+    args = mock_collector.record_job.call_args[0]
+    assert args[0] == "aiEnrichSkill"
+    if check_duration:
+        assert isinstance(args[1], float)
+    assert args[2] is False
+
+
 def run_process_skill_batch(mock_process_batch, with_error=False):
     from ..enrichment_service import _process_skill_batch
 

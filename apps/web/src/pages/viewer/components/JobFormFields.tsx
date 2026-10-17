@@ -20,6 +20,7 @@ interface JobFormFieldsProps {
         client: string;
         requiredTechnologies: string;
         optionalTechnologies: string;
+        modality: string;
         [key: string]: any;
     };
     setters: {
@@ -34,19 +35,23 @@ interface JobFormFieldsProps {
         setClient: Dispatch<SetStateAction<string>>;
         setRequiredTechnologies: Dispatch<SetStateAction<string>>;
         setOptionalTechnologies: Dispatch<SetStateAction<string>>;
+        setModality: Dispatch<SetStateAction<string>>;
         [key: string]: any;
     };
     handleChange: (setter: Dispatch<SetStateAction<string>>, field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleCreate: () => void;
+    handleModalityChange: (value: string) => void;
+    modalityValues?: string[];
 }
 
 export default function JobFormFields({
     mode, jobId, showAllFields,
-    formState, setters, handleChange, handleCreate
+    formState, setters, handleChange, handleCreate,
+    handleModalityChange, modalityValues
 }: JobFormFieldsProps) {
     const {
         title, location, url, webPage, markdown, comments, salary, company, client,
-        requiredTechnologies, optionalTechnologies
+        requiredTechnologies, optionalTechnologies, modality
     } = formState;
     const {
         setTitle, setLocation, setUrl, setWebPage, setMarkdown, setComments, setSalary,
@@ -107,14 +112,32 @@ export default function JobFormFields({
                 )}
             </div>
 
-            <FormField id={`${formIdPrefix}-salary`} label="Salary">
-                <input type="text" 
-                    id={`${formIdPrefix}-salary`} name="salary"
-                    value={salary} onChange={handleChange(setSalary, 'salary')} 
-                    placeholder="Salary range"
-                    autoComplete="off"
-                />
-            </FormField>
+            <div className="form-row">
+                <FormField id={`${formIdPrefix}-salary`} label="Salary">
+                    <input type="text" 
+                        id={`${formIdPrefix}-salary`} name="salary"
+                        value={salary} onChange={handleChange(setSalary, 'salary')} 
+                        placeholder="Salary range"
+                        autoComplete="off"
+                    />
+                </FormField>
+
+                {(mode === 'create' || showAllFields) && (
+                    <FormField id={`${formIdPrefix}-modality`} label="Modality" className="form-field form-field-small">
+                        <select
+                            id={`${formIdPrefix}-modality`} name="modality"
+                            className="compact-select"
+                            value={modality}
+                            onChange={(e) => handleModalityChange(e.target.value)}
+                        >
+                            <option value="">Not set</option>
+                            {(modalityValues && modalityValues.length > 0 ? modalityValues : ['REMOTE', 'HYBRID', 'ON_SITE']).map((value) => (
+                                <option key={value} value={value}>{value}</option>
+                            ))}
+                        </select>
+                    </FormField>
+                )}
+            </div>
 
             {(mode === 'create' || showAllFields) && (
                 <div className="form-row">

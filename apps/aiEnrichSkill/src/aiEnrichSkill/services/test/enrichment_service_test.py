@@ -1,8 +1,9 @@
 import pytest
+from structlog.testing import capture_logs
 from unittest.mock import patch, MagicMock
 
-from ..enrichment_service import enrich_skills, generate_skill_description_ollama
-from .enrichment_service_fixtures import make_ollama_mocks, run_process_skill_batch
+from ..enrichment_service import enrich_skills, generate_skill_description_ollama, _fetch_pending_skills
+from .enrichment_service_fixtures import assert_failure_metric, make_ollama_mocks, run_enrich_ollama, run_process_skill_batch
 
 
 @pytest.mark.parametrize("backend, expected, called_mock", [
@@ -85,8 +86,24 @@ def test_enrich_huggingface_no_skills(mock_fetch, mock_backend):
     mock_backend.return_value = "huggingface"
     mysql = MagicMock()
     mock_fetch.return_value = []
-    result = enrich_skills(mysql)
+    with capture_logs() as records:
+        result = enrich_skills(mysql)
     assert result == 0
+    skipped = [r for r in records if r["event"] == "jobs.skipped"]
+    assert len(skipped) == 1
+    assert skipped[0]["message"] == "No skills pending."
+    assert skipped[0]["reason"] == "no_pending_skills"
+    assert skipped[0]["limit"]
+
+
+def test_fetch_pending_skills_treats_null_ai_enriched_as_pending():
+    mysql = MagicMock()
+    mysql.fetchAll.return_value = [("Fix Protocol",)]
+    skills = _fetch_pending_skills(mysql, 10)
+    assert skills == [{"name": "Fix Protocol"}]
+    query = mysql.fetchAll.call_args[0][0]
+    # NULL ai_enriched never matches `ai_enriched = 0`, so COALESCE is required
+    assert "COALESCE(ai_enriched, 0) = 0" in query
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")
@@ -96,15 +113,7 @@ def test_enrich_huggingface_no_skills(mock_fetch, mock_backend):
 @patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
 def test_enrich_ollama_records_metric_on_success(mock_process, mock_build, mock_query, mock_parse, mock_collector):
     make_ollama_mocks(mock_build, mock_query, mock_parse, "**Summary**: Python is a language. **Category**: Language", ("Python is a language", "Language"))
-    generator_called = []
-    def side_effect(mysql, generate_fn, limit, check_empty_description_only):
-        result = generate_fn("Python", "context")
-        generator_called.append(result)
-        return 1
-    mock_process.side_effect = side_effect
-    mysql = MagicMock()
-    from ..enrichment_service import _enrich_ollama
-    result = _enrich_ollama(mysql)
+    result, generator_called = run_enrich_ollama(mock_process)
     assert result == 1
     assert generator_called == [("Python is a language", "Language")]
     mock_collector.record_job.assert_called_once_with("aiEnrichSkill", mock_collector.record_job.call_args[0][1], True)
@@ -116,17 +125,8 @@ def test_enrich_ollama_records_metric_on_success(mock_process, mock_build, mock_
 @patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
 def test_enrich_ollama_records_metric_on_failure(mock_process, mock_build, mock_query, mock_collector):
     make_ollama_mocks(mock_build, mock_query, query_result=None)
-    def side_effect(mysql, generate_fn, limit, check_empty_description_only):
-        generate_fn("Unknown", "")
-        return 1
-    mock_process.side_effect = side_effect
-    mysql = MagicMock()
-    from ..enrichment_service import _enrich_ollama
-    _enrich_ollama(mysql)
-    mock_collector.record_job.assert_called_once()
-    args = mock_collector.record_job.call_args[0]
-    assert args[0] == "aiEnrichSkill"
-    assert args[2] is False
+    run_enrich_ollama(mock_process, name="Unknown", context="")
+    assert_failure_metric(mock_collector)
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")
@@ -134,22 +134,10 @@ def test_enrich_ollama_records_metric_on_failure(mock_process, mock_build, mock_
 @patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
 @patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
 def test_enrich_ollama_records_metric_on_exception(mock_process, mock_build, mock_query, mock_collector):
-    mock_build.return_value = [
-        {"role": "system", "content": "system"},
-        {"role": "user", "content": "user"}
-    ]
+    make_ollama_mocks(mock_build, mock_query)
     mock_query.side_effect = RuntimeError("connection refused")
-    def side_effect(mysql, generate_fn, limit, check_empty_description_only):
-        generate_fn("Python", "context")
-        return 1
-    mock_process.side_effect = side_effect
-    mysql = MagicMock()
-    from ..enrichment_service import _enrich_ollama
-    _enrich_ollama(mysql)
-    mock_collector.record_job.assert_called_once()
-    args = mock_collector.record_job.call_args[0]
-    assert args[0] == "aiEnrichSkill"
-    assert args[2] is False
+    run_enrich_ollama(mock_process)
+    assert_failure_metric(mock_collector)
     mock_collector.record_error.assert_called_once_with("aiEnrichSkill", "connection refused")
 
 
@@ -171,11 +159,7 @@ def test_enrich_huggingface_sets_pending(mock_process_batch, mock_fetch, mock_ba
 def test_process_skill_batch_on_success_records_metric_failure(mock_process_batch, mock_collector):
     captured = run_process_skill_batch(mock_process_batch)
     captured["on_success"]({"name": "Python"}, "")
-    mock_collector.record_job.assert_called_once()
-    args = mock_collector.record_job.call_args[0]
-    assert args[0] == "aiEnrichSkill"
-    assert isinstance(args[1], float)
-    assert args[2] is False
+    assert_failure_metric(mock_collector, check_duration=True)
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")
@@ -191,9 +175,5 @@ def test_process_skill_batch_on_success_with_valid_result(mock_process_batch, mo
 def test_process_skill_batch_on_error_records_metric(mock_process_batch, mock_collector):
     captured = run_process_skill_batch(mock_process_batch)
     captured["on_error"]({"name": "Python"}, Exception("timeout"))
-    mock_collector.record_job.assert_called_once()
-    args = mock_collector.record_job.call_args[0]
-    assert args[0] == "aiEnrichSkill"
-    assert isinstance(args[1], float)
-    assert args[2] is False
+    assert_failure_metric(mock_collector, check_duration=True)
     mock_collector.record_error.assert_called_once_with("aiEnrichSkill", "timeout")

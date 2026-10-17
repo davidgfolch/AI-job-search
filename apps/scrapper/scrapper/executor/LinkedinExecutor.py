@@ -55,6 +55,10 @@ class LinkedinExecutor(BaseExecutor):
         try:
             self.navigator.collapse_messages()
             totalResults = self.navigator.get_total_results(keywords, self.remote, self.location, self.f_TPR, self.sortBy)
+            if not totalResults:
+                logger.warning("linkedin.total_results_unavailable", keywords=keywords,
+                               console=yellow(f'Results header not found for {keywords}, skipping this cycle (retry next cadency).'))
+                return
             totalPages = math.ceil(totalResults / self.jobs_x_page)
             page = self.navigator.fast_forward_page(startPage, totalResults, self.jobs_x_page)
             currentItem = (page - 1) * self.jobs_x_page
@@ -100,10 +104,10 @@ class LinkedinExecutor(BaseExecutor):
     def _load_and_process_row(self, idx, rowErrors=0) -> bool | str:
         # Returns True (exists), False (new), or "ERROR"
         try:
-            cssSel = self.navigator.scroll_jobs_list(idx)
-            url = self.navigator.get_job_url_from_element(cssSel)
+            cardElm = self.navigator.scroll_jobs_list(idx)
+            url = self.navigator.get_job_url_from_element(cardElm)
             jobId, jobExists = self.service.job_exists_in_db(url)
-            self.navigator.load_job_detail(jobExists, idx, cssSel)
+            self.navigator.load_job_detail(jobExists, cardElm)
             if jobExists:
                 logger.info("linkedin.job.already_exists", job_id=jobId, console=yellow(f'Job id={jobId} already exists in DB, IGNORED.'))
                 return True

@@ -1,12 +1,12 @@
 import sys
 import io
-import time
 from importlib.metadata import version as _v
 from typing import Optional
 
 from aiEnrich3.dataExtractor import dataExtractor
 from aiEnrich3.pipeline import ExtractionPipeline
 from aiEnrich3.config import get_job_enabled, get_skill_enabled
+from commonlib.ai_helpers import logIdleWait
 from commonlib.observability import configure_logging, get_logger
 from commonlib.services.metrics_collector import MetricsCollector
 
@@ -29,8 +29,7 @@ def run():
         if get_skill_enabled():
             pass
 
-        print(cyan("All jobs enriched. I'll retry in 10s ..."), flush=True)
-        time.sleep(10)
+        logIdleWait(cyan("All jobs enriched."), "10s", "jobs.skipped", reason="no_pending_jobs")
 
 
 if __name__ == "__main__":

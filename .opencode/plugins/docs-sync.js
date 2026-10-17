@@ -67,3 +67,23 @@ export const DocsSyncPlugin = async () => {
     },
   };
 };
+export default {
+  id: "docs-sync",
+  async setup(ctx) {
+    let codeChanged = false;
+    let reminded = false;
+
+    await ctx.tool.hook("execute.before", async (event) => {
+      if (!event || !event.tool) return;
+      if (EDIT_TOOLS.has(event.tool)) {
+        const args = (event.input || {});
+        if (needsReminder(args.filePath || args.path || args.file)) codeChanged = true;
+        return;
+      }
+      if (event.tool !== "shell" || reminded || !codeChanged) return;
+      if (!event.input || typeof event.input.command !== "string") return;
+      event.input.command = REMINDER + event.input.command;
+      reminded = true;
+    });
+  },
+};

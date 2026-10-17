@@ -40,7 +40,7 @@ Set these in your `.env` or `.env.secrets`:
 - `AI_ENRICHSKILL_TIMEOUT` — Timeout per item in seconds (default: `90`)
 
 ### Ollama Backend
-- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_HOST_BASE_URL` in `commonlib`)
+- `AI_ENRICHSKILL_OLLAMA_BASE_URL` — Ollama server URL (overrides centralized default `OLLAMA_HOST_BASE_URL` in `commonlib`). Set to `auto` to skip the fixed candidates and discover a server on the LAN
 - `AI_ENRICHSKILL_OLLAMA_MODEL` — Model name (default: `ollama/qwen2.5:3b`)
 - `AI_ENRICHSKILL_MAX_NEW_TOKENS` — Max output tokens (default: `2048`)
 - `AI_ENRICHSKILL_NUM_CTX` — Context window sent to Ollama per request (default: auto-bucketed from prompt length, capped at `32768`)
@@ -86,7 +86,7 @@ main.py → enrich_skills() loop
        └─ backend == "huggingface" → llm_client.py + llm_utils.py batch processing
 ```
 
-Each idle cycle logs a single `skill.enrich_skipped` record (`reason=no_pending_skills`) and then waits. In containers the wait is silent (`WakeableTimer`); on interactive terminals it shows the in-place countdown. When Ollama is unreachable, `ollama.unreachable` is logged and the retry countdown runs on both paths (up to `AI_ENRICHSKILL_MAX_OLLAMA_FAILURES`, then exit).
+Each idle cycle is one line: the enrichment service logs `jobs.skipped` (`message='No skills pending.'`, `reason=no_pending_skills`, `limit`) when nothing is pending, and the main loop then waits with `ai_helpers.idleWait()` — in containers the wait itself is silent, on a `WakeableTimer` that a shutdown signal cuts short, so `docker-compose logs` shows that single record per cycle; on interactive terminals `idleWait` keeps the in-place countdown. When Ollama is unreachable, `ollama.unreachable` is logged and the retry countdown runs on both paths (up to `AI_ENRICHSKILL_MAX_OLLAMA_FAILURES`, then exit).
 
 ## Dependencies
 

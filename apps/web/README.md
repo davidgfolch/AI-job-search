@@ -7,7 +7,7 @@ The modern frontend for the AI Job Search application, built with **React**, **T
 - **Job Listing**: View and filter job offers scraped from various platforms.
 - **Infinite Scroll Pagination**: The list keeps fetching pages on its own until it fills the screen, then again whenever the end of the list is scrolled into view.
 - **Next / Previous Job Navigation**: The ⏮ / ⏭ buttons and the `Alt+P` / `Alt+N` shortcuts move the selection, and the list scrolls whenever the new selection is outside the visible frame.
-- **Job Management**: Update job status (Applied, Interviewing, Rejected, etc.).
+- **Job Management**: Update job status (Applied, Interviewing, Rejected, etc.) and edit job data (title, company, location, salary, skills, modality, comments) via the job detail edit form — advanced fields are shown under the "Edit All" toggle.
 - **Statistics**: Visual insights into your job search progress.
 - **Settings Page**: Manage environment variables and scrapper state directly from the browser.
 - **Responsive Design**: Modern UI using CSS and standard React components.

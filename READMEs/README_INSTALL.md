@@ -2,30 +2,70 @@
 
 ## System Requirements
 
-- **Python**: 3.10 required.
+- **Python**: 3.10 required, except `apps/aiEnrich3`, which requires 3.11 (its locked `onnxruntime` has no 3.10 wheels).
+  - `apps/aiEnrich3/.python-version` pins `3.11.14`; `uv` downloads and uses that interpreter automatically on `uv sync`.
   - Python 3.12 has incompatibilities with some libraries used.
+  - **Install Python 3.11** — it is the only single version that satisfies both the 3.10 baseline and the 3.11 requirement of `apps/aiEnrich3` (all modules declare `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`backend`/`scrapper`/`cron`).
 - **Node.js**: LTS version (for `apps/web`).
 - **Docker**: For running services in containers.
+
+> **Prerequisites for the install scripts**: `scripts\install.bat` (Windows) and
+> `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need Python on `PATH`.
+> On a fresh Windows 11 or Linux machine, install Python 3.11, Poetry, and uv first
+> (steps 1-3 below), then run the script from a **new** terminal so `PATH` picks them up.
 
 ## Package Managers
 
 This project uses different package managers for different components:
 
 - **Poetry**: Used by `apps/scrapper`, `apps/commonlib`.
-- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, and `apps/aiCvMatcher`.
-- **npm**: Used by `apps/web`.
+- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, `apps/aiEnrichSkill`, `apps/aiCvMatcher`, `apps/cron`, and `apps/aiFormFiller`.
+- **npm**: Used by `apps/web` and `apps/e2e`.
 
 ## Installation Steps
 
 > **Note**: For the best development experience in VS Code, open the `.vscode/AI-job-search.code-workspace` file after installation. This ensures the correct Python interpreters are selected for each app.
 
-### 1. Install Poetry (Python)
+### 1. Install Python 3.11
+
+`scripts\install.bat` (Windows) and `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need a Python interpreter on `PATH` — install Python **3.11** first (see System Requirements for why 3.11 and not 3.12).
+
+**Windows 11:**
+
+```powershell
+winget install Python.Python.3.11
+# or download the installer from https://www.python.org/downloads/ and tick
+# "Add python.exe to PATH" during setup
+```
+
+**Linux (Debian/Ubuntu):**
 
 ```bash
+sudo apt-get update
+sudo apt-get install -y python3.11 python3.11-venv python3-pip
+# or use your distro's package manager, pyenv, or the installer from python.org
+```
+
+Verify in a **new** terminal:
+
+```bash
+python --version    # Windows
+python3 --version   # Linux
+```
+
+### 2. Install Poetry (Python)
+
+Poetry is used by `apps/scrapper` and `apps/commonlib`.
+
+```bash
+# Windows (PowerShell)
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+
+# Linux/Mac
 curl -sSL https://install.python-poetry.org | python3 -
 ```
 
-### 2. Install uv (Python)
+### 3. Install uv (Python)
 
 Required for `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, and `apps/aiCvMatcher`.
 
@@ -37,11 +77,11 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 3. Install Node.js & npm
+### 4. Install Node.js & npm
 
 Download and install from [nodejs.org](https://nodejs.org/).
 
-### 4. Install GitHub CLI (recommended)
+### 5. Install GitHub CLI (recommended)
 
 Required by the agent tooling to process Dependabot PRs (see the `dependabot-agent` skill in `.claude/skills/`, [AGENTIC_SDLC.md](AGENTIC_SDLC.md), and [README_GITHUB.md](README_GITHUB.md)).
 
@@ -61,7 +101,7 @@ gh auth login
 
 Verify with `gh auth status`.
 
-### 5. Install Ollama & required models
+### 6. Install Ollama & required models
 
 > **Note**: If you are using Docker, you do not need to install Ollama manually — add the `ollama` profile to run it containerized: `docker-compose --profile ollama up -d` (see [DOCKER_DEV.md](DOCKER_DEV.md)). If Ollama is already installed on your host, skip that: the AI modules auto-detect it and the `ollama` container is opt-in.
 
@@ -80,7 +120,7 @@ ollama pull phi3.5:3b
 ollama pull llama3.2:1b
 ```
 
-> `scripts/install.sh` / `scripts/install.bat` also pull `qwen2.5-coder:7b` (graphify tooling) and `qwen2.5:3b` (AI modules) automatically, detecting whether Ollama is dockerized (pull via the `ai-job-search-ollama` container) or installed directly on the host.
+> `scripts/install.sh` installs commonlib first, then resolves the Ollama server with the same fallback chain the AI modules use (`commonlib.ollama_client.resolve_ollama_url` over `commonlib.ollama_config.get_configured_ollama_url()`: the configured URL, then `host.docker.internal`, `localhost`, the `ollama` compose service, and finally a LAN scan on port 11434; an `OLLAMA_HOST` already set in the shell is tried first). The resolved URL is exported as `OLLAMA_HOST`, so the `ollama` CLI pulls `qwen2.5-coder:7b` (graphify tooling) and `qwen2.5:3b` (AI modules) from that host — including a server that lives on another machine in the LAN; when the resolved host is the compose service name, the pull goes through `docker exec ai-job-search-ollama ollama` instead. Every step that needs a reachable server — those two pulls, `graphify install`, and the `graphify . --backend ollama` indexing — is best-effort: an unreachable server prints a warning and the dependency install continues, so you can run the skipped step later by hand. `scripts/install.bat` (Windows) keeps its own detection and does not run this chain.
 
 If you are running the Dockerized Ollama server (`docker-compose up -d ollama`), pull the models through the container instead:
 
@@ -88,7 +128,7 @@ If you are running the Dockerized Ollama server (`docker-compose up -d ollama`),
 docker exec ai-job-search-ollama ollama pull qwen2.5:3b
 ```
 
-### 5.1 ISP blocking the Ollama registry (e.g. Movistar)
+### 6.1 ISP blocking the Ollama registry (e.g. Movistar)
 
 Some ISPs (e.g. Movistar) block or time out the model download host `r2.cloudflarestorage.com` (Cloudflare R2), so `ollama pull` hangs and fails with `dial tcp ...:443: i/o timeout`. Pull the same models from HuggingFace instead and alias them to the expected names:
 
@@ -110,7 +150,41 @@ For the Dockerized server, prefix each command with `docker exec ai-job-search-o
 
 The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable, then removes the temporary tag. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`.
 
-### 6. Install Project Dependencies
+### 7. Install Crawlee (source-page analysis)
+
+Required by the `crawlee-page-analyst` agent skill to analyze a source page after a site/DOM redesign and produce scrapper-change requirements before selectors are edited (see [AGENTIC_SDLC.md](AGENTIC_SDLC.md)).
+
+```bash
+uv tool install "crawlee[all]"
+```
+
+> `scripts/install.sh` / `scripts/install.bat` install it automatically. If you use `PlaywrightCrawler` and the browser binaries are missing, run `playwright install chromium` once.
+
+### 7.1 Install Google Chrome & system libraries (scrapper)
+
+The scrapper runs natively on the host — it is **not** a Docker service. Launch it with
+`apps/scrapper/run.sh` (Linux/Mac) or `apps/scrapper/run.bat` (Windows), which run
+`python -m scrapper.main` through Poetry. It therefore needs Google Chrome on the host;
+ChromeDriver itself is downloaded automatically by `undetected-chromedriver`.
+
+**Windows:** install Google Chrome from https://www.google.com/chrome/.
+
+**Linux (Debian/Ubuntu):** install Chrome and the libraries it needs to run headless:
+
+```bash
+wget -q -O /tmp/google-chrome-key.pub https://dl-ssl.google.com/linux/linux_signing_key.pub
+sudo gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg /tmp/google-chrome-key.pub
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+sudo apt-get update
+sudo apt-get install -y google-chrome-stable \
+    gcc wget gnupg unzip curl ca-certificates \
+    fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 \
+    libcups2 libdbus-1-3 libdrm2 libgbm1 libgtk-3-0 libnspr4 libnss3 \
+    libwayland-client0 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 \
+    libxrandr2 xdg-utils
+```
+
+### 8. Install Project Dependencies
 
 You can use the helper script in the project root:
 
@@ -123,6 +197,15 @@ You can use the helper script in the project root:
 > reinstalls `node_modules` on start (see `apps/web/docker-entrypoint.sh`), so a
 > simple `docker-compose up -d --build web` after a dependency change is enough.
 > See [DOCKER_DEV.md](DOCKER_DEV.md) for details.
+
+> **Note**: On Linux/macOS the script also prepares the folders it will log into
+> (`data/logs`, `data/metrics` and `apps/*/data/{logs,metrics}`) and fixes their owner.
+> The Docker containers run as root and create root-owned files in those bind mounts,
+> which then blocks the host user from writing its own logs, so `install.sh` re-owns
+> them with `sudo chown -R "$(id -u):$(id -g)" data apps/*/data` when it finds any
+> (it prints the command instead when `sudo` is unavailable). On Windows run the
+> equivalent by hand from an elevated shell; otherwise the apps report
+> `logs.write_failed` once per path and drop the affected records.
 
 Or install manually:
 
@@ -143,6 +226,24 @@ cd apps/web && npm install && cd ../..
 **AI Enrich and AI CV Matcher:**
 
 Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrich3/README.md](../apps/aiEnrich3/README.md), [apps/aiEnrichNew/README.md](../apps/aiEnrichNew/README.md), or [apps/aiCvMatcher/README.md](../apps/aiCvMatcher/README.md).
+
+### 8.1 Uninstall Project Dependencies
+
+`scripts/uninstall.bat` (Windows) and `scripts/uninstall.sh` (Linux) remove what
+`install.*` installed: virtual environments, `node_modules`, caches, and the
+gitignored lock files. The script shows an interactive menu and several items
+can be selected at once (only dependencies that are currently installed are
+shown); only the selected apps (or the root project, or the
+global Crawlee/graphify tools) are removed. No `git` command is run, and tracked
+files, `.env` / `.env.secrets`, and the `data/` folders are never touched.
+
+```bash
+./scripts/uninstall.sh # or .\scripts\uninstall.bat
+```
+
+Removing an app deletes its `.venv`, `node_modules` for the web apps, pytest
+coverage and bytecode caches, and the ignored lock files. Ollama models are **not**
+removed: they live inside the Ollama server, not the project.
 
 ## Configuration
 

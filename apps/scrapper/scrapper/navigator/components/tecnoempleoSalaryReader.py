@@ -37,7 +37,8 @@ class TecnoempleoSalaryReader:
         return None
 
     def _caption_of(self, item) -> str:
-        return normalize(self.selenium.getText(self.selenium.getElmOf(item, self.caption_css))).lower()
+        captions = self.selenium.getElms(self.caption_css, driverOverride=item)
+        return normalize(captions[0].text).lower() if captions else ''
 
     @retry(retries=2, delay=1, exception=NoSuchElementException, raiseException=False, stackTrace=StackTrace.NEVER)
     def _value_of(self, item) -> str | None:

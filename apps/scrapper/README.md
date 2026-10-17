@@ -14,20 +14,23 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 - **Undetected ChromeDriver**: Option to use `undetected-chromedriver` to bypass strict protections (Cloudflare).
 - **Duplicate Management**: Automatically merges duplicate job listings (`mergeDuplicates.py` from `commonlib`).
 - **Resilience**: Retry mechanisms for network failures and element loading issues.
+- **Targeted validation errors**: `validate()` reports `job.field_invalid` only for the required fields that are actually empty, instead of flagging every field when a single one is missing.
 
 ## Supported Sites
 
-- **LinkedIn**: Works fine. Careful with rate limits.
+- **LinkedIn**: Works fine. Careful with rate limits. The search/list DOM was redesigned (React): the cards are `role=button` divs whose `componentkey` (`job-card-component-ref-<jobId>`) carries the job id, so the row URL is derived from the card itself instead of an anchor, and title, company, location, fit chips, description and the easy-apply flag are read from the unified detail pane by `LinkedinDetailReader` (same layout for list clicks and direct `currentJobId` urls). A click is verified against the detail pane and re-issued if needed because LinkedIn briefly auto-selects the first card after a page load and can overwrite a fresh click. The old no-results banner is gone: an empty search serves a `0 results` header, so `check_results` reads the header text instead. Pagination is now prev button + page list + next button (`SearchResultsMainContent`). Card and pagination clicks scroll the target into view first and `scrollIntoView` no longer animates (`behavior: smooth` was still running when the click fired, so the click landed mid-flight and was intercepted by the element passing over); the cards are scrolled to `block: 'center'`, and the pagination click scrolls the job list's own scroll container to its internal bottom (LinkedIn is a full-height app: the document never scrolls, the list lives in a nested scrollbox so `window.scrollTo` is a no-op), because a `position: fixed` div covers the whole viewport-bottom band (even card centers land under it with a `block: 'end'` scroll) and only those positions lift the target clear of it. An `ElementClickInterceptedException` is re-scrolled and retried per row, and pagination gives up gracefully (returns `False`, the keyword finishes) instead of aborting the run. If the results-count header never renders (slow page or transient rate limit), `get_total_results` retries and then returns `0`: the keyword cycle is skipped for that run (log `linkedin.total_results_unavailable`) instead of being recorded as failed, so the search self-heals on the next cadency.
 - **Infojobs**: Works fine.
 - **Tecnoempleo**: Works fine. The company is read by `TecnoempleoCompanyReader`, which first tries the company link and then falls back to the bare text node tecnoempleo renders in the job header for the offers published without a company page. Only the offers that name no employer at all are stored with the company set to `unspecified` instead of being discarded, and the company is inferred later by `aiEnrich` (see [aiEnrich README](../aiEnrich/README.md)). While the company is unspecified the job is not linked to a duplicate; the duplicate check runs again once the company is known. The pay range is read by `TecnoempleoSalaryReader`, which matches the `Salario` caption of the "Datos principales" rows and stores the value in the `salary` column; offers stating no range are stored with `salary=NULL`. Matching the caption instead of a fixed row position matters because tecnoempleo renders a variable number of rows (`Imprescindible Residir`, `Otras Provincias` and `Salario` are all optional), and because the generic markdown scrape keeps the row values without their captions — the AI then receives the range as an unlabeled bullet and frequently answers `salary=null`. The page also exposes a schema.org `baseSalary` block, but it is missing on a noticeable share of salary-bearing offers, so it is not used.
 - **Glassdoor**: Prone to strict bot detection. Uses Indeed OTP login (email+code via Gmail IMAP). `SCRAPPER_GLASSDOOR_EMAIL` is not used — GlassdoorAuthenticator reads `SCRAPPER_INDEED_EMAIL` instead.
-- **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login.
+- **Indeed**: Fully automated login with email+2FA support (Selenium). Alternatively, a Scrapling-based execution to bypass Cloudflare `StealthyFetcher` without login. Both paths read the redesigned viewjob DOM (Indeed moved the detail page to React Native Web markup): the current `data-testid` selectors are tried first and the legacy class-based selectors work as fallback, so title, company, location, description markdown, salary and the easy-apply flag keep working after the frontend rewrite. Company is read from `vj-company-name` first (the dedicated node the RNW header renders for every offer) and then from the company-page `a[href*="/cmp/"]` link, because offers published without an Indeed company page expose no `/cmp/` link and only the `vj-company-name` node carries the employer. Offers whose detail page is gone or the link is broken return HTTP 404 with the `No podemos encontrar esta página` title: the Scrapling path detects them (`is_delisted`) and skips them quietly (log `indeed.scrapling.job.delisted_skipped`) instead of emitting validation errors, so pagination keeps moving.
 
 ## Dual Architecture (Selenium vs Scrapling)
 The project initially relies heavily on Selenium + Undetected ChromeDriver. Recently, **Scrapling** framework has been introduced to bypass hard bot protections seamlessly, specifically Cloudflare Turnstiles.
 Indeed scraper features a dual implementation:
 - `IndeedExecutor`: Legacy architecture requiring Gmail/2FA login.
-- `IndeedScraplingExecutor`: New architecture leveraging `scrapling` (`StealthyFetcher` + `ProxyRotator` + `solve_cloudflare=True`) to scrape jobs publicly without relying on authentication, which makes it faster and less error-prone when blocked. Controlled via ``.
+- `IndeedScraplingExecutor`: New architecture leveraging `scrapling` (`StealthyFetcher` + `ProxyRotator` + `solve_cloudflare=True`) to scrape jobs publicly without relying on authentication, which makes it faster and less error-prone when blocked. Controlled via `SCRAPPER_INDEED_SCRAPLING=true`.
+
+Both implementations share the same selector strategy for the detail page (`vj-job-title`, `vj-company-name`, `company-info-metadata`, `simple-job-description-html`, `viewjob-indeed-apply` first, previous markup second). Indeed also removed the SERP job-count pane, so `get_total_results` falls back to the `NN empleos` count in the page `<title>` when no count selector matches. The Scrapling session registers a `page_setup` callback that resizes the browser window through CDP (`Browser.setWindowBounds`) to the same geometry the Selenium path sets (1200 wide × `avail_height - 90`, right-aligned), so both implementations behave the same on screen.
 
 ## Setup & Running
 
@@ -45,6 +48,8 @@ See [README INSTALL](../../READMEs/README_INSTALL.md)
 poetry install
 ```
 
+`scrapling` is declared as `scrapling[fetchers]`: `scrapper/services/scrapling/scraplingService.py` imports `scrapling.fetchers`, and scrapling only declares that extra's runtime deps (`browserforge`, `apify-fingerprint-datapoints`, `protego`, `curl-cffi`, `playwright`, `patchright`, `msgspec`) behind the `fetchers` extra. Installing plain `scrapling` collects fine but crashes the test suite at import with `ModuleNotFoundError: No module named 'browserforge'`.
+
 ### Configuration
 
 Scraper behavior is configured via environment variables and configuration files (`scrapper_config.py`).
@@ -52,11 +57,11 @@ See `.env` and `scripts/.env.secrets.example`.
 
 ## Key Environment Variables
 
-- `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor).
+- `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true`: Enable undetected-chromedriver (Recommended for Infojobs/Glassdoor). Chrome driver startup is retried up to 3 times per scrapper before failing, and the scrapper name is logged before each instantiation.
 - `SCRAPPER_INDEED_EMAIL`: Indeed/Glassdoor login email (Glassdoor uses this for OTP login via Indeed popup).
 - `GMAIL_EMAIL`: Gmail address for 2FA verification (Required for Indeed Selenium and Glassdoor OTP).
 - `GMAIL_APP_PASSWORD`: 16-digit Gmail app password (Required for Indeed Selenium and Glassdoor OTP).
-- `=true`: Switches execution of Indeed scraper to use the lightweight, Cloudflare-bypassing Scrapling implementation.
+- `SCRAPPER_INDEED_SCRAPLING=true`: Switches execution of Indeed scraper to use the lightweight, Cloudflare-bypassing Scrapling implementation.
 - `SCRAPPER_INDEED_PROXIES`: Comma delimited list of proxy servers for `ProxyRotator` (e.g., `http://username:pass@ip:port,http://...`).
 
 ## Specific Scraper Parameters
@@ -88,7 +93,7 @@ Log file: /home/user/ai_job_search/apps/scrapper/data/logs/scrapper.jsonl
 Scrapper v0.1.0
 ```
 
-The path is resolved against the working directory of the process — `apps/scrapper` on the host, `/app` in the container — and honours `LOG_DIR`.
+The path is resolved against the working directory of the process (`apps/scrapper`) and honours `LOG_DIR`.
 
 ```python
 logger.info("linkedin.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy,
@@ -133,6 +138,13 @@ Order of precedence:
 1. Specific hour range match
 2. Default environment variable (`XX_RUN_CADENCY`)
 3. Hardcoded default
+
+### Keyword Resume & Failed-Keyword Retry
+
+Each scrapper keeps its per-keyword progress (`keyword`, `page`) and a `failed_keywords` list in the `scrapper_state` table (MySQL). On a new run the scrappers resume from the stored keyword and report the earlier keywords as "already processed". Two rules keep a run from getting stuck:
+
+- **Failed keywords are always retried**: a keyword present in `failed_keywords` is never reported as "already processed" — it is processed again on every cycle until it succeeds, then removed from the list. Only once the list is empty is the iteration state cleared.
+- **A failed `get_total_results` does not fail the run**: on LinkedIn, when the results-count header is slow to render or missing (transient block), `get_total_results` retries up to 6 times and then returns `0`; the executor logs `linkedin.total_results_unavailable` and skips that keyword cycle. The keyword is not recorded as failed, so the next cadency tries again.
 
 
 ### Running Scrapers

@@ -4,10 +4,14 @@ Job data enrichment service using Ollama LLMs (local) or OpenRouter (cloud).
 
 ## Overview
 
-This application enriches job data (e.g., extracting salary, technologies, modality) using an LLM. Two backends are supported, selected with the `AI_ENRICH_BACKEND` environment variable:
+This application enriches job data (e.g., extracting salary, technologies); modality is determined deterministically. Two backends are supported, selected with the `AI_ENRICH_BACKEND` environment variable:
 
 - **Ollama** (`ollama`, default): local models, free, no API key required. Communicates over Ollama's `/api/generate` HTTP API.
 - **OpenRouter** (`openrouter`): cloud models via the OpenAI-compatible API at openrouter.ai. Requires an API key, no local model/server needed.
+
+## Job selection
+
+Each cycle enriches pending jobs in this priority order: first the pending jobs matching the stored **watched filter configurations** (the same filters used by the web UI), processing the configurations in `ordering ASC`, honoring each configuration's `order` (falling back to `created desc`); the first configuration is drained until it yields nothing, later ones one job at a time (details in `apps/commonlib/README.md`). Finally every other pending job is processed in the same chunked fashion in `created desc`. The `ai_enriched` condition is always removed from a configuration, because this module is what sets that flag, and every candidate must still be unenriched and free of a previous `ai_enrich_error` (and not ignored/discarded/closed). When no watched configurations exist, the module falls back to the plain pending query. The selection lives in the shared `commonlib.aiEnrichRepository`, so `aiEnrichNew` and `aiEnrich3` follow the same order. The selector logs the watched configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` when it comes from the fallback queue).
 
 ## Installation
 
@@ -56,6 +60,18 @@ To run the enrichment in a continuous loop (monitoring the database for new jobs
 uv run aienrich
 ```
 
+## Logs
+
+Structured logging via `commonlib.observability`; records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the backend dashboard and the Prometheus exporter read.
+
+**Progress**: every enriched job ends with `footer()`, which logs one `ai.batch_completed` record carrying the `n/m` counters (`processed`, `total`, `total_processed`, `job_errors`, `config`) as fields *and* the human line in `console=` ("Processed jobs this run: n/m … Config: … Time elapsed: … (Media: …/job)"). `config` is the watched filter configuration the job came from (`NONE` for the fallback queue). `Time elapsed:` is the current job's inference total (query + validation retries + save), also stored as `job_elapsed`, while `elapsed` / `elapsed_per_job` stay the batch wall time and its average, so the media keeps meaning "how long a job takes in this run". So the batch reads as a progress line in `docker-compose logs` while the counters stay queryable in the JSONL. `job.started` counts from 1 (`index`) so it agrees with `processed`. Because the chunked drain re-selects pending jobs live, a cycle can outgrow the count taken at its start, so `total` (`m`) tracks jobs processed this run plus the jobs still pending — it stays stable at the initial count under normal processing, grows only when new jobs are inserted, and never drops below `processed` (`n`), so a slow cycle that keeps picking up new jobs reads `n/n`, not `n/1`.
+
+**Idle**: with nothing pending, or while the backend is unreachable, the pipeline calls `logIdleWait()` rather than sleeping. It renders one record — `jobs.skipped` (`reason=no_pending_jobs`) or `ai.retry_wait` (`reason=backend_unavailable`) — with the human sentence as `message=`, then waits on a `WakeableTimer` that a shutdown signal cuts short. Interactive terminals keep the in-place countdown.
+
+**Provider failures mid-job**: when a single job cannot reach the provider (`query_and_parse` returns no response), the service logs `job.ai_unreachable`, waits for the backend (with `ai.unreachable` / `ai.retry_wait`) and retries the *same* job. A job is never counted as processed, and progress is not advanced, until it either succeeds or fails with a real error; the job stays pending and is retried on the next cycle.
+
+**Attribution**: each job runs inside `job_log_context(id)`, so `job.started` / `job.result` and every database record in between carry the same `job_id`, and `module` is stamped from the calling module rather than from a shared helper. See [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
+
 ## Configuration
 
 
@@ -73,7 +89,7 @@ AI_ENRICH_BACKEND=ollama
 AI_ENRICH_OLLAMA_MODEL=ollama/phi3.5:3b
 ```
 
-The Ollama server URL is centralized as `OLLAMA_HOST_BASE_URL` in `commonlib` and can be overridden with `AI_ENRICH_OLLAMA_BASE_URL`. The module resolves the first reachable server once per cycle (configured URL first, then `host.docker.internal`, `localhost`, and the containerized `ollama:11434`) and reuses it for the whole batch — so a missing containerized Ollama transparently falls back to a host server instead of failing.
+The Ollama server URL is centralized as `OLLAMA_HOST_BASE_URL` in `commonlib` and can be overridden with `AI_ENRICH_OLLAMA_BASE_URL`. The module resolves the first reachable server once per cycle (configured URL first, then `host.docker.internal`, `localhost`, and the containerized `ollama:11434`) and reuses it for the whole batch — so a missing containerized Ollama transparently falls back to a host server instead of failing. When none of those answers, an Ollama server is searched for on the LAN (port 11434, disabled with `COMMONLIB_OLLAMA_DISCOVERY=False`); setting `AI_ENRICH_OLLAMA_BASE_URL=auto` skips the fixed candidates and goes straight to the LAN scan. Every job is preceded by a one-token generation probe on the server, so a stalled Ollama runner is skipped in `COMMONLIB_OLLAMA_PROBE_TIMEOUT` seconds (default 30) instead of consuming the whole `AI_ENRICH_TIMEOUT_JOB`. The probe runs with the job's own `num_ctx` (a different one would make Ollama reload the model for the probe and again for the job) and its verdict is remembered for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300), so the server is learned once and the following jobs are dispatched without re-connecting.
 
 > or change it in http://localhost:5173/settings (docker with web/backend must be running, see [DOCKER_DEV.md](../READMEs/DOCKER_DEV.md))
 

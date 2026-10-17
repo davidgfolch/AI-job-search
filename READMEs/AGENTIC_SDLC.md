@@ -31,11 +31,12 @@ All agent skills live in `.claude/skills/`. Core ones:
 - **`dependabot-agent`** — Processes open GitHub Dependabot PRs.
 - **`gh-actions-debug`** — Debugs GitHub Actions / Dependabot run failures with `gh`.
 - **`scrapling-implementer`** — Scrapling library usage (fetching, parsing, spiders).
+- **`crawlee-page-analyst`** — Uses Crawlee to analyze a source page after a site/DOM change and produce scrapper-change requirements before editing selectors.
 - **`view-backend-logs`** — How to view backend logs using docker-compose.
 
 ## Required Tools
 
-Agentic workflows require **Docker** and the **GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md))**. `gh` is used by `dependabot-agent` (processing Dependabot PRs) and `gh-actions-debug` (inspecting workflow/Dependabot run logs, which the web UI hides behind a write-access link).
+Agentic workflows require **Docker** and the **GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md))**. `gh` is used by `dependabot-agent` (processing Dependabot PRs) and `gh-actions-debug` (inspecting workflow/Dependabot run logs, which the web UI hides behind a write-access link). **Crawlee** (`uv tool install "crawlee[all]"`, installed automatically by `scripts/install.*`, see [README_INSTALL.md](README_INSTALL.md)) is used by `crawlee-page-analyst` to analyze source-page changes.
 
 ## graphify (knowledge graph)
 
@@ -52,6 +53,10 @@ Rules:
 - If `graphify-out/wiki/index.md` exists, use it for broad navigation.
 - Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review.
 - After modifying code, run the wrapper `update` subcommand to keep the graph current (AST-only, no API cost).
+
+## Crawlee (source-page change analysis)
+
+When an `apps/scrapper` change is required because a source page changed (DOM redesign, new URL pattern, moved to client-side rendering), the `crawlee-page-analyst` skill is the mandatory first step: fetch the live page with Crawlee, diff the DOM against the selectors the scrapper uses, and produce selector-level requirements **before** editing any scrapper code. The analysis decides which fields broke, which crawler class fits (static vs JS-rendered), and whether the fix affects the Selenium path, the Scrapling path, or both. Crawlee is installed as a host tool (`uv tool install "crawlee[all]"`, run automatically by `scripts/install.sh` / `scripts/install.bat`); see [README_INSTALL.md](README_INSTALL.md) and the skill at `.claude/skills/crawlee-page-analyst/SKILL.md`.
 
 ## Documentation Sync (automatic, mandatory)
 
@@ -81,7 +86,7 @@ The `jobs` MySQL database is **live production data** — scraping, enrichment, 
 | `.claude/hooks/db-mutation.py` | Claude Code (`PreToolUse` on `Bash`) | Exits 2 and denies the call, printing the reason and the remediation on stderr |
 | `.opencode/plugins/db-mutation.js` | opencode | Throws from `tool.execute.before`, aborting the `bash` call with the same message |
 
-Both are registered automatically: the hook in `.claude/settings.json` (`PreToolUse` → `Bash`), the plugin in the `plugin` array of `.opencode/opencode.json`. Both mirror each other and share the same detection logic, verified by an identical 31-case allow/block matrix.
+Both are registered automatically: the hook in `.claude/settings.json` (`PreToolUse` → `Bash`), the plugin auto-discovered from `.opencode/plugins/db-mutation.js` in opencode (V2 default export). Both mirror each other and share the same detection logic, verified by an identical 31-case allow/block matrix.
 
 What it blocks: a database client (`mysql`, `mariadb`, `psql`, `mongosh`, `sqlite3`, `redis-cli`, …) combined with a mutating statement (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, `ALTER`, `CREATE`, `GRANT`, `CALL`, `LOAD DATA`, `… INTO OUTFILE`), a `.sql` file piped or sourced into a client (contents are not reviewable), mongo mutators (`drop`, `updateMany`, `deleteMany`, `bulkWrite`), redis writes (`SET`, `DEL`, `FLUSHALL`), and data-volume destruction (`docker compose down -v`, `docker volume rm`, `docker system prune --volumes`).
 

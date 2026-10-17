@@ -21,6 +21,8 @@ export const mockJobs: Job[] = [
     comments: "Test comment",
     cv_match_percentage: 85,
     ai_enrich_error: null,
+    duplicated_id: null,
+    modality: null,
   },
   {
     id: 2,
@@ -53,6 +55,8 @@ export const mockJobs: Job[] = [
     comments: "Another comment",
     cv_match_percentage: 75,
     ai_enrich_error: null,
+    duplicated_id: null,
+    modality: null,
   },
 ];
 

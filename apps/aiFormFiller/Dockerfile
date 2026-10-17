@@ -17,15 +17,15 @@ COPY apps/commonlib /app/apps/commonlib
 WORKDIR /app/apps/commonlib
 RUN pip install -e .
 
+# Copy dependency manifests only, so the dependency install stays cached until
+# pyproject.toml/uv.lock change (the application source is copied after it).
+WORKDIR /app/apps/aiFormFiller
+COPY apps/aiFormFiller/pyproject.toml apps/aiFormFiller/uv.lock* apps/aiFormFiller/README.md ./
+RUN uv sync --no-install-project
+
 # Copy application files
 COPY apps/aiFormFiller /app/apps/aiFormFiller
-
-# Install dependencies
-WORKDIR /app/apps/aiFormFiller
 RUN uv sync
-
-# Copy environment file
-COPY .env* /app/
 
 # Expose port
 EXPOSE 8080

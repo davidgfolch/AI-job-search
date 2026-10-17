@@ -12,7 +12,7 @@ import time
 from gliner import GLiNER
 from .services.extractors.salary_extractor import SalaryExtractor
 from .services.extractors.skills_extractor import SkillsExtractor
-from .services.extractors.modality_extractor import ModalityExtractor
+from commonlib.modality_extractor import extract_modality
 from commonlib.observability import get_logger
 
 logger = get_logger("aiEnrich3.pipeline")
@@ -24,11 +24,10 @@ class ExtractionPipeline:
         shared_gliner = GLiNER.from_pretrained("urchade/gliner_multi-v2.1")
         self.salary_extractor = SalaryExtractor(model=shared_gliner)
         self.skills_extractor = SkillsExtractor(model=shared_gliner)
-        self.modality_extractor = ModalityExtractor()
         load_duration = time.time() - load_start
         logger.info("pipeline.loaded", duration=load_duration)
 
-    def process_job(self, text: str) -> dict:
+    def process_job(self, text: str, title: str = "") -> dict:
         if not text:
             return {
                 "salary": None,
@@ -41,7 +40,7 @@ class ExtractionPipeline:
 
         salary = self.salary_extractor.extract(text)
         required_skills, optional_skills = self.skills_extractor.extract(text)
-        modality = self.modality_extractor.extract(text)
+        modality = extract_modality(title=title, markdown=text)
 
         duration = time.time() - start
         logger.debug("pipeline.job_processed", duration=duration)
@@ -50,5 +49,5 @@ class ExtractionPipeline:
             "salary": salary,
             "required_skills": required_skills,
             "optional_skills": optional_skills,
-            "modality": modality.value if modality else None
+            "modality": modality
         }
