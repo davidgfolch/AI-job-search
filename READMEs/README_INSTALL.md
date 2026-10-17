@@ -120,7 +120,7 @@ ollama pull phi3.5:3b
 ollama pull llama3.2:1b
 ```
 
-> `scripts/install.sh` / `scripts/install.bat` also pull `qwen2.5-coder:7b` (graphify tooling) and `qwen2.5:3b` (AI modules) automatically, detecting whether Ollama is dockerized (pull via the `ai-job-search-ollama` container) or installed directly on the host.
+> `scripts/install.sh` installs commonlib first, then resolves the Ollama server with the same fallback chain the AI modules use (`commonlib.ollama_client.resolve_ollama_url` over `commonlib.ollama_config.get_configured_ollama_url()`: the configured URL, then `host.docker.internal`, `localhost`, the `ollama` compose service, and finally a LAN scan on port 11434; an `OLLAMA_HOST` already set in the shell is tried first). The resolved URL is exported as `OLLAMA_HOST`, so the `ollama` CLI pulls `qwen2.5-coder:7b` (graphify tooling) and `qwen2.5:3b` (AI modules) from that host — including a server that lives on another machine in the LAN; when the resolved host is the compose service name, the pull goes through `docker exec ai-job-search-ollama ollama` instead. Every step that needs a reachable server — those two pulls, `graphify install`, and the `graphify . --backend ollama` indexing — is best-effort: an unreachable server prints a warning and the dependency install continues, so you can run the skipped step later by hand. `scripts/install.bat` (Windows) keeps its own detection and does not run this chain.
 
 If you are running the Dockerized Ollama server (`docker-compose up -d ollama`), pull the models through the container instead:
 
@@ -197,6 +197,15 @@ You can use the helper script in the project root:
 > reinstalls `node_modules` on start (see `apps/web/docker-entrypoint.sh`), so a
 > simple `docker-compose up -d --build web` after a dependency change is enough.
 > See [DOCKER_DEV.md](DOCKER_DEV.md) for details.
+
+> **Note**: On Linux/macOS the script also prepares the folders it will log into
+> (`data/logs`, `data/metrics` and `apps/*/data/{logs,metrics}`) and fixes their owner.
+> The Docker containers run as root and create root-owned files in those bind mounts,
+> which then blocks the host user from writing its own logs, so `install.sh` re-owns
+> them with `sudo chown -R "$(id -u):$(id -g)" data apps/*/data` when it finds any
+> (it prints the command instead when `sudo` is unavailable). On Windows run the
+> equivalent by hand from an elevated shell; otherwise the apps report
+> `logs.write_failed` once per path and drop the affected records.
 
 Or install manually:
 

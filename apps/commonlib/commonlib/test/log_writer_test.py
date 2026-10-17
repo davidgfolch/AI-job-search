@@ -3,8 +3,9 @@ import os
 from unittest.mock import patch
 
 import pytest
+from structlog.testing import capture_logs
 
-from commonlib import log_writer
+from commonlib import log_writer, observability
 from commonlib.log_writer import append_jsonl, file_backup_count, file_max_bytes, get_log_dir, make_jsonl_writer, resolve_read_path, rotate_if_needed
 
 
@@ -12,6 +13,8 @@ from commonlib.log_writer import append_jsonl, file_backup_count, file_max_bytes
 def log_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("LOG_DIR", str(tmp_path))
     monkeypatch.delenv("AI_ENRICH_LOG_DIR", raising=False)
+    # structlog must be configured first for capture_logs to see the failure warning.
+    observability.configure_logging()
     yield tmp_path
 
 
@@ -124,13 +127,22 @@ class TestAppend:
         append_jsonl(path, {"event": "one", "payload": object()})
         assert _events(path)[0]["event"] == "one"
 
-    def test_write_oserror_is_swallowed(self, log_dir):
-        with patch("builtins.open", side_effect=OSError("disk full")):
-            append_jsonl(str(log_dir / "a.jsonl"), {"event": "one"})
+    @pytest.mark.parametrize("target, error", [("builtins.open", "disk full"), ("os.makedirs", "read only fs")])
+    def test_write_failure_warns_once_and_is_swallowed(self, log_dir, target, error):
+        path = str(log_dir / "a.jsonl")
+        with capture_logs() as records, patch(target, side_effect=OSError(error)):
+            append_jsonl(path, {"event": "one"})
+            append_jsonl(path, {"event": "two"})
+        failure = [r for r in records if r["event"] == "logs.write_failed"][0]
+        assert len(records) == 1 and failure["log_level"] == "warning" and failure["path"] == path and failure["error"] == error and "chown" in failure["hint"]
 
-    def test_makedirs_oserror_is_swallowed(self, log_dir):
-        with patch("os.makedirs", side_effect=OSError("read only fs")):
-            append_jsonl(str(log_dir / "a.jsonl"), {"event": "one"})
+    def test_warning_rearms_after_a_successful_write(self, log_dir):
+        path = str(log_dir / "a.jsonl")
+        with patch("builtins.open", side_effect=OSError("disk full")):
+            append_jsonl(path, {"event": "one"})
+        assert path in log_writer._warned_write_failures
+        append_jsonl(path, {"event": "two"})
+        assert path not in log_writer._warned_write_failures
 
 
 class TestWriterFactory:

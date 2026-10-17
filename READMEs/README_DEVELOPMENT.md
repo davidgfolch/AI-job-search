@@ -186,7 +186,7 @@ All apps share these variables. They can be set in `.env` (bind-mounted into eve
 
 ### Output layout
 
-Each app writes `data/logs/<app>.jsonl` relative to its working directory — for example `apps/cron/data/logs/cron.jsonl` on the host. The directory is created on first write, and file I/O failures are swallowed deliberately: losing a log line must never take down a worker. Containers receive the same files through the read-only log mounts declared in `docker-compose.yml`.
+Each app writes `data/logs/<app>.jsonl` relative to its working directory — for example `apps/cron/data/logs/cron.jsonl` on the host. The directory is created on first write, and a failing write is never fatal and never silent: losing a log line must not take down a worker, so `log_writer.append_jsonl` drops the record and reports it once per path as `logs.write_failed` with a `chown` hint, re-arming the warning after the next successful write. This is what surfaces the usual culprit — a root-owned `data/` folder created by a container and then unwritable by the host user; `install.sh` fixes those owners (see [README_INSTALL.md](README_INSTALL.md)). Containers receive the same files through the read-only log mounts declared in `docker-compose.yml`.
 
 ```bash
 # Tail one app
