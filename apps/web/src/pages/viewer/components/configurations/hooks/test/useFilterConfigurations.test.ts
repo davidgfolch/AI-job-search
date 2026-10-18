@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useFilterConfigurations } from '../useFilterConfigurations';
 import { persistenceApi as commonPersistenceApi } from "../../../../../common/api/CommonPersistenceApi";
 import { filterConfigsApi } from '../../../../api/FilterConfigurationsApi';
-import { createWrapper, setupMocks } from './testHelpers';
+import { createWrapper } from './testHelpers';
 
 vi.mock('../../../../../common/api/CommonPersistenceApi', () => ({
     persistenceApi: {
@@ -36,7 +36,6 @@ describe('useFilterConfigurations', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        setupMocks();
         (commonPersistenceApi.getValue as any).mockResolvedValue([]);
         (commonPersistenceApi.setValue as any).mockResolvedValue(true);
         (filterConfigsApi.getAll as any).mockResolvedValue([]);

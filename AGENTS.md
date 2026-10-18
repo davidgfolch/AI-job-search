@@ -67,6 +67,7 @@ npm run dev
 # Lint
 npm run lint
 ```
+Note: vitest 5 (apps/web) requires Node >= 22.12.0; prefer Node 24/26 (CI uses 24). If local Node is 22.12.0 and vitest workers fail with undici/zstd errors, use Node 24+ (e.g. `export PATH="$HOME/.nvm/versions/node/v26.8.2/bin:$PATH"`).
 
 ### E2E Tests (apps/e2e)
 ```bash

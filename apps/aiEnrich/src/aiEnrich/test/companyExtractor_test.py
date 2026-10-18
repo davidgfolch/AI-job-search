@@ -84,6 +84,7 @@ def _process_unspecified_job(repo, company: str | None):
     from aiEnrich.dataExtractor import _process_job_safe
     repo.get_job_to_enrich.return_value = (1, "Job", "Desc", company)
     with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", company, "Desc")), \
+         patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
          patch("aiEnrich.dataExtractor.query_ollama", return_value=_ollama_reply(EXTRACTION_REPLY)), \
          patch("aiEnrich.dataExtractor._save"), \
          patch("aiEnrich.dataExtractor.validateResult"), \
@@ -130,6 +131,7 @@ class TestCompanyRequestWiring:
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", UNSPECIFIED_COMPANY)
         replies = [_ollama_reply(EXTRACTION_REPLY), _ollama_reply('{"company": "Acme"}')]
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", UNSPECIFIED_COMPANY, "Desc")), \
+             patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
              patch("aiEnrich.dataExtractor.query_ollama", side_effect=replies) as mock_ollama, \
              patch("aiEnrich.dataExtractor._save"), \
              patch("aiEnrich.dataExtractor.validateResult"), \

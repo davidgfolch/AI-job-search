@@ -32,6 +32,15 @@ const DOC_SUFFIXES = [".md", ".mdx", ".txt"];
 const REMINDER =
   'echo "[docs-sync] source change detected: update docs in this same task. Apply the change to docs map in .claude/rules/documentation-update.md (apps/<module>/README.md, root README.md, AGENTS.md, .claude/CLAUDE.md, READMEs/DOCKER_DEV.md, READMEs/README_INSTALL.md, READMEs/README_DEVELOPMENT.md, READMEs/README_GITHUB.md, READMEs/AGENTIC_SDLC.md) and list updated docs in your final summary; if none needed, say so." ; ';
 
+// Idempotency guard: never prepend the reminder twice. Without it, a re-dispatched
+// hook concatenates another copy onto an already-reminded command, and the echoed
+// copies pile up in every subsequent bash result (mirrors docker-build's SKIP guard).
+const MARKER = "[docs-sync]";
+
+function shouldPrepend(command) {
+  return typeof command === "string" && command.length > 0 && !command.includes(MARKER);
+}
+
 function needsReminder(filePath) {
   if (!filePath) return false;
   const p = filePath.replace(/\\/g, "/");
@@ -60,7 +69,7 @@ export const DocsSyncPlugin = async () => {
         return;
       }
       if (input.tool !== "bash" || reminded || !codeChanged) return;
-      if (!output.args || !output.args.command) return;
+      if (!output.args || !shouldPrepend(output.args.command)) return;
       // ';' not '&&' - Windows PowerShell 5.1 rejects '&&' as a statement separator.
       output.args.command = REMINDER + output.args.command;
       reminded = true;
@@ -81,7 +90,7 @@ export default {
         return;
       }
       if (event.tool !== "shell" || reminded || !codeChanged) return;
-      if (!event.input || typeof event.input.command !== "string") return;
+      if (!event.input || !shouldPrepend(event.input.command)) return;
       event.input.command = REMINDER + event.input.command;
       reminded = true;
     });
