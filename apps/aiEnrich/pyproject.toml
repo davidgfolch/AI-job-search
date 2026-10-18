@@ -28,6 +28,15 @@ dev = [
     "genbadge[coverage]>=1.1.0"
 ]
 
+[tool.pytest.ini_options]
+# CI-hang debug: tee-sys streams every print()/log line to the console as it
+# happens instead of buffering it until the test ends, so the GitHub Actions
+# log shows the last step reached when the run hangs. log_cli shows the
+# commonlib.observability records live too.
+addopts = "--capture=tee-sys"
+log_cli = true
+log_cli_level = "INFO"
+
 [tool.coverage.run]
 branch = true
 source = ["src/aiEnrich"]
