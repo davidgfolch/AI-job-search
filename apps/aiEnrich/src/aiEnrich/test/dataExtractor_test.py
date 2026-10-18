@@ -180,6 +180,7 @@ class TestProcessJobSafeBackend:
         response = OllamaResponse(text='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}',
                                  url="http://ollama", done=True, done_reason="stop")
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
+             patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
              patch("aiEnrich.dataExtractor.query_openrouter") as mock_or, \
              patch("aiEnrich.dataExtractor.query_ollama", return_value=response) as mock_ollama, \
              patch("aiEnrich.dataExtractor._save") as mock_save, \
