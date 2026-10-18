@@ -160,6 +160,7 @@ class TestProcessJobSafeBackend:
         repo.count_pending_enrichment.return_value = 0
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
+             patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
              patch("aiEnrich.dataExtractor.query_openrouter", return_value='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}') as mock_or, \
              patch("aiEnrich.dataExtractor.query_ollama") as mock_ollama, \
              patch("aiEnrich.dataExtractor._save") as mock_save, \
