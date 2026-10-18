@@ -31,6 +31,11 @@ for /d %%a in (apps\*) do (
         if exist "%%~fa\package.json" (
             pushd "%%~fa"
             call npm install
+            REM The e2e module uses Playwright: install its browser binaries and OS deps.
+            if /i "%%~na"=="e2e" (
+                call npx playwright install
+                call npx playwright install-deps || echo WARNING: 'npx playwright install-deps' failed; run it manually (as admin) for e2e browsers.
+            )
             popd
         ) else if "%%~nxa" == "aiFormFiller" (
             pushd "%%~fa"

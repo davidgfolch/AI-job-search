@@ -140,7 +140,18 @@ export async function toggleFiltersIfNeeded(page: Page) {
     const filterContent = page.locator('.filters-content');
     const isExpanded = await filterContent.count() > 0;
     if (!isExpanded) {
-        await page.locator('#toggle-filters').click({ force: true });
+        // Ensure the toggle button is fully hydrated and visible before clicking,
+        // otherwise WebKit can miss the React state update that expands the panel.
+        await page.locator('#toggle-filters').waitFor({ state: 'visible', timeout: 10000 });
+        // Use dispatchEvent to fire a real DOM click event; Playwright's click()
+        // and page.evaluate().click() can fail to trigger React's synthetic
+        // onClick on WebKit. Retry until the panel appears, as WebKit may need
+        // multiple attempts to register the click and re-render.
+        for (let attempt = 0; attempt < 5; attempt++) {
+            await page.locator('#toggle-filters').dispatchEvent('click');
+            if (await filterContent.count() > 0) break;
+            await page.waitForTimeout(300);
+        }
         await filterContent.waitFor({ state: 'visible', timeout: 10000 });
     }
     await page.locator('#filter-search').waitFor({ state: 'visible', timeout: 10000 });

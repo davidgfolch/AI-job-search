@@ -133,6 +133,15 @@ for dir in apps/*; do
         echo "Installing $name..."
         if [ -f "$dir/package.json" ]; then
             (cd "$dir" && npm install)
+            # The e2e module uses Playwright: install its browser binaries and OS deps.
+            if [ "$name" == "e2e" ]; then
+                (cd "$dir" && npx playwright install)
+                if command -v sudo >/dev/null 2>&1; then
+                    (cd "$dir" && sudo npx playwright install-deps) || echo "WARNING: 'sudo npx playwright install-deps' failed; run it manually for e2e browsers."
+                else
+                    echo "WARNING: sudo not available; run 'sudo npx playwright install-deps' manually for e2e browsers."
+                fi
+            fi
         elif is_uv_app "$dir"; then
             (cd "$dir" && uv sync)
         else

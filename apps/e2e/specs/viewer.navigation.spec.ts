@@ -71,6 +71,8 @@ test.describe('Next and previous job keep the selection inside the visible frame
     });
 
     test('walks down and back up with the next and previous buttons', async ({ page }) => {
+        // WebKit needs more time: 2 x (PAGE_SIZE - 1) click + assert cycles.
+        test.setTimeout(60_000);
         await page.locator('#job-row-1').click();
         const next = page.locator('.list-header-actions .nav-button').last();
         const previous = page.locator('.list-header-actions .nav-button').first();

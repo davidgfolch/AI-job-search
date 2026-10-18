@@ -3,7 +3,13 @@ import { Page } from '@playwright/test';
 export const BASE_URL = 'http://127.0.0.1:5174';
 
 export async function setupPageLogging(page: Page) {
-    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    // Only surface warnings and errors; skip noisy info/debug/log chatter.
+    page.on('console', msg => {
+        const type = msg.type();
+        if (type === 'warning' || type === 'error') {
+            console.log(`PAGE ${type.toUpperCase()}:`, msg.text());
+        }
+    });
     page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
     page.on('requestfailed', request => console.log('REQUEST FAILED:', request.url(), request.failure()?.errorText));
 }
@@ -46,7 +52,6 @@ export async function setupAppBootstrapMocks(page: Page) {
 
 export async function setupApiSafetyNet(page: Page) {
     await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
-        console.log('UNMOCKED API REQUEST:', route.request().url());
         await route.fulfill({ status: 404, contentType: 'application/json', json: {} });
     });
 }
