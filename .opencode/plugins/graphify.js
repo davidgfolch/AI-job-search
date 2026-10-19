@@ -29,6 +29,19 @@ const hasGraph = (directory) => existsSync(join(directory, "graphify-out", "grap
 const location = [...import.meta.url].reduce((hash, ch) => (Math.imul(hash, 31) + ch.charCodeAt(0)) >>> 0, 7);
 const reminded = (globalThis.__graphifyReminded ??= new Set());
 
+export const GraphifyPlugin = async (ctx) => {
+  const reminded = new Set();
+  return {
+    "tool.execute.before": async (input, output) => {
+      if (input.tool !== "shell" || typeof output.args?.command !== "string") return;
+      if (reminded.has(input.sessionID)) return;
+      if (!hasGraph(ctx.directory)) return;
+      output.args.command = REMINDER + output.args.command;
+      reminded.add(input.sessionID);
+    },
+  };
+};
+
 export default {
   id: `graphify-${location.toString(16)}`,
 
