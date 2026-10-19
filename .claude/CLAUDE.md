@@ -203,32 +203,20 @@ Agent skills are located in `.claude/skills/`:
 - `skill-builder`: Create new agent skills
 - `e2e-implementer`: Create Playwright E2E tests
 - `test-implementer`: Implement unit tests
+- `codegraph`: Query the CodeGraph code-intelligence index (explore/node/impact/affected); the default for codebase questions
 - `scrapling-implementer`: Scrapling scraping library usage (fetching, parsing, spiders)
 - `crawlee-page-analyst`: Analyze a source page that changed (DOM/URL redesign) with Crawlee before changing `apps/scrapper`, producing selector-level requirements
 - `view-backend-logs`: How to view backend logs using docker-compose
 - `version-bumper`: Bump the version of any apps/* module following semver
 - `dependabot-agent`: Process open GitHub Dependabot PRs
 - `gh-actions-debug`: Debug GitHub Actions / Dependabot run failures with the gh CLI
-- `graphify`: Query the repo knowledge graph (query/path/explain)
-- `graphify-dev`: Change/improve graphify functionality (visualization, pipeline scripts). MANDATORY before editing anything graphify-related — never modify the uv-installed graphify package.
 
-## graphify
+## CodeGraph (code intelligence)
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
-
-Always run graphify through the wrapper scripts — `scripts\graphify\graphify.bat` (Windows) or `scripts/graphify/graphify.sh` (Linux/Mac) — never the raw `graphify` binary. The wrapper owns the full pipeline (no args = rebuild, `--clean`, `--module <name>`) and delegates `query`/`path`/`explain` to the CLI; mutating subcommands (`update`, `cluster-only`, `add`, `export`, `extract`, `merge-graphs`, URLs) are delegated and then re-run the repo HTML generator.
-
-`graphify-out/graph.html` is repo-owned: it is generated ONLY by `python scripts/graphify/graphify-html-grouped.py` (module-grouped visualization). Never regenerate it with upstream CLI commands (`graphify export html`, bare `graphify update .`, `graphify cluster-only`, path builds) — they overwrite it with the default/aggregated output.
+CodeGraph is the project's default code-intelligence tool. Its index lives in the local, gitignored `.codegraph/` directory; the background daemon auto-syncs changed files, and `scripts/install.*` install the CLI, wire its MCP server into the detected agents, and build the initial index.
 
 Rules:
-- For codebase questions, first run the wrapper `query` subcommand (e.g. `scripts\graphify\graphify.bat query "<question>"`) when graphify-out/graph.json exists. Use `path` for relationships and `explain` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run the wrapper `update` subcommand (e.g. `scripts\graphify\graphify.bat update .`) to keep the graph current (AST-only, no API cost).
-
-# graphify
-- **graphify** (`.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
-When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+- For codebase questions, use CodeGraph before your first grep, search or source-file read, and put this rule in every subagent prompt that explores code. Use the `codegraph_explore` MCP tool when available, otherwise `codegraph explore "<question>"`. Use `codegraph_node` / `codegraph node <symbol>` for one symbol, and `callers`/`callees`/`impact`/`affected` for relationships. See `.claude/skills/codegraph/SKILL.md`.
+- Read raw files only for lines CodeGraph or an earlier read already located.
+- `.codegraph/` is generated and local: never hand-edit it, never commit it, and never count it as documentation.
+- After substantial changes, check `codegraph status`; the daemon normally syncs automatically, otherwise run `codegraph sync`.

@@ -238,7 +238,7 @@ Outcome notes for this batch:
 phase, then the sandbox gate for `cron`, `backend` and `aiformfiller`. Docs to update
 per the documentation-sync rule: root `README.md` (Settings, Docker Compose volumes),
 `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_METRICS.md`, `READMEs/DOCKER_DEV.md`,
-`READMZs/TODO.md`, and the per-app READMEs. Then `scripts\graphify\graphify.bat update .`.
+`READMZs/TODO.md`, and the per-app READMEs.
 
 Done.
 
@@ -261,7 +261,7 @@ Outcome notes for this batch:
   (root `README.md` keeps pointers); backend `/metrics` `KeyError` from
   aiEnrichSkill's `job.result` events fixed by renaming them to `skill.result` and
   hardening `prometheus_exporter.build_log_metrics`. `AGENTS.md` Code Style now
-  documents the `PRINT_ALLOWLIST` architecture test. `graphify-out/` refreshed.
+  documents the `PRINT_ALLOWLIST` architecture test.
 
 ## Risks
 

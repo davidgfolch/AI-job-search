@@ -12,7 +12,6 @@
     }
   },
   "plugin": [
-    "./plugins/graphify.js",
     "./plugins/db-mutation.js",
     "./plugins/docker-build.js",
     "./plugins/docs-sync.js"

@@ -8,7 +8,6 @@ OLLAMA_CONTAINER=ai-job-search-ollama
 ollama_hf_spec() {
     case "$1" in
         qwen2.5:3b) echo "hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m" ;;
-        qwen2.5-coder:7b) echo "hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M" ;;
         *) echo "" ;;
     esac
 }
@@ -148,26 +147,17 @@ if [ -n "$OLLAMA_URL" ]; then
     export OLLAMA_HOST="$OLLAMA_URL"
     echo "Ollama server: $OLLAMA_URL"
 else
-    echo "WARNING: no reachable Ollama server found; the model pulls and the graphify indexing below only warn and are skipped (checked the configured URL, host.docker.internal, localhost, the compose service and the LAN)."
+    echo "WARNING: no reachable Ollama server found; the model pull below only warns and is skipped (checked the configured URL, host.docker.internal, localhost, the compose service and the LAN)."
 fi
 
 echo ""
-echo "Installing graphify..."
-# DISABLED: graphify tooling excluded from install scripts for now. Re-enable by uncommenting below.
-# uv tool install graphifyy
-# uv tool install "graphifyy[ollama]"
-# uv tool install "graphifyy[openai]"
-# uv tool install "graphifyy[sql]"
-# ollama_pull qwen2.5-coder:7b  # graphify community naming backend
+echo "Pulling Ollama models..."
+# The pull talks to the Ollama server resolved above, which may be another host on
+# the LAN, so a failure must not abort the dependency install that follows.
 ollama_pull qwen2.5:3b # aiEnrich / aiEnrichSkill default
-# The graphify steps talk to the Ollama server resolved above, which may be another
-# host on the LAN, so a failure must not abort the dependency install that follows.
-# graphify install --project --platform opencode || echo "WARNING: graphify project setup failed; continuing without it."
-# graphify . --backend ollama || echo "WARNING: graphify indexing skipped (the Ollama server was unreachable); run 'graphify . --backend ollama' later."
-# git add .claude/ .opencode/ AGENTS.md
 
 echo ""
-echo "Installing codegraph..."
+echo "Installing CodeGraph (default code intelligence)..."
 echo "  curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh"
 if curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh; then
     echo "codegraph installed."
@@ -195,7 +185,7 @@ uv tool install "crawlee[all]"
 
 for dir in apps/*; do
     name="$(basename "$dir")"
-    if [ -d "$dir" ] && [ "$name" != "commonlib" ] && [ "$name" != "graphify-out" ]; then
+    if [ -d "$dir" ] && [ "$name" != "commonlib" ]; then
         if [ ! -f "$dir/package.json" ] && [ ! -f "$dir/pyproject.toml" ]; then
             echo "Skipping $name (no package.json or pyproject.toml)"
             continue

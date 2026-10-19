@@ -62,6 +62,45 @@ function Remove-GlobalTool {
     }
 }
 
+function Test-CodeGraphInstalled {
+    if (Get-Command codegraph -ErrorAction SilentlyContinue) { return $true }
+    if ($env:LOCALAPPDATA -and (Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA "codegraph\current\bin\codegraph.cmd"))) { return $true }
+    return (Test-Path -LiteralPath (Join-Path $projectRoot ".codegraph"))
+}
+
+function Remove-CodeGraph {
+    $launcher = $null
+    $dir = Join-Path $projectRoot ".codegraph"
+    $ignore = Join-Path $dir ".gitignore"
+    $ignoreContent = $null
+    $found = Get-Command codegraph -ErrorAction SilentlyContinue
+    if ($found) {
+        $launcher = $found.Source
+    } elseif ($env:LOCALAPPDATA) {
+        $candidate = Join-Path $env:LOCALAPPDATA "codegraph\current\bin\codegraph.cmd"
+        if (Test-Path -LiteralPath $candidate) { $launcher = $candidate }
+    }
+    # .codegraph/.gitignore is tracked, so keep it when the index is removed.
+    if (Test-Path -LiteralPath $ignore) {
+        $ignoreContent = Get-Content -LiteralPath $ignore -Raw
+    }
+    if (-not $launcher) {
+        Write-Host "codegraph CLI not found; removing the local index only."
+        Remove-Path $dir
+    } else {
+        if (Test-Path -LiteralPath $dir) {
+            & $launcher uninit --force $projectRoot
+            if ($LASTEXITCODE -ne 0) { Write-Host "WARNING: codegraph uninit failed; remove .codegraph/ manually." }
+        }
+        & $launcher uninstall --yes
+        if ($LASTEXITCODE -ne 0) { Write-Host "WARNING: codegraph uninstall failed; run 'codegraph uninstall --yes' manually." }
+    }
+    if ($null -ne $ignoreContent) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        Set-Content -LiteralPath $ignore -Value $ignoreContent -NoNewline
+    }
+}
+
 function Test-AppInstalled {
     param([string]$App)
     $dir = Join-Path (Join-Path $projectRoot "apps") $App
@@ -147,7 +186,7 @@ foreach ($app in $apps) {
     }
 }
 if (Test-RootInstalled) { $items += "root" }
-if (Test-GlobalToolInstalled "graphify") { $items += "graphify" }
+if (Test-CodeGraphInstalled) { $items += "codegraph" }
 if (Test-GlobalToolInstalled "crawlee") { $items += "crawlee" }
 if ($items.Count -eq 0) {
     Write-Host "Nothing to uninstall (no dependencies found)."
@@ -161,7 +200,7 @@ if ($selected.Count -eq 0) {
         Write-Host "Removing dependencies of $item..."
         switch ($item) {
             "root" { Remove-Root }
-            "graphify" { Remove-GlobalTool graphify }
+            "codegraph" { Remove-CodeGraph }
             "crawlee" { Remove-GlobalTool crawlee }
             default { Remove-App $item }
         }

@@ -18,7 +18,7 @@ TOOLS = {"Edit", "MultiEdit", "NotebookEdit", "Write", "Update"}
 
 # Generated, vendored, or already-documentation paths: no reminder needed.
 IGNORED_PREFIXES = (
-    ".git/", "graphify-out/", "node_modules/", ".venv/", "venv/", "data/",
+    ".git/", ".codegraph/", "node_modules/", ".venv/", "venv/", "data/",
     "dist/", "build/", "coverage/", ".pytest_cache/", ".ruff_cache/",
     "READMZs/assets/", "uv.lock", "poetry.lock", "package-lock.json", "bun.lock",
 )

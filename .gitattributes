@@ -8,6 +8,3 @@ Dockerfile* text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 *.json text eol=lf
-
-#Exclude graphify-out generated from github languages
-graphify-out/** linguist-generated=true

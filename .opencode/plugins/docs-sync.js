@@ -14,7 +14,7 @@ const EDIT_TOOLS = new Set(["edit", "write", "patch", "multiedit"]);
 
 const IGNORED_PREFIXES = [
   ".git/",
-  "graphify-out/",
+  ".codegraph/",
   "node_modules/",
   ".venv/",
   "venv/",

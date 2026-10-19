@@ -11,7 +11,7 @@ This is enforced by a rule (this file) plus reminders: `.claude/hooks/docs-sync.
 ### When it applies
 
 - Applies to any change in `apps/**`, `scripts/**`, `docker/**`, `docker-compose*.yml`, `.env*`, `pyproject.toml`/`package.json`, `.github/workflows/**`, `.claude/**`, `.opencode/**`.
-- Does not apply to generated or vendored paths (`graphify-out/`, `node_modules/`, `.venv/`, `data/`, caches, lock files) or to changes with no observable behavior (renamed local variable, formatting, comments).
+- Does not apply to generated or vendored paths (`.codegraph/`, `node_modules/`, `.venv/`, `data/`, caches, lock files) or to changes with no observable behavior (renamed local variable, formatting, comments).
 
 ### Doc map: which docs to update for which change
 
@@ -23,6 +23,7 @@ This is enforced by a rule (this file) plus reminders: `.claude/hooks/docs-sync.
 | Docker service, profile, port, volume, healthcheck, or `extra_hosts` | `READMEs/DOCKER_DEV.md`, root `README.md` (Docker Compose Profiles), `AGENTS.md` (Ollama host vs container, sandbox sections) |
 | Build, test, install, or run command changed | `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md` |
 | New host requirement (Docker, `gh`, Ollama model, package manager) | `READMEs/README_INSTALL.md` |
+| Code-intelligence workflow or CodeGraph command changed | root `README.md`, `READMEs/AGENTIC_SDLC.md`, `.claude/skills/codegraph/SKILL.md` |
 | New/changed backend endpoint or DB schema | `apps/backend/README.md` |
 | User-visible UI flow, feature, or screenshot-worthy screen | root `README.md` (Features, Screenshots) |
 | CI workflow, Dependabot, or branch-flow behavior | `READMEs/README_GITHUB.md` |
@@ -41,6 +42,6 @@ This is enforced by a rule (this file) plus reminders: `.claude/hooks/docs-sync.
 
 - Document what the code does **after** the change; never describe intended behavior or speculate.
 - Markdown under `READMZs/`, the root `README.md`, and `apps/*/README.md` is the documentation surface. Code comments, docstrings, and test names are not a substitute.
-- `graphify-out/` is generated output: refresh it with the wrapper (`scripts\graphify\graphify.bat update .`) but never hand-edit it, and never count it as documentation.
+- `.codegraph/` is generated, machine-local output: refresh it with `codegraph sync`/`codegraph index`, never hand-edit it, and never count it as documentation.
 - Plan files in `.opencode/plans/**` must be marked with their real outcome; a plan left as "proposed" after implementation is stale documentation.
 - If the change makes existing documentation wrong, fixing it is part of the task, not a separate request.

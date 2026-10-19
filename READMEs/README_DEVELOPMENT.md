@@ -203,7 +203,7 @@ Per-app details live in each module's own README (`apps/<module>/README.md`); th
 
 ## Agentic SDLC
 
-Agent skills, rules, and workflows (including graphify and the dependabot agent) are documented in [AGENTIC_SDLC.md](AGENTIC_SDLC.md). All agent skills live under `.claude/skills/`.
+Agent skills, rules, and workflows (including CodeGraph and the dependabot agent) are documented in [AGENTIC_SDLC.md](AGENTIC_SDLC.md). All agent skills live under `.claude/skills/`.
 
 ## Documentation Sync
 

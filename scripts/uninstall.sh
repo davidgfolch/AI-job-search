@@ -61,6 +61,41 @@ remove_global_tool() {
     fi
 }
 
+codegraph_installed() {
+    if command -v codegraph > /dev/null 2>&1; then return 0; fi
+    if [ -x "$HOME/.local/bin/codegraph" ]; then return 0; fi
+    if [ -d "$PROJECT_ROOT/.codegraph" ]; then return 0; fi
+    return 1
+}
+
+remove_codegraph() {
+    local bin=""
+    local ignore_file="$PROJECT_ROOT/.codegraph/.gitignore"
+    local ignore_content=""
+    if command -v codegraph > /dev/null 2>&1; then
+        bin="$(command -v codegraph)"
+    elif [ -x "$HOME/.local/bin/codegraph" ]; then
+        bin="$HOME/.local/bin/codegraph"
+    fi
+    # .codegraph/.gitignore is tracked, so keep it when the index is removed.
+    if [ -f "$ignore_file" ]; then
+        ignore_content="$(cat "$ignore_file")"
+    fi
+    if [ -z "$bin" ]; then
+        echo "codegraph CLI not found; removing the local index only."
+        remove_path "$PROJECT_ROOT/.codegraph"
+    else
+        if [ -d "$PROJECT_ROOT/.codegraph" ]; then
+            "$bin" uninit --force "$PROJECT_ROOT" || echo "WARNING: codegraph uninit failed; remove .codegraph/ manually."
+        fi
+        "$bin" uninstall --yes || echo "WARNING: codegraph uninstall failed; run 'codegraph uninstall --yes' manually."
+    fi
+    if [ -n "$ignore_content" ]; then
+        mkdir -p "$PROJECT_ROOT/.codegraph"
+        printf '%s\n' "$ignore_content" > "$ignore_file"
+    fi
+}
+
 app_artifacts_present() {
     local app="$1"
     local dir="$APPS_DIR/$app"
@@ -162,8 +197,8 @@ main() {
     if root_artifacts_present; then
         items+=("root")
     fi
-    if global_tool_installed "graphify"; then
-        items+=("graphify")
+    if codegraph_installed; then
+        items+=("codegraph")
     fi
     if global_tool_installed "crawlee"; then
         items+=("crawlee")
@@ -181,7 +216,8 @@ main() {
         echo "Removing dependencies of $item..."
         case "$item" in
             root) remove_root ;;
-            graphify|crawlee) remove_global_tool "$item" ;;
+            codegraph) remove_codegraph ;;
+            crawlee) remove_global_tool "$item" ;;
             *) remove_app "$item" ;;
         esac
     done

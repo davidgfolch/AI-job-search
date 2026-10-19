@@ -9,25 +9,16 @@ call poetry install
 popd
 
 echo.
-echo Installing graphify...
-rem DISABLED: graphify tooling excluded from install scripts for now. Re-enable by uncommenting below.
-rem uv tool install graphifyy
-rem uv tool install "graphifyy[ollama]"
-rem uv tool install "graphifyy[openai]"
-rem uv tool install "graphifyy[sql]"
+echo Pulling Ollama models...
 rem Resolve the Ollama server the same way the AI modules do (configured URL ->
 rem host.docker.internal -> localhost -> compose service -> LAN scan) so models
 rem land on the host that will serve them, including a server on the LAN.
 call :ollama_resolve_url
 if defined OLLAMA_HOST echo Ollama server: %OLLAMA_HOST%
-rem call :ollama_pull qwen2.5-coder:7b
 call :ollama_pull qwen2.5:3b
-rem graphify install --project --platform opencode
-rem graphify . --backend ollama
-rem git add .claude/ .opencode/ AGENTS.md
 
 echo.
-echo Installing codegraph...
+echo Installing CodeGraph (default code intelligence)...
 echo   powershell -Command "irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex"
 powershell -Command "irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex"
 if !ERRORLEVEL! equ 0 (
@@ -57,7 +48,7 @@ echo Installing Crawlee...
 uv tool install "crawlee[all]"
 
 for /d %%a in (apps\*) do (
-    if /i not "%%~nxa"=="commonlib" if /i not "%%~nxa"=="graphify-out" (
+    if /i not "%%~nxa"=="commonlib" (
         echo.
         echo Installing %%~na...
         if exist "%%~fa\package.json" (
@@ -115,15 +106,15 @@ exit /b 0
 rem Resolve the Ollama server via commonlib discovery (source tree; no install needed).
 :ollama_resolve_url
 set "RESOLVED_URL="
-echo from commonlib.ollama_client import resolve_ollama_url > "%TEMP%\graphify-ollama-resolve.py"
-echo from commonlib.ollama_config import get_configured_ollama_url >> "%TEMP%\graphify-ollama-resolve.py"
-echo import os >> "%TEMP%\graphify-ollama-resolve.py"
-echo print(resolve_ollama_url(os.environ.get('OLLAMA_HOST') or get_configured_ollama_url()) or '') >> "%TEMP%\graphify-ollama-resolve.py"
+echo from commonlib.ollama_client import resolve_ollama_url > "%TEMP%\install-ollama-resolve.py"
+echo from commonlib.ollama_config import get_configured_ollama_url >> "%TEMP%\install-ollama-resolve.py"
+echo import os >> "%TEMP%\install-ollama-resolve.py"
+echo print(resolve_ollama_url(os.environ.get('OLLAMA_HOST') or get_configured_ollama_url()) or '') >> "%TEMP%\install-ollama-resolve.py"
 pushd apps\commonlib
-for /f "delims=" %%i in ('poetry run python "%TEMP%\graphify-ollama-resolve.py" 2^>nul') do set "RESOLVED_URL=%%i"
+for /f "delims=" %%i in ('poetry run python "%TEMP%\install-ollama-resolve.py" 2^>nul') do set "RESOLVED_URL=%%i"
 popd
 if defined RESOLVED_URL set "OLLAMA_HOST=%RESOLVED_URL%"
-del "%TEMP%\graphify-ollama-resolve.py" 2>nul
+del "%TEMP%\install-ollama-resolve.py" 2>nul
 exit /b 0
 
 :ollama_pull
@@ -146,19 +137,18 @@ if defined CID (
         if defined REMOTE_HOST (
             echo Pulling !MODEL! via remote Ollama host !REMOTE_HOST!...
             if /i "!MODEL!"=="qwen2.5:3b" set "HF_SPEC=hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m"
-            if /i "!MODEL!"=="qwen2.5-coder:7b" set "HF_SPEC=hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M"
             if defined HF_SPEC (
-                echo {"name": "!HF_SPEC!"} > "%TEMP%\graphify-ollama-pull.json"
-                curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/pull" -H "Content-Type: application/json" -d "@%TEMP%\graphify-ollama-pull.json" >nul 2>&1
+                echo {"name": "!HF_SPEC!"} > "%TEMP%\install-ollama-pull.json"
+                curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/pull" -H "Content-Type: application/json" -d "@%TEMP%\install-ollama-pull.json" >nul 2>&1
                 if !ERRORLEVEL! equ 0 (
-                    echo {"source": "!HF_SPEC!", "destination": "!MODEL!"} > "%TEMP%\graphify-ollama-cp.json"
-                    echo {"name": "!HF_SPEC!"} > "%TEMP%\graphify-ollama-rm.json"
-                    curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/cp" -H "Content-Type: application/json" -d "@%TEMP%\graphify-ollama-cp.json" >nul 2>&1 || true
-                    curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/delete" -H "Content-Type: application/json" -d "@%TEMP%\graphify-ollama-rm.json" >nul 2>&1 || true
+                    echo {"source": "!HF_SPEC!", "destination": "!MODEL!"} > "%TEMP%\install-ollama-cp.json"
+                    echo {"name": "!HF_SPEC!"} > "%TEMP%\install-ollama-rm.json"
+                    curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/cp" -H "Content-Type: application/json" -d "@%TEMP%\install-ollama-cp.json" >nul 2>&1 || true
+                    curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/delete" -H "Content-Type: application/json" -d "@%TEMP%\install-ollama-rm.json" >nul 2>&1 || true
                 )
             ) else (
-                echo {"name": "!MODEL!"} > "%TEMP%\graphify-ollama-pull.json"
-                curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/pull" -H "Content-Type: application/json" -d "@%TEMP%\graphify-ollama-pull.json" >nul 2>&1
+                echo {"name": "!MODEL!"} > "%TEMP%\install-ollama-pull.json"
+                curl.exe -s -m 120 -X POST "!REMOTE_HOST!/api/pull" -H "Content-Type: application/json" -d "@%TEMP%\install-ollama-pull.json" >nul 2>&1
             )
             if !ERRORLEVEL! equ 0 exit /b 0
             echo WARNING: could not pull !MODEL! from remote Ollama host !REMOTE_HOST!; continuing.
@@ -168,7 +158,6 @@ if defined CID (
     )
 )
 if /i "!MODEL!"=="qwen2.5:3b" set "HF_SPEC=hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m"
-if /i "!MODEL!"=="qwen2.5-coder:7b" set "HF_SPEC=hf.co/bartowski/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M"
 set "R2_OK=1"
 if /i "!OLLAMA_PULL_SOURCE!"=="hf" set "R2_OK=0"
 if /i "!OLLAMA_PULL_SOURCE!"=="ollama" set "R2_OK=1"
@@ -210,9 +199,9 @@ if !ERRORLEVEL! equ 0 (
     exit /b 1
 )
 if not defined OLLAMA_HOST exit /b 1
-echo {"name": "!CHECK_MODEL!"} > "%TEMP%\graphify-ollama-show.json"
-curl.exe -sf -m 10 -o NUL -X POST "!OLLAMA_HOST!/api/show" -H "Content-Type: application/json" -d "@%TEMP%\graphify-ollama-show.json" >nul 2>&1
+echo {"name": "!CHECK_MODEL!"} > "%TEMP%\install-ollama-show.json"
+curl.exe -sf -m 10 -o NUL -X POST "!OLLAMA_HOST!/api/show" -H "Content-Type: application/json" -d "@%TEMP%\install-ollama-show.json" >nul 2>&1
 set "SHOW_STATUS=!ERRORLEVEL!"
-del "%TEMP%\graphify-ollama-show.json" 2>nul
+del "%TEMP%\install-ollama-show.json" 2>nul
 if !SHOW_STATUS! equ 0 exit /b 0
 exit /b 1
