@@ -4,6 +4,7 @@ from unittest.mock import patch, MagicMock
 from contextlib import contextmanager
 
 from .. import dataExtractor as dataExtractor_module
+from .. import ollama_backend as ollama_backend_module
 
 
 @pytest.fixture
@@ -13,9 +14,11 @@ def mock_deps():
          patch('aiEnrich.dataExtractor.footer') as footer_chk, patch('aiEnrich.dataExtractor.StopWatch'), \
          patch('aiEnrich.dataExtractor.mapJob'), \
          patch('aiEnrich.dataExtractor.AiEnrichRepository') as repo_cls, \
-         patch('aiEnrich.dataExtractor.query_ollama') as mock_ollama, \
-         patch('aiEnrich.dataExtractor.ping_backend', return_value=True) as mock_ping, \
-         patch('aiEnrich.dataExtractor.get_backend', return_value='ollama'):
+         patch('aiEnrich.dataExtractor.ping_backend', return_value=True), \
+         patch('aiEnrich.dataExtractor.get_backend', return_value='ollama'), \
+         patch('aiEnrich.ollama_backend.query_ollama') as mock_ollama, \
+         patch('aiEnrich.ollama_backend.ping_backend', return_value=True) as mock_ping, \
+         patch('aiEnrich.ollama_backend.get_backend', return_value='ollama'):
         mysql = MagicMock()
         mysql_util.return_value.__enter__.return_value = mysql
         repo = MagicMock()
@@ -23,11 +26,13 @@ def mock_deps():
         repo_cls.return_value = repo
         dataExtractor_module.totalCount = 0
         dataExtractor_module.jobErrors = set()
-        dataExtractor_module._resolved_ollama_url = None
-        dataExtractor_module._ollama_server_known = False
+        ollama_backend_module._resolved_ollama_url = None
+        ollama_backend_module._ollama_server_known = False
+        ollama_backend_module.ollama_consecutive_failures = 0
         yield {'mysql': mysql, 'save': save_chk, 'repo': repo, 'ollama': mock_ollama, 'ping': mock_ping, 'footer': footer_chk}
-        dataExtractor_module._resolved_ollama_url = None
-        dataExtractor_module._ollama_server_known = False
+        ollama_backend_module._resolved_ollama_url = None
+        ollama_backend_module._ollama_server_known = False
+        ollama_backend_module.ollama_consecutive_failures = 0
 
 
 @pytest.fixture(autouse=True)
@@ -43,22 +48,3 @@ def clean_env():
             os.environ.pop(k, None)
         else:
             os.environ[k] = v
-
-
-ENV_GET_PARAMS = [
-    pytest.param(None, "ollama", id="default_ollama"),
-    pytest.param("openrouter", "openrouter", id="explicit_openrouter"),
-    pytest.param("ollama", "ollama", id="explicit_ollama"),
-]
-OPENROUTER_URL_PARAMS = [
-    pytest.param(None, "https://openrouter.ai/api/v1", id="default"),
-    pytest.param("http://custom:11434", "http://custom:11434", id="custom"),
-]
-OPENROUTER_MODEL_PARAMS = [
-    pytest.param(None, "openrouter/free", id="default"),
-    pytest.param("anthropic/claude-3.5-sonnet", "anthropic/claude-3.5-sonnet", id="custom"),
-]
-OPENROUTER_FALLBACK_PARAMS = [
-    pytest.param(None, "nex-agi/nex-n2.5-pro:free", id="default"),
-    pytest.param("openai/gpt-4o-mini", "openai/gpt-4o-mini", id="custom"),
-]

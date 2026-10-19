@@ -85,7 +85,7 @@ def _process_unspecified_job(repo, company: str | None):
     repo.get_job_to_enrich.return_value = (1, "Job", "Desc", company)
     with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", company, "Desc")), \
          patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
-         patch("aiEnrich.dataExtractor.query_ollama", return_value=_ollama_reply(EXTRACTION_REPLY)), \
+         patch("aiEnrich.ollama_backend.query_ollama", return_value=_ollama_reply(EXTRACTION_REPLY)), \
          patch("aiEnrich.dataExtractor._save"), \
          patch("aiEnrich.dataExtractor.validateResult"), \
          patch("aiEnrich.dataExtractor.footer"), \
@@ -132,7 +132,7 @@ class TestCompanyRequestWiring:
         replies = [_ollama_reply(EXTRACTION_REPLY), _ollama_reply('{"company": "Acme"}')]
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", UNSPECIFIED_COMPANY, "Desc")), \
              patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
-             patch("aiEnrich.dataExtractor.query_ollama", side_effect=replies) as mock_ollama, \
+             patch("aiEnrich.ollama_backend.query_ollama", side_effect=replies) as mock_ollama, \
              patch("aiEnrich.dataExtractor._save"), \
              patch("aiEnrich.dataExtractor.validateResult"), \
              patch("aiEnrich.dataExtractor.footer"), \
@@ -148,7 +148,7 @@ class TestCompanyRequestWiring:
 
     def test_company_request_routes_to_openrouter(self):
         os.environ["AI_ENRICH_BACKEND"] = "openrouter"
-        from aiEnrich.dataExtractor import _query_company
-        with patch("aiEnrich.dataExtractor.query_openrouter", return_value='{"company": "Acme"}') as mock_or:
+        from aiEnrich.ollama_backend import _query_company
+        with patch("aiEnrich.ollama_backend.query_openrouter", return_value='{"company": "Acme"}') as mock_or:
             _query_company("prompt", "openrouter", "openrouter/free")
         mock_or.assert_called_once()

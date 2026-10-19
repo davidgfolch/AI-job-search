@@ -1,57 +1,10 @@
-"""Tests for connection_manager module."""
+"""Tests for connection_manager module: target resolution, connection, and pool."""
 import os
 import queue
 import pytest
 from mysql.connector.errors import PoolError
 from unittest.mock import patch, MagicMock
 from commonlib.sql import connection_manager
-
-
-@pytest.fixture(autouse=True)
-def mock_mysql_connect():
-    with patch('commonlib.sql.connection_manager.mysqlConnector.connect') as mock_connect, \
-         patch.dict(os.environ, {'COMMONLIB_DB_HOST': '127.0.0.1'}, clear=False):
-        mock_connect.return_value = MagicMock()
-        connection_manager._pool_initialized = False
-        yield mock_connect
-        connection_manager._pool_initialized = False
-
-
-@pytest.mark.parametrize("range_str,expected", [
-    ("192.168.0.1-192.168.0.3", ["192.168.0.1", "192.168.0.2", "192.168.0.3"]),
-    ("192.168.0.10-12", ["192.168.0.10", "192.168.0.11", "192.168.0.12"]),
-    ("10.0.0.1-10.0.0.1", ["10.0.0.1"]),
-])
-def test_parse_ip_range(range_str, expected):
-    assert connection_manager._parse_ip_range(range_str) == expected
-
-
-def test_parse_ip_range_three_octets():
-    result = connection_manager._parse_ip_range("192.168.0.10-192.168.0.250")
-    assert result[0] == "192.168.0.10"
-    assert result[-1] == "192.168.0.250"
-
-
-def test_parse_ip_range_diff_prefix():
-    assert len(connection_manager._parse_ip_range("10.1.2.3-3.4.5")) > 0
-    assert len(connection_manager._parse_ip_range("192.168.0.10-1.20")) > 0
-
-
-def test_parse_ip_range_end_before_start_raises():
-    with pytest.raises(ValueError, match="Range end"):
-        connection_manager._parse_ip_range("192.168.0.50-192.168.0.10")
-
-
-def test_parse_host_targets():
-    assert connection_manager._parse_host_targets("127.0.0.1") == ["127.0.0.1"]
-    assert connection_manager._parse_host_targets("10.0.0.1,10.0.0.2") == ["10.0.0.1", "10.0.0.2"]
-    assert len(connection_manager._parse_host_targets("10.0.0.1-3")) == 3
-    assert "192.168.1.1" in connection_manager._parse_host_targets("192.168.1.0/30")
-
-
-def test_parse_host_targets_cleanup():
-    assert connection_manager._parse_host_targets("10.0.0.1,,10.0.0.2") == ["10.0.0.1", "10.0.0.2"]
-    assert connection_manager._parse_host_targets("  10.0.0.1  ,  10.0.0.2  ") == ["10.0.0.1", "10.0.0.2"]
 
 
 class TestTryTargets:
@@ -161,13 +114,11 @@ class TestGetConnection:
 class TestGetConnectionPoolError:
     def test_get_connection_retry_on_pool_exhausted(self, mock_mysql_connect):
         call_count = [0]
-
         def side_effect(**kwargs):
             call_count[0] += 1
             if call_count[0] <= 2:
                 raise PoolError("Pool exhausted")
             return MagicMock()
-
         mock_mysql_connect.side_effect = side_effect
         connection_manager._pool_initialized = True
         assert connection_manager.get_connection() is not None
@@ -180,7 +131,6 @@ class TestGetConnectionPoolError:
 
     def test_get_connection_retry_on_mixed_errors(self, mock_mysql_connect):
         call_count = [0]
-
         def side_effect(**kwargs):
             call_count[0] += 1
             if call_count[0] == 1:
@@ -188,38 +138,6 @@ class TestGetConnectionPoolError:
             if call_count[0] == 2:
                 raise PoolError("Pool exhausted")
             return MagicMock()
-
         mock_mysql_connect.side_effect = side_effect
         connection_manager._pool_initialized = True
         assert connection_manager.get_connection() is not None
-
-
-class TestProbeMysql:
-    def test_probe_success(self):
-        with patch('commonlib.sql.connection_manager.mysqlConnector.connect') as mock_connect:
-            mock_conn = MagicMock()
-            mock_connect.return_value = mock_conn
-            connection_manager._probe_mysql("10.0.0.1")
-            mock_conn.close.assert_called_once()
-
-    def test_probe_e2e_no_database(self):
-        with patch('commonlib.sql.connection_manager.mysqlConnector.connect') as mock_connect:
-            mock_connect.return_value = MagicMock()
-            connection_manager._probe_mysql("10.0.0.1", e2e_tests=True)
-            assert mock_connect.call_args[1].get('database') is None
-
-    def test_probe_failure(self):
-        with patch('commonlib.sql.connection_manager.mysqlConnector.connect', side_effect=Exception("refused")):
-            with pytest.raises(Exception):
-                connection_manager._probe_mysql("10.0.0.1")
-
-
-class TestInitPool:
-    def test_pool_init_skips_if_initialized(self, mock_mysql_connect):
-        connection_manager._pool_initialized = True
-        connection_manager._init_pool()
-        mock_mysql_connect.assert_not_called()
-
-    def test_pool_init_creates_pool(self, mock_mysql_connect):
-        connection_manager._init_pool()
-        assert connection_manager._pool_initialized is True

@@ -88,7 +88,7 @@ def _discover_ollama_lan_url(log=None) -> str | None:
         return None
     log = log or logger
     try:
-        from commonlib.network.ollama_discovery import auto_discover_host
+        from commonlib.network.ollama_resolve import auto_discover_host
         host = auto_discover_host()
     except Exception as e:
         log.warning("ollama.discovery_failed", error=str(e))
