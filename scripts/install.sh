@@ -58,10 +58,57 @@ ollama_unreachable() {
     return 0
 }
 
-ollama_pull() {
+# The model is often already on the server -- a remote host on the LAN is shared
+# between machines, and a previous run may have pulled it. Check first so a
+# blocked registry does not trigger a duplicate HuggingFace download.
+ollama_has_model() {
     local model="$1"
     local run; run="$(ollama_runner)"
+    if [ -n "$run" ]; then
+        # `ollama show` exits non-zero when the model is absent and honours OLLAMA_HOST.
+        $run show "$model" >/dev/null 2>&1 && return 0
+        return 1
+    fi
+    local host="${OLLAMA_HOST:-}"
+    [ -n "$host" ] || return 1
+    # No CLI and no container: ask the remote server directly (404 when absent).
+    curl -sf -m 10 -o /dev/null -X POST "$host/api/show" -H "Content-Type: application/json" -d "{\"name\": \"$model\"}" 2>/dev/null
+}
+
+ollama_pull() {
+    local model="$1"
+    if ollama_has_model "$model"; then
+        echo "$model already present on the Ollama server (${OLLAMA_HOST:-local}); skipping the download."
+        return 0
+    fi
+    local run; run="$(ollama_runner)"
     if [ -z "$run" ]; then
+        # No local CLI and no container: try a remote Ollama host reached over HTTP
+        # (e.g. a server on the LAN discovered by commonlib). Pull lands on that host.
+        local host; host="${OLLAMA_HOST:-}"
+        if [ -n "$host" ]; then
+            local hf_spec payload
+            if ollama_registry_reachable; then
+                payload="{\"name\": \"$model\"}"
+            else
+                hf_spec="$(ollama_hf_spec "$model")"
+                if [ -n "$hf_spec" ]; then
+                    echo "Ollama registry unreachable (r2.cloudflarestorage.com blocked) - pulling $model from HuggingFace ($hf_spec) on $host..."
+                    payload="{\"name\": \"$hf_spec\"}"
+                else
+                    payload="{\"name\": \"$model\"}"
+                fi
+            fi
+            echo "Pulling $model via remote Ollama host $host..."
+            if curl -s -m 120 -X POST "$host/api/pull" -H "Content-Type: application/json" -d "$payload" >/dev/null 2>&1; then
+                if [ -n "${hf_spec:-}" ]; then
+                    curl -s -m 120 -X POST "$host/api/cp" -H "Content-Type: application/json" -d "{\"source\": \"$hf_spec\", \"destination\": \"$model\"}" >/dev/null 2>&1 || true
+                    curl -s -m 120 -X POST "$host/api/delete" -H "Content-Type: application/json" -d "{\"name\": \"$hf_spec\"}" >/dev/null 2>&1 || true
+                fi
+                return 0
+            fi
+            echo "WARNING: could not pull $model from remote Ollama host $host; continuing."
+        fi
         echo "WARNING: no Ollama server reachable and no local 'ollama' CLI installed. Pull $model on the server that runs it: ollama pull $model."
         return 0
     fi
@@ -106,17 +153,41 @@ fi
 
 echo ""
 echo "Installing graphify..."
-uv tool install graphifyy
-uv tool install "graphifyy[ollama]"
-uv tool install "graphifyy[openai]"
-uv tool install "graphifyy[sql]"
-ollama_pull qwen2.5-coder:7b  # graphify community naming backend
+# DISABLED: graphify tooling excluded from install scripts for now. Re-enable by uncommenting below.
+# uv tool install graphifyy
+# uv tool install "graphifyy[ollama]"
+# uv tool install "graphifyy[openai]"
+# uv tool install "graphifyy[sql]"
+# ollama_pull qwen2.5-coder:7b  # graphify community naming backend
 ollama_pull qwen2.5:3b # aiEnrich / aiEnrichSkill default
 # The graphify steps talk to the Ollama server resolved above, which may be another
 # host on the LAN, so a failure must not abort the dependency install that follows.
-graphify install --project --platform opencode || echo "WARNING: graphify project setup failed; continuing without it."
-graphify . --backend ollama || echo "WARNING: graphify indexing skipped (the Ollama server was unreachable); run 'graphify . --backend ollama' later."
-git add .claude/ .opencode/ AGENTS.md
+# graphify install --project --platform opencode || echo "WARNING: graphify project setup failed; continuing without it."
+# graphify . --backend ollama || echo "WARNING: graphify indexing skipped (the Ollama server was unreachable); run 'graphify . --backend ollama' later."
+# git add .claude/ .opencode/ AGENTS.md
+
+echo ""
+echo "Installing codegraph..."
+echo "  curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh"
+if curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh; then
+    echo "codegraph installed."
+    # The installer links into ~/.local/bin, which this shell may not have on
+    # PATH yet, so resolve that link directly before wiring anything.
+    codegraph_bin="$(command -v codegraph || true)"
+    if [ -z "$codegraph_bin" ] && [ -x "$HOME/.local/bin/codegraph" ]; then
+        codegraph_bin="$HOME/.local/bin/codegraph"
+    fi
+    if [ -n "$codegraph_bin" ]; then
+        # --yes: non-interactive (global agent configs, auto-detected agents);
+        # --init: build this project's .codegraph/ index in the same step.
+        echo "Wiring codegraph into the detected agent(s) and indexing this project..."
+        "$codegraph_bin" install --yes --init || echo "WARNING: codegraph agent setup or indexing failed; run 'codegraph install --yes --init' later."
+    else
+        echo "WARNING: codegraph installed but is not on PATH in this shell. Open a new terminal and run: codegraph install --yes --init"
+    fi
+else
+    echo "WARNING: codegraph install failed; continuing without it. Install manually with: curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh"
+fi
 
 echo ""
 echo "Installing Crawlee..."

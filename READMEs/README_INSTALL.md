@@ -120,7 +120,7 @@ ollama pull phi3.5:3b
 ollama pull llama3.2:1b
 ```
 
-> `scripts/install.sh` installs commonlib first, then resolves the Ollama server with the same fallback chain the AI modules use (`commonlib.ollama_client.resolve_ollama_url` over `commonlib.ollama_config.get_configured_ollama_url()`: the configured URL, then `host.docker.internal`, `localhost`, the `ollama` compose service, and finally a LAN scan on port 11434; an `OLLAMA_HOST` already set in the shell is tried first). The resolved URL is exported as `OLLAMA_HOST`, so the `ollama` CLI pulls `qwen2.5-coder:7b` (graphify tooling) and `qwen2.5:3b` (AI modules) from that host — including a server that lives on another machine in the LAN; when the resolved host is the compose service name, the pull goes through `docker exec ai-job-search-ollama ollama` instead. Every step that needs a reachable server — those two pulls, `graphify install`, and the `graphify . --backend ollama` indexing — is best-effort: an unreachable server prints a warning and the dependency install continues, so you can run the skipped step later by hand. `scripts/install.bat` (Windows) keeps its own detection and does not run this chain.
+> `scripts/install.sh` installs commonlib first, then resolves the Ollama server with the same fallback chain the AI modules use (`commonlib.ollama_client.resolve_ollama_url` over `commonlib.ollama_config.get_configured_ollama_url()`: the configured URL, then `host.docker.internal`, `localhost`, the `ollama` compose service, and finally a LAN scan on port 11434; an `OLLAMA_HOST` already set in the shell is tried first). The resolved URL is exported as `OLLAMA_HOST`, so `qwen2.5:3b` (the AI modules' default; `qwen2.5-coder:7b` is only pulled when the graphify tooling is re-enabled) is pulled from that host — including a server that lives on another machine in the LAN — through the local `ollama` CLI when available, through `docker exec ai-job-search-ollama ollama` when the resolved host is the compose service, or directly against the host's Ollama HTTP API (`POST /api/pull`) when neither a local CLI nor a container exists. `scripts/install.bat` (Windows) resolves the same way and pulls via the local CLI, the container, or the host's HTTP API. Every step that needs a reachable server — the model pulls, and the graphify setup/indexing steps if you re-enable them — is best-effort: an unreachable server prints a warning and the dependency install continues, so you can run the skipped step later by hand. Before downloading anything, both scripts check whether the model is already on the resolved server (`ollama show` through the CLI or the container, or `POST /api/show` when neither exists) and skip the pull when the tag is present — a model already on a shared host in the LAN is never downloaded again, even when the registry probe fails and the HuggingFace fallback would otherwise kick in.
 
 If you are running the Dockerized Ollama server (`docker-compose up -d ollama`), pull the models through the container instead:
 
@@ -148,7 +148,7 @@ The `ollama rm` removes the temporary HuggingFace tag (it shares the same blobs,
 
 For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
 
-The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable, then removes the temporary tag. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`.
+The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable, then removes the temporary tag. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`. The HuggingFace fallback only runs when the model is actually missing: both scripts first ask the server (`ollama show`, or `POST /api/show` on a remote host without a local CLI) and skip the download when `<model>` is already there, so an existing model is not pulled again just because the registry is blocked.
 
 ### 7. Install Crawlee (source-page analysis)
 
@@ -183,6 +183,30 @@ sudo apt-get install -y google-chrome-stable \
     libwayland-client0 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 \
     libxrandr2 xdg-utils
 ```
+
+### 7.2 Install codegraph (agent code-graph tooling)
+
+`scripts/install.sh` / `scripts/install.bat` install [colbymchenry/codegraph](https://github.com/colbymchenry/codegraph) best-effort via its official installer:
+
+```bash
+# Linux/Mac (from scripts/install.sh)
+curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+
+# Windows (from scripts/install.bat)
+powershell -Command "irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex"
+```
+
+The scripts then wire CodeGraph into the agents they detect (**opencode**, Claude Code, Cursor, …) and build this project's index in one non-interactive step:
+
+```bash
+codegraph install --yes --init
+```
+
+`--yes` writes the MCP server entry into the detected agents' global config, and `--init` creates the local `.codegraph/` index, which ships its own `.gitignore` so the SQLite database and runtime files are never committed. The agent keeps the graph fresh automatically afterwards.
+
+Both the CLI install and the wiring/indexing are best-effort: if the installer is unreachable, or the `codegraph` launcher is not on `PATH` yet in the current shell (the installers update `PATH` for new terminals only), the scripts print a warning and the app dependency install continues. In that case open a new terminal and run `codegraph install --yes --init` in the repo root manually; on Windows the launcher lives at `%LOCALAPPDATA%\codegraph\current\bin\codegraph.cmd`.
+
+> codegraph is separate from the repo's existing `graphify` tooling (which builds `graphify-out/`). They write to different directories and can coexist.
 
 ### 8. Install Project Dependencies
 
