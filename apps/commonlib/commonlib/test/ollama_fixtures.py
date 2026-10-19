@@ -56,6 +56,12 @@ def clear_probe_cache(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def clear_last_ollama_server(monkeypatch):
+    """The last-known Ollama server is per-process state: reset between tests."""
+    monkeypatch.setattr("commonlib.ollama_probe._LAST_OLLAMA_SERVER", {"url": None, "ip": None, "is_lan": False})
+
+
+@pytest.fixture(autouse=True)
 def inference_probe_ok(monkeypatch):
     """A job is only sent after the inference probe passed; the probe itself is covered by TestInferenceProbe."""
     m = MagicMock(return_value=True)

@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function ServiceCard({ service }: Props) {
-    const { displayName, status, lastActivity, usesOllama, metrics } = service;
+    const { displayName, status, lastActivity, usesOllama, deployment, metrics } = service;
     return (
         <div className={`service-card service-card--${status}`}>
             <div className="service-card-header">
@@ -38,6 +38,9 @@ export default function ServiceCard({ service }: Props) {
                 {usesOllama && (
                     <div className="service-card-tag">Ollama</div>
                 )}
+                <div className="service-card-tag service-card-tag--deployment">
+                    {deployment === 'docker' ? 'Docker' : 'Host'}
+                </div>
                 {lastActivity && (
                     <div className="service-card-last-activity">
                         Last: {new Date(lastActivity).toLocaleString()}

@@ -78,7 +78,16 @@ docker-compose up -d --no-deps web
 
 ### Ollama auto-discovery
 
-The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). From inside a container the sweep only covers the Docker subnets, so an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL`. See [commonlib docs](apps/commonlib/README.md) for details.
+The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration — the dashboard automatically scans the common LAN subnets (`192.168.0.x`, `192.168.1.x`) even when it runs inside a Docker container. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). If your LAN uses a different subnet, add it with `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (comma-separated CIDRs, e.g. `10.0.0.0/24`). See [commonlib docs](apps/commonlib/README.md) for details.
+
+### Dashboard: Prometheus & Grafana health
+
+The dashboard probes Prometheus and Grafana on every refresh (via `GET /-/healthy` and `GET /api/health`) and shows their status as **Up**/**Down** summary cards. The target URLs are configured with:
+
+- `PROMETHEUS_URL` (default `http://host.docker.internal:9090` — works from the backend container via `extra_hosts: host.docker.internal=host-gateway`)
+- `GRAFANA_URL` (default `http://host.docker.internal:3000`)
+
+Override them in `.env` if your Prometheus/Grafana run on a different host or port.
 
 So in another PC in the same LAN you can run services that depend on Ollama, it must be run outside docker:
 

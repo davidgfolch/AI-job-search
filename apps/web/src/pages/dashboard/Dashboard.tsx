@@ -30,10 +30,26 @@ export default function Dashboard() {
                         <span className="summary-label">Ollama</span>
                     </div>
                     <div className="summary-item">
+                        <span className={`summary-value ${data.prometheus.reachable ? '' : 'summary-value--error'}`}>
+                            {data.prometheus.reachable ? 'Up' : 'Down'}
+                        </span>
+                        <span className="summary-label">Prometheus</span>
+                    </div>
+                    <div className="summary-item">
+                        <span className={`summary-value ${data.grafana.reachable ? '' : 'summary-value--error'}`}>
+                            {data.grafana.reachable ? 'Up' : 'Down'}
+                        </span>
+                        <span className="summary-label">Grafana</span>
+                    </div>
+                    <div className="summary-item">
                         <span className="summary-value">
                             {data.services.reduce((acc, s) => acc + s.metrics.pendingJobs, 0)}
                         </span>
                         <span className="summary-label">Total Pending</span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="summary-value">{data.deployment === 'docker' ? 'Docker' : 'Host'}</span>
+                        <span className="summary-label">Deployment</span>
                     </div>
                 </div>
 

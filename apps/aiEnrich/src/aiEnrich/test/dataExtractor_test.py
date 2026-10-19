@@ -131,16 +131,78 @@ def test_get_openrouter_fallback_model(env_val, expected):
     assert get_openrouter_fallback_model() == expected
 
 
+class TestCheckBackendAvailable:
+    def test_exits_when_no_server_was_ever_resolved(self, monkeypatch):
+        from aiEnrich import dataExtractor
+        monkeypatch.setattr(dataExtractor, "_resolved_ollama_url", None)
+        monkeypatch.setattr(dataExtractor, "_ollama_server_known", False)
+        monkeypatch.setattr(dataExtractor, "ollama_consecutive_failures", 0)
+        monkeypatch.setattr(dataExtractor, "get_backend", lambda: "ollama")
+        monkeypatch.setattr(dataExtractor, "get_max_ollama_failures", lambda: 3)
+        monkeypatch.setattr(dataExtractor, "ping_backend", lambda: False)
+        with patch.object(dataExtractor, "logger") as mock_logger:
+            assert dataExtractor._check_backend_available() is False
+            assert dataExtractor._check_backend_available() is False
+            with pytest.raises(SystemExit):
+                dataExtractor._check_backend_available()
+        mock_logger.critical.assert_called_once_with("ai.exit_threshold_reached", consecutive_failures=3)
+
+    def test_keeps_retrying_when_the_resolved_server_is_unreachable(self, monkeypatch):
+        """A sleeping LAN host must not stop the pipeline: once the server was reached,
+        failures keep the cycle returning -1 so the pipeline waits until it answers again."""
+        from aiEnrich import dataExtractor
+        monkeypatch.setattr(dataExtractor, "_resolved_ollama_url", None)
+        monkeypatch.setattr(dataExtractor, "_ollama_server_known", True)
+        monkeypatch.setattr(dataExtractor, "ollama_consecutive_failures", 0)
+        monkeypatch.setattr(dataExtractor, "get_backend", lambda: "ollama")
+        monkeypatch.setattr(dataExtractor, "get_max_ollama_failures", lambda: 3)
+        monkeypatch.setattr(dataExtractor, "ping_backend", lambda: False)
+        assert [dataExtractor._check_backend_available() for _ in range(5)] == [False] * 5
+        assert dataExtractor.ollama_consecutive_failures == 5
+        monkeypatch.setattr(dataExtractor, "ping_backend", lambda: True)
+        assert dataExtractor._check_backend_available() is True
+        assert dataExtractor.ollama_consecutive_failures == 0
+
+
 class TestPingBackend:
-    def test_routes_to_ollama(self):
+    def test_routes_to_ollama(self, monkeypatch):
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         from aiEnrich import dataExtractor
-        dataExtractor._resolved_ollama_url = None
+        monkeypatch.setattr(dataExtractor, "_resolved_ollama_url", None)
+        monkeypatch.setattr(dataExtractor, "_ollama_server_known", False)
         with patch.object(dataExtractor, "resolve_ollama_url", return_value="http://host:11434") as mock_resolve, \
              patch.object(dataExtractor, "ping_openrouter") as mock_ping_or:
             assert dataExtractor.ping_backend() is True
         mock_resolve.assert_called_once()
         mock_ping_or.assert_not_called()
+        assert dataExtractor._ollama_server_known is True
+
+    def test_rediscovers_when_cached_server_stops_answering(self, monkeypatch):
+        """A sleeping LAN host may come back on another address: the cached URL must be
+        dropped and resolved again instead of being pinged forever."""
+        from aiEnrich import dataExtractor
+        monkeypatch.setattr(dataExtractor, "_resolved_ollama_url", "http://192.168.1.50:11434")
+        monkeypatch.setattr(dataExtractor, "_ollama_server_known", True)
+        with patch.object(dataExtractor, "get_backend", return_value="ollama"), \
+             patch.object(dataExtractor, "_ping_url", return_value=False), \
+             patch.object(dataExtractor, "resolve_ollama_url", return_value="http://192.168.1.77:11434") as mock_resolve, \
+             patch.object(dataExtractor, "logger"):
+            assert dataExtractor.ping_backend() is True
+        mock_resolve.assert_called_once()
+        assert dataExtractor._resolved_ollama_url == "http://192.168.1.77:11434"
+        assert dataExtractor._ollama_server_known is True
+
+    def test_stays_unreachable_when_rediscovery_finds_nothing(self, monkeypatch):
+        from aiEnrich import dataExtractor
+        monkeypatch.setattr(dataExtractor, "_resolved_ollama_url", "http://192.168.1.50:11434")
+        monkeypatch.setattr(dataExtractor, "_ollama_server_known", True)
+        with patch.object(dataExtractor, "get_backend", return_value="ollama"), \
+             patch.object(dataExtractor, "_ping_url", return_value=False), \
+             patch.object(dataExtractor, "resolve_ollama_url", return_value=None), \
+             patch.object(dataExtractor, "logger"):
+            assert dataExtractor.ping_backend() is False
+        assert dataExtractor._resolved_ollama_url is None
+        assert dataExtractor._ollama_server_known is True
 
     def test_routes_to_openrouter(self):
         os.environ["AI_ENRICH_BACKEND"] = "openrouter"

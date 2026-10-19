@@ -1,6 +1,7 @@
 import pytest
+import time
 from datetime import datetime, timezone, timedelta
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import services.dashboard_service as dashboard_service
 
 
@@ -38,7 +39,9 @@ def test_determine_status(last_processed, last_error_at, expected):
 
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
-def test_get_services_status_running(mock_repo, mock_collector):
+@patch("services.dashboard_service._probe_ollama")
+def test_get_services_status_running(mock_probe, mock_repo, mock_collector):
+    mock_probe.return_value = {"reachable": False, "serverUrl": None, "serverIp": None, "isLan": False}
     mock_repo.read_recent_errors.return_value = []
     mock_repo.read_last_activity.return_value = None
     mock_repo.check_ollama_errors.return_value = []
@@ -64,7 +67,7 @@ def test_get_services_status_running(mock_repo, mock_collector):
 @patch("services.dashboard_service._repo")
 @patch("services.dashboard_service._probe_ollama")
 def test_get_services_status_ollama_reachable(mock_probe, mock_repo, mock_collector):
-    mock_probe.return_value = True
+    mock_probe.return_value = {"reachable": True, "serverUrl": "http://192.168.1.45:11434", "serverIp": "192.168.1.45", "isLan": True}
     mock_repo.read_recent_errors.return_value = []
     mock_repo.read_last_activity.return_value = None
     mock_repo.check_ollama_errors.return_value = []
@@ -74,13 +77,15 @@ def test_get_services_status_ollama_reachable(mock_probe, mock_repo, mock_collec
     result = dashboard_service.get_services_status()
 
     assert result["ollama"]["reachable"] is True
+    assert result["ollama"]["serverIp"] == "192.168.1.45"
+    assert result["ollama"]["isLan"] is True
 
 
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
 @patch("services.dashboard_service._probe_ollama")
 def test_get_services_status_ollama_unreachable(mock_probe, mock_repo, mock_collector):
-    mock_probe.return_value = False
+    mock_probe.return_value = {"reachable": False, "serverUrl": "http://192.168.1.45:11434", "serverIp": "192.168.1.45", "isLan": True}
     mock_repo.read_recent_errors.return_value = []
     mock_repo.read_last_activity.return_value = None
     mock_repo.check_ollama_errors.return_value = [
@@ -92,6 +97,7 @@ def test_get_services_status_ollama_unreachable(mock_probe, mock_repo, mock_coll
     result = dashboard_service.get_services_status()
 
     assert result["ollama"]["reachable"] is False
+    assert result["ollama"]["serverIp"] == "192.168.1.45"
     assert len(result["ollama"]["recentErrors"]) == 1
 
 
@@ -190,3 +196,113 @@ def test_module_metric_key_mapping():
         "aienrich3": "aiEnrich3",
         "aicvmatcher": "aiCvMatcher",
     }
+
+
+def test_host_ip_localhost():
+    assert dashboard_service._host_ip("http://localhost:11434") == "127.0.0.1"
+
+
+def test_host_ip_lan():
+    assert dashboard_service._host_ip("http://192.168.1.45:11434") == "192.168.1.45"
+
+
+@pytest.mark.parametrize("url,expected", [
+    ("http://localhost:11434", False),
+    ("http://127.0.0.1:11434", False),
+    ("http://host.docker.internal:11434", False),
+    ("http://ollama:11434", False),
+    ("http://192.168.1.45:11434", True),
+])
+def test_is_lan_url(url, expected):
+    assert dashboard_service._is_lan_url(url) is expected
+
+
+@patch("services.dashboard_service.get_last_ollama_server")
+@patch("services.dashboard_service.resolve_ollama_url")
+@patch("services.dashboard_service.urllib.request.urlopen")
+def test_probe_ollama_reachable_last_known(mock_urlopen, mock_resolve, mock_last):
+    """The last-known server IP:port is probed fresh (no cache) and trusted."""
+    mock_last.return_value = {
+        "url": "http://192.168.1.211:11434",
+        "ip": "192.168.1.211",
+        "is_lan": True,
+    }
+    resp = MagicMock()
+    resp.status = 200
+    mock_urlopen.return_value.__enter__.return_value = resp
+    dashboard_service._OLLAMA_CACHE = None  # safety: no cache attr anymore
+
+    result = dashboard_service._probe_ollama()
+
+    mock_resolve.assert_not_called()  # last-known answered, no fallback needed
+    assert result["reachable"] is True
+    assert result["serverUrl"] == "http://192.168.1.211:11434"
+    assert result["serverIp"] == "192.168.1.211"
+    assert result["isLan"] is True
+
+
+@patch("services.dashboard_service.get_last_ollama_server")
+@patch("services.dashboard_service.resolve_ollama_url")
+@patch("services.dashboard_service.urllib.request.urlopen")
+def test_probe_ollama_reachable_via_lan_discovery(mock_urlopen, mock_resolve, mock_last):
+    """Last-known is down; Ollama on another LAN PC is found by the subnet scan."""
+    mock_last.return_value = {
+        "url": "http://192.168.1.211:11434",
+        "ip": "192.168.1.211",
+        "is_lan": True,
+    }
+    # last-known probe fails
+    mock_urlopen.side_effect = OSError("connection refused")
+    mock_resolve.return_value = "http://192.168.1.211:11434"
+
+    result = dashboard_service._probe_ollama()
+
+    mock_resolve.assert_called_once()
+    assert result["reachable"] is True
+    assert result["serverUrl"] == "http://192.168.1.211:11434"
+    assert result["serverIp"] == "192.168.1.211"
+    assert result["isLan"] is True
+
+
+@patch("services.dashboard_service.get_last_ollama_server")
+@patch("services.dashboard_service.resolve_ollama_url")
+@patch("services.dashboard_service.urllib.request.urlopen")
+def test_probe_ollama_unreachable_keeps_last_known(mock_urlopen, mock_resolve, mock_last):
+    """Nothing reachable: last-known address is reported as unreachable (not blank)."""
+    mock_last.return_value = {
+        "url": "http://192.168.1.211:11434",
+        "ip": "192.168.1.211",
+        "is_lan": True,
+    }
+    mock_urlopen.side_effect = OSError("connection refused")
+    mock_resolve.return_value = None
+
+    result = dashboard_service._probe_ollama()
+
+    assert result["reachable"] is False
+    assert result["serverUrl"] == "http://192.168.1.211:11434"
+    assert result["serverIp"] == "192.168.1.211"
+    assert result["isLan"] is True
+
+
+@patch("services.dashboard_service.get_last_ollama_server")
+@patch("services.dashboard_service.resolve_ollama_url")
+@patch("services.dashboard_service.urllib.request.urlopen")
+def test_probe_ollama_no_cache_probes_last_known_every_time(mock_urlopen, mock_resolve, mock_last):
+    """No TTL cache: the last-known server is probed fresh on every call."""
+    mock_last.return_value = {
+        "url": "http://192.168.1.211:11434",
+        "ip": "192.168.1.211",
+        "is_lan": True,
+    }
+    resp = MagicMock()
+    resp.status = 200
+    mock_urlopen.return_value.__enter__.return_value = resp
+
+    dashboard_service._probe_ollama()
+    dashboard_service._probe_ollama()
+    dashboard_service._probe_ollama()
+
+    # urllib called once per _probe_ollama call (last-known always probed first)
+    assert mock_urlopen.call_count == 3
+    mock_resolve.assert_not_called()

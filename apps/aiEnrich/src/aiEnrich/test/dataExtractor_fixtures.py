@@ -24,8 +24,10 @@ def mock_deps():
         dataExtractor_module.totalCount = 0
         dataExtractor_module.jobErrors = set()
         dataExtractor_module._resolved_ollama_url = None
+        dataExtractor_module._ollama_server_known = False
         yield {'mysql': mysql, 'save': save_chk, 'repo': repo, 'ollama': mock_ollama, 'ping': mock_ping, 'footer': footer_chk}
         dataExtractor_module._resolved_ollama_url = None
+        dataExtractor_module._ollama_server_known = False
 
 
 @pytest.fixture(autouse=True)

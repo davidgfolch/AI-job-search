@@ -188,3 +188,41 @@ When fetching a single job (`GET /api/jobs/{id}`), the response includes a `syno
 | `PUT` | `/settings/env` | Bulk-updates one or more `.env` / `.env.secrets` variables. Returns the updated state. |
 | `GET` | `/settings/scrapper-state` | Returns the scrapper state from the MySQL database. |
 | `PUT` | `/settings/scrapper-state` | Saves the scrapper state to the MySQL database. |
+
+## Dashboard API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/dashboard/services` | Returns the status of every AI module plus Ollama reachability and deployment mode. |
+
+The response shape is:
+
+```json
+{
+  "services": [
+    {
+      "name": "aienrich",
+      "displayName": "AI Enrich (Ollama)",
+      "status": "running",
+      "lastActivity": "2026-01-01T10:00:00",
+      "usesOllama": true,
+      "deployment": "docker",
+      "metrics": { "pendingJobs": 3, "processed": 10, "succeeded": 8, "failed": 2, "lastError": null, "lastErrorAt": null },
+      "recentErrors": []
+    }
+  ],
+  "ollama": {
+    "reachable": true,
+    "serverUrl": "http://192.168.1.45:11434",
+    "serverIp": "192.168.1.45",
+    "isLan": true,
+    "recentErrors": []
+  },
+  "deployment": "docker",
+  "timestamp": "2026-01-01T10:00:00Z"
+}
+```
+
+- `ollama.serverIp` / `ollama.isLan` report the reachable Ollama server, discovered through the configured URL (`AI_ENRICH_OLLAMA_BASE_URL`), the Docker fallbacks (`host.docker.internal`, `localhost`, `ollama`) or the LAN scan — so an Ollama server running on another machine in the LAN is identified and shown by its IP. The last-known server address is saved in memory and shared across all modules via `commonlib.ollama_probe.get_last_ollama_server()`; the dashboard probes it fresh (no cache) on every refresh, so a server that came back up is detected immediately. When nothing is reachable, the last-known address is kept with `reachable: false` instead of going blank. The LAN scan covers the Docker bridge subnet plus the common LAN subnets (`192.168.0.x`, `192.168.1.x`) automatically, even when the dashboard runs inside a Docker container; if your LAN uses a different subnet, set `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (comma-separated CIDRs, e.g. `10.0.0.0/24`).
+- `prometheus` / `grafana` report the health of Prometheus (`GET /-/healthy`) and Grafana (`GET /api/health`) as `{ reachable, url }`. The target URLs come from `PROMETHEUS_URL` (default `http://host.docker.internal:9090`) and `GRAFANA_URL` (default `http://host.docker.internal:3000`); override them in `.env` if your services run elsewhere.
+- `deployment` is `"docker"` when the process runs inside a container (`/.dockerenv` or `/proc/1/cgroup`) and `"host"` otherwise. It is reported per service (from that module's own metrics collector) and at the top level for the dashboard itself.

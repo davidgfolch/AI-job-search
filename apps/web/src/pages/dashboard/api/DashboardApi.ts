@@ -29,18 +29,30 @@ export interface ServiceStatus {
     status: 'running' | 'stopped' | 'error';
     lastActivity: string | null;
     usesOllama: boolean;
+    deployment: 'docker' | 'host';
     metrics: ServiceMetrics;
     recentErrors: ServiceError[];
 }
 
+export interface ServiceHealth {
+    reachable: boolean;
+    url: string;
+}
+
 export interface OllamaStatus {
     reachable: boolean;
+    serverUrl: string | null;
+    serverIp: string | null;
+    isLan: boolean;
     recentErrors: OllamaError[];
 }
 
 export interface DashboardData {
     services: ServiceStatus[];
     ollama: OllamaStatus;
+    prometheus: ServiceHealth;
+    grafana: ServiceHealth;
+    deployment: 'docker' | 'host';
     timestamp: string;
 }
 

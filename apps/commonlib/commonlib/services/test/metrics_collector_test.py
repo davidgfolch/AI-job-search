@@ -62,6 +62,11 @@ def test_record_heartbeat(collector):
     assert m["last_processed_at"] is None
 
 
+def test_deployment_captured(collector):
+    m = collector._modules["test_module"]
+    assert m["deployment"] in ("docker", "host")
+
+
 def test_get_snapshot_no_data(collector):
     snapshot = collector.get_snapshot()
     assert "timestamp" in snapshot

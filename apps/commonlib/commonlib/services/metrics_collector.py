@@ -5,6 +5,7 @@ import threading
 from collections import defaultdict
 
 from commonlib.environmentUtil import getEnv
+from commonlib.systemUtil import isDocker
 
 METRICS_FILE = getEnv(
     "AI_ENRICH_METRICS_FILE",
@@ -43,6 +44,7 @@ class MetricsCollector:
                 "last_error_at": None,
                 "last_error": None,
                 "pending_jobs": 0,
+                "deployment": "docker" if isDocker() else "host",
             }
         )
         self._load()

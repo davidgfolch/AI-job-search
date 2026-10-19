@@ -6,7 +6,9 @@ interface Props {
 }
 
 export default function OllamaStatus({ ollama }: Props) {
-    const { reachable, recentErrors } = ollama;
+    const { reachable, serverUrl, serverIp, isLan, recentErrors } = ollama;
+    const address = serverIp ? (serverUrl ? `${serverIp}` : serverIp) : null;
+    const scope = isLan ? 'LAN' : 'local';
     return (
         <div className={`ollama-status ollama-status--${reachable ? 'ok' : 'error'}`}>
             <div className="ollama-status-header">
@@ -14,6 +16,11 @@ export default function OllamaStatus({ ollama }: Props) {
                 <h3 className="ollama-status-title">Ollama</h3>
                 <span className="ollama-status-label">{reachable ? 'Reachable' : 'Unreachable'}</span>
             </div>
+            {address && (
+                <span className="ollama-status-address">
+                    {reachable ? '' : 'last: '}{address} <span className="ollama-status-scope">· {scope}</span>
+                </span>
+            )}
             {!reachable && recentErrors.length > 0 && (
                 <div className="ollama-status-errors">
                     {recentErrors.map((err, i) => (

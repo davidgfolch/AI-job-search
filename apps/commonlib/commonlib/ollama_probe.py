@@ -35,6 +35,33 @@ AUTO_URL_SPECS = ("auto", "discover")
 
 _logged_fallback_urls: set[str] = set()
 _probed_servers: dict[str, float] = {}
+_LAST_OLLAMA_SERVER: dict = {"url": None, "ip": None, "is_lan": False}
+_OLLAMA_LOCAL_HOSTS = {"localhost", "127.0.0.1", "host.docker.internal", "ollama"}
+
+
+def get_last_ollama_server() -> dict:
+    """Last-known reachable Ollama server, shared by all modules in this process.
+
+    Modules that need to reach Ollama (backend dashboard, aiEnrich, aiEnrichSkill,
+    …) read this instead of rediscovering from scratch, so they all agree on the
+    same server until it stops answering."""
+    return dict(_LAST_OLLAMA_SERVER)
+
+
+def _is_lan_url(url: str) -> bool:
+    host = (urlsplit(url).hostname or "").lower()
+    if host in _OLLAMA_LOCAL_HOSTS:
+        return False
+    ip = _host_ip(url)
+    return bool(ip) and not ip.startswith("127.")
+
+
+def _record_ollama_server(url: str, log) -> None:
+    """Remember `url` as the last-known Ollama server (IP + LAN scope)."""
+    ip = _host_ip(url)
+    is_lan = _is_lan_url(url)
+    _LAST_OLLAMA_SERVER.update({"url": url, "ip": ip, "is_lan": is_lan})
+    log.info("ollama.server_learned", base_url=url, ip=ip, lan=is_lan)
 
 
 def _candidate_urls(primary_url: str | None) -> tuple[str, ...]:
@@ -84,25 +111,40 @@ def _ping_url(url: str, timeout: int, log) -> bool:
 
 
 def resolve_ollama_url(primary_url: str | None = None, timeout: int = PROBE_TIMEOUT, *, log=None) -> str | None:
-    """Return the URL of the first reachable Ollama server, or None if none respond."""
+    """Return the URL of the first reachable Ollama server, or None if none respond.
+
+    The last-known server (from a previous successful discovery) is probed first
+    with a fresh request — no cache — so a server that came back up is detected
+    immediately instead of waiting out a TTL. If it no longer answers, the
+    configured candidates and the LAN scan are tried as fallbacks."""
     log = log or logger
+    # 1. Last-known server first: fresh probe, no cache.
+    last = get_last_ollama_server()
+    last_url = last.get("url") if last else None
+    if last_url and _ping_url(last_url, timeout, log):
+        return last_url
+    # 2. auto spec -> straight to LAN discovery.
     if _is_auto_spec(primary_url):
         url = _discover_ollama_lan_url(log)
         if url is None:
             log.error("ollama.unreachable", candidates=(primary_url,))
+        else:
+            _record_ollama_server(url, log)
         return url
+    # 3. Configured candidates, then LAN scan as a last resort.
     candidates = _candidate_urls(primary_url)
     tried = {_host_ip(url) for url in candidates}
     resolved = next((url for url in candidates if _ping_url(url, timeout, log)), None)
     if resolved is None:
         discovered = _discover_ollama_lan_url(log)
         resolved = discovered if discovered is not None and _host_ip(discovered) not in tried else None
-    if resolved is None:
+    if resolved is not None:
+        _record_ollama_server(resolved, log)
+        if resolved != candidates[0] and resolved not in _logged_fallback_urls:
+            _logged_fallback_urls.add(resolved)
+            log.info("ollama.fallback_active", base_url=resolved)
+    else:
         log.error("ollama.unreachable", candidates=candidates)
-        return None
-    if resolved != candidates[0] and resolved not in _logged_fallback_urls:
-        _logged_fallback_urls.add(resolved)
-        log.info("ollama.fallback_active", base_url=resolved)
     return resolved
 
 

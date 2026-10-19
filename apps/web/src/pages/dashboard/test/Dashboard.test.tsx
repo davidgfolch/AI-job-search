@@ -12,14 +12,18 @@ const service = (over: Partial<ServiceStatus> = {}): ServiceStatus => ({
     status: 'running',
     lastActivity: null,
     usesOllama: false,
+    deployment: 'docker',
     metrics: { pendingJobs: 3, processed: 1, succeeded: 1, failed: 0, lastError: null, lastErrorAt: null },
     recentErrors: [],
     ...over,
 });
 
 const data: DashboardData = {
-    services: [service(), service({ name: 'backend', displayName: 'Backend', status: 'stopped', metrics: { ...service().metrics, pendingJobs: 4 } })],
-    ollama: { reachable: true, recentErrors: [] },
+    services: [service(), service({ name: 'backend', displayName: 'Backend', status: 'stopped', deployment: 'host', metrics: { ...service().metrics, pendingJobs: 4 } })],
+    ollama: { reachable: true, serverUrl: 'http://192.168.1.45:11434', serverIp: '192.168.1.45', isLan: true, recentErrors: [] },
+    prometheus: { reachable: true, url: 'http://localhost:9090' },
+    grafana: { reachable: true, url: 'http://localhost:3000' },
+    deployment: 'docker',
     timestamp: '2026-01-01T00:00:00Z',
 };
 
@@ -69,5 +73,26 @@ describe('Dashboard', () => {
         expect(screen.getByText('Backend')).toBeInTheDocument();
         expect(screen.getByRole('heading', { name: 'Recent Errors' })).toBeInTheDocument();
         expect(screen.getByText('No recent errors found')).toBeInTheDocument();
+    });
+
+    it('shows the ollama server ip and lan scope', () => {
+        mockUseDashboard.mockReturnValue({ data, isLoading: false, isError: false });
+        render(<Dashboard />);
+        expect(screen.getByText('192.168.1.45')).toBeInTheDocument();
+        expect(screen.getByText('· LAN')).toBeInTheDocument();
+    });
+
+    it('shows the deployment summary', () => {
+        mockUseDashboard.mockReturnValue({ data, isLoading: false, isError: false });
+        render(<Dashboard />);
+        expect(screen.queryAllByText('Deployment').length).toBeGreaterThan(0);
+        expect(screen.queryAllByText('Docker').length).toBeGreaterThan(0);
+    });
+
+    it('shows a docker/host tag on each service card', () => {
+        mockUseDashboard.mockReturnValue({ data, isLoading: false, isError: false });
+        render(<Dashboard />);
+        expect(screen.queryAllByText('Host').length).toBeGreaterThan(0);
+        expect(screen.queryAllByText('Docker').length).toBeGreaterThan(0);
     });
 });

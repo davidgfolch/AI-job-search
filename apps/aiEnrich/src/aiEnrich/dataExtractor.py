@@ -29,6 +29,7 @@ logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
 
 _resolved_ollama_url: str | None = None
+_ollama_server_known = False
 
 
 def _get_ollama_base_url() -> str:
@@ -57,15 +58,21 @@ def _query_company(prompt: str, backend: str, model: str):
 
 
 def ping_backend() -> bool:
-    global _resolved_ollama_url
+    global _resolved_ollama_url, _ollama_server_known
     if get_backend() == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
-    # Auto-discovery runs only on startup (when no server is cached yet). Normal
-    # liveness checks and retry waits must reuse the already resolved server
-    # instead of scanning the LAN again for every job.
+    # Liveness checks reuse the cached server while it answers. When it stops
+    # answering, drop it and resolve again: the LAN host may have gone to sleep
+    # and come back on another DHCP address, so pinging the cached URL forever
+    # would never find it again.
     if _resolved_ollama_url is not None:
-        return _ping_url(_resolved_ollama_url, 5, logger)
+        if _ping_url(_resolved_ollama_url, 5, logger):
+            return True
+        logger.warning("ollama.resolved_unreachable", base_url=_resolved_ollama_url)
+        _resolved_ollama_url = None
     _resolved_ollama_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
+    if _resolved_ollama_url is not None:
+        _ollama_server_known = True
     return _resolved_ollama_url is not None
 
 
@@ -75,9 +82,15 @@ def _check_backend_available() -> bool:
         ollama_consecutive_failures = 0
         return True
     ollama_consecutive_failures += 1
+    backend = get_backend()
     max_failures = get_max_ollama_failures()
-    logger.error("ai.unreachable", backend=get_backend(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-    if ollama_consecutive_failures >= max_failures:
+    logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+    # A server this process already reached may just be asleep (e.g. a LAN host that
+    # suspends), and Docker restarts cannot help there: keep waiting for it instead
+    # of exiting. Only abort while no server has ever been resolved, so a genuinely
+    # unreachable startup still self-heals through the container restart policy.
+    known_server = backend == "ollama" and _ollama_server_known
+    if ollama_consecutive_failures >= max_failures and not known_server:
         logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
         sys.exit(1)
     return False

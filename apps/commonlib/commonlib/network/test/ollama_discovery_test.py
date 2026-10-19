@@ -18,7 +18,24 @@ class TestGetLocalSubnets:
         inst = MagicMock()
         inst.connect.side_effect = Exception("no network")
         mock_socket_class.return_value = inst
-        assert get_local_subnets() == []
+        # Detection fails, but common LAN defaults are still returned.
+        assert get_local_subnets() == ['192.168.1.0/24', '192.168.0.0/24']
+
+    @patch('commonlib.network.ollama_discovery.OLLAMA_DISCOVERY_SUBNETS', ('192.168.7.0/24', '10.0.0.0/24'))
+    def test_includes_configured_subnets(self):
+        subnets = get_local_subnets()
+        assert '192.168.7.0/24' in subnets
+        assert '10.0.0.0/24' in subnets
+
+    @patch('commonlib.network.ollama_discovery.OLLAMA_DISCOVERY_SUBNETS', ('192.168.7.0/24',))
+    def test_configured_subnets_deduped(self):
+        subnets = get_local_subnets()
+        assert subnets.count('192.168.7.0/24') == 1
+
+    def test_default_includes_common_lan_subnets(self):
+        subnets = get_local_subnets()
+        assert '192.168.1.0/24' in subnets
+        assert '192.168.0.0/24' in subnets
 
 
 class TestScanPort:

@@ -33,6 +33,24 @@
     letter-spacing: 0.5px;
 }
 
+.ollama-status-address {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ollama-status-scope {
+    font-size: 0.7rem;
+    color: var(--text-muted, #9ca3af);
+    background: var(--bg-tertiary, #2a2a2a);
+    padding: 1px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color, #333);
+}
+
 .ollama-status-errors {
     margin-top: 12px;
     display: flex;

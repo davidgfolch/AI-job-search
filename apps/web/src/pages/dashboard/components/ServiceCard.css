@@ -108,6 +108,12 @@
     width: fit-content;
 }
 
+.service-card-tag--deployment {
+    background: var(--bg-tertiary, #2a2a2a);
+    border-color: var(--border-color, #333);
+    color: var(--text-secondary);
+}
+
 .service-card-last-activity {
     font-size: 0.75rem;
     color: var(--text-secondary);

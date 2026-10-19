@@ -8,8 +8,8 @@ from commonlib.ollama_probe import INFERENCE_PROBE_TIMEOUT, _host_ip, _probe_inf
 from commonlib.test.ollama_constants import OLLAMA_DOCKER_TEST_URL, OLLAMA_TEST_URL
 from commonlib.test.ollama_fixtures import (  # noqa: F401 - the autouse fixtures register by being imported here
     AUTO_DISCOVER, CANDIDATES, DISCOVERY_ENABLED, DISCOVERED_HOST, DISCOVERED_URL, FALLBACK_LOG, LOCAL_URL, POST,
-    PROBE_CACHE_SECONDS, _ok, clean_fallback_urls, clear_probe_cache, get, inference_probe_ok, no_lan_scan,
-    no_retry_sleep, post, single,
+    PROBE_CACHE_SECONDS, _ok, clean_fallback_urls, clear_last_ollama_server, clear_probe_cache, get,
+    inference_probe_ok, no_lan_scan, no_retry_sleep, post, single,
 )
 
 

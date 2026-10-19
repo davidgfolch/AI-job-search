@@ -2,8 +2,14 @@
 
 The scanner is gated by the caller: `ollama_client` only runs it when
 `COMMONLIB_OLLAMA_DISCOVERY` is enabled (default True).
+
+`COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (comma-separated CIDRs) adds extra
+subnets to scan. This is useful when the scanner runs inside a Docker
+container, where auto-detection only sees the Docker network and not the
+host LAN where an Ollama server on another PC may live.
 """
 import ipaddress
+import os
 import socket
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -22,6 +28,9 @@ SCAN_TIMEOUT = 0.5
 MAX_WORKERS = 100
 SPEC_LOCAL = ('local', 'localhost', '127.0.0.1')
 SPEC_AUTO = ('auto', 'discover')
+OLLAMA_DISCOVERY_SUBNETS = tuple(
+    part.strip() for part in os.getenv("COMMONLIB_OLLAMA_DISCOVERY_SUBNETS", "").split(",") if part.strip()
+)
 
 
 def get_local_ip():
@@ -38,7 +47,13 @@ def get_local_ip():
 
 
 def get_local_subnets():
-    """Detect local LAN subnets by finding the machine's IP via UDP connect."""
+    """Detect local LAN subnets by finding the machine's IP via UDP connect.
+
+    From inside a Docker container this only sees the Docker bridge network,
+    so common LAN /24s are appended so Ollama on another machine in the host LAN
+    is discovered automatically (no env var required). Extra subnets can be added
+    with ``COMMONLIB_OLLAMA_DISCOVERY_SUBNETS``.
+    """
     subnets = []
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(2)
@@ -55,7 +70,20 @@ def get_local_subnets():
         pass
     finally:
         s.close()
-    return subnets
+    # Common LAN subnets so discovery works automatically from inside Docker
+    # containers, where auto-detection only sees the Docker bridge network.
+    for common in ("192.168.1.0/24", "192.168.0.0/24"):
+        if common not in subnets:
+            subnets.append(common)
+    # Extra subnets (e.g. a different host LAN when scanning from Docker).
+    subnets.extend(OLLAMA_DISCOVERY_SUBNETS)
+    seen = set()
+    unique = []
+    for subnet in subnets:
+        if subnet not in seen:
+            seen.add(subnet)
+            unique.append(subnet)
+    return unique
 
 
 def _scan_port(ip, port, timeout):
