@@ -1,7 +1,6 @@
 import PageHeader from '../common/components/PageHeader';
-import { useDashboard } from './hooks/useDashboard';
+import { useDashboard, REFRESH_INTERVAL_MS } from './hooks/useDashboard';
 import ServiceCard from './components/ServiceCard';
-import OllamaStatus from './components/OllamaStatus';
 import RecentErrors from './components/RecentErrors';
 import './Dashboard.css';
 
@@ -13,33 +12,21 @@ export default function Dashboard() {
 
     const runningCount = data.services.filter(s => s.status === 'running').length;
     const totalCount = data.services.length;
+    const refreshedAt = data.timestamp ? new Date(data.timestamp).toLocaleString() : '-';
 
     return (
         <>
             <PageHeader title="Dashboard" />
             <main className="dashboard-main">
+                <div className="dashboard-last-updated">
+                    <span className="last-updated-label">Last updated:</span>
+                    <span className="last-updated-value">{refreshedAt}</span>
+                    <span className="last-updated-refresh">Autorefresh every {REFRESH_INTERVAL_MS / 1000}s</span>
+                </div>
                 <div className="dashboard-summary">
                     <div className="summary-item">
                         <span className="summary-value">{runningCount}/{totalCount}</span>
                         <span className="summary-label">Services Running</span>
-                    </div>
-                    <div className="summary-item">
-                        <span className={`summary-value ${data.ollama.reachable ? '' : 'summary-value--error'}`}>
-                            {data.ollama.reachable ? 'Connected' : 'Disconnected'}
-                        </span>
-                        <span className="summary-label">Ollama</span>
-                    </div>
-                    <div className="summary-item">
-                        <span className={`summary-value ${data.prometheus.reachable ? '' : 'summary-value--error'}`}>
-                            {data.prometheus.reachable ? 'Up' : 'Down'}
-                        </span>
-                        <span className="summary-label">Prometheus</span>
-                    </div>
-                    <div className="summary-item">
-                        <span className={`summary-value ${data.grafana.reachable ? '' : 'summary-value--error'}`}>
-                            {data.grafana.reachable ? 'Up' : 'Down'}
-                        </span>
-                        <span className="summary-label">Grafana</span>
                     </div>
                     <div className="summary-item">
                         <span className="summary-value">
@@ -54,7 +41,34 @@ export default function Dashboard() {
                 </div>
 
                 <div className="dashboard-top-row">
-                    <OllamaStatus ollama={data.ollama} />
+                    <div className="service-pill service-pill--ollama">
+                        <span className={`status-dot status-dot--${data.ollama.reachable ? 'running' : 'error'}`} />
+                        <span className="service-pill-label">Ollama</span>
+                        <span className={`service-pill-value ${data.ollama.reachable ? '' : 'service-pill-value--error'}`}>
+                            {data.ollama.reachable ? 'Connected' : 'Disconnected'}
+                        </span>
+                        {data.ollama.serverIp && (
+                            <span className="service-pill-address">
+                                {data.ollama.serverIp} <span className="service-pill-scope">· {data.ollama.isLan ? 'LAN' : 'local'}</span>
+                            </span>
+                        )}
+                    </div>
+                    <div className="service-pill service-pill--prometheus">
+                        <span className={`status-dot status-dot--${data.prometheus.reachable ? 'running' : 'error'}`} />
+                        <span className="service-pill-label">Prometheus</span>
+                        <span className={`service-pill-value ${data.prometheus.reachable ? '' : 'service-pill-value--error'}`}>
+                            {data.prometheus.reachable ? 'Up' : 'Down'}
+                        </span>
+                        <span className="service-pill-address">{data.prometheus.url}</span>
+                    </div>
+                    <div className="service-pill service-pill--grafana">
+                        <span className={`status-dot status-dot--${data.grafana.reachable ? 'running' : 'error'}`} />
+                        <span className="service-pill-label">Grafana</span>
+                        <span className={`service-pill-value ${data.grafana.reachable ? '' : 'service-pill-value--error'}`}>
+                            {data.grafana.reachable ? 'Up' : 'Down'}
+                        </span>
+                        <span className="service-pill-address">{data.grafana.url}</span>
+                    </div>
                 </div>
 
                 <div className="dashboard-services-grid">

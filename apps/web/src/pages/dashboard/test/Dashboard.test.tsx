@@ -4,7 +4,7 @@ import Dashboard from '../Dashboard';
 import type { DashboardData, ServiceStatus } from '../api/DashboardApi';
 
 const mockUseDashboard = vi.hoisted(() => vi.fn());
-vi.mock('../hooks/useDashboard', () => ({ useDashboard: () => mockUseDashboard() }));
+vi.mock('../hooks/useDashboard', () => ({ useDashboard: () => mockUseDashboard(), REFRESH_INTERVAL_MS: 30000 }));
 
 const service = (over: Partial<ServiceStatus> = {}): ServiceStatus => ({
     name: 'scrapper',
@@ -63,7 +63,7 @@ describe('Dashboard', () => {
         mockUseDashboard.mockReturnValue({ data: { ...data, ollama: { reachable: false, recentErrors: [] } }, isLoading: false, isError: false });
         render(<Dashboard />);
         expect(screen.getByText('Disconnected')).toBeInTheDocument();
-        expect(screen.getByText('Disconnected')).toHaveClass('summary-value--error');
+        expect(screen.getByText('Disconnected')).toHaveClass('service-pill-value--error');
     });
 
     it('renders one card per service and the recent errors panel', () => {
@@ -80,6 +80,27 @@ describe('Dashboard', () => {
         render(<Dashboard />);
         expect(screen.getByText('192.168.1.45')).toBeInTheDocument();
         expect(screen.getByText('· LAN')).toBeInTheDocument();
+    });
+
+    it('shows prometheus and grafana with url', () => {
+        mockUseDashboard.mockReturnValue({ data, isLoading: false, isError: false });
+        render(<Dashboard />);
+        expect(screen.getByText('http://localhost:9090')).toBeInTheDocument();
+        expect(screen.getByText('http://localhost:3000')).toBeInTheDocument();
+    });
+
+    it('marks prometheus as down and styles it as an error', () => {
+        mockUseDashboard.mockReturnValue({ data: { ...data, prometheus: { reachable: false, url: 'http://localhost:9090' } }, isLoading: false, isError: false });
+        render(<Dashboard />);
+        expect(screen.getByText('Down')).toBeInTheDocument();
+        expect(screen.getAllByText('Down')[0]).toHaveClass('service-pill-value--error');
+    });
+
+    it('shows the last updated timestamp and autorefresh interval', () => {
+        mockUseDashboard.mockReturnValue({ data, isLoading: false, isError: false });
+        render(<Dashboard />);
+        expect(screen.getByText('Last updated:')).toBeInTheDocument();
+        expect(screen.getByText('Autorefresh every 30s')).toBeInTheDocument();
     });
 
     it('shows the deployment summary', () => {

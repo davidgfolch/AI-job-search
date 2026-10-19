@@ -72,8 +72,8 @@ test.describe('Dashboard E2E', () => {
 
     test('should show prometheus and grafana health', async ({ page }) => {
         await page.goto(`${BASE_URL}/dashboard`);
-        await expect(page.locator('.summary-item').filter({ hasText: 'Prometheus' })).toContainText('Up');
-        await expect(page.locator('.summary-item').filter({ hasText: 'Grafana' })).toContainText('Up');
+        await expect(page.locator('.service-pill').filter({ hasText: 'Prometheus' })).toContainText('Up');
+        await expect(page.locator('.service-pill').filter({ hasText: 'Grafana' })).toContainText('Up');
     });
 
     test('should show a docker/host tag on each service card', async ({ page }) => {

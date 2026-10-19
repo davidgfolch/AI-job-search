@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '../api/DashboardApi';
 
-const REFRESH_INTERVAL_MS = 30000;
+export const REFRESH_INTERVAL_MS = 30000;
 
 export const useDashboard = () => {
     return useQuery({
