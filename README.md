@@ -61,8 +61,6 @@ The CI pipeline, Dependabot version updates, and automatic merging of dependency
 
 You can have specific mysql host server setting the `.env` ->  `COMMONLIB_DB_HOST` to your mysql database host IP.
 You can run scrapper in a (linux recommended) & connect to another mysql host pc.
-(Only tested, scrapper pc connecting to another LAN PC executing all other services including db)
-TODO: running in several machines AI services, Ollama, backend, etc.
 
 ### Scrapper MySQL host auto-discovery
 
@@ -72,14 +70,20 @@ TODO: running in several machines AI services, Ollama, backend, etc.
 
 Set `BACKEND_DISCOVERY=True` in `.env` to enable automatic LAN discovery of the backend API (port 8000). When enabled, the web app scans local subnets and probes `/health` to find the backend. Falls back to `localhost:8000` if nothing is found. See [web docs](apps/web/README.md#backend-discovery) for details.
 
-### Ollama auto-discovery
-
-The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). From inside a container the sweep only covers the Docker subnets, so an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL`. See [commonlib docs](apps/commonlib/README.md) for details.
-
 Run only web in the client machine like this:
 
 ```bash
 docker-compose up -d --no-deps web
+```
+
+### Ollama auto-discovery
+
+The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). From inside a container the sweep only covers the Docker subnets, so an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL`. See [commonlib docs](apps/commonlib/README.md) for details.
+
+So in another PC in the same LAN you can run services that depend on Ollama, it must be run outside docker:
+
+```bash
+./apps/aiEnrich/run.sh & ./apps/aiEnrichSkill/run.sh
 ```
 
 ## Screenshots

@@ -279,9 +279,9 @@ select * from jobs where jobId like '%handMade%';
 --- SKILL MANAGER
 
 select * from job_skills where ai_enriched = 1 and category is null or category = '' limit 10;
-select * from job_skills where job_skills.name like '%idempotency%';
-update job_skills set ai_enriched = 0, category = null
-where ai_enriched = 1 limit 1;
+select * from job_skills where job_skills.name like '%Fix protocol%';
+update job_skills set ai_enriched = null, category = null, description = null, learning_path=null
+where name = 'Fix protocol';
 where name like '%idempotency%' limit 1;
 where ai_enriched = 1 and (category is null or category = '') limit 10;
 
