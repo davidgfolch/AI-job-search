@@ -13,7 +13,6 @@ from commonlib.ai_helpers import (
 )
 from commonlib.terminalColor import cyan
 from commonlib.aiEnrichRepository import AiEnrichRepository
-from commonlib.modality_extractor import extract_modality
 from commonlib.observability import get_logger, job_log_context
 from .aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
@@ -174,7 +173,6 @@ def _process_job_safe(
                     if response is None:
                         logger.warning("job.ai_unreachable", job_id=id, title=title, company=company)
                 if result is not None:
-                    result['modality'] = extract_modality(title=title, markdown=markdown)
                     _save(repo, id, result)
                     success = True
                     resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)

@@ -194,3 +194,31 @@ class TestProcessJobSafeBackend:
         assert mock_ollama.call_args.kwargs["response_schema"]["required"] == ["required_technologies", "optional_technologies", "salary", "modality"]
         mock_or.assert_not_called()
         mock_save.assert_called_once()
+
+    @pytest.mark.parametrize("llm_modality, expected_modality", [
+        ("REMOTE", "REMOTE"),          # valid LLM modality overwrites scrape-time value
+        ("hybrid", "HYBRID"),          # valid LLM modality is normalized and overwrites
+        ("ON_SITE", "ON_SITE"),        # valid LLM modality overwrites scrape-time value
+        (None, None),                  # null modality -> COALESCE keeps scrape-time value
+        ("INVALID", None),             # invalid modality -> None -> COALESCE keeps scrape-time value
+    ])
+    def test_llm_modality_passthrough_to_update_enrichment(self, llm_modality, expected_modality):
+        """LLM-inferred modality is passed to update_enrichment without being overwritten by extract_modality.
+        Valid LLM modality overwrites the scrape-time deterministic value; None/invalid keeps it via COALESCE."""
+        os.environ["AI_ENRICH_BACKEND"] = "ollama"
+        from aiEnrich.dataExtractor import _process_job_safe
+        repo = MagicMock()
+        repo.count_pending_enrichment.return_value = 0
+        repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
+        payload = {"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": llm_modality}
+        # Patch query_and_parse directly so schema validation doesn't reject non-enum modalities;
+        # in production validateResult normalizes modality before _save passes it to update_enrichment.
+        with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
+             patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
+             patch("aiEnrich.dataExtractor.query_and_parse", return_value=(payload, MagicMock())), \
+             patch("aiEnrich.dataExtractor.resolve_unspecified_company"), \
+             patch("aiEnrich.dataExtractor.footer"), \
+             patch("aiEnrich.dataExtractor.stopWatch"):
+            _process_job_safe(repo, 1, 1, 0, "enrich")
+        repo.update_enrichment.assert_called_once()
+        assert repo.update_enrichment.call_args.args[4] == expected_modality
