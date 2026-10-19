@@ -47,11 +47,11 @@ uv sync
 To run the enrichment in a continuous loop (monitoring the database for new jobs):
 
 ```bash
-# Linux
-./run.sh
+# Linux (from project root)
+./apps/aiEnrich/run.sh
 
-# Windows
-.\run.bat
+# Windows (from project root)
+.\apps\aiEnrich\run.bat
 ```
 
 ### Manual Run (Dev)

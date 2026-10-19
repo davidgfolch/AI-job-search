@@ -1,4 +1,4 @@
 @echo off
-cd /d "%~dp0..\.."
+cd apps/cron
 uv run cron
-cd /d "%~dp0..\.."
+cd ../..
