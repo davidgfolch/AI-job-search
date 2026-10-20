@@ -233,6 +233,24 @@
       }
     },
     {
+      "title": "Backend Unreachable by Module",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 14 },
+      "targets": [
+        {
+          "expr": "ai_enrich_backend_unreachable_total",
+          "legendFormat": "{{module}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "color": "red", "value": 1 }] },
+          "unit": "short"
+        }
+      }
+    },
+    {
       "title": "Duration Percentiles (seconds)",
       "type": "table",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },

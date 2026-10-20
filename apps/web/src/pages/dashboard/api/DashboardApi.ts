@@ -50,6 +50,7 @@ export interface OllamaStatus {
 export interface DashboardData {
     services: ServiceStatus[];
     ollama: OllamaStatus;
+    aiBackend: string;
     prometheus: ServiceHealth;
     grafana: ServiceHealth;
     deployment: 'docker' | 'host';

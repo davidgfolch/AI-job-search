@@ -17,7 +17,7 @@ select title, company, location, url, markdown , salary, required_technologies, 
 
 update jobs set ai_enriched=0, salary=NULL, required_technologies=NULL, optional_technologies=NULL, modality=null
 -- WHERE modality is null
-LIMIT 20;
+LIMIT 5;
 
  AND DATE(created) >= '2026-03-18 15:50:00'
  -- AND DATE(created) >= DATE_SUB(CURDATE(), INTERVAL 8 HOUR)
@@ -290,6 +290,9 @@ delete from job_skills where job_skills.name = 'Control-M';
 --- Filter Configurations
 
 select * from filter_configurations;
+
+--- Watcher Service (filter configurations)
+select * from watcher_match;
 
 
 

@@ -44,6 +44,7 @@ class MetricsCollector:
                 "last_error_at": None,
                 "last_error": None,
                 "pending_jobs": 0,
+                "backend_unreachable": 0,
                 "deployment": "docker" if isDocker() else "host",
             }
         )
@@ -72,6 +73,11 @@ class MetricsCollector:
             m = self._modules[module]
             m["last_error_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
             m["last_error"] = error[:200]
+
+    def record_backend_unreachable(self, module: str):
+        with self._lock:
+            m = self._modules[module]
+            m["backend_unreachable"] = m.get("backend_unreachable", 0) + 1
 
     def set_pending(self, module: str, count: int):
         with self._lock:

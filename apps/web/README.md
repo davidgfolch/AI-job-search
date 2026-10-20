@@ -9,7 +9,7 @@ The modern frontend for the AI Job Search application, built with **React**, **T
 - **Next / Previous Job Navigation**: The ⏮ / ⏭ buttons and the `Alt+P` / `Alt+N` shortcuts move the selection, and the list scrolls whenever the new selection is outside the visible frame.
 - **Job Management**: Update job status (Applied, Interviewing, Rejected, etc.) and edit job data (title, company, location, salary, skills, modality, comments) via the job detail edit form — advanced fields are shown under the "Edit All" toggle.
 - **Statistics**: Visual insights into your job search progress.
-- **Dashboard autorefresh**: The dashboard polls the backend every 30 s and shows a human-readable "Last updated" timestamp plus the autorefresh interval. The top row shows Ollama, Prometheus and Grafana health pills with status, IP/URL and LAN scope.
+- **Dashboard autorefresh**: The dashboard polls the backend every 30 s and shows a human-readable "Last updated" timestamp plus the autorefresh interval. The top row shows the configured AI backend, Ollama, Prometheus and Grafana health pills with status, IP/URL and LAN scope.
 - **Settings Page**: Manage environment variables and scrapper state directly from the browser.
 - **Responsive Design**: Modern UI using CSS and standard React components.
 - **Real-time Updates**: The watcher badge receives near-realtime updates via Server-Sent Events (`GET /api/jobs/watcher-events`). When the backend creates, updates, or deletes a job, it broadcasts an SSE event and the frontend debounces a stats refetch (~200 ms), so the `+N` / `-M` watcher badge reflects new matches within seconds instead of waiting up to 5 minutes for the next poll.

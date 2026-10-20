@@ -109,6 +109,7 @@ def _process_job_safe(
                 while response is None:
                     if not ping_backend():
                         logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=get_max_ollama_failures())
+                        collector.record_backend_unreachable("aiEnrich")
                         logIdleWait(cyan('Backend unavailable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
                         continue
                     result, response = query_and_parse(

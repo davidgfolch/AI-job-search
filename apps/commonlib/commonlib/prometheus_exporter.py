@@ -34,6 +34,7 @@ def build_prometheus_metrics(snapshot: dict) -> bytes:
     cache_misses = Gauge("ai_enrich_cache_misses_total", "Total cache misses", ["module"], registry=registry)
     pending = Gauge("ai_enrich_pending_jobs", "Currently pending jobs", ["module"], registry=registry)
     last_ts = Gauge("ai_enrich_last_processed_timestamp", "Last job processed timestamp", ["module"], registry=registry)
+    backend_unreachable = Gauge("ai_enrich_backend_unreachable_total", "Total backend unreachable events", ["module"], registry=registry)
     g_total_jobs = Gauge("ai_enrich_total_jobs", "Total jobs across all modules", registry=registry)
     g_total_err = Gauge("ai_enrich_total_errors", "Total errors across all modules", registry=registry)
     g_modules = Gauge("ai_enrich_modules_count", "Number of modules reporting", registry=registry)
@@ -54,6 +55,7 @@ def build_prometheus_metrics(snapshot: dict) -> bytes:
         cache_hits.labels(module=name).set(data.get("cache_hits", 0))
         cache_misses.labels(module=name).set(data.get("cache_misses", 0))
         pending.labels(module=name).set(data.get("pending_jobs", 0))
+        backend_unreachable.labels(module=name).set(data.get("backend_unreachable", 0))
         last_processed = data.get("last_processed_at")
         if last_processed:
             try:

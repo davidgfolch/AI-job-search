@@ -220,13 +220,16 @@ The response shape is:
     "isLan": true,
     "recentErrors": []
   },
+  "aiBackend": "ollama",
+  "prometheus": { "reachable": true, "url": "http://host.docker.internal:9090" },
+  "grafana": { "reachable": true, "url": "http://host.docker.internal:3000" },
   "deployment": "docker",
   "timestamp": "2026-01-01T10:00:00Z"
-}
 ```
 
 - `ollama.serverIp` / `ollama.isLan` report the reachable Ollama server, discovered through the configured URL (`AI_ENRICH_OLLAMA_BASE_URL`), the Docker fallbacks (`host.docker.internal`, `localhost`, `ollama`) or the LAN scan — so an Ollama server running on another machine in the LAN is identified and shown by its IP. The last-known server address is saved in memory and shared across all modules via `commonlib.ollama_probe.get_last_ollama_server()`; the dashboard probes it fresh (no cache) on every refresh, so a server that came back up is detected immediately. When nothing is reachable, the last-known address is kept with `reachable: false` instead of going blank. The LAN scan covers the Docker bridge subnet plus the common LAN subnets (`192.168.0.x`, `192.168.1.x`) automatically, even when the dashboard runs inside a Docker container; if your LAN uses a different subnet, set `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (comma-separated CIDRs, e.g. `10.0.0.0/24`).
 - `prometheus` / `grafana` report the health of Prometheus (`GET /-/healthy`) and Grafana (`GET /api/health`) as `{ reachable, url }`. The target URLs come from `PROMETHEUS_URL` (default `http://host.docker.internal:9090`) and `GRAFANA_URL` (default `http://host.docker.internal:3000`); override them in `.env` if your services run elsewhere.
+- `aiBackend` reports the configured AI enrichment backend (`AI_ENRICH_BACKEND`, default `"ollama"`): `"ollama"` or `"openrouter"`. It is shown on the dashboard's top row as an informational pill alongside the Ollama health pill.
 - `deployment` is `"docker"` when the process runs inside a container (`/.dockerenv` or `/proc/1/cgroup`) and `"host"` otherwise. It is reported per service (from that module's own metrics collector) and at the top level for the dashboard itself.
 
 ## Watcher API
