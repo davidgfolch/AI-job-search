@@ -1,6 +1,7 @@
 export interface WatcherResult {
     total: number;
     newItems: number;
+    removedItems: number;
 }
 
 export interface UseFilterWatcherProps {

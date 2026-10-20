@@ -6,6 +6,7 @@ from services.jobQueryService import JobQueryService
 from services.company_synonym_service import CompanySynonymService
 from services.jobSnapshotService import JobSnapshotService
 from services.job_delete_service import JobDeleteService
+from services.watcher_matcher import get_watcher_matcher
 from utils.filter_parser import extract_filter_params
 
 
@@ -15,6 +16,7 @@ class JobsService:
         self.query_service = JobQueryService()
         self.delete_service = JobDeleteService(get_job_callback=self.get_job)
         self._snapshot_service = None
+        self._watcher_svc = get_watcher_matcher()
 
     @property
     def snapshot_service(self):
@@ -103,12 +105,14 @@ class JobsService:
         result = self.repo.update_job(job_id, update_data)
         if result and old_job:
             self.snapshot_service.maybe_create_snapshot_on_update(old_job, update_data)
+        self._watcher_svc.add_pending_ids([job_id])
         return self.get_job(job_id) if result else None
 
     def create_job(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         if "job_id" not in job_data:
             job_data["job_id"] = f"manual-{int(time.time() * 1000)}"
         job_id = self.repo.create_job(job_data)
+        self._watcher_svc.add_pending_ids([job_id])
         return self.get_job(job_id) if job_id else None
 
     def get_applied_jobs_by_company_name(

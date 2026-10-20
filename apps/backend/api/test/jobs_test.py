@@ -25,7 +25,7 @@ def mock_jobs_service(client):
 
 @pytest.fixture
 def mock_watcher_service(client):
-    from api.jobs import get_watcher_service
+    from api.watcher import get_watcher_service
     mock_watcher = MagicMock()
     client.app.dependency_overrides[get_watcher_service] = lambda: mock_watcher
     yield mock_watcher

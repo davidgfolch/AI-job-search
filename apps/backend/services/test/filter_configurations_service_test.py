@@ -6,9 +6,16 @@ from services.filter_configurations_service import FilterConfigurationsService
 def mock_repo():
     return MagicMock()
 
+
 @pytest.fixture
-def service(mock_repo):
-    return FilterConfigurationsService(repo=mock_repo)
+def mock_watcher_repo():
+    return MagicMock()
+
+
+@pytest.fixture
+def service(mock_repo, mock_watcher_repo):
+    return FilterConfigurationsService(repo=mock_repo, watcher_repo=mock_watcher_repo)
+
 
 def test_get_all_seeds_when_empty(service, mock_repo):
     """Test auto-seeding when database is empty"""
@@ -22,6 +29,7 @@ def test_get_all_seeds_when_empty(service, mock_repo):
         mock_seed.assert_called_once()
         assert len(result) == 1
 
+
 def test_get_all_skips_seeding_when_not_empty(service, mock_repo):
     """Test no seeding when database already has data"""
     mock_repo.count.return_value = 5
@@ -32,6 +40,8 @@ def test_get_all_skips_seeding_when_not_empty(service, mock_repo):
     with patch.object(service, 'seed_defaults') as mock_seed:
         result = service.get_all()
         mock_seed.assert_not_called()
+        assert len(result) == 1
+
 
 def test_get_by_id_found(service, mock_repo):
     """Test getting configuration by ID"""
@@ -42,12 +52,14 @@ def test_get_by_id_found(service, mock_repo):
     result = service.get_by_id(1)
     assert result['id'] == 1
 
+
 def test_get_by_id_not_found(service, mock_repo):
     """Test error when configuration not found"""
     mock_repo.find_by_id.return_value = None
     
     with pytest.raises(ValueError, match="not found"):
         service.get_by_id(999)
+
 
 def test_create_success(service, mock_repo):
     """Test creating new configuration"""
@@ -62,12 +74,14 @@ def test_create_success(service, mock_repo):
     assert result['pinned'] is True
     mock_repo.create.assert_called_once_with('New Config', {}, False, True, True, 0)
 
+
 def test_create_duplicate_name(service, mock_repo):
     """Test error when creating config with duplicate name"""
     mock_repo.find_by_name.return_value = {'id': 1, 'name': 'Existing'}
     
     with pytest.raises(ValueError, match="already exists"):
         service.create('Existing', {}, False)
+
 
 def test_update_success(service, mock_repo):
     """Test updating existing configuration"""
@@ -82,6 +96,7 @@ def test_update_success(service, mock_repo):
     assert result['name'] == 'New'
     assert result['pinned'] is True
 
+
 def test_update_duplicate_name(service, mock_repo):
     """Test error when updating to duplicate name"""
     mock_repo.find_by_id.return_value = {'id': 1, 'name': 'Current', 'filters': {}, 'watched': False}
@@ -90,14 +105,18 @@ def test_update_duplicate_name(service, mock_repo):
     with pytest.raises(ValueError, match="already exists"):
         service.update(1, name='Existing')
 
-def test_delete_success(service, mock_repo):
+
+def test_delete_success(service, mock_repo, mock_watcher_repo):
     """Test deleting configuration"""
     mock_repo.find_by_id.return_value = {'id': 1, 'name': 'Test'}
     mock_repo.delete.return_value = True
+    mock_watcher_repo.invalidate_view.return_value = None
     
     result = service.delete(1)
     assert result is True
     mock_repo.delete.assert_called_once_with(1)
+    mock_watcher_repo.invalidate_view.assert_called_once_with(1)
+
 
 def test_delete_not_found(service, mock_repo):
     """Test error when deleting non-existent configuration"""
@@ -105,6 +124,7 @@ def test_delete_not_found(service, mock_repo):
     
     with pytest.raises(ValueError, match="not found"):
         service.delete(999)
+
 
 @patch('services.filter_configurations_service.os.path.exists')
 @patch('services.filter_configurations_service.open')

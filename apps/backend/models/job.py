@@ -67,3 +67,4 @@ class AppliedCompanyJob(BaseModel):
 class WatcherStatsResponse(BaseModel):
     total: int
     new_items: int
+    removed_items: int = 0

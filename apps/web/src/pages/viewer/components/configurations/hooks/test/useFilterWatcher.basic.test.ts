@@ -50,8 +50,8 @@ describe('useFilterWatcher - Basic Functionality', () => {
         });
 
         expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
-        expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 0 });
-        expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 0 });
+        expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 0, removedItems: 0 });
+        expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 0, removedItems: 0 });
 
         // Second check: server still reports 10 (simulating clock skew or lag)
         act(() => {

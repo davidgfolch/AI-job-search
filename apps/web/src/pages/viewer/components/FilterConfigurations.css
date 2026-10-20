@@ -155,11 +155,19 @@
     background-color: var(--error-color);
     color: var(--text-primary);
     border-radius: 999px;
-    padding: 0.1rem 0.4rem;
+    padding: 0rem 0.4rem 0.1rem 0.4rem;
     font-size: 0.75rem;
     font-weight: bold;
     margin-left: 0.5rem;
-    vertical-align: middle;
+    margin-right: 0.1rem;
+}
+
+.watcher-badge-inline--new {
+    background-color: var(--error-color);
+}
+
+.watcher-badge-inline--removed {
+    background-color: var(--warning-color, #666);
 }
 
 .pinned-configurations {

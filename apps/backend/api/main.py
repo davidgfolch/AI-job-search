@@ -15,26 +15,29 @@ from api import jobs_history
 from api import metrics
 from api import company_synonyms
 from api import dashboard
+from api import watcher
 from commonlib.observability import configure_logging, get_logger
 from middleware.request_logging import RequestLoggingMiddleware
+from services.watcher_matcher import get_watcher_matcher
 
 configure_logging("backend")
 logger = get_logger("backend.api.main")
 
-logging.getLogger("uvicorn.access").disabled = True  # request timeline is emitted once, as http.request_completed
+logging.getLogger("uvicorn.access").disabled = True
 
 app = FastAPI(title="AI Job Search API")
 logger.info("app.started", version=_v('api'))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for dev
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.add_middleware(RequestLoggingMiddleware)
 
+app.include_router(watcher.router, prefix="/api/jobs", tags=["watcher"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 app.include_router(salary.router, prefix="/api/salary", tags=["salary"])
 app.include_router(ddl.router, prefix="/api/ddl", tags=["ddl"])
@@ -55,6 +58,14 @@ app.include_router(jobs_history.router, prefix="/api/jobs", tags=["jobs-history"
 app.include_router(company_synonyms.router, prefix="/api/company-synonyms", tags=["company-synonyms"])
 app.include_router(metrics.router, prefix="/api", tags=["metrics"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
+
+
+@app.on_event("startup")
+def start_watcher_matcher():
+    """Start the background watcher matcher thread on app startup."""
+    matcher = get_watcher_matcher()
+    matcher.start_background_matcher()
+    logger.info("watcher.background_matcher_started_on_startup")
 
 
 @app.get("/health")

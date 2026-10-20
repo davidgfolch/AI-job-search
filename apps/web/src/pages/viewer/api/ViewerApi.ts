@@ -84,6 +84,7 @@ export interface JobListParams {
 export interface WatcherStats {
   total: number;
   new_items: number;
+  removed_items: number;
 }
 
 export interface SalaryHistoryEntry {

@@ -12,7 +12,7 @@ The modern frontend for the AI Job Search application, built with **React**, **T
 - **Dashboard autorefresh**: The dashboard polls the backend every 30 s and shows a human-readable "Last updated" timestamp plus the autorefresh interval. The top row shows Ollama, Prometheus and Grafana health pills with status, IP/URL and LAN scope.
 - **Settings Page**: Manage environment variables and scrapper state directly from the browser.
 - **Responsive Design**: Modern UI using CSS and standard React components.
-- **Real-time Updates**: Interacts with the Python backend to fetch and update data.
+- **Real-time Updates**: The watcher badge receives near-realtime updates via Server-Sent Events (`GET /api/jobs/watcher-events`). When the backend creates, updates, or deletes a job, it broadcasts an SSE event and the frontend debounces a stats refetch (~200 ms), so the `+N` / `-M` watcher badge reflects new matches within seconds instead of waiting up to 5 minutes for the next poll.
 
 ## Infinite Scroll Pagination
 
@@ -42,6 +42,15 @@ The job list query is keyed by its filters (`['jobs', filters]` in `src/pages/vi
 The reload is `useJobsData.reloadCurrentPage`, which calls `refetch()` on the observed query. It deliberately does **not** use `refreshJobs` / `hardRefresh`, whose `queryClient.resetQueries({ queryKey: ['jobs'] })` resets *every* filter set in the cache: the previously active configuration gets refetched too and can come back as the visible list. `refetch()` touches one query, so no other configuration can be resurrected.
 
 The selected job is kept: reloading is not a reset, so the detail panel stays on the job it had. The watcher badge for the configuration is cleared at the same time by `useFilterWatcher.resetWatcher`, which keeps the badge and the refreshed list consistent. Loading a configuration from a page deeper than the first already changes the query key, so no reload is triggered there.
+
+### Watcher Badge
+
+Each watched filter configuration shows a badge next to its name in the configuration dropdown and pinned configurations:
+
+- `+{N}` (green) — N new jobs matching the filter since the last check cutoff
+- `-{N}` (gray) — N jobs that left the filter or were deleted since the last check
+
+The badge reads from `GET /api/jobs/watcher-stats`, which queries the `watcher_match` table (O(1) count instead of rebuilding MySQL views). On any job write through the backend API, an SSE event is broadcast (`GET /api/jobs/watcher-events`) and the frontend triggers a debounced refetch (~200 ms), so the badge stays near-realtime. A 5-minute poll runs as a safety net if the SSE connection drops.
 
 ## Settings Page
 

@@ -1,63 +1,57 @@
 from typing import Optional, Dict, Any, List
-from repositories.watcher_repository import WatcherRepository
-from datetime import datetime
 from commonlib.observability import get_logger
+from repositories.watcher_repository import WatcherRepository
 
 logger = get_logger("backend.services.watcher_service")
 
 
 class WatcherService:
+    """Service for watcher stats reads."""
+
+    _instance: Optional["WatcherService"] = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
         self.repo = WatcherRepository()
 
-    def _parse_cutoff(self, cutoff_str: str):
-        from datetime import datetime
-        try:
-            # Handle Z for UTC which might not be supported in older python fromisoformat
-            if cutoff_str.endswith('Z'):
-                cutoff_str = cutoff_str[:-1] + '+00:00'
-            dt = datetime.fromisoformat(cutoff_str)
-            # If naive, assume local time and make it aware
-            if dt.tzinfo is None:
-                dt = dt.astimezone()
-            return dt
-        except Exception as e:
-            logger.debug("watcher.cutoff_unparsed", error=str(e))
-            return None
+    @classmethod
+    def reset_for_testing(cls) -> None:
+        cls._instance = None
 
-    def get_watcher_stats(self, config_ids: List[int],
-                          cutoff_map: Optional[Dict[int, str]] = None,
-                          filter_config_service: Optional[Any] = None) -> Dict[int, Dict[str, int]]:
+    def get_watcher_stats(
+        self,
+        config_ids: List[int],
+        cutoff_map: Optional[Dict[int, str]] = None,
+        filter_config_service: Optional[Any] = None,
+    ) -> Dict[int, Dict[str, int]]:
+        """Return {config_id: {"total": N, "new_items": M}} using watcher_match.
+
+        new_items = active matches created after cutoff (per config).
+        total = all active matches (ignores cutoff for total).
+        """
         cutoff_map = cutoff_map or {}
         results = {cid: {"total": 0, "new_items": 0} for cid in config_ids}
         try:
-            rows = self.repo.get_watcher_stats_from_view(config_ids)
-            for row in rows:
-                config_id = row[0]
-                job_created = row[1]
-                if config_id in results:
-                    stats = results[config_id]
-                    stats["total"] += 1
-                    if cutoff_str := cutoff_map.get(config_id):
-                        if self._is_new(cutoff_str, job_created):
-                            stats["new_items"] += 1
+            active_counts = self.repo.get_match_counts(config_ids)
+            for cid, c in active_counts.items():
+                results[cid]["total"] = c["active"]
+            if cutoff_map:
+                latest_cutoff = min(cutoff_map.values())
+                recent = self.repo.get_recent_counts(config_ids, latest_cutoff)
+                for cid in config_ids:
+                    if cid in recent:
+                        results[cid]["new_items"] = recent[cid]["new"]
         except Exception as e:
-            logger.exception("watcher.stats_failed", error=str(e), config_count=len(config_ids))
-            pass
+            logger.exception(
+                "watcher.stats_failed", error=str(e), config_count=len(config_ids)
+            )
         return results
 
-    def _is_new(self, cutoff_str: str, job_created: Any) -> bool:
-        try:
-            cutoff_dt = self._parse_cutoff(cutoff_str)
-            if not cutoff_dt:
-                return False
-            if isinstance(job_created, str):
-                job_created = datetime.fromisoformat(job_created.replace('Z', '+00:00'))
-            if not isinstance(job_created, datetime):
-                return False
-            job_created_aware = job_created if job_created.tzinfo else job_created.astimezone()
-            return job_created_aware > cutoff_dt
-        except Exception as e:
-            logger.debug("watcher.comparison_failed", error=str(e))
-            return False
+
+def get_watcher_service() -> WatcherService:
+    """Return the module-level WatcherService singleton."""
+    return WatcherService()

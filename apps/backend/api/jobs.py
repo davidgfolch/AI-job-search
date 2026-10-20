@@ -1,15 +1,14 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, Depends, Request
+from fastapi import APIRouter, HTTPException, Query, Depends
 from models.job import (
     Job,
     JobUpdate,
     JobListResponse,
     AppliedCompanyJob,
     JobCreate,
-    WatcherStatsResponse,
 )
 from services.jobs_service import JobsService
-from services.watcher_service import WatcherService
+from services.watcher_matcher import get_watcher_matcher
 from pydantic import BaseModel
 from api.jobs_applied import router as jobs_applied_router
 
@@ -34,8 +33,12 @@ def get_service():
     return JobsService()
 
 
-def get_watcher_service():
-    return WatcherService()
+def notify_watcher(job_ids: List[int], event_type: str, data: dict = None) -> None:
+    """Notify background matcher and SSE subscribers of a job write."""
+    matcher = get_watcher_matcher()
+    matcher.add_pending_ids(job_ids)
+    from api.watcher import broadcast_watcher_event
+    broadcast_watcher_event(event_type, data or {})
 
 
 @router.post("", response_model=Job)
@@ -44,6 +47,7 @@ def create_job(job_create: JobCreate, service: JobsService = Depends(get_service
     job = service.create_job(job_data)
     if not job:
         raise HTTPException(status_code=500, detail="Failed to create job")
+    notify_watcher([job["id"]], "job_created", {"job_id": job["id"]})
     return job
 
 
@@ -57,7 +61,6 @@ def list_jobs(
     days_old: Optional[int] = None,
     salary: Optional[str] = None,
     order: Optional[str] = "created desc",
-    # Boolean field filters
     flagged: Optional[bool] = None,
     like: Optional[bool] = None,
     ignored: Optional[bool] = None,
@@ -117,23 +120,6 @@ def list_jobs(
     )
 
 
-@router.get("/watcher-stats")
-def get_watcher_stats(
-    request: Request,
-    config_ids: str = Query(
-        ..., description="Comma-separated list of filter configuration IDs"
-    ),
-    service: WatcherService = Depends(get_watcher_service),
-):
-    ids = [int(id.strip()) for id in config_ids.split(",") if id.strip()]
-    cutoff_map = {}
-    for config_id in ids:
-        param_name = f"from_{config_id}"
-        if param_name in request.query_params:
-            cutoff_map[config_id] = request.query_params[param_name]
-    return service.get_watcher_stats(config_ids=ids, cutoff_map=cutoff_map)
-
-
 @router.get("/{job_id}", response_model=Job)
 def get_job(job_id: int, service: JobsService = Depends(get_service)):
     job = service.get_job(job_id)
@@ -150,6 +136,7 @@ def update_job(
     job = service.update_job(job_id, update_data)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    notify_watcher([job_id], "job_updated", {"job_id": job_id})
     return job
 
 
@@ -164,6 +151,9 @@ def bulk_update_jobs(
         filters=bulk_update.filters,
         select_all=bulk_update.select_all,
     )
+    ids = bulk_update.ids or []
+    if ids:
+        notify_watcher(ids, "jobs_bulk_updated", {"job_ids": ids})
     return {"updated": count}
 
 
@@ -171,10 +161,12 @@ def bulk_update_jobs(
 def bulk_delete_jobs(
     bulk_delete: BulkJobDelete, service: JobsService = Depends(get_service)
 ):
-    # Using BulkJobDelete which doesn't require 'update' field
     count = service.delete_jobs(
         ids=bulk_delete.ids,
         filters=bulk_delete.filters,
         select_all=bulk_delete.select_all,
     )
+    ids = bulk_delete.ids or []
+    if ids:
+        notify_watcher(ids, "jobs_deleted", {"job_ids": ids})
     return {"deleted": count}

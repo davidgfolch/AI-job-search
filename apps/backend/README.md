@@ -106,10 +106,12 @@ jq -c 'select(.event == "http.request_failed")' apps/backend/data/logs/backend.j
 | `skills.parse_failed` | `warning` | `repositories/skills_repository.py` - malformed `learning_path` JSON in a row. |
 | `db.query_failed` | `error` | `repositories/queries/repository_utils.py` - `error` is the driver exception class name and `syntax_error` the classification, never the SQL or its bind values. |
 | `db.insert_failed` | `error` | `repositories/company_synonym_repository.py`. |
-| `db.view_creation_failed` | `error` | `repositories/watcher_repository.py`. |
 | `filters.parse_failed` | `warning` | `repositories/filter_configurations_repository.py` - malformed `filters` JSON in a row. |
 | `watcher.filters_parse_failed` | `warning` | `repositories/watcher_repository.py`. |
-| `watcher.stats_failed` | `error` | `services/watcher_service.py`. |
+| `watcher.match_loop_error` | `error` | `services/watcher_matcher.py` - background matcher loop failure, with `error`. |
+| `watcher.cleanup_error` | `error` | `services/watcher_matcher.py` - old-row cleanup failure, with `error`. |
+| `watcher.background_matcher_started` | `info` | `api/main.py` - on app startup, with `interval`. |
+| `watcher.stats_failed` | `error` | `services/watcher_service.py` - stats read failure, with `config_count`. |
 | `synonyms.lookup_failed` / `jobs.regex_search_failed` | `warning` | `services/jobQueryService.py` - degraded search fallbacks. |
 | `logs.read_failed` / `logs.line_skipped` / `logs.timestamp_unparsed` | `debug` | `repositories/dashboard_repository.py` - a missing or half-written JSONL line is expected while another app writes. |
 | `ollama.probe_failed` | `debug` | `services/dashboard_service.py`. |
@@ -226,3 +228,50 @@ The response shape is:
 - `ollama.serverIp` / `ollama.isLan` report the reachable Ollama server, discovered through the configured URL (`AI_ENRICH_OLLAMA_BASE_URL`), the Docker fallbacks (`host.docker.internal`, `localhost`, `ollama`) or the LAN scan — so an Ollama server running on another machine in the LAN is identified and shown by its IP. The last-known server address is saved in memory and shared across all modules via `commonlib.ollama_probe.get_last_ollama_server()`; the dashboard probes it fresh (no cache) on every refresh, so a server that came back up is detected immediately. When nothing is reachable, the last-known address is kept with `reachable: false` instead of going blank. The LAN scan covers the Docker bridge subnet plus the common LAN subnets (`192.168.0.x`, `192.168.1.x`) automatically, even when the dashboard runs inside a Docker container; if your LAN uses a different subnet, set `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (comma-separated CIDRs, e.g. `10.0.0.0/24`).
 - `prometheus` / `grafana` report the health of Prometheus (`GET /-/healthy`) and Grafana (`GET /api/health`) as `{ reachable, url }`. The target URLs come from `PROMETHEUS_URL` (default `http://host.docker.internal:9090`) and `GRAFANA_URL` (default `http://host.docker.internal:3000`); override them in `.env` if your services run elsewhere.
 - `deployment` is `"docker"` when the process runs inside a container (`/.dockerenv` or `/proc/1/cgroup`) and `"host"` otherwise. It is reported per service (from that module's own metrics collector) and at the top level for the dashboard itself.
+
+## Watcher API
+
+The watcher badge shows how many jobs match each watched filter configuration since the last check. The backend tracks matches incrementally in a `watcher_match` table instead of rebuilding MySQL views on every poll, so reads are O(1) and updates are near-realtime via Server-Sent Events.
+
+### Database Table
+
+`watcher_match` (created in `scripts/mysql/ddl.sql`):
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | INT PK | Auto-increment primary key |
+| `config_id` | INT | Filter configuration ID |
+| `job_id` | INT | Job ID that matches the config |
+| `deleted` | TINYINT(1) | `0` = active match, `1` = tombstone (job left the filter or was deleted) |
+| `created_at` | DATETIME | When the match row was inserted |
+
+Rows older than 1 day are cleaned up hourly by the background matcher.
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/jobs/watcher-stats` | Returns `{config_id: {total, new_items, removed_items}}` for given `config_ids`. Accepts `from_<config_id>` cutoff params to compute `new_items`. |
+| `GET` | `/api/jobs/watcher-events` | SSE stream (`text/event-stream`) that broadcasts `job_created`, `job_updated`, `jobs_bulk_updated`, `jobs_deleted` events. The frontend subscribes to trigger a debounced stats refetch within ~200 ms. |
+
+### Write Hooks
+
+Every job write through the backend API enqueues the affected job IDs for background matching:
+
+- `POST /api/jobs` (create) → enqueues the new job ID
+- `PATCH /api/jobs/{id}` (update) → enqueues the updated job ID
+- `POST /api/jobs/bulk` (bulk update) → enqueues updated job IDs
+- `POST /api/jobs/bulk/delete` (bulk delete) → enqueues deleted job IDs
+
+A background matcher thread (started on app startup, 8 s interval) drains pending IDs, matches them against each watched filter configuration using the existing filter SQL, and inserts active matches (`deleted=0`) or tombstones (`deleted=1`) into `watcher_match`.
+
+### Background Matcher Logs
+
+| Event | Level | When |
+|-------|-------|------|
+| `watcher.background_matcher_started` | `info` | App startup, with `interval` |
+| `watcher.match_loop_error` | `error` | Matcher loop failure |
+| `watcher.cleanup_error` | `error` | Old-row cleanup failure |
+| `watcher.stats_failed` | `error` | Stats read failure |
+| `watcher.filters_parse_failed` | `warning` | Malformed filter JSON |
+

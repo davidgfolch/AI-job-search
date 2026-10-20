@@ -28,6 +28,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const justResetRef = useRef<Set<string>>(new Set(savedConfigs.map(c => c.name)));
     const queryClient = useQueryClient();
+    const sseRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
         if (isWatching) notificationService.requestPermission();
@@ -64,10 +65,14 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             if (isMounted.current && requestId === lastRequestIdRef.current) {
                 const newResults: Record<string, WatcherResult> = {};
                 configIdsWithNames.forEach(({ id, name }) => {
-                    const stats = statsMap[id];
+                    const stats = statsMap[String(id)];
                     if (stats) {
                         const isReset = justReset.has(name);
-                        newResults[name] = { total: stats.total, newItems: isReset ? 0 : stats.new_items };
+                        newResults[name] = {
+                            total: stats.total,
+                            newItems: isReset ? 0 : stats.new_items,
+                            removedItems: stats.removed_items ?? 0,
+                        };
                         if (isReset && stats.new_items === 0) justResetRef.current.delete(name);
                     }
                 });
@@ -79,6 +84,38 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             }
         } catch (error) { console.error('Error checking watcher stats:', error); }
     }, [startTime, serverOffset]);
+
+    // SSE listener for near-realtime watcher badge updates
+    useEffect(() => {
+        const hasConfigsWithIds = savedConfigsRef.current.some(c => c.id);
+        if (!isWatching || !hasConfigsWithIds) return;
+
+        let eventSource: EventSource | null = null;
+        try {
+            eventSource = new EventSource('/api/jobs/watcher-events');
+            eventSource.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'connected') return;
+                    // Debounced re-check on any watcher write event
+                    if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+                    checkTimeoutRef.current = setTimeout(checkItems, 200);
+                } catch { /* ignore malformed SSE messages */ }
+            };
+            eventSource.onerror = () => {
+                // SSE reconnects automatically; silence errors to avoid log noise
+            };
+            sseRef.current = eventSource;
+        } catch {
+            // EventSource not supported; polling remains the fallback
+        }
+        return () => {
+            if (eventSource) {
+                eventSource.close();
+                sseRef.current = null;
+            }
+        };
+    }, [isWatching, checkItems]);
 
     const startWatching = () => {
         notificationService.requestPermission();
@@ -100,6 +137,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         configStartTimes.current = {};
         notifiedCountsRef.current = {};
         if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+        if (sseRef.current) { sseRef.current.close(); sseRef.current = null; }
     };
 
     const resetWatcher = (configName: string) => {
@@ -109,7 +147,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         lastRequestIdRef.current++;
         setResults(prev => ({
             ...prev,
-            [configName]: { total: prev[configName]?.total ?? 0, newItems: 0 }
+            [configName]: { total: prev[configName]?.total ?? 0, newItems: 0, removedItems: 0 }
         }));
     };
 

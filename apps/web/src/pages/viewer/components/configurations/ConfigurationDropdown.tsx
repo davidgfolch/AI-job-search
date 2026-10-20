@@ -77,6 +77,7 @@ export function ConfigurationDropdown({
             {filteredConfigs.map((config, index) => {
                 const result = results[config.name];
                 const hasNew = result && result.newItems > 0;
+                const hasRemoved = result && result.removedItems > 0;
                 
                 return (
                 <li
@@ -90,7 +91,7 @@ export function ConfigurationDropdown({
                     }}
                     onClick={() => onLoad(config)}
                     onMouseEnter={() => setHighlightIndex(index)}
-                    title={result ? `Total: ${result.total} | New: ${result.newItems} | Last check: ${lastCheckTime?.toLocaleTimeString()}` : undefined}
+                    title={result ? `Total: ${result.total} | New: ${result.newItems} | Removed: ${result.removedItems} | Last check: ${lastCheckTime?.toLocaleTimeString()}` : undefined}
                     draggable={allowReorder}
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragEnter={(e) => handleDragEnter(e, index)}
@@ -99,7 +100,8 @@ export function ConfigurationDropdown({
                 >
                     <span className="config-name text-no-wrap">
                         {config.name}
-                        {hasNew && <span className="watcher-badge-inline">+{result.newItems}</span>}
+                        {hasNew && <span className="watcher-badge-inline watcher-badge-inline--new">+{result.newItems}</span>}
+                        {hasRemoved && <span className="watcher-badge-inline watcher-badge-inline--removed">-{result.removedItems}</span>}
                     </span>
                     <button
                         className={`config-toggle-btn ${config.pinned ? 'enabled' : 'disabled'}`}

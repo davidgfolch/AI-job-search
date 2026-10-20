@@ -109,6 +109,20 @@ ALTER TABLE filter_configurations ADD COLUMN ordering INT DEFAULT 0;
 ALTER TABLE filter_configurations CHANGE COLUMN notify watched TINYINT(1) DEFAULT 0;
 
 
+-- Table structure for table `watcher_match`
+CREATE TABLE IF NOT EXISTS `watcher_match` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `config_id` INT NOT NULL,
+    `job_id` INT NOT NULL,
+    `deleted` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_config_del_created` (`config_id`, `deleted`, `created_at`),
+    KEY `idx_job_id` (`job_id`),
+    KEY `idx_cleanup` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
 -- Table structure for table `job_snapshots`
 CREATE TABLE if not exists `job_snapshots` (
   `id` int NOT NULL AUTO_INCREMENT,

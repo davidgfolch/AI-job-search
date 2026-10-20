@@ -32,6 +32,7 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
             {!collapsed && pinnedConfigs.map((config, index) => {
                 const result = results[config.name];
                 const hasNew = result && result.newItems > 0;
+                const hasRemoved = result && result.removedItems > 0;
                 const isSelected = config.name === selectedConfigName;
                 const shortcutDisplay = `Alt+${index + 1}`;
                 return (
@@ -43,7 +44,8 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
                         >
                             <span className="pinned-config-name text-no-wrap">
                                 {config.name}
-                                {hasNew && <span className="watcher-badge-inline">+{result.newItems}</span>}
+                                {hasNew && <span className="watcher-badge-inline watcher-badge-inline--new">+{result.newItems}</span>}
+                                {hasRemoved && <span className="watcher-badge-inline watcher-badge-inline--removed">-{result.removedItems}</span>}
                             </span>
                             <span className="pinned-config-badges">
                                 {config.statistics !== false && <span title="Included in Statistics">📈</span>}
