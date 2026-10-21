@@ -4,7 +4,7 @@ import { QueryClient } from '@tanstack/react-query';
 import JobDetail from "../JobDetail";
 import { jobsApi } from '../../api/ViewerApi';
 import { skillsApi } from '../../../skillsManager/api/SkillsManagerApi';
-import { renderWithProviders, createMockJob, createMockJobs } from "../../test/test-utils";
+import { renderWithProviders, createMockJob } from "../../test/test-utils";
 
 vi.mock('../../api/ViewerApi', () => ({
     jobsApi: {

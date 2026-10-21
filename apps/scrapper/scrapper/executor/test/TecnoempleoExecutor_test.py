@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.executor.TecnoempleoExecutor import TecnoempleoExecutor
-from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator
 from scrapper.services.TecnoempleoService import TecnoempleoService
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager

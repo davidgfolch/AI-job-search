@@ -107,33 +107,33 @@ describe('useJobSelection - URL parameters', () => {
         };
 
         it('selects the job that took the place of the filtered-out one', () => {
-            const { result, rerender, flag } = renderWithFlag();
+            const { result, rerender, flag, setFilters } = renderWithFlag();
             flag(2, 1);
             const refreshed = [{ id: 1, title: 'Job A' }, { id: 3, title: 'Job C' }] as any[];
-            rerender({ allJobs: refreshed, filters: { page: 1, size: 20 } } as Props);
+            rerender({ allJobs: refreshed, filters: { page: 1, size: 20 }, setFilters } as Props);
             expect(result.current.selectedJob?.id).toBe(1);
             expect([...result.current.selectedIds]).toEqual([1]);
         });
 
         it('consumes the flag without touching the selection when the previous job survived', () => {
-            const { result, rerender, flag } = renderWithFlag();
+            const { result, rerender, flag, setFilters } = renderWithFlag();
             flag(1, 0);
-            rerender({ allJobs: [...jobs], filters: { page: 1, size: 20 } } as Props);
+            rerender({ allJobs: [...jobs], filters: { page: 1, size: 20 }, setFilters } as Props);
             expect(result.current.autoSelectNext.current.shouldSelect).toBe(false);
             expect(result.current.selectedJob).toBeNull();
         });
 
         it('clears the selection when no jobs are left', () => {
-            const { result, rerender, flag } = renderWithFlag();
+            const { result, rerender, flag, setFilters } = renderWithFlag();
             flag(2, 1);
-            rerender({ allJobs: [], filters: { page: 1, size: 20 } } as Props);
+            rerender({ allJobs: [], filters: { page: 1, size: 20 }, setFilters } as Props);
             expect(result.current.selectedJob).toBeNull();
             expect(result.current.selectedIds.size).toBe(0);
         });
 
         it('does nothing while the auto-selection flag is not set', () => {
-            const { result, rerender } = renderWithFlag();
-            rerender({ allJobs: [{ id: 9, title: 'New' }] as any[], filters: { page: 1, size: 20 } } as Props);
+            const { result, rerender, setFilters } = renderWithFlag();
+            rerender({ allJobs: [{ id: 9, title: 'New' }] as any[], filters: { page: 1, size: 20 }, setFilters } as Props);
             expect(result.current.selectedJob).toBeNull();
         });
     });

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useJobsData } from '../useJobsData';
-import { jobsApi } from '../../api/ViewerApi';
+import { jobsApi, type Job } from '../../api/ViewerApi';
 
 // Mock react-router-dom
 const mockSearchParams = new URLSearchParams();
@@ -86,7 +86,7 @@ describe('useJobsData', () => {
   });
 
   it('refetches the current query on reload, even while its data is fresh', async () => {
-    vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [{ id: 1 }], total: 100, page: 1, size: 20 });
+    vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [{ id: 1 } as Job], total: 100, page: 1, size: 20 });
     const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.data?.total).toBe(100));
 
@@ -102,7 +102,7 @@ describe('useJobsData', () => {
   });
 
   it('leaves the cache of other filter sets untouched on reload', async () => {
-    vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [{ id: 1 }], total: 100, page: 1, size: 20 });
+    vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [{ id: 1 } as Job], total: 100, page: 1, size: 20 });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -162,7 +162,7 @@ describe('useJobsData', () => {
   });
 
   it('blocks load-more while showing placeholder data (config transition)', async () => {
-    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce({ items: [{ id: 1 }], total: 100, page: 1, size: 20 });
+    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce({ items: [{ id: 1 } as Job], total: 100, page: 1, size: 20 });
     const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.data?.total).toBe(100));

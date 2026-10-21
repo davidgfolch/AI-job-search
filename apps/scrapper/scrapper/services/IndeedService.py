@@ -1,7 +1,6 @@
 import re
 import urllib.parse
 import hashlib
-from typing import Tuple
 from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger

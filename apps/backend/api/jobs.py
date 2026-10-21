@@ -4,7 +4,6 @@ from models.job import (
     Job,
     JobUpdate,
     JobListResponse,
-    AppliedCompanyJob,
     JobCreate,
 )
 from services.jobs_service import JobsService

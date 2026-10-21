@@ -149,7 +149,7 @@ describe('useFilterConfigurations', () => {
             result.current.loadConfiguration({ 
                 name: backendConfigs[0].name, 
                 filters: backendConfigs[0].filters,
-                watched: backendConfigs[0].notify 
+                watched: backendConfigs[0].watched 
             });
         });
 

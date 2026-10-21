@@ -1,6 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from services.ddl_service import DdlService
+from unittest.mock import patch
 
 @patch('services.ddl_service.DdlService.get_schema')
 @patch('services.ddl_service.DdlService.get_keywords')

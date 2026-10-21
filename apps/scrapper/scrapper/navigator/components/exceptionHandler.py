@@ -1,6 +1,4 @@
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from commonlib.decorator.retry import retry, StackTrace
-from ...services.selenium.browser_service import sleep
 
 CSS_SEL_PASSCODE_ERROR = "#label-passcode-input-error"
 

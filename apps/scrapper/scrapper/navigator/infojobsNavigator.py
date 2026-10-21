@@ -4,7 +4,6 @@ from commonlib.decorator.retry import retry
 from commonlib.observability import get_logger
 from commonlib.stringUtil import join
 from commonlib.terminalColor import green, yellow, printHR
-from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 from .baseNavigator import BaseNavigator
 

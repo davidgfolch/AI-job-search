@@ -1,17 +1,9 @@
-import json
 from typing import List, Optional, Dict, Any
-import mysql
 
-from commonlib.terminalColor import red
 from commonlib.sql.mysqlUtil import (
     MysqlUtil,
     getConnection,
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY,
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT,
-    SELECT_APPLIED_JOB_ORDER_BY,
 )
-from commonlib.sqlUtil import scapeRegexChars, avoidInjection
-from commonlib.exceptionUtil import filter_trace_by_paths
 from repositories.queries.jobs_query_builder import (
     build_jobs_where_clause,
     parse_job_order,
@@ -19,8 +11,8 @@ from repositories.queries.jobs_query_builder import (
 from repositories.queries.repository_utils import execute_with_error_handler
 
 
-def _execute_with_error_handler(db, where_str: str, params: list, callback, include_items: bool = False, page: int = 0, size: int = 0, order: str = ""):
-    return execute_with_error_handler(db, where_str, params, callback, include_items, page, size, order)
+def _execute_with_error_handler(where_str: str, params: list, callback, include_items: bool = False):
+    return execute_with_error_handler(where_str, params, callback, include_items)
 
 
 class JobsRepository:
@@ -48,10 +40,10 @@ class JobsRepository:
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
             result = _execute_with_error_handler(
-                db, where_str, params,
+                where_str, params,
                 lambda: {"items": self._fetch_jobs(db, where_str, params, order, size, offset),
                          "total": self._count_jobs(db, where_str, params)},
-                include_items=True, page=page, size=size
+                include_items=True
             )
             if isinstance(result, dict) and "error" in result:
                 return {**result, "items": result.get("items", []), "total": result.get("total", 0), "page": page, "size": size}
@@ -77,7 +69,7 @@ class JobsRepository:
         where_str = " AND ".join(where_clauses)
         with self.get_db() as db:
             result = _execute_with_error_handler(
-                db, where_str, params,
+                where_str, params,
                 lambda: self._count_jobs(db, where_str, params),
                 include_items=False
             )
@@ -125,7 +117,7 @@ class JobsRepository:
         if not columns_data:
             return []
         columns = [col[0] for col in columns_data]
-        return [dict(zip(columns, row)) for row in rows]
+        return [dict(zip(columns, row, strict=True)) for row in rows]
 
     def fetch_job_row(self, db: MysqlUtil, job_id: int) -> Optional[tuple]:
         return db.fetchOne("SELECT * FROM jobs WHERE id = %s", job_id)

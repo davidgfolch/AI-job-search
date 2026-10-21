@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, mock_open
 import os
 from commonlib.environmentUtil import (
     getEnv, getEnvBool, getEnvModified, checkEnvReload,

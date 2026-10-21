@@ -1,12 +1,11 @@
-import React from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     BarChart, Bar
 } from 'recharts';
 import CustomTooltip from '../components/CustomTooltip';
-import { getColorForSource } from './chartUtils';
+import { getColorForSource, type ChartDataset } from './chartUtils';
 
-export const renderWeekdayChart = (data: any[], sourcesWeekdayKeys: string[], allSources: string[]) => (
+export const renderWeekdayChart = (data: ChartDataset, sourcesWeekdayKeys: string[]) => (
     <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -18,13 +17,13 @@ export const renderWeekdayChart = (data: any[], sourcesWeekdayKeys: string[], al
             <RechartsTooltip content={<CustomTooltip showDateLabel={false} />} />
             <Legend />
             {sourcesWeekdayKeys.map((key) => (
-                <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
+                <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key)} />
             ))}
         </BarChart>
     </ResponsiveContainer>
 );
 
-export const renderDateChart = (data: any[], sourcesDateKeys: string[], allSources: string[]) => (
+export const renderDateChart = (data: ChartDataset, sourcesDateKeys: string[]) => (
     <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -38,13 +37,13 @@ export const renderDateChart = (data: any[], sourcesDateKeys: string[], allSourc
             <RechartsTooltip content={<CustomTooltip />} />
             <Legend />
             {sourcesDateKeys.map((key) => (
-                <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
+                <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key)} />
             ))}
         </BarChart>
     </ResponsiveContainer>
 );
 
-export const renderHourChart = (data: any[], sourcesHourKeys: string[], allSources: string[]) => (
+export const renderHourChart = (data: ChartDataset, sourcesHourKeys: string[]) => (
     <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -53,13 +52,13 @@ export const renderHourChart = (data: any[], sourcesHourKeys: string[], allSourc
             <RechartsTooltip content={<CustomTooltip showDateLabel={false} />} />
             <Legend />
             {sourcesHourKeys.map((key) => (
-                <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key, allSources)} />
+                <Bar key={key} dataKey={key} stackId="a" fill={getColorForSource(key)} />
             ))}
         </BarChart>
     </ResponsiveContainer>
 );
 
-export const renderFilterConfigChart = (data: any[]) => (
+export const renderFilterConfigChart = (data: ChartDataset) => (
     <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data || []}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -76,7 +75,7 @@ export const renderFilterConfigChart = (data: any[]) => (
     </ResponsiveContainer>
 );
 
-export const renderHistoryChart = (data: any[]) => (
+export const renderHistoryChart = (data: ChartDataset) => (
     <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />

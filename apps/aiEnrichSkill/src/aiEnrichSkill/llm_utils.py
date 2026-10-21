@@ -1,6 +1,6 @@
 import time
 import torch
-from typing import List, Callable, Dict, Any, TypeVar
+from typing import List, Callable, Any, TypeVar
 
 from commonlib.observability import get_logger
 from .config import get_gpu_cleanup

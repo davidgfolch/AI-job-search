@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 from services.skills_service import SkillsService
 from models.skill import Skill

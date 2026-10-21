@@ -1,6 +1,5 @@
 import ctypes
 import platform
-import sys
 from contextlib import AbstractContextManager
 
 from commonlib.observability import get_logger

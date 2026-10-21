@@ -1,6 +1,4 @@
-import pytest
-from unittest.mock import MagicMock, patch
-from scrapper.services.gmail.email_exceptions import GmailConnectionError
+from unittest.mock import patch
 
 
 class TestGlassdoorGmailService:

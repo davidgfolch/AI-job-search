@@ -5,7 +5,7 @@ import pytest
 from commonlib.console_render import CONSOLE_MESSAGE, CONSOLE_RECORD, console_mode
 from commonlib.observability import configure_logging, get_logger, log_file_path
 from commonlib.terminalColor import green, stripAnsi
-from commonlib.test.console_render_fixtures import _events, console
+from commonlib.test.console_render_fixtures import _events, console  # noqa: F401 - the console fixture registers by being imported here
 
 
 class TestConsoleModeResolution:

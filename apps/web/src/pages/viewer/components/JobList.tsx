@@ -15,7 +15,7 @@ interface JobListProps {
     selectionMode: 'none' | 'manual' | 'all';
     onToggleSelectJob: (id: number) => void;
     onToggleSelectAll: () => void;
-    containerRef: React.RefObject<HTMLDivElement>;
+    containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const JobList: React.FC<JobListProps> = ({

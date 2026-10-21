@@ -33,6 +33,14 @@ const createMockJob = (overrides: Partial<Job> = {}): Job => ({
     ai_enriched: false,
     ai_enrich_error: null,
     duplicated_id: null,
+    interview_rh: null,
+    interview: null,
+    interview_tech: null,
+    interview_technical_test: null,
+    interview_technical_test_done: null,
+    easy_apply: null,
+    cv_match_percentage: null,
+    modality: null,
     ...overrides,
 });
 

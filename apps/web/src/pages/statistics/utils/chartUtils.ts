@@ -1,9 +1,15 @@
+/** A single cell of a chart row: an axis value, a series total or the breakdown of the "Other" bucket. */
+export type ChartCell = string | number | Record<string, number> | undefined;
+/** A chart row keyed by axis name, series name and, when present, the "Other" breakdown. */
+export type ChartRow = Record<string, ChartCell>;
+export type ChartDataset = ChartRow[];
+
 const COLORS_PALETTE = [
     '#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00C49F', 
     '#FFBB28', '#FF8042', '#a4de6c', '#d0ed57', '#a05195', '#d45087'
 ];
 
-export const getColorForSource = (source: string, allSources: string[]): string => {
+export const getColorForSource = (source: string): string => {
     // Generate a consistent index based on the source name string
     let hash = 0;
     for (let i = 0; i < source.length; i++) {
@@ -13,34 +19,38 @@ export const getColorForSource = (source: string, allSources: string[]): string 
     return COLORS_PALETTE[index];
 };
 
-export function pivotData<T>(data: T[] | undefined, xKey: keyof T, seriesKey: keyof T, valueKey: keyof T): Record<string, any>[] {
+/** Orders two axis values the way the JavaScript comparison operator does: numerically for numbers and
+ * lexicographically for strings. */
+const compareChartCells = (left: ChartCell, right: ChartCell): number => {
+    if (typeof left === 'number' && typeof right === 'number') return left > right ? 1 : -1;
+    if (typeof left === 'string' && typeof right === 'string') return left > right ? 1 : -1;
+    return Number(left) > Number(right) ? 1 : -1;
+};
+
+export function pivotData<T>(data: T[] | undefined, xKey: keyof T, seriesKey: keyof T, valueKey: keyof T): ChartDataset {
     if (!data) return [];
-    const result: Record<string, any>[] = [];
-    const map = new Map<string, Record<string, any>>();
-    
+    const result: ChartDataset = [];
+    const map = new Map<string, ChartRow>();
+
     data.forEach(item => {
         const xVal = String(item[xKey]);
         if (!map.has(xVal)) {
-            const newEntry: Record<string, any> = { [String(xKey)]: item[xKey] };
+            const newEntry: ChartRow = { [String(xKey)]: item[xKey] as ChartCell };
             map.set(xVal, newEntry);
             result.push(newEntry);
         }
         const seriesVal = String(item[seriesKey]);
-        const value = item[valueKey];
+        const value = item[valueKey] as ChartCell;
         const entry = map.get(xVal);
         if (entry) {
             entry[seriesVal] = value;
         }
     });
 
-    return result.sort((a, b) => {
-        const valA = a[String(xKey)];
-        const valB = b[String(xKey)];
-        return valA > valB ? 1 : -1;
-    });
+    return result.sort((a, b) => compareChartCells(a[String(xKey)], b[String(xKey)]));
 }
 
-export function getSeriesKeys(data: Record<string, any>[], ignoreKeys: string[] = ['dateCreated', 'hour', 'weekday']): string[] {
+export function getSeriesKeys(data: ChartDataset | undefined, ignoreKeys: string[] = ['dateCreated', 'hour', 'weekday']): string[] {
     if (!data) return [];
     const keys = new Set<string>();
     data.forEach(item => {
@@ -79,7 +89,7 @@ export function processChartData<T>(
     seriesKey: keyof T, 
     valueKey: keyof T,
     maxSources: number = 7
-): { processedData: Record<string, any>[], keys: string[] } {
+): { processedData: ChartDataset, keys: string[] } {
     if (!data) return { processedData: [], keys: [] };
 
     // 1. Calculate total volume per source to identify top sources
@@ -99,8 +109,8 @@ export function processChartData<T>(
     const hasOther = sortedSources.length > maxSources;
 
     // 3. Transform data with "Other" grouping
-    const processed: Record<string, any>[] = [];
-    const map = new Map<string, Record<string, any>>();
+    const processed: ChartDataset = [];
+    const map = new Map<string, ChartRow>();
     const otherDetailsMap = new Map<string, Record<string, number>>();
 
     data.forEach(item => {
@@ -120,7 +130,7 @@ export function processChartData<T>(
         }
 
         if (!map.has(xVal)) {
-            const newEntry: Record<string, any> = { [String(xKey)]: item[xKey] };
+            const newEntry: ChartRow = { [String(xKey)]: item[xKey] as ChartCell };
             if (hasOther) { 
                 newEntry['otherDetails'] = {}; // Initialize container
             }
@@ -129,7 +139,8 @@ export function processChartData<T>(
         }
         
         const entry = map.get(xVal)!;
-        entry[sourceKey] = (entry[sourceKey] || 0) + val;
+        const current = entry[sourceKey];
+        entry[sourceKey] = (typeof current === 'number' ? current : 0) + val;
         
         if (sourceKey === 'Other') {
              entry['otherDetails'] = otherDetailsMap.get(xVal);
@@ -140,11 +151,7 @@ export function processChartData<T>(
     const resultKeys = Array.from(topSources);
     if (hasOther) resultKeys.push('Other');
 
-    const sortedData = processed.sort((a, b) => {
-        const valA = a[String(xKey)];
-        const valB = b[String(xKey)];
-        return valA > valB ? 1 : -1;
-    });
+    const sortedData = processed.sort((a, b) => compareChartCells(a[String(xKey)], b[String(xKey)]));
 
     return { processedData: sortedData, keys: resultKeys };
 }

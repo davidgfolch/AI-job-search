@@ -1,4 +1,3 @@
-import pytest
 from scrapper.navigator.indeedScrapling_elements import (
     _extract_text, _extract_location, _modality_badge, _extract_total_from_title,
     CSS_SEL_JOB_TITLE, CSS_SEL_COMPANY, CSS_SEL_LOCATION, CSS_SEL_JOB_SALARY,

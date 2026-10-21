@@ -7,7 +7,7 @@ interface ConfigurationDropdownProps {
     filteredConfigs: FilterConfig[];
     highlightIndex: number;
     onLoad: (config: FilterConfig) => void;
-    onDelete: (name: string, event: React.MouseEvent) => void;
+    onDelete: (name: string, event: React.SyntheticEvent) => void;
     setHighlightIndex: (index: number) => void;
     onToggleWatch: (name: string) => void;
     onToggleStats: (name: string) => void;

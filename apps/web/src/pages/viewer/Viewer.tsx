@@ -14,6 +14,7 @@ import ConfirmModal from '../common/components/core/ConfirmModal';
 import './Viewer.css';
 import PageHeader from "../common/components/PageHeader";
 import { BOOLEAN_FILTERS } from './constants';
+import type { JobListParams } from './api/ViewerApi';
 import { useDefaultComment } from '../common/hooks/useDefaultComment';
 import { useJobShortcuts } from './hooks/useJobShortcuts';
 import ShortcutsControls from './components/ShortcutsControls';
@@ -46,7 +47,7 @@ export default function Viewer() {
     }, []);
     const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts, modifierPressed } = useJobShortcuts({ onAction: handleShortcut, onPinnedConfigShortcut: handlePinnedConfigShortcut });
 
-    const handleFiltersChange = useCallback((newFilters: any) => {
+    const handleFiltersChange = useCallback((newFilters: JobListParams) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
             BOOLEAN_FILTERS.some(filter => newFilters[filter.key] !== state.filters[filter.key]);
         const newPage = newFilters.page === 1 || isSearchOrFilterChange ? 1 : state.filters.page;        

@@ -69,6 +69,52 @@ jobs:
         env:
           CHANGED: ${{ steps.filter.outputs.changes }}
 
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install ruff
+        run: |
+          uv tool install ruff
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # Blocking gate: unused imports (F401), unused variables (F841),
+      # redefinitions (F811) and syntax errors (E9) fail the build.
+      - name: Python lint (ruff)
+        run: ./scripts/lint.sh python
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: apps/web
+
+      - name: Install e2e dependencies
+        run: npm install
+        working-directory: apps/e2e
+
+      # Blocking gate: ESLint errors (unused code, explicit `any` in production
+      # sources) and any TypeScript type error fail the build.
+      - name: Web lint and typecheck (eslint + tsc)
+        run: ./scripts/lint.sh web
+
+      - name: E2E lint (eslint)
+        run: ./scripts/lint.sh e2e
+
   test:
     needs: changes
     if: needs.changes.outputs.modules != '[]'
@@ -342,13 +388,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   ci-gate:
-    needs: [changes, test, e2e, frontend-coverage]
+    needs: [changes, test, e2e, frontend-coverage, static-analysis]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Fail on upstream failure
         run: |
-          if [ "${{ needs.changes.result }}" == "failure" ] || [ "${{ needs.test.result }}" == "failure" ] || [ "${{ needs.e2e.result }}" == "failure" ] || [ "${{ needs.frontend-coverage.result }}" == "failure" ]; then
+          if [ "${{ needs.changes.result }}" == "failure" ] || [ "${{ needs.test.result }}" == "failure" ] || [ "${{ needs.e2e.result }}" == "failure" ] || [ "${{ needs.frontend-coverage.result }}" == "failure" ] || [ "${{ needs.static-analysis.result }}" == "failure" ]; then
             echo "One or more CI jobs failed" >&2
             exit 1
           fi

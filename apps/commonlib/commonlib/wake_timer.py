@@ -1,5 +1,4 @@
 import ctypes
-import math
 import platform
 import time
 

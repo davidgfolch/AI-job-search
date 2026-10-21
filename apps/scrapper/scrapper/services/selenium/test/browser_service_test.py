@@ -1,7 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from scrapper.services.selenium import browser_service as browser_service_mod
 from scrapper.services.selenium.browser_service import BrowserService
 from scrapper.test.log_capture import captured_records

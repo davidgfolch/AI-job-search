@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import AppliedJobsWarning from '../AppliedJobsWarning';
-import type { AppliedCompanyJob } from '../../../api/jobs';
+import type { AppliedCompanyJob } from '../../../api/ViewerApi';
 
 describe('AppliedJobsWarning', () => {
   it('renders nothing when loading', () => {

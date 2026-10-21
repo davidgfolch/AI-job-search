@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from repositories.skills_repository import SkillsRepository
 from models.skill import Skill
 from commonlib.test.db_mock_util import create_mock_db

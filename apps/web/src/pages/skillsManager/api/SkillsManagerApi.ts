@@ -9,33 +9,44 @@ export interface Skill {
   category?: string;
 }
 
+/** Shape returned by the backend, which names the learning path in snake case. */
+interface SkillResponse {
+  name: string;
+  description: string;
+  learning_path?: string[];
+  learningPath?: string[];
+  disabled?: boolean;
+  ai_enriched?: boolean;
+  category?: string;
+}
+
 export const skillsApi = {
   getSkills: async (): Promise<Skill[]> => {
-    const response = await apiClient.get<any[]>('/skills');
-    return response.data.map((s: any) => ({
+    const response = await apiClient.get<SkillResponse[]>('/skills');
+    return response.data.map((s) => ({
       ...s,
       learningPath: s.learning_path || s.learningPath || [],
       ai_enriched: s.ai_enriched,
       category: s.category,
-    })) as Skill[];
+    }));
   },
 
   getSkill: async (name: string): Promise<Skill | null> => {
     try {
-      const response = await apiClient.get<any>(`/skills/${encodeURIComponent(name)}`);
+      const response = await apiClient.get<SkillResponse>(`/skills/${encodeURIComponent(name)}`);
       return {
           ...response.data,
           learningPath: response.data.learning_path || response.data.learningPath || [],
           ai_enriched: response.data.ai_enriched,
           category: response.data.category,
-      } as Skill;
-    } catch (e) {
+      };
+    } catch {
       return null;
     }
   },
 
   createSkill: async (skill: Skill): Promise<string> => {
-    const payloadToSend: any = {
+    const payloadToSend: Record<string, unknown> = {
       name: skill.name,
       description: skill.description,
       learning_path: skill.learningPath,
@@ -49,7 +60,7 @@ export const skillsApi = {
   },
 
   updateSkill: async (name: string, skill: Partial<Skill>): Promise<string> => {
-    const payload: any = { ...skill };
+    const payload: Record<string, unknown> = { ...skill };
     if (skill.learningPath) {
       payload.learning_path = skill.learningPath;
       delete payload.learningPath;

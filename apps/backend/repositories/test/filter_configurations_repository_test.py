@@ -21,8 +21,8 @@ def repo_with_mock(mock_db):
 def test_find_all(repo_with_mock):
     repo, mock_db = repo_with_mock
     mock_db.fetchAll.return_value = [
-        (1, 'Config 1', '{"page": 1}', 1, 1, 0, '2024-01-01', None),
-        (2, 'Config 2', '{"page": 2}', 0, 1, 1, '2024-01-02', None),
+        (1, 'Config 1', '{"page": 1}', 1, 1, 0, 0, '2024-01-01', None),
+        (2, 'Config 2', '{"page": 2}', 0, 1, 1, 0, '2024-01-02', None),
     ]
     result = repo.find_all()
     assert len(result) == 2
@@ -41,7 +41,7 @@ def test_find_all_empty(repo_with_mock):
 def test_find_all_logs_unparseable_filters(repo_with_mock, log_records):
     repo, mock_db = repo_with_mock
     mock_db.fetchAll.return_value = [
-        (1, 'Config 1', 'not-json', 1, 1, 0, '2024-01-01', None),
+        (1, 'Config 1', 'not-json', 1, 1, 0, 0, '2024-01-01', None),
     ]
     result = repo.find_all()
     assert result[0]['filters'] == {}
@@ -54,7 +54,7 @@ def test_find_all_logs_unparseable_filters(repo_with_mock, log_records):
 
 def test_find_by_id(repo_with_mock):
     repo, mock_db = repo_with_mock
-    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, 1, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, 1, 0, '2024-01-01', None)
     result = repo.find_by_id(1)
     assert result is not None
     assert result['id'] == 1
@@ -70,7 +70,7 @@ def test_find_by_id_not_found(repo_with_mock):
 
 def test_find_by_name(repo_with_mock):
     repo, mock_db = repo_with_mock
-    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, 0, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', '{"page": 1}', 0, 1, 0, 0, '2024-01-01', None)
     result = repo.find_by_name('Test')
     assert result is not None
     assert result['name'] == 'Test'
@@ -124,7 +124,7 @@ def test_count(repo_with_mock):
 
 def test_find_all_invalid_json(repo_with_mock):
     repo, mock_db = repo_with_mock
-    mock_db.fetchAll.return_value = [(1, 'Config 1', 'not-json', 1, 1, 0, '2024-01-01', None)]
+    mock_db.fetchAll.return_value = [(1, 'Config 1', 'not-json', 1, 1, 0, 0, '2024-01-01', None)]
     result = repo.find_all()
     assert len(result) == 1
     assert result[0]['filters'] == {}
@@ -132,14 +132,14 @@ def test_find_all_invalid_json(repo_with_mock):
 
 def test_find_by_id_invalid_json(repo_with_mock):
     repo, mock_db = repo_with_mock
-    mock_db.fetchOne.return_value = (1, 'Test', 'not-json', 0, 1, 1, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', 'not-json', 0, 1, 1, 0, '2024-01-01', None)
     result = repo.find_by_id(1)
     assert result['filters'] == {}
 
 
 def test_find_by_name_invalid_json(repo_with_mock):
     repo, mock_db = repo_with_mock
-    mock_db.fetchOne.return_value = (1, 'Test', 'not-json', 0, 1, 0, '2024-01-01', None)
+    mock_db.fetchOne.return_value = (1, 'Test', 'not-json', 0, 1, 0, 0, '2024-01-01', None)
     result = repo.find_by_name('Test')
     assert result['filters'] == {}
 

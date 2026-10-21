@@ -2,7 +2,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useLearnList, type Skill } from '../useLearnList';
-import { skillsApi } from '../../api/SkillsManagerApi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 

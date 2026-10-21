@@ -1,17 +1,14 @@
 import time
-import json
 from typing import List, Dict, Any
 
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.skill_context import get_skill_context
 from commonlib.skill_enricher_service import process_skill_enrichment, log_no_pending_skills
-from commonlib.terminalColor import yellow, magenta, cyan, red, green
 from commonlib.stopWatch import StopWatch
-from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
 
-from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_batch_size, get_enrich_limit, get_gpu_cleanup
+from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_batch_size, get_enrich_limit
 from commonlib.ollama_client import query_ollama
 from ..domain.mappers import build_skill_prompt_messages
 from ..domain.parsers import parse_skill_enrichment_result
@@ -90,7 +87,6 @@ def _save_skill_result(mysql: MysqlUtil, name: str, description: str, category: 
 
 def _enrich_huggingface(mysql: MysqlUtil) -> int:
     from ..llm_client import get_pipeline
-    from ..llm_utils import process_batch
 
     batch_size = get_batch_size()
     limit = get_enrich_limit()
@@ -124,8 +120,8 @@ def _process_skill_batch(
     batch_items: List[Dict[str, str]],
     start_idx: int,
     total: int,
-    current_global_count: int,
-    start_time: float
+    _current_global_count: int,
+    _start_time: float
 ) -> int:
     from ..llm_utils import process_batch
 

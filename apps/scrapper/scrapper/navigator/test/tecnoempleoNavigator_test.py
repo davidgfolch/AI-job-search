@@ -1,9 +1,8 @@
-import pytest
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, Mock, patch
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
-from scrapper.navigator.tecnoempleoNavigator import TecnoempleoNavigator, CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_NO_RESULTS, CSS_SEL_PAGINATION_LINKS, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE, TOAST_REMOVE_SCRIPT
+from scrapper.navigator.tecnoempleoNavigator import CSS_SEL_COMPANY, CSS_JOB_DETAIL_HEADER, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DATA_ITEM, CSS_SEL_JOB_DATA_CAPTION, CSS_SEL_JOB_DATA_VALUE, TOAST_REMOVE_SCRIPT
 from selenium.common.exceptions import ElementClickInterceptedException
-from scrapper.navigator.test.tecnoempleoNavigator_fixtures import mock_selenium, navigator
+from scrapper.navigator.test.tecnoempleoNavigator_fixtures import mock_selenium, navigator  # noqa: F401 - the fixtures register by being imported here
 
 class TestTecnoempleoNavigator:
 
@@ -61,7 +60,7 @@ class TestTecnoempleoNavigator:
          mock_selenium.scrollIntoView.assert_called_with("css")
 
     def test_scroll_jobs_list(self, navigator, mock_selenium):
-        with patch.object(navigator, 'scroll_jobs_list_retry') as mock_scroll_retry:
+        with patch.object(navigator, 'scroll_jobs_list_retry'):
             result = navigator.scroll_jobs_list(1)
             assert result is not None
         mock_selenium.waitUntilClickable.assert_called()

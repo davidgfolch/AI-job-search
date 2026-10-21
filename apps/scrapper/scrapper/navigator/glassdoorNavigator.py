@@ -1,5 +1,4 @@
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow, printHR
@@ -56,7 +55,7 @@ class GlassdoorNavigator(BaseNavigator):
         printHR(green)
         return int(total)
 
-    def check_results(self, keywords: str, url: str) -> bool:
+    def check_results(self, keywords: str, url: str) -> bool:  # noqa: ARG002 - navigator interface
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElm) == 0:
             return True

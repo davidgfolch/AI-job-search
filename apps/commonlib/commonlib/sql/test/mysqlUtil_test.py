@@ -133,7 +133,7 @@ class TestMysqlUtil:
     def test_cursor_reconnects_when_not_connected(self):
         mock_connection, mock_cursor = self._create_mock_connection()
         mock_connection.is_connected.return_value = False
-        with MysqlUtil(mock_connection).cursor() as cur:
+        with MysqlUtil(mock_connection).cursor():
             mock_connection.reconnect.assert_called_once()
 
     def test_cursor_no_existing_connection(self):

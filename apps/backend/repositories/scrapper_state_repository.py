@@ -1,5 +1,4 @@
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
-from commonlib.sql.scrapper_state_repository import ScrapperStateRepository as CommonScrapperStateRepo
 
 
 class ScrapperStateRepository:

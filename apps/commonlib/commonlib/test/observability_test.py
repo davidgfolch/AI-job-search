@@ -5,7 +5,7 @@ import pytest
 
 from commonlib import observability
 from commonlib.observability import configure_logging, get_app_name, get_logger, job_log_context, log_file_path
-from commonlib.test.observability_fixtures import APP_NAME_ENV, LEGACY_APP_NAME_ENV, _events, _read, fake_app, log_dir
+from commonlib.test.observability_fixtures import APP_NAME_ENV, LEGACY_APP_NAME_ENV, _events, _read, fake_app, log_dir  # noqa: F401 - the fixtures register by being imported here
 
 
 class TestConfiguration:

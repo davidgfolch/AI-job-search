@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from scrapper.navigator.components.exceptionHandler import (
     wait_for_cloudflare_filter, check_for_otp_error, raise_if_otp_invalid,
     wait_for_element_present, is_element_present

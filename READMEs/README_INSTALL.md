@@ -7,6 +7,7 @@
   - **Install Python 3.11** — it satisfies the 3.10 baseline of every module (all modules declare `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`backend`/`scrapper`/`cron`).
 - **Node.js**: LTS version (for `apps/web`).
 - **Docker**: For running services in containers.
+- **Ruff**: Optional locally, required by CI. Installed once for the whole repo with `uv tool install ruff` (step 7.3).
 
 > **Prerequisites for the install scripts**: `scripts\install.bat` (Windows) and
 > `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need Python on `PATH`.
@@ -211,6 +212,40 @@ codegraph affected apps/scrapper/scrapper/core/scrapper_scheduler.py
 See root [README.md](../README.md#code-intelligence-codegraph) for the full workflow and `.claude/skills/codegraph/SKILL.md` for the command reference.
 
 Both the CLI install and the wiring/indexing are best-effort: if the installer is unreachable, or the `codegraph` launcher is not on `PATH` yet in the current shell (the installers update `PATH` for new terminals only), the scripts print a warning and the app dependency install continues. In that case open a new terminal and run `codegraph install --yes --init` in the repo root manually; on Windows the launcher lives at `%LOCALAPPDATA%\codegraph\current\bin\codegraph.cmd`.
+
+### 7.3 Install Ruff (Python static analysis)
+
+[Ruff](https://docs.astral.sh/ruff/) is the Python linter used by the `static-analysis`
+CI gate. It is a single zero-dependency binary installed **once for the whole repo** —
+no app needs it in its own virtual environment:
+
+```bash
+# Linux/Mac
+uv tool install ruff
+
+# Windows
+uv tool install ruff
+```
+
+The binary lands in `%USERPROFILE%\.local\bin` (Windows) or `~/.local/bin` (Linux/Mac);
+add that directory to your `PATH` if it is not there yet. `scripts/lint.sh` falls back
+to `uvx ruff` when the binary is not on the `PATH`, so the checks still run without
+the extra step.
+
+`scripts/install.sh` / `scripts/install.bat` already install Ruff as part of the
+project dependency install, so running them is enough.
+
+Verify the install and run the gate:
+
+```bash
+ruff --version
+./scripts/lint.sh python
+```
+
+The configuration lives in the root [`ruff.toml`](../ruff.toml) and covers every
+Python app. See
+[README_DEVELOPMENT.md#static-analysis](README_DEVELOPMENT.md#static-analysis) for
+the rules in force.
 
 ### 8. Install Project Dependencies
 

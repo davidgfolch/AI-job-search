@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { CompanySynonymsTable } from '../CompanySynonymsTable';
 import type { SynonymGroup } from '../../api/CompanySynonymsManagerApi';
 
@@ -8,9 +8,9 @@ describe('CompanySynonymsTable', () => {
         { group_id: 7, names: ['Acme', 'Acme Inc'] },
         { group_id: 9, names: ['Globex'] },
     ];
-    let onAddToGroup: ReturnType<typeof vi.fn>;
-    let onRemoveName: ReturnType<typeof vi.fn>;
-    let onRemoveGroup: ReturnType<typeof vi.fn>;
+    let onAddToGroup: Mock<(groupId: number) => void>;
+    let onRemoveName: Mock<(name: string) => void>;
+    let onRemoveGroup: Mock<(group: SynonymGroup) => void>;
 
     beforeEach(() => {
         onAddToGroup = vi.fn();

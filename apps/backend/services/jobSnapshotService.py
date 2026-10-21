@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from commonlib.jobSnapshotRepository import JobSnapshotRepository
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Tuple, Dict, Any, List
+from typing import Optional, Tuple, Dict, Any
 
 from commonlib.sql.mysqlUtil import MysqlUtil
 

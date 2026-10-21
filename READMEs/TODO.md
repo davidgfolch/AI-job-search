@@ -21,6 +21,7 @@ ollama launch claude --config
 - find death code (vibe coding) 
   - scrapper done
   - backend done
+  - all apps covered by the enforced static-analysis gate (ruff `F401`/`F841`/`F811`/`ARG`, eslint + `tsc -b`); see [Static Analysis](README_DEVELOPMENT.md#static-analysis)
 - Filter Configurations Storage: Filter configurations are currently stored in browser localStorage (frontend-only). This implementation will work by sending filter configurations from the frontend to the backend for job counting. The configurations themselves will not be persisted in the backend database. Update apps/web, backend & statistics.
 
 ## apps/aiEnrich

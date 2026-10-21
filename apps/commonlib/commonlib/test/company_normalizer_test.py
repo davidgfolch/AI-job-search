@@ -1,5 +1,5 @@
 import pytest
-from commonlib.company_normalizer import UNSPECIFIED_COMPANY, is_unspecified_company, normalize_company_name
+from commonlib.company_normalizer import is_unspecified_company, normalize_company_name
 
 
 def test_empty_name():

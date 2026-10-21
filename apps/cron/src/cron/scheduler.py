@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import re
 
-from cron import config
 from commonlib.observability import get_logger
 from commonlib.repositories.cron_state_repository import CronStateRepository
 

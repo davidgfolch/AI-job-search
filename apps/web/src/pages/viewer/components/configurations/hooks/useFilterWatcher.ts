@@ -65,7 +65,7 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             if (isMounted.current && requestId === lastRequestIdRef.current) {
                 const newResults: Record<string, WatcherResult> = {};
                 configIdsWithNames.forEach(({ id, name }) => {
-                    const stats = statsMap[String(id)];
+                    const stats = statsMap[id];
                     if (stats) {
                         const isReset = justReset.has(name);
                         newResults[name] = {

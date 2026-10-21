@@ -1,12 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SalaryHistoryIndicator from '../SalaryHistoryIndicator';
-import type { Job } from '../../api/ViewerApi';
+import type { Job } from '../../../api/ViewerApi';
 
 const mockUseHistory = vi.hoisted(() => vi.fn());
 vi.mock('../../../hooks/useSalaryHistory', () => ({ useCompanySalaryHistory: (company: string) => mockUseHistory(company) }));
 
-const mockOnClose = vi.hoisted(() => vi.fn());
 vi.mock('../SalaryHistoryModal', () => ({
     default: ({ isOpen, onClose, records }: { isOpen: boolean; onClose: () => void; records: unknown[] }) =>
         isOpen ? <div data-testid="salary-modal" data-records={records.length}><button onClick={onClose}>close-modal</button></div> : null,

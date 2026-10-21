@@ -12,6 +12,8 @@ describe('ConfigurationInput', () => {
         onBlur: vi.fn(),
         onSave: vi.fn(),
         onExport: vi.fn(),
+        onWatch: vi.fn(),
+        isWatching: false,
     };
 
     it('renders input and buttons', () => {

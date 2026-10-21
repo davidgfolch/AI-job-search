@@ -41,7 +41,7 @@ def test_delete_jobs_by_filter():
 
 def test_delete_jobs_with_snapshots():
     repo = JobDeleteRepository()
-    mock_db = create_mock_db(fetchAll=[(1, "Job 1"), (2, "Job 2")])
+    mock_db = create_mock_db(fetchAll=[(1, "Job 1", "Acme"), (2, "Job 2", "Globex")])
     mock_db.executeAllAndCommit.return_value = 2
     with patch.object(repo, "get_db", return_value=mock_db):
         result = repo.delete_jobs_with_snapshots(
@@ -59,7 +59,7 @@ def test_delete_jobs_with_snapshots():
 
 def test_get_jobs_by_filter():
     repo = JobDeleteRepository()
-    mock_db = create_mock_db(fetchAll=[(1, "Job 1"), (2, "Job 2")])
+    mock_db = create_mock_db(fetchAll=[(1, "Job 1", "Acme"), (2, "Job 2", "Globex")])
     with patch.object(repo, "get_db", return_value=mock_db):
         result = repo.get_jobs_by_filter(["1=1"], [])
 

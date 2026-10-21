@@ -1,4 +1,4 @@
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 def create_mock_db(**kwargs):
     """

@@ -1,4 +1,4 @@
-import type { AppliedCompanyJob } from '../../api/jobs';
+import type { AppliedCompanyJob } from '../../api/ViewerApi';
 
 interface AppliedJobsWarningProps {
     appliedJobs: AppliedCompanyJob[];

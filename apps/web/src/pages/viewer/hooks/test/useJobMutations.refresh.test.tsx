@@ -30,11 +30,11 @@ const makeProps = (overrides: Record<string, unknown> = {}) => ({
   allJobs: [],
   selectedJob: null,
   setSelectedJob: vi.fn(),
-  activeTab: 'list',
+  activeTab: 'list' as const,
   autoSelectNext: { current: { shouldSelect: false, previousJobId: null } },
   selectedIds: new Set<number>(),
   setSelectedIds: vi.fn(),
-  selectionMode: 'all',
+  selectionMode: 'all' as const,
   setSelectionMode: vi.fn(),
   ...overrides,
 });
@@ -57,14 +57,14 @@ describe('useJobMutations - select_all ignore refreshes list', () => {
 
     client.setQueryData(['jobs', {}], { items: [{ id: 1 }, { id: 2 }, { id: 3 }], total: 3 });
 
-    const probe = () => {
+    const useProbe = () => {
       const { data } = useQuery({
         queryKey: ['jobs', {}],
         queryFn: async () => ({ items: [], total: 0 }),
       });
       return data;
     };
-    const { result: probeResult } = renderHook(probe, { wrapper });
+    const { result: probeResult } = renderHook(useProbe, { wrapper });
     expect(probeResult.current?.total).toBe(3);
 
     const { result } = renderHook(() => useJobMutations(makeProps()), { wrapper });

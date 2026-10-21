@@ -12,24 +12,19 @@ from typing import Any, Callable
 from mysql.connector import MySQLConnection
 
 from ..observability import get_logger
-from .connection_manager import get_connection, getConnection
+from .connection_manager import get_connection, getConnection  # noqa: F401 - getConnection is re-exported for legacy importers
 from .transaction_manager import TransactionManager
 from .query_executor import QueryExecutor
 from .job_repository import JobRepository
 from .scrapper_state_repository import ScrapperStateRepository
 from .job_queries import (
-    QRY_FIND_JOB_BY_JOB_ID,
-    QRY_INSERT,
-    QRY_SELECT_JOBS_VIEWER,
-    QRY_SELECT_COUNT_JOBS,
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY,
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT,
-    SELECT_APPLIED_JOB_ORDER_BY,
-    DB_FIELDS_BOOL,
-    QRY_UPDATE_JOB_DIRECT_URL,
+    QRY_FIND_JOB_BY_JOB_ID,  # noqa: F401 - re-exported: other modules import the queries from here
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY,  # noqa: F401 - re-exported: other modules import the queries from here
+    SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT,  # noqa: F401 - re-exported: other modules import the queries from here
+    SELECT_APPLIED_JOB_ORDER_BY,  # noqa: F401 - re-exported: other modules import the queries from here
+    QRY_UPDATE_JOB_DIRECT_URL,  # noqa: F401 - re-exported: other modules import the queries from here
 )
 # Re-export for backward compatibility
-from ..sqlUtil import getColumnTranslated
 
 logger = get_logger("commonlib.sql.mysqlUtil")
 

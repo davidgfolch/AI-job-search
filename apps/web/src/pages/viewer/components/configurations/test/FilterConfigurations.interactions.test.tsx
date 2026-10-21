@@ -75,7 +75,7 @@ describe('FilterConfigurations Interactions', () => {
         const { input } = await setup([testConfigs.z, testConfigs.a], {}, isLoadedRef);
         fireEvent.focus(input);
         const items = await screen.findAllByRole('listitem');
-        const names = items.map(i => i.textContent?.replace(/[\+\d+\📈📉🔔🔕📌×]/g, '').trim());
+        const names = items.map(i => i.textContent?.replace(/[\d+\u{1F4C8}\u{1F4C9}\u{1F514}\u{1F515}\u{1F4CC}\u{00D7}]/gu, '').trim());
         expect(names).toEqual(['A', 'Z']);
     });
 

@@ -2,8 +2,6 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useViewer } from '../useViewer';
 import { useJobsData } from '../useJobsData';
-import { useJobSelection } from '../useJobSelection';
-import { useJobMutations } from '../useJobMutations';
 import { useModalityValues } from '../../../common/hooks/useModalityValues';
 
 /**

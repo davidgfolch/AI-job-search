@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from scrapper.core import utils
 from scrapper.core.utils import debug, sleep, pageExists, abortExecution, runPreload
 from scrapper.test.log_capture import captured_records, jsonl_records

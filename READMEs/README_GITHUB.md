@@ -14,8 +14,26 @@ The CI workflow (`.github/workflows/ci.yml`) only tests the modules affected by 
 4. The `e2e` job runs Playwright when `apps/e2e` or `apps/web` changed, and uploads its monocart coverage summary.
 5. A `frontend-coverage` job enforces the frontend floor on the **union** of web unit + e2e coverage with `scripts/coverage/frontend-coverage-gate.mjs --min 90`, and publishes the union as the `apps/e2e` badge. It re-runs the web unit suite itself, so the gate does not depend on `apps/web` happening to be in the changed-module matrix.
 6. The scrapper floor is enforced inside the matrix by `scripts/coverage/scrapper_coverage_gate.py`; a module below the `fail_under` declared in its own `pyproject.toml` raises a CI warning annotation instead of a hard failure.
-7. `ci-gate` fails if any of `changes`, `test`, `e2e` or `frontend-coverage` failed.
-8. On `master`/`staging`, an `update-badges` job downloads the artifacts and commits any changed coverage badges to a dedicated `badges` branch (not the protected `master`), which the README badge images load from.
+7. The `static-analysis` job runs Ruff over `apps/` and `scripts/`, ESLint + `tsc -b` over `apps/web`, and ESLint over `apps/e2e`. It always runs, regardless of the change detection, because it is a required gate.
+8. `ci-gate` fails if any of `changes`, `test`, `e2e`, `frontend-coverage` or `static-analysis` failed.
+9. On `master`/`staging`, an `update-badges` job downloads the artifacts and commits any changed coverage badges to a dedicated `badges` branch (not the protected `master`), which the README badge images load from.
+
+### Static analysis gate
+
+The `static-analysis` job is a **required check** on both `master` and `staging`.
+It runs the same entry point developers use locally (`./scripts/lint.sh`), so a
+local run and the CI run never diverge:
+
+| Step | Command | Fails on |
+|------|---------|----------|
+| Python lint (ruff) | `./scripts/lint.sh python` | `E9`, `F401`, `F841`, `F811`, `ARG`, `B904`, `B905`, `B008` |
+| Web lint and typecheck | `./scripts/lint.sh web` | any ESLint **error** or any `tsc` type error |
+| E2E lint | `./scripts/lint.sh e2e` | any ESLint **error** |
+
+ESLint warnings are reported in the job log but do not break the build. The
+Ruff rules, the `_name` convention for intentionally unused arguments and the
+ESLint rule policy are documented in
+[README_DEVELOPMENT.md#static-analysis](README_DEVELOPMENT.md#static-analysis).
 
 ### Coverage gates
 

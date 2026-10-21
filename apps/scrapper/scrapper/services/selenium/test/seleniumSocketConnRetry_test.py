@@ -1,4 +1,3 @@
-import pytest
 from scrapper.services.selenium.seleniumSocketConnRetry import seleniumSocketConnRetry
 
 class TestSeleniumSocketConnRetry:

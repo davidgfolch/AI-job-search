@@ -1,7 +1,6 @@
 from unittest.mock import patch, MagicMock
-import pytest
 from commonlib.network.ollama_discovery import (
-    get_local_subnets, get_local_ip, _scan_port, _scan_hosts, discover_ollama_hosts,
+    get_local_subnets, _scan_port, _scan_hosts, discover_ollama_hosts,
 )
 
 

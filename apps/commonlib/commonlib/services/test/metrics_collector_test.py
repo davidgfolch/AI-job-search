@@ -1,6 +1,5 @@
 import json
 import os
-import tempfile
 import time
 
 import pytest

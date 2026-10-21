@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
 import services.dashboard_probe as dashboard_probe
-from .conftest import _iso
 
 
 @patch("services.dashboard_probe.get_last_ollama_server")

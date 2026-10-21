@@ -3,7 +3,6 @@ from unittest.mock import Mock, patch
 from scrapper.services.gmail.generic_gmail_service import GmailService
 from scrapper.services.gmail.email_exceptions import (
     GmailConnectionError,
-    GmailTimeoutError,
 )
 
 ENV_VARS = {"GMAIL_EMAIL": "test@gmail.com", "GMAIL_APP_PASSWORD": "test_password"}
@@ -45,7 +44,7 @@ class TestGmailService:
 
         expected_codes = ["123456", "789012", "456789", "654321"]
 
-        for email_body, expected_code in zip(email_bodies, expected_codes):
+        for email_body, expected_code in zip(email_bodies, expected_codes, strict=True):
             # Configure mock to return expected code for this specific test
             service.email_reader.extract_verification_code_from_subject.return_value = expected_code
             extracted = service.extract_code_from_email(email_body)
@@ -96,7 +95,7 @@ class TestGmailService:
         ) as mock_getEnv:
             mock_getEnv.side_effect = lambda key, default=None: ENV_VARS.get(key, default)
 
-            with patch.object(GmailService, "connect") as mock_connect:
+            with patch.object(GmailService, "connect"):
                 with GmailService() as service:
                     assert service.email == "test@gmail.com"
                     assert service.app_password == "test_password"
@@ -194,6 +193,6 @@ class TestGmailService:
             mock_getEnv.side_effect = lambda key, default=None: ENV_VARS.get(key, default)
             with patch.object(GmailService, "connect", return_value=True):
                 with patch.object(GmailService, "close") as mock_close:
-                    with GmailService() as service:
+                    with GmailService():
                         pass
                     mock_close.assert_called_once()

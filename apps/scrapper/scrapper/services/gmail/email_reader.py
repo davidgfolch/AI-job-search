@@ -3,7 +3,7 @@ import time
 import email
 import imaplib
 from email.header import decode_header
-from typing import List, Tuple, Optional
+from typing import List
 from commonlib.observability import get_logger
 from commonlib.terminalColor import yellow
 from .email_exceptions import GmailConnectionError, VerificationCodeExtractionError
@@ -32,7 +32,7 @@ class EmailReader:
             return True
         except Exception as e:
             logger.error("gmail.imap_connect_failed", error=str(e), console=yellow(f"Failed to connect to Gmail: {e}"))
-            raise GmailConnectionError(f"Failed to connect to Gmail: {e}")
+            raise GmailConnectionError(f"Failed to connect to Gmail: {e}") from e
 
     def select_inbox(self) -> bool:
         """Select the inbox folder"""
@@ -102,7 +102,7 @@ class EmailReader:
         except Exception as e:
             logger.warning("gmail.code_extraction_failed", subject_length=len(subject), error=str(e),
                             console=yellow(f"Failed to extract verification code from subject: {e}"))
-            raise VerificationCodeExtractionError(f"Failed to extract verification code from subject: {e}")
+            raise VerificationCodeExtractionError(f"Failed to extract verification code from subject: {e}") from e
 
     def get_email_subject(self, email_id: bytes) -> str:
         """Extract email subject from email"""
@@ -130,7 +130,7 @@ class EmailReader:
 
     def get_latest_verification_code(self, sender: str, timeout: int = 120) -> str:
         """Wait for and extract the latest verification code from a sender"""
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         start_time = time.time()
         start_datetime = datetime.now()

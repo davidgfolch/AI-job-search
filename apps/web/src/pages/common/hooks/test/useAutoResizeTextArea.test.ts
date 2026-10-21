@@ -29,7 +29,7 @@ describe('useAutoResizeTextArea', () => {
     vi.useRealTimers();
     vi.clearAllMocks();
     // Clean up global mock if needed
-    // @ts-ignore
+    // @ts-expect-error - the mock is installed on the window for the duration of the test
     delete window.IntersectionObserver;
   });
 

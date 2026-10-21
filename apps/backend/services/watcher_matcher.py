@@ -1,7 +1,7 @@
 import json
 import threading
 import time
-from typing import Optional, Dict, Any, List, Set, Tuple
+from typing import Optional, Any, List, Set, Tuple
 from commonlib.observability import get_logger
 from repositories.watcher_repository import WatcherRepository
 from repositories.watcher_match_repository import WatcherMatchRepository

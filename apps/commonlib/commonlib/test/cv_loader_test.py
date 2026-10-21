@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock, patch, mock_open
 from commonlib.cv_loader import CVLoader, extractTextFromPDF
 

@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 from services.ddl_service import DdlService
 

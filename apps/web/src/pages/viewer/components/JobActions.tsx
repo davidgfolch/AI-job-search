@@ -1,4 +1,4 @@
-import type { Job, JobListParams } from '../api/jobs';
+import type { Job, JobListParams } from '../api/ViewerApi';
 import { titleWithShortcut } from '../shortcutsConfig';
 import { useShortcuts } from '../shortcutsContext';
 import ShortcutBadge from './ShortcutBadge';

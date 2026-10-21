@@ -88,7 +88,7 @@ def set_console_mode(mode: str | None) -> None:
     _console_mode = mode or None
 
 
-def split_console_text(logger, method_name, event_dict: dict) -> dict:
+def split_console_text(logger, method_name, event_dict: dict) -> dict:  # noqa: ARG001 - structlog processor signature
     """Move the `console` field to a private key and record the stripped text.
 
     `end` defaults to a newline and only travels with the console text, so a record

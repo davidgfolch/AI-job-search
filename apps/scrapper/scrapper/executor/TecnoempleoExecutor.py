@@ -99,7 +99,7 @@ class TecnoempleoExecutor(BaseExecutor):
                         f'en_remoto={self.remote}',
                     ]))
 
-    def _load_and_process_row(self, idx, errors_count): # errors_count unused inside but passed for legacy?
+    def _load_and_process_row(self, idx, _errors_count):  # noqa: ARG002 - kept to preserve the executor row signature
         """
         Returns ok: bool, jobExistsInDb: bool
         """

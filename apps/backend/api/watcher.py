@@ -4,7 +4,6 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Query, Depends, Request
 from fastapi.responses import StreamingResponse
 from services.watcher_service import WatcherService, get_watcher_service
-from services.watcher_matcher import get_watcher_matcher
 
 router = APIRouter()
 

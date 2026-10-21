@@ -29,7 +29,6 @@ vi.mock('./useBulkJobMutations', () => ({
     })),
 }));
 
-import { jobsApi } from '../../api/ViewerApi';
 
 describe('useJobMutations - additional tests', () => {
     let defaultProps: ReturnType<typeof createDefaultJobMutationsProps>;

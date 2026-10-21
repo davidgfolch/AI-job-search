@@ -8,7 +8,6 @@ import {
     mockReorderSkills, 
     mockRemoveSkill, 
     mockSaveSkill,
-    mockUpdateSkill,
     MockEditSkillModal 
 } from './SkillsManager.test.utils';
 

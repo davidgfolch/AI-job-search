@@ -3,8 +3,6 @@ import sys
 import subprocess
 import time
 import socket
-import mysql.connector
-import signal
 from pathlib import Path
 # Add project root and commonlib to sys.path to allow imports
 root = Path(__file__).resolve().parent.parent

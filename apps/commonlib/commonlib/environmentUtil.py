@@ -72,7 +72,7 @@ def getEnv(key: str, default: str = None, required: bool = False) -> str:
         raise ValueError(f"Required environment variable '{key}' not found in .venv")
     return v
 
-def getEnvMultiline(key: str, default: str = None, required: bool = False) -> str:
+def getEnvMultiline(key: str, required: bool = False) -> str:
     idx = 1
     value = ''
     while True:

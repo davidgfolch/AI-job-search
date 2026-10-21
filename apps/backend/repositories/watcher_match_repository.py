@@ -1,4 +1,4 @@
-from typing import List, Optional, Set, Tuple
+from typing import List
 from commonlib.observability import get_logger
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 

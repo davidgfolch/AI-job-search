@@ -1,8 +1,6 @@
 """Shared fixtures for connection_manager tests."""
 import os
-import queue
 from unittest.mock import patch, MagicMock
-from mysql.connector.errors import PoolError
 import pytest
 
 from commonlib.sql import connection_manager

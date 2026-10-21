@@ -1,12 +1,10 @@
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.stringUtil import removeExtraEmptyLines
-from commonlib.sqlUtil import emptyToNone, maxLen
 from commonlib.cv_loader import CVLoader
 from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger, job_log_context

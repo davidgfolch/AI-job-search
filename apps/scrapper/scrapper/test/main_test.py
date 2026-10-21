@@ -1,14 +1,14 @@
 import os
 import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import patch
 from scrapper.main import main, hasArgument
 
 @pytest.fixture
 def mocks():
     with patch('scrapper.main.PersistenceManager') as mock_pm_cls, \
-         patch('scrapper.main.MysqlUtil') as mock_mysql_cls, \
-         patch('scrapper.main.getConnection') as mock_conn, \
-         patch('scrapper.main._v', return_value='0.0.0') as mock_v, \
+         patch('scrapper.main.MysqlUtil'), \
+         patch('scrapper.main.getConnection'), \
+         patch('scrapper.main._v', return_value='0.0.0'), \
          patch('scrapper.main.process_page_url') as mock_process_url, \
          patch('scrapper.main.ScrapperScheduler') as mock_scheduler_cls:
         

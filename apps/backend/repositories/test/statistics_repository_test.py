@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 import pandas as pd
 from repositories.statistics_repository import StatisticsRepository

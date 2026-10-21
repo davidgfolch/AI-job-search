@@ -1,4 +1,3 @@
-import re
 import ast
 from typing import Set
 from commonlib.sql.mysqlUtil import MysqlUtil

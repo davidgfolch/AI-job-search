@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import MagicMock, patch, mock_open
 from commonlib.json_helpers import (
     rawToJson, decode_unicode_escapes, fixJsonInvalidAttribute,
     fixJsonEndCurlyBraces, fixJsonStartCurlyBraces, LazyDecoder
@@ -113,13 +112,11 @@ class TestFixJsonStartCurlyBraces:
 
 class TestLazyDecoder:
     def test_fixes_unescaped_backslash(self):
-        import json
         decoder = LazyDecoder()
         result = decoder.decode('{"path": "C:\\Users\\test"}')
         assert "path" in result
 
     def test_fixes_trailing_comma_in_array(self):
-        import json
         decoder = LazyDecoder()
         result = decoder.decode('{"items": [1, 2, 3,]}')
         assert result["items"] == [1, 2, 3]

@@ -1,8 +1,6 @@
-from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException
 from commonlib.decorator.retry import StackTrace, retry
 from commonlib.observability import get_logger
 from commonlib.terminalColor import yellow
-from ...services.selenium.browser_service import sleep
 
 logger = get_logger("scrapper.captchaHandler")
 

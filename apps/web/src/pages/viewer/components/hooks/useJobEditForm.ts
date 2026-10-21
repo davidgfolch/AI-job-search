@@ -28,7 +28,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
     const [showAllFields, setShowAllFields] = useState(mode === 'create');
     
     // Ref to track debounce timers for auto-save
-    const debounceTimers = useRef<Record<string, number>>({});
+    const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
     
     // Track previous job ID to detect job switches vs updates
     const previousJobId = useRef<number | null>(null);

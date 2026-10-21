@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from scrapper.services.selenium import element_service as element_service_module
-from scrapper.services.selenium.element_service import ElementService, SCROLL_INTO_VIEW_SCRIPT, SCROLL_CONTAINER_TO_BOTTOM_SCRIPT
-from scrapper.services.selenium.test.element_service_fixtures import TestCheckboxUnselect
+from scrapper.services.selenium.element_service import SCROLL_INTO_VIEW_SCRIPT, SCROLL_CONTAINER_TO_BOTTOM_SCRIPT
+from scrapper.services.selenium.test.element_service_fixtures import TestCheckboxUnselect  # noqa: F401 - imported so pytest collects the test class here
 
 SEL = 'input#query'
 

@@ -1,6 +1,5 @@
 import os
 import pytest
-from unittest.mock import patch
 
 from commonlib.test.ollama_constants import OLLAMA_TEST_URL
 
@@ -44,7 +43,7 @@ def test_get_ollama_base_url(env_val, expected):
         os.environ.pop("AI_ENRICH_OLLAMA_BASE_URL", None)
     else:
         os.environ["AI_ENRICH_OLLAMA_BASE_URL"] = env_val
-    from aiEnrich.dataExtractor import get_ollama_base_url
+    from aiEnrich.aiEnrich_config import get_ollama_base_url
     assert get_ollama_base_url() == expected
 
 
@@ -57,5 +56,5 @@ def test_get_timeout_job(env_val, expected):
         os.environ.pop("AI_ENRICH_TIMEOUT_JOB", None)
     else:
         os.environ["AI_ENRICH_TIMEOUT_JOB"] = env_val
-    from aiEnrich.dataExtractor import get_timeout_job
+    from aiEnrich.aiEnrich_config import get_timeout_job
     assert get_timeout_job() == expected

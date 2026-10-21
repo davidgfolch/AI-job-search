@@ -25,7 +25,7 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
     const [isSqlEditorOpen, setIsSqlEditorOpen] = useState(false);
 
     const hasActiveFilters = BOOLEAN_FILTERS.some(filter => filters[filter.key] !== undefined)
-        || !!filters.sql_filter || !!filters.days_old || !!filters.salary || (filters.modality && filters.modality.length > 0);
+        || !!filters.sql_filter || !!filters.days_old || !!filters.salary || !!filters.modality?.length;
     return (
         <>
             <div className="boolean-filters">

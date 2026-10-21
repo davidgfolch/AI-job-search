@@ -172,3 +172,16 @@ Any OpenRouter slug works — `openai/gpt-4o-mini`, `anthropic/claude-3.5-sonnet
 **Strict extraction**: the response is validated against `EXTRACTION_SCHEMA` in `extraction_contract.py` (all four fields required, `additionalProperties: false`, `modality` must be `REMOTE`/`HYBRID`/`ON_SITE`, markdown code fences stripped) and sent to Ollama as a native JSON schema, so the model is constrained server-side instead of relying on prompt wording alone. When validation fails (invalid JSON, missing/extra field, wrong `modality`, or output truncated at the `num_predict` limit) the request is retried once with an explicit "the previous response was invalid" instruction. Tune with `AI_ENRICH_MAX_VALIDATION_RETRIES` (default `1`, so two attempts total; `0` disables the retry). After the last attempt the job is not saved and the reason is logged as `ai.structured_retry` / the final `ai.extract_failed` error, instead of persisting a partial row. Once the response is valid, `commonlib.ai_helpers.validateResult` normalizes it before saving: technology lists are flattened and de-duplicated, `modality` is upper-cased, and a **salary without any digit is discarded** (logged as `ai.invalid_salary`), so qualitative phrases such as "salario según experiencia" are intentionally not stored. An extraction that yields no technologies at all is logged as `ai.no_technologies`.
 
 **Company resolution**: some job boards publish offers without a company (e.g. Tecnoempleo), and the scrapper stores them with the company set to `unspecified` instead of discarding the offer. When a job is enriched and its company is still `unspecified`, a second, independent request (`companyExtractor.py`) asks the same backend for the company only, validated against `COMPANY_SCHEMA` (`{"company": "..." | null}`) and capped to 4000 characters of the job text. If a company is returned it is saved with `AiEnrichRepository.update_unspecified_company()`, which only writes while the company is still `unspecified`, and `AiEnrichRepository.refresh_duplicated_of()` then re-runs the duplicate check with the real company (deferred at scrape time, while the company was generic). When no company can be determined, or the request fails, the job keeps `unspecified` and is enriched normally: a failed guess never marks the job as failed to enrich. Events are logged as `company.resolved`, `company.unresolved`, and `company.resolution_failed`.
+
+## Static Analysis
+
+This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
+
+```bash
+# From the repo root
+./scripts/lint.sh python
+```
+
+Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`), `raise ... from` (`B904`), `zip(strict=)` (`B905`) and function calls in argument defaults (`B008`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
+
+See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

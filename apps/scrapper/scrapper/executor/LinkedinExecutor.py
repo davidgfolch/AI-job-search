@@ -101,7 +101,7 @@ class LinkedinExecutor(BaseExecutor):
         except Exception:
             debug(self.debug, exception=True)
             raise
-    def _load_and_process_row(self, idx, rowErrors=0) -> bool | str:
+    def _load_and_process_row(self, idx, _rowErrors=0) -> bool | str:
         # Returns True (exists), False (new), or "ERROR"
         try:
             cardElm = self.navigator.scroll_jobs_list(idx)
@@ -147,7 +147,7 @@ class LinkedinExecutor(BaseExecutor):
         from ..services.selenium.seleniumService import SeleniumService
         from ..util.persistence_manager import PersistenceManager
         
-        with MysqlUtil() as mysql, SeleniumService(False) as seleniumUtil:
+        with MysqlUtil(), SeleniumService(False) as seleniumUtil:
              # We need to instantiate ourselves potentially, or just use components directly?
              # Since this replaces `processUrl` logic which used navigator/service directly, 
              # we can do the same or instantiate Executor.

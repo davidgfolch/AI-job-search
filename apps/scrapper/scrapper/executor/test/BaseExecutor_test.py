@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from scrapper.core.scrapper_config import SCRAPPERS, TIMER
 from scrapper.executor.BaseExecutor import BaseExecutor
 from scrapper.executor import BaseExecutor as base_module
 
@@ -65,7 +64,6 @@ class TestExecutor:
 
     def test_preload_failure_sets_error_in_persistence(self, mocks):
         # Setup - patch the executor to test execute_preload directly
-        name = "infojobs"
         properties = {"preloaded": False}
         
         # We need to simulate the class/instance structure expected by execute_preload

@@ -123,7 +123,7 @@ def make_jsonl_writer(resolve_path: Callable[[], str], stamp: Callable[[dict], N
     app-name field and the path stays a single source of truth.
     """
 
-    def _writer(logger, method_name, event_dict):
+    def _writer(logger, method_name, event_dict):  # noqa: ARG001 - structlog processor signature
         stamp(event_dict)
         filepath = resolve_path()
         rotate_if_needed(filepath)

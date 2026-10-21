@@ -1,4 +1,3 @@
-import pytest
 from scrapper.services.gmail.email_exceptions import (
     GmailConnectionError, EmailNotFoundError, 
     VerificationCodeExtractionError, GmailTimeoutError

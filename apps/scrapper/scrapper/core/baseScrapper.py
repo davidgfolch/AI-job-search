@@ -1,7 +1,5 @@
-import math
 import re
 import urllib.parse
-from typing import Optional
 from markdownify import MarkdownConverter
 
 from .utils import debug
@@ -10,7 +8,6 @@ from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.observability import get_logger
 from commonlib.stringUtil import hasLenAnyText
 from commonlib.terminalColor import green, printHR, red, yellow
-from ..services.selenium.browser_service import sleep
 
 logger = get_logger("scrapper.baseScrapper")
 
@@ -51,7 +48,7 @@ def printPage(webPage, page, totalPages, keywords):
     printHR(green)
 
 class CustomConverter(MarkdownConverter):
-    def convert_br(self, el, text, parent_tags):
+    def convert_br(self, el, text, parent_tags):  # noqa: ARG002 - markdownify converter signature
         # Usa dos espacios + salto de línea para Markdown compatible
         return "  \n"
 

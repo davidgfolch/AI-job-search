@@ -1,7 +1,5 @@
 import pytest
-import re
-from unittest.mock import MagicMock, patch, call
-from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
+from unittest.mock import MagicMock, patch
 from scrapper.navigator.indeedNavigator import (
     IndeedNavigator, 
     CSS_SEL_SEARCH_WHAT, CSS_SEL_SEARCH_WHERE,

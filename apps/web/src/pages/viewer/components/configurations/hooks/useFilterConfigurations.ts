@@ -49,8 +49,9 @@ export function useFilterConfigurations({
         [onMessage]
     );
 
-    const allDefaults = useMemo(() => 
-        [...(defaultFilterConfigurations as any[]), ...additionalDefaults],
+    // The bundled JSON stores `null` for the boolean filters that were never set, so it needs a widening cast.
+    const allDefaults = useMemo(() =>
+        [...(defaultFilterConfigurations as unknown as FilterConfig[]), ...additionalDefaults],
         [additionalDefaults]
     );
 

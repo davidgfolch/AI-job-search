@@ -88,7 +88,7 @@ class JobsService:
             if not row:
                 return None
             columns = self.repo.fetch_columns(db)
-            result = {col: val for col, val in zip(columns, row)}
+            result = {col: val for col, val in zip(columns, row, strict=True)}
             company = result.get("company")
             if company:
                 synonym_service = CompanySynonymService()

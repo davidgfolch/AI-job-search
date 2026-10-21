@@ -1,7 +1,7 @@
 interface CustomTooltipProps {
     active?: boolean;
     payload?: Array<{ color: string; name: string; value: number; payload: { otherDetails?: Record<string, number> } }>;
-    label?: string;
+    label?: string | number;
     showDateLabel?: boolean;
 }
 

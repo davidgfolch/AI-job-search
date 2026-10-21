@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from typing import Optional
 from services.statistics_archived_service import StatisticsArchivedService
 

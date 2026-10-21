@@ -1,4 +1,3 @@
-import math
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.executor.GlassdoorExecutor import GlassdoorExecutor
@@ -46,10 +45,9 @@ class TestGlassdoorExecutor:
 
     
     def test_run_normal_execution(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
-        with patch('scrapper.executor.BaseExecutor.MysqlUtil') as mock_mysql_class, \
+        with patch('scrapper.executor.BaseExecutor.MysqlUtil'), \
              patch('scrapper.executor.GlassdoorExecutor.GlassdoorService') as mock_service_class, \
              patch.object(GlassdoorExecutor, '_process_keyword') as mock_process_keyword:
-            mock_mysql_instance = mock_mysql_class.return_value.__enter__.return_value
             mock_service = mock_service_class.return_value
             mock_service.should_skip_keyword.return_value = (False, 1)
             executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
@@ -60,8 +58,7 @@ class TestGlassdoorExecutor:
 
     def test_process_keyword(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch.object(GlassdoorExecutor, '_load_and_process_row') as mock_load_and_process, \
-             patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator') as mock_nav_class:
-            mock_nav_instance = mock_nav_class.return_value
+             patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator'):
             executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             # navigator is already mocked via initialization inside Executor using the patched class
             executor.navigator.check_results.return_value = True
@@ -76,8 +73,7 @@ class TestGlassdoorExecutor:
 
     def test_process_keyword_no_results(self, mock_sleep, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch.object(GlassdoorExecutor, '_load_and_process_row') as mock_load_and_process, \
-             patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator') as mock_nav_class:
-            mock_nav_instance = mock_nav_class.return_value
+             patch('scrapper.executor.GlassdoorExecutor.GlassdoorNavigator'):
             executor = GlassdoorExecutor(mock_selenium, mock_persistence_manager, False)
             executor.navigator.check_results.return_value = False
             executor._process_keyword("clojure", 1)

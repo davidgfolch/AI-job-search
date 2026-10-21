@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from repositories.jobs_repository import JobsRepository
 from commonlib.test.db_mock_util import create_mock_db
 
@@ -28,6 +28,7 @@ def test_list_jobs_happy_path(repo, mock_db):
     expected_item = dict(zip(
         ["id", "title", "company", "location", "salary", "url", "markdown", "web_page", "created", "modified"],
         (1, "Job 1", "Company", "Remote", None, None, None, None, "2023-01-01", "2023-01-01"),
+        strict=True,
     ))
     assert result["items"] == [expected_item]
 

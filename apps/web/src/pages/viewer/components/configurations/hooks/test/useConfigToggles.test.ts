@@ -1,8 +1,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { useConfigToggles } from '../useConfigToggles';
 import type { FilterConfig } from '../useFilterConfigurations';
-import type { FilterConfigService } from '../../../hooks/FilterConfigService';
+import type { FilterConfigService } from '../../../../hooks/FilterConfigService';
 
 const makeService = () => ({
     updateStatistics: vi.fn().mockResolvedValue(undefined),
@@ -14,8 +14,8 @@ const withId: FilterConfig = { id: 1, name: 'A', filters: {} as FilterConfig['fi
 
 describe('useConfigToggles', () => {
     let service: ReturnType<typeof makeService>;
-    let setSavedConfigs: ReturnType<typeof vi.fn>;
-    let notify: ReturnType<typeof vi.fn>;
+    let setSavedConfigs: Mock<(configs: FilterConfig[]) => void>;
+    let notify: Mock<(msg: string, type: 'success' | 'error') => void>;
     const setup = (configs: FilterConfig[]) => renderHook(() => useConfigToggles({
         savedConfigs: configs, setSavedConfigs: setSavedConfigs as never, service: service as unknown as FilterConfigService, notify
     }));

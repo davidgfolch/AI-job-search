@@ -39,7 +39,7 @@ def test_get_applied_jobs_by_company(
     assert response.status_code == 200
     data = response.json()
     assert len(data) == expected_count
-    for i, (expected_id, expected_date) in enumerate(zip(expected_ids, expected_dates)):
+    for i, (expected_id, expected_date) in enumerate(zip(expected_ids, expected_dates, strict=True)):
         assert data[i]["id"] == expected_id
         assert expected_date in data[i]["created"]
 

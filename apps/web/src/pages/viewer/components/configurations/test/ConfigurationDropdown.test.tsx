@@ -10,8 +10,9 @@ describe('ConfigurationDropdown', () => {
         onLoad: vi.fn(),
         onDelete: vi.fn(),
         setHighlightIndex: vi.fn(),
-        onTogglewatched: vi.fn(),
+        onToggleWatch: vi.fn(),
         onToggleStats: vi.fn(),
+        onTogglePin: vi.fn(),
     };
 
     it('renders nothing when closed', () => {

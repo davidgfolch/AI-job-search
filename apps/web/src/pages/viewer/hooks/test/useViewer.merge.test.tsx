@@ -2,8 +2,6 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useViewer } from '../useViewer';
 import { useJobsData } from '../useJobsData';
-import { useJobSelection } from '../useJobSelection';
-import { useJobMutations } from '../useJobMutations';
 import { useModalityValues } from '../../../common/hooks/useModalityValues';
 
 /** Stable instances: the closures captured by the hook must be the ones asserted on. */
@@ -56,7 +54,7 @@ const base = (over: Record<string, unknown> = {}) => ({
 
 /** setAllJobs is mocked, so its updater never runs on its own: invoke it explicitly. */
 const lastUpdater = (setAllJobs: any, from = 0) => {
-    const calls = setAllJobs.mock.calls.slice(from).map((c: any[]) => c[0]).filter(a => typeof a === 'function');
+    const calls = setAllJobs.mock.calls.slice(from).map((c: any[]) => c[0]).filter((a: unknown) => typeof a === 'function');
     expect(calls.length).toBeGreaterThan(0);
     return calls.at(-1);
 };
@@ -164,7 +162,7 @@ describe('useViewer data merging and callbacks', () => {
 
     it('does not arm auto-select outside the list tab', () => {
         const { result } = renderViewer();
-        act(() => result.current.actions.setActiveTab('stats'));
+        act(() => result.current.actions.setActiveTab('edit'));
         act(() => mocks.appliedModalConfig.onBulkUpdate([2], { seen: true }));
         expect(mocks.autoSelectNext.current).toEqual({});
         expect(mocks.mutate).toHaveBeenCalled();

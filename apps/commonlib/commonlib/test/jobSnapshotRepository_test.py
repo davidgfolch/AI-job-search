@@ -105,5 +105,5 @@ def test_build_snapshot_query_empty_job():
 
 def test_default_mysql_creates_instance():
     with patch("commonlib.jobSnapshotRepository.MysqlUtil") as mock_mysql_cls:
-        repo = JobSnapshotRepository()
+        JobSnapshotRepository()
         mock_mysql_cls.assert_called_once()

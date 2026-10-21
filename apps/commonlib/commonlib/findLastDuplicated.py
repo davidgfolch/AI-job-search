@@ -1,5 +1,4 @@
 from .sql.mysqlUtil import MysqlUtil
-from .stringUtil import removeNewLines
 from .company_normalizer import is_unspecified_company
 
 

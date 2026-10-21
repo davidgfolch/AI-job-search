@@ -30,4 +30,4 @@ class IndeedGmailService(GmailService):
         except GmailConnectionError:
             raise
         except Exception as e:
-            raise GmailConnectionError(f"Error getting Indeed verification code: {e}")
+            raise GmailConnectionError(f"Error getting Indeed verification code: {e}") from e

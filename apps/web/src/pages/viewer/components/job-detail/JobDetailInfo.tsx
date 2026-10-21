@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { type Job } from '../../api/ViewerApi';
+import { type Job, type AppliedCompanyJob } from '../../api/ViewerApi';
 import AppliedJobsWarning from './AppliedJobsWarning';
 import SalaryActions from './SalaryActions';
 import SkillsList from './SkillsList';
@@ -9,10 +9,9 @@ import CvMatchBar from '../../../common/components/core/CvMatchBar';
 
 interface JobDetailInfoProps {
     job: Job;
-    appliedCompanyJobs: Job[];
+    appliedCompanyJobs: AppliedCompanyJob[];
     loadingApplied: boolean;
     onUpdate?: (data: Partial<Job>) => void;
-    showCalculator: boolean;
     onToggleCalculator: () => void;
 }
 
@@ -30,7 +29,7 @@ const isModified = (created: string | undefined | null, modified: string | undef
     return Math.abs(d1.getTime() - d2.getTime()) >= 5 * 60 * 1000;
 };
 
-export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied, onUpdate, showCalculator, onToggleCalculator }: JobDetailInfoProps) {
+export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied, onUpdate, onToggleCalculator }: JobDetailInfoProps) {
     const [showHistory, setShowHistory] = useState(false);
     const allJobSkills = [job.required_technologies, job.optional_technologies].filter(Boolean).join(', ');
 

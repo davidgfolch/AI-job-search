@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import JobList from '../JobList';
-import type { Job } from '../../api/jobs';
+import type { Job } from '../../api/ViewerApi';
 
 vi.mock('../JobTable', () => ({
   default: vi.fn(() => <div data-testid="job-table">JobTable</div>),
@@ -21,6 +21,7 @@ describe('JobList', () => {
     selectionMode: 'none' as const,
     onToggleSelectJob: vi.fn(),
     onToggleSelectAll: vi.fn(),
+    containerRef: { current: null },
   };
 
   it('renders loading state', () => {

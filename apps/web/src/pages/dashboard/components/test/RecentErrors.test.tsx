@@ -9,6 +9,7 @@ const serviceWithErrors = (displayName: string, recentErrors: ServiceStatus['rec
     status: 'error',
     lastActivity: null,
     usesOllama: false,
+    deployment: 'docker',
     metrics: { pendingJobs: 0, processed: 0, succeeded: 0, failed: 0, lastError: null, lastErrorAt: null },
     recentErrors,
 });

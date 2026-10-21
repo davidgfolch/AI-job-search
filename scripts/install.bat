@@ -47,6 +47,12 @@ echo.
 echo Installing Crawlee...
 uv tool install "crawlee[all]"
 
+echo.
+echo Installing Ruff (static analysis)...
+rem Single zero-dependency binary for the whole repo; scripts\lint.bat falls back to
+rem `uvx ruff` when it is not on the PATH, so a failure here is not fatal.
+uv tool install ruff || echo WARNING: ruff install failed; continuing. Install manually with: uv tool install ruff
+
 for /d %%a in (apps\*) do (
     if /i not "%%~nxa"=="commonlib" (
         echo.

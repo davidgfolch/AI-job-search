@@ -11,7 +11,6 @@ interface ModalProps {
   className?: string;
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
-  fullWidthHeader?: boolean;
 }
 
 export function Modal({
@@ -24,7 +23,6 @@ export function Modal({
   className = '',
   closeOnOverlayClick = true,
   closeOnEscape = true,
-  fullWidthHeader = true,
 }: ModalProps) {
   useEffect(() => {
     if (!isOpen || !closeOnEscape) return;

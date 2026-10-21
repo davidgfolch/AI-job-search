@@ -183,6 +183,12 @@ echo ""
 echo "Installing Crawlee..."
 uv tool install "crawlee[all]"
 
+echo ""
+echo "Installing Ruff (static analysis)..."
+# Single zero-dependency binary for the whole repo; scripts/lint.sh falls back to
+# `uvx ruff` when it is not on the PATH, so a failure here is not fatal.
+uv tool install ruff || echo "WARNING: ruff install failed; continuing. Install manually with: uv tool install ruff"
+
 for dir in apps/*; do
     name="$(basename "$dir")"
     if [ -d "$dir" ] && [ "$name" != "commonlib" ]; then

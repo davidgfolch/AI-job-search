@@ -4,7 +4,6 @@ from repositories.queries.jobs_query_builder import (
     get_search_conditions,
     get_days_old_condition,
     get_salary_condition,
-    get_salary_condition,
     get_boolean_condition
 )
 

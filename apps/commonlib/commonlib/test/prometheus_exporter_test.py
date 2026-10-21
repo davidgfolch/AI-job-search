@@ -1,5 +1,5 @@
 from unittest.mock import patch, mock_open
-from commonlib.prometheus_exporter import build_prometheus_metrics, build_log_metrics, LOG_SOURCES, MAX_LOG_ENTRIES
+from commonlib.prometheus_exporter import build_prometheus_metrics, build_log_metrics
 
 
 def test_empty_snapshot():

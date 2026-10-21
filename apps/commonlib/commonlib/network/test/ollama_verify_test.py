@@ -1,5 +1,4 @@
 from unittest.mock import patch, MagicMock
-import pytest
 from commonlib.network.ollama_verify import verify_ollama
 
 

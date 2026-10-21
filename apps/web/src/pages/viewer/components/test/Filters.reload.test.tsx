@@ -1,6 +1,6 @@
 import { render, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import type { JobListParams } from '../../api/ViewerApi';
 
 // The decision lives in the onLoadConfig bridge Filters hands to FilterConfigurations, so the child is replaced
@@ -17,9 +17,9 @@ import Filters from '../Filters';
 import { createMockFilters } from '../../test/test-utils';
 
 describe('Filters - reloading the active configuration', () => {
-    let onFiltersChange: ReturnType<typeof vi.fn>;
-    let onReloadConfig: ReturnType<typeof vi.fn>;
-    let onConfigNameChange: ReturnType<typeof vi.fn>;
+    let onFiltersChange: Mock<(filters: Partial<JobListParams>) => void>;
+    let onReloadConfig: Mock<() => void>;
+    let onConfigNameChange: Mock<(name: string) => void>;
 
     beforeEach(() => {
         capturedOnLoadConfig = undefined;

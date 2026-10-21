@@ -4,7 +4,7 @@ from commonlib.terminalUtil import consoleTimer
 from commonlib.observability import get_logger
 from commonlib.terminalColor import red, yellow
 from commonlib.fileSystemUtil import getSrcPath
-from scrapper.core.scrapper_config import (SCRAPPERS, TIMER, AUTORUN, BROWSER, get_debug)
+from scrapper.core.scrapper_config import (SCRAPPERS, AUTORUN, BROWSER, get_debug)
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload

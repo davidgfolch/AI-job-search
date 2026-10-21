@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 
 export const setupIntersectionObserverMock = () => {
-  const mockIntersectionObserver = vi.fn(function(this: IntersectionObserver, callback: IntersectionObserverCallback) {
+  const mockIntersectionObserver = vi.fn(function(this: IntersectionObserver, _callback: IntersectionObserverCallback) {
     return {
       observe: vi.fn(),
       unobserve: vi.fn(),
@@ -18,7 +18,7 @@ export const setupIntersectionObserverMock = () => {
 };
 
 export const setupResizeObserverMock = () => {
-  const mockResizeObserver = vi.fn(function(this: ResizeObserver, callback: ResizeObserverCallback) {
+  const mockResizeObserver = vi.fn(function(this: ResizeObserver, _callback: ResizeObserverCallback) {
     return {
       observe: vi.fn(),
       unobserve: vi.fn(),

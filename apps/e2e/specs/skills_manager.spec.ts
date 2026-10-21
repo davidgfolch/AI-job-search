@@ -7,7 +7,6 @@ test.use({
     bypassCSP: true,
 });
 
-const SKILLS_GET = (req: { method(): string; url(): string }) => req.method() === 'GET' && /\/api\/skills$/.test(req.url());
 const SKILLS_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/skills\/.+/.test(req.url());
 const SKILLS_PUT = (req: { method(): string; url(): string }) => req.method() === 'PUT' && /\/api\/skills\/.+/.test(req.url());
 

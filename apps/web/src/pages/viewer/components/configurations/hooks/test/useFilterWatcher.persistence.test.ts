@@ -43,7 +43,7 @@ describe('useFilterWatcher - Persistence', () => {
         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 0 } });
         const { wrapper } = createWrapper();
 
-        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
+        renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
         // Trigger checkItems via debounce
         await act(async () => {

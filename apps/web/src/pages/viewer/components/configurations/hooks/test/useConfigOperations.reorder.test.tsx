@@ -39,8 +39,8 @@ describe('useConfigOperations - reorderConfigurations', () => {
 
     it('reorders configurations successfully', async () => {
         const configs: FilterConfig[] = [
-            { name: 'A', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0, created: '', modified: null },
-            { name: 'B', filters: {}, watched: false, statistics: true, pinned: false, ordering: 1, created: '', modified: null },
+            { name: 'A', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0 },
+            { name: 'B', filters: {}, watched: false, statistics: true, pinned: false, ordering: 1 },
         ];
         const props = createProps();
         
@@ -59,7 +59,7 @@ describe('useConfigOperations - reorderConfigurations', () => {
     it('notifies on reorder failure', async () => {
         const mockSave = vi.fn().mockRejectedValue(new Error('Reorder failed'));
         const configs: FilterConfig[] = [
-            { name: 'A', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0, created: '', modified: null },
+            { name: 'A', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0 },
         ];
         const props = createProps({ save: mockSave });
         

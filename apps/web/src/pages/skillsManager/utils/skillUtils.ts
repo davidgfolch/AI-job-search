@@ -12,7 +12,7 @@ import { type Skill } from '../hooks/useLearnList';
 export const normalizeName = (name: string): string => {
   // Replace non-alphanumeric chars (except space, +, #, .) with space
   // Maintain consistency with backend
-  const cleaned = name.replace(/[^a-zA-Z0-9\s\+\.#]/g, ' ');
+  const cleaned = name.replace(/[^a-zA-Z0-9\s+.#]/g, ' ');
   // Collapse multiple spaces and trim, then lowercase
   return cleaned.replace(/\s+/g, ' ').trim().toLowerCase();
 };

@@ -9,7 +9,6 @@ from commonlib.ai_helpers import (
     mapJob,
     validateResult,
     RETRY_ERROR_PREFIX,
-    MAX_AI_ENRICH_ERROR_LEN,
     logIdleWait,
 )
 from commonlib.terminalColor import cyan
@@ -17,16 +16,15 @@ from commonlib.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger, job_log_context
 from commonlib.services.metrics_collector import MetricsCollector
 from .aiEnrich_config import (
-    get_job_enabled, get_timeout_job, get_model, get_max_validation_retries,
-    get_backend, get_ollama_base_url, get_openrouter_base_url, get_openrouter_model,
-    get_openrouter_fallback_model, get_max_ollama_failures, get_backend_url,
+    get_job_enabled, get_model, get_max_validation_retries,
+    get_backend, get_openrouter_model,
+    get_max_ollama_failures, get_backend_url,
 )
 from .ollama_backend import (
     ping_backend, _check_backend_available, _query_job, _query_company,
-    _resolved_ollama_url, _ollama_server_known, ollama_consecutive_failures,
+    ollama_consecutive_failures,
 )
 from .extraction_contract import build_extraction_prompt, query_and_parse
-from .openrouter_client import query_openrouter, ping_openrouter
 from .companyExtractor import resolve_unspecified_company
 
 logger = get_logger("aiEnrich.dataExtractor")

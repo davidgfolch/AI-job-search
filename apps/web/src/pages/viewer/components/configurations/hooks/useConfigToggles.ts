@@ -1,11 +1,16 @@
 import { useCallback } from 'react';
 import type { FilterConfig } from './useFilterConfigurations';
-import type { FilterConfigService } from '../../../hooks/FilterConfigService';
+
+export interface ConfigTogglesService {
+    save(configs: FilterConfig[]): Promise<void>;
+    updateStatistics(id: number, statistics: boolean): Promise<void>;
+    updatePinned(id: number, pinned: boolean): Promise<void>;
+}
 
 interface UseConfigTogglesProps {
     savedConfigs: FilterConfig[];
     setSavedConfigs: (configs: FilterConfig[]) => void;
-    service: FilterConfigService;
+    service: ConfigTogglesService;
     notify: (msg: string, type: 'success' | 'error') => void;
 }
 

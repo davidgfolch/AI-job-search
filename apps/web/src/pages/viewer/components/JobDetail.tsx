@@ -105,7 +105,7 @@ interface JobDetailProps {
                 </div>
                 <div className="job-detail-content" ref={setContentRef} tabIndex={-1}>
                     {isScrolled && <JobDetailCompactHeader job={job} />}
-                    <JobDetailInfo job={job} appliedCompanyJobs={appliedCompanyJobs || []} loadingApplied={loadingApplied} onUpdate={onUpdate} showCalculator={showCalculator} onToggleCalculator={() => setShowCalculator(!showCalculator)} />
+                    <JobDetailInfo job={job} appliedCompanyJobs={appliedCompanyJobs || []} loadingApplied={loadingApplied} onUpdate={onUpdate} onToggleCalculator={() => setShowCalculator(!showCalculator)} />
                     {showCalculator && <SalaryCalculator key={job.id} onClose={() => setShowCalculator(false)} job={job} onUpdate={onUpdate} initialParams={savedCalcParams} allSavedParams={allSavedCalcParams} />}
                     {job.comments && (
                         <div className="job-comments"><h3>Comments</h3><div className="markdown-content"><ReactMarkdownCustom>{job.comments}</ReactMarkdownCustom></div></div>

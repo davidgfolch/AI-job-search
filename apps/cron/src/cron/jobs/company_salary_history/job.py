@@ -1,4 +1,3 @@
-from datetime import datetime
 
 from cron.scheduler import CronJob
 from cron import config

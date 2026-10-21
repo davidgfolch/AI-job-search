@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from concurrent.futures import ThreadPoolExecutor
 
 
 def _make_service(mock_session_cls, proxies=None, debug=False):
@@ -134,7 +133,6 @@ class TestScraplingService:
 
     def test_reset_session(self, mock_session_cls):
         service, mock_session = _make_service(mock_session_cls, proxies=[])
-        old_session = service.session
         service.reset_session()
         assert service.session is not None
         mock_session.close.assert_called_once()

@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 from commonlib.observability import get_logger
 from repositories.watcher_repository import WatcherRepository
 
@@ -26,7 +26,6 @@ class WatcherService:
         self,
         config_ids: List[int],
         cutoff_map: Optional[Dict[int, str]] = None,
-        filter_config_service: Optional[Any] = None,
     ) -> Dict[int, Dict[str, int]]:
         """Return {config_id: {"total": N, "new_items": M}} using watcher_match.
 

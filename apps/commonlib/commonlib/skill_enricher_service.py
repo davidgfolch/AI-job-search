@@ -25,7 +25,6 @@ def process_skill_enrichment(
                                          If False, only filters by ai_enriched (NULL treated as not enriched).
     """
     from commonlib.stopWatch import StopWatch
-    from datetime import datetime
 
     where_clause = "COALESCE(ai_enriched, 0) = 0"
     if check_empty_description_only:

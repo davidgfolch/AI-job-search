@@ -58,6 +58,7 @@ cd apps/web
 npm run dev        # Vite dev server (port 5173)
 npm run build      # Production build
 npm run lint       # ESLint
+npm run typecheck  # tsc -b (type check only)
 
 # Backend (uv)
 cd apps/backend
@@ -69,6 +70,22 @@ cd apps/scrapper
 poetry install
 poetry run pytest
 ```
+
+### Static Analysis (blocking CI gate)
+```bash
+# Whole repo (ruff + web eslint/tsc + e2e eslint)
+./scripts/lint.sh          # or .\scripts\lint.bat
+./scripts/lint.sh python   # ruff over apps/ and scripts/ (root ruff.toml)
+./scripts/lint.sh web      # eslint + tsc -b over apps/web
+./scripts/lint.sh e2e      # eslint over apps/e2e
+```
+Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its
+own environment. Rules in force: `E9`, `F401`, `F841`, `F811`, `ARG`, `B904`, `B905`, `B008`.
+Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it;
+use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog
+processors, markdownify overrides, navigator/executor interfaces). `ARG` is not enforced on
+pytest modules, because pytest resolves fixtures by parameter name.
+Details: [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ## Code Style Guidelines
 

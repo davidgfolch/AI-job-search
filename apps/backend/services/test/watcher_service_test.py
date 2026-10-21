@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from services.watcher_service import WatcherService
-from datetime import datetime
 
 
 @pytest.fixture(autouse=True)

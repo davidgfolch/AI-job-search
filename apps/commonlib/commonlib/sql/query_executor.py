@@ -1,12 +1,10 @@
 from typing import TypeVar, Union, Sequence, Dict
 from mysql.connector.types import RowItemType
-from mysql.connector import MySQLConnection
 import mysql.connector as mysqlConnector
 from contextlib import contextmanager
 
 from commonlib.sqlUtil import getColumnTranslated
 from ..observability import get_logger
-from .connection_manager import get_connection
 
 logger = get_logger("query_executor")
 

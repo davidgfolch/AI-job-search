@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from scrapper.navigator.linkedinNavigator import LinkedinNavigator, CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_LOGIN_BUTTON, CSS_SEL_LOGIN_BUTTON_LEGACY, CSS_SEL_LOGIN_REMEMBER_ME, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_CARD, CSS_SEL_NEXT_PAGE_BUTTON
+from scrapper.navigator.linkedinNavigator import CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_CARD, CSS_SEL_NEXT_PAGE_BUTTON
 from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
 from scrapper.navigator.test.linkedinNavigator_data import CHECK_RESULTS_CASES, EASY_APPLY_CASES, LOGIN_SUBMIT_CASES
 

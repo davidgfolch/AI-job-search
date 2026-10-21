@@ -1,8 +1,7 @@
-from typing import List, Dict, Any, Union
+from typing import List, Union
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from commonlib.sqlUtil import scapeRegexChars, avoidInjection
 from commonlib.sql.mysqlUtil import (
-    SELECT_APPLIED_JOB_IDS_BY_COMPANY,
     SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT,
     SELECT_APPLIED_JOB_ORDER_BY,
 )

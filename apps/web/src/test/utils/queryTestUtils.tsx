@@ -1,7 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-export const createTestQueryClient = (additionalOptions = {}) => {
+type TestQueryClientOptions = {
+  queries?: Record<string, unknown>;
+  mutations?: Record<string, unknown>;
+};
+
+export const createTestQueryClient = (additionalOptions: TestQueryClientOptions = {}) => {
   return new QueryClient({
     defaultOptions: { 
       queries: { 
@@ -13,12 +18,11 @@ export const createTestQueryClient = (additionalOptions = {}) => {
         retry: false,
         ...additionalOptions.mutations
       }
-    },
-    ...additionalOptions
+    }
   });
 };
 
-export const createHookTestWrapper = (additionalOptions = {}) => {
+export const createHookTestWrapper = (additionalOptions: TestQueryClientOptions = {}) => {
   const queryClient = createTestQueryClient(additionalOptions);
   
   return function Wrapper({ children }: { children: ReactNode }) {

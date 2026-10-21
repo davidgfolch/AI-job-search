@@ -5,7 +5,6 @@ import pytest
 import sys
 from pathlib import Path
 from fastapi.testclient import TestClient
-from unittest.mock import Mock
 from main import app
 
 # Add test directory to Python path to allow imports from test modules

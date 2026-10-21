@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.executor.InfojobsExecutor import InfojobsExecutor
-from scrapper.navigator.infojobsNavigator import InfojobsNavigator
 from scrapper.services.InfojobsService import InfojobsService
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
@@ -55,7 +54,7 @@ class TestInfojobsExecutor:
 
     def test_process_keyword_flow(self, mock_selenium, mock_persistence_manager, mock_env_vars):
         with patch.object(InfojobsExecutor, '_load_and_process_row', return_value=False) as mock_row, \
-             patch('scrapper.executor.InfojobsExecutor.InfojobsNavigator') as mock_nav_class:
+             patch('scrapper.executor.InfojobsExecutor.InfojobsNavigator'):
             
             executor = InfojobsExecutor(mock_selenium, mock_persistence_manager, False)
             executor.service = MagicMock()

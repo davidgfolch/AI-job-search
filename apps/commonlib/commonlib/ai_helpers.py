@@ -2,8 +2,6 @@ import re
 
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr, getSeconds, getTimeUnits
-from commonlib.sql.mysqlUtil import MysqlUtil
-from commonlib.sqlUtil import updateFieldsQuery
 from commonlib.systemUtil import isDocker
 from commonlib.terminalColor import green, stripAnsi
 from commonlib.terminalUtil import consoleTimer
@@ -27,8 +25,7 @@ def mapJob(job):
 
 
 from commonlib.json_helpers import (
-    rawToJson, decode_unicode_escapes, LazyDecoder, printJsonException,
-    fixJsonInvalidAttribute, fixJsonEndCurlyBraces, fixJsonStartCurlyBraces
+    rawToJson
 )
 
 

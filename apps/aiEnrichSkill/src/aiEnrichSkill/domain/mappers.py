@@ -1,4 +1,4 @@
-from ..config import get_skill_system_prompt, get_input_max_len
+from ..config import get_skill_system_prompt
 
 
 def build_skill_prompt_messages(skill_name: str, context: str) -> list[dict]:

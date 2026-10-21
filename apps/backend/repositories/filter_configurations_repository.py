@@ -12,19 +12,6 @@ class FilterConfigurationsRepository:
         return MysqlUtil(getConnection())
     
     def find_all(self) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM filter_configurations ORDER BY created"
-        with self.get_db() as db:
-            rows = db.fetchAll(query)
-            if not rows:
-                return []
-            columns = ['id', 'name', 'filters', 'notify', 'statistics', 'created', 'modified']
-            result = []
-            for row in rows:
-                if len(row) == 6:
-                     pass 
-            pass
-
-    def find_all(self) -> List[Dict[str, Any]]:
         query = "SELECT id, name, filters, watched, statistics, pinned, ordering, created, modified FROM filter_configurations ORDER BY pinned DESC, ordering ASC, created ASC"
         with self.get_db() as db:
             rows = db.fetchAll(query)
@@ -33,7 +20,7 @@ class FilterConfigurationsRepository:
             columns = ['id', 'name', 'filters', 'watched', 'statistics', 'pinned', 'ordering', 'created', 'modified']
             result = []
             for row in rows:
-                item = {col: val for col, val in zip(columns, row)}
+                item = {col: val for col, val in zip(columns, row, strict=True)}
                 if item['filters']:
                     try:
                         item['filters'] = json.loads(item['filters'])
@@ -50,7 +37,7 @@ class FilterConfigurationsRepository:
             if not row:
                 return None
             columns = ['id', 'name', 'filters', 'watched', 'statistics', 'pinned', 'ordering', 'created', 'modified']
-            item = {col: val for col, val in zip(columns, row)}
+            item = {col: val for col, val in zip(columns, row, strict=True)}
             if item['filters']:
                 try:
                     item['filters'] = json.loads(item['filters'])
@@ -66,7 +53,7 @@ class FilterConfigurationsRepository:
             if not row:
                 return None
             columns = ['id', 'name', 'filters', 'watched', 'statistics', 'pinned', 'ordering', 'created', 'modified']
-            item = {col: val for col, val in zip(columns, row)}
+            item = {col: val for col, val in zip(columns, row, strict=True)}
             if item['filters']:
                 try:
                     item['filters'] = json.loads(item['filters'])

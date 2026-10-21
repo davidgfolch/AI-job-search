@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from structlog.testing import capture_logs
 from commonlib.terminalUtil import consoleTimer, Spinner, consoleTimerDocker
 

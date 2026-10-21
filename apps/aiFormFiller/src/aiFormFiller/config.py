@@ -1,4 +1,4 @@
-from commonlib.environmentUtil import getEnv, getEnvBool
+from commonlib.environmentUtil import getEnv
 
 
 def get_provider() -> str:

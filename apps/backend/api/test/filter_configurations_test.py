@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch
 
 @patch('services.filter_configurations_service.FilterConfigurationsService.get_all')

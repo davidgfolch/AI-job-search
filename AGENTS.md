@@ -104,6 +104,23 @@ Coverage floors are 90% on **statements and lines** (functions and branches are 
 
 Run the suites when the change touches test code, production code, or the test runner scripts (`scripts/test.sh`, `scripts/test.bat`). Skip them when the change is limited to documentation or non-test scripts/config (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills) - those are not exercised by the unit or e2e suites, so state in the summary that the suites were skipped for that reason.
 
+### Static Analysis
+Static analysis is a blocking CI gate (`static-analysis` job). Run it locally with the same entry point CI uses:
+```bash
+# Whole repo: ruff + web eslint/tsc + e2e eslint
+./scripts/lint.sh          # or .\scripts\lint.bat
+
+# Per target
+./scripts/lint.sh python   # ruff over apps/ and scripts/ (root ruff.toml)
+./scripts/lint.sh web      # eslint + tsc -b over apps/web
+./scripts/lint.sh e2e      # eslint over apps/e2e
+```
+Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rules in force: `E9` (syntax errors), `F401` (unused imports), `F841` (unused variables), `F811` (dead redefinitions), `ARG` (unused arguments), `B904` (`raise ... from`), `B905` (`zip(strict=)`), `B008` (FastAPI `Depends`/`Query` defaults are allowed).
+
+Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it. Use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog processors, markdownify overrides, navigator/executor interfaces). `ARG` is **not** enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter, so an unused one cannot be renamed without breaking fixture resolution.
+
+Details: [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
+
 ### Running Individual Apps
 ```bash
 # Backend API

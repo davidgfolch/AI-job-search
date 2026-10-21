@@ -23,7 +23,7 @@ const { mockBulkUpdateMutation, mockBulkDeleteMutation } = mutationMocks;
 
 vi.mock('../../../common/hooks/useConfirmationModal', () => ({
     useConfirmationModal: () => ({
-        confirm: vi.fn((msg, cb) => cb()), // Auto-confirm for tests
+        confirm: vi.fn((_msg, cb) => cb()), // Auto-confirm for tests
         isOpen: false,
         message: '',
         handleConfirm: vi.fn(),

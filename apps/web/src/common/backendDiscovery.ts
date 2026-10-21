@@ -6,12 +6,17 @@ const BACKEND_PORT = 8000;
 const SCAN_TIMEOUT_MS = 200;
 const PROBE_TIMEOUT_MS = 1000;
 const MAX_WORKERS = 100;
+const DEFAULT_SUBNETS = ['192.168.1.0/24', '192.168.0.0/24'];
 
 function detectLocalSubnets(): string[] {
   const subnets: string[] = [];
   const s = net.createConnection({ host: '8.8.8.8', port: 80, timeout: 2000 });
   try {
     const localAddr = s.localAddress;
+    if (!localAddr) {
+      subnets.push(...DEFAULT_SUBNETS);
+      return subnets;
+    }
     const parts = localAddr.split('.');
     subnets.push(`${parts[0]}.${parts[1]}.${parts[2]}.0/24`);
     const third = parseInt(parts[2]);
@@ -22,7 +27,7 @@ function detectLocalSubnets(): string[] {
       }
     }
   } catch {
-    subnets.push('192.168.1.0/24', '192.168.0.0/24');
+    subnets.push(...DEFAULT_SUBNETS);
   } finally {
     s.destroy();
   }

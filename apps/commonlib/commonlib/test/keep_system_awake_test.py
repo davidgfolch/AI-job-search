@@ -6,7 +6,7 @@ class TestKeepSystemAwake(unittest.TestCase):
     def test_keep_system_awake(self):
         print("\nTesting KeepSystemAwake...")
         try:
-            with KeepSystemAwake() as k:
+            with KeepSystemAwake():
                 print("Inside context manager")
                 time.sleep(0.01)
             print("KeepSystemAwake test passed (no exceptions)")

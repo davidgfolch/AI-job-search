@@ -9,7 +9,7 @@ from .baseNavigator import BaseNavigator
 from ..services.scrapling.scraplingService import ScraplingService
 from .indeedScrapling_elements import (
     CSS_SEL_JOB_COUNT, CSS_SEL_JOB_LI, CSS_SEL_JOB_LINK, CSS_SEL_NEXT_PAGE_BUTTON,
-    CSS_SEL_JOB_TITLE, CSS_SEL_COMPANY, CSS_SEL_LOCATION, CSS_SEL_JOB_SALARY,
+    CSS_SEL_JOB_TITLE, CSS_SEL_COMPANY, CSS_SEL_JOB_SALARY,
     CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_EASY_APPLY, DELISTED_TITLE,
     _extract_text, _extract_location, _modality_badge, _extract_total_from_title,
 )
@@ -38,7 +38,7 @@ class IndeedScraplingNavigator(BaseNavigator):
     def clickSortByDate(self):
         pass
 
-    def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):
+    def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):  # noqa: ARG002 - navigator interface
         logger.info("indeed.scrapling.search.started", keyword=keyword, location=location,
                     console=f'Searching for "{keyword}" in "{location}" (Scrapling)')
         encoded_keyword, encoded_location = quote(keyword), quote(location)
@@ -90,7 +90,7 @@ class IndeedScraplingNavigator(BaseNavigator):
         printHR()
         return int(total.replace(".", "").replace(",", ""))
 
-    def fast_forward_page(self, start_page: int, total_results: int, jobs_x_page: int) -> int:
+    def fast_forward_page(self, start_page: int, total_results: int, jobs_x_page: int) -> int:  # noqa: ARG002 - navigator interface
         if start_page > 1:
             start_num = (start_page - 1) * 10
             url = self.current_page.url

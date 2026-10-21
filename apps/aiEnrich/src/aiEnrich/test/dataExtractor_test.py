@@ -7,8 +7,8 @@ from commonlib.ollama_client import OllamaResponse
 from ..dataExtractor import dataExtractor, _save, _process_job_safe, _notify_watcher_backend
 
 from .dataExtractor_fixtures import (
-    mock_deps, clean_env,
-)  # noqa: F401
+    mock_deps, clean_env,  # noqa: F401 - the fixtures register by being imported here
+)
 
 
 class TestDataExtractor:

@@ -17,7 +17,7 @@ type CodeEditorProps = { value: string; onValueChange: (code: string) => void; h
 const Editor = ((EditorImport as unknown as { default?: unknown }).default ?? EditorImport) as React.ComponentType<CodeEditorProps>;
 
 export default function Settings() {
-    const { data: envSettingsData, isLoading: isEnvLoading, isError: isEnvError } = useEnvSettings();
+    const { data: envSettingsData, isError: isEnvError } = useEnvSettings();
     const [envSettings, setEnvSettings] = useState<Record<string, string>>({});
     const [scrapperState, setScrapperState] = useState<string>('');
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);

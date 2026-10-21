@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { Skill } from './useLearnList';
+import type { Skill } from '../hooks/useLearnList';
 
 interface SkillsTableProps {
   skills: Skill[];

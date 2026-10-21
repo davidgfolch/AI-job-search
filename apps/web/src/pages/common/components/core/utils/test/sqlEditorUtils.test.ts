@@ -1,5 +1,5 @@
 
-import { tokenizeSql, SQL_FUNCTIONS } from '../sqlEditorUtils';
+import { tokenizeSql } from '../sqlEditorUtils';
 
 describe('sqlEditorUtils', () => {
     describe('tokenizeSql', () => {

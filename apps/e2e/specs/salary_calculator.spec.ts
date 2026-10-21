@@ -21,7 +21,6 @@ const SALARY_CALC_RESPONSE = {
     freelance_tax: '0',
 };
 
-const SALARY_CALC_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/salary\/calculate/.test(req.url());
 const JOB_1_PATCH = (req: { method(): string; url(): string }) => req.method() === 'PATCH' && /\/api\/jobs\/1$/.test(req.url());
 
 test.describe('Salary Calculator E2E', () => {

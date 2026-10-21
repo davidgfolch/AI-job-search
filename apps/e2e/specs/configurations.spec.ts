@@ -9,7 +9,6 @@ test.use({
 
 const CONFIG_PUT = (req: { method(): string; url(): string }) => req.method() === 'PUT' && /\/api\/filter-configurations\/\d+/.test(req.url());
 const CONFIG_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/filter-configurations$/.test(req.url());
-const CONFIG_DELETE = (req: { method(): string; url(): string }) => req.method() === 'DELETE' && /\/api\/filter-configurations\/\d+/.test(req.url());
 
 const clickConfig = (page: Page, name: string) =>
     openConfigDropdown(page).then(() => page.locator('.config-suggestion-item').filter({ hasText: name }).locator('.config-name').click());

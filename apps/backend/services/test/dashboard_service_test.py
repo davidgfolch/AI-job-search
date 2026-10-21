@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import services.dashboard_service as dashboard_service
 from .conftest import SNAPSHOT, _iso
 

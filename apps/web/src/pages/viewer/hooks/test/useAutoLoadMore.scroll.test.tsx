@@ -99,7 +99,7 @@ describe('useAutoLoadMore scroll and observer signals', () => {
         const observer = (globalThis.IntersectionObserver as any).mock.results[0].value;
         const targets = observer.observe.mock.calls.map((call: any[]) => call[0]);
         expect(targets).toEqual([sentinel]);
-        expect(targets.every(target => target.tagName !== 'TR')).toBe(true);
+        expect(targets.every((target: Element) => target.tagName !== 'TR')).toBe(true);
     });
 
     it('keeps reacting to the sentinel after a page is appended', () => {

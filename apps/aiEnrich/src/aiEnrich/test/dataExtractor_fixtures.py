@@ -1,7 +1,6 @@
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-from contextlib import contextmanager
 
 from .. import dataExtractor as dataExtractor_module
 from .. import ollama_backend as ollama_backend_module

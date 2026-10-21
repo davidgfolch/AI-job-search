@@ -31,7 +31,9 @@ export const useViewer = () => {
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
     const handleJobSelectRef = useRef(handleJobSelect);
-    handleJobSelectRef.current = handleJobSelect;
+    useEffect(() => {
+        handleJobSelectRef.current = handleJobSelect;
+    }, [handleJobSelect]);
 
     const {
         message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation, bulkUpdateMutation

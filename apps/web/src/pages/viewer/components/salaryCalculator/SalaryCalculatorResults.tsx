@@ -1,4 +1,4 @@
-import type { SalaryCalculationResponse } from '../../api/salary';
+import type { SalaryCalculationResponse } from '../../api/ViewerSalaryApi';
 
 interface SalaryCalculatorResultsProps {
     calcResult: SalaryCalculationResponse | null;

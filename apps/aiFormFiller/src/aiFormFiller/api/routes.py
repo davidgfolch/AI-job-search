@@ -31,10 +31,10 @@ async def answer(req: AnswerRequest):
         )
     except ValueError as e:
         logger.warning("provider.rejected", endpoint="answer", provider=req.provider, error=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.exception("provider.failed", endpoint="answer", provider=req.provider)
-        raise HTTPException(status_code=500, detail=f"AI provider error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI provider error: {str(e)}") from e
 
 
 @router.post("/api/answer/follow-up", response_model=AnswerResponse)
@@ -52,7 +52,7 @@ async def follow_up(req: FollowUpRequest):
         )
     except Exception as e:
         logger.exception("provider.failed", endpoint="follow_up", provider="auto")
-        raise HTTPException(status_code=500, detail=f"Follow-up error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Follow-up error: {str(e)}") from e
 
 
 @router.post("/api/answer/batch", response_model=BatchAnswerResponse)
@@ -77,10 +77,10 @@ async def answer_batch(req: BatchAnswerRequest):
         return BatchAnswerResponse(answers=items)
     except ValueError as e:
         logger.warning("provider.rejected", endpoint="answer_batch", provider=req.provider, error=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.exception("provider.failed", endpoint="answer_batch", provider=req.provider)
-        raise HTTPException(status_code=500, detail=f"AI provider error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI provider error: {str(e)}") from e
 
 
 @router.get("/api/health", response_model=HealthResponse)

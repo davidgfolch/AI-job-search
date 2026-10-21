@@ -17,7 +17,7 @@ interface JobTableProps {
     selectionMode: 'none' | 'manual' | 'all';
     onToggleSelectJob: (id: number) => void;
     onToggleSelectAll: () => void;
-    containerRef: React.RefObject<HTMLDivElement>;
+    containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export default function JobTable({ 

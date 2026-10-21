@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends
-from typing import List, Dict, Any, Optional
+from fastapi import APIRouter
+from typing import Optional
 from services.statistics_service import StatisticsService
 from services.statistics_archived_service import StatisticsArchivedService
 
@@ -56,6 +56,5 @@ def get_sources_by_weekday(
 def get_filter_config_stats(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    include_old_jobs: bool = True,
 ):
     return service.get_filter_configuration_stats(start_date=start_date, end_date=end_date)

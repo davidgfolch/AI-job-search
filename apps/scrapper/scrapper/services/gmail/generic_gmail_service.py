@@ -1,14 +1,10 @@
-import time
-from typing import Optional
 from commonlib.environmentUtil import getEnv
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow
 from .email_reader import EmailReader
 from .email_exceptions import (
     GmailConnectionError,
-    EmailNotFoundError,
     VerificationCodeExtractionError,
-    GmailTimeoutError,
 )
 
 logger = get_logger("scrapper.generic_gmail_service")
@@ -50,13 +46,13 @@ class GmailService:
         except GmailConnectionError:
             raise
         except Exception as e:
-            raise GmailConnectionError(f"Error getting verification code: {e}")
+            raise GmailConnectionError(f"Error getting verification code: {e}") from e
 
     def extract_code_from_email(self, subject: str) -> str:
         try:
             return self.email_reader.extract_verification_code_from_subject(subject)
         except:
-            raise VerificationCodeExtractionError("No verification code found in email subject")
+            raise VerificationCodeExtractionError("No verification code found in email subject") from None
 
     def is_connected(self) -> bool:
         """Check if Gmail service is connected"""

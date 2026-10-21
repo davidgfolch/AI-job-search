@@ -1,11 +1,10 @@
-from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException, WebDriverException
+from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry, StackTrace
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow, printHR
 from ..core import baseScrapper
-from ..services.selenium.seleniumService import SeleniumService
 from ..services.selenium.browser_service import sleep
 import re
 
@@ -53,7 +52,7 @@ class IndeedNavigator(BaseNavigator):
     def login(self):
         self.authenticator.login()
 
-    def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):
+    def search(self, keyword: str, location: str, remote: bool, daysOld: int, startPage: int):  # noqa: ARG002 - navigator interface
         logger.info("indeed.search.started", keyword=keyword, location=location, console=f'Searching for "{keyword}" in "{location}"')
         self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_SEARCH_WHAT)
         self.selenium.setFocus(CSS_SEL_SEARCH_WHAT)

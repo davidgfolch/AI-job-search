@@ -6,6 +6,7 @@ import {
 } from './utils/statisticsChartRenderers';
 import './Statistics.css';
 import { useStatistics } from './useStatistics';
+import type { ChartDataset } from './utils/chartUtils';
 import PageHeader from '../common/components/PageHeader';
 
 const Statistics = () => {
@@ -46,7 +47,6 @@ const Statistics = () => {
         sourcesWeekdayWide,
         sourcesWeekdayKeys,
         filterConfigData,
-        allSources
     } = useStatistics();
 
     React.useEffect(() => {
@@ -98,7 +98,7 @@ const Statistics = () => {
                         onFilterChange={handleFilterChange}
                         expandedChart={expandedChart}
                     >
-                        {(data: any) => renderWeekdayChart(data || sourcesWeekdayWide, sourcesWeekdayKeys, allSources)}
+                        {(data: ChartDataset | null) => renderWeekdayChart(data || sourcesWeekdayWide, sourcesWeekdayKeys)}
                     </ChartCard>
 
                     <ChartCard
@@ -110,7 +110,7 @@ const Statistics = () => {
                         onFilterChange={handleFilterChange}
                         expandedChart={expandedChart}
                     >
-                        {(data: any) => renderDateChart(data || sourcesDateWide, sourcesDateKeys, allSources)}
+                        {(data: ChartDataset | null) => renderDateChart(data || sourcesDateWide, sourcesDateKeys)}
                     </ChartCard>
 
                     <ChartCard
@@ -122,7 +122,7 @@ const Statistics = () => {
                         onFilterChange={handleFilterChange}
                         expandedChart={expandedChart}
                     >
-                        {(data: any) => renderHourChart(data || sourcesHourWide, sourcesHourKeys, allSources)}
+                        {(data: ChartDataset | null) => renderHourChart(data || sourcesHourWide, sourcesHourKeys)}
                     </ChartCard>
 
                     <ChartCard
@@ -134,7 +134,7 @@ const Statistics = () => {
                         onFilterChange={handleFilterChange}
                         expandedChart={expandedChart}
                     >
-                        {(data: any) => renderFilterConfigChart(data || filterConfigData || [])}
+                        {(data: ChartDataset | null) => renderFilterConfigChart(data || filterConfigData || [])}
                     </ChartCard>
 
                     <ChartCard
@@ -146,7 +146,7 @@ const Statistics = () => {
                         onFilterChange={handleFilterChange}
                         expandedChart={expandedChart}
                     >
-                        {(data: any) => renderHistoryChart(data || historyData)}
+                        {(data: ChartDataset | null) => renderHistoryChart(data || historyData || [])}
                     </ChartCard>
 
                 </div>

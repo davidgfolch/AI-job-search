@@ -1,8 +1,6 @@
-import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from commonlib.fileSystemUtil import createFolder, listFiles, getSrcPath
-import os
 
 class TestFileSystemUtil:
     

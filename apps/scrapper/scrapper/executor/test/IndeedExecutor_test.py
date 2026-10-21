@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.executor.IndeedExecutor import IndeedExecutor
-from scrapper.navigator.indeedNavigator import IndeedNavigator
 from scrapper.services.IndeedService import IndeedService
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager

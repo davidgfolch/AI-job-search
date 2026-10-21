@@ -104,7 +104,7 @@ describe('useFilterDropdown', () => {
 
     it('should handle click outside to close', () => {
         const setIsOpenMock = vi.fn();
-        const { result } = renderHook(() => useFilterDropdown({ ...defaultProps, setIsOpen: setIsOpenMock, isOpen: true }));
+        renderHook(() => useFilterDropdown({ ...defaultProps, setIsOpen: setIsOpenMock, isOpen: true }));
 
         // Simulate mousedown on document
         act(() => {

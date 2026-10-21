@@ -1,4 +1,3 @@
-import math
 from abc import ABC, abstractmethod
 
 from commonlib.observability import get_logger
@@ -57,7 +56,7 @@ class BaseExecutor(ABC):
                 return False
         return True
 
-    def execute(self, properties: dict) -> bool:
+    def execute(self, _properties: dict) -> bool:
         """ returns False if double KeyboardInterrupt """
         name = self.site_name_key
         try:
@@ -151,8 +150,7 @@ class BaseExecutor(ABC):
     def _process_keyword(self, keyword, start_page):
         pass
     
-    def _generic_search_loop(self, keyword, start_page, total_results):
-        totalPages = math.ceil(total_results / self.jobs_x_page)
+    def _generic_search_loop(self, _keyword, start_page, total_results):
         page = self.navigator.fast_forward_page(start_page, total_results, self.jobs_x_page)
         # Some scrappers use 0-indexed currentItem, others might vary. Usually (page-1)*X
         currentItem = (page - 1) * self.jobs_x_page

@@ -1,0 +1,66 @@
+# Ruff configuration for the whole monorepo (8 Python apps + shared scripts).
+#
+# One config at the repo root on purpose: ruff is a zero-dependency single
+# binary, so it is installed once (`uv tool install ruff`) and run from the
+# root over `apps/` and `scripts/`. The apps keep their own per-module
+# package managers (poetry for commonlib/scrapper, uv for the rest) and none
+# of their pyproject.toml files needs a ruff entry.
+#
+# Run it through ./scripts/lint.sh so local runs and CI use the same entry point.
+
+line-length = 200
+target-version = "py310"
+
+extend-exclude = [
+    "**/.venv",
+    "**/custom-venv",
+    "**/node_modules",
+    "**/coverage",
+    "**/htmlcov",
+    "**/dist",
+    "**/build",
+    "**/data",
+    "**/storage",
+    "**/.docker-sandbox",
+]
+
+[lint]
+# The high-signal rules only.
+#   E9    - syntax errors and unreadable files
+#   F401  - unused imports
+#   F841  - unused local variables
+#   F811  - redefinition of an unused name (dead code)
+#   ARG   - unused function/method/lambda arguments
+#   B904  - raise without `from` inside an `except` block
+#   B905  - `zip()` without an explicit `strict=`
+#   B008  - function call in an argument default
+# The rest of bugbear (B0xx) is not enforced yet; see
+# .opencode/plans/static-analysis-setup.md.
+select = ["E9", "F401", "F841", "F811", "ARG", "B904", "B905", "B008"]
+
+# `_name` marks a parameter that is intentionally unused, so ARG does not
+# report it. `__name` (dunder) is exempt by default.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.per-file-ignores]
+# A pytest test parameter legitimately shadows the imported fixture of the
+# same name (e.g. `navigator` in apps/scrapper/scrapper/navigator/test/
+# tecnoempleoNavigator_test.py), which F811 reports as a redefinition.
+#
+# ARG is not enforced on pytest modules: pytest resolves a fixture by the
+# name of the test parameter, so an unused parameter cannot be renamed to
+# `_name` without breaking fixture resolution. Those parameters exist for
+# the side effect of the fixture, not to be read by the test body.
+"**/test/**" = ["F811", "ARG001", "ARG002", "ARG005"]
+"**/tests/**" = ["F811", "ARG001", "ARG002", "ARG005"]
+"**/*_test.py" = ["F811", "ARG001", "ARG002", "ARG005"]
+"**/conftest.py" = ["F811", "ARG001", "ARG002", "ARG005"]
+
+[lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[lint.flake8-bugbear]
+# FastAPI resolves injected dependencies and query parameters from argument
+# defaults (`Depends(...)`, `Query(...)`). That is the documented framework
+# idiom and the only way to declare them, so B008 is allowed for those calls.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]

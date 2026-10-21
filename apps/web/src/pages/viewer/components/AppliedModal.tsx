@@ -48,7 +48,7 @@ export default function AppliedModal({
     }, [isOpen, comment, onConfirm]);
 
     return (
-        <Modal isOpen={isOpen} onClose={onCancel} title="Mark as Applied" closeOnEscape={false} fullWidthHeader={false}>
+        <Modal isOpen={isOpen} onClose={onCancel} title="Mark as Applied" closeOnEscape={false}>
             <div style={{ marginBottom: '12px' }}>
                 Add a comment (optional):
             </div>

@@ -6,6 +6,8 @@ import { useConfirmationModal } from '../../common/hooks/useConfirmationModal';
 import { useBulkJobMutations } from "./useBulkJobMutations";
 
 export type TabType = "list" | "edit" | "create";
+
+type ConfirmModalState = { isOpen: boolean };
 export const getDeleteOldJobsMsg = (count: number) => `Going to delete ${count} older jobs (see sql filter)`;
 
 interface UseJobMutationsProps {
@@ -167,7 +169,7 @@ export const useJobMutations = ({
         onConfirm: confirmModal.handleConfirm,
         close: confirmModal.close,
     },
-    setConfirmModal: (val: any) => { 
+    setConfirmModal: (val: ConfirmModalState | ((prev: ConfirmModalState) => ConfirmModalState)) => {
         // Backward compatibility shim if needed, or better, expose close.
         if (typeof val === 'function') {
             const newState = val({ isOpen: confirmModal.isOpen });

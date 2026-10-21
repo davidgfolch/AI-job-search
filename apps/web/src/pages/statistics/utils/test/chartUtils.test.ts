@@ -4,21 +4,21 @@ import { getColorForSource, pivotData, getSeriesKeys, processChartData, getDateR
 describe('chartUtils', () => {
     describe('getColorForSource', () => {
         it('returns consistent and distinct colors per source', () => {
-            const color1 = getColorForSource('LinkedIn', ['LinkedIn', 'Indeed']);
-            const color2 = getColorForSource('LinkedIn', ['LinkedIn', 'Indeed']);
-            const color3 = getColorForSource('Indeed', ['LinkedIn', 'Indeed']);
+            const color1 = getColorForSource('LinkedIn');
+            const color2 = getColorForSource('LinkedIn');
+            const color3 = getColorForSource('Indeed');
             expect(color1).toBe(color2);
             expect(color1).not.toBe(color3);
         });
 
         it('handles empty source string', () => {
-            const color = getColorForSource('', ['LinkedIn']);
+            const color = getColorForSource('');
             expect(color).toBeDefined();
         });
 
         it('handles long source names', () => {
             const longName = 'A'.repeat(100);
-            const color = getColorForSource(longName, [longName]);
+            const color = getColorForSource(longName);
             expect(color).toBeDefined();
         });
     });

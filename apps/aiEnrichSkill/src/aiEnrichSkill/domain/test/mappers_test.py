@@ -9,10 +9,8 @@ from ..mappers import build_skill_prompt_messages
     pytest.param("", False, id="no_context"),
 ])
 @patch("aiEnrichSkill.domain.mappers.get_skill_system_prompt")
-@patch("aiEnrichSkill.domain.mappers.get_input_max_len")
-def test_build_skill_prompt_messages(mock_max_len, mock_prompt, context, expect_context):
+def test_build_skill_prompt_messages(mock_prompt, context, expect_context):
     mock_prompt.return_value = "System prompt here"
-    mock_max_len.return_value = 12000
 
     messages = build_skill_prompt_messages("Python", context)
 

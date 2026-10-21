@@ -53,8 +53,8 @@ describe('useConfigOperations - deleteConfiguration', () => {
 
     it('deletes config when confirmed', async () => {
         const existingConfigs: FilterConfig[] = [
-            { name: 'Test Config', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0, created: '', modified: null },
-            { name: 'Other', filters: {}, watched: false, statistics: true, pinned: false, ordering: 1, created: '', modified: null },
+            { name: 'Test Config', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0 },
+            { name: 'Other', filters: {}, watched: false, statistics: true, pinned: false, ordering: 1 },
         ];
         const props = createProps({}, { savedConfigs: existingConfigs });
         const { result } = renderHook(() => useConfigOperations(props));
@@ -76,7 +76,7 @@ describe('useConfigOperations - deleteConfiguration', () => {
 
     it('clears config name when deleting current config', async () => {
         const existingConfigs: FilterConfig[] = [
-            { name: 'Current Config', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0, created: '', modified: null },
+            { name: 'Current Config', filters: {}, watched: false, statistics: true, pinned: false, ordering: 0 },
         ];
         const props = createProps({}, { savedConfigs: existingConfigs, configName: 'Current Config' });
         const { result } = renderHook(() => useConfigOperations(props));

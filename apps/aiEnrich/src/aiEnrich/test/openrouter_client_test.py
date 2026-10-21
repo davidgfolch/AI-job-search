@@ -1,7 +1,8 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from ..openrouter_client import ping_openrouter, query_openrouter, DEFAULT_BASE_URL, DEFAULT_MODEL, DEFAULT_FALLBACK_MODEL
+from ..openrouter_client import ping_openrouter, query_openrouter, DEFAULT_BASE_URL, DEFAULT_MODEL
+from ..aiEnrich_config import OPENROUTER_DEFAULT_FALLBACK_MODEL as DEFAULT_FALLBACK_MODEL
 from ._client_mocks import make_choice_response, make_sequence_choices
 
 

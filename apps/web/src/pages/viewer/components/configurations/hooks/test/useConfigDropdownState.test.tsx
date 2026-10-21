@@ -19,7 +19,7 @@ describe('useConfigDropdownState', () => {
   });
 
   it('should clear configName on focus if it matches savedConfigName', () => {
-    const { result, rerender } = renderHook(
+    const { result } = renderHook(
       ({ saved }) => useConfigDropdownState(saved),
       { initialProps: { saved: 'saved' } }
     );

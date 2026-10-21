@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from commonlib.environmentUtil import getEnv
 from commonlib.observability import get_logger

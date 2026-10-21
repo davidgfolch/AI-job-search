@@ -1,6 +1,6 @@
 import './FilterConfigurations.css';
 import type { JobListParams } from '../api/ViewerApi';
-import { useFilterConfigurations } from './configurations/hooks/useFilterConfigurations';
+import { useFilterConfigurations, type FilterConfig } from './configurations/hooks/useFilterConfigurations';
 import { ConfigurationInput } from './configurations/ConfigurationInput';
 import { ConfigurationDropdown } from './configurations/ConfigurationDropdown';
 import { PinnedConfigurations } from './configurations/PinnedConfigurations';
@@ -87,7 +87,7 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         }
     }, [savedConfigs]);
 
-    const handleLoadConfiguration = (config: any) => {
+    const handleLoadConfiguration = (config: FilterConfig) => {
         loadConfiguration(config);
         if (config.name === 'By company') {
             if (!isExpanded) {

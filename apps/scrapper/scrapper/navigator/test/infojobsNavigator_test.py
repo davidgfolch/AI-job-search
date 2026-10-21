@@ -1,7 +1,6 @@
 import pytest
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, Mock, patch
 from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DETAIL
-from selenium.common.exceptions import NoSuchElementException
 
 class TestInfojobsNavigator:
 
@@ -103,7 +102,7 @@ class TestInfojobsNavigator:
     def test_load_filtered_search_results_no_results(self, navigator, mock_selenium):
         mock_selenium.sendKeys.return_value = True
         mock_selenium.getElms.return_value = ['some element'] # "No results" found
-        with patch.object(navigator, 'click_on_search_jobs') as mock_click_search:
+        with patch.object(navigator, 'click_on_search_jobs'):
              with patch('scrapper.navigator.infojobsNavigator.sleep'):
                 result = navigator.load_filtered_search_results("python")
                 assert result is False

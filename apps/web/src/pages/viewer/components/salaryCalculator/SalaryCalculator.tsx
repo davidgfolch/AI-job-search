@@ -1,7 +1,7 @@
 import { useState, useEffect, useDeferredValue } from 'react';
 import { salaryApi } from '../../api/ViewerSalaryApi';
-import type { SalaryCalculationResponse } from '../../api/salary';
-import type { Job } from '../../api/jobs';
+import type { SalaryCalculationResponse } from '../../api/ViewerSalaryApi';
+import type { Job } from '../../api/ViewerApi';
 import { updateCommentsWithSalaryCalc, type CalcMode, type SalaryCalculatorParams } from './salaryFormatters';
 import { SalaryCalculatorControls } from './SalaryCalculatorControls';
 import { SalaryCalculatorResults } from './SalaryCalculatorResults';

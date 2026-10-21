@@ -21,5 +21,5 @@ def get_applied_jobs_by_company(
         results = service.get_applied_jobs_by_company_name(company, client)
     except ValueError as e:
         logger.warning("api.request_rejected", operation="applied_by_company", status_code=400, has_client=bool(client), error=str(e))
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return [AppliedCompanyJob(**r) for r in results]

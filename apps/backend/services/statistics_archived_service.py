@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from repositories.snapshots_repository import SnapshotsRepository
 from repositories.statistics_repository import StatisticsRepository
 from repositories.combinedStatsRepository import CombinedStatsRepository

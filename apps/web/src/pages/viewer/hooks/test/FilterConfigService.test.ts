@@ -24,8 +24,8 @@ describe('FilterConfigService', () => {
   describe('load', () => {
     it('should load configurations from backend API', async () => {
       const mockBackendConfigs = [
-        { id: 1, name: 'Config 1', filters: { page: 1 }, watched: false, statistics: true, pinned: false, created: '2024-01-01', modified: null },
-        { id: 2, name: 'Config 2', filters: { page: 2 }, watched: true, statistics: true, pinned: false, created: '2024-01-02', modified: null }
+        { id: 1, name: 'Config 1', filters: { page: 1 }, watched: false, statistics: true, pinned: false, ordering: 0, created: '2024-01-01', modified: null },
+        { id: 2, name: 'Config 2', filters: { page: 2 }, watched: true, statistics: true, pinned: false, ordering: 0, created: '2024-01-02', modified: null }
       ];
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(mockBackendConfigs);
       vi.mocked(persistenceApi.getValue).mockResolvedValue(null);
@@ -62,7 +62,7 @@ describe('FilterConfigService', () => {
 
     it('should migrate localStorage configs on first load', async () => {
       const backendConfigs = [
-        { id: 1, name: 'Backend Config', filters: { page: 1 }, watched: false, statistics: true, pinned: false, created: '2024-01-01', modified: null }
+        { id: 1, name: 'Backend Config', filters: { page: 1 }, watched: false, statistics: true, pinned: false, ordering: 0, created: '2024-01-01', modified: null }
       ];
       const localStorageConfigs = [
         { name: 'Local Config', filters: { page: 2 }, watched: false }
@@ -71,7 +71,7 @@ describe('FilterConfigService', () => {
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
       vi.mocked(persistenceApi.getValue).mockResolvedValue(localStorageConfigs);
       vi.mocked(filterConfigsApi.create).mockResolvedValue({
-        id: 2, name: 'Local Config', filters: { page: 2 }, watched: false, statistics: true, pinned: false, created: '2024-01-01', modified: null
+        id: 2, name: 'Local Config', filters: { page: 2 }, watched: false, statistics: true, pinned: false, ordering: 0, created: '2024-01-01', modified: null
       });
 
       await service.load(mockDefaults);
@@ -94,7 +94,7 @@ describe('FilterConfigService', () => {
         { name: 'Config 1', filters: { page: 1 }, watched: false }
       ];
       const backendConfigs = [
-        { id: 1, name: 'Config 1', filters: { page: 1 }, watched: false, statistics: true, pinned: false, created: '2024-01-01', modified: null }
+        { id: 1, name: 'Config 1', filters: { page: 1 }, watched: false, statistics: true, pinned: false, ordering: 0, created: '2024-01-01', modified: null }
       ];
 
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
@@ -118,7 +118,7 @@ describe('FilterConfigService', () => {
 
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue([]);
       vi.mocked(filterConfigsApi.create).mockResolvedValue({
-        id: 1, name: 'New Config', filters: { page: 3 }, watched: true, statistics: true, pinned: false, created: '2024-01-01', modified: null
+        id: 1, name: 'New Config', filters: { page: 3 }, watched: true, statistics: true, pinned: false, ordering: 0, created: '2024-01-01', modified: null
       });
 
       await service.save(configs);
@@ -136,7 +136,7 @@ describe('FilterConfigService', () => {
     it('should delete configs that are no longer in the list', async () => {
       const configs: FilterConfig[] = [];
       const backendConfigs = [
-        { id: 1, name: 'Old Config', filters: { page: 1 }, watched: false, statistics: true, pinned: false, created: '2024-01-01', modified: null }
+        { id: 1, name: 'Old Config', filters: { page: 1 }, watched: false, statistics: true, pinned: false, ordering: 0, created: '2024-01-01', modified: null }
       ];
 
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
@@ -164,7 +164,7 @@ describe('FilterConfigService', () => {
   describe('export', () => {
     it('should export configurations from backend API', async () => {
       const mockBackendConfigs = [
-        { id: 1, name: 'Config 1', filters: { page: 1 }, watched: false, statistics: true, pinned: false, created: '2024-01-01', modified: null }
+        { id: 1, name: 'Config 1', filters: { page: 1 }, watched: false, statistics: true, pinned: false, ordering: 0, created: '2024-01-01', modified: null }
       ];
       vi.mocked(filterConfigsApi.getAll).mockResolvedValue(mockBackendConfigs);
 

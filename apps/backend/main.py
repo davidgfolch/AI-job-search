@@ -1,6 +1,6 @@
 import os
 import uvicorn
-from api.main import app
+from api.main import app  # noqa: F401 - the ASGI app must stay importable as "main:app" for uvicorn
 
 if __name__ == "__main__":
     host = os.getenv("BACKEND_HOST", "0.0.0.0")

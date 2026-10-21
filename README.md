@@ -53,6 +53,8 @@ This is a monorepo containing several applications and packages:
 
 The CI pipeline, Dependabot version updates, and automatic merging of dependency PRs are documented in [GitHub Automation](READMEs/README_GITHUB.md). In short: CI only tests the modules affected by a change, Dependabot groups non-breaking updates per app, and green minor/patch Dependabot PRs auto-merge (majors stay manual; failing PRs never merge).
 
+A separate `static-analysis` job is a **required check**: it lints every Python app with [Ruff](https://docs.astral.sh/ruff/), lints the frontend and the e2e suite with ESLint, and type-checks `apps/web` with `tsc`. Run the same checks locally with `./scripts/lint.sh` (see [Static Analysis](READMEs/README_DEVELOPMENT.md#static-analysis)).
+
 ## Distributed execution
 
 You can have specific mysql host server setting the `.env` ->  `COMMONLIB_DB_HOST` to your mysql database host IP.
@@ -289,6 +291,30 @@ codegraph affected apps/scrapper/scrapper/core/scrapper_scheduler.py
 ```
 
 Agents use the `codegraph_explore` / `codegraph_node` MCP tools (or the CLI equivalents) before grepping or reading files. `.codegraph/` is machine-local generated state — never commit it; `codegraph uninit` removes the index and `codegraph uninstall --yes` removes the agent wiring and CLI. See the [CodeGraph skill](.claude/skills/codegraph/SKILL.md) for the full command list.
+
+## Static Analysis
+
+The whole monorepo is covered by one static-analysis gate, run locally and in CI through the same entry point:
+
+```bash
+# Everything: ruff + web eslint/tsc + e2e eslint
+./scripts/lint.sh          # or .\scripts\lint.bat
+
+# Per target
+./scripts/lint.sh python   # ruff over apps/ and scripts/ (root ruff.toml)
+./scripts/lint.sh web      # eslint + tsc -b over apps/web
+./scripts/lint.sh e2e      # eslint over apps/e2e
+```
+
+| Target | Tool | Rules in force |
+|--------|------|----------------|
+| Python | [Ruff](https://docs.astral.sh/ruff/) (installed once with `uv tool install ruff`) | `E9`, `F401` unused imports, `F841` unused variables, `F811` dead redefinitions, `ARG` unused arguments, `B904` `raise ... from`, `B905` `zip(strict=)`, `B008` call in a default |
+| Web | ESLint + `tsc -b` | unused code and explicit `any` are errors; the React Compiler advisory hooks rules are warnings |
+| E2E | ESLint | unused code is an error; explicit `any` is a warning |
+
+Ruff is configured once for the whole repo in the root [`ruff.toml`](ruff.toml); the apps keep their own package managers and need no linter dependency. The ESLint policies live in [`apps/web/eslint.config.js`](apps/web/eslint.config.js) and [`apps/e2e/eslint.config.mjs`](apps/e2e/eslint.config.mjs).
+
+Details: [Static Analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ## Documentation
 

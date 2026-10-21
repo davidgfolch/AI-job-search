@@ -3,12 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import {
     getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats
 } from '../api/StatisticsApi';
-import { processChartData, getDateRange } from '../utils/chartUtils';
+import type { HistoryStat, SourceDateStat, SourceHourStat, SourceWeekdayStat, FilterConfigStat } from '../api/StatisticsApi';
+import { processChartData, getDateRange, type ChartDataset } from '../utils/chartUtils';
 import StatisticsFilters from './StatisticsFilters';
+
+type ChartData = HistoryStat[] | SourceDateStat[] | SourceHourStat[] | SourceWeekdayStat[] | FilterConfigStat[];
 
 interface ChartCardProps {
     title: string;
-    children: React.ReactNode | ((data: any) => React.ReactNode);
+    children: React.ReactNode | ((data: ChartDataset | null) => React.ReactNode);
     chartType: 'weekday' | 'date' | 'hour' | 'filterConfig' | 'history';
     parentTimeRange: string;
     parentIncludeOldJobs: boolean;
@@ -35,12 +38,15 @@ const ChartCard: React.FC<ChartCardProps> = ({
             case 'date': return getSourcesByDate(startDate, endDate, localIncludeOldJobs);
             case 'hour': return getSourcesByHour(startDate, endDate, localIncludeOldJobs);
             case 'weekday': return getSourcesByWeekday(startDate, endDate, localIncludeOldJobs);
-            case 'filterConfig': return getFilterConfigStats(startDate, endDate, localIncludeOldJobs);
+            case 'filterConfig': return getFilterConfigStats(startDate, endDate);
         }
     }, [chartType, startDate, endDate, localIncludeOldJobs]);
 
-    const { data: rawData, isFetching } = useQuery({
-        queryKey: ['statistics', chartType, startDate, endDate, localIncludeOldJobs],
+    const { data: rawData, isFetching } = useQuery<ChartData>({
+        // The filter-configs endpoint does not take includeOldJobs, so it is not part of the cache key.
+        queryKey: chartType === 'filterConfig'
+            ? ['statistics', chartType, startDate, endDate]
+            : ['statistics', chartType, startDate, endDate, localIncludeOldJobs],
         queryFn: fetchData,
         enabled: isThisChartExpanded && hasLocalFiltersChanged
     });
@@ -78,15 +84,15 @@ const ChartCard: React.FC<ChartCardProps> = ({
         if (!rawData) return null;
         switch (chartType) {
             case 'date': {
-                const { processedData } = processChartData(rawData as any[], 'dateCreated', 'source', 'total');
+                const { processedData } = processChartData(rawData as ChartDataset, 'dateCreated', 'source', 'total');
                 return processedData;
             }
             case 'hour': {
-                const { processedData } = processChartData(rawData as any[], 'hour', 'source', 'total');
+                const { processedData } = processChartData(rawData as ChartDataset, 'hour', 'source', 'total');
                 return processedData;
             }
             case 'weekday': {
-                const { processedData } = processChartData(rawData as any[], 'weekday', 'source', 'total');
+                const { processedData } = processChartData(rawData as ChartDataset, 'weekday', 'source', 'total');
                 return processedData;
             }
             default:

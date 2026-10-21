@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import JobActions from '../JobActions';
-import type { JobListParams } from '../../api/jobs';
+import type { JobListParams } from '../../api/ViewerApi';
 import { ShortcutsContext, type ShortcutsContextValue } from '../../shortcutsContext';
 import { defaultValue } from '../../shortcutsContext';
 

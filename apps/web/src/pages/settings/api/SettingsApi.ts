@@ -5,8 +5,11 @@ export interface SettingsEnvUpdateDto {
     value: string;
 }
 
+/** Free-form scraper state persisted by the backend; the payload is not schema constrained. */
+export type ScrapperState = Record<string, unknown>;
+
 export interface ScrapperStateUpdateDto {
-    state: Record<string, any>;
+    state: ScrapperState;
 }
 
 export const settingsApi = {
@@ -25,13 +28,13 @@ export const settingsApi = {
         return response.data;
     },
 
-    getScrapperState: async (): Promise<Record<string, any>> => {
-        const response = await apiClient.get<Record<string, any>>('/settings/scrapper-state');
+    getScrapperState: async (): Promise<ScrapperState> => {
+        const response = await apiClient.get<ScrapperState>('/settings/scrapper-state');
         return response.data;
     },
 
-    updateScrapperState: async (state: Record<string, any>): Promise<Record<string, any>> => {
-        const response = await apiClient.post<Record<string, any>>('/settings/scrapper-state', { state });
+    updateScrapperState: async (state: ScrapperState): Promise<ScrapperState> => {
+        const response = await apiClient.post<ScrapperState>('/settings/scrapper-state', { state });
         return response.data;
     }
 };

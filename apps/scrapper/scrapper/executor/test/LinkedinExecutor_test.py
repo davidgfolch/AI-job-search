@@ -1,8 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.executor.LinkedinExecutor import LinkedinExecutor
-from scrapper.navigator.linkedinNavigator import LinkedinNavigator
-from scrapper.services.LinkedinService import LinkedinService
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
 from commonlib.sql.mysqlUtil import MysqlUtil

@@ -98,7 +98,7 @@ class JobReadRepository:
         query = f"SELECT * FROM jobs WHERE {where} ORDER BY {sort_col} {sort_dir}, id DESC LIMIT %s OFFSET %s"
         rows = db.fetchAll(query, params + [size, offset])
         columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
-        return [dict(zip(columns, row)) for row in rows]
+        return [dict(zip(columns, row, strict=True)) for row in rows]
 
     def fetch_job_row(self, db: MysqlUtil, job_id: int) -> Optional[tuple]:
         return db.fetchOne("SELECT * FROM jobs WHERE id = %s", job_id)

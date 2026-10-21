@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
-import React from 'react';
 import type { JobListParams } from '../api/ViewerApi.ts';
 
 // Mocks first

@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import services.settings_service as settings_service
 
 ENV_DATA = {"KEY_A": "val_a", "KEY_B": "val_b"}
@@ -33,7 +33,7 @@ def test_update_env_setting(mock_set, mock_get_all, key, value, log_records):
 @patch("services.settings_service.getEnvAll", return_value=ENV_DATA)
 def test_update_env_settings_bulk(mock_get_all, log_records):
     updates = {"KEY_A": "x", "KEY_B": "y"}
-    with patch("commonlib.environmentUtil.setEnvBulk") as mock_bulk:
+    with patch("commonlib.environmentUtil.setEnvBulk"):
         result = settings_service.update_env_settings_bulk(updates)
         assert result == ENV_DATA
     records = log_records(event="settings.updated")

@@ -4,6 +4,8 @@ import { useRef } from 'react';
 import { useScrollSelectedIntoView } from '../useScrollSelectedIntoView';
 import { stubElementRect } from '../../test/test-utils';
 
+type Rect = { top: number; bottom: number; left?: number; right?: number };
+
 const LIST = { top: 100, bottom: 200, left: 0, right: 200 };
 const HEADER = { top: 100, bottom: 130 }; // The sticky header floats over the top of the scroll port
 
@@ -22,7 +24,7 @@ const Harness = ({ selectedId }: { selectedId?: number }) => {
 };
 
 /** Publishes the geometry of the list, of its sticky header and of the row, then selects the row. */
-const selectRow = ({ row, list = LIST, header = HEADER }) => {
+const selectRow = ({ row, list = LIST, header = HEADER }: { row: Rect; list?: Rect; header?: Rect }) => {
     const { container: rendered, rerender } = render(<Harness />);
     const container = rendered.firstElementChild as HTMLDivElement;
     stubElementRect(container, list);

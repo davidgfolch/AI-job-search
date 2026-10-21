@@ -191,3 +191,16 @@ uv run pytest
 # Run with coverage
 uv run coverage run -m pytest && uv run coverage report -m
 ```
+
+## Static Analysis
+
+This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
+
+```bash
+# From the repo root
+./scripts/lint.sh python
+```
+
+Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`), `raise ... from` (`B904`), `zip(strict=)` (`B905`) and function calls in argument defaults (`B008`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
+
+See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

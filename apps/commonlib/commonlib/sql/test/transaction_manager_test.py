@@ -1,6 +1,6 @@
 """Tests for transaction_manager module."""
 import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 import mysql.connector as mysqlConnector
 from commonlib.sql.transaction_manager import TransactionManager
 

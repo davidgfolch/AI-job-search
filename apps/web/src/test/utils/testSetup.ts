@@ -1,7 +1,6 @@
 import { vi } from 'vitest';
 import { setupDOMMocks, cleanupDOMMocks } from '../mocks/domMocks';
 import { setupAxiosMock } from '../mocks/axiosMock';
-import { setupServiceMocks } from '../mocks/serviceMocks';
 
 export const setupStandardTestEnvironment = () => {
   beforeEach(() => {

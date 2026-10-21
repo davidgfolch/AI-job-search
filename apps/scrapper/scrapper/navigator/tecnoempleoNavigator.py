@@ -7,7 +7,6 @@ from .baseNavigator import BaseNavigator
 from .components.tecnoempleoCompanyReader import TecnoempleoCompanyReader
 from .components.tecnoempleoSalaryReader import TecnoempleoSalaryReader
 from ..services.selenium.browser_service import sleep
-from ..services.selenium.seleniumService import SeleniumService
 
 logger = get_logger("scrapper.tecnoempleoNavigator")
 
@@ -63,7 +62,7 @@ class TecnoempleoNavigator(BaseNavigator):
         self.selenium.sendKeys('#password', user_pwd)
         self.selenium.waitAndClick('form input[type=submit]')
 
-    def check_results(self, keywords: str, url: str, remote) -> bool:
+    def check_results(self, keywords: str, url: str, remote) -> bool:  # noqa: ARG002 - navigator interface
         noResultElm = self.selenium.getElms(CSS_SEL_NO_RESULTS)
         if len(noResultElm) > 0:
             logger.info("tecnoempleo.no_results", keywords=keywords, remote=remote,

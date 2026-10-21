@@ -38,7 +38,7 @@ describe('useConfigOperations - loadConfiguration', () => {
 
     it('loads configuration and closes dropdown', () => {
         const props = createProps();
-        const config: FilterConfig = { name: 'Test', filters: { search: 'loaded' }, watched: false, statistics: true, pinned: false, ordering: 0, created: '', modified: null };
+        const config: FilterConfig = { name: 'Test', filters: { search: 'loaded' }, watched: false, statistics: true, pinned: false, ordering: 0 };
         const { result } = renderHook(() => useConfigOperations(props));
 
         result.current.loadConfiguration(config);

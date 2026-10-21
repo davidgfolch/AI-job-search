@@ -67,7 +67,7 @@ describe('useConfigOperations - saveConfiguration', () => {
 
     it('overwrites existing config with same name', async () => {
         const existingConfigs: FilterConfig[] = [
-            { name: 'Test Config', filters: { search: 'old' }, watched: false, statistics: true, pinned: false, ordering: 0, created: '', modified: null },
+            { name: 'Test Config', filters: { search: 'old' }, watched: false, statistics: true, pinned: false, ordering: 0 },
         ];
         const props = createProps({}, { savedConfigs: existingConfigs, currentFilters: { search: 'new' } });
         const { result } = renderHook(() => useConfigOperations(props));
@@ -83,7 +83,7 @@ describe('useConfigOperations - saveConfiguration', () => {
 
     it('preserves pinned, statistics and watched flags when updating existing config', async () => {
         const existingConfigs: FilterConfig[] = [
-            { id: 1, name: 'Test Config', filters: { search: 'old' }, watched: true, statistics: true, pinned: true, ordering: 2, created: '', modified: null },
+            { id: 1, name: 'Test Config', filters: { search: 'old' }, watched: true, statistics: true, pinned: true, ordering: 2 },
         ];
         const props = createProps({}, { savedConfigs: existingConfigs, currentFilters: { search: 'new' } });
         const { result } = renderHook(() => useConfigOperations(props));

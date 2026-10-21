@@ -1,6 +1,5 @@
 from decimal import Decimal
-from typing import Dict, Tuple
-from mathparse import mathparse
+from typing import Dict
 
 class SalaryCalculator:
     tramos = [

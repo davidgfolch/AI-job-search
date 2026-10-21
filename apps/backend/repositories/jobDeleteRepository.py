@@ -35,7 +35,7 @@ class JobDeleteRepository:
             columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
             items = []
             for row in rows:
-                item_dict = {col: val for col, val in zip(columns, row)}
+                item_dict = {col: val for col, val in zip(columns, row, strict=True)}
                 items.append(item_dict)
 
             queries = []
@@ -58,7 +58,7 @@ class JobDeleteRepository:
             columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
             items = []
             for row in rows:
-                item_dict = {col: val for col, val in zip(columns, row)}
+                item_dict = {col: val for col, val in zip(columns, row, strict=True)}
                 items.append(item_dict)
             return items
 

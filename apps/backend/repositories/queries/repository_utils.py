@@ -4,7 +4,7 @@ from commonlib.observability import get_logger
 logger = get_logger("backend.repositories.queries.repository_utils")
 
 
-def execute_with_error_handler(db, where_str: str, params: list, callback, include_items: bool = False, page: int = 0, size: int = 0, order: str = ""):
+def execute_with_error_handler(where_str: str, params: list, callback, include_items: bool = False):
     try:
         return callback()
     except mysql.connector.errors.DatabaseError as e:

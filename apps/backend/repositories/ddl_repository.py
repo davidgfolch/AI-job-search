@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List
 import re
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 

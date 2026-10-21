@@ -1,5 +1,5 @@
 from commonlib.network.ollama_discovery import (
-    DEFAULT_OLLAMA_PORT, SPEC_LOCAL, SPEC_AUTO, discover_ollama_hosts, get_local_ip,
+    SPEC_LOCAL, SPEC_AUTO, discover_ollama_hosts, get_local_ip,
 )
 from commonlib.network.ollama_verify import verify_ollama
 

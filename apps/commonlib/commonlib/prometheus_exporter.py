@@ -1,9 +1,8 @@
 import json
-import os
 from collections import deque
 from datetime import datetime
 
-from prometheus_client import CollectorRegistry, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CollectorRegistry, Gauge, generate_latest
 
 from commonlib.log_writer import resolve_read_path
 

@@ -150,3 +150,16 @@ node scripts/coverage/frontend-coverage-gate.mjs --min 90
 - `src/services`: API service layer.
 - `src/types`: TypeScript type definitions.
 - `src/utils`: Utility functions.
+
+## Static Analysis
+
+`apps/web` is linted with ESLint and type-checked with TypeScript. Both run in the `static-analysis` CI gate:
+
+```bash
+npm run lint       # ESLint
+npm run typecheck  # tsc -b
+```
+
+From the repo root, `./scripts/lint.sh web` runs both. The gate fails on any ESLint **error** and on any type error; ESLint warnings are reported but do not break the build. `no-explicit-any` is an error in production sources and a warning in test, fixture and mock files.
+
+See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

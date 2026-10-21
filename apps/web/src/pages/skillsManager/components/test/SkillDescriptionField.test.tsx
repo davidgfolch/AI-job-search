@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { SkillDescriptionField } from '../SkillDescriptionField';
-import type { Skill } from '../useLearnList';
+import type { Skill } from '../../hooks/useLearnList';
 
 describe('SkillDescriptionField', () => {
     const mockSkill: Skill = {

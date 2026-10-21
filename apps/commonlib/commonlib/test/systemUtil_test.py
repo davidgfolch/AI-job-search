@@ -1,6 +1,3 @@
-import pytest
-import platform
-import os
 from unittest.mock import patch, mock_open
 from commonlib.systemUtil import isDocker, isMacOS, isWindowsOS, isLinuxOS
 

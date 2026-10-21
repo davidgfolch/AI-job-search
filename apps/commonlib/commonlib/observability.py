@@ -62,7 +62,8 @@ from contextlib import contextmanager
 
 import structlog
 
-from commonlib.console_render import CONSOLE_MESSAGE, CONSOLE_RECORD, color_enabled, console_mode, render_console, set_console_mode, split_console_text
+from commonlib.console_render import CONSOLE_MESSAGE, color_enabled  # noqa: F401 - re-exported: apps/scrapper/scrapper/main.py and the observability tests import them from here
+from commonlib.console_render import render_console, set_console_mode, split_console_text
 from commonlib.environmentUtil import getEnv
 from commonlib.log_writer import get_log_dir, make_jsonl_writer
 
@@ -111,7 +112,7 @@ def _caller_module() -> str | None:
     return None
 
 
-def stamp_caller_module(logger, method_name, event_dict: dict) -> dict:
+def stamp_caller_module(logger, method_name, event_dict: dict) -> dict:  # noqa: ARG001 - structlog processor signature
     """Stamp the calling app module as `module`, overriding the logger's own name.
 
     `commonlib.terminalUtil.consoleTimer` called from `aiEnrich.pipeline` stamps

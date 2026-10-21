@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Set, Tuple
+from typing import List, Dict, Set, Tuple
 from commonlib.observability import get_logger
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 
@@ -98,7 +98,7 @@ class WatcherRepository:
         return [(int(r[0]), int(r[1])) for r in rows]
 
     def match_jobs_against_config(
-        self, config_id: int, where_part: str, job_ids: List[int]
+        self, config_id: int, where_part: str, job_ids: List[int]  # noqa: ARG002 - the config id identifies the filter, the SQL only needs its WHERE clause
     ) -> List[int]:
         """Return the subset of job_ids that match the config's filter where clause."""
         if not job_ids:

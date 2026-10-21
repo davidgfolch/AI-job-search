@@ -6,7 +6,7 @@ import type { Suggestion } from '../../../utils/sqlEditorUtils';
 interface UseSqlEditorProps {
     isOpen: boolean;
     initialValue: string;
-    textareaRef: React.RefObject<HTMLTextAreaElement>;
+    textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 export const useSqlEditor = ({ isOpen, initialValue, textareaRef }: UseSqlEditorProps) => {
@@ -87,7 +87,7 @@ export const useSqlEditor = ({ isOpen, initialValue, textareaRef }: UseSqlEditor
         const match = left.match(/([a-zA-Z0-9_.]+)$/);
         if (match) {
             const currentWord = match[1];
-            let insertion = suggestion.text;
+            const insertion = suggestion.text;
             if (currentWord.includes('.')) {
                  const prefixTable = currentWord.split('.')[0];
                  const newValue = text.slice(0, cursorIndex - currentWord.length) + prefixTable + '.' + insertion + right;

@@ -7,7 +7,7 @@ interface UseFilterDropdownProps {
     configName: string;
     onLoad: (config: FilterConfig) => void;
     onSave: () => void;
-    onDelete: (name: string, event: React.MouseEvent) => void;
+    onDelete: (name: string, event: React.SyntheticEvent) => void;
     setIsOpen: (isOpen: boolean) => void;
     isOpen: boolean;
     results?: Record<string, { newItems: number; total: number }>;
@@ -97,7 +97,7 @@ export function useFilterDropdown({
             if (isOpen && highlightIndex >= 0 && highlightIndex < filteredConfigs.length) {
                 e.preventDefault();
                 const configToDelete = filteredConfigs[highlightIndex];
-                onDelete(configToDelete.name, e as any);
+                onDelete(configToDelete.name, e);
                 if (highlightIndex >= filteredConfigs.length - 1) {
                     setHighlightIndex(Math.max(-1, filteredConfigs.length - 2));
                 }

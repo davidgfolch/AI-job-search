@@ -1,12 +1,16 @@
 import { useCallback } from 'react';
 import type { JobListParams } from '../../../api/ViewerApi';
 import type { FilterConfig } from './useFilterConfigurations';
-import type { FilterConfigService } from '../../../hooks/FilterConfigService';
 import { normalizeFilters } from '../utils/filterNormalization';
 import type { ConfirmationModal } from './useConfirmationModal';
 
+export interface ConfigOperationsService {
+  save(configs: FilterConfig[]): Promise<void>;
+  export(): Promise<FilterConfig[]>;
+}
+
 interface UseConfigOperationsProps {
-  service: FilterConfigService;
+  service: ConfigOperationsService;
   savedConfigs: FilterConfig[];
   setSavedConfigs: (configs: FilterConfig[]) => void;
   currentFilters: JobListParams;
@@ -84,7 +88,7 @@ export const useConfigOperations = ({
     setIsOpen(false);
   }, [onLoadConfig, setConfigName, setSavedConfigName, setIsOpen]);
 
-  const deleteConfiguration = useCallback(async (name: string, event: React.MouseEvent) => {
+  const deleteConfiguration = useCallback(async (name: string, event: React.SyntheticEvent) => {
     event.stopPropagation();
     confirmModal.confirm(`Delete configuration "${name}"?`, async () => {
       const updated = savedConfigs.filter(c => c.name !== name);

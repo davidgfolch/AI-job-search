@@ -21,7 +21,6 @@ interface JobFormFieldsProps {
         requiredTechnologies: string;
         optionalTechnologies: string;
         modality: string;
-        [key: string]: any;
     };
     setters: {
         setTitle: Dispatch<SetStateAction<string>>;
@@ -36,7 +35,6 @@ interface JobFormFieldsProps {
         setRequiredTechnologies: Dispatch<SetStateAction<string>>;
         setOptionalTechnologies: Dispatch<SetStateAction<string>>;
         setModality: Dispatch<SetStateAction<string>>;
-        [key: string]: any;
     };
     handleChange: (setter: Dispatch<SetStateAction<string>>, field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleCreate: () => void;

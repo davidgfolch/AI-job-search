@@ -1,6 +1,6 @@
 from tabulate import tabulate
 from commonlib.observability import get_logger
-from commonlib.terminalColor import yellow, red
+from commonlib.terminalColor import yellow
 
 logger = get_logger("scrapper.terminalTableUtil")
 

@@ -1,6 +1,6 @@
 import pytest
 from scrapper.core.scrapper_config import (
-    TIMER, CLOSE_TAB, AUTORUN, SCRAPPERS, SCRAPPER_RUN_IN_TABS, DEBUG, BROWSER
+    TIMER, CLOSE_TAB, AUTORUN, SCRAPPERS, DEBUG, BROWSER
 )
 
 class TestScrapperConfig:

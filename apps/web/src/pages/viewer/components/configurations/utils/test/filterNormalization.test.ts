@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeFilters, isSameFilterSet } from '../filterNormalization';
-import type { JobListParams } from '../../../../api/jobs';
+import type { JobListParams } from '../../../../api/ViewerApi';
 
 describe('normalizeFilters', () => {
   it('should preserve existing filter values', () => {

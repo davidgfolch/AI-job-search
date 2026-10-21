@@ -13,7 +13,8 @@ export const useStatistics = () => {
     const { data: sourcesDateData } = useQuery({ queryKey: ['statistics', 'sourcesDate', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByDate(startDate, endDate, includeOldJobs) });
     const { data: sourcesHourData } = useQuery({ queryKey: ['statistics', 'sourcesHour', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByHour(startDate, endDate, includeOldJobs) });
     const { data: sourcesWeekdayData } = useQuery({ queryKey: ['statistics', 'sourcesWeekday', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByWeekday(startDate, endDate, includeOldJobs) });
-    const { data: filterConfigData } = useQuery({ queryKey: ['statistics', 'filterConfigs', startDate, endDate, includeOldJobs], queryFn: () => getFilterConfigStats(startDate, endDate, includeOldJobs) });
+    // The filter-configs endpoint does not take includeOldJobs, so it is not part of the cache key.
+    const { data: filterConfigData } = useQuery({ queryKey: ['statistics', 'filterConfigs', startDate, endDate], queryFn: () => getFilterConfigStats(startDate, endDate) });
     
     // Process data to unify sources and handle colors
     const { processedData: sourcesDateWide, keys: sourcesDateKeys } = React.useMemo(

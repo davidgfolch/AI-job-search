@@ -21,6 +21,7 @@ const service = (over: Partial<ServiceStatus> = {}): ServiceStatus => ({
 const data: DashboardData = {
     services: [service(), service({ name: 'backend', displayName: 'Backend', status: 'stopped', deployment: 'host', metrics: { ...service().metrics, pendingJobs: 4 } })],
     ollama: { reachable: true, serverUrl: 'http://192.168.1.45:11434', serverIp: '192.168.1.45', isLan: true, recentErrors: [] },
+    aiBackend: 'ollama',
     prometheus: { reachable: true, url: 'http://localhost:9090' },
     grafana: { reachable: true, url: 'http://localhost:3000' },
     deployment: 'docker',

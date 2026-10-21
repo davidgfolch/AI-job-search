@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, HTTPException
 from models.skill import Skill, SkillCreate, SkillUpdate
 from services.skills_service import SkillsService

@@ -1,5 +1,4 @@
 import os
-import pytest
 from unittest.mock import patch
 
 from commonlib.test.ollama_constants import OLLAMA_TEST_URL

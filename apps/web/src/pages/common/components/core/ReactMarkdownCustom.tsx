@@ -23,8 +23,10 @@ const getText = (node: ReactNode): string => {
     return '';
 };
 
+type HeadingProps = React.ComponentPropsWithoutRef<'h1'>;
+
 const createHeadingRenderer = (level: number) => {
-    return ({ children, ...props }: any) => {
+    return ({ children, ...props }: HeadingProps) => {
         const text = getText(children);
         const slug = slugify(text);
         const Tag = `h${level}` as React.ElementType;

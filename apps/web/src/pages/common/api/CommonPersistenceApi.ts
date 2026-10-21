@@ -1,6 +1,6 @@
 import defaultFilterConfigurations from '../../../resources/defaultFilterConfigurations.json';
 
-const persistenceDefaults: Record<string, any> = {
+const persistenceDefaults: Record<string, unknown> = {
     'filter_configurations': defaultFilterConfigurations,
     'default_comment_text': '',
 };

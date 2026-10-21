@@ -1,5 +1,4 @@
 """Tests for job_queries module."""
-import pytest
 from commonlib.sql.job_queries import (
     QRY_FIND_JOB_BY_JOB_ID,
     QRY_INSERT,

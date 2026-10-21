@@ -36,6 +36,72 @@ workflows, coverage gates, install/sandbox helpers, agent rules and skills. Thos
 not exercised by the unit or e2e suites, so a run proves nothing; say so in the summary
 instead.
 
+## Static Analysis
+
+Static analysis is a blocking CI gate (`static-analysis` job). Run the same checks
+locally before pushing:
+
+- **Linux**: `./scripts/lint.sh` (runs everything) or `./scripts/lint.sh python|web|e2e`
+- **Windows**: `.\scripts\lint.bat` (same modes)
+
+| Target | Tool | What it checks |
+|--------|------|----------------|
+| `python` | [Ruff](https://docs.astral.sh/ruff/) | `apps/` and `scripts/` against the root [`ruff.toml`](../ruff.toml) |
+| `web` | ESLint + `tsc -b` | `apps/web` lint rules and the TypeScript type check |
+| `e2e` | ESLint | `apps/e2e` lint rules |
+
+Ruff is installed **once for the whole repo** (it is a single zero-dependency binary):
+`uv tool install ruff`. No app needs it in its own environment. `scripts/lint.sh`
+falls back to `uvx ruff` when the binary is not on the `PATH`, so a one-off
+`uvx ruff@latest check apps/ scripts/ --config ruff.toml` also works.
+
+### Ruff rules in force
+
+| Rule | Meaning |
+|------|---------|
+| `E9` | Syntax errors and unreadable files |
+| `F401` | Unused imports |
+| `F841` | Unused local variables |
+| `F811` | Redefinition of an unused name (dead code) |
+| `ARG` | Unused function, method and lambda arguments |
+| `B904` | `raise` without `from` inside an `except` block |
+| `B905` | `zip()` without an explicit `strict=` |
+| `B008` | Function call in an argument default (FastAPI `Depends`/`Query` are allowed) |
+
+### Marking an intentionally unused argument
+
+Prefix the parameter with `_` (`_properties`, `_start_time`). Ruff's
+`dummy-variable-rgx` already accepts that convention, so no `noqa` is needed.
+
+When the signature is fixed by a contract, add an explicit suppression with a reason:
+
+```python
+def stamp_caller_module(logger, method_name, event_dict: dict) -> dict:  # noqa: ARG001 - structlog processor signature
+```
+
+`ARG` is **not enforced on pytest modules** (`**/test/**`, `**/tests/**`,
+`**/*_test.py`, `**/conftest.py`): pytest resolves a fixture by the name of the test
+parameter, so an unused parameter cannot be renamed to `_name` without breaking
+fixture resolution. Those parameters exist for the side effect of the fixture.
+
+### TypeScript rules in force
+
+`apps/web/eslint.config.js` defines the rule policy:
+
+- `@typescript-eslint/no-unused-vars` — **error**, ignoring names that start with `_`.
+- `@typescript-eslint/no-explicit-any` — **error** in production sources, **warning**
+  in test, fixture and mock files.
+- `react-hooks/rules-of-hooks` and `react-hooks/refs` — **error**.
+- `react-hooks/exhaustive-deps`, `react-hooks/immutability` and
+  `react-hooks/set-state-in-effect` — **warning** (React Compiler advisory rules;
+  making them blocking would require migrating the components to the React
+  Compiler model).
+
+The gate fails on **errors**; warnings are reported but do not break the build.
+`apps/web` also exposes `npm run typecheck` (`tsc -b`), which fails on any type
+error. `apps/e2e` uses `eslint.config.mjs` with the same `_`-prefix convention and
+reports `no-explicit-any` as a warning (the whole module is test code).
+
 ## Coverage Gates
 
 `--coverage` does not only produce reports and badges: it enforces two floors on
