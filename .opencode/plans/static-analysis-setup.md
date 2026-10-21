@@ -65,7 +65,7 @@ Two unapplied attempts at this already exist in the repo and are not usable as-i
 | 6 | TS: the 30 `no-unused-vars` findings + the `no-explicit-any` policy | `npm run lint` green |
 | 7 | `ARG` phase: rename intentionally-unused parameters to `_name`; `# noqa: ARG002` with a reason for overridden/interface methods (renaming changes the public keyword-argument contract) | `ARG` added to `select` |
 | 8 | Bugbear `B904` / `B905` / `B008` (~50 findings, real bug classes) | `B` added to `select` |
-| 9 | Bugbear follow-up: `B007` / `B011` / `B017` / `B018` / `B027` / `B028` / `B034` (the last 14 findings of the whole bugbear set) | the full bugbear set enforced, rule by rule |
+| 9 | Bugbear follow-up: `B007` / `B011` / `B017` / `B018` / `B027` / `B028` / `B034` (the last 14 findings of the whole bugbear set) | the full bugbear set enforced (`B` selector) |
 
 ### Documentation
 

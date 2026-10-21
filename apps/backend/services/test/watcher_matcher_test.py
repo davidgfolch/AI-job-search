@@ -154,6 +154,57 @@ def test_match_existing_jobs_empty(mock_repos):
     mock_match_repo.insert_match.assert_not_called()
 
 
+def test_match_config_omits_sql_from_info_record(mock_repos):
+    """The info record carries ids and counts only; the SQL lives in the debug record."""
+    mock_repo, mock_match_repo = mock_repos
+    service = WatcherMatcher()
+    mock_repo.match_jobs_against_config.return_value = [10]
+
+    with patch("services.watcher_matcher.logger") as mock_logger:
+        service._match_existing_jobs({10}, [(1, '{"search": "python"}')])
+
+    info_calls = [c for c in mock_logger.info.call_args_list if c.args[0] == "watcher.match_config"]
+    assert len(info_calls) == 1
+    assert info_calls[0].kwargs == {"config_id": 1, "matched": 1, "matched_ids": [10]}
+
+    debug_calls = [c for c in mock_logger.debug.call_args_list if c.args[0] == "watcher.match_config_query"]
+    assert len(debug_calls) == 1
+    assert debug_calls[0].kwargs["config_id"] == 1
+    assert debug_calls[0].kwargs["filters"] == {"search": "python"}
+    assert "where" in debug_calls[0].kwargs
+
+
+def test_match_config_not_logged_without_matches(mock_repos):
+    """A config that matched nothing produces no info record, only the debug one."""
+    mock_repo, mock_match_repo = mock_repos
+    service = WatcherMatcher()
+    mock_repo.match_jobs_against_config.return_value = []
+
+    with patch("services.watcher_matcher.logger") as mock_logger:
+        service._match_existing_jobs({10}, [(1, '{"search": "python"}')])
+
+    info_events = [c.args[0] for c in mock_logger.info.call_args_list]
+    assert "watcher.match_config" not in info_events
+    debug_events = [c.args[0] for c in mock_logger.debug.call_args_list]
+    assert "watcher.match_config_query" in debug_events
+
+
+def test_process_pending_logs_count_without_ids(mock_repos):
+    """The tick record carries the count; the id list is debug-only."""
+    mock_repo, mock_match_repo = mock_repos
+    service = WatcherMatcher()
+    mock_repo.get_watched_configs.return_value = []
+    service.add_pending_ids([10, 20])
+
+    with patch("services.watcher_matcher.logger") as mock_logger:
+        service._process_pending()
+
+    info_calls = [c for c in mock_logger.info.call_args_list if c.args[0] == "watcher.process_pending"]
+    assert [c.kwargs for c in info_calls] == [{"count": 2}]
+    debug_calls = [c for c in mock_logger.debug.call_args_list if c.args[0] == "watcher.process_pending_ids"]
+    assert [c.kwargs for c in debug_calls] == [{"pending_ids": [10, 20]}]
+
+
 def test_parse_filters_valid_json(mock_repos):
     """_parse_filters parses valid JSON string into a dict."""
     mock_repo, mock_match_repo = mock_repos

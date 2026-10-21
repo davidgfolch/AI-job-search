@@ -283,6 +283,17 @@ A background matcher thread (started on app startup, 8 s interval) drains pendin
 | `watcher.cleanup_error` | `error` | Old-row cleanup failure |
 | `watcher.stats_failed` | `error` | Stats read failure |
 | `watcher.filters_parse_failed` | `warning` | Malformed filter JSON |
+| `watcher.process_pending` | `info` | Matcher tick, with `count` only |
+| `watcher.process_pending_ids` | `debug` | Matcher tick, with `pending_ids` |
+| `watcher.match_config` | `info` | Per watched config **that matched**, with `config_id`, `matched` and `matched_ids` |
+| `watcher.match_config_query` | `debug` | Per watched config, with `config_id`, `filters` and the generated `where` SQL |
+
+The matcher tick stays quiet on purpose. `watcher.match_config` is emitted only for a
+config that actually matched, and it carries no SQL and no filter dict: the generated
+`where` clause and the parsed filters live in the `watcher.match_config_query` debug
+record, so they are available in the JSONL at `LOG_LEVEL=10` and never printed at the
+default `LOG_LEVEL=20`. A config that matched nothing is visible as the difference
+between `watcher.process_pending_done matched=N` and the sum of the per-config counts.
 
 
 ## Statistics API

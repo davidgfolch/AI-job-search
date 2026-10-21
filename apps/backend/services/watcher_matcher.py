@@ -95,7 +95,8 @@ class WatcherMatcher:
         if not pending:
             return
 
-        logger.info("watcher.process_pending", count=len(pending), pending_ids=sorted(pending))
+        logger.info("watcher.process_pending", count=len(pending))
+        logger.debug("watcher.process_pending_ids", pending_ids=sorted(pending))
         watched_configs = self.repo.get_watched_configs()
         if not watched_configs:
             logger.info("watcher.process_pending_no_configs", count=len(pending))
@@ -150,14 +151,9 @@ class WatcherMatcher:
             matched_ids = self.repo.match_jobs_against_config(
                 cfg_id, where_part, existing_sorted
             )
-            logger.info(
-                "watcher.match_config",
-                config_id=cfg_id,
-                filters=filters,
-                where=where_part,
-                matched=len(matched_ids),
-                matched_ids=matched_ids,
-            )
+            logger.debug("watcher.match_config_query", config_id=cfg_id, filters=filters, where=where_part)
+            if matched_ids:
+                logger.info("watcher.match_config", config_id=cfg_id, matched=len(matched_ids), matched_ids=matched_ids)
             for job_id in matched_ids:
                 self.match_repo.insert_match(cfg_id, job_id)
                 matched_total += 1
