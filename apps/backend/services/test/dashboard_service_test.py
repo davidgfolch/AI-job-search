@@ -20,9 +20,9 @@ def test_get_services_status_running(mock_probe, mock_repo, mock_collector):
     assert "services" in result
     assert "ollama" in result
     services = result["services"]
-    assert len(services) == 5
+    assert len(services) == 3
     names = [s["name"] for s in services]
-    assert names == ["aienrich", "aienrichnew", "aienrichskill", "aienrich3", "aicvmatcher"]
+    assert names == ["aienrich", "aienrichskill", "aicvmatcher"]
     aienrich = services[0]
     assert aienrich["status"] == "running"
     assert aienrich["usesOllama"] is True
@@ -128,8 +128,6 @@ def test_get_services_status_recent_activity_running(mock_repo, mock_collector, 
 def test_module_metric_key_mapping():
     assert dashboard_service.MODULE_METRIC_KEYS == {
         "aienrich": "aiEnrich",
-        "aienrichnew": "aiEnrichNew",
         "aienrichskill": "aiEnrichSkill",
-        "aienrich3": "aiEnrich3",
         "aicvmatcher": "aiCvMatcher",
     }

@@ -64,7 +64,7 @@ This regenerates lockfiles/badges like CI does (`ci.yml` runs this matrix):
 # Linux/Mac
 ./scripts/test.sh <module>
 ```
-For a `commonlib` bump run the full Python dependent set, e.g. `.\scripts\test.bat commonlib backend scrapper aiEnrich aiEnrichNew aiEnrichSkill aiEnrich3 aiCvMatcher aiFormFiller cron` (or `./scripts/test.sh` on Linux/Mac).
+For a `commonlib` bump run the full Python dependent set, e.g. `.\scripts\test.bat commonlib backend scrapper aiEnrich aiEnrichSkill aiCvMatcher aiFormFiller cron` (or `./scripts/test.sh` on Linux/Mac).
 
 ### 5. Sandbox build+run the affected docker-compose services and check logs — MANDATORY GATE
 
@@ -77,9 +77,9 @@ Every PR whose diff touchs a module that runs in the compose stack **must** be b
 ./scripts/test-sandbox.sh <service>
 ```
 
-- Use the affected composed service name, e.g. `backend` or `web`. The script brings up only that service plus its DB dependencies in the isolated `dependabot-test` project. The `aiEnrich*` workers except `aienrich`/`aienrichskill` (`aienrichnew`, `aienrich3`), `aicvmatcher`, `cron`, and `aiformfiller` are sandbox-runnable; the profile-gated ones need their profile, e.g. `.\scripts\test-sandbox.bat --profile aiEnrichNew aienrichnew`.
+- Use the affected composed service name, e.g. `backend` or `web`. The script brings up only that service plus its DB dependencies in the isolated `dependabot-test` project. The `aiEnrich*` workers except `aienrich`/`aienrichskill`, plus `aicvmatcher`, `cron`, and `aiformfiller`, are sandbox-runnable; the profile-gated ones need their profile, e.g. `.\scripts\test-sandbox.bat --profile aiEnrichSkill aienrichskill`.
 - **Deterministic addresses — no autodiscovery**: the sandbox never autodiscovers IPs/ports. `docker-compose.test.override.yml` pins every interacting URL to the sandbox service names + internal ports (e.g. web `BACKEND_URL=http://backend:8000`, backend `COMMONLIB_DB_HOST=mysql_db` + `MONGO_URI=...mongo_db:27017`), and sets `COMMONLIB_DB_DISCOVERY=False` so commonlib never LAN-scans for MySQL (which would otherwise find the LIVE mysql at the docker bridge). Services NOT deployed in the sandbox point to the host (`host.docker.internal`, e.g. ollama at `:11434`). The web dev-proxy skips its probe/scan because `BACKEND_URL` is set.
-- **Disabled aiEnrich modules are build-only**: the script reads the module enable flags from `.env` (`AI_ENRICH_JOB`/`AI_ENRICH_SKILL`, `AI_ENRICHNEW_JOB`/`AI_ENRICHNEW_SKILL`, `AI_ENRICHSKILL_ENABLED`, `AI_ENRICH3_JOB`/`AI_ENRICH3_SKILL`, `AI_CVMATCHER_ENABLED`). If every flag for the module is false, it does a **build-only** check and does not require the service to run/process.
+- **Disabled aiEnrich modules are build-only**: the script reads the module enable flags from `.env` (`AI_ENRICH_JOB`/`AI_ENRICH_SKILL`, `AI_ENRICHSKILL_ENABLED`, `AI_CVMATCHER_ENABLED`). If every flag for the module is false, it does a **build-only** check and does not require the service to run/process.
 - **MySQL data clone**: the script dumps the live `jobs` DB (`scripts/mysql/backup.*`) into `scripts/mysql/backups/`, then restores it into the sandbox mysql container. Skip with `--no-db-clone`. The sandbox mysql is initialized only from the schema SQL files (`ddl.sql`, `skills_data.sql`), never from the maintenance `backup.*`/`restore.*` scripts (they break the MySQL entrypoint on fresh boots due to CRLF) nor the scratch `mysql_queries.sql` (it has a SQL syntax error). The override uses a strict authenticated TCP healthcheck and the script waits for `SELECT 1` before restoring, so the clone never races the mysqld entrypoint restart.
 - **Mongo**: the sandbox spins a fresh, empty Mongo seeded by `scripts/mongo/init.js` (full isolation) — the base full-stack Mongo is never touched.
 - **Ollama/prometheus/grafana are never duplicated**: they are not defined in the override.

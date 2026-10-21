@@ -10,8 +10,6 @@ logger = get_logger("backend.repositories.dashboard_repository")
 
 LOG_SOURCES = {
     "aienrich": "/logs/aienrich/aiEnrich.jsonl",
-    "aienrich3": "/logs/aienrich3/aiEnrich3.jsonl",
-    "aienrichnew": "/logs/aienrichnew/aiEnrichNew.jsonl",
     "aienrichskill": "/logs/aienrichskill/aiEnrichSkill.jsonl",
     "aicvmatcher": "/logs/aicvmatcher/aiCvMatcher.jsonl",
 }

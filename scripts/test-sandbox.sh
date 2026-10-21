@@ -41,9 +41,7 @@ module_disabled() {
     local keys=""
     case "$1" in
         aienrich) keys="AI_ENRICH_JOB AI_ENRICH_SKILL" ;;
-        aienrichnew) keys="AI_ENRICHNEW_JOB AI_ENRICHNEW_SKILL" ;;
         aienrichskill) keys="AI_ENRICHSKILL_ENABLED" ;;
-        aienrich3) keys="AI_ENRICH3_JOB AI_ENRICH3_SKILL" ;;
         aicvmatcher) keys="AI_CVMATCHER_ENABLED" ;;
     esac
     [ -z "$keys" ] && return 1

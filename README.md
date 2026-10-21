@@ -4,8 +4,6 @@
 ![backend](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/backend/coverage.svg)
 ![web](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/web/coverage/badges.svg)
 ![aiEnrich](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/aiEnrich/coverage.svg)
-![aiEnrich3](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/aiEnrich3/coverage.svg)
-![aiEnrichNew](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/aiEnrichNew/coverage.svg)
 ![aiEnrichSkill](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/aiEnrichSkill/coverage.svg)
 ![scrapper](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/scrapper/coverage.svg)
 ![aiCvMatcher](https://raw.githubusercontent.com/davidgfolch/AI-job-search/badges/apps/aiCvMatcher/coverage.svg)
@@ -31,8 +29,6 @@ This is a monorepo containing several applications and packages:
 | **Cron**         | [`apps/cron`](apps/cron/README.md)                   | Background scheduler for periodic cron jobs.              | Python, uv, MongoDB          |
 | **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                              | Python, Selenium, Poetry     |
 | **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI enrichment using Ollama or OpenRouter                  | Python, Ollama/OpenRouter, uv |
-| **AI Enrich New**| [`apps/aiEnrichNew`](apps/aiEnrichNew/README.md)     | Local AI enrichment using transformers pipeline           | Python, HuggingFace, uv      |
-| **AI Enrich 3**  | [`apps/aiEnrich3`](apps/aiEnrich3/README.md)         | Local AI enrichment using CPU models (GLiNER & mDeBERTa). | Python, ML Models, uv        |
 | **AI Enrich Skill**| [`apps/aiEnrichSkill`](apps/aiEnrichSkill/README.md) | Local AI skill enrichment (Ollama & HuggingFace).        | Python, Transformers, uv     |
 | **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)     | Local fast CV matching.                                   | Python, SentenceTransformers |
 | **AI Form Filler**| [`apps/aiFormFiller`](apps/aiFormFiller/README.md) | AI-powered form question answerer using CV + preferences. | Python, FastAPI, HuggingFace |
@@ -156,16 +152,14 @@ The `docker-compose.yml` defines several service profiles to control which conta
 | _(default)_    | `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
 | `ollama`       | `ollama`                          | Containerized Ollama server (opt-in; see [Ollama: host vs container](#ollama-host-vs-container)) |
 | `aienrich`     | `aienrich`                        | Ollama AI enrichment             |
-| `aiEnrichNew`  | `aienrichnew`                     | Transformers-based AI enrichment |
 | `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
-| `aiEnrich3`    | `aienrich3`                       | Fast CPU AI enrichment (GLiNER & mDeBERTa) |
 
 **Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`.
-Use `--profile` to run alternative AI enrichment services:
+Use `--profile` to run the profile-gated AI enrichment services:
 
 ```bash
-docker-compose --profile aiEnrich3 up -d
-docker-compose --profile aiEnrichNew up -d
+docker-compose --profile aienrich up -d aienrich
+docker-compose --profile aiEnrichSkill up -d aienrichskill
 ```
 
 #### Ollama: host vs container
@@ -193,10 +187,8 @@ The **scrapper** runs natively on the host as a batch job (not a Docker service,
 - Run dockerized applications `docker-compose up -d` (starts default services).
 - Run `apps/scrapper/run.(bat/sh)` in terminal.
 - Navigate to UI at [http://localhost:5173](http://localhost:5173)
-- Run (optional) alternative AI Enrichment tools:
-  - Default runs `aiEnrich`. If you want to use the others:
-  - Run `aiEnrich3` (local fast CPU models) with `docker-compose --profile aiEnrich3 up -d`.
-  - Alternatively, `docker-compose --profile aiEnrichNew up -d` for the transformers-based engine.
+- Run `aiEnrich` (Ollama by default, or OpenRouter with `AI_ENRICH_BACKEND=openrouter`) for AI enrichment:
+  - Start it with `docker-compose --profile aienrich up -d aienrich`.
 - Run `aiCvMatcher` (local fast CV matching):
   - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CVMATCHER_ENABLED=True` is in your `.env`.
 - Run `aiFormFiller` (AI-powered form question answerer):
@@ -245,10 +237,6 @@ Each application includes convenience scripts (`run.sh` / `run.bat`) to start th
 ./apps/scrapper/run.sh
 
 # 3. AI Enrichment
-# (NEW CPU and quicker)
-./apps/aiEnrich3/run.sh
-# (NEW GPU/Transformers pipeline)
-./apps/aiEnrichNew/run.sh
 # (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
 ./apps/aiEnrich/run.sh
 # (Local Fast CV Matcher)
@@ -271,10 +259,6 @@ docker compose up -d
 .\apps\scrapper\run.bat
 
 :: 3. AI Enrichment
-:: (NEW CPU and quicker)
-.\apps\aiEnrich3\run.bat
-:: (NEW GPU/Transformers pipeline)
-.\apps\aiEnrichNew\run.bat
 :: (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
 .\apps\aiEnrich\run.bat
 :: (Local Fast CV Matcher)

@@ -1,5 +1,9 @@
 # AI Enrichment — Speed Improvement Plans
 
+Status: superseded — target module removed
+
+
+The `aiEnrich3` and `aiEnrichNew` modules referenced by these plans were removed from the repository; only `aiEnrich` (Ollama/OpenRouter) and `aiEnrichSkill` remain.
 ## Context
 
 You have 3 enrichment modules. You primarily use **aiEnrich** (Ollama) because it gives the best extraction quality, but it's the slowest (~10-30s/job on CPU). These plans focus on making it faster while preserving quality.

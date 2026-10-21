@@ -26,23 +26,22 @@ This analysis examines the AI-job-search monorepo containing **110 Python files*
 
 ### 1.2 Module Consolidation: AI Enrich Variants
 
-The project contains **three coexisting AI enrichment modules**:
+**Status: resolved** — the project now keeps a single job-enrichment module (`aiEnrich`, Ollama/OpenRouter) plus the decoupled skill-enrichment module (`aiEnrichSkill`). The alternative implementations `aiEnrich3` (CPU evaluators) and `aiEnrichNew` (HuggingFace transformers) were removed from the repository, so the duplication and the "which module is canonical" ambiguity are gone.
 
 | Module | Structure | Status |
 |--------|-----------|--------|
-| `aiEnrich` | Basic crew-based approach | Legacy |
-| `aiEnrich3` | Domain-driven (entities, pipeline, services) | **Recommended pattern** |
-| `aiEnrichNew` | Functional mappers/parsers | Alternative approach |
+| `aiEnrich` | Basic crew-based approach | **Canonical job enrichment** |
+| `aiEnrichSkill` | Decoupled skill enrichment (Ollama / HuggingFace) | Canonical skill enrichment |
 
 **Problem**:
 - Code duplication across modules
 - Unclear which module is canonical
 - Maintenance overhead for parallel implementations
 
-**Recommendation**:
-- Consolidate into single `aiEnrich` module using `aiEnrich3`'s domain-driven architecture
-- Keep `aiEnrichNew`'s functional mappers pattern for LLM interactions
-- Document migration path and deprecate old modules
+**Resolution**:
+- `aiEnrich` is the canonical job-enrichment module; `aiEnrichSkill` handles skill enrichment
+- The alternative implementations (`aiEnrich3`, `aiEnrichNew`) were deleted
+- The domain-driven layout of the deleted `aiEnrich3` is gone with it — do not reintroduce it as a parallel module
 
 ---
 
@@ -345,7 +344,7 @@ web → (no Python dependencies)
 | 1.1 | Refactor `mysqlUtil.py` (200 lines) into connection/query/transaction modules | 4-6 hours | High |
 | 1.2 | Refactor `jobSnapshotRepository.py` (167 lines) | 2-3 hours | Medium |
 | 1.3 | Refactor `sqlUtil.py` (145 lines) | 2-3 hours | Medium |
-| 1.4 | Consolidate aiEnrich modules (aiEnrich, aiEnrich3, aiEnrichNew) | 2-3 days | High |
+| 1.4 | ~~Consolidate aiEnrich modules~~ — done by removing `aiEnrich3` and `aiEnrichNew` | — | High |
 
 ### Priority 2: High (Maintainability)
 
@@ -382,7 +381,7 @@ web → (no Python dependencies)
 3. **FastAPI Structure**: Clean router separation
 4. **Test Architecture**: Comprehensive Python architecture tests
 5. **Custom Hooks**: Excellent hook separation in viewer
-6. **Domain-Driven Design**: `aiEnrich3` shows proper entity/service separation
+6. **Domain-Driven Design**: the backend and `commonlib` show proper entity/service separation
 7. **Query Builder Pattern**: `jobs_query_builder.py` demonstrates good SQL abstraction
 
 ---

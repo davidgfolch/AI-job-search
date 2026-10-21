@@ -38,7 +38,7 @@ The configuration lives in `.github/dependabot.yml`.
 ### Ecosystems & cadency
 
 - **`npm`** — `apps/web`, `apps/e2e` (daily).
-- **`pip`** — all Python apps (daily): `commonlib`, `scrapper`, `backend`, `aiEnrich`, `aiEnrichNew`, `aiEnrichSkill`, `aiEnrich3`, `aiCvMatcher`, `aiFormFiller`, `cron`.
+- **`pip`** — all Python apps (daily): `commonlib`, `scrapper`, `backend`, `aiEnrich`, `aiEnrichSkill`, `aiCvMatcher`, `aiFormFiller`, `cron`.
 - **`github-actions`** — the repository root (weekly), so the CI workflows themselves stay up to date.
 - Every Dependabot PR is labeled `dependencies` and each update is capped at 5 open PRs.
 - **All PRs target the `staging` branch** via `target-branch: "staging"` on every update entry. Nothing from Dependabot is ever merged straight into `master`.

@@ -47,8 +47,6 @@ services:
       - ./.env.secrets:/app/.env.secrets
       - ./data/metrics:/app/data/metrics
       - ./apps/aiEnrich/data/logs:/logs/aienrich:ro
-      - ./apps/aiEnrich3/data/logs:/logs/aienrich3:ro
-      - ./apps/aiEnrichNew/data/logs:/logs/aienrichnew:ro
       - ./apps/aiEnrichSkill/data/logs:/logs/aienrichskill:ro
       - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
       - ./apps/cron/data/logs:/logs/cron:ro
@@ -184,43 +182,6 @@ services:
     extra_hosts:
       - "host.docker.internal=host-gateway"
 
-  # AI Enrichment New - Hugging Face Local Models
-  aienrichnew:
-    build:
-      context: .
-      dockerfile: apps/aiEnrichNew/Dockerfile
-    container_name: ai-job-search-aienrichnew
-    profiles:
-      - aiEnrichNew
-    env_file:
-      - ./.env
-      - ./.env.secrets
-    volumes:
-      - ./apps/aiEnrichNew:/app/apps/aiEnrichNew
-      - /app/apps/aiEnrichNew/.venv # Anonymous volume to isolate container venv from host
-      - ./apps/commonlib:/app/apps/commonlib
-      - ./.env:/app/.env
-      - ./.env.secrets:/app/.env.secrets
-      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models (set HF_HOME in .env if needed)
-      - ./data/metrics:/app/data/metrics
-    environment:
-      - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
-      - TZ=${GLOBAL_TZ}
-      - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
-      start_period: 30s
-      interval: 30s
-      timeout: 5s
-      retries: 1
-    restart: unless-stopped
-    networks:
-      - ai-job-search
-
   # AI Skill Enrichment - Decoupled skill enrichment (Ollama / HuggingFace)
   aienrichskill:
     build:
@@ -290,42 +251,6 @@ services:
     healthcheck:
       test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
       start_period: 30s
-      interval: 30s
-      timeout: 5s
-      retries: 1
-    restart: unless-stopped
-    networks:
-      - ai-job-search
-
-  # AI Enrichment 3 - Fast CPU Evaluators (mDeBERTa + GLiNER)
-  aienrich3:
-    build:
-      context: .
-      dockerfile: apps/aiEnrich3/Dockerfile
-    container_name: ai-job-search-aienrich3
-    profiles:
-      - aiEnrich3
-    env_file:
-      - ./.env
-      - ./.env.secrets
-    volumes:
-      - ./apps/aiEnrich3:/app/apps/aiEnrich3
-      - ./apps/commonlib:/app/apps/commonlib
-      - ./.env:/app/.env
-      - ./.env.secrets:/app/.env.secrets
-      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
-      - ./data/metrics:/app/data/metrics
-    environment:
-      - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db
-      - TZ=${GLOBAL_TZ}
-      - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
-      start_period: 60s
       interval: 30s
       timeout: 5s
       retries: 1

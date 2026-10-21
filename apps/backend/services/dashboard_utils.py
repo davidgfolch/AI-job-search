@@ -61,9 +61,7 @@ def _display_name(module: str) -> str:
         label = BACKEND_LABELS.get(backend) or backend.replace("_", " ").title() or "Ollama"
         return f"AI Enrich ({label})"
     names = {
-        "aienrichnew": "AI Enrich New (HF)",
         "aienrichskill": "AI Enrich Skill",
-        "aienrich3": "AI Enrich 3 (CPU)",
         "aicvmatcher": "CV Matcher",
     }
     return names.get(module, module)

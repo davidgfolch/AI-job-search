@@ -9,8 +9,6 @@ from commonlib.log_writer import resolve_read_path
 
 LOG_SOURCES = {
     "aiEnrich": "/logs/aienrich/aiEnrich.jsonl",
-    "aiEnrich3": "/logs/aienrich3/aiEnrich3.jsonl",
-    "aiEnrichNew": "/logs/aienrichnew/aiEnrichNew.jsonl",
     "aiEnrichSkill": "/logs/aienrichskill/aiEnrichSkill.jsonl",
 }
 MAX_LOG_ENTRIES = 50

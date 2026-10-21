@@ -12,7 +12,7 @@ def test_empty_snapshot():
 def test_build_metrics_with_module_data():
     snapshot = {
         "modules": {
-            "aiEnrichNew": {
+            "aiEnrichSkill": {
                 "jobs_processed": 42, "jobs_succeeded": 40, "jobs_failed": 2,
                 "total_duration": 840.0, "pending_jobs": 5,
                 "cache_hits": 10, "cache_misses": 3,
@@ -25,18 +25,18 @@ def test_build_metrics_with_module_data():
     result = build_prometheus_metrics(snapshot)
     output = result.decode()
 
-    assert 'ai_enrich_jobs_processed_total{module="aiEnrichNew"} 42.0' in output
-    assert 'ai_enrich_jobs_succeeded_total{module="aiEnrichNew"} 40.0' in output
-    assert 'ai_enrich_jobs_failed_total{module="aiEnrichNew"} 2.0' in output
-    assert 'ai_enrich_duration_seconds_total{module="aiEnrichNew"} 840.0' in output
-    assert 'ai_enrich_pending_jobs{module="aiEnrichNew"} 5.0' in output
-    assert 'ai_enrich_cache_hits_total{module="aiEnrichNew"} 10.0' in output
-    assert 'ai_enrich_cache_misses_total{module="aiEnrichNew"} 3.0' in output
-    assert 'ai_enrich_duration_seconds_p50{module="aiEnrichNew"} 18.5' in output
-    assert 'ai_enrich_duration_seconds_p90{module="aiEnrichNew"} 35.2' in output
-    assert 'ai_enrich_duration_seconds_p99{module="aiEnrichNew"} 60.1' in output
-    assert 'ai_enrich_duration_seconds_avg{module="aiEnrichNew"} 20.0' in output
-    assert 'ai_enrich_last_processed_timestamp{module="aiEnrichNew"}' in output
+    assert 'ai_enrich_jobs_processed_total{module="aiEnrichSkill"} 42.0' in output
+    assert 'ai_enrich_jobs_succeeded_total{module="aiEnrichSkill"} 40.0' in output
+    assert 'ai_enrich_jobs_failed_total{module="aiEnrichSkill"} 2.0' in output
+    assert 'ai_enrich_duration_seconds_total{module="aiEnrichSkill"} 840.0' in output
+    assert 'ai_enrich_pending_jobs{module="aiEnrichSkill"} 5.0' in output
+    assert 'ai_enrich_cache_hits_total{module="aiEnrichSkill"} 10.0' in output
+    assert 'ai_enrich_cache_misses_total{module="aiEnrichSkill"} 3.0' in output
+    assert 'ai_enrich_duration_seconds_p50{module="aiEnrichSkill"} 18.5' in output
+    assert 'ai_enrich_duration_seconds_p90{module="aiEnrichSkill"} 35.2' in output
+    assert 'ai_enrich_duration_seconds_p99{module="aiEnrichSkill"} 60.1' in output
+    assert 'ai_enrich_duration_seconds_avg{module="aiEnrichSkill"} 20.0' in output
+    assert 'ai_enrich_last_processed_timestamp{module="aiEnrichSkill"}' in output
 
     assert "ai_enrich_total_jobs 42.0" in output
     assert "ai_enrich_total_errors 2.0" in output

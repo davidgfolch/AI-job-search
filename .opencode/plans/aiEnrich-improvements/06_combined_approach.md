@@ -1,5 +1,9 @@
 # Plan F: Combined / Recommended Approach
 
+Status: superseded — target module removed
+
+
+This plan stacks plans C and D, which depended on the `aiEnrich3` and `aiEnrichNew` modules that no longer exist — they were removed from the repository.
 ## Goal
 
 Stack all individual plans together for maximum speedup (10-20x) while maintaining extraction quality.

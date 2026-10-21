@@ -2,13 +2,12 @@
 
 ## Business Overview
 
-This project tracks performance metrics for AI-powered job enrichment operations. The enrichment pipeline extracts structured data (technologies, salary, modality) from raw job postings using three different approaches:
+This project tracks performance metrics for AI-powered job enrichment operations. The enrichment pipeline extracts structured data (technologies, salary, modality) from raw job postings using two different approaches:
 
 | Module | Technology | Speed | Use Case |
 |--------|-----------|-------|----------|
 | **aiEnrich** | Ollama (LLM) | Slow (~10s/job) | Full LLM-based extraction |
-| **aiEnrich3** | GLiNER + mDeBERTa + Regex (CPU) | Fast (~0.5s/job) | CPU-optimized extraction |
-| **aiEnrichNew** | HuggingFace Transformers (Qwen2.5) | Medium (~3s/job) | Batch inference, preferred |
+| **aiEnrichSkill** | Ollama or HuggingFace Transformers | Medium (~3s/job) | Skill description + category enrichment |
 
 Metrics enable answering:
 
@@ -22,8 +21,8 @@ Metrics enable answering:
 ```
 ┌──────────────┐    JSONL logs     ┌──────────────────┐   /api/metrics    ┌────────────┐
 │  aiEnrich     │ ────────────────► │                  │ ────────────────► │ Prometheus  │
-│  aiEnrich3    │ ────────────────► │  Backend (FastAPI)│                   │ (time-series│
-│  aiEnrichNew  │ ────────────────► │                  │                   │   DB)       │
+│  aiEnrichSkill│ ────────────────► │  Backend (FastAPI)│                   │ (time-series│
+│               │ ────────────────► │                  │                   │   DB)       │
 └──────────────┘                   │  + MetricsCollector│                   └──────┬─────┘
                                    │  + Log parser      │                          │
                                    └──────────────────┘                     ┌──────┴─────┐
@@ -56,9 +55,9 @@ Singleton class that accumulates per-module stats:
 - **Called from**: Each enrichment app after processing each job
 
 ```python
-collector.record_job("aiEnrichNew", duration_seconds, success=True)
-collector.set_pending("aiEnrichNew", pending_count)
-collector.record_error("aiEnrichNew", "error message")
+collector.record_job("aiEnrich", duration_seconds, success=True)
+collector.set_pending("aiEnrich", pending_count)
+collector.record_error("aiEnrich", "error message")
 ```
 
 ### Prometheus Exporter (`commonlib/prometheus_exporter.py`)
@@ -79,7 +78,7 @@ Two functions generate Prometheus-formatted metrics:
 
 **`build_log_metrics()`** — Per-job durations from JSONL log files:
 - `ai_enrich_job_duration_seconds{module, job_id}` — Individual job duration in seconds
-- Sources: `/logs/aienrich/app.jsonl`, `/logs/aienrich3/app.jsonl`, `/logs/aienrichnew/app.jsonl`
+- Sources: `/logs/aienrich/aiEnrich.jsonl`, `/logs/aienrichskill/aiEnrichSkill.jsonl`
 - Window: Last 50 `job.result` events per module
 
 ### Log Format
@@ -93,17 +92,14 @@ Key log events:
 {"event": "job.failed", "job_id": 123, "error": "...", "timestamp": "..."}
 ```
 
-The `duration` field was added to `job.result` events across all three enrichment apps for this metrics pipeline.
+The `duration` field was added to `job.result` events across the enrichment apps for this metrics pipeline.
 
 ### Per-Job Timing Details
 
 | Module | Timing Source | What's Measured |
 |--------|-------------|-----------------|
 | aiEnrich | `time.time() - start_time` around entire job fetch+LLM+save cycle | Total wall-clock time per job |
-| aiEnrich3 | `time.time() - job_start` around pipeline extraction + save | Total per-job (sequential) |
-| aiEnrichNew | `time.time()` delta between consecutive `on_success` callbacks | Post-batch-inference processing time (parse + save) |
-
-For aiEnrichNew, batch inference time is logged separately as `batch.inference_complete` with a `duration` field.
+| aiEnrichSkill | `time.time() - job_start` around the per-item enrichment + save | Total per-item (sequential) |
 
 ## Infrastructure
 
@@ -133,11 +129,9 @@ Each enrichment service mounts its log directory to the host, and the backend mo
 | Service | Host Path | Container Path |
 |---------|-----------|----------------|
 | aiEnrich | `./apps/aiEnrich/data/logs` | `/app/apps/aiEnrich/data/logs` |
-| aiEnrich3 | `./apps/aiEnrich3/data/logs` | `/app/apps/aiEnrich3/data/logs` |
-| aiEnrichNew | `./apps/aiEnrichNew/data/logs` | `/app/apps/aiEnrichNew/data/logs` |
+| aiEnrichSkill | `./apps/aiEnrichSkill/data/logs` | `/app/apps/aiEnrichSkill/data/logs` |
 | backend | `./apps/aiEnrich/data/logs` | `/logs/aienrich:ro` |
-| backend | `./apps/aiEnrich3/data/logs` | `/logs/aienrich3:ro` |
-| backend | `./apps/aiEnrichNew/data/logs` | `/logs/aienrichnew:ro` |
+| backend | `./apps/aiEnrichSkill/data/logs` | `/logs/aienrichskill:ro` |
 
 ## Dashboard
 

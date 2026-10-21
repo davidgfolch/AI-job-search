@@ -5,7 +5,7 @@ export const MOCK_ENV_SETTINGS = {
     SCRAPPER_JOBS_SEARCH: 'react, python',
     UI_GROSS_YEAR_URL: 'https://example.com/calculator',
     GLOBAL_TZ: 'Europe/Madrid',
-    AI_ENRICHNEW_MODEL: 'Qwen/Qwen2.5-1.5B-Instruct',
+    AI_ENRICHSKILL_HF_MODEL_ID: 'Qwen/Qwen2.5-1.5B-Instruct',
 };
 
 export const MOCK_SCRAPPER_STATE = {

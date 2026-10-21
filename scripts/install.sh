@@ -131,7 +131,7 @@ ollama_pull() {
 
 is_uv_app() {
     case "$(basename "$1")" in
-        aiEnrich|aiEnrichNew|aiEnrich3|backend|aiFormFiller|aiCvMatcher|cron|aiEnrichSkill) return 0 ;;
+        aiEnrich|backend|aiFormFiller|aiCvMatcher|cron|aiEnrichSkill) return 0 ;;
     esac
     return 1
 }

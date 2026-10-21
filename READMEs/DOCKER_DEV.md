@@ -15,8 +15,7 @@ docker-compose down
 ## With AI Services (AI Enrichment + Ollama)
 
 **Ollama CPU/GPU:** `aienrich` service uses Ollama by default (profile: `aienrich`). Set `AI_ENRICH_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
-**New CPU:** `aienrich3` service uses local fast CPU models (profile: `aiEnrich3`).
-**New GPU:** `aienrichnew` service uses transformers pipeline (profile: `aiEnrichNew`).
+**Skill enrichment:** `aienrichskill` service enriches the `job_skills` table with Ollama or HuggingFace (profile: `aiEnrichSkill`).
 **CV Matcher:** `aicvmatcher` service uses sentence transformers to rapidly match your cv (runs by default if configured in .env).
 
 > Note: the `ollama` service is **opt-in** (`--profile ollama`) and no module hard-depends on it, so it is never started implicitly - useful when Ollama already runs on your host. The Ollama-backed modules probe the configured URL, then `host.docker.internal`, `localhost` and `ollama:11434`, and use the first one that answers. Each job is only sent to a server that answers a one-token generation probe (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s), so a stalled runner is skipped instead of blocking the whole job timeout; that verdict is remembered per server for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300), so the following jobs go straight to inference instead of re-connecting every time. The workers take that URL from `.env` (`docker-compose.yml` only defaults to `http://ollama:11434` when it is unset), so pointing them at Ollama on your host or on another machine is `AI_ENRICH_OLLAMA_BASE_URL=http://<host>:11434` in `.env` plus a worker restart (`docker compose up -d --force-recreate aienrich aienrichskill`).
@@ -33,8 +32,7 @@ docker-compose up -d
 
 # Add the AI enrichment module you want
 docker-compose --profile aienrich up -d aienrich
-docker-compose --profile aiEnrich3 up -d aienrich3
-docker-compose --profile aiEnrichNew up -d aienrichnew
+docker-compose --profile aiEnrichSkill up -d aienrichskill
 
 # Only if you want Ollama containerized too (skip it if Ollama runs on the host):
 docker-compose --profile ollama --profile aienrich up -d
@@ -75,7 +73,7 @@ See [README_INSTALL.md](README_INSTALL.md#61-install-google-chrome--system-libra
 ## All Services
 ```bash
 # Start the core services plus every AI enrichment profile
-docker-compose --profile aienrich --profile aiEnrichNew --profile aiEnrichSkill --profile aiEnrich3 up -d
+docker-compose --profile aienrich --profile aiEnrichSkill up -d
 ```
 
 ## Service URLs

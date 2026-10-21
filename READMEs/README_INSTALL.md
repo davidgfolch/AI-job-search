@@ -2,10 +2,9 @@
 
 ## System Requirements
 
-- **Python**: 3.10 required, except `apps/aiEnrich3`, which requires 3.11 (its locked `onnxruntime` has no 3.10 wheels).
-  - `apps/aiEnrich3/.python-version` pins `3.11.14`; `uv` downloads and uses that interpreter automatically on `uv sync`.
+- **Python**: 3.10 or newer is required (3.11 recommended).
   - Python 3.12 has incompatibilities with some libraries used.
-  - **Install Python 3.11** — it is the only single version that satisfies both the 3.10 baseline and the 3.11 requirement of `apps/aiEnrich3` (all modules declare `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`backend`/`scrapper`/`cron`).
+  - **Install Python 3.11** — it satisfies the 3.10 baseline of every module (all modules declare `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`backend`/`scrapper`/`cron`).
 - **Node.js**: LTS version (for `apps/web`).
 - **Docker**: For running services in containers.
 
@@ -19,7 +18,7 @@
 This project uses different package managers for different components:
 
 - **Poetry**: Used by `apps/scrapper`, `apps/commonlib`.
-- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, `apps/aiEnrichSkill`, `apps/aiCvMatcher`, `apps/cron`, and `apps/aiFormFiller`.
+- **uv**: Used by `apps/backend`, `apps/aiEnrich`, `apps/aiEnrichSkill`, `apps/aiCvMatcher`, `apps/cron`, and `apps/aiFormFiller`.
 - **npm**: Used by `apps/web` and `apps/e2e`.
 
 ## Installation Steps
@@ -67,7 +66,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 
 ### 3. Install uv (Python)
 
-Required for `apps/backend`, `apps/aiEnrich`, `apps/aiEnrich3`, `apps/aiEnrichNew`, and `apps/aiCvMatcher`.
+Required for `apps/backend`, `apps/aiEnrich`, `apps/aiEnrichSkill`, and `apps/aiCvMatcher`.
 
 ```bash
 # Windows
@@ -254,7 +253,7 @@ cd apps/web && npm install && cd ../..
 
 **AI Enrich and AI CV Matcher:**
 
-Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrich3/README.md](../apps/aiEnrich3/README.md), [apps/aiEnrichNew/README.md](../apps/aiEnrichNew/README.md), or [apps/aiCvMatcher/README.md](../apps/aiCvMatcher/README.md).
+Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrichSkill/README.md](../apps/aiEnrichSkill/README.md), or [apps/aiCvMatcher/README.md](../apps/aiCvMatcher/README.md).
 
 ### 8.1 Uninstall Project Dependencies
 

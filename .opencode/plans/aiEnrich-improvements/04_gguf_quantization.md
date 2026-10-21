@@ -1,5 +1,9 @@
 # Plan D: GGUF Quantized Models via llama-cpp-python
 
+Status: superseded — target module removed
+
+
+This plan was built around the `aiEnrichNew` module, which no longer exists — the module was removed from the repository.
 ## Goal
 
 Replace Hugging Face Transformers with `llama-cpp-python` in `aiEnrichNew` for CPU-optimized inference, making it a viable faster alternative to `aiEnrich` (Ollama) if quality is acceptable.

@@ -107,39 +107,7 @@ updates:
           - "patch"
 
   - package-ecosystem: "uv"
-    directory: "/apps/aiEnrichNew"
-    target-branch: "staging"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-    ignore:
-      - dependency-name: "commonlib"
-    groups:
-      minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "uv"
     directory: "/apps/aiEnrichSkill"
-    target-branch: "staging"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-    ignore:
-      - dependency-name: "commonlib"
-    groups:
-      minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "uv"
-    directory: "/apps/aiEnrich3"
     target-branch: "staging"
     schedule:
       interval: "daily"

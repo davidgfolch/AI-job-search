@@ -27,13 +27,6 @@ ollama launch claude --config
 
 - aiEnrich* common implementation abstractions to commonlib
 
-## apps/aiEnrich3
-
-## apps/aiEnrichNew
-
-- improvements:
-  - Detect: "Sueldo bruto / año en 30.000b/a - 38.000b/a"
-
 ## apps/backend
 
 ## apps/commonlib

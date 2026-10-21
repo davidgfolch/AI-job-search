@@ -2,7 +2,7 @@
 
 Decoupled skill enrichment module supporting **Ollama** and **HuggingFace** backends.
 
-Extracted from `aiEnrich` and `aiEnrichNew` — provides AI-based enrichment of `job_skills` table (description and category generation).
+Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table (description and category generation).
 
 ## Backends
 

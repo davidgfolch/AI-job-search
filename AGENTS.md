@@ -37,11 +37,11 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 
 # Examples
 .\scripts\test-sandbox.bat backend
-.\scripts\test-sandbox.bat --profile aiEnrichNew aienrichnew
+.\scripts\test-sandbox.bat --profile aiEnrichSkill aienrichskill
 ```
 - `backend` auto-clones the live MySQL `jobs` DB into the sandbox (via `scripts/mysql/backup.*`); skip with `--no-db-clone`.
 - Mongo boots fresh/empty from `scripts/mongo/init.js`; ollama/prometheus/grafana are never duplicated.
-- Profile-gated ai workers need their profile (`--profile aienrich|aiEnrichNew|aiEnrichSkill|aiEnrich3`).
+- Profile-gated ai workers need their profile (`--profile aienrich|aiEnrichSkill`).
 - Ollama-dependent services (`aienrich`, `aienrichskill`) are validated build-only + unit tests + ci-gate, not `up`.
 
 ### Python Apps (commonlib, scrapper)
@@ -50,7 +50,7 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 poetry install
 ```
 
-### Python Apps (backend, aiEnrich, aiEnrich3, aiEnrichNew, aiEnrichSkill, aiCvMatcher)
+### Python Apps (backend, aiEnrich, aiEnrichSkill, aiCvMatcher)
 ```bash
 # Install dependencies
 uv sync
@@ -120,8 +120,6 @@ npm run dev  # from apps/web, runs on localhost:5173
 
 # AI Enrichment
 .\apps\aiEnrich\run.bat  # or run.sh
-.\apps\aiEnrich3\run.bat  # or run.sh
-.\apps\aiEnrichNew\run.bat  # or run.sh
 .\apps\aiEnrichSkill\run.bat  # or run.sh
 .\apps\aiCvMatcher\run.bat  # or run.sh
 ```
@@ -133,8 +131,6 @@ npm run dev  # from apps/web, runs on localhost:5173
 commonlib ← backend
 commonlib ← scrapper  
 commonlib ← aiEnrich
-commonlib ← aiEnrich3
-commonlib ← aiEnrichNew
 commonlib ← aiEnrichSkill
 commonlib ← aiCvMatcher
 backend ← web (via REST API)
@@ -175,20 +171,10 @@ backend ← web (via REST API)
 - Coordinator scripts: `linkedin.py`, `infojobs.py`, etc.
 - Supports `SCRAPPER_USE_UNDETECTED_CHROMEDRIVER=true` for bot detection bypass
 
-**aiEnrichNew** (`apps/aiEnrichNew/`)
-- Local Hugging Face transformers for job data enrichment
-- Model: `Qwen/Qwen2.5-1.5B-Instruct` (configurable in `dataExtractor.py`)
-- Preferred over `aiEnrich` (Ollama)
-
 **aiEnrichSkill** (`apps/aiEnrichSkill/`)
 - Skill enrichment module supporting Ollama and HuggingFace backends
-- Extracted from `aiEnrich` (Ollama) and `aiEnrichNew` (HuggingFace)
+- Extracted from `aiEnrich` (Ollama)
 - See `apps/aiEnrichSkill/README.md` for configuration
-
-**aiEnrich3** (`apps/aiEnrich3/`)
-- CPU-optimized multilingual data extraction service
-- Uses GLiNER, mDeBERTa, and Regex
-- Fast alternative to `aiEnrich` when GPUs are not available
 
 **aiCvMatcher** (`apps/aiCvMatcher/`)
 - Local fast CV matching service

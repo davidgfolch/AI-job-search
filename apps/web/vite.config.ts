@@ -24,9 +24,9 @@ export default defineConfig(async ({ mode }) => {
   console.log('🔍 Mode:', mode)
   
   const env = loadEnv(mode, envDir, '')
-  console.log('🔍 AI_ENRICHNEW_SKILL from loadEnv:', env.AI_ENRICHNEW_SKILL)
+  console.log('🔍 AI_ENRICHSKILL_ENABLED from loadEnv:', env.AI_ENRICHSKILL_ENABLED)
   
-  const aiEnrichSkillEnabled = env.AI_ENRICHNEW_SKILL === 'True' || env.AI_ENRICHNEW_SKILL === 'true'
+  const aiEnrichSkillEnabled = env.AI_ENRICHSKILL_ENABLED === 'True' || env.AI_ENRICHSKILL_ENABLED === 'true'
   console.log('🔍 aiEnrichSkillEnabled:', aiEnrichSkillEnabled)
 
 
@@ -34,7 +34,7 @@ export default defineConfig(async ({ mode }) => {
 
   return {
     define: {
-      __AI_ENRICHNEW_SKILL_ENABLED__: aiEnrichSkillEnabled ? 'true' : 'false',
+      __AI_ENRICH_SKILL_ENABLED__: aiEnrichSkillEnabled ? 'true' : 'false',
       __TEST_CONSTANT__: 'true',
     },
     plugins: [react()],

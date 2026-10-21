@@ -47,8 +47,6 @@ When `commonlib` version is bumped, update the `commonlib==OLD_VERSION` to `comm
 | backend | `apps/backend/pyproject.toml` |
 | scrapper | `apps/scrapper/pyproject.toml` |
 | aiEnrich | `apps/aiEnrich/pyproject.toml` |
-| aiEnrich3 | `apps/aiEnrich3/pyproject.toml` |
-| aiEnrichNew | `apps/aiEnrichNew/pyproject.toml` |
 | aiCvMatcher | `apps/aiCvMatcher/pyproject.toml` |
 | aiFormFiller | `apps/aiFormFiller/pyproject.toml` |
 
@@ -62,8 +60,6 @@ Search for the pattern `commonlib==<old_version>` and replace with `commonlib==<
 | backend | `pyproject.toml` | — | `api` |
 | scrapper | `pyproject.toml` | — | `scrapper` |
 | aiEnrich | `pyproject.toml` | — | `aiEnrich` |
-| aiEnrich3 | `pyproject.toml` | — | `aiEnrich3` |
-| aiEnrichNew | `pyproject.toml` | — | `aiEnrichNew` |
 | aiCvMatcher | `pyproject.toml` | — | `aiCvMatcher` |
 | aiFormFiller | `pyproject.toml` | `extension/manifest.json` | `aiFormFiller` |
 | web | `package.json` | — | (npm, no importlib) |

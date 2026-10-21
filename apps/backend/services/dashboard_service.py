@@ -15,12 +15,10 @@ logger = get_logger("backend.services.dashboard_service")
 
 _repo = DashboardRepository()
 
-MODULES = ["aienrich", "aienrichnew", "aienrichskill", "aienrich3", "aicvmatcher"]
+MODULES = ["aienrich", "aienrichskill", "aicvmatcher"]
 MODULE_METRIC_KEYS = {
     "aienrich": "aiEnrich",
-    "aienrichnew": "aiEnrichNew",
     "aienrichskill": "aiEnrichSkill",
-    "aienrich3": "aiEnrich3",
     "aicvmatcher": "aiCvMatcher",
 }
 OLLAMA_MODULES = {"aienrich", "aienrichskill"}

@@ -1,5 +1,9 @@
 # Plan C: Two-Stage Pipeline (aiEnrich3 Fast Path + aiEnrich LLM Fallback)
 
+Status: superseded — target module removed
+
+
+This plan was built around the `aiEnrich3` fast path, which no longer exists — the module was removed from the repository.
 ## Goal
 
 Run aiEnrich3 (GLiNER/mDeBERTa, ~0.5-2s per job) first, then only invoke the slow Ollama LLM for fields where aiEnrich3 has low confidence.

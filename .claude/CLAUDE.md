@@ -14,7 +14,6 @@ AI-powered job search monorepo with multi-platform scraping, AI enrichment, and 
 | **scrapper** | `apps/scrapper/` | Python, Selenium | Poetry |
 | **backend** | `apps/backend/` | Python, FastAPI | uv |
 | **aiEnrich** | `apps/aiEnrich/` | Python, Ollama | uv |
-| **aiEnrichNew** | `apps/aiEnrichNew/` | Python, Hugging Face | uv |
 | **aiEnrichSkill** | `apps/aiEnrichSkill/` | Python, Ollama & HuggingFace | uv |
 | **aiCvMatcher** | `apps/aiCvMatcher/` | Python, SentenceTransformers | uv |
 | **web** | `apps/web/` | React, TypeScript, Vite | npm |
@@ -28,7 +27,7 @@ cd apps/web
 npm test -- path/to/specific.test.ts
 
 # Backend/Python apps with uv
-cd apps/backend  # or apps/aiEnrichNew
+cd apps/backend  # or apps/aiEnrich
 uv run pytest path/to/specific_test.py
 
 # Legacy Python apps with Poetry  

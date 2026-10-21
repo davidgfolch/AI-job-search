@@ -26,8 +26,8 @@ def test_display_name_aienrich_backend(mock_env, backend, label):
 
 
 @pytest.mark.parametrize("module,expected", [
-    ("aienrichnew", "AI Enrich New (HF)"), ("aienrichskill", "AI Enrich Skill"),
-    ("aienrich3", "AI Enrich 3 (CPU)"), ("aicvmatcher", "CV Matcher"), ("unknown", "unknown"),
+    ("aienrichskill", "AI Enrich Skill"),
+    ("aicvmatcher", "CV Matcher"), ("unknown", "unknown"),
 ])
 def test_display_name_mapping(module, expected):
     assert dashboard_utils._display_name(module) == expected

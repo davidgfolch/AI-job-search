@@ -18,7 +18,7 @@ SNAPSHOT = {
             "last_error_at": None,
             "last_error": None,
         },
-        "aiEnrichNew": {},
+        "aiEnrichSkill": {},
     },
     "global": {},
 }

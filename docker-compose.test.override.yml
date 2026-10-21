@@ -56,15 +56,6 @@ services:
       COMMONLIB_DB_DISCOVERY: "False"
       AI_ENRICH_OLLAMA_BASE_URL: http://host.docker.internal:11434
 
-  aienrichnew:
-    container_name: ai-job-search-test-aienrichnew
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    environment:
-      COMMONLIB_DB_HOST: mysql_db
-      COMMONLIB_DB_DISCOVERY: "False"
-
   aienrichskill:
     container_name: ai-job-search-test-aienrichskill
     depends_on:
@@ -74,15 +65,6 @@ services:
       COMMONLIB_DB_HOST: mysql_db
       COMMONLIB_DB_DISCOVERY: "False"
       AI_ENRICHSKILL_OLLAMA_BASE_URL: http://host.docker.internal:11434
-
-  aienrich3:
-    container_name: ai-job-search-test-aienrich3
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    environment:
-      COMMONLIB_DB_HOST: mysql_db
-      COMMONLIB_DB_DISCOVERY: "False"
 
   aicvmatcher:
     container_name: ai-job-search-test-aicvmatcher
