@@ -12,6 +12,12 @@ OLLAMA_HOST_BASE_URL = "http://localhost:11434"
 OLLAMA_DOCKER_BASE_URL = "http://ollama:11434"
 OLLAMA_HOST_FROM_DOCKER_BASE_URL = "http://host.docker.internal:11434"
 
+# Backend (FastAPI) API URL fallbacks, mirroring the Ollama chain so enrichment
+# workers reach the backend whether running on the host or inside Docker.
+BACKEND_HOST_BASE_URL = "http://localhost:8000"
+BACKEND_DOCKER_BASE_URL = "http://backend:8000"
+BACKEND_HOST_FROM_DOCKER_BASE_URL = "http://host.docker.internal:8000"
+
 _MODULE_OLLAMA_URL_ENVS = (
     "AI_ENRICH_OLLAMA_BASE_URL",
     "AI_ENRICHSKILL_OLLAMA_BASE_URL",
@@ -33,6 +39,19 @@ def ollama_candidate_urls(primary: str | None = None) -> tuple[str, ...]:
     """Ordered, deduplicated URLs to try, primary first and then the shared fallback chain."""
     urls = [primary] if primary else []
     for url in (OLLAMA_HOST_FROM_DOCKER_BASE_URL, OLLAMA_HOST_BASE_URL, OLLAMA_DOCKER_BASE_URL):
+        if url not in urls:
+            urls.append(url)
+    return tuple(urls)
+
+
+def backend_candidate_urls(primary: str | None = None) -> tuple[str, ...]:
+    """Ordered, deduplicated backend API URLs to try, primary first and then fallbacks."""
+    urls = [primary] if primary else []
+    for url in (
+        BACKEND_DOCKER_BASE_URL,
+        BACKEND_HOST_FROM_DOCKER_BASE_URL,
+        BACKEND_HOST_BASE_URL,
+    ):
         if url not in urls:
             urls.append(url)
     return tuple(urls)

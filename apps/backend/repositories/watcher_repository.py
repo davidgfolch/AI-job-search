@@ -97,6 +97,43 @@ class WatcherRepository:
             )
         return [(int(r[0]), int(r[1])) for r in rows]
 
+    def match_jobs_against_config(
+        self, config_id: int, where_part: str, job_ids: List[int]
+    ) -> List[int]:
+        """Return the subset of job_ids that match the config's filter where clause."""
+        if not job_ids:
+            return []
+        ids_str = ", ".join(["%s"] * len(job_ids))
+        query = f"""
+            SELECT id FROM jobs
+            WHERE {where_part}
+              AND id IN ({ids_str})
+        """
+        with self.get_db() as db:
+            rows = db.fetchAll(query, tuple(job_ids))
+        return [int(r[0]) for r in rows]
+
+    def get_recently_enriched_ids(self, since_minutes: int = 10) -> List[int]:
+        """Return recently-enriched job ids that have no active watcher_match row yet.
+
+        This is a safety net so enrichment is matched even when the in-process
+        ``add_pending_ids`` notification did not reach the matcher loop
+        (e.g. across uvicorn workers or a timing race).
+        """
+        with self.get_db() as db:
+            rows = db.fetchAll(
+                """
+                SELECT DISTINCT j.id FROM jobs j
+                LEFT JOIN watcher_match wm
+                  ON wm.job_id = j.id AND wm.deleted = 0
+                WHERE j.ai_enriched = 1
+                  AND j.modified >= DATE_SUB(NOW(), INTERVAL %s MINUTE)
+                  AND wm.job_id IS NULL
+                """,
+                (since_minutes,),
+            )
+        return [int(r[0]) for r in rows]
+
     def invalidate_view(self, config_id: int) -> None:
         """Clear watcher_match rows for a config (called when filter config changes)."""
         with self.get_db() as db:

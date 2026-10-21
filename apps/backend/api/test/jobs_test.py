@@ -193,3 +193,30 @@ def test_watcher_stats(client, mock_watcher_service, query_params, expected_ids,
     call_kwargs = mock_watcher_service.get_watcher_stats.call_args[1]
     assert call_kwargs["config_ids"] == expected_ids
     assert call_kwargs["cutoff_map"] == expected_cutoff
+
+
+@patch('api.jobs.notify_watcher')
+def test_notify_watcher_enqueues_ids(mock_notify, client):
+    mock_notify.return_value = None
+    response = client.post("/api/jobs/notify-watcher", json={"ids": [1, 2, 3]})
+    assert response.status_code == 200
+    assert response.json() == {"notified": 3}
+    mock_notify.assert_called_once_with([1, 2, 3], "jobs_enriched", {"job_ids": [1, 2, 3]})
+
+
+@patch('api.jobs.notify_watcher')
+def test_notify_watcher_uses_custom_event_type(mock_notify, client):
+    mock_notify.return_value = None
+    response = client.post("/api/jobs/notify-watcher", json={"ids": [5], "event_type": "job_updated"})
+    assert response.status_code == 200
+    assert response.json() == {"notified": 1}
+    mock_notify.assert_called_once_with([5], "job_updated", {"job_ids": [5]})
+
+
+@patch('api.jobs.notify_watcher')
+def test_notify_watcher_empty_ids(mock_notify, client):
+    mock_notify.return_value = None
+    response = client.post("/api/jobs/notify-watcher", json={"ids": []})
+    assert response.status_code == 200
+    assert response.json() == {"notified": 0}
+    mock_notify.assert_not_called()

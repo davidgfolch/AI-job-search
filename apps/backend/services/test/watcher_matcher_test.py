@@ -179,3 +179,32 @@ def test_parse_filters_none_returns_empty(mock_repos):
 
     result = service._parse_filters(None)
     assert result == {}
+
+
+def test_singleton_repeated_access_preserves_pending_ids(mock_repos):
+    """Accessing the singleton again must not wipe queued job IDs.
+
+    Regression: `__init__` used to run on every access and reset `_pending_ids`,
+    so a notify enqueue was lost as soon as any request resolved the matcher.
+    """
+    first = WatcherMatcher()
+    first.add_pending_ids([10, 20])
+
+    second = WatcherMatcher()
+
+    assert second is first
+    assert second._pending_ids == {10, 20}
+
+
+def test_singleton_repeated_access_preserves_running_state(mock_repos):
+    """Accessing the singleton again must not stop the background thread."""
+    first = WatcherMatcher()
+    first._running = True
+    first._thread = MagicMock()
+
+    second = WatcherMatcher()
+
+    assert second is first
+    assert second._running is True
+    assert second._thread is first._thread
+    assert second._lock is first._lock

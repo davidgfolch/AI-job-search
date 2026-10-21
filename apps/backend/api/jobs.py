@@ -29,6 +29,11 @@ class BulkJobDelete(BaseModel):
     select_all: bool = False
 
 
+class NotifyWatcherRequest(BaseModel):
+    ids: List[int]
+    event_type: str = "jobs_enriched"
+
+
 def get_service():
     return JobsService()
 
@@ -39,6 +44,19 @@ def notify_watcher(job_ids: List[int], event_type: str, data: dict = None) -> No
     matcher.add_pending_ids(job_ids)
     from api.watcher import broadcast_watcher_event
     broadcast_watcher_event(event_type, data or {})
+
+
+@router.post("/notify-watcher")
+def notify_watcher_endpoint(req: NotifyWatcherRequest):
+    """Enqueue job IDs for watcher matching and broadcast an SSE event.
+
+    Called by enrichment workers (separate processes) after a job is enriched so
+    the watcher matcher evaluates the job against watched filter configs and the
+    frontend badge is updated.
+    """
+    if req.ids:
+        notify_watcher(req.ids, req.event_type, {"job_ids": req.ids})
+    return {"notified": len(req.ids)}
 
 
 @router.post("", response_model=Job)

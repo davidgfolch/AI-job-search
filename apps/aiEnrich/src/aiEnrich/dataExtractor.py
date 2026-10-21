@@ -1,7 +1,9 @@
 import time
+from typing import List
 
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
+from commonlib.watcher_notify import notify_watcher as notify_backend_watcher
 from commonlib.ai_helpers import (
     footer,
     mapJob,
@@ -17,7 +19,7 @@ from commonlib.services.metrics_collector import MetricsCollector
 from .aiEnrich_config import (
     get_job_enabled, get_timeout_job, get_model, get_max_validation_retries,
     get_backend, get_ollama_base_url, get_openrouter_base_url, get_openrouter_model,
-    get_openrouter_fallback_model, get_max_ollama_failures,
+    get_openrouter_fallback_model, get_max_ollama_failures, get_backend_url,
 )
 from .ollama_backend import (
     ping_backend, _check_backend_available, _query_job, _query_company,
@@ -142,6 +144,18 @@ def _save(repo: AiEnrichRepository, id, result: dict):
     validateResult(result)
     repo.update_enrichment(id, result.get("salary", None), result.get("required_technologies", None),
                            result.get("optional_technologies", None), result.get("modality", None))
+    _notify_watcher_backend([id])
+
+
+def _notify_watcher_backend(job_ids: List[int]) -> None:
+    """Tell the backend to enqueue enriched job IDs for watcher matching + SSE broadcast.
+
+    Delegates to the shared client, which logs and swallows failures so enrichment
+    keeps progressing after the job was already persisted.
+    """
+    if not job_ids:
+        return
+    notify_backend_watcher(job_ids, base_url=get_backend_url())
 
 
 def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):

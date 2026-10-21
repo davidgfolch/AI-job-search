@@ -39,6 +39,10 @@ Once running, you can access the interactive API docs at:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
+### Cross-Origin Requests (CORS)
+
+The backend allows cross-origin requests from any origin (`allow_origins=["*"]`) without credentials (`allow_credentials=False`). This is required so the frontend (served on a different port, e.g. Vite's `5173`) can reach the API and the SSE stream at `GET /api/jobs/watcher-events` cross-origin. No client sends credentials (`withCredentials` is never set), so credentials are disabled to keep the wildcard origin valid per the CORS spec.
+
 ## Testing
 
 Run unit tests with pytest:
@@ -255,7 +259,8 @@ Rows older than 1 day are cleaned up hourly by the background matcher.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/jobs/watcher-stats` | Returns `{config_id: {total, new_items, removed_items}}` for given `config_ids`. Accepts `from_<config_id>` cutoff params to compute `new_items`. |
-| `GET` | `/api/jobs/watcher-events` | SSE stream (`text/event-stream`) that broadcasts `job_created`, `job_updated`, `jobs_bulk_updated`, `jobs_deleted` events. The frontend subscribes to trigger a debounced stats refetch within ~200 ms. |
+| `GET` | `/api/jobs/watcher-events` | SSE stream (`text/event-stream`) that broadcasts `job_created`, `job_updated`, `jobs_bulk_updated`, `jobs_deleted`, `jobs_enriched` events. The frontend subscribes to trigger a debounced stats refetch within ~200 ms. |
+| `POST` | `/api/jobs/notify-watcher` | Enqueues job IDs for watcher matching and broadcasts an SSE event. Body: `{"ids": [1, 2], "event_type": "jobs_enriched"}`. Used by enrichment workers after a job is enriched. |
 
 ### Write Hooks
 
@@ -265,8 +270,9 @@ Every job write through the backend API enqueues the affected job IDs for backgr
 - `PATCH /api/jobs/{id}` (update) → enqueues the updated job ID
 - `POST /api/jobs/bulk` (bulk update) → enqueues updated job IDs
 - `POST /api/jobs/bulk/delete` (bulk delete) → enqueues deleted job IDs
+- `POST /api/jobs/notify-watcher` (enrichment worker) → enqueues enriched job IDs
 
-A background matcher thread (started on app startup, 8 s interval) drains pending IDs, matches them against each watched filter configuration using the existing filter SQL, and inserts active matches (`deleted=0`) or tombstones (`deleted=1`) into `watcher_match`.
+A background matcher thread (started on app startup, 8 s interval) drains pending IDs, matches them against each watched filter configuration using the existing filter SQL, and inserts active matches (`deleted=0`) or tombstones (`deleted=1`) into `watcher_match`. The matcher is a process-wide singleton initialized exactly once: constructing it again (which every `JobsService`/`JobDeleteService` does) returns the same instance and must not reset its pending queue, lock, or thread. Each tick also merges a safety net of jobs enriched in the last 10 minutes that still have no active match, so a notification lost across reloads/workers is still matched.
 
 ### Background Matcher Logs
 

@@ -24,6 +24,13 @@ class WatcherMatcher:
         return cls._instance
 
     def __init__(self):
+        # `__new__` caches the singleton, but Python still calls `__init__` on every
+        # `WatcherMatcher()` access. Re-running it would reset `_running`, wipe
+        # `_pending_ids` and replace the lock/thread, killing the background matcher
+        # as soon as any request resolves the singleton. Initialize exactly once.
+        if getattr(self, "_initialized", False):
+            return
+        self._initialized = True
         self.repo = WatcherRepository()
         self.match_repo = WatcherMatchRepository()
         self._pending_ids: Set[int] = set()
@@ -82,25 +89,38 @@ class WatcherMatcher:
         with self._lock:
             pending = set(self._pending_ids)
             self._pending_ids.clear()
+        # Safety net: also pick up recently-enriched jobs whose notification may
+        # not have reached this matcher instance (e.g. across uvicorn workers).
+        pending |= set(self.repo.get_recently_enriched_ids())
         if not pending:
             return
 
-        logger.debug("watcher.process_pending", count=len(pending))
+        logger.info("watcher.process_pending", count=len(pending), pending_ids=sorted(pending))
         watched_configs = self.repo.get_watched_configs()
         if not watched_configs:
+            logger.info("watcher.process_pending_no_configs", count=len(pending))
             return
 
         pending_list = sorted(pending)
         existing_ids = self.repo.get_existing_job_ids(pending_list)
         deleted_ids = set(pending_list) - existing_ids
 
-        self._handle_deleted_jobs(deleted_ids)
-        self._match_existing_jobs(existing_ids, watched_configs)
+        logger.info(
+            "watcher.process_pending_loaded",
+            pending=len(pending),
+            existing=len(existing_ids),
+            deleted=len(deleted_ids),
+            watched_configs=len(watched_configs),
+        )
 
-        logger.debug(
+        self._handle_deleted_jobs(deleted_ids)
+        matched_total = self._match_existing_jobs(existing_ids, watched_configs)
+
+        logger.info(
             "watcher.process_pending_done",
             existing=len(existing_ids),
             deleted=len(deleted_ids),
+            matched=matched_total,
         )
 
     def _handle_deleted_jobs(self, deleted_ids: Set[int]) -> None:
@@ -115,19 +135,33 @@ class WatcherMatcher:
 
     def _match_existing_jobs(
         self, existing_ids: Set[int], watched_configs: List[Tuple[int, str]]
-    ) -> None:
-        """Match existing pending jobs against each watched filter config."""
+    ) -> int:
+        """Match existing pending jobs against each watched filter config.
+
+        Returns the total number of matches inserted.
+        """
         if not existing_ids:
-            return
+            return 0
         existing_sorted = sorted(existing_ids)
+        matched_total = 0
         for cfg_id, filters_json in watched_configs:
             filters = self._parse_filters(filters_json)
             where_part = _get_where(filters) or "1=1"
             matched_ids = self.repo.match_jobs_against_config(
                 cfg_id, where_part, existing_sorted
             )
+            logger.info(
+                "watcher.match_config",
+                config_id=cfg_id,
+                filters=filters,
+                where=where_part,
+                matched=len(matched_ids),
+                matched_ids=matched_ids,
+            )
             for job_id in matched_ids:
                 self.match_repo.insert_match(cfg_id, job_id)
+                matched_total += 1
+        return matched_total
 
     @staticmethod
     def _parse_filters(filters_json: Any) -> dict:

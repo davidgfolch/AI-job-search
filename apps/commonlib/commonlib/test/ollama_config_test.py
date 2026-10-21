@@ -2,7 +2,9 @@ import pytest
 
 from commonlib.ollama_config import (
     OLLAMA_HOST_BASE_URL, OLLAMA_DOCKER_BASE_URL, OLLAMA_HOST_FROM_DOCKER_BASE_URL,
+    BACKEND_HOST_BASE_URL, BACKEND_DOCKER_BASE_URL, BACKEND_HOST_FROM_DOCKER_BASE_URL,
     get_configured_ollama_url, ollama_candidate_urls, ollama_probe_urls, get_num_ctx, get_repeat_penalty, strip_provider_prefix,
+    backend_candidate_urls,
 )
 
 URLS = [
@@ -38,6 +40,22 @@ def test_host_from_docker_base_url():
 ])
 def test_ollama_candidate_urls(primary, expected):
     assert ollama_candidate_urls(primary) == expected
+
+
+def test_backend_base_urls():
+    assert BACKEND_HOST_BASE_URL == "http://localhost:8000"
+    assert BACKEND_DOCKER_BASE_URL == "http://backend:8000"
+    assert BACKEND_HOST_FROM_DOCKER_BASE_URL == "http://host.docker.internal:8000"
+
+
+@pytest.mark.parametrize("primary, expected", [
+    pytest.param(None, ("http://backend:8000", "http://host.docker.internal:8000", "http://localhost:8000"), id="no_primary"),
+    pytest.param("http://custom:8000", ("http://custom:8000", "http://backend:8000", "http://host.docker.internal:8000", "http://localhost:8000"), id="custom_primary"),
+    pytest.param("http://backend:8000", ("http://backend:8000", "http://host.docker.internal:8000", "http://localhost:8000"), id="primary_equals_docker_dedupe"),
+    pytest.param("http://localhost:8000", ("http://localhost:8000", "http://backend:8000", "http://host.docker.internal:8000"), id="primary_equals_host_dedupe"),
+])
+def test_backend_candidate_urls(primary, expected):
+    assert backend_candidate_urls(primary) == expected
 
 
 def test_ollama_probe_urls_with_module_env(monkeypatch):

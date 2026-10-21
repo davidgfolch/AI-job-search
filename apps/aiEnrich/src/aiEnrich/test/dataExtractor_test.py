@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from unittest.mock import patch, MagicMock
 
 from commonlib.ollama_client import OllamaResponse
-from ..dataExtractor import dataExtractor, _save, _process_job_safe
+from ..dataExtractor import dataExtractor, _save, _process_job_safe, _notify_watcher_backend
 
 from .dataExtractor_fixtures import (
     mock_deps, clean_env,
@@ -42,9 +42,10 @@ class TestDataExtractor:
 
     def test_save(self, mock_deps):
         repo = MagicMock()
-        with patch('aiEnrich.dataExtractor.validateResult'):
+        with patch('aiEnrich.dataExtractor.validateResult'), patch('aiEnrich.dataExtractor._notify_watcher_backend') as notify:
             _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': 'REMOTE'})
             repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', 'REMOTE')
+            notify.assert_called_once_with([1])
 
     @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1, 2]])
     def test_job_started_index_is_one_based(self, mock_ids, mock_deps):
@@ -154,3 +155,18 @@ class TestProcessJobSafeBackend:
             _process_job_safe(repo, 1, 1, 0, "enrich")
         repo.update_enrichment.assert_called_once()
         assert repo.update_enrichment.call_args.args[4] == expected_modality
+
+
+class TestNotifyWatcherBackend:
+    @patch("aiEnrich.dataExtractor.notify_backend_watcher")
+    @patch("aiEnrich.dataExtractor.get_backend_url", return_value="http://backend:8000/")
+    def test_delegates_to_shared_client(self, mock_url, mock_notify):
+        _notify_watcher_backend([1, 2])
+
+        mock_notify.assert_called_once_with([1, 2], base_url="http://backend:8000/")
+
+    @patch("aiEnrich.dataExtractor.notify_backend_watcher")
+    def test_empty_ids_skip_request(self, mock_notify):
+        _notify_watcher_backend([])
+
+        mock_notify.assert_not_called()

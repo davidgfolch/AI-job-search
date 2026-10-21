@@ -82,6 +82,15 @@ Structured logging via `commonlib.observability`; records go to stdout and are m
 
 Select the backend with `AI_ENRICH_BACKEND` in your `.env` file. The default is `ollama`.
 
+### Watcher notification
+
+After a job is successfully enriched, `aiEnrich` tells the backend to enqueue the job for watcher matching so the watcher badge updates in the UI. The worker calls the shared `commonlib.watcher_notify.notify_watcher` client, which POSTs to `POST /api/jobs/notify-watcher`. The backend URL is read from `AI_ENRICH_BACKEND_URL` when set; otherwise the worker auto-discovers it by probing `http://backend:8000` (Docker), `http://host.docker.internal:8000`, then `http://localhost:8000`, caching the first reachable one — so it works both on the host and inside Docker Compose without any env changes. The notification is best-effort: if the backend is unreachable the enrichment run continues and only a `watcher.notify_failed` warning is logged; a non-2xx answer logs `watcher.notify_rejected`.
+
+```bash
+# Optional override (e.g. when the backend is on another host):
+AI_ENRICH_BACKEND_URL=http://backend:8000
+```
+
 #### Ollama backend (default)
 
 The default model is `ollama/qwen2.5:3b` (optimized for CPU inference). To change the model, set the `AI_ENRICH_OLLAMA_MODEL` environment variable in your `.env` file:

@@ -80,6 +80,10 @@ docker-compose up -d --no-deps web
 
 The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration — the dashboard automatically scans the common LAN subnets (`192.168.0.x`, `192.168.1.x`) even when it runs inside a Docker container. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). If your LAN uses a different subnet, add it with `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (comma-separated CIDRs, e.g. `10.0.0.0/24`). See [commonlib docs](apps/commonlib/README.md) for details.
 
+### Watcher notifications
+
+After enrichment, `aiEnrich` POSTs the enriched job IDs to the backend (`/api/jobs/notify-watcher`) so the watcher badge updates, through the shared `commonlib.watcher_notify` client. The backend URL is auto-discovered the same way as Ollama (`http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000`); set `AI_ENRICH_BACKEND_URL` in `.env` to pin it. The call is best-effort — an unreachable backend only logs `watcher.notify_failed`, a rejected one logs `watcher.notify_rejected`, and enrichment continues. See [aiEnrich docs](apps/aiEnrich/README.md#watcher-notification).
+
 ### Dashboard: Prometheus & Grafana health
 
 The dashboard probes Prometheus and Grafana on every refresh (via `GET /-/healthy` and `GET /api/health`) and shows their status as **Up**/**Down** summary cards. The target URLs are configured with:
