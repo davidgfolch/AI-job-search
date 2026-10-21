@@ -91,8 +91,10 @@ jobs:
 
       # Blocking gate: unused imports (F401), unused variables (F841),
       # redefinitions (F811) and syntax errors (E9) fail the build.
+      # Invoked through `bash` so the step does not depend on the checked-out
+      # file mode.
       - name: Python lint (ruff)
-        run: ./scripts/lint.sh python
+        run: bash ./scripts/lint.sh python
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -110,10 +112,10 @@ jobs:
       # Blocking gate: ESLint errors (unused code, explicit `any` in production
       # sources) and any TypeScript type error fail the build.
       - name: Web lint and typecheck (eslint + tsc)
-        run: ./scripts/lint.sh web
+        run: bash ./scripts/lint.sh web
 
       - name: E2E lint (eslint)
-        run: ./scripts/lint.sh e2e
+        run: bash ./scripts/lint.sh e2e
 
   test:
     needs: changes
