@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 from scrapper.services.gmail.generic_gmail_service import GmailService
 from scrapper.services.gmail.email_exceptions import (
     GmailConnectionError,
+    VerificationCodeExtractionError,
 )
 
 ENV_VARS = {"GMAIL_EMAIL": "test@gmail.com", "GMAIL_APP_PASSWORD": "test_password"}
@@ -60,7 +61,7 @@ class TestGmailService:
             "No code found"
         )
 
-        with pytest.raises(Exception):  # Should raise VerificationCodeExtractionError
+        with pytest.raises(VerificationCodeExtractionError):
             service.extract_code_from_email("This email has no verification code")
 
     def test_is_connected(self):
@@ -161,7 +162,7 @@ class TestGmailService:
         service = GmailService()
         service.email_reader = Mock()
         service.email_reader.extract_verification_code_from_subject.side_effect = Exception("no code")
-        with pytest.raises(Exception):
+        with pytest.raises(VerificationCodeExtractionError):
             service.extract_code_from_email("subject")
 
     def test_close_without_email_reader(self):

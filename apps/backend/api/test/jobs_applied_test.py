@@ -133,7 +133,7 @@ def test_get_applied_jobs_partial_search_exclusions(
     for pattern in all_patterns:
         if "The" in pattern and "White" not in pattern and "Team" not in pattern:
             if len(pattern) < 20:
-                assert False, (
+                pytest.fail(
                     f"Should not have searched for short generic term: {pattern}"
                 )
 

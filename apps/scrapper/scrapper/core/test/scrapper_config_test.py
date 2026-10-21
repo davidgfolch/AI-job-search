@@ -13,7 +13,7 @@ class TestScrapperConfig:
     def test_scrappers_structure(self):
         assert isinstance(SCRAPPERS, dict)
         assert len(SCRAPPERS) > 0
-        for name, config in SCRAPPERS.items():
+        for _name, config in SCRAPPERS.items():
             assert TIMER in config
             assert AUTORUN in config
             assert BROWSER in config

@@ -1,3 +1,4 @@
+import json
 import pytest
 from commonlib.json_helpers import (
     rawToJson, decode_unicode_escapes, fixJsonInvalidAttribute,
@@ -31,12 +32,22 @@ class TestRawToJson:
         assert result == {"key": "value"}
 
     def test_invalid_json_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(json.JSONDecodeError):
             rawToJson("not json at all {{{")
 
     def test_json_with_backslash_escape(self):
         result = rawToJson('{"key": "value\\.txt"}')
         assert "key" in result
+
+    def test_json_with_many_backslash_escapes(self):
+        """Regression: the unescape step used to stop after 10 replacements.
+
+        `re.I | re.M` was passed positionally as `count` instead of `flags`, so a
+        payload with more than 10 escaped specials kept its backslashes and the
+        whole parse failed with a JSONDecodeError.
+        """
+        result = rawToJson('{"key": "' + '\\&' * 12 + '"}')
+        assert result["key"] == "&" * 12
 
 
 class TestDecodeUnicodeEscapes:

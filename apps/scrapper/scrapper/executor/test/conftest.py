@@ -73,6 +73,12 @@ class StubKeywordExecutor(BaseExecutor):
     def _process_keyword(self, keyword, start_page):
         pass
 
+    def _init_scrapper(self):
+        pass
+
+    def _preload_action(self):
+        pass
+
 
 @pytest.fixture
 def stub_executor():

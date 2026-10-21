@@ -1,5 +1,6 @@
 """Tests for MySQL probing and pool initialization in connection_manager."""
 import pytest
+import mysql.connector as mysqlConnector
 from unittest.mock import patch, MagicMock
 from commonlib.sql import connection_manager
 
@@ -19,8 +20,8 @@ class TestProbeMysql:
             assert mock_connect.call_args[1].get('database') is None
 
     def test_probe_failure(self):
-        with patch('commonlib.sql.connection_manager.mysqlConnector.connect', side_effect=Exception("refused")):
-            with pytest.raises(Exception):
+        with patch('commonlib.sql.connection_manager.mysqlConnector.connect', side_effect=mysqlConnector.Error("refused")):
+            with pytest.raises(mysqlConnector.Error):
                 connection_manager._probe_mysql("10.0.0.1")
 
 

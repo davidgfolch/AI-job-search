@@ -64,9 +64,33 @@ falls back to `uvx ruff` when the binary is not on the `PATH`, so a one-off
 | `F841` | Unused local variables |
 | `F811` | Redefinition of an unused name (dead code) |
 | `ARG` | Unused function, method and lambda arguments |
+| `B` | The whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (44 rules) |
+
+The bugbear rules that shaped this codebase the most:
+
+| Rule | Meaning |
+|------|---------|
+| `B007` | Loop control variable not used within the loop body |
+| `B008` | Function call in an argument default (FastAPI `Depends`/`Query` are allowed) |
+| `B011` | `assert False` (removed by `python -O`) |
+| `B017` | Blind `pytest.raises(Exception)` |
+| `B018` | Useless expression (a statement with no effect) |
+| `B027` | Empty method in an abstract base class without `@abstractmethod` |
+| `B028` | `warnings.warn` without an explicit `stacklevel` |
+| `B034` | `re.sub` with positional `count`/`flags` arguments |
 | `B904` | `raise` without `from` inside an `except` block |
 | `B905` | `zip()` without an explicit `strict=` |
-| `B008` | Function call in an argument default (FastAPI `Depends`/`Query` are allowed) |
+
+`B034` catches a real bug class: `re.sub(pattern, repl, string, count=0, flags=0)`
+takes `count` before `flags`, so passing `re.M` (or `re.I | re.M`) positionally
+silently caps the number of replacements instead of setting the flags. Always pass
+`count=` and `flags=` as keyword arguments.
+
+Enabling the whole `B` selector means a ruff release that adds new bugbear rules
+turns them on automatically. That is intentional: a new bugbear rule usually
+flags a real defect, and ruff is already installed unpinned
+(`uv tool install ruff`). Pin a specific ruff version if that trade-off is not
+wanted.
 
 ### Marking an intentionally unused argument
 

@@ -31,12 +31,22 @@ extend-exclude = [
 #   F841  - unused local variables
 #   F811  - redefinition of an unused name (dead code)
 #   ARG   - unused function/method/lambda arguments
+#   B     - the whole flake8-bugbear set (44 rules)
+#
+# The bugbear rules that shaped the codebase the most:
+#   B007  - loop control variable not used within the loop body
+#   B008  - function call in an argument default
+#   B011  - `assert False` (removed by `python -O`)
+#   B017  - blind `pytest.raises(Exception)`
+#   B018  - useless expression (statement has no effect)
+#   B027  - empty method in an abstract base class without `@abstractmethod`
+#   B028  - `warnings.warn` without an explicit `stacklevel`
+#   B034  - `re.sub` with positional `count`/`flags` arguments
 #   B904  - raise without `from` inside an `except` block
 #   B905  - `zip()` without an explicit `strict=`
-#   B008  - function call in an argument default
-# The rest of bugbear (B0xx) is not enforced yet; see
-# .opencode/plans/static-analysis-setup.md.
-select = ["E9", "F401", "F841", "F811", "ARG", "B904", "B905", "B008"]
+#
+# See .opencode/plans/static-analysis-setup.md for the full history.
+select = ["E9", "F401", "F841", "F811", "ARG", "B"]
 
 # `_name` marks a parameter that is intentionally unused, so ARG does not
 # report it. `__name` (dunder) is exempt by default.

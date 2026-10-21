@@ -5,7 +5,7 @@ def hasLen(iter: Iterator):
     return any(True for _ in iter)
 
 def removeBlanks(text):
-    return re.sub(r'[\n\b]+', '', text, re.M).strip()
+    return re.sub(r'[\n\b]+', '', text, flags=re.M).strip()
 
 def hasLenAnyText(*texts: str) -> list[bool]:
     return [t is not None and len(removeBlanks(t)) > 0 for t in texts]

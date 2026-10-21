@@ -24,6 +24,9 @@ class TestStringUtil:
         ("hello\nworld", "helloworld"),
         ("hello\bworld", "helloworld"),
         ("\n\b  test  \n\b", "test"),
+        # Regression: the blank runs used to be capped at 8 replacements (re.M was passed
+        # positionally as `count` instead of `flags`), leaving the 9th group behind.
+        ("a\nb\nc\nd\ne\nf\ng\nh\ni\nj", "abcdefghij"),
     ])
     def test_removeBlanks(self, input_str, expected):
         assert removeBlanks(input_str) == expected

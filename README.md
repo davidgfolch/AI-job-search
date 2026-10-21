@@ -308,7 +308,7 @@ The whole monorepo is covered by one static-analysis gate, run locally and in CI
 
 | Target | Tool | Rules in force |
 |--------|------|----------------|
-| Python | [Ruff](https://docs.astral.sh/ruff/) (installed once with `uv tool install ruff`) | `E9`, `F401` unused imports, `F841` unused variables, `F811` dead redefinitions, `ARG` unused arguments, `B904` `raise ... from`, `B905` `zip(strict=)`, `B008` call in a default |
+| Python | [Ruff](https://docs.astral.sh/ruff/) (installed once with `uv tool install ruff`) | `E9`, `F401` unused imports, `F841` unused variables, `F811` dead redefinitions, `ARG` unused arguments and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`) |
 | Web | ESLint + `tsc -b` | unused code and explicit `any` are errors; the React Compiler advisory hooks rules are warnings |
 | E2E | ESLint | unused code is an error; explicit `any` is a warning |
 

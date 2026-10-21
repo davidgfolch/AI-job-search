@@ -21,7 +21,7 @@ def get_files_without_sibling_test():
                 dir_path = Path(root) / d
                 has_py = False
                 try:
-                    for p_root, _, p_files in os.walk(dir_path):
+                    for _p_root, _, p_files in os.walk(dir_path):
                          if any(f.endswith('.py') for f in p_files):
                              has_py = True
                              break

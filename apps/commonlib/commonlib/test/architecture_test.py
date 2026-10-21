@@ -24,7 +24,7 @@ def test_files_exceed_200_lines():
             return f"{color}{path}: {lines} lines{RESET}"
             
         message = "\nFound files with more than 200 lines:\n" + "\n".join(format_line(f) for f in files)
-        warnings.warn(UserWarning(message))
+        warnings.warn(UserWarning(message), stacklevel=2)
 
 @pytest.mark.parametrize("layer_name, required_deps, forbidden_deps, ignore_files", [
     ('api',

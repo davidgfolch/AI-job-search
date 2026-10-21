@@ -26,7 +26,7 @@ local run and the CI run never diverge:
 
 | Step | Command | Fails on |
 |------|---------|----------|
-| Python lint (ruff) | `./scripts/lint.sh python` | `E9`, `F401`, `F841`, `F811`, `ARG`, `B904`, `B905`, `B008` |
+| Python lint (ruff) | `./scripts/lint.sh python` | `E9`, `F401`, `F841`, `F811`, `ARG` and the whole flake8-bugbear set (`B`) |
 | Web lint and typecheck | `./scripts/lint.sh web` | any ESLint **error** or any `tsc` type error |
 | E2E lint | `./scripts/lint.sh e2e` | any ESLint **error** |
 

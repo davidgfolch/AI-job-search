@@ -65,6 +65,7 @@ Two unapplied attempts at this already exist in the repo and are not usable as-i
 | 6 | TS: the 30 `no-unused-vars` findings + the `no-explicit-any` policy | `npm run lint` green |
 | 7 | `ARG` phase: rename intentionally-unused parameters to `_name`; `# noqa: ARG002` with a reason for overridden/interface methods (renaming changes the public keyword-argument contract) | `ARG` added to `select` |
 | 8 | Bugbear `B904` / `B905` / `B008` (~50 findings, real bug classes) | `B` added to `select` |
+| 9 | Bugbear follow-up: `B007` / `B011` / `B017` / `B018` / `B027` / `B028` / `B034` (the last 14 findings of the whole bugbear set) | the full bugbear set enforced, rule by rule |
 
 ### Documentation
 
@@ -78,7 +79,7 @@ All eight phases landed. The gate is green and enforced by the `static-analysis`
 
 | Target | Tool | Rules in force |
 |--------|------|----------------|
-| Python (`apps/`, `scripts/`) | Ruff 0.17.1, root `ruff.toml` | `E9`, `F401`, `F841`, `F811`, `ARG`, `B904`, `B905`, `B008` |
+| Python (`apps/`, `scripts/`) | Ruff 0.17.1, root `ruff.toml` | `E9`, `F401`, `F841`, `F811`, `ARG` and the whole flake8-bugbear set (`B`, 44 rules) |
 | Web (`apps/web`) | ESLint 9 flat config + `tsc -b` | 0 errors (304 warnings, non-blocking) |
 | E2E (`apps/e2e`) | ESLint 9 flat config (`eslint.config.mjs`) | 0 errors (5 warnings) |
 
@@ -93,6 +94,13 @@ All eight phases landed. The gate is green and enforced by the `static-analysis`
 | `B904` missing `raise ... from` | 16 | 0 |
 | `B905` `zip()` without `strict=` | 11 | 0 |
 | `B008` call in an argument default | 17 | 0 (FastAPI `Depends`/`Query` allowed) |
+| `B007` unused loop variable | 3 | 0 |
+| `B011` `assert False` | 1 | 0 |
+| `B017` blind `pytest.raises(Exception)` | 4 | 0 |
+| `B018` useless expression | 1 | 0 |
+| `B027` empty abstract method | 2 | 0 |
+| `B028` `warnings.warn` without `stacklevel` | 1 | 0 |
+| `B034` positional `re.sub` arguments | 2 | 0 |
 | TS type errors (`tsc -b`) | 761 | 0 |
 | ESLint errors (`apps/web`) | 395 | 0 |
 
@@ -102,6 +110,9 @@ All eight phases landed. The gate is green and enforced by the `static-analysis`
 - **`ARG` is not enforced on pytest modules** (`**/test/**`, `**/tests/**`, `**/*_test.py`, `**/conftest.py`). 356 of the 388 `ARG` findings were pytest fixture parameters: pytest resolves a fixture by the name of the test parameter, so an unused one cannot be renamed to `_name` without breaking fixture resolution. Those parameters exist for the side effect of the fixture, not to be read by the test body. Production code is fully gated.
 - **`_name` for intentional non-use, `# noqa: ARG00x - <reason>` for contracts.** The latter is used for the structlog processor signature (`logger`, `method_name`), the markdownify `MarkdownConverter` overrides, the navigator interface (`search`, `check_results`, `fast_forward_page`) and the executor row template method.
 - **`B008` is allowed for `fastapi.Depends` / `fastapi.Query`** through `lint.flake8-bugbear.extend-immutable-calls`: declaring an injected dependency or a query parameter in an argument default is the documented FastAPI idiom.
+- **The whole bugbear set is enabled with the `B` selector**, not a hand-picked list of rules. The 34 rules that were already clean (`B002`-`B006`, `B009`, `B010`, `B012`-`B016`, `B019`-`B026`, `B029`-`B033`, `B035`, `B039`, `B043`, `B901`, `B903`, `B909`, `B911`, `B912`) cost nothing to enable and close the gap for good. A ruff release that adds a new bugbear rule therefore turns it on automatically; that is the intended trade-off, because ruff is already installed unpinned and a new bugbear rule usually flags a real defect. `BLE001` is not included: it is a preview rule and a different prefix, so `B` does not select it.
+- **`BaseExecutor._init_scrapper` and `_preload_action` are `@abstractmethod`.** All six concrete executors already implemented both, so the contract is unchanged for them; the test doubles (`MockBaseExecutor`, `StubKeywordExecutor`) gained the two overrides. A new executor that forgets one now fails at instantiation instead of silently doing nothing.
+- **`pytest.raises(Exception)` was narrowed to the real exception type** in four tests: `json.JSONDecodeError`, `mysql.connector.Error` and `VerificationCodeExtractionError` (twice). The gmail test already documented the expected type in a comment; the comment is now the code.
 - **The React Compiler hooks rules stay warnings** (`react-hooks/exhaustive-deps`, `react-hooks/immutability`, `react-hooks/set-state-in-effect`). Making them errors would require migrating the components to the React Compiler model, which is out of scope for this plan. `rules-of-hooks` and `refs` remain errors.
 - **`apps/e2e/package.json` must not declare `"type": "module"`** — `coverage.config.ts` uses `__dirname`. The ESLint config is `eslint.config.mjs` instead, so the module system of the package stays CommonJS.
 
@@ -112,6 +123,10 @@ All eight phases landed. The gate is green and enforced by the `static-analysis`
 - `getEnvMultiline` declared a `default` it never used, and `get_watcher_stats` a `filter_config_service` it never used. Both were removed.
 - `zip(columns, row)` silently truncated when the row was shorter than the column list. With `strict=True` it surfaced two test mocks that returned short rows (`filter_configurations_repository_test.py` was missing the `ordering` value, `jobDeleteRepository_test.py` returned 2-value rows against a 3-column table); both mocks were corrected.
 - `apps/web` had **761 TypeScript errors** that CI never saw, because the web Dockerfile only runs `npm run dev` and `npm run build` was never part of the pipeline. The typecheck is now a gate.
+- `re.sub` takes `count` **before** `flags`, so `re.M` (and `re.I | re.M`) passed positionally became a replacement cap instead of a flag. Two production call sites did that:
+  - `commonlib.stringUtil.removeBlanks` capped the blank runs it stripped at 8, so a text with more than 8 separate blank groups came back with the remaining newlines in it.
+  - `commonlib.json_helpers.rawToJson` capped its unescape step at 10, so an LLM answer containing more than 10 escaped `&`/`.`/`*`/`-`/`+`/`#` kept its backslashes and the whole parse failed with a `json.JSONDecodeError`.
+  Both now pass `flags=` as a keyword argument, and both are covered by a regression test that fails against the old code.
 
 ### Files
 
@@ -120,10 +135,10 @@ All eight phases landed. The gate is green and enforced by the `static-analysis`
 
 ### Verification
 
-`./scripts/lint.sh all` passes. `./scripts/test.sh commonlib scrapper backend aiEnrich aiEnrichSkill aiCvMatcher aiFormFiller cron` → 2481 passed / 1 skipped. `./scripts/test.sh web` → 982 passed. `./scripts/test.sh e2e` → 207 passed.
+`./scripts/lint.sh all` passes. `./scripts/test.sh` (every module) → 2483 passed / 1 skipped for the 8 Python apps, 137 web test files / 982 tests, 207 e2e tests.
 
 ### Not done (deliberately)
 
-- The remaining bugbear rules (`B017`, `B007`, `B027`, `B034`, `B011`, `B028`, `B018`) are measured but not gated: they are 14 findings across 7 apps and mostly need judgement calls (broad `pytest.raises(Exception)`, empty methods, `warnings.warn` stack levels). A later phase can enable them one at a time.
 - `.pre-commit-config.yaml` and the `.vscode/settings.json` wiring (deliverable 5) were not created; they were optional ergonomics with no CI impact.
 - SonarQube stays in reserve (`sonar-quality-gate-setup-changes.patch`).
+- The bugbear rules beyond the ones listed above were measured too: the whole `B` set reports 0 findings, so nothing else is pending on that front.

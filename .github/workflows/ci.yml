@@ -89,8 +89,8 @@ jobs:
           uv tool install ruff
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # Blocking gate: unused imports (F401), unused variables (F841),
-      # redefinitions (F811) and syntax errors (E9) fail the build.
+      # Blocking gate: the full rule set of the root ruff.toml fails the build
+      # (E9, F401, F841, F811, ARG and the whole flake8-bugbear set).
       # Invoked through `bash` so the step does not depend on the checked-out
       # file mode.
       - name: Python lint (ruff)

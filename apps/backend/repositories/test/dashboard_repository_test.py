@@ -11,7 +11,7 @@ def test_log_sources_include_aicvmatcher():
 
 
 def test_log_sources_name_each_jsonl_after_its_app():
-    for module, path in LOG_SOURCES.items():
+    for _module, path in LOG_SOURCES.items():
         assert path.endswith(".jsonl")
         assert not path.endswith("/app.jsonl")
 

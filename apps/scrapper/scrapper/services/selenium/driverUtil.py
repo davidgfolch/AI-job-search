@@ -184,7 +184,7 @@ class DriverUtil:
 
     def isAlive(self) -> bool:
         try:
-            self.driver.current_url
+            _ = self.driver.current_url
             return True
         except Exception:
             return False

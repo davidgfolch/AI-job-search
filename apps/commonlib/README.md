@@ -126,6 +126,19 @@ Example `pyproject.toml` dependency:
 commonlib = {path = "../commonlib", develop = true}
 ```
 
+## Text and JSON helpers
+
+- `stringUtil.removeBlanks(text)` strips **every** run of newlines and backspaces
+  from a text. The regex flags are passed as a keyword argument
+  (`re.sub(r'[\n\b]+', '', text, flags=re.M)`): `re.sub` takes `count` before
+  `flags`, so passing `re.M` positionally silently capped the replacements at 8
+  and left the remaining blank runs in the returned string.
+- `json_helpers.rawToJson(raw)` parses LLM-produced JSON. Its unescape step
+  (`re.sub(r'\\([&.*-+#])', r'\1', res, flags=re.I | re.M)`) unescapes **every**
+  escaped `&`, `.`, `*`, `-`, `+` or `#`. The same positional-argument mistake
+  used to stop the step after 10 replacements, which left the backslashes in
+  place and made the whole parse fail with a `json.JSONDecodeError`.
+
 ## Testing
 
 Run tests with pytest:
@@ -143,6 +156,6 @@ This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo ro
 ./scripts/lint.sh python
 ```
 
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`), `raise ... from` (`B904`), `zip(strict=)` (`B905`) and function calls in argument defaults (`B008`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
+Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
 
 See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

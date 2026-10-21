@@ -115,7 +115,7 @@ Static analysis is a blocking CI gate (`static-analysis` job). Run it locally wi
 ./scripts/lint.sh web      # eslint + tsc -b over apps/web
 ./scripts/lint.sh e2e      # eslint over apps/e2e
 ```
-Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rules in force: `E9` (syntax errors), `F401` (unused imports), `F841` (unused variables), `F811` (dead redefinitions), `ARG` (unused arguments), `B904` (`raise ... from`), `B905` (`zip(strict=)`), `B008` (FastAPI `Depends`/`Query` defaults are allowed).
+Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rules in force: `E9` (syntax errors), `F401` (unused imports), `F841` (unused variables), `F811` (dead redefinitions), `ARG` (unused arguments) and the whole flake8-bugbear set (`B`, 44 rules). The bugbear rules that shaped the codebase the most: `B007` (unused loop variables), `B008` (call in an argument default), `B011` (`assert False`), `B017` (blind `pytest.raises(Exception)`), `B018` (useless expressions), `B027` (empty abstract methods), `B028` (`warnings.warn` without `stacklevel`), `B034` (positional `re.sub` arguments), `B904` (`raise ... from`), `B905` (`zip(strict=)`). FastAPI `Depends`/`Query` defaults are allowed for `B008`.
 
 Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it. Use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog processors, markdownify overrides, navigator/executor interfaces). `ARG` is **not** enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter, so an unused one cannot be renamed without breaking fixture resolution.
 

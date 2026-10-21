@@ -18,6 +18,10 @@ def run_mocks():
     for p in patchers.values(): p.stop()
 
 class MockBaseExecutor(BaseExecutor):
+    def _init_scrapper(self):
+        pass
+    def _preload_action(self):
+        pass
     def _create_service(self, mysql):
         return MagicMock()
     def _process_keyword(self, keyword, start_page):

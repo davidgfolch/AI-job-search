@@ -80,7 +80,7 @@ poetry run pytest
 ./scripts/lint.sh e2e      # eslint over apps/e2e
 ```
 Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its
-own environment. Rules in force: `E9`, `F401`, `F841`, `F811`, `ARG`, `B904`, `B905`, `B008`.
+own environment. Rules in force: `E9`, `F401`, `F841`, `F811`, `ARG` and the whole flake8-bugbear set (`B`).
 Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it;
 use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog
 processors, markdownify overrides, navigator/executor interfaces). `ARG` is not enforced on

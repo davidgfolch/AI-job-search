@@ -6,6 +6,7 @@ Automated job scraping service for multiple job boards (LinkedIn, Infojobs, Glas
 
 - **Navigators (`scrapper/navigator/`)**: Specialized classes that handle Selenium browser interactions for each site (e.g., `linkedinNavigator.py`, `infojobsNavigator.py`).
 - **Services (`scrapper/services/`)**: Business logic and orchestration for job fetching and processing (e.g., `LinkedinService.py`, `InfojobsService.py`).
+- **Executors (`scrapper/executor/`)**: One class per site, extending `BaseExecutor` (an abstract base class). A concrete executor must implement `_create_service`, `_process_keyword`, `_init_scrapper` (site-specific variables such as `site_name`) and `_preload_action` (the preload step); the two latter hooks are declared `@abstractmethod`, so a missing implementation fails at instantiation instead of silently doing nothing.
 - **Coordinators**: Top-level scripts (`linkedin.py`, `infojobs.py`, etc.) that coordinate the scraping process.
 
 ## Features
@@ -223,6 +224,6 @@ This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo ro
 ./scripts/lint.sh python
 ```
 
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`), `raise ... from` (`B904`), `zip(strict=)` (`B905`) and function calls in argument defaults (`B008`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
+Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
 
 See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

@@ -34,6 +34,7 @@ class BaseExecutor(ABC):
         """Returns the standardized site name for persistence."""
         return self.site_name.capitalize()
 
+    @abstractmethod
     def _init_scrapper(self):
         """Initialize scrapper specific variables like site_name, credentials, navigator, etc."""
         pass
@@ -85,6 +86,7 @@ class BaseExecutor(ABC):
             return
         self._execute_scrapping()
 
+    @abstractmethod
     def _preload_action(self):
         """Override if specific preload action is needed"""
         pass

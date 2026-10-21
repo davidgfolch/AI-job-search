@@ -32,7 +32,7 @@ def rawToJson(raw: str) -> dict[str, str]:
         res = fixJsonEndCurlyBraces(res)
         res = fixJsonInvalidAttribute(res)
         # repl \& or \. (...) by & or .
-        res = re.sub(r'\\([&.*-+#])', r'\1', res, re.I | re.M)
+        res = re.sub(r'\\([&.*-+#])', r'\1', res, flags=re.I | re.M)
         parsed_dict = dict(json.loads(f'{res}', cls=LazyDecoder))
 
         decode_unicode_escapes(parsed_dict)
