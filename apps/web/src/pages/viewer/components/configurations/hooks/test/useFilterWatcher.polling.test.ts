@@ -42,10 +42,10 @@ describe('useFilterWatcher - Polling Logic', () => {
         });
 
         expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
-        // First check after reset/mount should be 0
-        expect(Object.values(result.current.results)[0].newItems).toBe(0);
+        // The first check reports the matches counted since the cutoff: nothing is masked.
+        expect(Object.values(result.current.results)[0].newItems).toBe(5);
 
-        // Catch up check: server reports 0 for the future cutoff
+        // Catch up check: server reports 0 for the current cutoff
         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 } });
         await act(async () => {
              await vi.advanceTimersByTimeAsync(1000); // Trigger another debounced check if we can, or just wait for next poll

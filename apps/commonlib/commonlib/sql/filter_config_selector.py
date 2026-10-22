@@ -16,13 +16,14 @@ logger = get_logger("commonlib.sql.filter_config_selector")
 class FilterConfigSelector:
     """Selects enrichment candidates matching the stored watched filter configurations.
 
-    Only watched configurations are considered, iterated in `ordering ASC`. Each
-    configuration is drained in chunks of `batch_size`: the worker enriches the
-    yielded jobs, they stop satisfying the base pending condition, and the next
-    query returns the following chunk. Once a configuration yields no more jobs the
-    next one is drained. Jobs are attributed to the first configuration that matched
-    them (`config_for`). The ai_enriched filter is always removed from a
-    configuration, because the enrichment worker is what sets it.
+    Only watched configurations are considered, iterated in `ordering ASC`. The first
+    configuration is drained without a limit: all of its remaining matches are yielded
+    at once. Every later configuration is drained one job at a time, and the earlier
+    configurations are re-checked for newly arrived jobs before any later one advances.
+    The worker enriches the yielded jobs, they stop satisfying the base pending
+    condition, and the next query returns the following chunk. Jobs are attributed to
+    the first configuration that matched them (`config_for`). The ai_enriched filter is
+    always removed from a configuration, because the enrichment worker is what sets it.
     """
 
     QUERY_CONFIGS = "SELECT id, name, filters FROM filter_configurations WHERE watched = 1 ORDER BY ordering ASC"
@@ -32,10 +33,10 @@ class FilterConfigSelector:
         self.job_configs: Dict[int, str] = {}
 
     def iter_batches(self) -> Iterator[Tuple[str, List[int]]]:
-        """Yield (config_name, job_ids) draining each watched configuration in chunks of batch_size.
+        """Yield (config_name, job_ids) draining each watched configuration in turn.
 
-        The first watched configuration keeps batch_size; every later one is
-        drained one job at a time."""
+        The first watched configuration is drained without a limit (all of its
+        remaining matches at once); every later one is drained one job at a time."""
         self.job_configs.clear()
         configs = self.load_configs()
         if not configs:

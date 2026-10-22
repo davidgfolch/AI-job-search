@@ -26,7 +26,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     const isMounted = useRef(true);
     const lastRequestIdRef = useRef(0);
     const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const justResetRef = useRef<Set<string>>(new Set(savedConfigs.map(c => c.name)));
     const queryClient = useQueryClient();
     const sseRef = useRef<EventSource | null>(null);
 
@@ -58,7 +57,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
             .filter(c => c.id && c.watched !== false)
             .map(c => ({ id: c.id!, name: c.name }));
         if (configIdsWithNames.length === 0) return;
-        const justReset = new Set(justResetRef.current);
         try {
             const cutoffMap = getCutoffMap(configIdsWithNames, startTime, configStartTimes.current, serverOffset);
             const statsMap = await jobsApi.getWatcherStats(cutoffMap);
@@ -67,13 +65,11 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
                 configIdsWithNames.forEach(({ id, name }) => {
                     const stats = statsMap[id];
                     if (stats) {
-                        const isReset = justReset.has(name);
                         newResults[name] = {
                             total: stats.total,
-                            newItems: isReset ? 0 : stats.new_items,
+                            newItems: stats.new_items,
                             removedItems: stats.removed_items ?? 0,
                         };
-                        if (isReset && stats.new_items === 0) justResetRef.current.delete(name);
                     }
                 });
                 setResults(newResults);
@@ -124,7 +120,6 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
         setStartTime(now);
         setLastCheckTime(now);
         setResults({});
-        justResetRef.current = new Set(savedConfigsRef.current.map(c => c.name));
         configStartTimes.current = {};
         notifiedCountsRef.current = {};
     };
@@ -141,9 +136,11 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
     };
 
     const resetWatcher = (configName: string) => {
-        configStartTimes.current[configName] = new Date(Date.now() + 5000);
+        // The cutoff is "seen up to now": matches the backend records from now on
+        // are the new ones. A future offset would hide the matches created in
+        // that window, so the cutoff is the current instant.
+        configStartTimes.current[configName] = new Date();
         notifiedCountsRef.current[configName] = 0;
-        justResetRef.current.add(configName);
         lastRequestIdRef.current++;
         setResults(prev => ({
             ...prev,

@@ -46,46 +46,66 @@ describe('useFilterWatcher - Notifications', () => {
          const config1 = { ...mockSavedConfigs[0], watched: true };
          const config2 = { ...mockSavedConfigs[1], watched: true };
          
-         const { wrapper, queryClient } = createWrapper();
+         const { wrapper } = createWrapper();
          renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }), { wrapper });
 
-         // First check: newItems should be 0 (due to justReset protection)
          await waitFor(() => {
-             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
-         });
-         expect(notificationService.notify).not.toHaveBeenCalled();
-
-         // Second check: server returns 0 (catching up)
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 }, 2: { total: 5, new_items: 0 } });
-         act(() => {
-             queryClient.setQueryData(['jobs'], []);
-         });
-         await waitFor(() => {
-             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
-         });
-         expect(notificationService.notify).not.toHaveBeenCalled();
-
-         // Third check: server returns 5 (new items arrive after catch-up)
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 5 }, 2: { total: 10, new_items: 5 } });
-         act(() => {
-             queryClient.setQueryData(['jobs'], []);
-         });
-         await waitFor(() => {
-             expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(3);
+             expect(jobsApi.getWatcherStats).toHaveBeenCalled();
          });
 
-         expect(notificationService.notify).toHaveBeenCalledWith(
-             expect.stringContaining('New jobs found'),
-             expect.objectContaining({ 
-                 body: expect.stringMatching(/Config 1 \(5\)/) 
-             })
-         );
+         await waitFor(() => {
+             expect(notificationService.notify).toHaveBeenCalledWith(
+                 expect.stringContaining('New jobs found'),
+                 expect.objectContaining({ 
+                     body: expect.stringMatching(/Config 1 \(5\)/) 
+                 })
+             );
+         });
          expect(notificationService.notify).toHaveBeenCalledWith(
              expect.stringContaining('New jobs found'),
              expect.objectContaining({ 
                  body: expect.stringMatching(/Config 2 \(5\)/) 
              })
          );
+    });
+
+    it('should notify a loaded configuration when new matches arrive', async () => {
+         // The configuration was loaded: its cutoff is now, so the backend reports
+         // no new match yet.
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 }, 2: { total: 5, new_items: 0 } });
+
+         const config1 = { ...mockSavedConfigs[0], watched: true };
+         const config2 = { ...mockSavedConfigs[1], watched: true };
+
+         const { wrapper, queryClient } = createWrapper();
+         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [config1, config2] }), { wrapper });
+
+         await waitFor(() => {
+             expect(jobsApi.getWatcherStats).toHaveBeenCalled();
+         });
+         expect(notificationService.notify).not.toHaveBeenCalled();
+
+         act(() => {
+             result.current.resetWatcher('Config 1');
+         });
+
+         // A new match arrives for the loaded configuration.
+         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 6, new_items: 1 }, 2: { total: 5, new_items: 0 } });
+         act(() => {
+             queryClient.setQueryData(['jobs'], []);
+         });
+
+         await waitFor(() => {
+             expect(result.current.results['Config 1'].newItems).toBe(1);
+         });
+         await waitFor(() => {
+             expect(notificationService.notify).toHaveBeenCalledWith(
+                 expect.stringContaining('New jobs found'),
+                 expect.objectContaining({
+                     body: expect.stringMatching(/Config 1 \(1\)/)
+                 })
+             );
+         });
     });
 
     it('should NOT make API calls for unwatched configs', async () => {

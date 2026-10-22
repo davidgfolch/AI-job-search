@@ -43,15 +43,16 @@ describe('useFilterWatcher - Basic Functionality', () => {
         const { wrapper, queryClient } = createWrapper();
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
-        // First check after start/reset should force newItems to 0
         // Initial check is debounced by 200ms
         await act(async () => {
             await vi.advanceTimersByTimeAsync(200);
         });
 
         expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(1);
-        expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 0, removedItems: 0 });
-        expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 0, removedItems: 0 });
+        // The count reported by the backend is shown as-is: the cutoff already
+        // expresses "seen up to now", so nothing may be masked out.
+        expect(result.current.results['Config 1']).toEqual({ total: 10, newItems: 10, removedItems: 0 });
+        expect(result.current.results['Config 2']).toEqual({ total: 10, newItems: 10, removedItems: 0 });
 
         // Second check: server still reports 10 (simulating clock skew or lag)
         act(() => {
@@ -61,8 +62,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
             await vi.advanceTimersByTimeAsync(200);
         });
         expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(2);
-        // Should STILL be 0 because stats.new_items was 10
-        expect(result.current.results['Config 1'].newItems).toBe(0);
+        expect(result.current.results['Config 1'].newItems).toBe(10);
 
         // Third check: server finally reports 0 (catches up)
         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 0 }, 2: { total: 10, new_items: 0 } });
@@ -85,6 +85,35 @@ describe('useFilterWatcher - Basic Functionality', () => {
         });
         expect(jobsApi.getWatcherStats).toHaveBeenCalledTimes(4);
         expect(result.current.results['Config 1'].newItems).toBe(1);
+    });
+
+    it('should send an independent cutoff per configuration after a reset', async () => {
+        vi.useFakeTimers();
+        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 }, 2: { total: 5, new_items: 0 } });
+        const { wrapper, queryClient } = createWrapper();
+        const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
+        });
+        const calls = (jobsApi.getWatcherStats as any).mock.calls;
+        const firstCutoffMap = calls[0][0];
+        expect(firstCutoffMap[1]).toEqual(firstCutoffMap[2]);
+
+        // Reloading one configuration moves only its own cutoff forward.
+        act(() => {
+            result.current.resetWatcher('Config 1');
+        });
+        act(() => {
+            queryClient.setQueryData(['jobs'], []);
+        });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
+        });
+
+        const allCalls = (jobsApi.getWatcherStats as any).mock.calls;
+        const lastCutoffMap = allCalls[allCalls.length - 1][0];
+        expect(lastCutoffMap[1]).not.toEqual(lastCutoffMap[2]);
     });
 
     it('should stop watching', async () => {

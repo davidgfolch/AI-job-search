@@ -37,30 +37,40 @@ class WatcherRepository:
         return counts
 
     def get_recent_counts(
-        self, config_ids: List[int], cutoff: str
+        self, config_ids: List[int], cutoff_map: Dict[int, str]
     ) -> Dict[int, Dict[str, int]]:
-        """Return {config_id: {"new": N, "removed": M}} for rows created after cutoff."""
+        """Return {config_id: {"new": N, "removed": M}} for rows created after each config's own cutoff.
+
+        Every configuration keeps its own cutoff: the ids are grouped by cutoff and
+        one query is issued per distinct cutoff, so a configuration that was
+        reloaded recently is not counted with the oldest cutoff of the batch.
+        """
         if not config_ids:
             return {}
         counts = {cid: {"new": 0, "removed": 0} for cid in config_ids}
+        ids_by_cutoff: Dict[str, List[int]] = {}
+        for config_id in config_ids:
+            cutoff = cutoff_map.get(config_id)
+            if cutoff:
+                ids_by_cutoff.setdefault(cutoff, []).append(config_id)
         with self.get_db() as db:
-            ids_str = ", ".join(["%s"] * len(config_ids))
-            query = f"""
-                SELECT config_id, deleted, COUNT(*) as cnt
-                FROM watcher_match
-                WHERE config_id IN ({ids_str})
-                  AND created_at > %s
-                GROUP BY config_id, deleted
-            """
-            params = tuple(config_ids) + (cutoff,)
-            rows = db.fetchAll(query, params)
-        for row in rows:
-            config_id = row[0]
-            deleted = bool(row[1])
-            cnt = int(row[2])
-            if config_id in counts:
-                key = "removed" if deleted else "new"
-                counts[config_id][key] = cnt
+            for cutoff, ids in ids_by_cutoff.items():
+                ids_str = ", ".join(["%s"] * len(ids))
+                query = f"""
+                    SELECT config_id, deleted, COUNT(*) as cnt
+                    FROM watcher_match
+                    WHERE config_id IN ({ids_str})
+                      AND created_at > %s
+                    GROUP BY config_id, deleted
+                """
+                rows = db.fetchAll(query, tuple(ids) + (cutoff,))
+                for row in rows:
+                    config_id = int(row[0])
+                    deleted = bool(row[1])
+                    cnt = int(row[2])
+                    if config_id in counts:
+                        key = "removed" if deleted else "new"
+                        counts[config_id][key] = cnt
         return counts
 
     def get_watched_configs(self) -> List[Tuple[int, str]]:
