@@ -110,16 +110,18 @@ describe('useViewer actions and side effects', () => {
         const { result, rerender } = renderViewer();
         rerender();
         act(() => result.current.actions.toggleSelectJob(7));
-        expect([...mocks.setSelectedIds.mock.calls[0][0]]).toEqual([]);
+        expect([...mocks.setSelectedIds.mock.calls[0][0]]).toEqual([1, 2]);
         expect(mocks.setSelectionMode).toHaveBeenCalledWith('manual');
     });
 
-    it('keeps select-all mode when deselecting a single id from manual mode', () => {
-        mocks.selectedIds = new Set([7]);
+    it('clears selection when deselecting the last selected id from manual mode', () => {
+        mocks.selectedIds = new Set([1]);
+        mocks.selectionMode = 'manual';
         const { result, rerender } = renderViewer();
         rerender();
-        act(() => result.current.actions.toggleSelectJob(7));
-        expect(mocks.setSelectionMode).not.toHaveBeenCalled();
+        act(() => result.current.actions.toggleSelectJob(1));
+        expect(mocks.setSelectionMode).toHaveBeenCalledWith('none');
+        expect([...mocks.setSelectedIds.mock.calls[0][0]]).toEqual([]);
     });
 
     it('toggles between select-all and no selection', () => {
