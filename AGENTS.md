@@ -69,6 +69,8 @@ npm run lint
 ```
 Note: vitest 5 (apps/web) requires Node >= 22.12.0; prefer Node 24/26 (CI uses 24). If local Node is 22.12.0 and vitest workers fail with undici/zstd errors, use Node 24+ (e.g. `export PATH="$HOME/.nvm/versions/node/v26.8.2/bin:$PATH"`).
 
+The dev server resolves the backend API at startup (`apps/web/src/common/backendResolver.ts`): it waits for a candidate to answer `/health` (`BACKEND_WAIT_TIMEOUT_SECONDS`, default 120) before serving, and a watchdog (`backendWatchdog.ts`) re-resolves the backend after `BACKEND_MAX_RETRIES` consecutive failures, retargeting the live Vite proxy. In Docker the candidates are `backend:8000` → `host.docker.internal:8000` → `localhost:8000`; the web service maps `host.docker.internal=host-gateway` through `extra_hosts`. The wait and the watchdog are skipped under vitest, so the test suite never waits for a running backend.
+
 ### E2E Tests (apps/e2e)
 ```bash
 # Run Playwright tests

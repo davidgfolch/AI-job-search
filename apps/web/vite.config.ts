@@ -3,10 +3,11 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import fs from 'fs'
-import { discoverBackendUrl } from './src/common/backendDiscovery.ts'
+import { BackendResolver } from './src/common/backendResolver.ts'
+import { BackendWatchdog } from './src/common/backendWatchdog.ts'
 
 // https://vite.dev/config/
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(async ({ mode, command }) => {
   // In Docker: /app is WORKDIR, .env is mounted at /workspace/.env
   // In local dev: resolve from __dirname (apps/web) up two levels to monorepo root
   let envDir: string;
@@ -29,8 +30,31 @@ export default defineConfig(async ({ mode }) => {
   const aiEnrichSkillEnabled = env.AI_ENRICHSKILL_ENABLED === 'True' || env.AI_ENRICHSKILL_ENABLED === 'true'
   console.log('🔍 aiEnrichSkillEnabled:', aiEnrichSkillEnabled)
 
+  // Vitest loads this config as well: never block on the backend there, and never
+  // start the watchdog, otherwise the test run would wait for a running backend.
+  const isTestRun = mode === 'test' || process.env.VITEST !== undefined
+  const resolver = new BackendResolver({ env })
 
-  const apiTarget = await discoverBackendUrl(env);
+  // The dev server waits for the backend to answer before it starts serving, so a
+  // container start (or a host reboot) never ends up proxying to a dead target.
+  const apiTarget = command === 'serve' && !isTestRun ? await resolver.resolve() : resolver.target
+
+  // Vite keeps this exact object and spreads it on every proxied request, so
+  // mutating `target` retargets the live proxy without restarting the server.
+  const proxyConfig = { target: apiTarget, changeOrigin: true }
+
+  if (command === 'serve' && !isTestRun) {
+    const watchdog = new BackendWatchdog({
+      check: () => resolver.isReachable(),
+      reconnect: () => resolver.reconnect(),
+      current: () => resolver.target,
+      onChange: (url: string) => { proxyConfig.target = url },
+      checkIntervalMs: resolver.config.checkIntervalMs,
+      maxFailures: resolver.config.maxRetries,
+    })
+    watchdog.start()
+    console.log('🔍 Backend watchdog started, interval:', resolver.config.checkIntervalMs, 'ms, retries:', resolver.config.maxRetries)
+  }
 
   return {
     define: {
@@ -50,10 +74,7 @@ export default defineConfig(async ({ mode }) => {
       port: 5173,
     },
     proxy: {
-      '/api': {
-        target: apiTarget,
-        changeOrigin: true,
-      }
+      '/api': proxyConfig
     }
   },
   test: {

@@ -89,6 +89,14 @@ docker-compose --profile aienrich --profile aiEnrichSkill up -d
 - Web: Vite HMR refreshes browser on code changes
 - Viewer: Streamlit auto-reruns on file changes
 
+## Web: backend discovery and reconnects
+The `web` service resolves the backend API when it starts and keeps watching it:
+
+- It waits for the backend to answer `/health` before serving (bounded by `BACKEND_WAIT_TIMEOUT_SECONDS`, default 120). After a host reboot every container starts in parallel, so this wait is what keeps the API proxy from pointing at a dead target.
+- Candidates: `http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000`. The `host.docker.internal` alias is mapped through `extra_hosts: host.docker.internal=host-gateway`, so the containerized web also reaches a backend running on the host.
+- A watchdog probes the current target every `BACKEND_CHECK_INTERVAL_SECONDS` (default 10) and, after `BACKEND_MAX_RETRIES` (default 3) failures, resolves the backend again and retargets the live proxy.
+- The web healthcheck asserts the API through the proxy (`/api/system/timezone`), so a broken proxy reports the container as unhealthy instead of healthy.
+
 ## Troubleshooting
 ```bash
 # Rebuild after dependency changes

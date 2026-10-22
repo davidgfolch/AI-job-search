@@ -66,7 +66,7 @@ You can run scrapper in a (linux recommended) & connect to another mysql host pc
 
 ### Web Backend API auto-discovery
 
-Set `BACKEND_DISCOVERY=True` in `.env` to enable automatic LAN discovery of the backend API (port 8000). When enabled, the web app scans local subnets and probes `/health` to find the backend. Falls back to `localhost:8000` if nothing is found. See [web docs](apps/web/README.md#backend-discovery) for details.
+The web app resolves the backend API when it starts and keeps watching it afterwards. It tries `http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000` inside Docker, and `http://localhost:8000` → `http://host.docker.internal:8000` → `http://backend:8000` on the host, so it works with the backend containerized or not. The dev server **waits** for the backend to answer before serving (bounded by `BACKEND_WAIT_TIMEOUT_SECONDS`, default 120), which is what makes a container start or a host reboot safe. A watchdog probes the current target every `BACKEND_CHECK_INTERVAL_SECONDS` (default 10) and, after `BACKEND_MAX_RETRIES` (default 3) consecutive failures, resolves the backend again and retargets the live proxy. Set `BACKEND_URL` to pin the target, `BACKEND_DISCOVERY=True` to allow the LAN scan as a last resort. See [web docs](apps/web/README.md#backend-discovery) for details.
 
 Run only web in the client machine like this:
 
@@ -163,6 +163,8 @@ Use `--profile` to run the profile-gated AI enrichment services:
 docker-compose --profile aienrich up -d aienrich
 docker-compose --profile aiEnrichSkill up -d aienrichskill
 ```
+
+The `web` service waits for the backend to answer before it serves, and reconnects to it when it moves, so it works with the backend containerized or running on the host (see [Web Backend API auto-discovery](#web-backend-api-auto-discovery)).
 
 #### Ollama: host vs container
 

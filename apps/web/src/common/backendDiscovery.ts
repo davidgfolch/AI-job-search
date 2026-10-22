@@ -2,11 +2,66 @@ import net from 'net';
 import http from 'http';
 import fs from 'fs';
 
-const BACKEND_PORT = 8000;
+export const BACKEND_PORT = 8000;
+export const DEFAULT_WAIT_TIMEOUT_SECONDS = 120;
+export const DEFAULT_CHECK_INTERVAL_SECONDS = 10;
+export const DEFAULT_MAX_RETRIES = 3;
+
 const SCAN_TIMEOUT_MS = 200;
 const PROBE_TIMEOUT_MS = 1000;
 const MAX_WORKERS = 100;
 const DEFAULT_SUBNETS = ['192.168.1.0/24', '192.168.0.0/24'];
+
+export type BackendEnv = Record<string, string | undefined>;
+
+export interface BackendSettings {
+  /** Port the backend API listens on. */
+  port: number;
+  /** How long the web waits for the backend to answer at startup. */
+  waitTimeoutMs: number;
+  /** How often the watchdog probes the current backend target. */
+  checkIntervalMs: number;
+  /** Consecutive failed probes before the target is resolved again. */
+  maxRetries: number;
+}
+
+function toInt(value: string | undefined, fallback: number, min = 1): number {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isFinite(parsed) && parsed >= min ? parsed : fallback;
+}
+
+export function backendSettings(env: BackendEnv = {}): BackendSettings {
+  return {
+    port: toInt(env.BACKEND_PORT, BACKEND_PORT),
+    waitTimeoutMs: toInt(env.BACKEND_WAIT_TIMEOUT_SECONDS, DEFAULT_WAIT_TIMEOUT_SECONDS, 0) * 1000,
+    checkIntervalMs: toInt(env.BACKEND_CHECK_INTERVAL_SECONDS, DEFAULT_CHECK_INTERVAL_SECONDS) * 1000,
+    maxRetries: toInt(env.BACKEND_MAX_RETRIES, DEFAULT_MAX_RETRIES),
+  };
+}
+
+/** True when the web runs inside the Docker image (the workspace env file is mounted there). */
+export function isDockerEnvironment(): boolean {
+  return fs.existsSync('/workspace/.env');
+}
+
+/**
+ * Ordered candidates for the backend API, covering every web/backend topology:
+ * web in Docker or on the host, backend in Docker or on the host.
+ */
+export function backendUrlCandidates(isDocker: boolean, env: BackendEnv = {}, port = BACKEND_PORT): string[] {
+  const configured = env.BACKEND_URL?.trim();
+  if (configured) return [configured];
+  const dockerUrl = `http://backend:${port}`;
+  const hostUrl = `http://host.docker.internal:${port}`;
+  const localUrl = `http://localhost:${port}`;
+  return isDocker ? [dockerUrl, hostUrl, localUrl] : [localUrl, hostUrl, dockerUrl];
+}
+
+/** The LAN scan is the last resort, used when no direct candidate answers. */
+export function lanScanEnabled(env: BackendEnv = {}): boolean {
+  const value = (env.BACKEND_DISCOVERY ?? '').trim().toLowerCase();
+  return value === 'true' || value === '1' || value === 'yes';
+}
 
 function detectLocalSubnets(): string[] {
   const subnets: string[] = [];
@@ -60,7 +115,8 @@ function scanPort(ip: string, port: number, timeout: number): Promise<boolean> {
   });
 }
 
-function probeBackend(url: string): Promise<boolean> {
+/** Probes an absolute URL and resolves true only on a 200 answer. */
+export function probeBackend(url: string): Promise<boolean> {
   return new Promise((resolve) => {
     const req = http.get(url, { timeout: PROBE_TIMEOUT_MS }, (res) => {
       res.resume();
@@ -71,62 +127,18 @@ function probeBackend(url: string): Promise<boolean> {
   });
 }
 
-export async function discoverBackendUrl(env?: Record<string, string>): Promise<string> {
-  const backendUrl = env?.BACKEND_URL ?? process.env.BACKEND_URL;
-  if (backendUrl) {
-    console.log(`[backendDiscovery] Using configured BACKEND_URL ${backendUrl}`);
-    return backendUrl;
-  }
-
-  const isDocker = fs.existsSync('/workspace/.env');
-  if (isDocker) {
-    if (await probeBackend(`http://backend:${BACKEND_PORT}/health`)) {
-      console.log('[backendDiscovery] Docker detected, backend reachable at http://backend:8000');
-      return `http://backend:${BACKEND_PORT}`;
-    }
-    console.log('[backendDiscovery] Docker detected but backend unreachable, scanning... (set BACKEND_DISCOVERY=False to skip)');
-  }
-
-  const backendDiscovery = env?.BACKEND_DISCOVERY ?? process.env.BACKEND_DISCOVERY;
-  const discoveryEnabled = backendDiscovery === 'True' || backendDiscovery === 'true';
-  if (!discoveryEnabled) {
-    if (isDocker) {
-      console.log('[backendDiscovery] Discovery disabled, using http://backend:8000 (Docker)');
-      return `http://backend:${BACKEND_PORT}`;
-    }
-    console.log('[backendDiscovery] Discovery disabled, using http://localhost:8000');
-    return 'http://localhost:8000';
-  }
-
-  if (await probeBackend(`http://localhost:${BACKEND_PORT}/health`)) {
-    console.log(`[backendDiscovery] Backend found at localhost:${BACKEND_PORT}`);
-    return `http://localhost:${BACKEND_PORT}`;
-  }
-
-  console.log('[backendDiscovery] Localhost failed, scanning LAN...');
+/** Returns the LAN hosts that answer on the backend port. */
+export async function scanLanForBackend(port = BACKEND_PORT, log: (message: string) => void = console.log): Promise<string[]> {
   const subnets = detectLocalSubnets();
-  console.log(`[backendDiscovery] Scanning subnets: ${subnets.join(', ')}`);
-
+  log(`[backendDiscovery] Scanning subnets: ${subnets.join(', ')}`);
   const hosts = subnets.flatMap(cidrToHosts);
-  console.log(`[backendDiscovery] Scanning ${hosts.length} hosts for port ${BACKEND_PORT}...`);
-
+  log(`[backendDiscovery] Scanning ${hosts.length} hosts for port ${port}...`);
   const openHosts: string[] = [];
   for (let i = 0; i < hosts.length; i += MAX_WORKERS) {
     const batch = hosts.slice(i, i + MAX_WORKERS);
-    const results = await Promise.all(batch.map((ip) => scanPort(ip, BACKEND_PORT, SCAN_TIMEOUT_MS)));
+    const results = await Promise.all(batch.map((ip) => scanPort(ip, port, SCAN_TIMEOUT_MS)));
     batch.forEach((ip, idx) => { if (results[idx]) openHosts.push(ip); });
   }
-
-  console.log(`[backendDiscovery] Found ${openHosts.length} hosts with port ${BACKEND_PORT} open`);
-
-  for (const ip of openHosts) {
-    const url = `http://${ip}:${BACKEND_PORT}`;
-    if (await probeBackend(`${url}/health`)) {
-      console.log(`[backendDiscovery] Backend found at ${url}`);
-      return url;
-    }
-  }
-
-  console.log('[backendDiscovery] No backend found, falling back to localhost');
-  return `http://localhost:${BACKEND_PORT}`;
+  log(`[backendDiscovery] Found ${openHosts.length} hosts with port ${port} open`);
+  return openHosts;
 }

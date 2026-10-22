@@ -101,8 +101,13 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    # Cross-platform host alias, so the web can reach a backend that runs on the
+    # host instead of in Docker (the resolver falls back to it when `backend` is
+    # not reachable).
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5173" ]
+      test: [ "CMD", "sh", "-c", "curl -fsS http://localhost:5173/ >/dev/null && curl -fsS http://localhost:5173/api/system/timezone >/dev/null" ]
       start_period: 20s
       interval: 10s
       timeout: 5s

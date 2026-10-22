@@ -95,15 +95,29 @@ Variables are grouped into four logical sections:
 
 ## Backend Discovery
 
-The web app auto-discovers the backend API URL at Vite startup:
+The web app resolves the backend API URL when the Vite dev server starts, and keeps watching it afterwards.
 
-| Environment | Behavior |
-|-------------|----------|
-| Docker | Uses `http://backend:8000` (Docker DNS) |
-| Local (default) | Uses `http://localhost:8000` |
-| Local (`BACKEND_DISCOVERY=True`) | Tries localhost → scans LAN for port 8000 → verifies `/health` |
+**Resolution order** (the first candidate that answers on `/health` wins):
 
-Set `BACKEND_DISCOVERY=True` in your `.env` to enable automatic LAN discovery when the backend runs on a different machine.
+| Environment | Candidates, in order |
+|-------------|-----------------------|
+| Docker | `http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000` → LAN scan |
+| Host | `http://localhost:8000` → `http://host.docker.internal:8000` → `http://backend:8000` → LAN scan |
+
+`BACKEND_URL` (when set) pins the target and short-circuits the chain. The LAN scan is only used when `BACKEND_DISCOVERY=True`.
+
+**Waiting at startup**: the dev server does not serve until a backend answers, so a container start (or a host reboot, where every container comes up in parallel) never ends up proxying to a dead target. The wait is bounded by `BACKEND_WAIT_TIMEOUT_SECONDS` (default 120); when it expires the web keeps serving and the watchdog takes over.
+
+**Reconnecting**: a watchdog probes the current target every `BACKEND_CHECK_INTERVAL_SECONDS` (default 10). After `BACKEND_MAX_RETRIES` (default 3) consecutive failures it resolves the backend again (candidate chain + LAN scan) and retargets the live proxy — no restart needed.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `BACKEND_URL` | – | Pins the backend API URL (skips discovery) |
+| `BACKEND_PORT` | `8000` | Backend API port |
+| `BACKEND_DISCOVERY` | `False` | `True` allows the LAN scan as a last resort |
+| `BACKEND_WAIT_TIMEOUT_SECONDS` | `120` | How long the web waits for the backend at startup |
+| `BACKEND_CHECK_INTERVAL_SECONDS` | `10` | Watchdog probe interval |
+| `BACKEND_MAX_RETRIES` | `3` | Failed probes before the backend is resolved again |
 
 ## Setup & Running
 
