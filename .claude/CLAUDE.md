@@ -157,14 +157,23 @@ models/       - Pydantic models
 
 ## Required Architecture Tests
 
-Always run these after significant changes:
-```bash
-# Python architecture compliance & max files length including all apps/*
-python apps/commonlib/commonlib/test/architecture_test.py
+`apps/commonlib/commonlib/test/architecture_test.py` is the only place the repo's architecture rules are enforced (file length, backend layering, test-file naming, sibling-test correspondence, bare `print()`, the `console=` logging contract). It lives in commonlib, so it runs **only** when commonlib is one of the modules passed to the centralized test script — always include it:
 
-# Frontend architecture compliance  
-npm test -- apps/web/src/test/architecture.test.ts
+```bash
+# Linux/Mac
+./scripts/test.sh commonlib
+# Windows
+.\scripts\test.bat commonlib
 ```
+
+The frontend architecture test runs as part of the `web` module:
+
+```bash
+./scripts/test.sh commonlib web      # Linux/Mac
+.\scripts\test.bat commonlib web     # Windows
+```
+
+This is enforced in the tool call, not left to memory: `.claude/rules/test-enforcement.md` (canonical policy), `.claude/hooks/test-enforce.py` (Claude Code) and `.opencode/plugins/test-enforce.js` (opencode) add the missing targets to a `scripts/test.sh` / `scripts/test.bat` invocation and inject a reminder with the exact command to run. The rule applies to changes in `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`, the test runners themselves, `.env*`, dependency manifests and other `scripts/**` files; documentation, CI workflows, coverage gates, install/sandbox helpers and agent rules/skills are excluded.
 
 ## Definition of Done
 

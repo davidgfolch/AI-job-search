@@ -11,6 +11,10 @@
           {
             "type": "command",
             "command": "python .claude/hooks/db-mutation.py"
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/test-enforce.py"
           }
         ]
       },
@@ -20,6 +24,10 @@
           {
             "type": "command",
             "command": "python .claude/hooks/docs-sync.py"
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/test-enforce.py"
           }
         ]
       }

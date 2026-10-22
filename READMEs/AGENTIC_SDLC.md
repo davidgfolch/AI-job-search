@@ -9,12 +9,12 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 | Directory | Purpose |
 |-----------|---------|
 | `.claude/skills/` | Canonical home for all agent skills |
-| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `docker-build.md`, `documentation-update.md`, `db-mutation-permission.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
-| `.claude/hooks/` | Claude Code `PreToolUse` hooks (`docker-build.py`, `docs-sync.py`, `db-mutation.py`) |
+| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `docker-build.md`, `documentation-update.md`, `db-mutation-permission.md`, `test-enforcement.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
+| `.claude/hooks/` | Claude Code `PreToolUse` hooks (`docker-build.py`, `docs-sync.py`, `db-mutation.py`, `test-enforce.py`) and their shared logic (`lib/`) |
 | `.claude/CLAUDE.md` | Agent guidance for Claude Code (repo overview, build/test commands, code style) |
 | `.claude/settings.json` | Project-shared Claude Code settings (hooks) |
 | `.claude/settings.local.json` | Local Claude Code permissions (not committed) |
-| `.opencode/` | opencode-specific config only: `plugins/docker-build.js`, `plugins/docs-sync.js`, `plugins/db-mutation.js`, `opencode.json`, and `plans/`. opencode plugins must live here (`issue #8158`) |
+| `.opencode/` | opencode-specific config only: `plugins/docker-build.js`, `plugins/docs-sync.js`, `plugins/db-mutation.js`, `plugins/test-enforce.js`, the shared plugin logic in `lib/`, `opencode.json`, and `plans/`. opencode plugins must live here (`issue #8158`) |
 
 > **Note:** `.agent/` is retired. Skills and rules that previously lived in `.agent/` and the now-consolidated `.opencode/skills/` all live under `.claude/skills/` / `.claude/rules/` today.
 
@@ -96,6 +96,28 @@ $env:AI_DB_WRITE_APPROVED=1; docker exec ai-job-search-mysql mysql -uroot -proot
 Adding the token is itself a permission decision: never add it to a statement the user has not approved, and re-confirm when the scope grows (approved for 100 rows is not approval for 6000).
 
 Honest limits: the guardrail matches clients, SQL keywords, and destructive volume commands by pattern. It cannot see inside an arbitrary script that builds SQL dynamically, and it cannot verify that the user actually consented. When a mutation is genuinely warranted and runs with the token, say so explicitly in the summary.
+
+## The test suite must run after code changes (enforced guardrail)
+
+`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), backend layering, test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script** — a runner call that omits `commonlib` silently skips every architecture check.
+
+The requirement is therefore enforced in the tool call, so it does not depend on the agent remembering it:
+
+| Mechanism | Harness | What it does |
+|-----------|---------|--------------|
+| `.claude/rules/test-enforcement.md` | all | Canonical policy: which changes require the suite, and how it must be invoked |
+| `.claude/hooks/test-enforce.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit` and on `Bash`) | Tracks the changed files, adds `commonlib` and the pending modules to a `scripts/test.sh` / `scripts/test.bat` invocation, and injects a reminder with the exact command to run |
+| `.opencode/plugins/test-enforce.js` | opencode | Same behavior: injects the missing targets into a test-runner call and prints the reminder once on the next shell call |
+
+Both are registered automatically: the hook in `.claude/settings.json`, the plugin in `.opencode/opencode.json`. They mirror each other, and both work the same way:
+
+1. An edit to a file that requires the suite is recorded, together with the module it belongs to.
+2. The next `scripts/test.sh` / `scripts/test.bat` invocation gets `commonlib` plus every recorded module added to its target list (`./scripts/test.sh web` → `./scripts/test.sh commonlib web`), so the architecture tests always execute.
+3. If the agent runs any other shell command first, the reminder is prepended once, naming the exact command to run.
+
+A runner invocation with **no** targets is left alone — the script already runs commonlib first, then every other module, then the e2e suite. Only real invocations are rewritten: a runner path that is a quoted string or an argument of another command (`echo "./scripts/test.sh web"`, `cat scripts/test.sh`) is left untouched, and every invocation of a compound command (`a && ./scripts/test.sh web && ./scripts/test.sh e2e`) is fixed.
+
+Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`, the test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`), `.env*`, dependency manifests (`pyproject.toml`, `package.json`, `package-lock.json`, `uv.lock`, `poetry.lock`) and other `scripts/**` files. Changes that do **not** require it: documentation, CI workflows, coverage gates, install/sandbox helpers, agent rules and skills, and generated paths — state that reason in the summary when skipping.
 
 ## Dependabot PR workflow
 

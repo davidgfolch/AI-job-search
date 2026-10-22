@@ -106,6 +106,16 @@ Coverage floors are 90% on **statements and lines** (functions and branches are 
 
 Run the suites when the change touches test code, production code, or the test runner scripts (`scripts/test.sh`, `scripts/test.bat`). Skip them when the change is limited to documentation or non-test scripts/config (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills) - those are not exercised by the unit or e2e suites, so state in the summary that the suites were skipped for that reason.
 
+This requirement is enforced in the tool call, not left to memory: `architecture_test.py` (file length, layering, test naming, sibling tests, bare `print()`, the `console=` contract) lives in commonlib, so a runner call that omits `commonlib` silently skips it.
+
+| Mechanism | Harness | What it does |
+|-----------|---------|--------------|
+| `.claude/rules/test-enforcement.md` | all | Canonical policy: which changes require the suite and how it must be invoked |
+| `.claude/hooks/test-enforce.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit` and on `Bash`) | Adds `commonlib` and the changed modules to a `scripts/test.sh` / `scripts/test.bat` invocation, and injects a reminder with the exact command to run |
+| `.opencode/plugins/test-enforce.js` | opencode | Same behavior: injects the missing targets into a test-runner call and prints the reminder once on the next shell call |
+
+Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`, the test runners themselves, `.env*`, dependency manifests (`pyproject.toml`, `package.json`, lock files) and other `scripts/**` files. Documentation, CI workflows, coverage gates, install/sandbox helpers and agent rules/skills do not.
+
 ### Static Analysis
 Static analysis is a blocking CI gate (`static-analysis` job). Run it locally with the same entry point CI uses:
 ```bash
