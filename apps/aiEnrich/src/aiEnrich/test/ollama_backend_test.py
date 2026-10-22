@@ -81,7 +81,7 @@ class TestPingBackend:
     def test_routes_to_openrouter(self):
         os.environ["AI_ENRICH_BACKEND"] = "openrouter"
         from aiEnrich import ollama_backend
-        with patch.object(ollama_backend, "resolve_ollama_url", return_value=None) as mock_resolve, \
+        with patch.object(ollama_backend, "probe_resolve_ollama_url", return_value=None) as mock_resolve, \
              patch.object(ollama_backend, "ping_openrouter", return_value=True) as mock_ping_or:
             assert ollama_backend.ping_backend() is True
         mock_ping_or.assert_called_once()
