@@ -52,6 +52,12 @@ Each watched filter configuration shows a badge next to its name in the configur
 
 The badge reads from `GET /api/jobs/watcher-stats`, which queries the `watcher_match` table (O(1) count instead of rebuilding MySQL views). On any job write through the backend API, an SSE event is broadcast (`GET /api/jobs/watcher-events`) and the frontend triggers a debounced refetch (~200 ms), so the badge stays near-realtime. A 5-minute poll runs as a safety net if the SSE connection drops.
 
+Every configuration carries **its own cutoff**, sent as a `from_<config_id>` param and honoured as such by the backend. The cutoff is the instant up to which the user has already seen the matches ("seen up to now"):
+
+- The global start time (restored from the persisted last check) is the cutoff of every configuration until one of them is reloaded.
+- Reloading a configuration (`useFilterWatcher.resetWatcher`) moves **only that configuration's** cutoff to the current instant and clears its badge. The other configurations keep their own cutoffs, so reloading one does not change what the others report.
+- The count returned by the backend is shown as it is — it is never masked out. A reloaded configuration therefore starts counting (and notifying) again as soon as a new match arrives, instead of staying muted.
+
 ## Settings Page
 
 The Settings page (`/settings`) allows you to manage application configuration without restarting services.

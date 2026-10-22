@@ -4,6 +4,7 @@ import re
 import time
 
 from openai import OpenAI
+from commonlib.json_helpers import strip_code_fence
 from commonlib.observability import get_logger
 
 logger = get_logger("aiEnrich.openrouter_client")
@@ -28,8 +29,7 @@ def _get_api_key() -> str:
     return key
 
 
-def _strip_fences(raw: str) -> str:
-    return re.sub(r'```(json)?\n?', '', raw).strip()
+_strip_fences = strip_code_fence
 
 
 def _is_valid_json(raw: str) -> bool:

@@ -258,9 +258,15 @@ Rows older than 1 day are cleaned up hourly by the background matcher.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/jobs/watcher-stats` | Returns `{config_id: {total, new_items, removed_items}}` for given `config_ids`. Accepts `from_<config_id>` cutoff params to compute `new_items`. |
+| `GET` | `/api/jobs/watcher-stats` | Returns `{config_id: {total, new_items, removed_items}}` for given `config_ids`. Accepts a `from_<config_id>` cutoff param per configuration to compute `new_items` and `removed_items`; each configuration is counted with its own cutoff. |
 | `GET` | `/api/jobs/watcher-events` | SSE stream (`text/event-stream`) that broadcasts `job_created`, `job_updated`, `jobs_bulk_updated`, `jobs_deleted`, `jobs_enriched` events. The frontend subscribes to trigger a debounced stats refetch within ~200 ms. |
 | `POST` | `/api/jobs/notify-watcher` | Enqueues job IDs for watcher matching and broadcasts an SSE event. Body: `{"ids": [1, 2], "event_type": "jobs_enriched"}`. Used by enrichment workers after a job is enriched. |
+
+### Per-Configuration Cutoffs
+
+`new_items` and `removed_items` are counted per configuration, from the `watcher_match` rows created after that configuration's own cutoff (`from_<config_id>`). The cutoffs are independent: a configuration the user reloaded recently is counted from its own (recent) cutoff, while the others keep theirs. The cutoffs are never collapsed into a single value, so a configuration with a newer cutoff is not reported with the oldest cutoff of the batch. `total` ignores the cutoffs and always counts every active match.
+
+A configuration without a `from_<config_id>` param is not counted as "new": only `total` is reported for it.
 
 ### Write Hooks
 

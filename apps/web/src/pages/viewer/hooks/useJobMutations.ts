@@ -62,6 +62,7 @@ export const useJobMutations = ({
       onUpdateSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["jobUpdates"] });
           queryClient.invalidateQueries({ queryKey: ["jobs"] });
+          queryClient.refetchQueries({ queryKey: ["jobs"], type: "active" });
       }
   });
 

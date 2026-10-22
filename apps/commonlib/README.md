@@ -58,12 +58,12 @@ All attempts are logged at INFO/WARNING level. The resolved host is cached for t
 
 ## Job enrichment selection
 
-`aiEnrichRepository.AiEnrichRepository` selects the jobs an enrichment worker processes. `iter_pending_enrichment_batches(batch_size=None)` yields job-id chunks drained in order:
+`aiEnrichRepository.AiEnrichRepository` selects the jobs an enrichment worker processes. `iter_pending_enrichment_batches()` yields job-id chunks drained in order:
 
 1. Pending jobs matching the stored **watched** `filter_configurations` (`sql/filter_config_selector.py`), processing the configurations in their stored order (`WHERE watched = 1 ORDER BY ordering ASC`) and each config's own `order` (falling back to `created desc` when it is null or invalid), deduplicated across configurations. The first configuration is drained until it yields nothing; every later one is drained one job at a time, re-checking the earlier configurations for newly arrived jobs. After a chunk is enriched the jobs stop satisfying the base pending condition, so the next query returns the following chunk.
-2. Every remaining pending job in `created desc`, also in chunks of `batch_size`.
+2. Every remaining pending job in `created desc`, in chunks of 10.
 
-The first watched configuration is drained in `batch_size` chunks; every later watched configuration is drained one job at a time.
+The first watched configuration is drained without a limit (all of its remaining matches are yielded at once); every later watched configuration is drained one job at a time.
 
 The pending-queue fallback is drained in chunks of 10.
 

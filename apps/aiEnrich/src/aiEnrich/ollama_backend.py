@@ -1,6 +1,7 @@
 import sys
 
-from commonlib.ollama_client import query_ollama, resolve_ollama_url, _ping_url
+from commonlib.ollama_client import query_ollama, resolve_ollama_url
+from commonlib.ollama_probe import resolve_ollama_url as probe_resolve_ollama_url, forget_server
 from commonlib.observability import get_logger
 from .aiEnrich_config import (
     get_backend, get_ollama_base_url, get_timeout_job,
@@ -49,12 +50,11 @@ def ping_backend() -> bool:
     # answering, drop it and resolve again: the LAN host may have gone to sleep
     # and come back on another DHCP address, so pinging the cached URL forever
     # would never find it again.
-    if _resolved_ollama_url is not None:
-        if _ping_url(_resolved_ollama_url, 5, logger):
-            return True
+    url = probe_resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger, timeout=5)
+    if url is None and _resolved_ollama_url is not None:
         logger.warning("ollama.resolved_unreachable", base_url=_resolved_ollama_url)
-        _resolved_ollama_url = None
-    _resolved_ollama_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
+        forget_server(_resolved_ollama_url)
+    _resolved_ollama_url = url
     if _resolved_ollama_url is not None:
         _ollama_server_known = True
     return _resolved_ollama_url is not None

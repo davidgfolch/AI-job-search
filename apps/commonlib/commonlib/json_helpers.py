@@ -1,9 +1,20 @@
 import json
 import re
+from typing import Optional
 
 from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.json_helpers")
+
+
+def strip_code_fence(raw: str) -> str:
+    if not raw:
+        return raw
+    text = raw.strip()
+    text = re.sub(r'^```(?:json)?\s*\n?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\n?```\s*$', '', text)
+    return text.strip()
+
 
 def decode_unicode_escapes(parsed_dict: dict) -> None:
     # CrewAI/LiteLLM can return literal unicode escapes like \u00f3 instead of native characters

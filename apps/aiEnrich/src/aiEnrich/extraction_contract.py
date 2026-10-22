@@ -3,6 +3,7 @@ from typing import Any, Callable
 
 from commonlib.ai_helpers import VALID_MODALITIES
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
+from commonlib.json_helpers import strip_code_fence
 
 
 class ExtractionValidationError(ValueError):
@@ -49,13 +50,7 @@ def build_extraction_prompt(title: str, markdown: str) -> str:
     return EXTRACTION_PROMPT.format(markdown=f"# {title} \n {markdown}")
 
 
-def _strip_code_fence(value: str) -> str:
-    if not value.startswith("```") or not value.endswith("```"):
-        return value
-    lines = value.splitlines()
-    if lines and lines[0].strip().lower() in {"```json", "```"}:
-        return "\n".join(lines[1:-1]).strip()
-    return value
+_strip_code_fence = strip_code_fence
 
 
 def validate_extraction_result(result: Any) -> dict[str, Any]:

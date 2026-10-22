@@ -133,6 +133,19 @@ export const useViewer = () => {
     }, [data, filters.page, isPlaceholderData, setSelectionMode, setAllJobs, setIsLoadingMore]);
 
     useEffect(() => {
+        if (activeConfigName === 'Clean - Ignore jobs by title') {
+            if ((filters.page || 1) === 1 && data?.items && data.page === 1 && !isPlaceholderData && allJobs.length > 0) {
+                if (selectionMode !== 'all') {
+                    autoSelectAllAfterLoad.current = false;
+                    setSelectionMode('all');
+                }
+            } else if ((filters.page || 1) > 1) {
+                autoSelectAllAfterLoad.current = true;
+            }
+        }
+    }, [activeConfigName, filters.page, data, isPlaceholderData, allJobs.length, selectionMode, setSelectionMode]);
+
+    useEffect(() => {
         if (shouldSelectFirst && data?.items?.length) {
             handleJobSelectRef.current(data.items[0]);
             setShouldSelectFirst(false);
@@ -161,10 +174,24 @@ export const useViewer = () => {
             appliedJob: openAppliedModal, discardedJob: () => handleJobUpdate({ discarded: true }), closedJob: () => handleJobUpdate({ closed: true }),
             deleteJob: deleteSingleJob, nextJob: () => navigateJob('next'), previousJob: () => navigateJob('previous'), loadMore: handleLoadMore,
             toggleSelectJob: (id: number) => {
+                if (selectionMode === 'all') {
+                    // Deselecting one row while all are selected: switch to manual with every loaded job except this one
+                    const newSelected = new Set<number>();
+                    for (const job of allJobs) {
+                        if (job.id !== id) newSelected.add(job.id);
+                    }
+                    setSelectionMode('manual');
+                    setSelectedIds(newSelected);
+                    const job = allJobs.find(j => j.id === id);
+                    if (job) setSelectedJob(job);
+                    return;
+                }
                 const newSelected = new Set(selectedIds);
                 if (newSelected.has(id)) {
                     newSelected.delete(id);
-                    if (selectionMode === 'all') setSelectionMode('manual');
+                    if (newSelected.size === 0) {
+                        setSelectionMode('none');
+                    }
                 } else {
                     newSelected.add(id);
                     setSelectionMode('manual');
