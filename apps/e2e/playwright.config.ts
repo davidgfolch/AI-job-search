@@ -55,10 +55,14 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests.
      Use a dedicated port (not 5173) so the Docker web container (also on 5173)
-     is never reused: its Vite runs on a slow WSL bind-mount and drops clicks. */
+     is never reused: its Vite runs on a slow WSL bind-mount and drops clicks.
+     The e2e specs mock the API, so the dev server must not wait for a backend:
+     BACKEND_WAIT_TIMEOUT_SECONDS=0 serves immediately and BACKEND_DISCOVERY=False
+     skips the LAN scan that would otherwise delay the boot by ~30s. */
   webServer: {
     command: 'npm run dev --prefix ../web -- --port 5174 --strictPort',
     url: 'http://127.0.0.1:5174',
     reuseExistingServer: !process.env.CI,
+    env: { BACKEND_WAIT_TIMEOUT_SECONDS: '0', BACKEND_DISCOVERY: 'False' },
   },
 });
