@@ -1,7 +1,8 @@
 import sys
 
-from commonlib.ollama_client import query_ollama, resolve_ollama_url
-from commonlib.ollama_probe import resolve_ollama_url as probe_resolve_ollama_url, forget_server
+from commonlib.ollama_client import query_ollama
+from commonlib.ollama_probe import forget_server
+from commonlib.ollama_probe import resolve_ollama_url as probe_resolve_ollama_url
 from commonlib.observability import get_logger
 from .aiEnrich_config import (
     get_backend, get_ollama_base_url, get_timeout_job,
