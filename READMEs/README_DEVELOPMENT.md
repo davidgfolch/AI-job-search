@@ -126,6 +126,36 @@ The gate fails on **errors**; warnings are reported but do not break the build.
 error. `apps/e2e` uses `eslint.config.mjs` with the same `_`-prefix convention and
 reports `no-explicit-any` as a warning (the whole module is test code).
 
+### Pre-commit hooks
+
+The same rules run before the commit, on the changed files only, through
+[pre-commit](https://pre-commit.com/):
+
+```bash
+pip install pre-commit   # or uv tool install pre-commit
+pre-commit install       # writes .git/hooks/pre-commit
+pre-commit run --all-files   # optional: check the whole repo once
+```
+
+[`.pre-commit-config.yaml`](../.pre-commit-config.yaml) holds three hooks:
+
+| Hook | What it runs |
+|------|--------------|
+| `ruff-check` | `ruff check --config ruff.toml --fix` on the staged Python files |
+| `eslint-web` | `eslint` over `apps/web/src` with the app's own config |
+| `eslint-e2e` | `eslint` over `apps/e2e` with the app's own config |
+
+The two ESLint hooks are *local* hooks: they call the `eslint` already installed
+in `apps/web` and `apps/e2e`, so `npm install` must have been run in both before
+the first commit. The hooks never reformat — ruff only applies safe fixes and
+eslint runs without `--fix` — so a finding fails the commit instead of rewriting
+the code behind the author's back.
+
+VS Code is wired to the same tools (`.vscode/settings.json`): the Ruff
+extension fixes Python on save and the ESLint extension fixes TypeScript on
+save. Import sorting and `ruff format` are off, because the repository does not
+use them.
+
 ## Coverage Gates
 
 `--coverage` does not only produce reports and badges: it enforces two floors on

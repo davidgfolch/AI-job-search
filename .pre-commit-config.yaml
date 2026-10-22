@@ -1,0 +1,42 @@
+# Pre-commit hooks for the monorepo's static analysis.
+#
+# These run the same rules that gate CI (./scripts/lint.sh), but only on the
+# files that changed, so the feedback arrives before the commit instead of in
+# the pipeline.
+#
+#   pip install pre-commit && pre-commit install
+#
+# ruff is pinned to the version the CI job uses. The ESLint hooks are local
+# hooks: they call the eslint already installed in apps/web and apps/e2e, so
+# `npm install` must have been run in both before the first commit.
+#
+# The hooks never reformat: ruff runs in check mode with --fix (safe fixes
+# only) and eslint runs without --fix, so a commit can fail on a finding
+# instead of rewriting the code behind the author's back.
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        args: [--config, ruff.toml, --fix]
+        types_or: [python, pyi]
+
+  - repo: local
+    hooks:
+      - id: eslint-web
+        name: eslint (apps/web)
+        entry: bash -c 'cd apps/web && npx eslint --no-error-on-unmatched-pattern'
+        language: system
+        files: ^apps/web/src/.*\.[jt]sx?$
+        pass_filenames: false
+        require_serial: true
+
+      - id: eslint-e2e
+        name: eslint (apps/e2e)
+        entry: bash -c 'cd apps/e2e && npx eslint --no-error-on-unmatched-pattern'
+        language: system
+        files: ^apps/e2e/.*\.[jt]sx?$
+        pass_filenames: false
+        require_serial: true

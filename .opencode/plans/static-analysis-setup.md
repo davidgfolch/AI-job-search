@@ -16,7 +16,7 @@ Two genuine bugs are already visible in the findings:
 - `apps/backend/repositories/filter_configurations_repository.py:14` defines `find_all` and **redefines it at line 27** — the first is a dead `pass` stub that is silently shadowed.
 - `apps/backend/repositories/queries/view_generator.py:6` imports `get_salary_condition` **twice** from the same module.
 
-Two unapplied attempts at this already exist in the repo and are not usable as-is: `scripts/lint_python.patch` (ruff + mypy, with inverted/broken batch logic) and `sonar-quality-gate-setup-changes.patch` (full SonarQube setup requiring a server, token and scanner).
+An unapplied attempt at this already exists in the repo and is not usable as-is: `sonar-quality-gate-setup-changes.patch` (full SonarQube setup requiring a server, token and scanner).
 
 ## Solution
 
@@ -139,6 +139,10 @@ All eight phases landed. The gate is green and enforced by the `static-analysis`
 
 ### Not done (deliberately)
 
-- `.pre-commit-config.yaml` and the `.vscode/settings.json` wiring (deliverable 5) were not created; they were optional ergonomics with no CI impact.
 - SonarQube stays in reserve (`sonar-quality-gate-setup-changes.patch`).
 - The bugbear rules beyond the ones listed above were measured too: the whole `B` set reports 0 findings, so nothing else is pending on that front.
+
+### Follow-up (after the gate landed)
+
+- The stale `scripts/lint_python.patch` (ruff + mypy, with inverted/broken batch logic) was deleted: it was a superseded attempt at the same work and nothing referenced it. The SonarQube patch is kept on purpose, because SonarQube is still a live option.
+- Deliverable 5 was built: `.pre-commit-config.yaml` (ruff + ESLint on the changed files only) and the `.vscode/settings.json` wiring, so the same rules that gate CI also run before the commit.

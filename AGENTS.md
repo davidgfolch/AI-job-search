@@ -119,6 +119,8 @@ Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs
 
 Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it. Use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog processors, markdownify overrides, navigator/executor interfaces). `ARG` is **not** enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter, so an unused one cannot be renamed without breaking fixture resolution.
 
+The same rules run before the commit on the changed files only, via [pre-commit](https://pre-commit.com/) (`.pre-commit-config.yaml`: `ruff-check`, `eslint-web`, `eslint-e2e`). Install it with `pre-commit install`; the two ESLint hooks need `npm install` to have run in `apps/web` and `apps/e2e`. VS Code is wired to the same tools in `.vscode/settings.json`.
+
 Details: [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ### Running Individual Apps

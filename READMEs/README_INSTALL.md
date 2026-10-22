@@ -8,6 +8,7 @@
 - **Node.js**: LTS version (for `apps/web`).
 - **Docker**: For running services in containers.
 - **Ruff**: Optional locally, required by CI. Installed once for the whole repo with `uv tool install ruff` (step 7.3).
+- **pre-commit**: Optional locally. Installs the commit hooks that run the same ruff and ESLint rules (step 7.4).
 
 > **Prerequisites for the install scripts**: `scripts\install.bat` (Windows) and
 > `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need Python on `PATH`.
@@ -246,6 +247,28 @@ The configuration lives in the root [`ruff.toml`](../ruff.toml) and covers every
 Python app. See
 [README_DEVELOPMENT.md#static-analysis](README_DEVELOPMENT.md#static-analysis) for
 the rules in force.
+
+### 7.4 Install pre-commit (optional, local commit hooks)
+
+[pre-commit](https://pre-commit.com/) runs the same ruff and ESLint rules on the
+changed files before each commit, so a finding is caught locally instead of in
+the pipeline:
+
+```bash
+# Linux/Mac
+pip install pre-commit
+pre-commit install
+
+# Windows (PowerShell)
+pip install pre-commit
+pre-commit install
+```
+
+This is optional: the `static-analysis` CI gate enforces the same rules whether
+or not the hooks are installed. The ESLint hooks use the `eslint` already
+installed in `apps/web` and `apps/e2e`, so run `npm install` in both modules
+before the first commit. See
+[README_DEVELOPMENT.md#pre-commit-hooks](README_DEVELOPMENT.md#pre-commit-hooks).
 
 ### 8. Install Project Dependencies
 

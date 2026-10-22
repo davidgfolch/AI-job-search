@@ -45,6 +45,28 @@
     "python.testing.pytestEnabled": true,
     "[python]": {
       "editor.defaultFormatter": "ms-python.autopep8",
+      "editor.codeActionsOnSave": {
+        "source.fixAll.ruff": "explicit"
+      }
+    },
+    "ruff.enable": true,
+    "ruff.organizeImports": false,
+    "ruff.format.enable": false,
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+    ],
+    "[typescript]": {
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+      }
+    },
+    "[typescriptreact]": {
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+      }
     },
     "autopep8.args": [
           "--max-line-length=120"

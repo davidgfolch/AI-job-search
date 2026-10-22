@@ -85,6 +85,8 @@ Prefix an intentionally unused parameter with `_` (`_properties`) instead of del
 use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog
 processors, markdownify overrides, navigator/executor interfaces). `ARG` is not enforced on
 pytest modules, because pytest resolves fixtures by parameter name.
+The same rules run before the commit via pre-commit (`.pre-commit-config.yaml`); install it with
+`pre-commit install`. VS Code is wired to ruff and eslint in `.vscode/settings.json`.
 Details: [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ## Code Style Guidelines
