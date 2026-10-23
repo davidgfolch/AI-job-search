@@ -17,7 +17,7 @@ class TestDataExtractor:
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
         with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')):
-            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}'
             assert dataExtractor() == 1
             mock_deps['save'].assert_called()
             mock_deps['ollama'].assert_called_once()
@@ -34,7 +34,7 @@ class TestDataExtractor:
     def test_retries_job_when_ollama_returns_none(self, mock_ids, mock_deps):
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
-        mock_deps['ollama'].side_effect = [None, '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}']
+        mock_deps['ollama'].side_effect = [None, '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}']
         with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')):
             assert dataExtractor() == 1
             mock_deps['save'].assert_called_once()
@@ -43,8 +43,8 @@ class TestDataExtractor:
     def test_save(self, mock_deps):
         repo = MagicMock()
         with patch('aiEnrich.dataExtractor.validateResult'), patch('aiEnrich.dataExtractor._notify_watcher_backend') as notify:
-            _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': 'REMOTE'})
-            repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', 'REMOTE')
+            _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': ['REMOTE']})
+            repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', ['REMOTE'])
             notify.assert_called_once_with([1])
 
     @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1, 2]])
@@ -53,7 +53,7 @@ class TestDataExtractor:
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
         with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')), \
              patch('aiEnrich.dataExtractor.logger') as mock_logger:
-            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}'
             assert dataExtractor() == 2
         started = [c.kwargs for c in mock_logger.info.call_args_list if c.args and c.args[0] == "job.started"]
         assert [entry['index'] for entry in started] == [1, 2]
@@ -63,7 +63,7 @@ class TestDataExtractor:
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = (1, 'Job', 'Desc', 'Comp')
         with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')):
-            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}'
             assert dataExtractor() == 1
         assert mock_deps['footer'].call_count == 1
         args = mock_deps['footer'].call_args.args
@@ -83,7 +83,7 @@ class TestDataExtractor:
         mock_deps['save'].side_effect = lambda *a, **k: order.append(('save', None))
         with patch('aiEnrich.dataExtractor.mapJob', return_value=('Job', 'Comp', 'Desc')), \
              patch('aiEnrich.dataExtractor.job_log_context', spy):
-            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}'
+            mock_deps['ollama'].return_value = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}'
             assert dataExtractor() == 1
         assert order[0] == ('enter', 1)
         assert ('save', None) in order
@@ -98,7 +98,7 @@ class TestProcessJobSafeBackend:
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
              patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
-             patch("aiEnrich.ollama_backend.query_openrouter", return_value='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}') as mock_or, \
+             patch("aiEnrich.ollama_backend.query_openrouter", return_value='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}') as mock_or, \
              patch("aiEnrich.ollama_backend.query_ollama") as mock_ollama, \
              patch("aiEnrich.dataExtractor._save") as mock_save, \
              patch("aiEnrich.dataExtractor.validateResult"), \
@@ -114,7 +114,7 @@ class TestProcessJobSafeBackend:
         repo = MagicMock()
         repo.count_pending_enrichment.return_value = 0
         repo.get_job_to_enrich.return_value = (1, "Job", "Desc", "Comp")
-        response = OllamaResponse(text='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": "REMOTE"}',
+        response = OllamaResponse(text='{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}',
                                  url="http://ollama", done=True, done_reason="stop")
         with patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Desc")), \
              patch("aiEnrich.dataExtractor.ping_backend", return_value=True), \
@@ -132,14 +132,15 @@ class TestProcessJobSafeBackend:
         mock_save.assert_called_once()
 
     @pytest.mark.parametrize("llm_modality, expected_modality", [
-        ("REMOTE", "REMOTE"),          # valid LLM modality overwrites scrape-time value
-        ("hybrid", "HYBRID"),          # valid LLM modality is normalized and overwrites
-        ("ON_SITE", "ON_SITE"),        # valid LLM modality overwrites scrape-time value
-        (None, None),                  # null modality -> COALESCE keeps scrape-time value
-        ("INVALID", None),             # invalid modality -> None -> COALESCE keeps scrape-time value
+        (["REMOTE"], ["REMOTE"]),                      # valid LLM modality overwrites scrape-time value
+        (["hybrid"], ["HYBRID"]),                      # valid LLM modality is normalized and overwrites
+        (["ON_SITE"], ["ON_SITE"]),                    # valid LLM modality overwrites scrape-time value
+        (["HYBRID", "REMOTE"], ["REMOTE", "HYBRID"]),  # several arrangements kept in canonical order
+        (None, None),                                  # null modality -> COALESCE keeps scrape-time value
+        (["INVALID"], None),                           # invalid modality -> None -> COALESCE keeps scrape-time value
     ])
     def test_llm_modality_passthrough_to_update_enrichment(self, llm_modality, expected_modality):
-        """LLM-inferred modality is passed to update_enrichment without being overwritten by extract_modality.
+        """LLM-inferred modality is passed to update_enrichment without being overwritten by extract_modalities.
         Valid LLM modality overwrites the scrape-time deterministic value; None/invalid keeps it via COALESCE."""
         os.environ["AI_ENRICH_BACKEND"] = "ollama"
         repo = MagicMock()

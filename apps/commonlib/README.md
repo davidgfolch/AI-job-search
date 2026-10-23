@@ -34,7 +34,7 @@ Resolution order, highest first:
 
 ## MySQL connection
 
-The connection pool is initialized once via `get_connection()` from `sql/connection_manager.py`. The host is resolved from the `COMMONLIB_DB_HOST` env var (default `127.0.0.1`).
+The connection pool is initialized once via `get_connection()` from `sql/connection_manager.py`. The host is resolved from the `COMMONLIB_DB_HOST` env var (default `127.0.0.1`) and the schema from `COMMONLIB_DB_NAME` (default `jobs`). Pointing `COMMONLIB_DB_NAME` at another schema (e.g. `jobs_multi`) is how a second checkout runs against the same MySQL server without touching the live `jobs` database.
 
 When the pool is temporarily exhausted, `get_connection()` retries `COMMONLIB_DB_POOL_RETRIES` times (default 3) with backoff, treating both the internal `queue.Empty` and mysql-connector's `mysql.connector.errors.PoolError` as temporary exhaustion.
 

@@ -4,7 +4,7 @@ from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, removeLinks, debug as baseDebug
-from commonlib.modality_extractor import extract_modality
+from commonlib.modality_extractor import extract_modalities, modalities_to_db
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
@@ -28,7 +28,7 @@ class InfojobsService(BaseService):
             job_id = self.get_job_id(url)
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
-            modality = extract_modality(title, location, md)
+            modality = modalities_to_db(extract_modalities(title, location, md))
 
             logger.info("infojobs.job.scraped", job_id=job_id, title=title, company=company, location=location,
                           console=f'{job_id}, {title}, {cyan(company)}, {location} - ', end="")

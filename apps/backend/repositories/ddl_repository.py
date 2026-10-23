@@ -20,9 +20,12 @@ class DdlRepository:
             if not rows or not rows[0]:
                 return []
             column_type = rows[0][0]
-            if not column_type or not column_type.startswith("enum("):
+            if not column_type:
                 return []
-            enum_content = column_type[5:-1]
+            lowered = column_type.lower()
+            if not lowered.startswith(("enum(", "set(")):
+                return []
+            enum_content = column_type[column_type.index("(") + 1:-1]
             values = re.findall(r"'([^']+)'", enum_content)
             return values
 

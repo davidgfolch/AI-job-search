@@ -6,12 +6,14 @@ import time
 import mysql.connector as mysqlConnector
 from mysql.connector import MySQLConnection
 
+from commonlib.environmentUtil import getEnv
 from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.sql.connection_manager")
 
 DEBUG = False
 
+DEFAULT_DB_NAME = 'jobs'
 DEFAULT_MYSQL_PORT = 3306
 SMALL_RANGE_THRESHOLD = 10
 POOL_GET_RETRIES = int(os.getenv('COMMONLIB_DB_POOL_RETRIES', '3'))
@@ -76,11 +78,20 @@ def _parse_host_targets(raw: str) -> list[str]:
     return targets
 
 
+def get_db_name() -> str:
+    """Database the runtime connects to (COMMONLIB_DB_NAME, default 'jobs').
+
+    Lets a second checkout work on its own schema on the same MySQL server
+    without touching the live `jobs` database.
+    """
+    return getEnv('COMMONLIB_DB_NAME', DEFAULT_DB_NAME) or DEFAULT_DB_NAME
+
+
 def _probe_mysql(host: str, e2e_tests: bool = False, timeout: int = 3):
     """Test if MySQL is reachable at host. Raises on failure."""
     conn = mysqlConnector.connect(
         host=host, user='root', password='rootPass',
-        database=None if e2e_tests else 'jobs',
+        database=None if e2e_tests else get_db_name(),
         connect_timeout=timeout,
     )
     conn.close()
@@ -149,7 +160,7 @@ def _init_pool(e2e_tests: bool = False):
             host=db_host,
             user='root',
             password='rootPass',
-            database=None if e2e_tests else 'jobs',
+            database=None if e2e_tests else get_db_name(),
             pool_name='jobsPool',
             pool_size=pool_size,
             pool_reset_session=True,

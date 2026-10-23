@@ -1,4 +1,5 @@
 from typing import Any
+from commonlib.modality_extractor import modalities_to_db
 
 QRY_INSERT = """
 INSERT INTO jobs (
@@ -58,7 +59,7 @@ class JobRepository:
             job_data.get('company', ''),
             job_data.get('location', ''),
             job_data.get('salary'),
-            job_data.get('modality'),
+            modalities_to_db(job_data.get('modality')),
             job_data.get('url', ''),
             job_data.get('markdown', ''),
             job_data.get('easy_apply', False),

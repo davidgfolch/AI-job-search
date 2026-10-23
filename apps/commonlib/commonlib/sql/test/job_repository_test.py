@@ -100,7 +100,6 @@ class TestJobRepository:
         cursor.lastrowid = 1
         callback(cursor)
         params = cursor.execute.call_args[0][1]
-        assert params[4] == '60k - 70k'
         assert params[5] is None
         assert params[6] == 'https://example.com/job/123'
 

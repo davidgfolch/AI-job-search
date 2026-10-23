@@ -5,7 +5,7 @@ import pytest
 
 from commonlib.ollama_client import OllamaResponse
 from ..extraction_contract import (
-    COMPANY_SCHEMA, ExtractionValidationError, MAX_COMPANY_LEN, parse_company_result, parse_extraction_result, query_and_parse, query_company,
+    COMPANY_SCHEMA, EXTRACTION_SCHEMA, ExtractionValidationError, MAX_COMPANY_LEN, parse_company_result, parse_extraction_result, query_and_parse, query_company,
 )
 
 sut = parse_extraction_result
@@ -14,12 +14,27 @@ VALID_RESULT = {
     "required_technologies": ["Java"],
     "optional_technologies": ["Docker"],
     "salary": "50000 EUR",
-    "modality": "REMOTE",
+    "modality": ["REMOTE"],
 }
 
 
 def test_parses_valid_object():
     assert sut(json.dumps(VALID_RESULT)) == VALID_RESULT
+
+
+def test_normalizes_multiple_modalities_to_canonical_order():
+    raw = json.dumps({**VALID_RESULT, "modality": ["hybrid", "REMOTE", "ON_SITE", "remote"]})
+    assert sut(raw)["modality"] == ["REMOTE", "HYBRID", "ON_SITE"]
+
+
+def test_accepts_empty_modality_array():
+    assert sut(json.dumps({**VALID_RESULT, "modality": []}))["modality"] == []
+
+
+def test_modality_schema_is_an_array_of_known_values():
+    assert EXTRACTION_SCHEMA["properties"]["modality"] == {
+        "type": "array", "items": {"type": "string", "enum": ["HYBRID", "ON_SITE", "REMOTE"]}, "uniqueItems": True,
+    }
 
 
 def test_parses_json_code_fence():
@@ -30,8 +45,9 @@ def test_parses_json_code_fence():
 @pytest.mark.parametrize("raw, message", [
     pytest.param("", "empty", id="empty"),
     pytest.param('{"required_technologies": ["Java"],', "invalid JSON", id="truncated"),
-    pytest.param(json.dumps({**VALID_RESULT, "modality": "ONSITE"}), "modality", id="invalid_modality"),
-    pytest.param(json.dumps({**VALID_RESULT, "modality": '"REMOTE"'}), "modality", id="quoted_modality"),
+    pytest.param(json.dumps({**VALID_RESULT, "modality": ["ONSITE"]}), "modality", id="unknown_modality"),
+    pytest.param(json.dumps({**VALID_RESULT, "modality": "REMOTE"}), "modality", id="string_modality"),
+    pytest.param(json.dumps({**VALID_RESULT, "modality": [42]}), "modality", id="non_string_modality"),
     pytest.param(json.dumps({**VALID_RESULT, "extra": "value"}), "unexpected", id="extra_field"),
     pytest.param(json.dumps({**VALID_RESULT, "required_technologies": "Java"}), "array", id="string_technologies"),
     pytest.param(json.dumps({**VALID_RESULT, "required_technologies": [{"name": "Java"}]}), "array", id="nested_technologies"),

@@ -5,6 +5,7 @@ from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
 from commonlib.ai_helpers import MAX_AI_ENRICH_ERROR_LEN, RETRY_ERROR_PREFIX
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.findLastDuplicated import find_last_duplicated
+from commonlib.modality_extractor import modalities_to_db
 from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.aiEnrichRepository")
@@ -100,9 +101,9 @@ class AiEnrichRepository:
                         (salary,
                          required_tech,
                          optional_tech,
-                         modality,
+                         modalities_to_db(modality),
                          id)),
-                        (200, 1000, 1000, 20, None))
+                        (200, 1000, 1000, 32, None))
         self.mysql.updateFromAI(query, params)
 
     def update_enrichment_error(self, id: int, error_msg: str, is_enrichment: bool):

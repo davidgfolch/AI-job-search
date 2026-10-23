@@ -6,7 +6,7 @@ from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, debug, removeUrlParameter
-from commonlib.modality_extractor import extract_modality
+from commonlib.modality_extractor import extract_modalities, modalities_to_db
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
@@ -72,7 +72,7 @@ class IndeedService(BaseService):
             url = f"https://es.indeed.com/viewjob?jk={job_id}"
             md = htmlToMarkdown(html)
             md = self.post_process_markdown(md)
-            modality = extract_modality(title, location, md)
+            modality = modalities_to_db(extract_modalities(title, location, md))
             # Use the actual URL from seleniumService.getUrl() directly
             logger.info("indeed.job.scraped", job_id=job_id, title=title, company=company, easy_apply=easy_apply,
                           console=f"{job_id}, {title}, {cyan(company)}, easy_apply={easy_apply} - ", end="")

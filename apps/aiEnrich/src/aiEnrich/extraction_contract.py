@@ -4,6 +4,7 @@ from typing import Any, Callable
 from commonlib.ai_helpers import VALID_MODALITIES
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.json_helpers import strip_code_fence
+from commonlib.modality_extractor import normalize_modalities
 
 
 class ExtractionValidationError(ValueError):
@@ -16,7 +17,7 @@ EXTRACTION_SCHEMA = {
         "required_technologies": {"type": "array", "items": {"type": "string"}},
         "optional_technologies": {"type": "array", "items": {"type": "string"}},
         "salary": {"type": ["string", "null"]},
-        "modality": {"type": "string", "enum": sorted(VALID_MODALITIES)},
+        "modality": {"type": "array", "items": {"type": "string", "enum": sorted(VALID_MODALITIES)}, "uniqueItems": True},
     },
     "required": ["required_technologies", "optional_technologies", "salary", "modality"],
     "additionalProperties": False,
@@ -39,7 +40,9 @@ _REQUIRED_FIELDS = (*_TECHNOLOGY_FIELDS, "salary", "modality")
 EXTRACTION_PROMPT = """Analyze the following job offer and extract structured information.
 Return only one valid JSON object with exactly these fields: required_technologies, optional_technologies, salary, and modality.
 Both technology fields must be JSON arrays of non-empty strings; use an empty array when none are stated.
-Salary must be a string or null. Modality must be exactly REMOTE, HYBRID, or ON_SITE.
+Salary must be a string or null. Modality must be a JSON array listing every work arrangement the offer allows,
+using only REMOTE, HYBRID, and ON_SITE; a job may allow several at once (for example ["REMOTE", "HYBRID"]),
+and the array must be empty when no arrangement is stated.
 Do not include markdown, explanations, nested objects, or any other fields.
 
 Job Offer:
@@ -69,8 +72,12 @@ def validate_extraction_result(result: Any) -> dict[str, Any]:
     salary = result["salary"]
     if salary is not None and not isinstance(salary, str):
         raise ExtractionValidationError("salary must be a string or null")
-    if result["modality"] not in VALID_MODALITIES:
-        raise ExtractionValidationError("modality must be REMOTE, HYBRID, or ON_SITE")
+    modality = result["modality"]
+    if not isinstance(modality, list) or any(not isinstance(value, str) for value in modality):
+        raise ExtractionValidationError("modality must be an array of REMOTE, HYBRID, or ON_SITE")
+    if any(value.upper().strip() not in VALID_MODALITIES for value in modality):
+        raise ExtractionValidationError("modality must be an array of REMOTE, HYBRID, or ON_SITE")
+    result["modality"] = normalize_modalities(modality)
     return result
 
 

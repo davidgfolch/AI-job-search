@@ -126,26 +126,26 @@ describe('JobEditForm', () => {
         expect(screen.queryByText('Edit Less')).toBeInTheDocument();
     });
 
-    it('updates Modality field correctly', () => {
+    it('adds a modality value', () => {
         render(<JobEditForm job={mockJob} onUpdate={onUpdateMock} />);
         fireEvent.click(screen.getByText('Edit All'));
 
-        const select = screen.getByLabelText('Modality');
-        expect(select).toBeInTheDocument();
+        expect(screen.getByLabelText('Modality')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('checkbox', { name: 'REMOTE' }));
 
-        fireEvent.change(select, { target: { value: 'REMOTE' } });
-
-        expect(onUpdateMock).toHaveBeenCalledWith({ modality: 'REMOTE' });
+        expect(onUpdateMock).toHaveBeenCalledWith({ modality: ['REMOTE'] });
     });
 
-    it('clears Modality to null', () => {
-        render(<JobEditForm job={{ ...mockJob, modality: 'REMOTE' }} onUpdate={onUpdateMock} />);
+    it('keeps every selected modality and clears to null', () => {
+        render(<JobEditForm job={{ ...mockJob, modality: ['REMOTE'] }} onUpdate={onUpdateMock} />);
         fireEvent.click(screen.getByText('Edit All'));
 
-        const select = screen.getByLabelText('Modality');
-        fireEvent.change(select, { target: { value: '' } });
+        fireEvent.click(screen.getByRole('checkbox', { name: 'HYBRID' }));
+        expect(onUpdateMock).toHaveBeenLastCalledWith({ modality: ['REMOTE', 'HYBRID'] });
 
-        expect(onUpdateMock).toHaveBeenCalledWith({ modality: null });
+        fireEvent.click(screen.getByRole('checkbox', { name: 'REMOTE' }));
+        fireEvent.click(screen.getByRole('checkbox', { name: 'HYBRID' }));
+        expect(onUpdateMock).toHaveBeenLastCalledWith({ modality: null });
     });
 
     it('includes modality in create payload', () => {
@@ -157,8 +157,7 @@ describe('JobEditForm', () => {
         fireEvent.change(titleInput, { target: { value: 'New Job Title' } });
         fireEvent.change(companyInput, { target: { value: 'New Company' } });
 
-        const modalitySelect = screen.getByLabelText('Modality');
-        fireEvent.change(modalitySelect, { target: { value: 'HYBRID' } });
+        fireEvent.click(screen.getByRole('checkbox', { name: 'HYBRID' }));
 
         const createButton = screen.getByRole('button', { name: /Create Job/i });
         fireEvent.click(createButton);
@@ -167,7 +166,7 @@ describe('JobEditForm', () => {
         expect(onCreateMock).toHaveBeenCalledWith(expect.objectContaining({
             title: 'New Job Title',
             company: 'New Company',
-            modality: 'HYBRID',
+            modality: ['HYBRID'],
         }));
     });
 });

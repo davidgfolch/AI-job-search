@@ -91,6 +91,32 @@
     max-width: 20rem;
 }
 
+.modality-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    padding: 0.35rem 0;
+}
+
+.form-field .modality-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0;
+    color: var(--text-primary);
+    font-weight: 400;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.form-field .modality-checkbox input {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
 .form-field label {
     color: var(--primary-color);
     font-weight: 500;
