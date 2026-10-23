@@ -44,6 +44,17 @@ def test_get_enum_values(mock_get_connection, mock_mysql_util):
 
 @patch("repositories.ddl_repository.MysqlUtil")
 @patch("repositories.ddl_repository.getConnection")
+def test_get_enum_values_from_set_column(mock_get_connection, mock_mysql_util):
+    mock_db = MagicMock()
+    mock_mysql_util.return_value.__enter__.return_value = mock_db
+    mock_db.fetchAll.return_value = [("set('REMOTE','HYBRID','ON_SITE')",)]
+    repo = DdlRepository()
+    result = repo.get_enum_values("jobs", "modality")
+    assert result == ["REMOTE", "HYBRID", "ON_SITE"]
+
+
+@patch("repositories.ddl_repository.MysqlUtil")
+@patch("repositories.ddl_repository.getConnection")
 def test_get_enum_values_not_enum(mock_get_connection, mock_mysql_util):
     mock_db = MagicMock()
     mock_mysql_util.return_value.__enter__.return_value = mock_db

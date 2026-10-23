@@ -1,6 +1,8 @@
 from typing import Optional, List, Any, Union
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from commonlib.modality_extractor import normalize_modalities
 
 class JobBase(BaseModel):
     title: Optional[str] = None
@@ -17,7 +19,13 @@ class JobBase(BaseModel):
     comments: Optional[str] = None
     ai_enrich_error: Optional[str] = None
     cv_match_percentage: Optional[float] = None
-    modality: Optional[str] = None
+    modality: Optional[List[str]] = None
+
+    @field_validator('modality', mode='before')
+    @classmethod
+    def _parse_modality(cls, value: object) -> Optional[List[str]]:
+        """Accept the stored MySQL SET string ('REMOTE,HYBRID') or an API list."""
+        return normalize_modalities(value) or None
     
     # Boolean fields
     flagged: Optional[bool] = None

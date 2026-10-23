@@ -75,7 +75,7 @@ def test_normalizeModality(input_modality, expected):
     _normalizeModality(result)
     assert result["modality"] == expected
 
-@pytest.mark.parametrize("value, expected", [("remote", "REMOTE"), ("ONSITE", None)])
+@pytest.mark.parametrize("value, expected", [("remote", ["REMOTE"]), ("ONSITE", None), (["REMOTE", "hybrid"], ["REMOTE", "HYBRID"])])
 def test_validateResult_normalizes_modality(value, expected):
     result = {"modality": value}
     validateResult(result)

@@ -1,5 +1,15 @@
 from typing import Optional
+from commonlib.modality_extractor import modalities_to_db
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
+
+
+def _db_values(update_data: dict) -> list:
+    """Serialize API-level values to their database representation.
+
+    ``modality`` travels as a list (a job can allow several arrangements) but the
+    column is a MySQL SET, so it is stored as a comma-separated string.
+    """
+    return [modalities_to_db(value) if key == 'modality' else value for key, value in update_data.items()]
 
 
 class JobWriteRepository:
@@ -13,11 +23,8 @@ class JobWriteRepository:
                 return None
             if not update_data:
                 return job_id
-            set_clauses = []
-            params = []
-            for key, value in update_data.items():
-                set_clauses.append(f"`{key}` = %s")
-                params.append(value)
+            set_clauses = [f"`{key}` = %s" for key in update_data]
+            params = _db_values(update_data)
             params.append(job_id)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id = %s"
             db.executeAndCommit(query, params)
@@ -27,11 +34,8 @@ class JobWriteRepository:
         if not job_ids or not update_data:
             return 0
         with self.get_db() as db:
-            set_clauses = []
-            params = []
-            for key, value in update_data.items():
-                set_clauses.append(f"`{key}` = %s")
-                params.append(value)
+            set_clauses = [f"`{key}` = %s" for key in update_data]
+            params = _db_values(update_data)
             ids = ", ".join(["%s"] * len(job_ids))
             params.extend(job_ids)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id IN ({ids})"
@@ -44,12 +48,8 @@ class JobWriteRepository:
         if not update_data:
             return 0
         with self.get_db() as db:
-            set_clauses = []
-            update_params = []
-            for key, value in update_data.items():
-                set_clauses.append(f"`{key}` = %s")
-                update_params.append(value)
-            full_params = update_params + params
+            set_clauses = [f"`{key}` = %s" for key in update_data]
+            full_params = _db_values(update_data) + params
             where_str = " AND ".join(where_clauses)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE {where_str}"
             return db.executeAndCommit(query, full_params)

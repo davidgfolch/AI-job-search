@@ -180,6 +180,8 @@ When viewing a job and checking for already-applied positions:
 
 When fetching a single job (`GET /api/jobs/{id}`), the response includes a `synonyms` field with other company names in the same synonym group, or `null` if none exist.
 
+`modality` is a list of work arrangements (`["REMOTE", "HYBRID"]`, canonical order `REMOTE`, `HYBRID`, `ON_SITE`) or `null` when unknown, because an offer can allow more than one. It is stored in a MySQL `SET` column (`REMOTE,HYBRID,ON_SITE`); `GET /api/jobs?modality=REMOTE` matches any job whose set contains that value (`FIND_IN_SET`), and the update endpoints accept the array form (`PATCH /api/jobs/{id}` with `{"modality": ["REMOTE", "HYBRID"]}`, or `null` to clear it).
+
 ## Metrics API
 
 | Method | Endpoint | Description |

@@ -51,16 +51,17 @@ def get_boolean_condition(field_name: str, value_provider: str, alias: str = "")
 def get_modality_condition(modality_values: List[str], alias: str = "") -> str:
     """
     Returns SQL condition for modality filter.
+
+    The column is a MySQL SET, so membership is tested with FIND_IN_SET rather
+    than IN (``IN`` compares the whole comma-separated value).
+
     Args:
         modality_values: List of modality values (e.g., ['REMOTE', 'HYBRID', 'NULL'])
         alias: Table alias
     """
     col = f"{alias}.modality" if alias else "modality"
     actual_values = [v for v in modality_values if v != "NULL"]
-    conditions = []
-    if actual_values:
-        placeholders = ", ".join(["%s"] * len(actual_values))
-        conditions.append(f"{col} IN ({placeholders})")
+    conditions = [f"FIND_IN_SET(%s, {col})" for _ in actual_values]
     if "NULL" in modality_values:
         conditions.append(f"{col} IS NULL")
     if len(conditions) == 1:

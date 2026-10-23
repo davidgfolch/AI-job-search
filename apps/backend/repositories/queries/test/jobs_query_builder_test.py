@@ -115,10 +115,10 @@ def test_build_jobs_where_clause_boolean_filters(boolean_filters, expected_claus
     [
         (None, [], 0),
         ([], [], 0),
-        (["REMOTE"], ["modality IN (%s)"], 1),
-        (["REMOTE", "HYBRID"], ["modality IN (%s, %s)"], 2),
+        (["REMOTE"], ["FIND_IN_SET(%s, modality)"], 1),
+        (["REMOTE", "HYBRID"], ["(FIND_IN_SET(%s, modality) OR FIND_IN_SET(%s, modality))"], 2),
         (["NULL"], ["modality IS NULL"], 0),
-        (["REMOTE", "NULL"], ["(modality IN (%s) OR modality IS NULL)"], 1),
+        (["REMOTE", "NULL"], ["(FIND_IN_SET(%s, modality) OR modality IS NULL)"], 1),
     ],
     ids=["none", "empty", "single_remote", "multiple", "null_only", "remote_and_null"],
 )

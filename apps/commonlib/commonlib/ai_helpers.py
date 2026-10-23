@@ -27,17 +27,13 @@ def mapJob(job):
 from commonlib.json_helpers import (
     rawToJson
 )
+from commonlib.modality_extractor import MODALITIES, normalize_modalities
 
 
-VALID_MODALITIES = {'REMOTE', 'HYBRID', 'ON_SITE'}
+VALID_MODALITIES = set(MODALITIES)
 
 def _normalizeModality(result: dict) -> None:
-    modality = result.get('modality')
-    if not modality:
-        result['modality'] = None
-        return
-    normalized = str(modality).upper().strip()
-    result['modality'] = normalized if normalized in VALID_MODALITIES else None
+    result['modality'] = normalize_modalities(result.get('modality')) or None
 
 def validateResult(result: dict[str, str]):
     salary = result.get('salary')

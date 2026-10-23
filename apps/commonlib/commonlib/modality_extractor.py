@@ -1,17 +1,27 @@
 """Deterministic modality extraction.
 
-This module intentionally avoids LLMs and zero-shot models: modality is derived
-from explicit text cues so the result is reproducible and suitable for filter rules.
+A job offer can allow more than one modality at once (``"remote or hybrid
+collaboration"``), so the extractor returns every modality the text states
+instead of collapsing them into a single value. It intentionally avoids LLMs
+and zero-shot models: the result is reproducible and suitable for filter rules.
 """
 
 from __future__ import annotations
 
 import re
-from typing import Optional
+
+REMOTE = "REMOTE"
+HYBRID = "HYBRID"
+ON_SITE = "ON_SITE"
+
+# Canonical order used for storage and for API responses.
+MODALITIES = (REMOTE, HYBRID, ON_SITE)
 
 _REMOTE_TERMS = ("teletrabajo", "remoto", "remote", "work from home", "desde casa", "work remotely")
-_HYBRID_TERMS = ("híbrido", "hibrido", "hybrid", "semi-presencial", "semipresencial", "mixto")
+_HYBRID_TERMS = ("híbrido", "hibrido", "hybrid", "semi-presencial", "semipresencial", "semi presencial", "mixto")
 _ONSITE_TERMS = ("presencial", "on-site", "onsite", "in office", "en oficina", "on site")
+# Hybrid spellings that contain the on-site cue "presencial".
+_SEMI_ONSITE_TERMS = ("semi-presencial", "semipresencial", "semi presencial")
 
 _EXPLICIT_PATTERN = re.compile(
     r"modalidad(?:\s+de\s+(?:trabajo|empleo))?\s*[:\-]\s*([a-záéíóúüñ0-9 %()/.,-]+)",
@@ -23,37 +33,57 @@ def _cues(text: str) -> tuple[bool, bool, bool]:
     lowered = (text or "").casefold()
     hybrid = any(term.casefold() in lowered for term in _HYBRID_TERMS)
     remote = any(term.casefold() in lowered for term in _REMOTE_TERMS)
-    onsite = any(term.casefold() in lowered for term in _ONSITE_TERMS)
+    # "semipresencial" means hybrid, not on-site: drop those spellings before
+    # looking for the on-site cue they contain.
+    onsite_text = lowered
+    for term in _SEMI_ONSITE_TERMS:
+        onsite_text = onsite_text.replace(term, " ")
+    onsite = any(term.casefold() in onsite_text for term in _ONSITE_TERMS)
     return remote, hybrid, onsite
 
 
-def extract_modality(title: str = "", location: str = "", markdown: str = "") -> Optional[str]:
-    """Return ``REMOTE``, ``HYBRID``, ``ON_SITE`` or ``None``.
+def _flags_to_modalities(remote: bool, hybrid: bool, onsite: bool) -> list[str]:
+    found = {name for name, flag in zip(MODALITIES, (remote, hybrid, onsite), strict=True) if flag}
+    return [name for name in MODALITIES if name in found]
 
-    ``None`` means the modality could not be determined; callers should store it as
-    ``NULL`` and let filter rules treat it as unknown.
+
+def extract_modalities(title: str = "", location: str = "", markdown: str = "") -> list[str]:
+    """Return every modality the offer states, in canonical order.
+
+    An empty list means the modality could not be determined; callers should
+    store ``NULL`` and let filter rules treat it as unknown.
     """
     text = "\n".join(str(part or "") for part in (title, location, markdown))
-
     if match := _EXPLICIT_PATTERN.search(text):
-        phrase = match.group(1)
-        remote, hybrid, onsite = _cues(phrase)
-        if hybrid:
-            return "HYBRID"
-        if remote and not onsite:
-            return "REMOTE"
-        if onsite and not remote:
-            return "ON_SITE"
-        if remote and onsite:
-            return "HYBRID"
+        explicit = _flags_to_modalities(*_cues(match.group(1)))
+        if explicit:
+            return explicit
+    return _flags_to_modalities(*_cues(text))
 
-    remote, hybrid, onsite = _cues(text)
-    if hybrid:
-        return "HYBRID"
-    if remote and onsite:
-        return "HYBRID"
-    if remote:
-        return "REMOTE"
-    if onsite:
-        return "ON_SITE"
-    return None
+
+def normalize_modalities(value: object) -> list[str]:
+    """Normalize a DB string, an API list, or a single value into MODALITIES order.
+
+    Accepts ``"REMOTE,HYBRID"``, ``["hybrid", "REMOTE"]`` or ``None``; unknown
+    values are dropped and duplicates removed.
+    """
+    if value is None:
+        return []
+    if isinstance(value, str):
+        parts: list[object] = [value]
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        parts = list(value)
+    else:
+        parts = [value]
+    found: set[str] = set()
+    for part in parts:
+        for token in str(part).split(","):
+            token = token.strip().upper()
+            if token in MODALITIES:
+                found.add(token)
+    return [name for name in MODALITIES if name in found]
+
+
+def modalities_to_db(value: object) -> str | None:
+    """Format modalities as the comma-separated MySQL SET value, ``None`` when empty."""
+    return ",".join(normalize_modalities(value)) or None

@@ -185,4 +185,12 @@ CREATE TABLE IF NOT EXISTS `company_synonyms` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+--
+-- Migration: multi-value modality.
+-- A job offer can allow several arrangements at once (e.g. "remote or hybrid"),
+-- so modality is a SET instead of a single-value ENUM. Existing single values
+-- remain valid, so no data backfill is needed.
+--
+ALTER TABLE jobs MODIFY COLUMN modality SET('REMOTE', 'HYBRID', 'ON_SITE') DEFAULT NULL;
+
 

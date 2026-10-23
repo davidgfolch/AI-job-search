@@ -21,7 +21,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
     const [client, setClient] = useState('');
     const [requiredTechnologies, setRequiredTechnologies] = useState('');
     const [optionalTechnologies, setOptionalTechnologies] = useState('');
-    const [modality, setModality] = useState('');
+    const [modality, setModality] = useState<string[]>([]);
     
     // Local state for status fields to handle optimistic updates
     const [statusState, setStatusState] = useState<Record<string, boolean>>({});
@@ -68,7 +68,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
         setClient('');
         setRequiredTechnologies('');
         setOptionalTechnologies('');
-        setModality('');
+        setModality([]);
     };
 
     const populateForm = (job: Job) => {
@@ -83,7 +83,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
         setClient(job.client || '');
         setRequiredTechnologies(job.required_technologies || '');
         setOptionalTechnologies(job.optional_technologies || '');
-        setModality(job.modality || '');
+        setModality(job.modality || []);
     };
 
     const handleStatusToggle = (field: string) => {
@@ -97,9 +97,10 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
     };
 
     const handleModalityChange = (value: string) => {
-        setModality(value);
+        const next = modality.includes(value) ? modality.filter(item => item !== value) : [...modality, value];
+        setModality(next);
         if (mode === 'edit' && job) {
-            onUpdate({ modality: value === '' ? null : value });
+            onUpdate({ modality: next.length > 0 ? next : null });
         }
     };
 
@@ -138,7 +139,7 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
                 markdown, comments, client,
                 required_technologies: requiredTechnologies,
                 optional_technologies: optionalTechnologies,
-                modality: modality || null,
+                modality: modality.length > 0 ? modality : null,
                 ...booleanFields
             });
         }

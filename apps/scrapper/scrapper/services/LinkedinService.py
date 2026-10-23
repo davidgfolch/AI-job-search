@@ -5,7 +5,7 @@ from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, magenta, yellow, cyan
 from ..core import baseScrapper
-from commonlib.modality_extractor import extract_modality
+from commonlib.modality_extractor import extract_modalities, modalities_to_db
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
@@ -32,7 +32,7 @@ class LinkedinService(BaseService):
             url_short = self.get_job_url_short(url)
             jobId = self.get_job_id(url_short)
             md = baseScrapper.htmlToMarkdown(html)
-            modality = extract_modality(title, location, md)
+            modality = modalities_to_db(extract_modalities(title, location, md))
             logger.info("linkedin.job.scraped", job_id=jobId, title=title, company=company, location=location, easy_apply=easy_apply,
                           console=f'{jobId}, {title}, {cyan(company)}, {location}, easy_apply={easy_apply} - ', end="")
             if baseScrapper.validate(title, url_short, company, md, self.debug):
@@ -59,7 +59,7 @@ class LinkedinService(BaseService):
 
     def update_job(self, jobId, title, company, location, url, html, md, easy_apply):
         self.print_job(title, company, location, url, jobId, html, md)
-        modality = extract_modality(title, location, md)
+        modality = modalities_to_db(extract_modalities(title, location, md))
         params = (title, company, location, url, md, easy_apply, modality, jobId, self.web_page)
         self.mysql.executeAndCommit(QRY_UPDATE_JOB_DIRECT_URL, params)
         logger.info("linkedin.job.updated", job_id=jobId, console=green(f'Job updated {jobId}'))

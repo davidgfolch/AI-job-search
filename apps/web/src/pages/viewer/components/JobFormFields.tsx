@@ -20,7 +20,7 @@ interface JobFormFieldsProps {
         client: string;
         requiredTechnologies: string;
         optionalTechnologies: string;
-        modality: string;
+        modality: string[];
     };
     setters: {
         setTitle: Dispatch<SetStateAction<string>>;
@@ -34,7 +34,7 @@ interface JobFormFieldsProps {
         setClient: Dispatch<SetStateAction<string>>;
         setRequiredTechnologies: Dispatch<SetStateAction<string>>;
         setOptionalTechnologies: Dispatch<SetStateAction<string>>;
-        setModality: Dispatch<SetStateAction<string>>;
+        setModality: Dispatch<SetStateAction<string[]>>;
     };
     handleChange: (setter: Dispatch<SetStateAction<string>>, field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleCreate: () => void;
@@ -122,17 +122,18 @@ export default function JobFormFields({
 
                 {(mode === 'create' || showAllFields) && (
                     <FormField id={`${formIdPrefix}-modality`} label="Modality" className="form-field form-field-small">
-                        <select
-                            id={`${formIdPrefix}-modality`} name="modality"
-                            className="compact-select"
-                            value={modality}
-                            onChange={(e) => handleModalityChange(e.target.value)}
-                        >
-                            <option value="">Not set</option>
+                        <div id={`${formIdPrefix}-modality`} className="modality-checkboxes" role="group" aria-label="Modality">
                             {(modalityValues && modalityValues.length > 0 ? modalityValues : ['REMOTE', 'HYBRID', 'ON_SITE']).map((value) => (
-                                <option key={value} value={value}>{value}</option>
+                                <label key={value} className="modality-checkbox">
+                                    <input
+                                        type="checkbox" name="modality" value={value}
+                                        checked={modality.includes(value)}
+                                        onChange={() => handleModalityChange(value)}
+                                    />
+                                    {value}
+                                </label>
                             ))}
-                        </select>
+                        </div>
                     </FormField>
                 )}
             </div>

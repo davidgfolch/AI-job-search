@@ -57,8 +57,8 @@ A separate `static-analysis` job is a **required check**: it lints every Python 
 
 ## Distributed execution
 
-You can have specific mysql host server setting the `.env` ->  `COMMONLIB_DB_HOST` to your mysql database host IP.
-You can run scrapper in a (linux recommended) & connect to another mysql host pc.
+You can have specific mysql host server setting the `.env` ->  `COMMONLIB_DB_HOST` to your mysql database host IP.  
+You can run scrapper in a (linux recommended) & connect to another mysql host pc.  
 
 ### Scrapper MySQL host auto-discovery
 

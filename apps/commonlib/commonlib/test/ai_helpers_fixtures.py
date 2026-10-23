@@ -53,8 +53,9 @@ CV_MATCH_CASES = [
 MAP_JOB_CASES = [(b"Markdown", "Markdown\n"), ("MarkdownStr", "MarkdownStr\n")]
 
 MODALITY_CASES = [
-    ("REMOTE", "REMOTE"), ("remote", "REMOTE"), ("Hybrid", "HYBRID"),
-    ("ON_SITE", "ON_SITE"), ("invalid", None), (None, None), ("", None),
+    ("REMOTE", ["REMOTE"]), ("remote", ["REMOTE"]), ("Hybrid", ["HYBRID"]),
+    ("ON_SITE", ["ON_SITE"]), ("invalid", None), (None, None), ("", None),
+    ("REMOTE,HYBRID", ["REMOTE", "HYBRID"]), (["hybrid", "remote"], ["REMOTE", "HYBRID"]),
 ]
 
 EXPAND_CASES = [

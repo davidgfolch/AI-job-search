@@ -4,7 +4,7 @@ Job data enrichment service using Ollama LLMs (local) or OpenRouter (cloud).
 
 ## Overview
 
-This application enriches job data (e.g., extracting salary, technologies); modality comes from the LLM job inference and overwrites the deterministic scrape-time value when the LLM returns a valid value, otherwise the scrape-time value is kept. Two backends are supported, selected with the `AI_ENRICH_BACKEND` environment variable:
+This application enriches job data (e.g., extracting salary, technologies); a job may have several modalities at once (REMOTE/HYBRID/ON_SITE) and the LLM extracts the full set (overwriting the deterministic scrape-time value when valid, otherwise the scrape-time value is kept). Two backends are supported, selected with the `AI_ENRICH_BACKEND` environment variable:
 
 - **Ollama** (`ollama`, default): local models, free, no API key required. Communicates over Ollama's `/api/generate` HTTP API.
 - **OpenRouter** (`openrouter`): cloud models via the OpenAI-compatible API at openrouter.ai. Requires an API key, no local model/server needed.

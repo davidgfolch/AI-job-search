@@ -4,7 +4,7 @@ from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, cyan
 from ..core.baseScrapper import htmlToMarkdown, validate, debug as baseDebug
-from commonlib.modality_extractor import extract_modality
+from commonlib.modality_extractor import extract_modalities, modalities_to_db
 from ..util.persistence_manager import PersistenceManager
 from .BaseService import BaseService
 
@@ -22,7 +22,7 @@ class GlassdoorService(BaseService):
         try:
             job_id = self.get_job_id(url)
             md = htmlToMarkdown(html)
-            modality = extract_modality(title, location, md)
+            modality = modalities_to_db(extract_modalities(title, location, md))
 
             logger.info("glassdoor.job.scraped", job_id=job_id, title=title, company=company, location=location, easy_apply=easy_apply,
                           console=f'{job_id}, {title}, {cyan(company)}, {location}, easy_apply={easy_apply} - ', end="")

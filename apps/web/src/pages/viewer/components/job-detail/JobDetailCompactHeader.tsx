@@ -20,9 +20,11 @@ export default function JobDetailCompactHeader({ job }: JobDetailCompactHeaderPr
             <span className="compact-item">
                 <span className="compact-company">{job.company}</span>
             </span>
-            <span className="compact-item compact-modality">
-                {job.modality}
-            </span>
+            {job.modality && job.modality.length > 0 && (
+                <span className="compact-item compact-modality">
+                    {job.modality.join(', ')}
+                </span>
+            )}
             {truncatedSalary && (
                 <span className="compact-item compact-salary" title={job.salary || undefined}>
                     {truncatedSalary}
