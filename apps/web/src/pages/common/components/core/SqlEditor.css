@@ -1,43 +1,35 @@
-.sql-editor-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--overlay-bg);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.sql-editor-content {
+.modal-content.sql-editor-modal {
     background-color: #1e1e1e;
     color: #d4d4d4;
-    padding: 20px;
-    border-radius: 8px;
     width: 80%;
     max-width: 800px;
     height: 60vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow-md);
 }
 
-.sql-editor-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+.sql-editor-modal .modal-header {
+    background: #1e1e1e;
+    box-shadow: none;
+    border-bottom: 1px solid #3e3e42;
 }
 
-.sql-editor-header h3 {
-    margin: 0;
+.sql-editor-modal .modal-header h3 {
     color: #9cdcfe;
+}
+
+.sql-editor-modal .modal-body {
+    padding: 15px 20px;
+    gap: 0;
+    overflow: hidden;
+}
+
+.sql-editor-modal .modal-footer {
+    border-top: none;
+    padding: 10px 20px 15px;
 }
 
 .editor-container {
     flex: 1;
+    min-height: 0;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -143,13 +135,6 @@
     font-size: 10px;
     opacity: 0.7;
     margin-left: 8px;
-}
-
-.sql-editor-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 15px;
 }
 
 .editor-button {

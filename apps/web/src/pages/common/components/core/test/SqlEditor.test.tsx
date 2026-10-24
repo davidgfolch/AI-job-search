@@ -76,6 +76,34 @@ describe('SqlEditor', () => {
         expect(onCloseMock).toHaveBeenCalledTimes(1);
     });
 
+    it('should call onClose when Escape is pressed', () => {
+        const onCloseMock = vi.fn();
+        render(
+            <SqlEditor
+                isOpen={true}
+                initialValue=""
+                onSave={vi.fn()}
+                onClose={onCloseMock}
+            />
+        );
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(onCloseMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not call onClose on Escape when isOpen is false', () => {
+        const onCloseMock = vi.fn();
+        render(
+            <SqlEditor
+                isOpen={false}
+                initialValue=""
+                onSave={vi.fn()}
+                onClose={onCloseMock}
+            />
+        );
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(onCloseMock).not.toHaveBeenCalled();
+    });
+
     it('should call onSave with current value when Apply Filter is clicked', () => {
         const onSaveMock = vi.fn();
         render(
