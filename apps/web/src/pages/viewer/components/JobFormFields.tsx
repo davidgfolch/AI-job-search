@@ -121,17 +121,17 @@ export default function JobFormFields({
                 </FormField>
 
                 {(mode === 'create' || showAllFields) && (
-                    <FormField id={`${formIdPrefix}-modality`} label="Modality" className="form-field form-field-small">
-                        <div id={`${formIdPrefix}-modality`} className="modality-checkboxes" role="group" aria-label="Modality">
+                    <FormField id={`${formIdPrefix}-modality`} label="Modality" className="form-field form-field-modality">
+                        <div id={`${formIdPrefix}-modality`} className="modality-pills-row" role="group" aria-label="Modality">
                             {(modalityValues && modalityValues.length > 0 ? modalityValues : ['REMOTE', 'HYBRID', 'ON_SITE']).map((value) => (
-                                <label key={value} className="modality-checkbox">
-                                    <input
-                                        type="checkbox" name="modality" value={value}
-                                        checked={modality.includes(value)}
-                                        onChange={() => handleModalityChange(value)}
-                                    />
+                                <button
+                                    type="button"
+                                    key={value}
+                                    className={`modality-pill ${modality.includes(value) ? 'active' : ''}`}
+                                    onClick={() => handleModalityChange(value)}
+                                >
                                     {value}
-                                </label>
+                                </button>
                             ))}
                         </div>
                     </FormField>

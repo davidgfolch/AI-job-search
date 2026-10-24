@@ -126,6 +126,7 @@ class JobsRepository:
         return [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
 
     def update_job(self, job_id: int, update_data: Dict[str, Any]) -> Optional[int]:
+        from commonlib.modality_extractor import modalities_to_db
         with self.get_db() as db:
             existing = db.fetchOne("SELECT id FROM jobs WHERE id = %s", job_id)
             if not existing:
@@ -136,7 +137,10 @@ class JobsRepository:
             params = []
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
-                params.append(value)
+                if key == 'modality':
+                    params.append(modalities_to_db(value))
+                else:
+                    params.append(value)
             params.append(job_id)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id = %s"
             db.executeAndCommit(query, params)
@@ -145,6 +149,7 @@ class JobsRepository:
     def update_jobs_by_ids(
         self, job_ids: List[int], update_data: Dict[str, Any]
     ) -> int:
+        from commonlib.modality_extractor import modalities_to_db
         if not job_ids or not update_data:
             return 0
         with self.get_db() as db:
@@ -152,7 +157,10 @@ class JobsRepository:
             params = []
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
-                params.append(value)
+                if key == 'modality':
+                    params.append(modalities_to_db(value))
+                else:
+                    params.append(value)
             ids = ", ".join(["%s"] * len(job_ids))
             params.extend(job_ids)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE id IN ({ids})"
@@ -162,6 +170,7 @@ class JobsRepository:
     def update_jobs_by_filter(
         self, where_clauses: List[str], params: List[Any], update_data: Dict[str, Any]
     ) -> int:
+        from commonlib.modality_extractor import modalities_to_db
         if not update_data:
             return 0
         with self.get_db() as db:
@@ -169,12 +178,19 @@ class JobsRepository:
             update_params = []
             for key, value in update_data.items():
                 set_clauses.append(f"`{key}` = %s")
-                update_params.append(value)
+                if key == 'modality':
+                    update_params.append(modalities_to_db(value))
+                else:
+                    update_params.append(value)
             full_params = update_params + params
             where_str = " AND ".join(where_clauses)
             query = f"UPDATE jobs SET {', '.join(set_clauses)} WHERE {where_str}"
             return db.executeAndCommit(query, full_params)
 
     def create_job(self, job_data: Dict[str, Any]) -> int:
+        from commonlib.modality_extractor import modalities_to_db
+        if 'modality' in job_data:
+            job_data = dict(job_data)
+            job_data['modality'] = modalities_to_db(job_data['modality'])
         with self.get_db() as db:
             return db.insertJob(job_data)

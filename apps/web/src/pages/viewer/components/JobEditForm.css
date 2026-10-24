@@ -207,3 +207,48 @@
     position: relative;
     float: right;
 }
+.form-field-modality {
+    max-width: 100%;
+    flex: 2;
+}
+
+.modality-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.35rem 0;
+}
+
+.modality-pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.modality-pill:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.modality-pill.active {
+    background: rgba(var(--success-color-rgb), 0.1);
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.modality-pills-detail {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-left: 0.25rem;
+}

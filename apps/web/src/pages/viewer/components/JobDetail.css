@@ -303,6 +303,30 @@
     background: rgba(var(--success-color-rgb), 0.2);
     border-color: rgba(var(--success-color-rgb), 0.4);
     color: #6ee7b7;
+
+}
+.modality-pills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-left: 0.25rem;
+}
+
+.modality-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    background: rgba(var(--primary-color-rgb), 0.15);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.3);
+    color: #c3d0ff;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    backdrop-filter: blur(4px);
+    white-space: nowrap;
+    box-shadow: var(--shadow-sm);
 }
 
 .job-info ul {

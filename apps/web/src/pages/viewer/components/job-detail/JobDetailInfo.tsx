@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import '../../../skillsManager/components/SkillTag.css';
 import { type Job, type AppliedCompanyJob } from '../../api/ViewerApi';
 import AppliedJobsWarning from './AppliedJobsWarning';
 import SalaryActions from './SalaryActions';
@@ -29,6 +30,14 @@ const isModified = (created: string | undefined | null, modified: string | undef
     return Math.abs(d1.getTime() - d2.getTime()) >= 5 * 60 * 1000;
 };
 
+const ModalityPills = ({ modalities }: { modalities: string[] }) => (
+    <span className="modality-pills-detail">
+        {modalities.map((m) => (
+            <span key={m} className="skill-tag">{m}</span>
+        ))}
+    </span>
+);
+
 export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied, onUpdate, onToggleCalculator }: JobDetailInfoProps) {
     const [showHistory, setShowHistory] = useState(false);
     const allJobSkills = [job.required_technologies, job.optional_technologies].filter(Boolean).join(', ');
@@ -50,7 +59,7 @@ export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied,
                 </li>
             )}
             {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
-            {job.modality && job.modality.length > 0 && <li className="info-row">Modality: <span>{job.modality.join(', ')}</span></li>}
+            {job.modality && job.modality.length > 0 && <li className="info-row">Modality: <ModalityPills modalities={job.modality} /></li>}
             {job.salary ? (
                 <li className="info-row job-salary-row">Salary: <span className="salary-value-text">{job.salary}</span>
                     <button className="config-btn salary-toggle-btn" onClick={() => setShowHistory(true)} title="View salary history">📊 History</button>
