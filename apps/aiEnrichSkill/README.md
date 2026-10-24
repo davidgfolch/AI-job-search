@@ -13,6 +13,15 @@ Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table
 
 ## Usage
 
+### Docker (recommended)
+
+```bash
+# From the repository root; add --profile ollama when Ollama is containerized
+docker-compose --profile aiEnrichSkill up -d aienrichskill
+```
+
+The worker auto-discovers a MySQL host, an Ollama server (when the Ollama backend is selected) and the backend. See [Network discovery](../../README.md#network-discovery).
+
 ### Windows
 ```cmd
 run.bat
@@ -93,16 +102,3 @@ Each idle cycle is one line: the enrichment service logs `jobs.skipped` (`messag
 - `commonlib` (shared library)
 - `requests` (Ollama HTTP client)
 - `transformers`, `torch`, `accelerate` (HuggingFace backend)
-
-## Static Analysis
-
-This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
-
-```bash
-# From the repo root
-./scripts/lint.sh python
-```
-
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
-
-See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

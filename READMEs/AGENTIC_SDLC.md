@@ -49,21 +49,17 @@ Agents should query CodeGraph before grepping or reading source files: use `code
 
 When an `apps/scrapper` change is required because a source page changed (DOM redesign, new URL pattern, moved to client-side rendering), the `crawlee-page-analyst` skill is the mandatory first step: fetch the live page with Crawlee, diff the DOM against the selectors the scrapper uses, and produce selector-level requirements **before** editing any scrapper code. The analysis decides which fields broke, which crawler class fits (static vs JS-rendered), and whether the fix affects the Selenium path, the Scrapling path, or both. Crawlee is installed as a host tool (`uv tool install "crawlee[all]"`, run automatically by `scripts/install.sh` / `scripts/install.bat`); see [README_INSTALL.md](README_INSTALL.md) and the skill at `.claude/skills/crawlee-page-analyst/SKILL.md`.
 
-## Documentation Sync (automatic, mandatory)
+## Documentation Policy (fix if wrong, high-level only)
 
-Documentation is updated **in the same session** as every plan implementation, feature, fix, refactor, config change, or dependency bump — it is never a follow-up task, and it is never left for the user to ask for.
-
-The workflow is defined once in `.claude/rules/documentation-update.md` (an always-on rule, loaded by opencode through `instructions` and by any harness that reads `.claude/rules/`), and it is reinforced automatically by:
+Documentation must stay accurate and useful — it is not a changelog. The policy is defined once in `.claude/rules/documentation-update.md` (an always-on rule, loaded by opencode through `instructions` and by any harness that reads `.claude/rules/`); harnesses only nudge for impactful paths:
 
 | Mechanism | Harness | What it does |
 |-----------|---------|--------------|
-| `.claude/rules/documentation-update.md` | all | Canonical rule: when the doc sync applies, the change → docs map, and the definition-of-done checklist |
-| `.claude/hooks/docs-sync.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit`) | Injects a reminder the first time a source/config file is edited in the session |
-| `.opencode/plugins/docs-sync.js` | opencode | Tracks source edits and prints the same reminder once on the next bash call |
+| `.claude/rules/documentation-update.md` | all | Canonical policy: fix what is wrong, user-visible/setup changes, high-level scope |
+| `.claude/hooks/docs-sync.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit`) | Reminds once per session when a compose/env/manifest/apps/scripts path is edited |
+| `.opencode/plugins/docs-sync.js` | opencode | Same reminder, printed once on the next bash call |
 
-Every task ends with the same five steps: pick the doc-map rows that match the change, open each listed doc, fix only what became inaccurate, keep snippets copy-pasteable, and report the updated docs in the final summary (or state that none were needed).
-
-Rows of the map worth remembering: module behavior → `apps/<module>/README.md`; new/removed module → root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`; env var → root `README.md` (Settings); compose service/profile/port → `READMEs/DOCKER_DEV.md`; build/test/install command → `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md`; new host tool → `READMEs/README_INSTALL.md`; API/DB schema → `apps/backend/README.md`; user-facing UI → root `README.md` (Features/Screenshots); CI/Dependabot → `READMEs/README_GITHUB.md`; skill/rule/hook/plugin → this file plus the Skills lists; plan implementation → the plan file (`Status:` + outcome) and `READMZs/TODO.md`.
+In practice: fix docs the change made factually wrong; update root `README.md` or `apps/<module>/README.md` only for user-visible features, API/UI contracts and setup/run steps; update this file plus the affected rule for hooks, guards, skills and workflows; skip refactors, tests and internals (use CodeGraph to explore the code). Keep the user-facing READMEs high-level and link here for mechanics.
 
 `.codegraph/` is generated, machine-local output: refresh it with `codegraph sync`/`codegraph index`, never hand-edit it, and never count it as documentation.
 
@@ -131,6 +127,14 @@ The `dependabot-agent` skill processes open Dependabot PRs (they target `staging
 Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
 
 **Usage:** ask the agent to "process the open dependabot PRs" (optionally scoped to a module).
+
+## Network Discovery
+
+- **Scrapper MySQL**: `COMMONLIB_DB_HOST` supports single IPs, CIDR, ranges, and comma-separated combinations with automatic LAN fallback. See [commonlib docs](../apps/commonlib/README.md#mysql-connection).
+- **Web Backend API**: The web app resolves the backend at startup and watches it (`http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000` in Docker; reverse order on host). It waits for readiness (`BACKEND_WAIT_TIMEOUT_SECONDS`, default 120) and retries via watchdog (`BACKEND_CHECK_INTERVAL_SECONDS`, default 10, `BACKEND_MAX_RETRIES`, default 3). Pin with `BACKEND_URL`, allow LAN scan with `BACKEND_DISCOVERY=True`. See [web docs](../apps/web/README.md#backend-discovery).
+- **Ollama**: Modules probe the configured URL (`AI_ENRICH_OLLAMA_BASE_URL`), then `host.docker.internal`, `localhost`, `ollama:11434`, then LAN scan on 11434 (disable with `COMMONLIB_OLLAMA_DISCOVERY=False`). Set `AI_ENRICH_OLLAMA_BASE_URL=auto` to scan directly. A one-token probe gates job submission (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). Add subnets with `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (e.g. `10.0.0.0/24`). See [commonlib docs](../apps/commonlib/README.md).
+- **Watcher notifications**: After enrichment, `aiEnrich` POSTs enriched job IDs to the backend via `commonlib.watcher_notify` (auto-discovered like Ollama; pin with `AI_ENRICH_BACKEND_URL`). Best-effort (failures logged, enrichment continues). See [aiEnrich docs](../apps/aiEnrich/README.md#watcher-notification).
+- **Dashboard health**: Backend probes Prometheus/Grafana on refresh (`GET /-/healthy`, `GET /api/health`). Configure `PROMETHEUS_URL` (default `http://host.docker.internal:9090`) and `GRAFANA_URL` (default `http://host.docker.internal:3000`).
 
 ## Related Documentation
 

@@ -1,15 +1,9 @@
 // docs-sync OpenCode plugin
-// Nudges the agent to update documentation in the same task as the code change.
-//
-// It flags edits/writes/patches that touch source or config files (not markdown,
-// not generated/vendored paths) and, on the next bash call of the session, prints
-// the change -> docs map reminder once. Silent when no such edit happened.
-// Mirrors .claude/hooks/docs-sync.py behavior; the canonical map lives in
+// Nudges the agent to check docs only for impactful changes
+// (fix if wrong; high-level only; use CodeGraph for internals).
+// Mirrors .claude/hooks/docs-sync.py behavior; the canonical policy lives in
 // .claude/rules/documentation-update.md.
-//
-// IMPORTANT: keep the reminder string free of backticks and $(...) constructs.
-// The reminder is printed with `echo "<reminder>"`, where backticks would trigger
-// shell command substitution.
+
 const EDIT_TOOLS = new Set(["edit", "write", "patch", "multiedit"]);
 
 const IGNORED_PREFIXES = [
@@ -25,16 +19,26 @@ const IGNORED_PREFIXES = [
   ".pytest_cache/",
   ".ruff_cache/",
   "READMEs/assets/",
+  "READMZs/assets/",
 ];
 const IGNORED_FILES = ["uv.lock", "poetry.lock", "package-lock.json", "bun.lock"];
 const DOC_SUFFIXES = [".md", ".mdx", ".txt"];
 
-const REMINDER =
-  'echo "[docs-sync] source change detected: update docs in this same task. Apply the change to docs map in .claude/rules/documentation-update.md (apps/<module>/README.md, root README.md, AGENTS.md, .claude/CLAUDE.md, READMEs/DOCKER_DEV.md, READMEs/README_INSTALL.md, READMEs/README_DEVELOPMENT.md, READMEs/README_GITHUB.md, READMEs/AGENTIC_SDLC.md) and list updated docs in your final summary; if none needed, say so." ; ';
+const IMPACTFUL_PATTERNS = [
+  "docker-compose",
+  ".env",
+  "pyproject.toml",
+  "package.json",
+  "apps/",
+  "scripts/install",
+  "scripts/uninstall",
+  "scripts/run",
+];
 
-// Idempotency guard: never prepend the reminder twice. Without it, a re-dispatched
-// hook concatenates another copy onto an already-reminded command, and the echoed
-// copies pile up in every subsequent bash result (mirrors docker-build's SKIP guard).
+const REMINDER =
+  'echo "[docs-sync] Check docs if this change affects setup/features/API/UI or is user-facing. See .claude/rules/documentation-update.md (fix if wrong, high-level only; use CodeGraph for internals). No need to update docs for internal refactors/tests. If none needed, say so briefly." ; ';
+
+// Idempotency guard
 const MARKER = "[docs-sync]";
 
 function shouldPrepend(command) {
@@ -47,14 +51,22 @@ function needsReminder(filePath) {
   const lower = p.toLowerCase();
   if (DOC_SUFFIXES.some((ext) => lower.endsWith(ext))) return false;
   if (IGNORED_FILES.some((f) => lower.endsWith("/" + f) || lower === f)) return false;
-  const marker = p.lastIndexOf("/");
-  const tail = marker >= 0 ? p.slice(marker + 1) : p;
-  if (IGNORED_PREFIXES.includes(tail)) return false;
+  // Check ignored prefixes
   const segments = p.split("/");
-  return !IGNORED_PREFIXES.some((prefix) => {
-    const parts = prefix.split("/");
-    return parts.every((part, i) => segments[i] === part);
-  });
+  for (const prefix of IGNORED_PREFIXES) {
+    const parts = prefix.split("/").filter(Boolean);
+    if (parts.length === 0) continue;
+    let match = true;
+    for (let i = 0; i < parts.length; i++) {
+      if (segments[i] !== parts[i]) { match = false; break; }
+    }
+    if (match) return false;
+  }
+  // Only remind for impactful patterns
+  for (const pat of IMPACTFUL_PATTERNS) {
+    if (lower.includes(pat)) return true;
+  }
+  return false;
 }
 
 export const DocsSyncPlugin = async () => {
@@ -70,7 +82,6 @@ export const DocsSyncPlugin = async () => {
       }
       if (input.tool !== "bash" || reminded || !codeChanged) return;
       if (!output.args || !shouldPrepend(output.args.command)) return;
-      // ';' not '&&' - Windows PowerShell 5.1 rejects '&&' as a statement separator.
       output.args.command = REMINDER + output.args.command;
       reminded = true;
     },

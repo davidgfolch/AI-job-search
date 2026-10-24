@@ -73,7 +73,7 @@ Before querying, the selector logs `enrich.selection_source` with `source="filte
 
 ## Structured logging
 
-Modules report telemetry through `observability.py` instead of `print()`. Each module binds a logger once at module level:
+`observability.py` is the shared implementation behind every app's telemetry. The event/level/console conventions, `LOG_*` variables, `job_log_context`, `footer()`, `logIdleWait()` and the output layout are documented once in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging); this section covers the library internals.
 
 ```python
 from commonlib.observability import get_logger
@@ -82,30 +82,14 @@ logger = get_logger("commonlib.cv_loader")
 logger.warning("cv.file_not_found", location=self.cv_location)
 ```
 
-Conventions:
+- `module` is stamped from the caller by `stamp_caller_module`, so a shared helper's record still names the app module. No call site may pass `module=` (the architecture test rejects it); data read from the stamped value uses `source_module`.
+- `job_log_context(id)` binds `job_id` for every record emitted inside the block, including shared helpers; an explicit `job_id=` wins.
+- `metrics_collector` (`services/metrics_collector.py`) keeps a per-module snapshot (`jobs_processed`, `jobs_failed`, `backend_unreachable`, …) persisted to `AI_ENRICH_METRICS_FILE` every 60 s; `prometheus_exporter.py` renders it for the backend's `/metrics` endpoint. See [Metrics](../../READMEs/README_METRICS.md).
+- A failed `log_writer.append_jsonl` write is never fatal and never silent: the record is dropped and reported once per path as `logs.write_failed` with a `chown` hint. `metrics_collector.persist()` mirrors this with `metrics.persist_failed`.
+- `print()` stays only for presentational output: in-place terminal progress (`terminalUtil.py`, `decorator/retry.py`) and the `sync/mysql_sync.py` dry-run summary. `PRINT_ALLOWLIST` in the architecture test enforces this.
+- `environmentUtil.py` cannot import `observability` at module scope (circular import), so it resolves its logger lazily and logs `env.loaded` / `env.reloaded` with dotenv paths only, never values.
 
-- Event names are dotted `domain.action` (`cv.loaded`, `db.dump_started`, `skill.enrich_started`), never free text.
-- Dynamic values are `key=value` fields; f-strings are never passed to a log call, so records stay queryable.
-- Levels: `debug` per-item detail, `info` lifecycle, `warning` recoverable problem, `error` failed operation, `exception` for tracebacks (called inside an `except` block, traceback attached automatically).
-- Secrets and PII are never logged (no env values, tokens, CV text or user content), and large blobs are passed as objects rather than pre-rendered strings.
-- `module` is stamped from the calling app module by `observability.stamp_caller_module`, so a record names the module that produced it even when a shared helper logged it; the `get_logger(name)` argument is only the fallback. No call site may pass `module=` (the architecture test rejects it) — data read from the stamped value uses `source_module`.
-- `job_log_context(id)` binds `job_id` for the records emitted inside the block, including those from shared helpers like `sql.query_executor`, and unbinds it on exit (also on an exception). An explicit `job_id=` on a call wins over the context.
-- `metrics_collector` (`services/metrics_collector.py`) holds a per-module in-memory snapshot (`jobs_processed`, `jobs_succeeded`, `jobs_failed`, `pending_jobs`, `backend_unreachable`, `last_error`, …) persisted to `AI_ENRICH_METRICS_FILE` (`data/metrics/enrichment_metrics.json` by default) every 60 s and reloaded on each `/metrics` scrape. Enrichment workers call `collector.record_job(module, duration, success)` per job, `collector.record_error(module, error)` on failure, and `collector.record_backend_unreachable(module)` when the LLM backend (Ollama or OpenRouter) cannot be reached. `prometheus_exporter.py` converts the snapshot to Prometheus text format (`ai_enrich_jobs_processed_total`, `ai_enrich_jobs_failed_total`, `ai_enrich_backend_unreachable_total`, …) for the backend's `/metrics` endpoint.
-- A write that fails in `log_writer.append_jsonl` — usually a root-owned `data/logs` folder that a container created and the host user cannot write — is never fatal and never silent: the record is dropped and reported once per path as `logs.write_failed` with a `chown` hint, and the warning is re-armed by the next successful write. `metrics_collector.persist()` follows the same contract with `metrics.persist_failed`.
-- `print()` is kept only for presentational output: in-place terminal progress (`end=`, `flush=True`, `\r`) — the `terminalUtil.py` countdown and the `decorator/retry.py` progress chain — and the `sync/mysql_sync.py` dry-run summary. In-place redraws require an interactive terminal; `ai_helpers.logIdleWait()` instead logs one rendered record — the human sentence as `message=`, with the event, `wait_seconds` and `reason` as fields — and then waits on a `WakeableTimer`, so `docker-compose logs` shows one readable line per idle cycle (`ai_helpers.idleWait()` is the same wait without a record, when the cycle's event was already logged). `ai_helpers.footer()` does the same for a batch summary (`ai.batch_completed`, with the `n/m` counters as fields); `footer()` and `printJob()` clamp the denominator to at least the jobs already processed, so a drain that picks up newly pending jobs reads `n/n` instead of `n/1`. ANSI color codes passed into these helpers are stripped before a `message` reaches the JSONL, so records never carry escape sequences.
-
-`environmentUtil.py` is the one module that cannot import `observability` at module scope, because `observability` imports `environmentUtil`. It resolves the logger lazily inside `_logEvent()` and emits `env.loaded` (debug, once) and `env.reloaded` (info) with the dotenv file paths only — never their values. A reentrancy guard keeps the reload from recursing through `configure_logging`.
-
-`terminalColor.py` remains for colored console output; `printHR()` is a rule-drawing primitive and is not structured-logged.
-
-### Console fields
-
-`console_render.py` implements the two console modes an app can select with `configure_logging(app, console=...)`:
-
-- `CONSOLE_RECORD` (default): every record is rendered on stdout as `timestamp [app] [level] event message=... fields...` — the `[app]` tag (`logger`) is bracketed right after the timestamp, `message` is the first named field, and the rest follow.
-- `CONSOLE_MESSAGE`: only the text of the `console=` field is printed; records without it go to the JSONL alone. This is how a host app keeps a human console and a silent library.
-
-`split_console_text()` moves `console=` into the record's `message` and `end=` into the private `_console_end`, so neither the raw ANSI text nor the terminator reaches the file; `log_writer.public_record()` drops the private keys. Both helpers are also what strips ANSI from a `message`. `color_enabled()`, `console_mode()`, `set_console_mode()` and `render_console()` are re-exported from `observability.py`.
+`console_render.py` implements `CONSOLE_RECORD` and `CONSOLE_MESSAGE`, `split_console_text()` (moves `console=` to `message`, `end=` to a private key) and ANSI stripping; the public helpers are re-exported from `observability.py`. `terminalColor.py` still provides console colors; `printHR()` is a rule-drawing primitive and is not logged.
 
 ## Installation
 
@@ -141,21 +125,9 @@ commonlib = {path = "../commonlib", develop = true}
 
 ## Testing
 
-Run tests with pytest:
+Run the module suite through the centralized runner:
 
 ```bash
-poetry run pytest
+./scripts/test.sh commonlib   # Linux/Mac
+.\scripts\test.bat commonlib  # Windows
 ```
-
-## Static Analysis
-
-This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
-
-```bash
-# From the repo root
-./scripts/lint.sh python
-```
-
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
-
-See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

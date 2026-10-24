@@ -30,9 +30,7 @@ Console output goes to stdout and every record is mirrored to a JSONL file, one 
 | `jobs/company_salary_history/job` | `cron.scan_started`, `cron.scan_completed` (info); `cron.scan_no_records` (debug) |
 | `jobs/company_salary_history/scanner` | `cron.scanner.jobs_fetched`, `cron.scanner.records_saved`, `cron.scanner.updates_checked`, `cron.scanner.updates_saved` (info); `cron.scanner.no_new_jobs`, `cron.scanner.salary_recorded` (debug, one per changed job) |
 
-Conventions: event names are dotted `domain.action` and never free text; dynamic values are `key=value` fields and no f-string is ever passed to a log call; `debug` is per-item detail, `info` is lifecycle, `exception` is a failed operation with its traceback. Mongo URIs and other env values are never logged — only derived counts, cadencies and job ids. Nothing in this app is presentational output, so no `print()` remains.
-
-`cron.job_failed` is the event to alert on: job failures are recorded at `error` level and the scheduler still persists `status=error` in `cron_state`, so the job is retried on the next tick.
+Mongo URIs and other env values are never logged — only derived counts, cadencies and job ids. `cron.job_failed` is the event to alert on: job failures are recorded at `error` level and the scheduler still persists `status=error` in `cron_state`, so the job is retried on the next tick. Event names, levels, and the shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
 
 ## Configuration
 
@@ -42,11 +40,8 @@ Conventions: event names are dotted `domain.action` and never free text; dynamic
 | `MONGO_DATABASE` | `jobs` | MongoDB database name |
 | `CRON_SALARY_CADENCY` | `1h` | Run interval for the salary history scanner |
 | `COMMONLIB_DB_HOST` | `127.0.0.1` | MySQL host for job data |
-| `LOG_LEVEL` | `20` | 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR |
-| `LOG_COLOR` | `True` | Colored console output instead of raw JSON on stdout |
-| `LOG_DIR` | `data/logs` | Directory holding `cron.jsonl` |
-| `LOG_FILE_MAX_BYTES` | `10485760` | Rotate the JSONL file once it grows past this |
-| `LOG_FILE_BACKUP_COUNT` | `5` | Rotated files to keep |
+
+Shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
 
 ## Registered jobs
 
@@ -65,19 +60,9 @@ Built from `Dockerfile` (Python 3.12-slim, uv-based). Runs via `docker-compose` 
 ## Testing
 
 ```bash
-uv run pytest
-uv run coverage run -m pytest && uv run coverage report -m
+./scripts/test.sh commonlib cron   # Linux/Mac
+.\scripts\test.bat commonlib cron  # Windows
+
+# With coverage
+./scripts/test.sh --coverage commonlib cron
 ```
-
-## Static Analysis
-
-This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
-
-```bash
-# From the repo root
-./scripts/lint.sh python
-```
-
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
-
-See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

@@ -28,6 +28,6 @@ Use this skill when implementing or modifying End-to-End (E2E) tests. These test
 - Run architecture tests via the centralized script: `./scripts/test.sh commonlib` (Linux/Mac) or `.\scripts\test.bat commonlib` (Windows).
 
 ## Usage
-- **Preferred Method**: Run `npm test` inside `apps/e2e`. Playwright starts its own Vite dev server for `apps/web` on port 5174 and mocks all `/api/**` requests via `page.route()` — no backend, database, or Docker services required.
-- **Subset**: `npm test -- --grep "pattern"` (optionally `--project=chromium`).
+- **Preferred Method**: Run the suite through the centralized script: `./scripts/test.sh e2e` (Linux/Mac) or `.\scripts\test.bat e2e` (Windows). Playwright starts its own Vite dev server for `apps/web` on port 5174 and mocks all `/api/**` requests via `page.route()` — no backend, database, or Docker services required.
+- **Subset / interactive**: pass Playwright arguments through the runner (`./scripts/test.sh e2e --grep pattern`, optionally `--project=chromium`), or use `npm run test:ui` inside `apps/e2e` for the interactive UI.
 - **New endpoints**: If the safety net logs `UNMOCKED API REQUEST`, add a mock for that endpoint in the relevant helper (registered after the safety net).

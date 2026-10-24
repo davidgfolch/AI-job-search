@@ -43,9 +43,7 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of the company when a job board publishes the offer without one (stored as `unspecified` until inferred)
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
-- **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes its own `data/logs/<app>.jsonl` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)); scraped by Prometheus (`:9090`) → Grafana dashboard (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics`
-- **Dual console & log output**: a record can carry both its structured fields and the human line to print (`console=`, `end=""`), so the scrapper keeps its classic console transcript while `scrapper.jsonl` stays complete and queryable (see [Scrapper — Console Output](apps/scrapper/README.md#console-output--structured-logging)). Workers also use this for batch progress (`footer()` → `ai.batch_completed`) and for the wait between cycles (`logIdleWait()` → `jobs.skipped` / `ai.retry_wait`), so a container log still reads as a progress line instead of a field dump
-- **Per-record attribution**: `module` is stamped from the calling app module and `job_id` from `job_log_context()`, so a record stays attributable to the worker and the job even when a shared helper logged it
+- **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes `data/logs/<app>.jsonl`, scraped by Prometheus (`:9090`) → Grafana (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging))
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 
@@ -57,45 +55,21 @@ A separate `static-analysis` job is a **required check**: it lints every Python 
 
 ## Distributed execution
 
-You can have specific mysql host server setting the `.env` ->  `COMMONLIB_DB_HOST` to your mysql database host IP.  
-You can run scrapper in a (linux recommended) & connect to another mysql host pc.  
-
-### Scrapper MySQL host auto-discovery
-
-`COMMONLIB_DB_HOST` supports single IPs, CIDR, ranges, and comma-separated combinations, with automatic LAN fallback. See [commonlib docs](apps/commonlib/README.md#mysql-connection) for details.
-
-### Web Backend API auto-discovery
-
-The web app resolves the backend API when it starts and keeps watching it afterwards. It tries `http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000` inside Docker, and `http://localhost:8000` → `http://host.docker.internal:8000` → `http://backend:8000` on the host, so it works with the backend containerized or not. The dev server **waits** for the backend to answer before serving (bounded by `BACKEND_WAIT_TIMEOUT_SECONDS`, default 120), which is what makes a container start or a host reboot safe. A watchdog probes the current target every `BACKEND_CHECK_INTERVAL_SECONDS` (default 10) and, after `BACKEND_MAX_RETRIES` (default 3) consecutive failures, resolves the backend again and retargets the live proxy. Set `BACKEND_URL` to pin the target, `BACKEND_DISCOVERY=True` to allow the LAN scan as a last resort. See [web docs](apps/web/README.md#backend-discovery) for details.
-
-Run only web in the client machine like this:
+You can set a specific MySQL host in `.env` via `COMMONLIB_DB_HOST` and run the scrapper on a separate machine connected to it (Linux recommended). Run only the web UI on a client machine:
 
 ```bash
 docker-compose up -d --no-deps web
 ```
 
-### Ollama auto-discovery
-
-The Ollama-backed modules resolve the server from a short probe against the configured URL (`.env` → `AI_ENRICH_OLLAMA_BASE_URL`, which the workers honour; `docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset) and the shared fallback chain. When none of them answers, the LAN is scanned for an Ollama server on port 11434 (`COMMONLIB_OLLAMA_DISCOVERY=False` disables the scan), so running Ollama on another machine on the LAN needs no extra configuration — the dashboard automatically scans the common LAN subnets (`192.168.0.x`, `192.168.1.x`) even when it runs inside a Docker container. Setting `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan. Before a job is sent, the chosen server must answer a one-token generation probe, so a wedged runner is skipped in seconds instead of blocking the full `AI_ENRICH_TIMEOUT_JOB` (tune with `COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). If your LAN uses a different subnet, add it with `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (comma-separated CIDRs, e.g. `10.0.0.0/24`). See [commonlib docs](apps/commonlib/README.md) for details.
-
-### Watcher notifications
-
-After enrichment, `aiEnrich` POSTs the enriched job IDs to the backend (`/api/jobs/notify-watcher`) so the watcher badge updates, through the shared `commonlib.watcher_notify` client. The backend URL is auto-discovered the same way as Ollama (`http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000`); set `AI_ENRICH_BACKEND_URL` in `.env` to pin it. The call is best-effort — an unreachable backend only logs `watcher.notify_failed`, a rejected one logs `watcher.notify_rejected`, and enrichment continues. See [aiEnrich docs](apps/aiEnrich/README.md#watcher-notification).
-
-### Dashboard: Prometheus & Grafana health
-
-The dashboard probes Prometheus and Grafana on every refresh (via `GET /-/healthy` and `GET /api/health`) and shows their status as **Up**/**Down** summary cards. The target URLs are configured with:
-
-- `PROMETHEUS_URL` (default `http://host.docker.internal:9090` — works from the backend container via `extra_hosts: host.docker.internal=host-gateway`)
-- `GRAFANA_URL` (default `http://host.docker.internal:3000`)
-
-Override them in `.env` if your Prometheus/Grafana run on a different host or port.
-
-So in another PC in the same LAN you can run services that depend on Ollama, it must be run outside docker:
+To run Ollama-backed workers on another machine in the same LAN (outside Docker):
 
 ```bash
 ./apps/aiEnrich/run.sh & ./apps/aiEnrichSkill/run.sh
 ```
+
+### Network discovery
+
+The MySQL host (`COMMONLIB_DB_HOST`), the web backend API, the Ollama server, the watcher notifications and the dashboard health probes are all auto-discovered on the LAN. Each concern, with its variables and fallback order, is documented once in [Network Discovery](READMEs/AGENTIC_SDLC.md#network-discovery) and in the module READMEs it points to.
 
 ## Screenshots
 
@@ -147,28 +121,13 @@ So in another PC in the same LAN you can run services that depend on Ollama, it 
 
 ### Docker Compose Profiles
 
-The `docker-compose.yml` defines several service profiles to control which containers start:
+The `docker-compose.yml` groups services into profiles: the core services start by default, and the AI services (`aienrich`, `aiEnrichSkill`) plus the opt-in `ollama` server are selected with `--profile`. The profile table, the exact commands and the service URLs live in [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
 
-| Profile        | Services                          | Description                      |
-| -------------- | --------------------------------- | -------------------------------- |
-| _(default)_    | `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
-| `ollama`       | `ollama`                          | Containerized Ollama server (opt-in; see [Ollama: host vs container](#ollama-host-vs-container)) |
-| `aienrich`     | `aienrich`                        | Ollama AI enrichment             |
-| `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
-
-**Auto-started** (no `--profile` flag): `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`.
-Use `--profile` to run the profile-gated AI enrichment services:
-
-```bash
-docker-compose --profile aienrich up -d aienrich
-docker-compose --profile aiEnrichSkill up -d aienrichskill
-```
-
-The `web` service waits for the backend to answer before it serves, and reconnects to it when it moves, so it works with the backend containerized or running on the host (see [Web Backend API auto-discovery](#web-backend-api-auto-discovery)).
+The `web` service waits for the backend to answer before it serves, and reconnects to it when it moves, so it works with the backend containerized or running on the host (see [web backend discovery](apps/web/README.md#backend-discovery)).
 
 #### Ollama: host vs container
 
-The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they probe the configured URL, then `host.docker.internal`, `localhost`, the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`), and finally the LAN on port 11434 (see [Ollama auto-discovery](#ollama-auto-discovery)). No module hard-depends on the `ollama` container, so it is never started implicitly.
+The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they probe the configured URL, then `host.docker.internal`, `localhost`, the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`), and finally the LAN on port 11434 (see [Ollama server resolution](READMEs/AGENTIC_SDLC.md#network-discovery)). No module hard-depends on the `ollama` container, so it is never started implicitly.
 
 ```bash
 # Ollama already installed on the host (nothing extra to start)
@@ -178,54 +137,19 @@ docker-compose --profile aienrich up -d aienrich
 docker-compose --profile ollama --profile aienrich up -d
 ```
 
-The **scrapper** runs natively on the host as a batch job (not a Docker service, not long-running). Start it in a terminal:
+### Install & run
+
+Environment setup — Python/Node, host tools, dependencies, `.env` and `.env.secrets` — is documented once in [README_INSTALL.md](READMEs/README_INSTALL.md). After that:
 
 ```bash
-./apps/scrapper/run.sh   # or .\apps\scrapper\run.bat on Windows
-```
-
-### Quick Start
-
-- Copy `scripts/.env.secrets.example` to `.env.secrets` and set your credentials there.
-- Set your options in `.env` (e.g., SCRAPPER_JOBS_SEARCH, CV_MATCH flag, etc.)
-- Run dockerized applications `docker-compose up -d` (starts default services).
-- Run `apps/scrapper/run.(bat/sh)` in terminal.
-- Navigate to UI at [http://localhost:5173](http://localhost:5173)
-- Run `aiEnrich` (Ollama by default, or OpenRouter with `AI_ENRICH_BACKEND=openrouter`) for AI enrichment:
-  - Start it with `docker-compose --profile aienrich up -d aienrich`.
-- Run `aiCvMatcher` (local fast CV matching):
-  - It runs by default via `docker-compose up -d` if enabled. Make sure `AI_CVMATCHER_ENABLED=True` is in your `.env`.
-- Run `aiFormFiller` (AI-powered form question answerer):
-  - Auto-starts with Docker by default. Alternatively run manually with `.\apps\aiFormFiller\run.bat`.
-  - Load the `apps/aiFormFiller/extension/` folder as an unpacked extension in Chrome.
-  - Right-click any form field → "Answer with AI".
-
-NOTE: the scrapper is not a Docker service; run it manually on the host (see below).
-
-### Installation
-
-Please see [README_INSTALL.md](READMEs/README_INSTALL.md) for detailed setup instructions.
-
-### Run with Docker 🐳
-
-You can run for development or just to use it.
-
-```bash
-docker-compose up -d
+docker-compose up -d      # core services
 docker-compose logs -f
+
+# in another terminal: the scrapper is not a Docker service
+./apps/scrapper/run.sh    # or .\apps\scrapper\run.bat
 ```
 
-Then run the scrappers in a separate terminal:
-
-```bash
-./apps/scrapper/run.sh # or .bat
-```
-
-> **After changing web dependencies**, just rebuild and restart the web container:
-> `docker-compose up -d --build web`. Its entrypoint auto-detects the changed
-> `package-lock.json` and reinstalls `node_modules` on start.
-
-See [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
+Open the UI at [http://localhost:5173](http://localhost:5173). AI service profiles, the scrapper and Docker troubleshooting: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
 
 ## Run Manually (Using Helper Scripts)
 
@@ -275,48 +199,15 @@ docker compose up -d
 .\apps\web\run.bat
 ```
 
-## Code Intelligence (CodeGraph)
+## Developer tooling
 
-[CodeGraph](https://github.com/colbymchenry/codegraph) is the project's default code-intelligence tool. It builds a local index of the repository in `.codegraph/` (gitignored) and keeps it fresh through a background daemon. `scripts/install.sh` / `scripts/install.bat` install it, wire its MCP server into Claude Code and opencode, and build the initial index.
+Cross-cutting developer concerns are documented once, in the reference guides under [`READMEs/`](READMEs/):
 
-```bash
-# Index status, incremental sync and full rebuild
-codegraph status
-codegraph sync
-codegraph index
-
-# Explore the codebase
-codegraph explore "how does the scrapper scheduler dispatch platforms"
-codegraph node ScrapperScheduler
-codegraph impact ScrapperScheduler
-codegraph affected apps/scrapper/scrapper/core/scrapper_scheduler.py
-```
-
-Agents use the `codegraph_explore` / `codegraph_node` MCP tools (or the CLI equivalents) before grepping or reading files. `.codegraph/` is machine-local generated state — never commit it; `codegraph uninit` removes the index and `codegraph uninstall --yes` removes the agent wiring and CLI. See the [CodeGraph skill](.claude/skills/codegraph/SKILL.md) for the full command list.
-
-## Static Analysis
-
-The whole monorepo is covered by one static-analysis gate, run locally and in CI through the same entry point:
-
-```bash
-# Everything: ruff + web eslint/tsc + e2e eslint
-./scripts/lint.sh          # or .\scripts\lint.bat
-
-# Per target
-./scripts/lint.sh python   # ruff over apps/ and scripts/ (root ruff.toml)
-./scripts/lint.sh web      # eslint + tsc -b over apps/web
-./scripts/lint.sh e2e      # eslint over apps/e2e
-```
-
-| Target | Tool | Rules in force |
-|--------|------|----------------|
-| Python | [Ruff](https://docs.astral.sh/ruff/) (installed once with `uv tool install ruff`) | `E9`, `F401` unused imports, `F841` unused variables, `F811` dead redefinitions, `ARG` unused arguments and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`) |
-| Web | ESLint + `tsc -b` | unused code and explicit `any` are errors; the React Compiler advisory hooks rules are warnings |
-| E2E | ESLint | unused code is an error; explicit `any` is a warning |
-
-Ruff is configured once for the whole repo in the root [`ruff.toml`](ruff.toml); the apps keep their own package managers and need no linter dependency. The ESLint policies live in [`apps/web/eslint.config.js`](apps/web/eslint.config.js) and [`apps/e2e/eslint.config.mjs`](apps/e2e/eslint.config.mjs).
-
-Details: [Static Analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
+- **Testing** (centralized runner, when to run the suites): [README_DEVELOPMENT.md#testing](READMEs/README_DEVELOPMENT.md#testing)
+- **Static analysis** (Ruff, ESLint, `tsc`, pre-commit): [README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis)
+- **Coverage gates** (frontend union, scrapper statements): [README_DEVELOPMENT.md#coverage-gates](READMEs/README_DEVELOPMENT.md#coverage-gates)
+- **Structured logging** (events, conventions, `LOG_*` config): [README_DEVELOPMENT.md#structured-logging](READMEs/README_DEVELOPMENT.md#structured-logging)
+- **CodeGraph** (code intelligence) and agent skills, rules and guardrails: [AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md)
 
 ## Documentation
 
@@ -326,4 +217,4 @@ Details: [Static Analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 - **Docker**: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md)
 - **GitHub Automation (CI & Dependabot)**: [README_GITHUB.md](READMEs/README_GITHUB.md)
 - **Metrics & Grafana**: [README_METRICS.md](READMEs/README_METRICS.md)
-- **Structured Logging** (events, conventions, `LOG_*` config): [README_DEVELOPMENT.md#structured-logging](READMEs/README_DEVELOPMENT.md#structured-logging)
+- **Agentic SDLC** (agents, CodeGraph, guardrails): [AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md)

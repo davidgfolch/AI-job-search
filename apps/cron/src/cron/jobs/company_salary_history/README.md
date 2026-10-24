@@ -60,4 +60,4 @@ Queries use regex prefix matching on the first word of the normalized name (e.g.
 
 ## Configuration
 
-See [`apps/cron/README.md`](../../../README.md) for `CRON_SALARY_CADENCY` and MongoDB settings.
+See [`apps/cron/README.md`](../../../../README.md) for `CRON_SALARY_CADENCY` and MongoDB settings.

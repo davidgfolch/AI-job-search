@@ -1,5 +1,16 @@
 # Quick Start Commands for Docker Development
 
+## Profiles
+
+The `docker-compose.yml` defines several service profiles to control which containers start:
+
+| Profile        | Services                          | Description                      |
+| -------------- | --------------------------------- | -------------------------------- |
+| _(default)_    | `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
+| `ollama`       | `ollama`                          | Containerized Ollama server (opt-in; see the note below) |
+| `aienrich`     | `aienrich`                        | Ollama AI enrichment             |
+| `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
+
 ## Core Services (Backend + Web + Viewer)
 ```bash
 # Start core services
@@ -68,7 +79,7 @@ The scrapper is **not** a Docker service. Run it natively in a terminal:
 ./apps/scrapper/run.sh   # or .\apps\scrapper\run.bat on Windows
 ```
 
-See [README_INSTALL.md](README_INSTALL.md#61-install-google-chrome--system-libraries-scrapper) for the required Chrome/system libraries.
+See [README_INSTALL.md](README_INSTALL.md#71-install-google-chrome--system-libraries-scrapper) for the required Chrome/system libraries.
 
 ## All Services
 ```bash

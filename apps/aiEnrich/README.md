@@ -42,9 +42,16 @@ uv sync
 
 ## Running
 
-### Automated Loop
+### Docker (recommended)
 
-To run the enrichment in a continuous loop (monitoring the database for new jobs):
+```bash
+# From the repository root; the ollama profile is only needed when Ollama is containerized
+docker-compose --profile aienrich up -d aienrich
+```
+
+The worker auto-discovers a MySQL host, an Ollama server and the backend (configured URL → Docker/host fallbacks → LAN scan), so the same command works with Ollama on the host or in a container. See [Network discovery](../../README.md#network-discovery) for the full chain.
+
+### Automated Loop (host)
 
 ```bash
 # Linux (from project root)
@@ -60,19 +67,15 @@ To run the enrichment in a continuous loop (monitoring the database for new jobs
 uv run aienrich
 ```
 
-## Logs
+## Structured logging
 
-Structured logging via `commonlib.observability`; records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the backend dashboard and the Prometheus exporter read.
+Records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the backend dashboard and the Prometheus exporter read. The shared event/level/`LOG_*` rules are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging); app-specific behaviour:
 
-**Progress**: every enriched job ends with `footer()`, which logs one `ai.batch_completed` record carrying the `n/m` counters (`processed`, `total`, `total_processed`, `job_errors`, `config`) as fields *and* the human line in `console=` ("Processed jobs this run: n/m … Config: … Time elapsed: … (Media: …/job)"). `config` is the watched filter configuration the job came from (`NONE` for the fallback queue). `Time elapsed:` is the current job's inference total (query + validation retries + save), also stored as `job_elapsed`, while `elapsed` / `elapsed_per_job` stay the batch wall time and its average, so the media keeps meaning "how long a job takes in this run". So the batch reads as a progress line in `docker-compose logs` while the counters stay queryable in the JSONL. `job.started` counts from 1 (`index`) so it agrees with `processed`. Because the chunked drain re-selects pending jobs live, a cycle can outgrow the count taken at its start, so `total` (`m`) tracks jobs processed this run plus the jobs still pending — it stays stable at the initial count under normal processing, grows only when new jobs are inserted, and never drops below `processed` (`n`), so a slow cycle that keeps picking up new jobs reads `n/n`, not `n/1`.
-
-**Idle**: with nothing pending, or while the backend is unreachable, the pipeline calls `logIdleWait()` rather than sleeping. It renders one record — `jobs.skipped` (`reason=no_pending_jobs`) or `ai.retry_wait` (`reason=backend_unavailable`) — with the human sentence as `message=`, then waits on a `WakeableTimer` that a shutdown signal cuts short. Interactive terminals keep the in-place countdown.
-
-**Sleeping backend**: once an Ollama server has been resolved, consecutive `ai.unreachable` failures keep the loop waiting for it instead of exiting. A cached server that stops answering is dropped (`ollama.resolved_unreachable`) and resolved again through the configured URL, the fallback candidates and the LAN scan, so a LAN host that suspends resumes the run even when it comes back on another DHCP address — no container restart needed. Each unreachable detection is also counted in the `backend_unreachable` per-module metric (exposed as `ai_enrich_backend_unreachable_total` on `/metrics`), so Grafana can show backend-outage spikes independently of job failures. `AI_ENRICH_MAX_OLLAMA_FAILURES` (default `3`) only aborts the process while no server has ever been resolved, so Docker's restart policy can retry a startup that cannot reach any candidate (wrong URL, network not ready).
-
-**Provider failures mid-job**: when a single job cannot reach the provider (`query_and_parse` returns no response), the service logs `job.ai_unreachable`, waits for the backend (with `ai.unreachable` / `ai.retry_wait`) and retries the *same* job. A job is never counted as processed, and progress is not advanced, until it either succeeds or fails with a real error; the job stays pending and is retried on the next cycle.
-
-**Attribution**: each job runs inside `job_log_context(id)`, so `job.started` / `job.result` and every database record in between carry the same `job_id`, and `module` is stamped from the calling module rather than from a shared helper. See [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
+- **Progress**: `footer()` logs one `ai.batch_completed` record per job with the `n/m` counters and the human line in `console=`, so `docker-compose logs` reads as a progress line while the counters stay queryable.
+- **Idle**: `logIdleWait()` logs `jobs.skipped` (`no_pending_jobs`) or `ai.retry_wait` (`backend_unavailable`) on a `WakeableTimer` instead of sleeping; interactive terminals keep the countdown.
+- **Sleeping backend**: consecutive `ai.unreachable` failures wait for the server instead of exiting. A cached server that stops answering is re-resolved (`ollama.resolved_unreachable`) and counted in the `backend_unreachable` metric. `AI_ENRICH_MAX_OLLAMA_FAILURES` (default `3`) only aborts while no server has ever been resolved.
+- **Provider failures mid-job**: `job.ai_unreachable` retries the same job without advancing progress; it stays pending until it succeeds or fails with a real error.
+- **Attribution**: each job runs inside `job_log_context(id)`, so related records share `job_id`.
 
 ## Configuration
 
@@ -102,7 +105,7 @@ AI_ENRICH_OLLAMA_MODEL=ollama/phi3.5:3b
 
 The Ollama server URL is centralized as `OLLAMA_HOST_BASE_URL` in `commonlib` and can be overridden with `AI_ENRICH_OLLAMA_BASE_URL`. The module resolves the first reachable server once per cycle (configured URL first, then `host.docker.internal`, `localhost`, and the containerized `ollama:11434`) and reuses it for the whole batch — so a missing containerized Ollama transparently falls back to a host server instead of failing. When none of those answers, an Ollama server is searched for on the LAN (port 11434, disabled with `COMMONLIB_OLLAMA_DISCOVERY=False`); setting `AI_ENRICH_OLLAMA_BASE_URL=auto` skips the fixed candidates and goes straight to the LAN scan. Every job is preceded by a one-token generation probe on the server, so a stalled Ollama runner is skipped in `COMMONLIB_OLLAMA_PROBE_TIMEOUT` seconds (default 30) instead of consuming the whole `AI_ENRICH_TIMEOUT_JOB`. The probe runs with the job's own `num_ctx` (a different one would make Ollama reload the model for the probe and again for the job) and its verdict is remembered for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300), so the server is learned once and the following jobs are dispatched without re-connecting.
 
-> or change it in http://localhost:5173/settings (docker with web/backend must be running, see [DOCKER_DEV.md](../READMEs/DOCKER_DEV.md))
+> or change it in http://localhost:5173/settings (docker with web/backend must be running, see [DOCKER_DEV.md](../../READMEs/DOCKER_DEV.md))
 
 **Recommended models for CPU-only inference:**
 
@@ -172,16 +175,3 @@ Any OpenRouter slug works — `openai/gpt-4o-mini`, `anthropic/claude-3.5-sonnet
 **Strict extraction**: the response is validated against `EXTRACTION_SCHEMA` in `extraction_contract.py` (all four fields required, `additionalProperties: false`, `modality` must be `REMOTE`/`HYBRID`/`ON_SITE`, markdown code fences stripped) and sent to Ollama as a native JSON schema, so the model is constrained server-side instead of relying on prompt wording alone. When validation fails (invalid JSON, missing/extra field, wrong `modality`, or output truncated at the `num_predict` limit) the request is retried once with an explicit "the previous response was invalid" instruction. Tune with `AI_ENRICH_MAX_VALIDATION_RETRIES` (default `1`, so two attempts total; `0` disables the retry). After the last attempt the job is not saved and the reason is logged as `ai.structured_retry` / the final `ai.extract_failed` error, instead of persisting a partial row. Once the response is valid, `commonlib.ai_helpers.validateResult` normalizes it before saving: technology lists are flattened and de-duplicated, `modality` is upper-cased, and a **salary without any digit is discarded** (logged as `ai.invalid_salary`), so qualitative phrases such as "salario según experiencia" are intentionally not stored. An extraction that yields no technologies at all is logged as `ai.no_technologies`.
 
 **Company resolution**: some job boards publish offers without a company (e.g. Tecnoempleo), and the scrapper stores them with the company set to `unspecified` instead of discarding the offer. When a job is enriched and its company is still `unspecified`, a second, independent request (`companyExtractor.py`) asks the same backend for the company only, validated against `COMPANY_SCHEMA` (`{"company": "..." | null}`) and capped to 4000 characters of the job text. If a company is returned it is saved with `AiEnrichRepository.update_unspecified_company()`, which only writes while the company is still `unspecified`, and `AiEnrichRepository.refresh_duplicated_of()` then re-runs the duplicate check with the real company (deferred at scrape time, while the company was generic). When no company can be determined, or the request fails, the job keeps `unspecified` and is enriched normally: a failed guess never marks the job as failed to enrich. Events are logged as `company.resolved`, `company.unresolved`, and `company.resolution_failed`.
-
-## Static Analysis
-
-This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
-
-```bash
-# From the repo root
-./scripts/lint.sh python
-```
-
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
-
-See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

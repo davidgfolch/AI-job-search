@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Claude Code PreToolUse hook for documentation sync.
 
-Injects a reminder the first time the agent edits a source/config file in the
-session, pointing at the change -> docs map in .claude/rules/documentation-update.md
-so documentation is updated in the same task instead of being requested later.
+Injects a reminder only for potentially user-facing/config changes,
+pointing at .claude/rules/documentation-update.md (fix if wrong; docs
+should be high-level; use CodeGraph for internals).
 Mirrors .opencode/plugins/docs-sync.js behavior.
 
 Reads the tool-use JSON from stdin, writes the reminder JSON to stdout.
@@ -20,17 +20,26 @@ TOOLS = {"Edit", "MultiEdit", "NotebookEdit", "Write", "Update"}
 IGNORED_PREFIXES = (
     ".git/", ".codegraph/", "node_modules/", ".venv/", "venv/", "data/",
     "dist/", "build/", "coverage/", ".pytest_cache/", ".ruff_cache/",
-    "READMZs/assets/", "uv.lock", "poetry.lock", "package-lock.json", "bun.lock",
+    "READMEs/assets/", "READMZs/assets/", "uv.lock", "poetry.lock", "package-lock.json", "bun.lock",
 )
 DOC_SUFFIXES = (".md", ".mdx", ".txt")
 
+# Only remind for changes likely to be user-facing/setup/config
+IMPACTFUL_PATTERNS = (
+    "docker-compose",
+    ".env",
+    "pyproject.toml",
+    "package.json",
+    "apps/",
+    "scripts/install",
+    "scripts/uninstall",
+    "scripts/run",
+)
+
 REMINDER = (
-    "[docs-sync] Source change detected. Documentation is part of the implementation: "
-    "before you finish, apply the change -> docs map in .claude/rules/documentation-update.md "
-    "(apps/<module>/README.md for module behavior, root README.md, AGENTS.md, "
-    ".claude/CLAUDE.md, READMEs/DOCKER_DEV.md, READMEs/README_INSTALL.md, "
-    "READMEs/README_DEVELOPMENT.md, READMEs/README_GITHUB.md, READMEs/AGENTIC_SDLC.md), "
-    "and list the docs you updated in your final summary. If none needed changes, say so."
+    "[docs-sync] Check docs if this change affects setup/features/API/UI or is user-facing. "
+    "See .claude/rules/documentation-update.md (fix if wrong, high-level only; use CodeGraph for internals). "
+    "No need to update docs for internal refactors/tests. If none needed, say so briefly."
 )
 
 
@@ -54,9 +63,16 @@ def needs_reminder(rel_path: str) -> bool:
     if not rel_path:
         return False
     rel_path = rel_path.replace("\\", "/")
-    if rel_path.lower().endswith(DOC_SUFFIXES):
+    lower = rel_path.lower()
+    if lower.endswith(DOC_SUFFIXES):
         return False
-    return not rel_path.startswith(IGNORED_PREFIXES)
+    if rel_path.startswith(IGNORED_PREFIXES):
+        return False
+    # Only remind for impactful paths
+    for pat in IMPACTFUL_PATTERNS:
+        if pat in lower:
+            return True
+    return False
 
 
 def main() -> int:

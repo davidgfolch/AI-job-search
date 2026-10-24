@@ -42,11 +42,7 @@ Console output goes to stdout and every record is mirrored to a JSONL file, one 
 | `main` | `app.started` (info); `app.disabled` (info, with the `flag` that turned the worker off); `jobs.skipped` (info, `message='All CV matches calculated.'`, plus `wait_seconds` and `reason`) |
 | `cvMatcher` | `model.loading`, `model.loaded`, `cv.context_loaded`, `jobs.batch_started`, `jobs.batch_completed` (info); `job.started`, `job.result` (debug, one per job); `job.error_saved` (warning, the match percentage is set to `-1`); `match.failed` (exception - records the traceback); `job.failed` (exception - records the traceback, the job id, title and company); `jobs.batch_errors` (warning, count of failures in the run) |
 
-Conventions: event names are dotted `domain.action` and never free text; dynamic values are `key=value` fields and no f-string is ever passed to a log call; `debug` is per-item detail, `info` is lifecycle, `warning` is recoverable, `exception` is a failed operation with its traceback. The CV is never logged - only its length and location - and neither are job descriptions or the embedding vectors. Neither module has a `print()` call. The wait between cycles in the main loop is `logIdleWait(cyan('All CV matches calculated.'), '10s', "jobs.skipped", reason="no_pending_jobs")`: it renders one record with that sentence as `message=` (plus `wait_seconds` and `reason`) and then waits on a `WakeableTimer`, so a container log shows one rendered line per cycle instead of a countdown nobody can see. On an interactive terminal it keeps the in-place countdown (`commonlib.terminalUtil.consoleTimer`), which is why `terminalColor.cyan` is still imported in `main.py`.
-
-Each job is processed inside `job_log_context(id)` (`commonlib.observability`), so the `job.started` / `job.result` pair and every database record in between carry the same `job_id`.
-
-`job.result` is a reserved name scraped by `commonlib.prometheus_exporter`, which requires both `job_id` and `duration`; the per-job `job.result` emitted here is debug-level detail and is not the exporter's metric.
+The CV is never logged - only its length and location - and neither are job descriptions or the embedding vectors. Each job runs inside `job_log_context(id)`, so its records carry the same `job_id`. The idle wait uses `logIdleWait()` (one `jobs.skipped` record on a `WakeableTimer`) instead of a countdown. `job.result` here is debug detail, not the exporter's metric of the same name. Event names, levels, and the shared `LOG_*` variables are documented once in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
 
 ### Configuration
 
@@ -54,23 +50,3 @@ Each job is processed inside `job_log_context(id)` (`commonlib.observability`), 
 |---|---|---|
 | `AI_CVMATCHER_ENABLED` | — | Runs the match loop when true; `app.disabled` and exit otherwise |
 | `AI_CVMATCHER_LIMIT` | `100` | Maximum jobs pulled per batch |
-| `LOG_LEVEL` | `20` | 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR |
-| `LOG_COLOR` | `True` | Colored console output instead of raw JSON on stdout |
-| `LOG_DIR` | `data/logs` | Directory holding `aiCvMatcher.jsonl` |
-| `LOG_FILE_MAX_BYTES` | `10485760` | Rotate the JSONL file once it grows past this |
-| `LOG_FILE_BACKUP_COUNT` | `5` | Rotated files to keep |
-
-These are shared with every other app; see [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging) for the full reference.
-
-## Static Analysis
-
-This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
-
-```bash
-# From the repo root
-./scripts/lint.sh python
-```
-
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
-
-See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

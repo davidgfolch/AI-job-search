@@ -1,16 +1,10 @@
 # AI Job Search Default Development Guide
 
-This guide covers setting up your development environment, running the application manually, and testing.
+This guide covers the development workflows: testing, static analysis, coverage gates and structured logging.
 
-## Development with VS Code
+## Editor
 
-To ensure VS Code automatically selects the correct interpreter for each project:
-
-1. **Open the Workspace**: Open the `.vscode/AI-job-search.code-workspace` file in VS Code (`File > Open Workspace from File...`).
-2. **Interpreter Selection**: The workspace is configured to automatically pick up the `.venv` in each application folder (`apps/backend`, `apps/scrapper`, etc.).
-
-> **Note the root `pyproject.toml` is not required** for deploying or running the applications**, as each module (in `apps/`) has its own dependencies and configuration for Docker and CI/CD. However, it is **highly necessary for the local Developer Experience (DX)**. It configures the virtual environment used by the VS Code Workspace (`.venv`), providing global linting/formatting tools (like `black`, `ruff`, and `mypy`), and ensures the IDE can correctly resolve cross-module imports like `commonlib`.
-
+The VS Code workspace (`.vscode/AI-job-search.code-workspace`) and the root `pyproject.toml` that backs it are part of the setup, documented in [README_INSTALL.md](README_INSTALL.md#installation-steps).
 
 
 ## Testing
@@ -50,10 +44,11 @@ locally before pushing:
 | `web` | ESLint + `tsc -b` | `apps/web` lint rules and the TypeScript type check |
 | `e2e` | ESLint | `apps/e2e` lint rules |
 
-Ruff is installed **once for the whole repo** (it is a single zero-dependency binary):
-`uv tool install ruff`. No app needs it in its own environment. `scripts/lint.sh`
-falls back to `uvx ruff` when the binary is not on the `PATH`, so a one-off
-`uvx ruff@latest check apps/ scripts/ --config ruff.toml` also works.
+Ruff is installed **once for the whole repo** (a single zero-dependency binary, see
+[README_INSTALL.md](README_INSTALL.md#73-install-ruff-python-static-analysis)); no app
+needs it in its own environment. `scripts/lint.sh` falls back to `uvx ruff` when the
+binary is not on the `PATH`, so a one-off `uvx ruff@latest check apps/ scripts/ --config
+ruff.toml` also works.
 
 ### Ruff rules in force
 
@@ -129,13 +124,9 @@ reports `no-explicit-any` as a warning (the whole module is test code).
 ### Pre-commit hooks
 
 The same rules run before the commit, on the changed files only, through
-[pre-commit](https://pre-commit.com/):
-
-```bash
-pip install pre-commit   # or uv tool install pre-commit
-pre-commit install       # writes .git/hooks/pre-commit
-pre-commit run --all-files   # optional: check the whole repo once
-```
+[pre-commit](https://pre-commit.com/) (install per
+[README_INSTALL.md](README_INSTALL.md#74-install-pre-commit-optional-local-commit-hooks));
+`pre-commit run --all-files` checks the whole repo once.
 
 [`.pre-commit-config.yaml`](../.pre-commit-config.yaml) holds three hooks:
 
@@ -169,10 +160,8 @@ suites, because neither number alone is meaningful: a lazily-routed page is invi
 to the unit run and barely touched by e2e.
 
 ```bash
-# Both reports must exist; both suites include every production file under apps/web/src
-(cd apps/web && npm test -- run --coverage)
-(cd apps/e2e && npm test)
-node scripts/coverage/frontend-coverage-gate.mjs --min 90
+# Runs the web unit suite with coverage, the e2e suite, then the union gate
+./scripts/test.sh --coverage web e2e
 ```
 
 - Per file, `total` and `covered` are the max of the two reports. Both tools count the
@@ -190,10 +179,7 @@ node scripts/coverage/frontend-coverage-gate.mjs --min 90
 ### Scrapper: production statements
 
 ```bash
-cd apps/scrapper
-poetry run coverage run -m pytest
-poetry run coverage xml
-python ../../scripts/coverage/scrapper_coverage_gate.py --min 90
+./scripts/test.sh --coverage commonlib scrapper   # runs the production-statements gate
 ```
 
 Tests live inside the package, so `[tool.coverage.run] omit` keeps `*/test/*` and
@@ -325,9 +311,9 @@ Per-app details live in each module's own README (`apps/<module>/README.md`); th
 
 Agent skills, rules, and workflows (including CodeGraph and the dependabot agent) are documented in [AGENTIC_SDLC.md](AGENTIC_SDLC.md). All agent skills live under `.claude/skills/`.
 
-## Documentation Sync
+## Documentation
 
-Documentation is part of the implementation: after every plan implementation, feature, fix, or config change, the affected docs are updated in the same session. The change → docs map and the definition-of-done checklist live in `.claude/rules/documentation-update.md` and are described in [AGENTIC_SDLC.md](AGENTIC_SDLC.md#documentation-sync-automatic-mandatory).
+Documentation must stay accurate and high-level, not track every change: fix the docs a change made wrong, and update the READMEs only for user-visible or setup changes. The policy lives in `.claude/rules/documentation-update.md`; the agent mechanisms are described in [AGENTIC_SDLC.md](AGENTIC_SDLC.md#documentation-policy-fix-if-wrong-high-level-only).
 
 ## Related Documentation
 

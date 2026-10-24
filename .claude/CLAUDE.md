@@ -20,19 +20,17 @@ AI-powered job search monorepo with multi-platform scraping, AI enrichment, and 
 
 ## Build & Test Commands
 
-### Single Test Execution
+### Test Execution
+All tests run through the centralized runner — never `npm test`, `uv run pytest` or `poetry run pytest` directly:
 ```bash
-# Web frontend (Vitest)
-cd apps/web
-npm test -- path/to/specific.test.ts
+# One module (add commonlib when the change involves it)
+./scripts/test.sh commonlib backend
 
-# Backend/Python apps with uv
-cd apps/backend  # or apps/aiEnrich
-uv run pytest path/to/specific_test.py
+# Several modules
+./scripts/test.sh commonlib web e2e
 
-# Legacy Python apps with Poetry  
-cd apps/scrapper  # or apps/commonlib
-poetry run pytest path/to/specific_test.py
+# E2E only
+./scripts/test.sh e2e
 ```
 
 ### Full Suite & Coverage
@@ -57,7 +55,6 @@ poetry run pytest path/to/specific_test.py
 cd apps/web
 npm run dev        # Vite dev server (port 5173)
 npm run build      # Production build
-npm run lint       # ESLint
 npm run typecheck  # tsc -b (type check only)
 
 # Backend (uv)
@@ -68,7 +65,6 @@ uv run uvicorn main:app --reload --port 8000
 # Legacy apps (Poetry)
 cd apps/scrapper
 poetry install
-poetry run pytest
 ```
 
 ### Static Analysis (blocking CI gate)
@@ -79,15 +75,7 @@ poetry run pytest
 ./scripts/lint.sh web      # eslint + tsc -b over apps/web
 ./scripts/lint.sh e2e      # eslint over apps/e2e
 ```
-Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its
-own environment. Rules in force: `E9`, `F401`, `F841`, `F811`, `ARG` and the whole flake8-bugbear set (`B`).
-Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it;
-use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog
-processors, markdownify overrides, navigator/executor interfaces). `ARG` is not enforced on
-pytest modules, because pytest resolves fixtures by parameter name.
-The same rules run before the commit via pre-commit (`.pre-commit-config.yaml`); install it with
-`pre-commit install`. VS Code is wired to ruff and eslint in `.vscode/settings.json`.
-Details: [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
+Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rule set, unused-argument conventions, pre-commit hooks and VS Code wiring: [README_DEVELOPMENT.md#static-analysis](../READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ## Code Style Guidelines
 
@@ -181,12 +169,11 @@ Before marking any task as complete, always verify:
 1. **No architecture violations**: Run architecture tests to ensure no files exceed 200 lines
 2. **Tests pass**: Ensure all related tests pass after changes — required when the change touches test code, production code, or `scripts/test.sh`/`scripts/test.bat`. Skip it when the change is only docs or non-test scripts/config (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills) and say why in the summary.
 3. **Lint/TypeScript clean**: Run linting and type checking commands
-4. **Docs synced**: Apply the change → docs map in `.claude/rules/documentation-update.md` and list the updated docs in your summary (or state that none were needed)
+4. **Docs accurate**: Fix only what the change made wrong (see `.claude/rules/documentation-update.md`) and list the updated docs in your summary (or state that none were needed)
 
 ```bash
 # Quick check for architecture violations (always run before finishing)
-cd apps/web && npx vitest run src/test/architecture.test.ts
-cd apps/commonlib && poetry run pytest test/architecture_test.py
+./scripts/test.sh commonlib web
 ```
 
 ## Testing Requirements
@@ -216,9 +203,9 @@ docker-compose --profile ollama --profile aienrich up -d
 .\scripts\uninstall.bat  # Windows
 ```
 
-## Documentation Sync (mandatory, automatic)
+## Documentation Policy (fix if wrong, high-level only)
 
-Documentation is updated in the same session as every plan implementation, feature, fix, refactor, config change, or dependency bump — never as a follow-up task, never only when the user asks. The rule lives in `.claude/rules/documentation-update.md` (change → docs map + definition-of-done checklist) and is reinforced by `.claude/hooks/docs-sync.py` and `.opencode/plugins/docs-sync.js`. Module behavior → `apps/<module>/README.md`; new module → root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`; env var → root `README.md`; compose change → `READMEs/DOCKER_DEV.md`; command change → `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md`; new host tool → `READMEs/README_INSTALL.md`; API/DB → `apps/backend/README.md`; UI flow → root `README.md`; CI → `READMEs/README_GITHUB.md`; skill/rule/hook/plugin → `READMEs/AGENTIC_SDLC.md`; plan → the plan file + `READMZs/TODO.md`.
+Documentation is not a changelog: fix docs the change made wrong, and update the user-facing READMEs only for user-visible features, API/UI contracts and setup/run steps. The policy is defined once in `.claude/rules/documentation-update.md` and described in [READMEs/AGENTIC_SDLC.md](../READMEs/AGENTIC_SDLC.md#documentation-policy-fix-if-wrong-high-level-only); don't duplicate mechanics across `README.md`, `AGENTS.md` and this file.
 
 ## Database Safety (ask before any write)
 
@@ -240,10 +227,6 @@ Agent skills are located in `.claude/skills/`:
 
 ## CodeGraph (code intelligence)
 
-CodeGraph is the project's default code-intelligence tool. Its index lives in the local, gitignored `.codegraph/` directory; the background daemon auto-syncs changed files, and `scripts/install.*` install the CLI, wire its MCP server into the detected agents, and build the initial index.
+For codebase questions, use CodeGraph before the first grep, search or source-file read (and put this rule in every subagent prompt that explores code): `codegraph_explore` / `codegraph_node` MCP tools when available, otherwise `codegraph explore "<question>"` / `codegraph node <symbol>`; `callers`/`callees`/`impact`/`affected` for relationships. Read raw files only for lines CodeGraph or an earlier read already located.
 
-Rules:
-- For codebase questions, use CodeGraph before your first grep, search or source-file read, and put this rule in every subagent prompt that explores code. Use the `codegraph_explore` MCP tool when available, otherwise `codegraph explore "<question>"`. Use `codegraph_node` / `codegraph node <symbol>` for one symbol, and `callers`/`callees`/`impact`/`affected` for relationships. See `.claude/skills/codegraph/SKILL.md`.
-- Read raw files only for lines CodeGraph or an earlier read already located.
-- `.codegraph/` is generated and local: never hand-edit it, never commit it, and never count it as documentation.
-- After substantial changes, check `codegraph status`; the daemon normally syncs automatically, otherwise run `codegraph sync`.
+Tool docs, index lifecycle and the `.codegraph/` rules: [READMEs/AGENTIC_SDLC.md](../READMEs/AGENTIC_SDLC.md#codegraph-code-intelligence); full command list: `.claude/skills/codegraph/SKILL.md`.

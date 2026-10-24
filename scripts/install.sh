@@ -3,6 +3,15 @@ set -e
 # debug: show commands
 # set -x
 
+# Installs this repo's local development environment:
+#   - commonlib first, then every app (Poetry / uv / npm; e2e also gets its Playwright browsers)
+#   - the shared host tools: CodeGraph (with agent wiring and the project index), Crawlee, Ruff
+#   - the default Ollama model (qwen2.5:3b) on the server the AI modules resolve
+#   - data/logs + data/metrics, re-owning folders created by root in the containers
+# Host prerequisites (Python, Poetry, uv, npm, Docker) and `.env` / `.env.secrets` are
+# not created here: see READMEs/README_INSTALL.md. Optional or remote steps (Ollama pull,
+# CodeGraph, Ruff) warn and continue instead of aborting the dependency install.
+
 OLLAMA_CONTAINER=ai-job-search-ollama
 
 ollama_hf_spec() {

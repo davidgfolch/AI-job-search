@@ -10,10 +10,7 @@
 - **Ruff**: Optional locally, required by CI. Installed once for the whole repo with `uv tool install ruff` (step 7.3).
 - **pre-commit**: Optional locally. Installs the commit hooks that run the same ruff and ESLint rules (step 7.4).
 
-> **Prerequisites for the install scripts**: `scripts\install.bat` (Windows) and
-> `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need Python on `PATH`.
-> On a fresh Windows 11 or Linux machine, install Python 3.11, Poetry, and uv first
-> (steps 1-3 below), then run the script from a **new** terminal so `PATH` picks them up.
+`scripts/install.sh` (Linux) / `scripts/install.bat` (Windows) automate the app dependencies, the shared host tools (Crawlee, Ruff, CodeGraph) and the default Ollama model pull. They need Python, Poetry, uv and npm on `PATH`, so install those first (steps 1–4) and run the script from a **new** terminal. The steps below remain the manual path for the pieces you prefer to do yourself.
 
 ## Package Managers
 
@@ -25,11 +22,11 @@ This project uses different package managers for different components:
 
 ## Installation Steps
 
-> **Note**: For the best development experience in VS Code, open the `.vscode/AI-job-search.code-workspace` file after installation. This ensures the correct Python interpreters are selected for each app.
+> **VS Code**: open `.vscode/AI-job-search.code-workspace` after installation. The workspace picks each app's `.venv`; the root `pyproject.toml` (not required to run or deploy) supplies the shared environment, the linting tools and the cross-module imports such as `commonlib`.
 
 ### 1. Install Python 3.11
 
-`scripts\install.bat` (Windows) and `scripts/install.sh` (Linux) call `poetry` and `uv`, both of which need a Python interpreter on `PATH` — install Python **3.11** first (see System Requirements for why 3.11 and not 3.12).
+Install **3.11** first (see System Requirements for why 3.11 and not 3.12).
 
 **Windows 11:**
 
@@ -121,8 +118,6 @@ ollama pull phi3.5:3b
 ollama pull llama3.2:1b
 ```
 
-> `scripts/install.sh` installs commonlib first, then resolves the Ollama server with the same fallback chain the AI modules use (`commonlib.ollama_client.resolve_ollama_url` over `commonlib.ollama_config.get_configured_ollama_url()`: the configured URL, then `host.docker.internal`, `localhost`, the `ollama` compose service, and finally a LAN scan on port 11434; an `OLLAMA_HOST` already set in the shell is tried first). The resolved URL is exported as `OLLAMA_HOST`, so `qwen2.5:3b` (the AI modules' default) is pulled from that host — including a server that lives on another machine in the LAN — through the local `ollama` CLI when available, through `docker exec ai-job-search-ollama ollama` when the resolved host is the compose service, or directly against the host's Ollama HTTP API (`POST /api/pull`) when neither a local CLI nor a container exists. `scripts/install.bat` (Windows) resolves the same way and pulls via the local CLI, the container, or the host's HTTP API. Every step that needs a reachable server — the model pull — is best-effort: an unreachable server prints a warning and the dependency install continues, so you can run the skipped step later by hand. Before downloading anything, both scripts check whether the model is already on the resolved server (`ollama show` through the CLI or the container, or `POST /api/show` when neither exists) and skip the pull when the tag is present — a model already on a shared host in the LAN is never downloaded again, even when the registry probe fails and the HuggingFace fallback would otherwise kick in.
-
 If you are running the Dockerized Ollama server (`docker-compose up -d ollama`), pull the models through the container instead:
 
 ```bash
@@ -145,7 +140,7 @@ The `ollama rm` removes the temporary HuggingFace tag (it shares the same blobs,
 
 For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
 
-The install scripts handle this automatically: `OLLAMA_PULL_SOURCE=auto` (default) probes `r2.cloudflarestorage.com` and falls back to HuggingFace + alias when it is unreachable, then removes the temporary tag. Force the source with `OLLAMA_PULL_SOURCE=ollama|hf`. The HuggingFace fallback only runs when the model is actually missing: both scripts first ask the server (`ollama show`, or `POST /api/show` on a remote host without a local CLI) and skip the download when `<model>` is already there, so an existing model is not pulled again just because the registry is blocked.
+The helper install script picks this path automatically when `r2.cloudflarestorage.com` is unreachable; set `OLLAMA_PULL_SOURCE=hf` to force it.
 
 ### 7. Install Crawlee (source-page analysis)
 
@@ -155,7 +150,7 @@ Required by the `crawlee-page-analyst` agent skill to analyze a source page afte
 uv tool install "crawlee[all]"
 ```
 
-> `scripts/install.sh` / `scripts/install.bat` install it automatically. If you use `PlaywrightCrawler` and the browser binaries are missing, run `playwright install chromium` once.
+> If you use `PlaywrightCrawler` and the browser binaries are missing, run `playwright install chromium` once.
 
 ### 7.1 Install Google Chrome & system libraries (scrapper)
 
@@ -183,36 +178,20 @@ sudo apt-get install -y google-chrome-stable \
 
 ### 7.2 Install CodeGraph (default code intelligence)
 
-`scripts/install.sh` / `scripts/install.bat` install [colbymchenry/codegraph](https://github.com/colbymchenry/codegraph) best-effort via its official installer:
+[CodeGraph](https://github.com/colbymchenry/codegraph) is installed by its official installer, then wired into the detected agents with a local index:
 
 ```bash
-# Linux/Mac (from scripts/install.sh)
+# Linux/Mac
 curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
 
-# Windows (from scripts/install.bat)
+# Windows (PowerShell)
 powershell -Command "irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex"
-```
 
-The scripts then wire CodeGraph into the agents they detect (**opencode**, Claude Code, Cursor, …) and build this project's index in one non-interactive step:
-
-```bash
+# Then wire it into the detected agents and build this project's index
 codegraph install --yes --init
 ```
 
-`--yes` writes the MCP server entry into the detected agents' global config, and `--init` creates the local `.codegraph/` index, which ships its own `.gitignore` so the SQLite database and runtime files are never committed. The daemon watches the repository and auto-syncs changed files, so the graph normally stays fresh on its own.
-
-CodeGraph is the default way to explore the codebase, for humans and agents alike. Prefer it over grepping or reading whole files:
-
-```bash
-codegraph explore "how does the scrapper scheduler dispatch platforms"
-codegraph node ScrapperScheduler
-codegraph impact ScrapperScheduler
-codegraph affected apps/scrapper/scrapper/core/scrapper_scheduler.py
-```
-
-See root [README.md](../README.md#code-intelligence-codegraph) for the full workflow and `.claude/skills/codegraph/SKILL.md` for the command reference.
-
-Both the CLI install and the wiring/indexing are best-effort: if the installer is unreachable, or the `codegraph` launcher is not on `PATH` yet in the current shell (the installers update `PATH` for new terminals only), the scripts print a warning and the app dependency install continues. In that case open a new terminal and run `codegraph install --yes --init` in the repo root manually; on Windows the launcher lives at `%LOCALAPPDATA%\codegraph\current\bin\codegraph.cmd`.
+CodeGraph is the default way to explore the codebase, for humans and agents alike: prefer `codegraph explore "<question>"` / `codegraph node <symbol>` over grepping or reading whole files. See [AGENTIC_SDLC.md](AGENTIC_SDLC.md#codegraph-code-intelligence) for the workflow and `.claude/skills/codegraph/SKILL.md` for the command reference.
 
 ### 7.3 Install Ruff (Python static analysis)
 
@@ -221,22 +200,11 @@ CI gate. It is a single zero-dependency binary installed **once for the whole re
 no app needs it in its own virtual environment:
 
 ```bash
-# Linux/Mac
-uv tool install ruff
-
-# Windows
 uv tool install ruff
 ```
 
-The binary lands in `%USERPROFILE%\.local\bin` (Windows) or `~/.local/bin` (Linux/Mac);
-add that directory to your `PATH` if it is not there yet. `scripts/lint.sh` falls back
-to `uvx ruff` when the binary is not on the `PATH`, so the checks still run without
-the extra step.
-
-`scripts/install.sh` / `scripts/install.bat` already install Ruff as part of the
-project dependency install, so running them is enough.
-
-Verify the install and run the gate:
+`scripts/lint.sh` falls back to `uvx ruff` when the binary is not on `PATH`, so the gate
+runs either way. Verify the install and run the gate:
 
 ```bash
 ruff --version
@@ -255,19 +223,12 @@ changed files before each commit, so a finding is caught locally instead of in
 the pipeline:
 
 ```bash
-# Linux/Mac
-pip install pre-commit
-pre-commit install
-
-# Windows (PowerShell)
 pip install pre-commit
 pre-commit install
 ```
 
-This is optional: the `static-analysis` CI gate enforces the same rules whether
-or not the hooks are installed. The ESLint hooks use the `eslint` already
-installed in `apps/web` and `apps/e2e`, so run `npm install` in both modules
-before the first commit. See
+Optional: the `static-analysis` CI gate enforces the same rules either way. Details,
+including the `npm install` prerequisite of the `apps/web` and `apps/e2e` ESLint hooks:
 [README_DEVELOPMENT.md#pre-commit-hooks](README_DEVELOPMENT.md#pre-commit-hooks).
 
 ### 8. Install Project Dependencies
@@ -278,20 +239,7 @@ You can use the helper script in the project root:
 ./scripts/install.sh # or .\scripts\install.bat
 ```
 
-> **Note**: The `install.*` scripts install dependencies locally. If you run the
-> web app via Docker, its image auto-detects changed `package-lock.json` and
-> reinstalls `node_modules` on start (see `apps/web/docker-entrypoint.sh`), so a
-> simple `docker-compose up -d --build web` after a dependency change is enough.
-> See [DOCKER_DEV.md](DOCKER_DEV.md) for details.
-
-> **Note**: On Linux/macOS the script also prepares the folders it will log into
-> (`data/logs`, `data/metrics` and `apps/*/data/{logs,metrics}`) and fixes their owner.
-> The Docker containers run as root and create root-owned files in those bind mounts,
-> which then blocks the host user from writing its own logs, so `install.sh` re-owns
-> them with `sudo chown -R "$(id -u):$(id -g)" data apps/*/data` when it finds any
-> (it prints the command instead when `sudo` is unavailable). On Windows run the
-> equivalent by hand from an elevated shell; otherwise the apps report
-> `logs.write_failed` once per path and drop the affected records.
+> **Note**: If you run the web app via Docker, its image auto-detects changed `package-lock.json` and reinstalls `node_modules` on start (see `apps/web/docker-entrypoint.sh`), so `docker-compose up -d --build web` after a dependency change is enough. See [DOCKER_DEV.md](DOCKER_DEV.md).
 
 Or install manually:
 
@@ -315,24 +263,16 @@ Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [a
 
 ### 8.1 Uninstall Project Dependencies
 
-`scripts/uninstall.bat` (Windows) and `scripts/uninstall.sh` (Linux) remove what
-`install.*` installed: virtual environments, `node_modules`, caches, and the
-gitignored lock files. The script shows an interactive menu and several items
-can be selected at once (only dependencies that are currently installed are
-shown); only the selected apps (or the root project, or the
-global Crawlee/CodeGraph tools) are removed. Selecting CodeGraph runs
-`codegraph uninit` for this checkout and `codegraph uninstall --yes` for the
-agent wiring and CLI, while preserving the tracked `.codegraph/.gitignore`.
-No `git` command is run, and tracked
-files, `.env` / `.env.secrets`, and the `data/` folders are never touched.
+`scripts/uninstall.bat` (Windows) / `scripts/uninstall.sh` (Linux) remove what the
+install script created — virtual environments, `node_modules`, caches and ignored
+lock files — through an interactive menu, and never touch `git`-tracked files,
+`.env` / `.env.secrets` or the `data/` folders.
 
 ```bash
 ./scripts/uninstall.sh # or .\scripts\uninstall.bat
 ```
 
-Removing an app deletes its `.venv`, `node_modules` for the web apps, pytest
-coverage and bytecode caches, and the ignored lock files. Ollama models are **not**
-removed: they live inside the Ollama server, not the project.
+Ollama models are **not** removed: they live inside the Ollama server, not the project.
 
 ## Configuration
 

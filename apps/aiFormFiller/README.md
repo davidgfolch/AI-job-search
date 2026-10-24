@@ -163,44 +163,21 @@ Console output goes to stdout and every record is mirrored to a JSONL file, one 
 | `context_loader` | `context.cv_loaded`, `context.looking_for_loaded` (info); `context.cv_reloaded`, `context.looking_for_reloaded` (info, the documents are re-read on every request when their mtime changes); `context.file_not_found`, `context.file_empty` (warning) |
 | `models/local_hf` | `model.loading`, `model.loaded` (info, provider and model id; the pipeline is built once and cached) |
 
-Conventions: event names are dotted `domain.action` and never free text; dynamic values are `key=value` fields and no f-string is ever passed to a log call; `debug` is per-request detail, `info` is lifecycle, `warning` is recoverable, `exception` is a failed provider call with its traceback. The service handles the CV and the LLM conversation, so **nothing from the documents, the prompts, the questions or the model answers is ever logged** - only lengths, counts, flags, provider names and paths. The HTTPException raised from the failure branches is unchanged; the `provider.failed` record is what makes those failures visible, because the 500 response body alone does not say which provider broke. No `print()` remains in this app.
-
-### Configuration
-
-| Variable | Default | Description |
-|---|---|---|
-| `LOG_LEVEL` | `20` | 10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR |
-| `LOG_COLOR` | `True` | Colored console output instead of raw JSON on stdout |
-| `LOG_DIR` | `data/logs` | Directory holding `aiFormFiller.jsonl` |
-| `LOG_FILE_MAX_BYTES` | `10485760` | Rotate the JSONL file once it grows past this |
-| `LOG_FILE_BACKUP_COUNT` | `5` | Rotated files to keep |
-
-Set `LOG_LEVEL=10` to get the per-request `form.answered` records. These variables are shared with every other app; see [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging) for the full reference.
+The service handles the CV and the LLM conversation, so **nothing from the documents, the prompts, the questions or the model answers is ever logged** - only lengths, counts, flags, provider names and paths. The `provider.failed` record is what makes provider failures visible, because the 500 response body alone does not say which provider broke. Event names, levels, and the shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging); set `LOG_LEVEL=10` for the per-request `form.answered` records.
 
 ## Development
 
 ```bash
+# Install dependencies (inside apps/aiFormFiller)
 cd apps/aiFormFiller
-
-# Install dependencies
 uv sync
-
-# Run tests
-uv run pytest
-
-# Run with coverage
-uv run coverage run -m pytest && uv run coverage report -m
 ```
-
-## Static Analysis
-
-This module is linted with [Ruff](https://docs.astral.sh/ruff/) from the repo root, using the shared [`ruff.toml`](../../ruff.toml) that covers every Python app.
 
 ```bash
-# From the repo root
-./scripts/lint.sh python
+# From the repo root: tests through the centralized runner
+./scripts/test.sh commonlib aiFormFiller   # Linux/Mac
+.\scripts\test.bat commonlib aiFormFiller  # Windows
+
+# With coverage
+./scripts/test.sh --coverage commonlib aiFormFiller
 ```
-
-Rules in force: unused imports (`F401`), unused variables (`F841`), dead redefinitions (`F811`), unused arguments (`ARG`) and the whole [flake8-bugbear](https://github.com/PyCQA/flake8-bugbear) set (`B`). Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it; `ARG` is not enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter.
-
-See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.

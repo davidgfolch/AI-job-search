@@ -9,10 +9,8 @@ AI Job Search is a monorepo for scraping, managing, and AI-enriching job offers 
 ## Build and Development Commands
 
 ### Environment Setup
+Secrets (`.env.secrets`, copied from `scripts/.env.secrets.example`) and dependency installation are documented once in [README_INSTALL.md](READMEs/README_INSTALL.md); `./scripts/install.sh` / `.\scripts\install.bat` performs the full install.
 ```bash
-# Copy secrets template (never execute this, I have my credentials in .env.secrets)
-cp scripts/.env.secrets.example .env.secrets
-
 # Start services with Docker
 docker-compose up -d
 ```
@@ -44,28 +42,16 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 - Profile-gated ai workers need their profile (`--profile aienrich|aiEnrichSkill`).
 - Ollama-dependent services (`aienrich`, `aienrichskill`) are validated build-only + unit tests + ci-gate, not `up`.
 
-### Python Apps (commonlib, scrapper)
-```bash
-# Install dependencies
-poetry install
-```
-
-### Python Apps (backend, aiEnrich, aiEnrichSkill, aiCvMatcher)
-```bash
-# Install dependencies
-uv sync
-```
+### Dependencies
+[README_INSTALL.md](READMEs/README_INSTALL.md) covers the dependency install, automated by the setup script or per app. Package managers: Poetry (`commonlib`, `scrapper`), uv (`backend`, `aiEnrich`, `aiEnrichSkill`, `aiCvMatcher`, `aiFormFiller`, `cron`) and npm (`web`, `e2e`).
 
 ### Web Frontend (apps/web)
 ```bash
-# Install
-npm install
-
 # Dev server
 npm run dev
 
-# Lint
-npm run lint
+# Lint (from the repo root)
+./scripts/lint.sh web
 ```
 Note: vitest 5 (apps/web) requires Node >= 22.12.0; prefer Node 24/26 (CI uses 24). If local Node is 22.12.0 and vitest workers fail with undici/zstd errors, use Node 24+ (e.g. `export PATH="$HOME/.nvm/versions/node/v26.8.2/bin:$PATH"`).
 
@@ -73,13 +59,13 @@ The dev server resolves the backend API at startup (`apps/web/src/common/backend
 
 ### E2E Tests (apps/e2e)
 ```bash
-# Run Playwright tests
-npm test
+# Run Playwright tests through the centralized runner
+./scripts/test.sh e2e
 
-# Interactive UI mode
+# Interactive UI mode (inside apps/e2e)
 npm run test:ui
 
-# Generate test code
+# Generate test code (inside apps/e2e)
 npm run codegen
 ```
 
@@ -127,13 +113,7 @@ Static analysis is a blocking CI gate (`static-analysis` job). Run it locally wi
 ./scripts/lint.sh web      # eslint + tsc -b over apps/web
 ./scripts/lint.sh e2e      # eslint over apps/e2e
 ```
-Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rules in force: `E9` (syntax errors), `F401` (unused imports), `F841` (unused variables), `F811` (dead redefinitions), `ARG` (unused arguments) and the whole flake8-bugbear set (`B`, 44 rules). The bugbear rules that shaped the codebase the most: `B007` (unused loop variables), `B008` (call in an argument default), `B011` (`assert False`), `B017` (blind `pytest.raises(Exception)`), `B018` (useless expressions), `B027` (empty abstract methods), `B028` (`warnings.warn` without `stacklevel`), `B034` (positional `re.sub` arguments), `B904` (`raise ... from`), `B905` (`zip(strict=)`). FastAPI `Depends`/`Query` defaults are allowed for `B008`.
-
-Prefix an intentionally unused parameter with `_` (`_properties`) instead of deleting it. Use `# noqa: ARG00x - <reason>` only when the signature is fixed by a contract (structlog processors, markdownify overrides, navigator/executor interfaces). `ARG` is **not** enforced on pytest modules, because pytest resolves a fixture by the name of the test parameter, so an unused one cannot be renamed without breaking fixture resolution.
-
-The same rules run before the commit on the changed files only, via [pre-commit](https://pre-commit.com/) (`.pre-commit-config.yaml`: `ruff-check`, `eslint-web`, `eslint-e2e`). Install it with `pre-commit install`; the two ESLint hooks need `npm install` to have run in `apps/web` and `apps/e2e`. VS Code is wired to the same tools in `.vscode/settings.json`.
-
-Details: [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
+Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rule set (Ruff selectors, bugbear rules), the unused-argument conventions, pre-commit hooks and VS Code wiring are documented once in [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ### Running Individual Apps
 ```bash
@@ -240,27 +220,9 @@ Environment variables are split across two files:
 - **Method bodies**: Avoid extra spaces inside parentheses, e.g., `func(arg)` not `func( arg )`. Avoid empty lines inside method bodies.
 - **Logging**: Structured events via `commonlib.observability` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging)). Bare `print()` is only allowed for presentational output listed in `PRINT_ALLOWLIST` in `apps/commonlib/commonlib/test/architecture/architecture_logging.py` — a commonlib architecture test enforces this.
 
-## Documentation Sync (mandatory, automatic)
+## Documentation Policy (fix if wrong, high-level only)
 
-Documentation is part of the implementation, never a follow-up task. After **every** plan implementation, feature, fix, refactor, config change, or dependency bump, update the affected docs in the same session, before reporting the work as done. Never wait for the user to ask for it.
-
-The rule is defined once in `.claude/rules/documentation-update.md` (always-on, auto-loaded via `instructions` in `.opencode/opencode.json`) and reinforced by `.claude/hooks/docs-sync.py` (Claude Code) and `.opencode/plugins/docs-sync.js` (opencode). Change → docs map, in short:
-
-| Change | Docs to update |
-|--------|-----------------|
-| Behavior/feature/bug fix in `apps/<module>/` | `apps/<module>/README.md` |
-| New/renamed/removed module in `apps/` | root `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/AGENTIC_SDLC.md` |
-| Env var added/renamed/removed | root `README.md` (Settings), affected `apps/<module>/README.md` |
-| Docker service, profile, port, volume | `READMEs/DOCKER_DEV.md`, root `README.md` (Docker Compose Profiles), `AGENTS.md` |
-| Build/test/install/run command | `AGENTS.md`, `.claude/CLAUDE.md`, `READMEs/README_DEVELOPMENT.md` |
-| New host tool (Docker, `gh`, Ollama model) | `READMEs/README_INSTALL.md` |
-| Backend endpoint / DB schema | `apps/backend/README.md` |
-| User-visible UI flow | root `README.md` (Features, Screenshots) |
-| CI / Dependabot behavior | `READMEs/README_GITHUB.md` |
-| Agent skill/rule/hook/plugin | `READMEs/AGENTIC_SDLC.md`, `AGENTS.md` + `.claude/CLAUDE.md` (Skills) |
-| Plan implementation | the plan file (`Status:` + outcome), `READMZs/TODO.md` |
-
-Before reporting done: open every listed doc, fix only what the change made inaccurate, and list the updated docs in the final summary (or state that none were needed). `.codegraph/` is generated, machine-local output — rebuild it with `codegraph index`/`sync`, never hand-edit it, and never count it as documentation.
+Documentation is not a changelog: fix docs the change made wrong, and update the user-facing READMEs only for user-visible features, API/UI contracts and setup/run steps. The policy is defined once in `.claude/rules/documentation-update.md` and described in [READMEs/AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md#documentation-policy-fix-if-wrong-high-level-only) — link to it instead of duplicating mechanics. State in the final summary which docs you updated, or that none needed changes.
 
 ## Database Safety (ask before any write)
 
@@ -284,10 +246,6 @@ Agent skills are located in `.claude/skills/`:
 
 ## CodeGraph (code intelligence)
 
-CodeGraph is the project's default code-intelligence tool. Its index lives in the local, gitignored `.codegraph/` directory; the background daemon auto-syncs changed files, and `scripts/install.*` install the CLI, wire its MCP server into the detected agents, and build the initial index.
+For codebase questions, use CodeGraph before the first grep, search or source-file read (and put this rule in every subagent prompt that explores code): `codegraph_explore` / `codegraph_node` MCP tools when available, otherwise `codegraph explore "<question>"` / `codegraph node <symbol>`; `callers`/`callees`/`impact`/`affected` for relationships. Read raw files only for lines CodeGraph or an earlier read already located.
 
-Rules:
-- For codebase questions, use CodeGraph before your first grep, search or source-file read, and put this rule in every subagent prompt that explores code. Use the `codegraph_explore` MCP tool when available, otherwise `codegraph explore "<question>"`. Use `codegraph_node` / `codegraph node <symbol>` for one symbol, and `callers`/`callees`/`impact`/`affected` for relationships. See `.claude/skills/codegraph/SKILL.md`.
-- Read raw files only for lines CodeGraph or an earlier read already located.
-- `.codegraph/` is generated and local: never hand-edit it, never commit it, and never count it as documentation.
-- After substantial changes, check `codegraph status`; the daemon normally syncs automatically, otherwise run `codegraph sync`.
+Tool docs, index lifecycle and the `.codegraph/` rules: [READMEs/AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md#codegraph-code-intelligence); full command list: `.claude/skills/codegraph/SKILL.md`.

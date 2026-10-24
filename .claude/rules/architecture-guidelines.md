@@ -15,7 +15,7 @@ trigger: always_on
 3. Monorepo module's:
    - This project contains several modules in apps folder.
    - Each module use a package manager, check test.* or install.* in scripts folder to know wich to use.
-      - for npm tests use `npx vitest run`.
+      - run module tests through the centralized script (`./scripts/test.sh <module>` / `.\scripts\test.bat <module>`), never the package manager directly.
       - always implement parameterized tests when applies.
    - Run module full suite tests when the change touches **test code, production code, or the test runner scripts** (`scripts/test.sh`, `scripts/test.bat`). Always include `commonlib`.
    - Do **not** run the suites when the change is limited to **documentation or non-test scripts/config** (CI workflows, coverage gates, install/sandbox helpers, agent rules and skills): those files are not exercised by the unit or e2e suites, so a run proves nothing. State in the summary that the suites were skipped for that reason.

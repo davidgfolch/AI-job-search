@@ -144,13 +144,14 @@ The application will be available at `http://localhost:5173`.
 
 - `npm run dev`: Start the development server.
 - `npm run build`: Build the application for production.
-- `npm run lint`: Run ESLint to check for code quality issues.
-- `npm test`: Run unit tests using Vitest.
 - `npm run preview`: Preview the production build locally.
+- `npm run lint` / `npm run typecheck`: run together by `./scripts/lint.sh web` from the repo root.
+
+Tests run through the centralized runner (`./scripts/test.sh commonlib web`), not `npm test` directly.
 
 ### Coverage
 
-`npm test -- run --coverage` measures **production code only**: `vite.config.ts` includes
+`./scripts/test.sh --coverage web` measures **production code only**: `vite.config.ts` includes
 every `src` file (so lazily-routed pages still count) and excludes `**/test/**`, CSS,
 `node_modules` and `dist`. The Vitest threshold is 90% on **statements and lines**;
 functions and branches are reported only.
@@ -159,7 +160,7 @@ The enforced frontend floor is the **union** of this unit coverage and the e2e c
 (see `apps/e2e/coverage.config.ts`), gated by `scripts/coverage/frontend-coverage-gate.mjs`:
 
 ```bash
-node scripts/coverage/frontend-coverage-gate.mjs --min 90
+./scripts/test.sh --coverage commonlib web e2e   # both reports, then the union gate
 ```
 
 ## Project Structure
@@ -170,16 +171,3 @@ node scripts/coverage/frontend-coverage-gate.mjs --min 90
 - `src/services`: API service layer.
 - `src/types`: TypeScript type definitions.
 - `src/utils`: Utility functions.
-
-## Static Analysis
-
-`apps/web` is linted with ESLint and type-checked with TypeScript. Both run in the `static-analysis` CI gate:
-
-```bash
-npm run lint       # ESLint
-npm run typecheck  # tsc -b
-```
-
-From the repo root, `./scripts/lint.sh web` runs both. The gate fails on any ESLint **error** and on any type error; ESLint warnings are reported but do not break the build. `no-explicit-any` is an error in production sources and a warning in test, fixture and mock files.
-
-See [Static Analysis](../../READMEs/README_DEVELOPMENT.md#static-analysis) for the full reference.
