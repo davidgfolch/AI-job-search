@@ -88,6 +88,7 @@ export interface WatcherStats {
 }
 
 export interface SalaryHistoryEntry {
+  id: string;
   job_id: number;
   company_raw: string;
   company_normalized: string;
@@ -179,6 +180,11 @@ export const jobsApi = {
   getCompanyHistory: async (company: string): Promise<SalaryHistoryEntry[]> => {
     return handleRequest(apiClient.get<SalaryHistoryEntry[]>('/jobs/history/by-company', { params: { company } }),
       'Error loading company salary history');
+  },
+
+  deleteSalaryHistoryEntry: async (recordId: string): Promise<{ deleted: number }> => {
+    return handleRequest(apiClient.delete<{ deleted: number }>(`/jobs/history/${recordId}`),
+      'Error deleting salary history entry');
   },
 
   getSystemTimezone: async (): Promise<{ offset_minutes: number }> => {

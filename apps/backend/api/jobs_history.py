@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.salary_history_service import SalaryHistoryService
 
@@ -17,3 +17,10 @@ def get_job_history(job_id: int, service: SalaryHistoryService = Depends(get_ser
 @router.get("/history/by-company")
 def get_company_history(company: str = Query(...), service: SalaryHistoryService = Depends(get_service)):
     return service.get_company_history(company)
+
+
+@router.delete("/history/{record_id}")
+def delete_history_record(record_id: str, service: SalaryHistoryService = Depends(get_service)):
+    if not service.delete_record(record_id):
+        raise HTTPException(status_code=404, detail="Salary history record not found")
+    return {"deleted": 1}

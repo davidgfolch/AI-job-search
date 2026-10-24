@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { jobsApi } from '../ViewerApi';
 const mocks = vi.hoisted(() => ({
     axiosCreateConfig: { value: null as any },
-    axiosInstance: { get: vi.fn(), patch: vi.fn(), post: vi.fn() }
+    axiosInstance: { get: vi.fn(), patch: vi.fn(), post: vi.fn(), delete: vi.fn() }
 }));
 vi.mock('axios', () => ({ default: { create: vi.fn((config) => { mocks.axiosCreateConfig.value = config; return mocks.axiosInstance; }) } }));
 
@@ -127,6 +127,19 @@ describe('jobsApi', () => {
             const result = await jobsApi.deleteJobs({ ids: [1, 2, 3] });
             expect(mockAxios.post).toHaveBeenCalledWith('/jobs/bulk/delete', { ids: [1, 2, 3] });
             expect(result).toEqual({ deleted: 3 });
+        });
+    });
+
+    describe('deleteSalaryHistoryEntry', () => {
+        it('deletes a salary history record by id', async () => {
+            mockAxios.delete.mockResolvedValue({ data: { deleted: 1 } });
+            const result = await jobsApi.deleteSalaryHistoryEntry('abc123');
+            expect(mockAxios.delete).toHaveBeenCalledWith('/jobs/history/abc123');
+            expect(result).toEqual({ deleted: 1 });
+        });
+        it('throws an error when the deletion fails', async () => {
+            mockAxios.delete.mockRejectedValue(new Error('Not Found'));
+            await expect(jobsApi.deleteSalaryHistoryEntry('missing')).rejects.toThrow('Error deleting salary history entry: Not Found');
         });
     });
 

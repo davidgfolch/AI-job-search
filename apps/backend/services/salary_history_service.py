@@ -23,3 +23,6 @@ class SalaryHistoryService:
         if not normalized:
             return []
         return _repo.get_company_history(normalized)
+
+    def delete_record(self, record_id: str) -> bool:
+        return _repo.delete_record(record_id)

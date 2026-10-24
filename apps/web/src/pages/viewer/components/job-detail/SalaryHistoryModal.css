@@ -1,0 +1,63 @@
+.salary-history-table-container {
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.salary-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.salary-history-table th,
+.salary-history-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.salary-history-table th {
+    background-color: var(--table-header-bg, var(--bg-secondary));
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.salary-history-table tr:last-child td {
+    border-bottom: none;
+}
+
+.salary-history-date {
+    white-space: nowrap;
+}
+
+.salary-history-salary {
+    font-weight: 600;
+}
+
+.salary-history-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    line-height: 1;
+    color: var(--error-color);
+    transition: all 0.2s;
+}
+
+.salary-history-delete-btn:hover:not(:disabled) {
+    background-color: rgba(var(--error-color-rgb), 0.1);
+}
+
+.salary-history-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.salary-history-error {
+    margin: 0;
+    color: var(--error-color);
+}

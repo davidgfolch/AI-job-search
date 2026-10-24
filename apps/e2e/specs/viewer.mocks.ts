@@ -97,6 +97,7 @@ export const MOCK_JOB_NO_SALARY = {
 
 export const SALARY_HISTORY_ENTRIES = [
     {
+        id: 'salary-history-1',
         job_id: 1,
         company_raw: 'Tech Corp',
         company_normalized: 'tech corp',
@@ -106,6 +107,7 @@ export const SALARY_HISTORY_ENTRIES = [
         source: 'LinkedIn',
     },
     {
+        id: 'salary-history-2',
         job_id: 3,
         company_raw: 'Tech Corp',
         company_normalized: 'tech corp',
