@@ -79,7 +79,7 @@ class FilterConfigSelector:
             return []
         return [{"id": row[0], "name": row[1], "filters": strip_ai_enriched(self._parse_filters(row[2]))} for row in (rows or [])]
 
-    def match_ids(self, filters: Dict[str, Any], limit: Optional[int] = None) -> List[int]:
+    def match_ids(self, filters: Dict[str, Any], limit: Optional[int] = None, job_id: Optional[int] = None) -> List[int]:
         filters = strip_ai_enriched(filters)
         where, params = build_jobs_where_clause(
             search=filters.get('search') or None,
@@ -92,6 +92,12 @@ class FilterConfigSelector:
         )
         sort_col, sort_dir = parse_job_order(filters.get('order'))
         clauses = [BASE_PENDING_CONDITION] + where
+        if job_id is not None:
+            clauses.append("id = %s")
+            if params is None:
+                params = (job_id,)
+            else:
+                params = tuple(list(params) + [job_id])
         query = f"SELECT id FROM jobs WHERE {' AND '.join(clauses)} ORDER BY {sort_col} {sort_dir}, created DESC, id DESC"
         if limit is not None:
             query += f" LIMIT {int(limit)}"

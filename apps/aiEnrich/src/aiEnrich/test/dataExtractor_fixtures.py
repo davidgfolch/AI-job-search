@@ -4,6 +4,7 @@ from unittest.mock import patch, MagicMock
 
 from .. import dataExtractor as dataExtractor_module
 from .. import ollama_backend as ollama_backend_module
+from .dataExtractor_mocks import MAPPED_JOB
 
 
 @pytest.fixture
@@ -11,7 +12,7 @@ def mock_deps():
     with patch('aiEnrich.dataExtractor.MysqlUtil') as mysql_util, \
          patch('aiEnrich.dataExtractor._save') as save_chk, \
          patch('aiEnrich.dataExtractor.footer') as footer_chk, patch('aiEnrich.dataExtractor.StopWatch'), \
-         patch('aiEnrich.dataExtractor.mapJob'), \
+         patch('aiEnrich.dataExtractor.mapJob') as map_job, \
          patch('aiEnrich.dataExtractor.AiEnrichRepository') as repo_cls, \
          patch('aiEnrich.dataExtractor.ping_backend', return_value=True), \
          patch('aiEnrich.dataExtractor.get_backend', return_value='ollama'), \
@@ -22,7 +23,9 @@ def mock_deps():
         mysql_util.return_value.__enter__.return_value = mysql
         repo = MagicMock()
         repo.count_pending_enrichment.return_value = 0
+        repo._job_configs = {}
         repo_cls.return_value = repo
+        map_job.return_value = MAPPED_JOB
         dataExtractor_module.totalCount = 0
         dataExtractor_module.jobErrors = set()
         ollama_backend_module._resolved_ollama_url = None

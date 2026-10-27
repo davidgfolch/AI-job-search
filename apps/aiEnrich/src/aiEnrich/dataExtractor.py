@@ -54,8 +54,26 @@ def dataExtractor() -> int:
         stopWatch.start()
         _batch_start = time.time()
         idx = 0
+        from commonlib.sql.filter_config_selector import FilterConfigSelector
+        selector = FilterConfigSelector(mysql)
         for batch in _getJobBatches(repo):
             for id in batch:
+                try:
+                    original_config = repo.config_for_job(id)
+                    if original_config:
+                        configs = selector.load_configs()
+                        if configs:
+                            matched_name = None
+                            for cfg in configs:
+                                if selector.match_ids(cfg["filters"], limit=1, job_id=id):
+                                    matched_name = cfg["name"]
+                                    break
+                            if matched_name is None:
+                                idx += 1
+                                continue
+                            repo._job_configs[id] = matched_name
+                except Exception:
+                    logger.exception("job.fc_recheck_failed", job_id=id)
                 _process_job_safe(repo, id, total, idx, "enrich")
                 idx += 1
         return total
@@ -72,6 +90,23 @@ def retry_failed_jobs() -> int:
         error_id = repo.get_enrichment_error_id_retry()
         if error_id is None:
             return 0
+        try:
+            from commonlib.sql.filter_config_selector import FilterConfigSelector
+            selector = FilterConfigSelector(mysql)
+            original_config = repo.config_for_job(error_id)
+            if original_config:
+                configs = selector.load_configs()
+                if configs:
+                    matched_name = None
+                    for cfg in configs:
+                        if selector.match_ids(cfg["filters"], limit=1, job_id=error_id):
+                            matched_name = cfg["name"]
+                            break
+                    if matched_name is None:
+                        return 1
+                    repo._job_configs[error_id] = matched_name
+        except Exception:
+            logger.exception("job.fc_recheck_failed", job_id=error_id)
         logger.info("job.retry", job_id=error_id)
         stopWatch.start()
         _batch_start = time.time()
