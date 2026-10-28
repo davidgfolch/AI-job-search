@@ -82,12 +82,9 @@ class GlassdoorExecutor(BaseExecutor):
             else:
                 self.navigator.load_job_detail(li_elm)
                 sleep(1,1)
-                try:
-                    title, company, location, url, html = self.navigator.get_job_data()
-                    easy_apply = self.navigator.check_easy_apply()
-                    self.service.process_job(title, company, location, url, html, easy_apply)
-                finally:
-                    self.navigator.go_back()
+                title, company, location, url, html = self.navigator.get_job_data()
+                easy_apply = self.navigator.check_easy_apply()
+                self.service.process_job(title, company, location, url, html, easy_apply)
         except Exception:
             debug(self.debug, exception=True)
         finally:

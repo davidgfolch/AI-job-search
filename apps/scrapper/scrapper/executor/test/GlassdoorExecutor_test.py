@@ -108,7 +108,6 @@ class TestGlassdoorExecutor:
             executor._load_and_process_row(0)
             mock_nav.load_job_detail.assert_called_once()
             mock_service.process_job.assert_called_once_with("Title", "Company", "Loc", "URL", "HTML", False)
-            mock_nav.go_back.assert_called_once()
 
 # Navigator and Service tests can remain if they were testing those classes directly,
 # but if they were in the same file, I should keep them or move them.

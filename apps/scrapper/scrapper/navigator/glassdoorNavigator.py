@@ -1,3 +1,4 @@
+import re
 from selenium.common.exceptions import NoSuchElementException
 from commonlib.decorator.retry import retry
 from commonlib.observability import get_logger
@@ -9,21 +10,23 @@ from .components.glassdoorAuthenticator import GlassdoorAuthenticator
 
 logger = get_logger("scrapper.glassdoorNavigator")
 
-CSS_SEL_SEARCH_RESULT_TOTAL = 'div#left-column h1'
+CSS_SEL_SEARCH_RESULT_TOTAL = 'div#left-column h1, h1[data-test="search-title"]'
 CSS_SEL_COOKIES_ACCEPT = 'button#onetrust-accept-btn-handler'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'CSS_SEL_GLOBAL_ALERT_HIDE'
-CSS_SEL_DIALOG_CLOSE = 'div[data-test="Modal-content"] button[data-test=job-alert-modal-close]'
-CSS_SEL_NO_RESULTS = 'div.ErrorPage_errorPage__5lJBV'
-CSS_SEL_JOB_LI = 'div#left-column > div.JobsList_wrapper__EyUF6 > ul > li.JobsList_jobListItem__wjTHv'
-CSS_SEL_COMPANY = '.EmployerProfile_compactEmployerName__9MGcV'
-CSS_SEL_COMPANY2 = '.EmployerProfile_employerNameContainer__ptolz h4'
-CSS_SEL_LOCATION = 'header[data-test=job-details-header] div[data-test=location]'
-LI_JOB_TITLE_CSS_SUFFIX = 'a.JobCard_jobTitle__GLyJ1'
+CSS_SEL_DIALOG_CLOSE = 'dialog[open] button[data-test="auth-modal-close-button"], div[data-test="Modal-content"] button[data-test=job-alert-modal-close]'
+CSS_SEL_NO_RESULTS = 'div[class*="notice_NoticeContainer"], div.ErrorPage_errorPage__5lJBV'
+CSS_SEL_JOB_LI = 'div#left-column ul li[data-test="jobListing"]'
+CSS_SEL_JOB_DETAIL = 'div[class*="JobDetails_jobDetailsContainer"]'
+CSS_SEL_COMPANY = f'{CSS_SEL_JOB_DETAIL} [class*="EmployerProfile_compactEmployerName"]'
+CSS_SEL_COMPANY2 = f'{CSS_SEL_JOB_DETAIL} [class*="EmployerProfile_employerNameContainer"] h4'
+CSS_SEL_LOCATION = f'{CSS_SEL_JOB_DETAIL} header[data-test="job-details-header"] div[data-test="location"]'
+LI_JOB_TITLE_CSS_SUFFIX = 'a[data-test="job-title"], a[class*="JobCard_jobTitle__"]'
 CSS_SEL_NEXT_PAGE_BUTTON = 'div#left-column button[data-test="load-more"]'
-CSS_SEL_JOB_DETAIL = 'div.JobDetails_jobDetailsContainer__y9P3L'
 CSS_SEL_JOB_TITLE = f'{CSS_SEL_JOB_DETAIL} h1'
-CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div.JobDetails_jobDescription__uW_fK'
-CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} header > div.JobDetails_webActionWrapper__ib_fm > div > button > span > div > svg'
+CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} [class*="JobDetails_jobDescription"]'
+CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} button[data-test="easyApply"]'
+CSS_SEL_JOB_DETAIL_TITLE_ID = '#jd-job-title-{}'
+CSS_SEL_AUTH_MODAL_CLOSE = 'dialog[open] button[data-test="auth-modal-close-button"]'
 
 
 class GlassdoorNavigator(BaseNavigator):
@@ -31,6 +34,7 @@ class GlassdoorNavigator(BaseNavigator):
     def __init__(self, selenium: SeleniumService, debug: bool):
         super().__init__(selenium, debug)
         self.authenticator = GlassdoorAuthenticator(selenium)
+        self.current_job_url: str | None = None
 
     @retry(delay=5, exceptionFnc=lambda self, *args, **kwargs: None if self.selenium.usesUndetectedDriver() else self.security_filter())
     def load_main_page(self):
@@ -97,21 +101,38 @@ class GlassdoorNavigator(BaseNavigator):
 
     def load_job_detail(self, li_elm):
         print(yellow('loading... '), end='')
-        href = self.get_job_url(li_elm)
-        self.selenium.loadPage(href)
+        self.current_job_url = self.get_job_url(li_elm)
+        self.selenium.waitAndClick(li_elm, scrollIntoView=True)
+        if job_id := self._job_id_from_url(self.current_job_url):
+            self.selenium.waitUntil_presenceLocatedElement(CSS_SEL_JOB_DETAIL_TITLE_ID.format(job_id))
+        sleep(1, 2)
+        self.close_auth_modal()
+
+    @staticmethod
+    def _job_id_from_url(url: str) -> str | None:
+        return match.group(1) if (match := re.search(r'[?&](?:jl|jobListingId)=([0-9]+)', url or '', re.I)) else None
+
+    def close_auth_modal(self):
+        """Glassdoor prompts a sign in bottom sheet on some job views, it blocks the next card click until dismissed."""
+        if self.selenium.getElms(CSS_SEL_AUTH_MODAL_CLOSE):
+            self.selenium.waitAndClick_noError(CSS_SEL_AUTH_MODAL_CLOSE, 'Could not close auth modal', False)
 
     @retry()
     def get_job_data(self):
         title = self.selenium.getText(CSS_SEL_JOB_TITLE)
-        company_elms = self.selenium.getElms(CSS_SEL_COMPANY)
-        if len(company_elms) == 1:
-            company = company_elms[0].text
-        else:
-            company = self.selenium.getText(CSS_SEL_COMPANY2)
+        if not (company := self.get_company()):
+            raise NoSuchElementException(f'No company found with {CSS_SEL_COMPANY}')
         location = self.selenium.getText(CSS_SEL_LOCATION)
-        url = self.selenium.getUrl()
+        url = self.current_job_url or self.selenium.getUrl()
         html = self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION)
         return title, company, location, url, html
+
+    def get_company(self) -> str:
+        for cssSel in (CSS_SEL_COMPANY, CSS_SEL_COMPANY2):
+            for elm in self.selenium.getElms(cssSel):
+                if company := (elm.text or '').strip():
+                    return company
+        return ''
 
     def check_easy_apply(self):
         return len(self.selenium.getElms(CSS_SEL_JOB_EASY_APPLY)) > 0
