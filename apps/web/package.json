@@ -11,13 +11,13 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.104.2",
-    "axios": "^1.20.0",
+    "@tanstack/react-query": "^5.105.0",
+    "axios": "^1.21.0",
     "prismjs": "^1.30.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.18.4",
+    "react-router-dom": "^7.18.5",
     "react-simple-code-editor": "^0.14.1",
     "recharts": "^3.10.1"
   },
@@ -32,7 +32,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^5.0.2",
-    "baseline-browser-mapping": "^2.11.28",
+    "baseline-browser-mapping": "^2.11.34",
     "coverage-badges-cli": "^2.2.0",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -40,8 +40,8 @@
     "globals": "^17.13.0",
     "jsdom": "^30.1.2",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.71.2",
-    "vite": "^8.3.4",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5",
     "vitest": "^5.0.2"
   }
 }
