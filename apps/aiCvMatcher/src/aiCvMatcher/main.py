@@ -9,6 +9,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 from commonlib.environmentUtil import getEnvBool
 from commonlib.observability import configure_logging, get_logger
 from commonlib.ai_helpers import logIdleWait
+from commonlib.sql.connection_manager import wait_for_db
 from commonlib.terminalColor import cyan
 from .cvMatcher import FastCVMatcher
 
@@ -18,6 +19,7 @@ def run():
     configure_logging("aiCvMatcher")
     logger.info("app.started", version=_v('aiCvMatcher'))
     if getEnvBool('AI_CVMATCHER_ENABLED'):
+        wait_for_db(log=logger)
         cvMatcher = FastCVMatcher.instance()
     else:
         logger.info("app.disabled", flag="AI_CVMATCHER_ENABLED")

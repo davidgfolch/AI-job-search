@@ -13,30 +13,30 @@ class TestGetLocalSubnets:
         if subnets:
             assert all('/' in s for s in subnets)
 
-    @patch('commonlib.network.mysql_discovery.socket.socket')
-    def test_returns_empty_on_failure(self, mock_socket_class):
+    @patch('commonlib.network.discovery.socket.socket')
+    def test_returns_common_lans_on_failure(self, mock_socket_class):
         inst = MagicMock()
         inst.connect.side_effect = Exception("no network")
         mock_socket_class.return_value = inst
-        assert get_local_subnets() == []
+        assert get_local_subnets() == ['192.168.1.0/24', '192.168.0.0/24']
 
 
 class TestScanPort:
-    @patch('commonlib.network.mysql_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_port_open(self, mock_socket):
         inst = MagicMock()
         inst.connect_ex.return_value = 0
         mock_socket.return_value = inst
         assert _scan_port('192.168.1.1', 3306, 0.5) is True
 
-    @patch('commonlib.network.mysql_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_port_closed(self, mock_socket):
         inst = MagicMock()
         inst.connect_ex.return_value = 1
         mock_socket.return_value = inst
         assert _scan_port('192.168.1.1', 3306, 0.5) is False
 
-    @patch('commonlib.network.mysql_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_exception(self, mock_socket_class):
         inst = MagicMock()
         inst.connect_ex.side_effect = OSError("connection error")
@@ -143,14 +143,14 @@ class TestAutoDiscoverHost:
 
 
 class TestGetLocalIp:
-    @patch('commonlib.network.mysql_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_returns_ip(self, mock_socket_class):
         inst = MagicMock()
         inst.getsockname.return_value = ('192.168.1.10', 50000)
         mock_socket_class.return_value = inst
         assert get_local_ip() == '192.168.1.10'
 
-    @patch('commonlib.network.mysql_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_failure(self, mock_socket_class):
         inst = MagicMock()
         inst.connect.side_effect = Exception("no network")

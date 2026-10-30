@@ -64,8 +64,23 @@ class TestResolveDbHost:
 
     def test_resolve_comma_separated_groups(self):
         with patch.dict(os.environ, {'COMMONLIB_DB_HOST': '10.0.0.1,10.0.0.2'}), \
-             patch('commonlib.sql.connection_manager._try_targets', side_effect=[None, '10.0.0.2']):
+             patch('commonlib.sql.connection_manager._try_targets', return_value='10.0.0.2') as try_targets:
             assert connection_manager._resolve_db_host() == '10.0.0.2'
+        assert try_targets.call_args[0][0][:2] == ['10.0.0.1', '10.0.0.2']
+
+    def test_auto_spec_skips_the_candidate_probes(self):
+        with patch.dict(os.environ, {'COMMONLIB_DB_HOST': 'auto'}), \
+             patch('commonlib.sql.connection_manager._try_targets') as try_targets, \
+             patch('commonlib.network.mysql_discovery.auto_discover_host', return_value='192.168.1.100'):
+            assert connection_manager._resolve_db_host() == '192.168.1.100'
+        try_targets.assert_not_called()
+
+    def test_discovery_disabled_reports_configured_hosts_only(self):
+        with patch.dict(os.environ, {'COMMONLIB_DB_HOST': ''}), \
+             patch.object(connection_manager, 'DB_DISCOVERY_ENABLED', False), \
+             patch('commonlib.sql.connection_manager._try_targets', return_value=None):
+            with pytest.raises(ConnectionError, match="COMMONLIB_DB_DISCOVERY=False"):
+                connection_manager._resolve_db_host()
 
 
 class TestGetConnection:

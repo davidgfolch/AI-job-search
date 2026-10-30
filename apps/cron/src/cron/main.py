@@ -3,9 +3,12 @@ import time
 from cron import config
 from cron.scheduler import Scheduler
 from commonlib.mongodb_provider import get_mongo_provider
+from commonlib.mongo_config import resolve_mongo_uri
 from commonlib.observability import configure_logging, get_logger
 from commonlib.repositories.cron_state_repository import CronStateRepository
+from commonlib.sql.connection_manager import wait_for_db
 from cron.jobs.company_salary_history.job import CompanySalaryHistoryJob
+
 
 logger = get_logger("cron.main")
 
@@ -14,7 +17,11 @@ def run():
     configure_logging("cron")
     logger.info("cron.started")
 
-    provider = get_mongo_provider(config.MONGO_READ_URI, config.MONGO_WRITE_URI, config.MONGO_DATABASE)
+    wait_for_db(log=logger)
+    provider = get_mongo_provider(
+        resolve_mongo_uri(config.MONGO_READ_URI), resolve_mongo_uri(config.MONGO_WRITE_URI), config.MONGO_DATABASE
+    )
+
     cron_state = CronStateRepository(provider)
 
     jobs = [

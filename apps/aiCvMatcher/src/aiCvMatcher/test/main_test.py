@@ -6,7 +6,7 @@ from .. import main
 
 @pytest.fixture
 def enabled():
-    with patch("aiCvMatcher.main.getEnvBool", return_value=True), patch("aiCvMatcher.main.configure_logging") as configure:
+    with patch("aiCvMatcher.main.getEnvBool", return_value=True), patch("aiCvMatcher.main.wait_for_db"), patch("aiCvMatcher.main.configure_logging") as configure:
         yield configure
 
 

@@ -31,14 +31,14 @@ class TestAutoDiscoverHost:
 
 
 class TestGetLocalIp:
-    @patch('commonlib.network.ollama_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_returns_ip(self, mock_socket_class):
         inst = MagicMock()
         inst.getsockname.return_value = ('192.168.1.10', 50000)
         mock_socket_class.return_value = inst
         assert get_local_ip() == '192.168.1.10'
 
-    @patch('commonlib.network.ollama_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_failure(self, mock_socket_class):
         inst = MagicMock()
         inst.connect.side_effect = Exception("no network")
@@ -62,9 +62,10 @@ class TestResolveOllamaHost:
         mock_verify.assert_any_call('192.168.1.50')
         assert mock_verify.call_count == 1
 
+    @patch('commonlib.network.ollama_resolve.verify_ollama', return_value=False)
     @patch('commonlib.network.ollama_resolve.discover_ollama_hosts')
     @patch('commonlib.network.ollama_resolve.get_local_ip')
-    def test_auto_none_found(self, mock_local, mock_discover):
+    def test_auto_none_found(self, mock_local, mock_discover, _verify):
         mock_local.return_value = '192.168.1.10'
         mock_discover.return_value = ['192.168.1.50']
         with pytest.raises(ConnectionError):

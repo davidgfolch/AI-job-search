@@ -1,17 +1,19 @@
+from commonlib.network.discovery_cache import cached_discover
 from commonlib.network.ollama_discovery import (
     SPEC_LOCAL, SPEC_AUTO, discover_ollama_hosts, get_local_ip,
 )
 from commonlib.network.ollama_verify import verify_ollama
+from commonlib.observability import get_logger
+
+logger = get_logger("commonlib.network.ollama_resolve")
 
 
 def auto_discover_host():
-    """Auto-discover an Ollama host on the LAN. Returns host IP string or None."""
+    """Auto-discover an Ollama host on the LAN, using and refreshing the shared cache."""
     try:
-        for host in discover_ollama_hosts():
-            if verify_ollama(host):
-                return host
-        return None
-    except Exception:
+        return cached_discover("ollama", verify=verify_ollama, scan=discover_ollama_hosts, log=logger)
+    except Exception as e:
+        logger.warning("ollama.discovery_failed", error=str(e))
         return None
 
 
@@ -19,7 +21,7 @@ def resolve_ollama_host(spec="auto"):
     """Resolve a host spec to a reachable Ollama host IP.
 
     - 'local' | 'localhost' | '127.0.0.1' -> 127.0.0.1 (assumed, no probe)
-    - 'auto' | 'discover' -> LAN scan, first verified host excluding local
+    - 'auto' | 'discover' -> cached LAN discovery, first verified host excluding local
     - otherwise -> the given IP, verified as an Ollama host
 
     Raises ConnectionError when nothing can be resolved.
@@ -29,11 +31,9 @@ def resolve_ollama_host(spec="auto"):
         return "127.0.0.1"
     if spec in SPEC_AUTO:
         local = get_local_ip()
-        for host in discover_ollama_hosts():
-            if local and host == local:
-                continue
-            if verify_ollama(host):
-                return host
+        host = cached_discover("ollama", verify=verify_ollama, scan=discover_ollama_hosts, log=logger, tried={local})
+        if host:
+            return host
         raise ConnectionError("Auto-discovery found no reachable Ollama server on the LAN")
     if verify_ollama(spec):
         return spec

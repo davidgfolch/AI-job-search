@@ -32,7 +32,7 @@ def _raw_log():
 
 
 def _run_one_tick():
-    with patch("cron.main.get_mongo_provider") as mock_provider, patch("cron.main.Scheduler") as mock_scheduler_cls, patch("cron.main.time.sleep", side_effect=_StopLoop):
+    with patch("cron.main.wait_for_db"), patch("cron.main.resolve_mongo_uri", return_value="mongodb://mongo:27017/"), patch("cron.main.get_mongo_provider") as mock_provider, patch("cron.main.Scheduler") as mock_scheduler_cls, patch("cron.main.time.sleep", side_effect=_StopLoop):
         mock_scheduler_cls.return_value = MagicMock()
         with pytest.raises(_StopLoop):
             main.run()
@@ -46,7 +46,7 @@ def test_run_names_the_log_file_after_the_app(log_dir):
 
 
 def test_run_configures_logging_before_connecting_to_mongo(log_dir):
-    with patch("cron.main.configure_logging") as mock_configure, patch("cron.main.get_mongo_provider") as mock_provider, patch("cron.main.Scheduler"), patch("cron.main.time.sleep", side_effect=_StopLoop):
+    with patch("cron.main.configure_logging") as mock_configure, patch("cron.main.wait_for_db"), patch("cron.main.resolve_mongo_uri", return_value="mongodb://mongo:27017/"), patch("cron.main.get_mongo_provider") as mock_provider, patch("cron.main.Scheduler"), patch("cron.main.time.sleep", side_effect=_StopLoop):
         order = MagicMock()
         order.attach_mock(mock_configure, "configure")
         order.attach_mock(mock_provider, "provider")

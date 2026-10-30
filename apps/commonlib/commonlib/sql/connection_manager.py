@@ -1,4 +1,3 @@
-import ipaddress
 import os
 import queue
 import threading
@@ -8,6 +7,11 @@ from mysql.connector import MySQLConnection
 
 from commonlib.environmentUtil import getEnv
 from commonlib.observability import get_logger
+from commonlib.sql.connection_manager_parse import _parse_host_targets as _parse_host_targets, _parse_ip_range as _parse_ip_range
+from commonlib.sql.db_hosts import (
+    DB_AUTO_SPECS as DB_AUTO_SPECS, DB_CANDIDATE_HOSTS as DB_CANDIDATE_HOSTS, db_candidate_hosts as db_candidate_hosts,
+)
+from commonlib.sql.db_wait import wait_for_db as wait_for_db
 
 logger = get_logger("commonlib.sql.connection_manager")
 
@@ -20,62 +24,9 @@ POOL_GET_RETRIES = int(os.getenv('COMMONLIB_DB_POOL_RETRIES', '3'))
 POOL_GET_DELAY = float(os.getenv('COMMONLIB_DB_POOL_RETRY_DELAY', '0.1'))
 DB_DISCOVERY_ENABLED = os.getenv('COMMONLIB_DB_DISCOVERY', 'True').strip().lower() not in ('false', '0', 'no')
 
+
 _pool_initialized = False
 _pool_lock = threading.Lock()
-
-
-def _parse_ip_range(range_str: str) -> list[str]:
-    """Parse an IP range (start-end) into a list of IPs.
-    Supports: 192.168.0.10-192.168.0.250, 192.168.0.10-250."""
-    start_str, end_str = (x.strip() for x in range_str.split('-', 1))
-    start_ip = ipaddress.IPv4Address(start_str)
-    end_parts = end_str.split('.')
-    if len(end_parts) < 4:
-        start_parts = start_str.split('.')
-        if len(end_parts) == 1:
-            padded = start_parts[:3] + end_parts
-        elif len(end_parts) == 2:
-            padded = start_parts[:2] + end_parts
-        elif len(end_parts) == 3:
-            if end_parts[:2] == start_parts[:2]:
-                padded = start_parts[:3] + [end_parts[2]]
-            else:
-                padded = [start_parts[0]] + end_parts
-        end_str = '.'.join(padded)
-    end_ip = ipaddress.IPv4Address(end_str)
-    start_int = int(start_ip)
-    end_int = int(end_ip)
-    if end_int < start_int:
-        raise ValueError(f"Range end {end_str} < start {start_str}")
-    return [str(ipaddress.IPv4Address(i)) for i in range(start_int, end_int + 1)]
-
-
-def _parse_host_targets(raw: str) -> list[str]:
-    """Parse COMMONLIB_DB_HOST into a list of IPs.
-    Supports: single IP, CIDR (192.168.1.0/24), range (10-250),
-    comma-separated combinations."""
-    targets = []
-    for part in raw.split(','):
-        part = part.strip()
-        if not part:
-            continue
-        if '/' in part:
-            try:
-                network = ipaddress.IPv4Network(part, strict=False)
-                targets.extend(str(ip) for ip in network.hosts())
-            except ValueError:
-                try:
-                    targets.extend(_parse_ip_range(part.replace('/', '-', 1)))
-                except Exception:
-                    targets.append(part)
-        elif '-' in part:
-            try:
-                targets.extend(_parse_ip_range(part))
-            except Exception:
-                targets.append(part)
-        else:
-            targets.append(part)
-    return targets
 
 
 def get_db_name() -> str:
@@ -118,19 +69,9 @@ def _try_targets(targets: list[str], e2e_tests: bool) -> str | None:
 
 
 def _resolve_db_host(e2e_tests: bool = False) -> str:
-    """Resolve MySQL host — try configured targets, fall back to LAN discovery."""
+    """Resolve MySQL host — try the candidate chain, fall back to (cached) LAN discovery."""
     raw = os.getenv('COMMONLIB_DB_HOST', '').strip()
-
-    resolved = None
-    if raw:
-        groups = [g.strip() for g in raw.split(',') if g.strip()]
-        for group_raw in groups:
-            targets = _parse_host_targets(group_raw)
-            resolved = _try_targets(targets, e2e_tests)
-            if resolved:
-                break
-    else:
-        resolved = _try_targets(['127.0.0.1'], e2e_tests)
+    resolved = None if raw.lower() in DB_AUTO_SPECS else _try_targets(list(db_candidate_hosts(raw)), e2e_tests)
 
     if not resolved and DB_DISCOVERY_ENABLED:
         from commonlib.network.mysql_discovery import auto_discover_host

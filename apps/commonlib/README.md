@@ -34,9 +34,11 @@ Resolution order, highest first:
 
 ## MySQL connection
 
-The connection pool is initialized once via `get_connection()` from `sql/connection_manager.py`. The host is resolved from the `COMMONLIB_DB_HOST` env var (default `127.0.0.1`) and the schema from `COMMONLIB_DB_NAME` (default `jobs`). Pointing `COMMONLIB_DB_NAME` at another schema (e.g. `jobs_multi`) is how a second checkout runs against the same MySQL server without touching the live `jobs` database.
+The connection pool is initialized once via `get_connection()` from `sql/connection_manager.py`. The host is resolved from the `COMMONLIB_DB_HOST` env var and the schema from `COMMONLIB_DB_NAME` (default `jobs`). Pointing `COMMONLIB_DB_NAME` at another schema (e.g. `jobs_multi`) is how a second checkout runs against the same MySQL server without touching the live `jobs` database.
 
 When the pool is temporarily exhausted, `get_connection()` retries `COMMONLIB_DB_POOL_RETRIES` times (default 3) with backoff, treating both the internal `queue.Empty` and mysql-connector's `mysql.connector.errors.PoolError` as temporary exhaustion.
+
+Workers call `wait_for_db()` (`sql/db_wait.py`) at startup instead of exiting when MySQL is not up yet: compose only gates the start it orchestrates, so a resumed stack would otherwise turn a missing database into a restart storm. It waits forever by default (`COMMONLIB_DB_WAIT_TIMEOUT=0`), logging `db.waiting` every `COMMONLIB_DB_WAIT_LOG_SECONDS`.
 
 ### Supported host formats
 
@@ -47,14 +49,31 @@ When the pool is temporarily exhausted, `get_connection()` retries `COMMONLIB_DB
 | IP range | `192.168.0.10-192.168.0.250` | Contiguous range |
 | Abbreviated range | `192.168.0.10/99` or `192.168.0.10-99` | End octet only (same /24) |
 | Comma-separated | `192.168.0.10/99,192.168.0.100/250` | Priority-ordered ranges |
+| `auto` / `discover` | `COMMONLIB_DB_HOST=auto` | Skip configured hosts, scan the LAN first |
 
 ### Resolution order
 
-1. **Direct probe** — small target lists (≤10) are tried sequentially via MySQL handshake.
-2. **Concurrent scan** — ranges larger than 10 IPs are port-scanned on port 3306 (100 workers, 0.5s timeout per host), then verified in original priority order.
-3. **LAN fallback** — if no configured host responds, `network/mysql_discovery.py` detects the machine's local subnet(s) and scans them for any MySQL server with the `jobs` database.
+1. **Configured host(s)** — `COMMONLIB_DB_HOST` values first, in order.
+2. **Container chain** — `mysql_db` (compose service), `host.docker.internal` (MySQL on the Docker host), `127.0.0.1` (native run), so the same `.env` works inside a container and on the host.
+3. **Direct probe** — small target lists (≤10) are tried sequentially via MySQL handshake.
+4. **Concurrent scan** — ranges larger than 10 IPs are port-scanned on port 3306 (100 workers, 0.5s timeout per host), then verified in original priority order.
+5. **LAN fallback** — `network/mysql_discovery.py` detects the machine's local subnet(s) and scans them for any MySQL server with the `jobs` database.
 
 All attempts are logged at INFO/WARNING level. The resolved host is cached for the process lifetime.
+
+## Service discovery (MySQL / MongoDB / Ollama)
+
+All three use the same primitives (`network/discovery.py`: local IP/subnet detection, port scan, host budget) and the same shared cache (`network/discovery_cache.py`), so a stack of containers starting together performs **one** LAN scan instead of one per container and per retry:
+
+- `COMMONLIB_DISCOVERY_CACHE` — cache file path (default `<repo>/data/discovery/cache.json`; compose mounts `./data/discovery` into every service).
+- `COMMONLIB_DISCOVERY_CACHE_SECONDS` / `COMMONLIB_DISCOVERY_NEGATIVE_CACHE_SECONDS` — TTL for a found host (default 3600s) and for "nothing found" (default 60s).
+- `COMMONLIB_DISCOVERY_SUBNETS` — extra CIDRs to scan, comma-separated.
+- `COMMONLIB_DISCOVERY_MAX_HOSTS` — cap hosts per scan (default 0 = no cap).
+- `COMMONLIB_DISCOVERY_LOCK_SECONDS` / `COMMONLIB_DISCOVERY_LOCK_STALE_SECONDS` — cross-process scan lock timeout and stale takeover.
+
+Ollama's chain and knobs are documented under **Ollama** above; MongoDB resolves `MONGO_URI` the same way (`mongo_db` → `host.docker.internal` → `127.0.0.1`, then LAN on 27017, `auto` to scan first) in `commonlib/mongo_config.py`.
+
+The worker healthchecks (`scripts/healthcheck/ollama_healthcheck.py`) read the cached Ollama host first, so a container that reached a LAN server through discovery is reported healthy instead of being judged against the static fallback URLs only (the healthcheck never starts a scan).
 
 ## Job enrichment selection
 

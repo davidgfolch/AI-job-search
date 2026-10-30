@@ -202,12 +202,18 @@ def healthy_urls(primary_url: str | None, payload: dict, log) -> Iterator[str]:
     unless it only leads back to an already-tried host (`host.docker.internal`
     and its gateway IP are the same server under two names)."""
     if _is_auto_spec(primary_url):
-        discovered = _discover_ollama_lan_url(log)
+        last_url = (get_last_ollama_server() or {}).get("url")
+        discovered = last_url if last_url and _server_ready(last_url, payload, log) else _discover_ollama_lan_url(log)
         if discovered is not None and _server_ready(discovered, payload, log):
             yield discovered
         return
     candidates = _candidate_urls(primary_url)
     tried = {_host_ip(url) for url in candidates}
+    # The server learned by a previous job (possibly a LAN one) is probed first,
+    # so a cache hit never falls through to the discovery scan.
+    last_url = (get_last_ollama_server() or {}).get("url")
+    if last_url and _host_ip(last_url) not in tried and _server_ready(last_url, payload, log):
+        yield last_url
     for url in candidates:
         if _server_ready(url, payload, log):
             yield url

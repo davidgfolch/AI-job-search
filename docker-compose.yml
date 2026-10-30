@@ -12,7 +12,7 @@ services:
     volumes:
       - /var/lib/mysql:/var/lib/mysql # Original bind mount to preserve existing data
       - ./scripts/mysql:/docker-entrypoint-initdb.d
-    command: --log_timestamps=SYSTEM --max_connections=500
+    command: --log_timestamps=SYSTEM --max_connections=500 --skip-name-resolve
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootPass
@@ -25,8 +25,9 @@ services:
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
-      retries: 10
-      interval: 10s
+      retries: 30
+      interval: 5s
+      start_period: 30s
     networks:
       - ai-job-search
 
@@ -46,6 +47,7 @@ services:
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
       - ./data/metrics:/app/data/metrics
+      - ./data/discovery:/app/data/discovery
       - ./apps/aiEnrich/data/logs:/logs/aienrich:ro
       - ./apps/aiEnrichSkill/data/logs:/logs/aienrichskill:ro
       - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
@@ -55,9 +57,8 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db # MySQL service name for Docker networking
       - COMMONLIB_DB_POOL_SIZE=10
-      - MONGO_URI=mongodb://${MONGO_USERNAME:-root}:${MONGO_PASSWORD:-rootPass}@mongo_db:27017/
+      - COMMONLIB_DISCOVERY_CACHE=/app/data/discovery/cache.json
       - TZ=${GLOBAL_TZ}
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
     depends_on:
@@ -159,9 +160,10 @@ services:
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
       - ./data/metrics:/app/data/metrics
+      - ./data/discovery:/app/data/discovery
     environment:
       - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db
+      - COMMONLIB_DISCOVERY_CACHE=/app/data/discovery/cache.json
       - TZ=${GLOBAL_TZ}
       # .env wins so the worker can be pointed at a host or LAN Ollama; the containerized
       # service name is only the default (clients still fall back to it when it answers)
@@ -179,7 +181,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
+    restart: on-failure:3
     networks:
       - ai-job-search
     # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
@@ -206,9 +208,10 @@ services:
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
       - ./data/metrics:/app/data/metrics
+      - ./data/discovery:/app/data/discovery
     environment:
       - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db
+      - COMMONLIB_DISCOVERY_CACHE=/app/data/discovery/cache.json
       - TZ=${GLOBAL_TZ}
       - AI_ENRICHSKILL_OLLAMA_BASE_URL=${AI_ENRICH_OLLAMA_BASE_URL:-http://ollama:11434}
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
@@ -222,7 +225,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
+    restart: on-failure:3
     networks:
       - ai-job-search
     # Cross-platform host alias for Linux containers. Docker Desktop provides it on Windows/macOS;
@@ -246,9 +249,10 @@ services:
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
+      - ./data/discovery:/app/data/discovery
     environment:
       - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db
+      - COMMONLIB_DISCOVERY_CACHE=/app/data/discovery/cache.json
       - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
@@ -262,6 +266,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers, so the matcher can reach a
+    # MySQL/host Ollama that runs on the Docker host instead of in a container.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
 
   # AI Form Filler - AI-powered job application form answerer
   aiformfiller:
@@ -336,10 +344,10 @@ services:
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
       - ./.env.secrets:/app/.env.secrets
+      - ./data/discovery:/app/data/discovery
     environment:
       - PYTHONUNBUFFERED=1
-      - COMMONLIB_DB_HOST=mysql_db
-      - MONGO_URI=mongodb://${MONGO_USERNAME:-root}:${MONGO_PASSWORD:-rootPass}@mongo_db:27017/
+      - COMMONLIB_DISCOVERY_CACHE=/app/data/discovery/cache.json
       - TZ=${GLOBAL_TZ}
     depends_on:
       mysql_db:
@@ -355,6 +363,10 @@ services:
     restart: unless-stopped
     networks:
       - ai-job-search
+    # Cross-platform host alias for Linux containers, so the scheduler can reach a
+    # MySQL/Mongo that runs on the Docker host instead of in a container.
+    extra_hosts:
+      - "host.docker.internal=host-gateway"
 
   # Prometheus - Metrics Collection
   prometheus:

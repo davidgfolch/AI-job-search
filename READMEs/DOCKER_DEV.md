@@ -23,6 +23,8 @@ docker-compose logs -f
 docker-compose down
 ```
 
+> **Service discovery (MySQL / MongoDB / Ollama):** nothing is pinned to a compose hostname. Each client tries the host from `.env` first, then the container chain (`mysql_db`/`mongo_db` service name, `host.docker.internal`, `127.0.0.1`), then a cached LAN scan, so the same `.env` works whether the database runs in compose, on the Docker host or on another LAN machine. Workers call `wait_for_db()` at startup instead of exiting when MySQL is not up yet (compose only gates the first start). The scan result is cached in `./data/discovery/cache.json`, which every service mounts, so containers starting together perform one scan instead of one each. Add `COMMONLIB_DISCOVERY_SUBNETS` (comma-separated CIDRs) to extend the sweep.
+
 ## With AI Services (AI Enrichment + Ollama)
 
 **Ollama CPU/GPU:** `aienrich` service uses Ollama by default (profile: `aienrich`). Set `AI_ENRICH_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
@@ -35,7 +37,7 @@ docker-compose down
 >
 > Docker Desktop exposes no GPU to containers by default, so containerized Ollama is CPU-only: set `COMMONLIB_OLLAMA_PROBE_TIMEOUT` higher (e.g. `120`) so a cold model load is not mistaken for a stalled runner, and keep the model warm with `OLLAMA_KEEP_ALIVE` (e.g. `30m`) in the `ollama` service environment to avoid reloading it between jobs.
 >
-> **Discovery stops at the Docker network:** inside a container the LAN sweep covers only the container's own subnets (e.g. `172.19.x`), so it finds sibling containers and the Docker gateway but *not* an Ollama on the physical LAN. Reaching a machine like `192.168.1.211` from a container therefore requires pinning `AI_ENRICH_OLLAMA_BASE_URL` (or running the worker with `network_mode: host`), even though the container can route to it.
+> **Discovery stops at the Docker network:** inside a container the LAN sweep covers only the container's own subnets (e.g. `172.19.x`), so it finds sibling containers and the Docker gateway but *not* an Ollama on the physical LAN. Reaching a machine like `192.168.1.211` from a container therefore requires pinning `AI_ENRICH_OLLAMA_BASE_URL`, listing the subnet in `COMMONLIB_DISCOVERY_SUBNETS` (e.g. `192.168.1.0/24`), or running the worker with `network_mode: host`, even though the container can route to it.
 
 ```bash
 # Start core services

@@ -275,6 +275,15 @@ delete from jobs where jobId  = 'handMade0000001';
 select * from jobs where jobId like '%handMade%';
 
 
+--- JOBS SNAPSHOTS
+
+select * from job_snapshots where company rlike 'tobeit' and title RLIKE 'Senior Backend Engineer'
+
+select * from job_snapshots
+inner join jobs on jobs.`jobId` = job_snapshots.job_id and jobs.web_page=job_snapshots.web_page
+order by snapshot_at desc
+
+
 
 --- SKILL MANAGER
 

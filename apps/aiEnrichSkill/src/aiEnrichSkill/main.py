@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import sys
 import warnings
 from importlib.metadata import version as _v
 
@@ -9,6 +8,7 @@ from commonlib.observability import configure_logging, get_logger
 from commonlib.ai_helpers import logIdleWait, idleWait
 from commonlib.terminalColor import cyan
 from commonlib.sql.mysqlUtil import MysqlUtil
+from commonlib.sql.connection_manager import wait_for_db
 from commonlib.services.metrics_collector import MetricsCollector
 from .config import get_enabled, get_backend, get_ollama_base_url, get_max_ollama_failures
 from .services.enrichment_service import enrich_skills
@@ -27,6 +27,7 @@ def run():
         logger.info("disabled")
         return
 
+    wait_for_db(log=logger)
     ollama_base_url = get_ollama_base_url()
     if get_backend() == "ollama":
         ollama_consecutive_failures = 0
@@ -38,11 +39,12 @@ def run():
             ollama_consecutive_failures += 1
             max_failures = get_max_ollama_failures()
             logger.error("ollama.unreachable", base_url=get_ollama_base_url(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-            if ollama_consecutive_failures >= max_failures:
-                logger.critical("ollama.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
-                sys.exit(1)
+            if ollama_consecutive_failures == max_failures:
+                # Keep waiting: exiting here turned a sleeping Ollama server into a
+                # container restart storm that starved the database on resume.
+                logger.critical("ollama.waiting_after_failures", consecutive_failures=ollama_consecutive_failures)
             logIdleWait(cyan('Ollama unreachable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
-        ollama_consecutive_failures = 0
+
     while True:
         collector.record_heartbeat("aiEnrichSkill")
         with MysqlUtil() as mysql:

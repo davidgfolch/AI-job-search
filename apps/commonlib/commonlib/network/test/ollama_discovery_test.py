@@ -11,7 +11,7 @@ class TestGetLocalSubnets:
         if subnets:
             assert all('/' in s for s in subnets)
 
-    @patch('commonlib.network.ollama_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_returns_empty_on_failure(self, mock_socket_class):
         inst = MagicMock()
         inst.connect.side_effect = Exception("no network")
@@ -37,21 +37,21 @@ class TestGetLocalSubnets:
 
 
 class TestScanPort:
-    @patch('commonlib.network.ollama_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_port_open(self, mock_socket):
         inst = MagicMock()
         inst.connect_ex.return_value = 0
         mock_socket.return_value = inst
         assert _scan_port('192.168.1.1', 11434, 0.5) is True
 
-    @patch('commonlib.network.ollama_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_port_closed(self, mock_socket):
         inst = MagicMock()
         inst.connect_ex.return_value = 1
         mock_socket.return_value = inst
         assert _scan_port('192.168.1.1', 11434, 0.5) is False
 
-    @patch('commonlib.network.ollama_discovery.socket.socket')
+    @patch('commonlib.network.discovery.socket.socket')
     def test_exception(self, mock_socket_class):
         inst = MagicMock()
         inst.connect_ex.side_effect = OSError("connection error")

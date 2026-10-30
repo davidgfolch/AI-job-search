@@ -282,6 +282,8 @@ Ollama models are **not** removed: they live inside the Ollama server, not the p
    ```
 2. Edit `.env.secrets` with your credentials and `.env` with your configuration (create `.env` if needed).
 
+> **Service discovery:** MySQL, MongoDB and Ollama are resolved at runtime — the host in `.env` first, then the container chain (`mysql_db`/`mongo_db` service name, `host.docker.internal`, `127.0.0.1`), then a cached LAN scan (`data/discovery/cache.json`). The same `.env` therefore works in Docker, on the host or against another LAN machine; no host needs to be pinned in `docker-compose.yml`. See [DOCKER_DEV.md](DOCKER_DEV.md) and [apps/commonlib/README.md](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
+
 ## Database Setup
 
 After starting the MySQL container (via docker-compose or script), verify the database is initialized.

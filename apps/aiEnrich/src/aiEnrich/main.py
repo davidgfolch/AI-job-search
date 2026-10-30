@@ -4,7 +4,9 @@ from importlib.metadata import version as _v
 
 from commonlib.environmentUtil import getEnvBool
 from commonlib.observability import configure_logging, get_logger
+from commonlib.sql.connection_manager import wait_for_db
 from .pipeline import run_pipeline
+
 
 configure_logging("aiEnrich")
 
@@ -20,6 +22,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 def run():
     logger.info("startup", version=_v('aiEnrich'))
+    wait_for_db(log=logger)
     if get_job_enabled():
         run_pipeline()
     logger.info("shutdown")

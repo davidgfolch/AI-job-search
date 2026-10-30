@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from commonlib.ollama_client import query_ollama
 from commonlib.ollama_config import OLLAMA_HOST_FROM_DOCKER_BASE_URL
-from commonlib.ollama_probe import INFERENCE_PROBE_TIMEOUT, _host_ip, _probe_inference, ping_ollama, resolve_ollama_url
+from commonlib.ollama_probe import INFERENCE_PROBE_TIMEOUT, _host_ip, _probe_inference, healthy_urls, ping_ollama, resolve_ollama_url
 from commonlib.test.ollama_constants import OLLAMA_DOCKER_TEST_URL, OLLAMA_TEST_URL
 from commonlib.test.ollama_fixtures import (  # noqa: F401 - the autouse fixtures register by being imported here
     AUTO_DISCOVER, CANDIDATES, DISCOVERY_ENABLED, DISCOVERED_HOST, DISCOVERED_URL, FALLBACK_LOG, LOCAL_URL, POST,
@@ -105,6 +105,27 @@ class TestPingOllama:
         assert ping_ollama(primary_url=OLLAMA_DOCKER_TEST_URL) is True
         assert get.call_count == 2
         assert get.call_args[0][0] == f"{OLLAMA_HOST_FROM_DOCKER_BASE_URL}/api/tags"
+
+
+class TestHealthyUrlsOrder:
+
+    def _urls(self, monkeypatch, candidates, last_url, ready):
+        monkeypatch.setattr(CANDIDATES, lambda *a, **k: candidates)
+        monkeypatch.setattr("commonlib.ollama_probe._LAST_OLLAMA_SERVER", {"url": last_url, "ip": None, "is_lan": False})
+        monkeypatch.setattr("commonlib.ollama_probe._server_ready", MagicMock(side_effect=ready))
+        return list(healthy_urls(candidates[0], {}, MagicMock()))
+
+    def test_learned_server_is_probed_first(self, monkeypatch):
+        urls = self._urls(monkeypatch, (OLLAMA_DOCKER_TEST_URL,), DISCOVERED_URL, lambda *a: True)
+        assert urls == [DISCOVERED_URL, OLLAMA_DOCKER_TEST_URL]
+
+    def test_learned_server_already_in_candidates_is_not_repeated(self, monkeypatch):
+        urls = self._urls(monkeypatch, (DISCOVERED_URL,), DISCOVERED_URL, lambda *a: True)
+        assert urls == [DISCOVERED_URL]
+
+    def test_unready_learned_server_falls_through(self, monkeypatch):
+        urls = self._urls(monkeypatch, (OLLAMA_DOCKER_TEST_URL,), DISCOVERED_URL, lambda url, payload, log: url != DISCOVERED_URL)
+        assert urls == [OLLAMA_DOCKER_TEST_URL]
 
 
 class TestResolveOllamaUrl:
