@@ -5,6 +5,29 @@ from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.LinkedinService import LinkedinService
 from scrapper.test.log_capture import assert_console_text, assert_logged, structured_fields
 
+FIT_CARD_MD = (
+    'Hybrid, Full-time\n\nYour profile and resume match the required qualifications well\n\nBETA • Is this information helpful?\n\n'
+    '[Reactivate Premium](https://www.linkedin.com/premium/products/?upsellOrderOrigin=x)\n\nAbout the job\n-------------\n\n'
+    '**About JetBrains**  We create intelligent software development tools.\n\n---\n\nBenefits found in job post\n\nMedical insurance\n\n'
+    'Job search faster with Premium\n\nAbout the company\n\nTrending employee content\n\n[Show more](https://www.linkedin.com/company/jetbrains/life/)\n'
+)
+
+TRENDS_CARD_MD = (
+    'On-site, Full-time\n\nSee recent hiring trends for Advanced Field Solutions Ltd\n\n'
+    'Access exclusive applicant insights, see jobs where you have the highest chance of hearing back, and more.\n\n'
+    '[Reactivate Premium](https://www.linkedin.com/premium/products/?x)\n\nAbout the job\n-------------\n\n'
+    'About AFS\n\nAdvanced Field Solutions Ltd (AFS) builds field-service management products.\n'
+)
+
+CLEAN_MD = (
+    '70K EUR/yr - 120K EUR/yr + Bonus, Stock options, Hybrid, Full-time\n\nAbout the job\n-------------\n\n'
+    '💻 **Job Title:**  AI Engineer\n\n---\n\nRequirements added by the job poster\n\n'
+    '• 4+ years of work experience with Python (Programming Language)\n'
+)
+
+# A clean offer whose description legitimately mentions the company section: the guard must leave it alone
+COMPANY_IN_DESCRIPTION_MD = 'Remote, Full-time\n\nAbout the job\n-------------\n\nAbout the company\n\nWe build agents for enterprises.\n'
+
 class TestLinkedinService:
     @pytest.fixture
     def mock_mysql(self):
@@ -123,3 +146,24 @@ class TestLinkedinService:
             service.process_job("T", "C", "L", "https://www.linkedin.com/jobs/view/9/", "H", False, True)
         assert_logged(log, 'info', 'linkedin.job.scraped', job_id=9, title='T', company='C', location='L', easy_apply=True)
         assert_console_text(log, 'info', 'linkedin.job.scraped', '9, T,', end='')
+
+    @pytest.mark.parametrize("input_md, required, forbidden", [
+        (FIT_CARD_MD, ['Hybrid, Full-time', 'About the job\n-------------', 'Benefits found in job post', 'Medical insurance'],
+         ['Your profile and resume', 'Reactivate Premium', 'Job search faster with Premium', 'Trending employee content', 'Show more']),
+        (TRENDS_CARD_MD, ['On-site, Full-time', 'About the job', 'Advanced Field Solutions Ltd'],
+         ['See recent hiring trends', 'Reactivate Premium']),
+        (CLEAN_MD, ['About the job', 'Requirements added by the job poster'], []),
+        (COMPANY_IN_DESCRIPTION_MD, ['About the company', 'We build agents'], []),
+        ('MD', ['MD'], []),
+        ('No heading\n\nJob search faster with Premium\n\nAbout the company', ['No heading'], ['Job search faster with Premium']),
+    ])
+    def test_post_process_markdown(self, service, input_md, required, forbidden):
+        cleaned = service.post_process_markdown(input_md)
+        for text in required:
+            assert text in cleaned
+        for text in forbidden:
+            assert text not in cleaned
+
+    @pytest.mark.parametrize("md", [CLEAN_MD, COMPANY_IN_DESCRIPTION_MD, 'MD'])
+    def test_post_process_markdown_keeps_clean_markdown(self, service, md):
+        assert service.post_process_markdown(md) == md

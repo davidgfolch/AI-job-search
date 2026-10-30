@@ -14,9 +14,31 @@ CSS_SEL_JOB_TITLE_LINK = f'{CSS_SEL_JOB_DETAIL} a[href*="/jobs/view/"]'
 CSS_SEL_DETAIL_COMPANY = f'{CSS_SEL_JOB_DETAIL} p a[href*="/company/"]'
 CSS_SEL_DETAIL_LOCATION = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p > span:first-child'
 CSS_SEL_DETAIL_LOCATION_WIDE = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p'
-CSS_SEL_JOB_DESCRIPTION = f'{CSS_SEL_JOB_DETAIL} div[id^="JobDetails_AboutTheJob_"]'
-CSS_SEL_JOB_DESCRIPTION_FALLBACK = f'{CSS_SEL_JOB_DETAIL} > div:nth-child(2)'
+# LinkedIn dropped the JobDetails_AboutTheJob_ id and the section carries no stable class/id, so it is anchored on
+# its heading and walked up to the first wrapper holding exactly one expandable-text-box (the description body).
+# The premium upsell marks the pane that must never be returned: it wraps the whole job, company and related cards.
+# LEGACY stays as a fallback for a rollback of the frontend; BOX is the last resort (description text only).
+CSS_SEL_JOB_DESCRIPTION_LEGACY = f'{CSS_SEL_JOB_DETAIL} div[id^="JobDetails_AboutTheJob_"]'
+CSS_SEL_JOB_DESCRIPTION_BOX = f'{CSS_SEL_JOB_DETAIL} [data-testid="expandable-text-box"]'
 CSS_SEL_JOB_EXPAND_BUTTONS = f'{CSS_SEL_JOB_DETAIL} button[data-testid="expandable-text-button"]'
+JS_FIND_ABOUT_THE_JOB_SECTION = (
+    'const pane = document.querySelector(\'[data-testid="lazy-column"]\') || document;'
+    'const heading = Array.from(pane.querySelectorAll("h2, h3")).find(h => (h.textContent || "").trim().toLowerCase() === "about the job");'
+    'const findSection = () => {'
+    ' let el = heading ? heading.parentElement : null;'
+    ' while (el && el.getAttribute("data-testid") !== "lazy-column") {'
+    '  const text = el.textContent || "";'
+    '  if (el.querySelectorAll(\'[data-testid="expandable-text-box"]\').length === 1 && !text.includes("Job search faster with Premium")) return el;'
+    '  el = el.parentElement;'
+    ' }'
+    ' return null;'
+    '};'
+)
+JS_READ_ABOUT_THE_JOB_SECTION = JS_FIND_ABOUT_THE_JOB_SECTION + 'const section = findSection(); return section ? section.innerHTML : null;'
+JS_EXPAND_ABOUT_THE_JOB_SECTION = JS_FIND_ABOUT_THE_JOB_SECTION + (
+    'const section = findSection() || document.querySelector(\'[id^="JobDetails_AboutTheJob_"]\'); '
+    'if (section) section.querySelectorAll(\'button[data-testid="expandable-text-button"]\').forEach(b => { try { b.click(); } catch (e) {} });'
+)
 # aria-label matches in both list-click and direct-url mode, the bug icon only exists in list-click mode
 CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} button[aria-label="Easy Apply to this job"]'
 CSS_SEL_JOB_FIT_PREFERENCES = f'{CSS_SEL_JOB_DETAIL} > div:first-child a[href*="currentJobId"]'
@@ -62,12 +84,16 @@ class LinkedinDetailReader:
 
     def _expand_description(self):
         try:
-            self.selenium.driver.execute_script(
-                'const root = document.querySelector(\'[id^="JobDetails_AboutTheJob_"]\'); '
-                'if (root) root.querySelectorAll(\'button[data-testid="expandable-text-button"]\').forEach(b => { try { b.click(); } catch (e) {} });',
-            )
+            self.selenium.driver.execute_script(JS_EXPAND_ABOUT_THE_JOB_SECTION)
         except Exception:
             pass
+
+    def _section_html(self) -> Optional[str]:
+        try:
+            html = self.selenium.driver.execute_script(JS_READ_ABOUT_THE_JOB_SECTION)
+        except Exception:
+            return None
+        return html if isinstance(html, str) and html else None
 
     def _all_html(self, cssSel: str) -> str:
         # Querying the selector in the page keeps the extraction consistent with the live DOM
@@ -96,12 +122,19 @@ class LinkedinDetailReader:
 
     def _description_html(self) -> str:
         self._expand_description()
-        for cssSel in (CSS_SEL_JOB_DESCRIPTION, CSS_SEL_JOB_DESCRIPTION_FALLBACK):
-            try:
-                if html := self._all_html(cssSel):
-                    return html
-            except Exception:
-                continue
+        if html := self._section_html():
+            return html
+        try:
+            if html := self._all_html(CSS_SEL_JOB_DESCRIPTION_LEGACY):
+                return html
+        except Exception:
+            pass
+        # Last resort: the first expandable-text-box is the About-the-job body (the company box comes after it).
+        try:
+            if html := self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION_BOX):
+                return html
+        except Exception:
+            pass
         raise NoSuchElementException('Job description not found')
 
     def _first_text(self, *cssSels) -> str:

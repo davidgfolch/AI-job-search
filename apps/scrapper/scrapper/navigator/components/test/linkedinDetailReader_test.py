@@ -1,6 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from scrapper.navigator.components.linkedinDetailReader import LinkedinDetailReader, CSS_SEL_JOB_TITLE_LINK, CSS_SEL_DETAIL_COMPANY, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_FIT_PREFERENCES
+from scrapper.navigator.components.linkedinDetailReader import (
+    LinkedinDetailReader, CSS_SEL_JOB_TITLE_LINK, CSS_SEL_DETAIL_COMPANY, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_FIT_PREFERENCES,
+    CSS_SEL_JOB_DESCRIPTION_LEGACY, CSS_SEL_JOB_DESCRIPTION_BOX,
+)
 from selenium.common.exceptions import NoSuchElementException
 
 class TestLinkedinDetailReader:
@@ -41,6 +44,41 @@ class TestLinkedinDetailReader:
         mock_selenium.getElms.return_value = []
         mock_selenium.getHtml.side_effect = [NoSuchElementException('about the job'), 'body_html']
         assert reader.read()[4] == 'body_html'
+
+    def test_description_uses_anchored_section(self, reader, mock_selenium):
+        """The section is found by heading + single expandable-text-box, so the pane chrome never leaks in"""
+        mock_selenium.getText.side_effect = ['Title', 'Company', 'Location']
+        mock_selenium.getAttr.return_value = 'u'
+        mock_selenium.getElms.return_value = []
+        mock_selenium.driver.execute_script.side_effect = [None, 'section_html']
+        assert reader.read()[4] == 'section_html'
+        mock_selenium.getHtml.assert_not_called()
+
+    def test_description_falls_back_to_legacy_container(self, reader, mock_selenium):
+        mock_selenium.getText.side_effect = ['Title', 'Company', 'Location']
+        mock_selenium.getAttr.return_value = 'u'
+        mock_selenium.getElms.return_value = []
+        mock_selenium.driver.execute_script.return_value = None
+        mock_selenium.getHtml.return_value = 'legacy_html'
+        assert reader.read()[4] == 'legacy_html'
+        mock_selenium.getHtml.assert_called_with(CSS_SEL_JOB_DESCRIPTION_LEGACY)
+
+    def test_description_last_resort_uses_first_text_box(self, reader, mock_selenium):
+        mock_selenium.getText.side_effect = ['Title', 'Company', 'Location']
+        mock_selenium.getAttr.return_value = 'u'
+        mock_selenium.getElms.return_value = []
+        mock_selenium.driver.execute_script.return_value = None
+        mock_selenium.getHtml.side_effect = [NoSuchElementException('legacy gone'), 'box_html']
+        assert reader.read()[4] == 'box_html'
+        mock_selenium.getHtml.assert_called_with(CSS_SEL_JOB_DESCRIPTION_BOX)
+
+    def test_expand_clicks_section_buttons_with_legacy_fallback(self, reader, mock_selenium):
+        mock_selenium.driver.execute_script.return_value = None
+        reader._expand_description()
+        script = mock_selenium.driver.execute_script.call_args.args[0]
+        assert 'findSection' in script
+        assert 'expandable-text-button' in script
+        assert 'JobDetails_AboutTheJob_' in script
 
     def test_read_without_description_raises(self, reader, mock_selenium):
         mock_selenium.getText.side_effect = ['Title', 'Company', 'Location']
