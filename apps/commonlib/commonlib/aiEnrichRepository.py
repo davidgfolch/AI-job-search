@@ -2,7 +2,7 @@ from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.sql.filter_config_selector import FilterConfigSelector
 from commonlib.sqlUtil import emptyToNone, maxLen, updateFieldsQuery
 
-from commonlib.ai_helpers import MAX_AI_ENRICH_ERROR_LEN, RETRY_ERROR_PREFIX
+from commonlib.ai_helpers import MAX_AI_ENRICH_ERROR_LEN, RETRY_ERROR_PREFIX, TOO_LONG_CONTEXT_REASON
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.modality_extractor import modalities_to_db
@@ -75,6 +75,7 @@ class AiEnrichRepository:
             SELECT id FROM jobs 
             WHERE ai_enrich_error IS NOT NULL AND ai_enrich_error != '' 
             AND ai_enrich_error NOT LIKE '{RETRY_ERROR_PREFIX}%'
+            AND ai_enrich_error != '{TOO_LONG_CONTEXT_REASON}'
             AND created > DATE_SUB(NOW(), INTERVAL 2 DAY)
             ORDER BY created DESC LIMIT 1"""
         rows = self.mysql.fetchAll(query)
@@ -109,6 +110,12 @@ class AiEnrichRepository:
     def update_enrichment_error(self, id: int, error_msg: str, is_enrichment: bool):
         error_msg = error_msg[:MAX_AI_ENRICH_ERROR_LEN]
         fields = {'ai_enrich_error': error_msg, 'ai_enriched': False} if is_enrichment else {'cv_match_percentage': -1}
+        query, params = updateFieldsQuery([id], fields)
+        return self.mysql.executeAndCommit(query, params)
+
+    def skip_enrichment(self, id: int, reason: str = TOO_LONG_CONTEXT_REASON) -> int:
+        """Mark the job enriched without calling the model, so it leaves the pending queue for good."""
+        fields = {'ai_enriched': True, 'ai_enrich_error': reason[:MAX_AI_ENRICH_ERROR_LEN]}
         query, params = updateFieldsQuery([id], fields)
         return self.mysql.executeAndCommit(query, params)
 

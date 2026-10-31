@@ -1,5 +1,6 @@
 
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
+from commonlib.ai_helpers import TOO_LONG_CONTEXT_REASON
 from commonlib.test.aiEnrichRepository_fixtures import mockRepo
 
 
@@ -148,3 +149,21 @@ def test_update_cv_match():
     repo.update_cv_match(1, 95)
     assert mock_mysql.update_called
     assert "cv_match_percentage" in mock_mysql.last_query
+
+def test_skip_enrichment_marks_enriched_so_it_leaves_the_queue():
+    mock_mysql, repo = mockRepo()
+    assert repo.skip_enrichment(7) == 1
+    assert mock_mysql.last_query.startswith("UPDATE jobs SET")
+    assert "ai_enriched" in mock_mysql.last_query
+    assert mock_mysql.last_params == {'ai_enriched': True, 'ai_enrich_error': TOO_LONG_CONTEXT_REASON}
+
+def test_skip_enrichment_truncates_custom_reason():
+    mock_mysql, repo = mockRepo()
+    repo.skip_enrichment(7, "x" * 600)
+    assert len(mock_mysql.last_params['ai_enrich_error']) == 500
+
+def test_get_enrichment_error_id_retry_excludes_too_long_context():
+    mock_mysql, repo = mockRepo()
+    mock_mysql.fetch_all_result = []
+    repo.get_enrichment_error_id_retry()
+    assert f"ai_enrich_error != '{TOO_LONG_CONTEXT_REASON}'" in mock_mysql.last_query

@@ -2,6 +2,7 @@ import re
 
 from commonlib.stringUtil import hasLen, removeExtraEmptyLines
 from commonlib.dateUtil import getDatetimeNowStr, getSeconds, getTimeUnits
+from commonlib.environmentUtil import getEnv
 from commonlib.systemUtil import isDocker
 from commonlib.terminalColor import green, stripAnsi
 from commonlib.terminalUtil import consoleTimer
@@ -12,6 +13,17 @@ logger = get_logger("commonlib.ai_helpers")
 
 MAX_AI_ENRICH_ERROR_LEN = 500
 RETRY_ERROR_PREFIX = "RETRY ERROR: "
+MAX_AI_INPUT_CHARS = 30000
+TOO_LONG_CONTEXT_REASON = "too long context"
+
+def get_max_ai_input_chars() -> int:
+    """Read per call so a .env edit applies without a restart."""
+    return int(getEnv("AI_ENRICH_INPUT_MAX_LEN", str(MAX_AI_INPUT_CHARS)))
+
+def is_context_too_long(text: str) -> bool:
+    """Oversized inputs cannot finish within the job timeout, so they are skipped before dispatch."""
+    return len(text or "") > get_max_ai_input_chars()
+
 
 def printJob(processName, total, idx, id, title, company, inputLen):
     print(green(f'AI {processName} job {idx+1}/{max(total, idx + 1)} - {getDatetimeNowStr()} -> id={id}, title={title}, company={company} -> input length={inputLen}'))

@@ -182,3 +182,25 @@ class TestFcRecheck:
         with selector_patches(selector(["NewFC"], [5])):
             assert retry_failed_jobs() == 1
         assert repo._job_configs[5] == "NewFC"
+
+
+class TestProcessJobSafeTooLongContext:
+    def test_oversized_context_is_marked_without_calling_the_model(self, monkeypatch):
+        monkeypatch.setenv("AI_ENRICH_INPUT_MAX_LEN", "10")
+        repo = enrich_repo()
+        with process_job_patches() as deps, patch("aiEnrich.dataExtractor.footer") as footer:
+            _process_job_safe(repo, 1, 1, 0, "enrich")
+        repo.skip_enrichment.assert_called_once_with(1)
+        deps.ollama.assert_not_called()
+        deps.openrouter.assert_not_called()
+        deps.save.assert_not_called()
+        footer.assert_called_once()
+
+    def test_short_context_still_calls_the_model(self, monkeypatch):
+        monkeypatch.setenv("AI_ENRICH_INPUT_MAX_LEN", "100000")
+        repo = enrich_repo()
+        with process_job_patches() as deps:
+            deps.ollama.return_value = ollama_response()
+            _process_job_safe(repo, 1, 1, 0, "enrich")
+        repo.skip_enrichment.assert_not_called()
+        deps.ollama.assert_called_once()

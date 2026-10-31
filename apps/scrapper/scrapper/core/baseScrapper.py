@@ -3,6 +3,7 @@ import urllib.parse
 from markdownify import MarkdownConverter
 
 from .utils import debug
+from commonlib.ai_helpers import get_max_ai_input_chars, is_context_too_long
 from commonlib.environmentUtil import getEnv
 from commonlib.dateUtil import getDatetimeNowStr
 from commonlib.observability import get_logger
@@ -88,6 +89,11 @@ def validate(title: str, url: str, company: str, markdown: str, debugFlag: bool)
             debug(debugFlag, "validate -> " + red(f'ERROR: empty required field {fields[i]}, ') + yellow(f' -> Url: {url} '))
             logger.error("job.field_invalid", field=fields[i], url=url, debug=debugFlag)
         return False
+    if is_context_too_long(markdown):
+        limit = get_max_ai_input_chars()
+        debug(debugFlag, "validate -> " + yellow(f'WARNING: markdown length {len(markdown)} exceeds AI input cap {limit}, ') + f' -> Url: {url} ')
+        logger.warning("job.markdown_too_long", url=url, markdown_length=len(markdown), limit=limit,
+                       console=yellow(f'WARNING: description larger than the AI input cap ({len(markdown)}>{limit} chars), check the page DOM'))
     return True
 
 

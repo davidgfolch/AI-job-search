@@ -1,7 +1,7 @@
 from structlog.testing import capture_logs
 import pytest
 from unittest.mock import MagicMock, patch
-from commonlib.ai_helpers import validateResult, listsToString, mapJob, combineTaskResults, footer, printJob, logIdleWait, idleWait, _expand_parenthesized_skills, flatten_skill_groups, _normalizeModality
+from commonlib.ai_helpers import validateResult, listsToString, mapJob, combineTaskResults, footer, printJob, logIdleWait, idleWait, _expand_parenthesized_skills, flatten_skill_groups, _normalizeModality, get_max_ai_input_chars, is_context_too_long
 from commonlib.terminalColor import cyan
 from commonlib.test.ai_helpers_fixtures import (
     LISTS_TO_STRING_CASES, LISTS_TO_STRING_TYPES_CASES, FLATTEN_STRING_CASES, FLATTEN_LIST_CASES, SALARY_CASES, CV_MATCH_CASES, MAP_JOB_CASES,
@@ -197,3 +197,27 @@ class TestIdleWait:
             idleWait("All skills enriched.", "10s")
         mock_timer.assert_called_once_with("All skills enriched.", "10s")
         assert records == []
+
+
+class TestAiInputLimit:
+    def test_default_limit(self, monkeypatch):
+        monkeypatch.delenv("AI_ENRICH_INPUT_MAX_LEN", raising=False)
+        assert get_max_ai_input_chars() == 30000
+
+    @pytest.mark.parametrize("length, expected", [
+        (30000, False),
+        (30001, True),
+        (0, False),
+    ], ids=["at_limit", "over_limit", "empty"])
+    def test_boundary(self, monkeypatch, length, expected):
+        monkeypatch.delenv("AI_ENRICH_INPUT_MAX_LEN", raising=False)
+        assert is_context_too_long("x" * length) is expected
+
+    def test_env_override(self, monkeypatch):
+        monkeypatch.setenv("AI_ENRICH_INPUT_MAX_LEN", "10")
+        assert get_max_ai_input_chars() == 10
+        assert is_context_too_long("x" * 10) is False
+        assert is_context_too_long("x" * 11) is True
+
+    def test_none_is_not_too_long(self):
+        assert is_context_too_long(None) is False

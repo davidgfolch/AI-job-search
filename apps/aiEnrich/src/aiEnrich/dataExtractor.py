@@ -10,6 +10,8 @@ from commonlib.ai_helpers import (
     validateResult,
     RETRY_ERROR_PREFIX,
     logIdleWait,
+    get_max_ai_input_chars,
+    is_context_too_long,
 )
 from commonlib.terminalColor import cyan
 from commonlib.aiEnrichRepository import AiEnrichRepository
@@ -126,6 +128,7 @@ def _process_job_safe(
     _remaining_pending = repo.count_pending_enrichment()
     live_total = max(total, idx + _remaining_pending, idx + 1)
     success = False
+    skipped = False
     title, company = "Unknown", "Unknown"
     try:
         with job_log_context(id):
@@ -141,33 +144,42 @@ def _process_job_safe(
                 logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=live_total, index=idx + 1, backend=backend, model=model, config=repo.config_for_job(id) or "NONE")
                 prompt = build_extraction_prompt(title, markdown)
                 result, response = None, None
-                while response is None:
-                    if not ping_backend():
-                        logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=get_max_ollama_failures())
-                        collector.record_backend_unreachable("aiEnrich")
-                        logIdleWait(cyan('Backend unavailable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
-                        continue
-                    result, response = query_and_parse(
-                        lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
-                        max_attempts=get_max_validation_retries() + 1, log=logger,
+                if is_context_too_long(prompt):
+                    logger.warning("job.context_too_long", job_id=id, title=title, company=company, input_len=len(prompt), limit=get_max_ai_input_chars())
+                    if repo.skip_enrichment(id) == 0:
+                        logger.error("job.skip_update_failed", job_id=id)
+                    skipped = True
+                else:
+                    while response is None:
+                        if not ping_backend():
+                            logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=get_max_ollama_failures())
+                            collector.record_backend_unreachable("aiEnrich")
+                            logIdleWait(cyan('Backend unavailable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+                            continue
+                        result, response = query_and_parse(
+                            lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
+                            max_attempts=get_max_validation_retries() + 1, log=logger,
+                        )
+                        if response is None:
+                            logger.warning("job.ai_unreachable", job_id=id, title=title, company=company)
+                    if result is not None:
+                        _save(repo, id, result)
+                        success = True
+                        resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
+                    logger.info(
+                        "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
+                        model=model, done_reason=getattr(response, "done_reason", None),
                     )
-                    if response is None:
-                        logger.warning("job.ai_unreachable", job_id=id, title=title, company=company)
-                if result is not None:
-                    _save(repo, id, result)
-                    success = True
-                    resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)
-                logger.info(
-                    "job.result", job_id=id, result=result, duration=round(time.time() - start_time, 3), backend=backend,
-                    model=model, done_reason=getattr(response, "done_reason", None),
-                )
             except Exception as ex:
                 _handle_error(repo, id, title, company, ex, process_name)
     except Exception as e:
         logger.error("job.critical_error", job_id=id, error=str(e))
     totalCount += 1
     duration = time.time() - start_time
-    collector.record_job("aiEnrich", duration, success)
+    if skipped:
+        collector.record_job_skipped("aiEnrich")
+    else:
+        collector.record_job("aiEnrich", duration, success)
     collector.persist_if_due(60)
     stopWatch.end()
     footer(live_total, idx, totalCount, jobErrors, time.time() - _batch_start, duration, config=repo.config_for_job(id) or "NONE")

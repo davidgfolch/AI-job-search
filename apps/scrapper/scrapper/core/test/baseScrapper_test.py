@@ -159,3 +159,22 @@ def test_remove_url_parameter(url, param, expected_not_in, expected_in):
     res = removeUrlParameter(url, param)
     for item in expected_not_in: assert item not in res
     for item in expected_in: assert item in res
+
+
+class TestValidateMarkdownTooLong:
+    def test_warns_over_cap_but_still_inserts(self, monkeypatch):
+        monkeypatch.setenv("AI_ENRICH_INPUT_MAX_LEN", "10")
+        with captured_records(baseScrapper, "scrapper.baseScrapper") as records:
+            assert validate('Title', 'http://url.com', 'Company', 'x' * 11, False) is True
+        warning = [r for r in records if r["event"] == "job.markdown_too_long"]
+        assert len(warning) == 1
+        assert warning[0]["log_level"] == "warning"
+        assert warning[0]["url"] == 'http://url.com'
+        assert warning[0]["markdown_length"] == 11
+        assert warning[0]["limit"] == 10
+
+    def test_silent_at_or_under_cap(self, monkeypatch):
+        monkeypatch.setenv("AI_ENRICH_INPUT_MAX_LEN", "10")
+        with captured_records(baseScrapper, "scrapper.baseScrapper") as records:
+            assert validate('Title', 'http://url.com', 'Company', 'x' * 10, False) is True
+        assert [r for r in records if r["event"] == "job.markdown_too_long"] == []

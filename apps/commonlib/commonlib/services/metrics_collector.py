@@ -35,6 +35,7 @@ class MetricsCollector:
                 "jobs_processed": 0,
                 "jobs_succeeded": 0,
                 "jobs_failed": 0,
+                "jobs_skipped": 0,
                 "total_duration": 0.0,
                 "durations": [],
                 "cache_hits": 0,
@@ -62,6 +63,14 @@ class MetricsCollector:
                 m["jobs_succeeded"] += 1
             else:
                 m["jobs_failed"] += 1
+            m["last_processed_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    def record_job_skipped(self, module: str):
+        """A job bypassed without calling the model (e.g. oversized input) still counts as processed, never as failed."""
+        with self._lock:
+            m = self._modules[module]
+            m["jobs_processed"] += 1
+            m["jobs_skipped"] += 1
             m["last_processed_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
     def record_heartbeat(self, module: str):
