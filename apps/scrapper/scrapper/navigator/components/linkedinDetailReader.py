@@ -15,29 +15,44 @@ CSS_SEL_DETAIL_COMPANY = f'{CSS_SEL_JOB_DETAIL} p a[href*="/company/"]'
 CSS_SEL_DETAIL_LOCATION = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p > span:first-child'
 CSS_SEL_DETAIL_LOCATION_WIDE = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p'
 # LinkedIn dropped the JobDetails_AboutTheJob_ id and the section carries no stable class/id, so it is anchored on
-# its heading and walked up to the first wrapper holding exactly one expandable-text-box (the description body).
-# The premium upsell marks the pane that must never be returned: it wraps the whole job, company and related cards.
-# LEGACY stays as a fallback for a rollback of the frontend; BOX is the last resort (description text only).
+# its heading and bounded structurally: exactly one expandable-text-box and at most one section heading. Copy inside
+# the wrapper (premium upsell, AI-fit card) must NOT disqualify it: matching on that copy made the anchor return null
+# on the list-click layout, so every description silently fell back to the clamped box and stored a trailing "… more".
+# The first text box is the description itself (the company blurb box comes after it); LEGACY stays as a fallback for
+# a rollback of the frontend.
 CSS_SEL_JOB_DESCRIPTION_LEGACY = f'{CSS_SEL_JOB_DETAIL} div[id^="JobDetails_AboutTheJob_"]'
 CSS_SEL_JOB_DESCRIPTION_BOX = f'{CSS_SEL_JOB_DETAIL} [data-testid="expandable-text-box"]'
 CSS_SEL_JOB_EXPAND_BUTTONS = f'{CSS_SEL_JOB_DETAIL} button[data-testid="expandable-text-button"]'
 JS_FIND_ABOUT_THE_JOB_SECTION = (
     'const pane = document.querySelector(\'[data-testid="lazy-column"]\') || document;'
     'const heading = Array.from(pane.querySelectorAll("h2, h3")).find(h => (h.textContent || "").trim().toLowerCase() === "about the job");'
+    'const firstBox = pane.querySelector(\'[data-testid="expandable-text-box"]\');'
     'const findSection = () => {'
-    ' let el = heading ? heading.parentElement : null;'
+    ' let el = heading ? heading.parentElement : (firstBox ? firstBox.parentElement : null);'
     ' while (el && el.getAttribute("data-testid") !== "lazy-column") {'
-    '  const text = el.textContent || "";'
-    '  if (el.querySelectorAll(\'[data-testid="expandable-text-box"]\').length === 1 && !text.includes("Job search faster with Premium")) return el;'
+    '  if (el.querySelectorAll(\'[data-testid="expandable-text-box"]\').length === 1 && el.querySelectorAll("h2, h3").length <= 1) return el;'
     '  el = el.parentElement;'
     ' }'
     ' return null;'
     '};'
 )
-JS_READ_ABOUT_THE_JOB_SECTION = JS_FIND_ABOUT_THE_JOB_SECTION + 'const section = findSection(); return section ? section.innerHTML : null;'
+# The "… more" affordance only lifts a CSS line clamp: the full text is already in the DOM. Stripping the button
+# node from a clone keeps its label out of the markdown even when the click below cannot fire.
+JS_STRIP_EXPANDER = 'clone.querySelectorAll(\'[data-testid="expandable-text-button"]\').forEach(b => b.remove());'
+JS_READ_ABOUT_THE_JOB_SECTION = JS_FIND_ABOUT_THE_JOB_SECTION + (
+    'const section = findSection(); if (!section) return null;'
+    'const clone = section.cloneNode(true); ' + JS_STRIP_EXPANDER + ' return clone.innerHTML;'
+)
+JS_READ_FIRST_TEXT_BOX = (
+    'const pane = document.querySelector(\'[data-testid="lazy-column"]\') || document;'
+    'const box = pane.querySelector(\'[data-testid="expandable-text-box"]\'); if (!box) return null;'
+    'const clone = box.cloneNode(true); ' + JS_STRIP_EXPANDER + ' return clone.innerHTML;'
+)
 JS_EXPAND_ABOUT_THE_JOB_SECTION = JS_FIND_ABOUT_THE_JOB_SECTION + (
-    'const section = findSection() || document.querySelector(\'[id^="JobDetails_AboutTheJob_"]\'); '
-    'if (section) section.querySelectorAll(\'button[data-testid="expandable-text-button"]\').forEach(b => { try { b.click(); } catch (e) {} });'
+    'const roots = [findSection(), document.querySelector(\'[id^="JobDetails_AboutTheJob_"]\'), firstBox].filter(Boolean);'
+    'let clicked = 0;'
+    'roots.forEach(root => root.querySelectorAll(\'button[data-testid="expandable-text-button"]\').forEach(b => { try { b.click(); clicked += 1; } catch (e) {} }));'
+    'return clicked;'
 )
 # aria-label matches in both list-click and direct-url mode, the bug icon only exists in list-click mode
 CSS_SEL_JOB_EASY_APPLY = f'{CSS_SEL_JOB_DETAIL} button[aria-label="Easy Apply to this job"]'
@@ -82,11 +97,14 @@ class LinkedinDetailReader:
         buttons = self.selenium.getElms(CSS_SEL_JOB_FIT_PREFERENCES)
         return ', '.join(map(lambda b: self.selenium.getText(b), buttons))
 
-    def _expand_description(self):
+    def _expand_description(self) -> int:
         try:
-            self.selenium.driver.execute_script(JS_EXPAND_ABOUT_THE_JOB_SECTION)
+            clicked = self.selenium.driver.execute_script(JS_EXPAND_ABOUT_THE_JOB_SECTION)
         except Exception:
-            pass
+            return 0
+        if not clicked:
+            logger.debug("linkedin.description.expander_missing")
+        return clicked or 0
 
     def _section_html(self) -> Optional[str]:
         try:
@@ -94,6 +112,18 @@ class LinkedinDetailReader:
         except Exception:
             return None
         return html if isinstance(html, str) and html else None
+
+    def _box_html(self) -> Optional[str]:
+        try:
+            html = self.selenium.driver.execute_script(JS_READ_FIRST_TEXT_BOX)
+            if isinstance(html, str) and html:
+                return html
+        except Exception:
+            pass
+        try:
+            return self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION_BOX) or None
+        except Exception:
+            return None
 
     def _all_html(self, cssSel: str) -> str:
         # Querying the selector in the page keeps the extraction consistent with the live DOM
@@ -129,12 +159,8 @@ class LinkedinDetailReader:
                 return html
         except Exception:
             pass
-        # Last resort: the first expandable-text-box is the About-the-job body (the company box comes after it).
-        try:
-            if html := self.selenium.getHtml(CSS_SEL_JOB_DESCRIPTION_BOX):
-                return html
-        except Exception:
-            pass
+        if html := self._box_html():
+            return html
         raise NoSuchElementException('Job description not found')
 
     def _first_text(self, *cssSels) -> str:

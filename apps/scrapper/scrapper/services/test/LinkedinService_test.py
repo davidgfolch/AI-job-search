@@ -167,3 +167,21 @@ class TestLinkedinService:
     @pytest.mark.parametrize("md", [CLEAN_MD, COMPANY_IN_DESCRIPTION_MD, 'MD'])
     def test_post_process_markdown_keeps_clean_markdown(self, service, md):
         assert service.post_process_markdown(md) == md
+
+    @pytest.mark.parametrize("md, expected", [
+        ('Description text.… more', 'Description text.'),
+        ('Description text.…more', 'Description text.'),
+        ('Description text.... more', 'Description text.'),
+        ('Description text.\n\n… more', 'Description text.'),
+        ('Description text.… less', 'Description text.'),
+        ('A legit sentence ends with more.', 'A legit sentence ends with more.'),
+        ('Description text.', 'Description text.'),
+    ])
+    def test_strip_expander_label(self, service, md, expected):
+        assert service._strip_expander_label(md) == expected
+
+    @pytest.mark.parametrize("md", ['Description text.… more', 'Description text.… less'])
+    def test_strip_expander_label_warns(self, service, md):
+        with patch('scrapper.services.LinkedinService.logger') as log:
+            service._strip_expander_label(md)
+        assert_logged(log, 'warning', 'linkedin.description.expander_label_stripped', markdown_length=len(md))

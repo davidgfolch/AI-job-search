@@ -1,3 +1,4 @@
+import sys
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.navigator.components.linkedinDetailReader import (
@@ -79,6 +80,38 @@ class TestLinkedinDetailReader:
         assert 'findSection' in script
         assert 'expandable-text-button' in script
         assert 'JobDetails_AboutTheJob_' in script
+        assert 'firstBox' in script  # the box is clicked even when the heading anchor misses
+
+    @pytest.mark.parametrize("script_result, expected", [(2, 2), (0, 0), (None, 0)])
+    def test_expand_description_returns_click_count(self, reader, mock_selenium, script_result, expected):
+        mock_selenium.driver.execute_script.return_value = script_result
+        assert reader._expand_description() == expected
+
+    def test_expand_description_survives_script_failure(self, reader, mock_selenium):
+        mock_selenium.driver.execute_script.side_effect = Exception('driver gone')
+        assert reader._expand_description() == 0
+
+    @pytest.mark.parametrize("script", ['JS_READ_ABOUT_THE_JOB_SECTION', 'JS_READ_FIRST_TEXT_BOX'])
+    def test_read_scripts_strip_the_expander_label(self, script):
+        """The '… more' affordance only lifts a CSS clamp: its label must never reach the markdown"""
+        source = getattr(sys.modules[LinkedinDetailReader.__module__], script)
+        assert 'expandable-text-button' in source
+        assert 'remove()' in source
+
+    @pytest.mark.parametrize("script_html, get_html, expected", [
+        ('box_html', None, 'box_html'),
+        (None, 'legacy_box_html', 'legacy_box_html'),
+        (None, NoSuchElementException('no box'), None),
+    ])
+    def test_box_html_prefers_live_dom_then_falls_back(self, reader, mock_selenium, script_html, get_html, expected):
+        mock_selenium.driver.execute_script.return_value = script_html
+        if isinstance(get_html, Exception):
+            mock_selenium.getHtml.side_effect = get_html
+        else:
+            mock_selenium.getHtml.return_value = get_html
+        assert reader._box_html() == expected
+        if get_html is not None:
+            mock_selenium.getHtml.assert_called_with(CSS_SEL_JOB_DESCRIPTION_BOX)
 
     def test_read_without_description_raises(self, reader, mock_selenium):
         mock_selenium.getText.side_effect = ['Title', 'Company', 'Location']

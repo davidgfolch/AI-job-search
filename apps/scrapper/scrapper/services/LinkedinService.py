@@ -18,6 +18,10 @@ logger = get_logger("scrapper.LinkedinService")
 MARKDOWN_PREFIX_MARKERS = ('Your profile and resume match', 'See recent hiring trends', 'Use AI to assess how you fit', 'Reactivate Premium')
 MARKDOWN_SUFFIX_MARKERS = ('Job search faster with Premium', 'Trending employee content', '[Show more](https://www.linkedin.com/company/')
 ABOUT_THE_JOB_HEADING_RE = re.compile(r'^About the job\n-{3,}[ \t]*$', re.M)
+# LinkedIn ships the full description in the DOM: the "… more" affordance only lifts a CSS line clamp. The reader
+# strips the button node, so a label reaching the markdown means the DOM moved again (or the box was already
+# expanded and carries "… less"): trim it and say so instead of storing chrome the AI would read as content.
+EXPANDER_LABEL_RE = re.compile(r'\s*(?:…|\.\.\.)\s*(?:see\s+)?(?:more|less)\s*$', re.I)
 
 class LinkedinService(BaseService):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, debug: bool):
@@ -60,7 +64,14 @@ class LinkedinService(BaseService):
             baseScrapper.debug(self.debug, exception=True)
 
     def post_process_markdown(self, md: str) -> str:
-        return self._cut_suffix(self._drop_fit_card(md))
+        return self._strip_expander_label(self._cut_suffix(self._drop_fit_card(md)))
+
+    def _strip_expander_label(self, md: str) -> str:
+        stripped = EXPANDER_LABEL_RE.sub('', md)
+        if stripped != md:
+            logger.warning("linkedin.description.expander_label_stripped", markdown_length=len(md),
+                           console=yellow('Description carried an expander label ("… more"), stripped'))
+        return stripped
 
     def _drop_fit_card(self, md: str) -> str:
         heading = ABOUT_THE_JOB_HEADING_RE.search(md)
