@@ -67,11 +67,7 @@ class LinkedinService(BaseService):
         return self._strip_expander_label(self._cut_suffix(self._drop_fit_card(md)))
 
     def _strip_expander_label(self, md: str) -> str:
-        stripped = EXPANDER_LABEL_RE.sub('', md)
-        if stripped != md:
-            logger.warning("linkedin.description.expander_label_stripped", markdown_length=len(md),
-                           console=yellow('Description carried an expander label ("… more"), stripped'))
-        return stripped
+        return EXPANDER_LABEL_RE.sub('', md)
 
     def _drop_fit_card(self, md: str) -> str:
         heading = ABOUT_THE_JOB_HEADING_RE.search(md)

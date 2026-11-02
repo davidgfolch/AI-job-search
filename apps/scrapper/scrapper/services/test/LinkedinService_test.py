@@ -180,8 +180,3 @@ class TestLinkedinService:
     def test_strip_expander_label(self, service, md, expected):
         assert service._strip_expander_label(md) == expected
 
-    @pytest.mark.parametrize("md", ['Description text.… more', 'Description text.… less'])
-    def test_strip_expander_label_warns(self, service, md):
-        with patch('scrapper.services.LinkedinService.logger') as log:
-            service._strip_expander_label(md)
-        assert_logged(log, 'warning', 'linkedin.description.expander_label_stripped', markdown_length=len(md))
