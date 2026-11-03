@@ -1,5 +1,7 @@
 import math
+from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException
+from commonlib.environmentUtil import getEnv
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, yellow
 from commonlib.decorator.retry import retry
@@ -13,14 +15,21 @@ from .BaseExecutor import BaseExecutor
 
 logger = get_logger("scrapper.LinkedinExecutor")
 
+QUERY_MODE_KEYWORDS = 'keywords'
+QUERY_MODE_AI = 'ai'
+AI_QUERY_SUFFIX_DEFAULT = '100% remoto dentro de España'
+
 class LinkedinExecutor(BaseExecutor):
     def _init_scrapper(self):
         self.site_name = "LINKEDIN"
         self.jobs_x_page = 25
-        self.remote = '2'   # onsite "1", remote "2", hybrid "3"
-        self.location = '105646813' # Spain
+        self.location = '105646813' # Spain geoId
         self.f_TPR = 'r86400'  # last 24 hours
-        self.sortBy = 'DD'  # DD most recent, R (default) most relevent
+        # LinkedIn's /jobs/search/ now redirects to /jobs/search-results/ and drops f_WT (the
+        # workplace-type pill) and sortBy: the pill is optional and often unset, so the remote
+        # hint has to travel in the keyword text instead (QUERY_MODE_AI appends the suffix).
+        self.query_mode = (getEnv('SCRAPPER_LINKEDIN_QUERY_MODE') or QUERY_MODE_KEYWORDS).strip().lower()
+        self.ai_query_suffix = getEnv('SCRAPPER_LINKEDIN_AI_QUERY_SUFFIX') or AI_QUERY_SUFFIX_DEFAULT
         self.user_email, self.user_pwd, self.jobs_search = getAndCheckEnvVars(self.site_name)
         self.navigator = LinkedinNavigator(self.selenium_service, self.debug)
 
@@ -39,14 +48,19 @@ class LinkedinExecutor(BaseExecutor):
             url = self._load_page(keyword)
         if self.navigator.check_login_popup(lambda: self.navigator.login(self.user_email, self.user_pwd)):
             url = self._load_page(keyword)
-        if self.navigator.check_results(keyword, url, self.remote, self.location, self.f_TPR):
+        if self.navigator.check_results(keyword, url, self.location, self.f_TPR, self.query_mode):
             self._search_jobs_loop(keyword, start_page)
 
+    def _build_search_url(self, keywords: str) -> str:
+        query = keywords if self.query_mode != QUERY_MODE_AI else f'{keywords} {self.ai_query_suffix}'
+        url = f'https://www.linkedin.com/jobs/search-results/?keywords={quote(query)}&geoId={self.location}&f_TPR={self.f_TPR}'
+        if self.query_mode == QUERY_MODE_AI:
+            url += '&origin=JOBS_HOME_SEARCH_BUTTON'
+        return url
+
     def _load_page(self, keywords: str) -> str:
-        from urllib.parse import quote
-        logger.info("linkedin.search.started", keywords=keywords, console=f'Search keyword={keywords}')
-        url = f'https://www.linkedin.com/jobs/search/?keywords={quote(keywords)}&f_WT={self.remote}' + \
-            f'&geoId={self.location}&f_TPR={self.f_TPR}&sortBy={self.sortBy}'
+        logger.info("linkedin.search.started", keywords=keywords, query_mode=self.query_mode, console=f'Search keyword={keywords}')
+        url = self._build_search_url(keywords)
         self.navigator.load_page(url)
         self.navigator.close_cookies_banner()
         return url
@@ -54,7 +68,7 @@ class LinkedinExecutor(BaseExecutor):
     def _search_jobs_loop(self, keywords: str, startPage: int):
         try:
             self.navigator.collapse_messages()
-            totalResults = self.navigator.get_total_results(keywords, self.remote, self.location, self.f_TPR, self.sortBy)
+            totalResults = self.navigator.get_total_results(keywords, self.location, self.f_TPR, self.query_mode)
             if not totalResults:
                 logger.warning("linkedin.total_results_unavailable", keywords=keywords,
                                console=yellow(f'Results header not found for {keywords}, skipping this cycle (retry next cadency).'))

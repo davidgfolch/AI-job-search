@@ -13,6 +13,7 @@ def mocks():
          patch('scrapper.util.persistence_manager.PersistenceManager'), \
          patch('scrapper.services.selenium.seleniumService.SeleniumService'), \
          patch('scrapper.executor.LinkedinExecutor.getAndCheckEnvVars', return_value=('u', 'p', 'k')), \
+         patch('scrapper.executor.LinkedinExecutor.getEnv', return_value=None), \
          patch('scrapper.executor.LinkedinExecutor.sleep'), \
          patch('scrapper.navigator.linkedinNavigator.sleep'):
         
@@ -73,6 +74,19 @@ class TestLinkedinExecutor:
         executor = LinkedinExecutor(mock_selenium, mock_pm, False)
         assert 'linkedin.com' in executor._load_page('python')
         mocks['nav'].load_page.assert_called()
+
+    @pytest.mark.parametrize("query_mode, expected, forbidden", [
+        ('keywords', ['/jobs/search-results/?keywords=python&geoId=105646813&f_TPR=r86400'], ['f_WT', 'sortBy', 'origin=', 'remoto']),
+        ('ai', ['keywords=python%20100%25%20remoto%20dentro%20de%20Espa%C3%B1a', 'origin=JOBS_HOME_SEARCH_BUTTON'], ['f_WT', 'sortBy']),
+    ])
+    def test_build_search_url(self, mocks, mock_selenium, mock_pm, query_mode, expected, forbidden):
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
+        executor.query_mode = query_mode
+        url = executor._build_search_url('python')
+        for fragment in expected:
+            assert fragment in url
+        for fragment in forbidden:
+            assert fragment not in url
 
     @pytest.mark.parametrize("start_page,total_res,calls", [(1, 4, 1), (3, 100, 1)])
     def test_search_jobs_flow(self, mocks, mock_selenium, mock_pm, start_page, total_res, calls):

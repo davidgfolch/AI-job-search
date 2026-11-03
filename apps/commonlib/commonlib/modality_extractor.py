@@ -58,6 +58,11 @@ def extract_modalities(title: str = "", location: str = "", markdown: str = "") 
         explicit = _flags_to_modalities(*_cues(match.group(1)))
         if explicit:
             return explicit
+    title_cues = _cues(str(title or ""))
+    if title_cues[0]:
+        # A remote claim in the title is authoritative: offers titled "100% remoto" are
+        # routinely diluted by a token "modelo híbrido" sentence in the description.
+        return _flags_to_modalities(*title_cues)
     return _flags_to_modalities(*_cues(text))
 
 

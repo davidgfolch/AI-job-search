@@ -98,24 +98,24 @@ class LinkedinNavigator(BaseNavigator):
     def close_cookies_banner(self):
         self.selenium.waitAndClick_noError(CSS_SEL_GLOBAL_ALERT_HIDE, 'Could not close cookies banner')
 
-    def check_results(self, keywords: str, url: str, remote, location, f_TPR) -> bool:
+    def check_results(self, keywords: str, url: str, location, f_TPR, query_mode) -> bool:
         # LinkedIn dropped the no-results banner: an empty search serves a "0 results" header instead
         try:
             total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).strip()
         except NoSuchElementException:
             return True  # header not rendered yet: get_total_results retries and fails loudly if the layout changed
         if total.startswith('0'):
-            logger.info("linkedin.no_results", keywords=keywords, remote=remote, location=location, last=f_TPR, url=url,
-                        console=yellow(join('No results for job search on linkedIn for', f'keywords={keywords}', f'remote={remote}', f'location={location}', f'old={f_TPR}', f'URL {url}')))
+            logger.info("linkedin.no_results", keywords=keywords, query_mode=query_mode, location=location, last=f_TPR, url=url,
+                        console=yellow(join('No results for job search on linkedIn for', f'keywords={keywords}', f'query_mode={query_mode}', f'location={location}', f'old={f_TPR}', f'URL {url}')))
             return False
         return True
 
     @retry(exception=NoSuchElementException, retries=6, delay=3, raiseException=False)
-    def get_total_results(self, keywords: str, remote, location, f_TPR, sortBy) -> int:
+    def get_total_results(self, keywords: str, location, f_TPR, query_mode) -> int:
         total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')
         printHR(green)
-        logger.info("linkedin.results_found", total=total, keywords=keywords, remote=remote, location=location, last=f_TPR, sort_by=sortBy,
-                    console=green(join(f'{total} total results for search: {keywords}', f'(remote={remote}, location={location}, last={f_TPR}, sortBy={sortBy})')))
+        logger.info("linkedin.results_found", total=total, keywords=keywords, query_mode=query_mode, location=location, last=f_TPR,
+                    console=green(join(f'{total} total results for search: {keywords}', f'(query_mode={query_mode}, location={location}, last={f_TPR})')))
         printHR(green)
         return int(total.replace('+', ''))
 

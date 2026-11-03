@@ -34,6 +34,20 @@ def test_explicit_modalidad_wins_over_the_whole_description():
 
 
 @pytest.mark.parametrize(
+    "title,markdown,expected",
+    [
+        ("Backend Engineer (100% Remoto)", "Modelo híbrido: 2 días en oficina", ["REMOTE"]),
+        ("Full Remote Senior Java", "Trabajo presencial ocasional en Madrid", ["REMOTE"]),
+        ("Híbrido (teletrabajo posible)", "", ["REMOTE", "HYBRID"]),
+        ("Dev", "Trabajo híbrido con opción en remoto", ["REMOTE", "HYBRID"]),
+        ("100% remoto", "Modalidad: presencial", ["ON_SITE"]),
+    ],
+)
+def test_remote_title_wins_over_description_cues(title, markdown, expected):
+    assert extract_modalities(title, "", markdown) == expected
+
+
+@pytest.mark.parametrize(
     "value,expected",
     [
         (None, []),

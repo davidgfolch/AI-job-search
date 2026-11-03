@@ -75,12 +75,12 @@ class TestLinkedinNavigator:
             mock_selenium.getText.side_effect = NoSuchElementException('missing')
         else:
             mock_selenium.getText.return_value = header_text
-        result = navigator.check_results("key", "url", False, "loc", "tpr")
+        result = navigator.check_results("key", "url", "loc", "tpr", "keywords")
         assert result is expected
 
     def test_get_total_results(self, navigator, mock_selenium):
         mock_selenium.getText.return_value = "100+ results"
-        result = navigator.get_total_results("key", False, "loc", "tpr", "d")
+        result = navigator.get_total_results("key", "loc", "tpr", "keywords")
         assert result == 100
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 
@@ -88,7 +88,7 @@ class TestLinkedinNavigator:
     def test_get_total_results_missing_header_returns_false(self, mock_retry_sleep, navigator, mock_selenium):
         """A slow/missing results header must not fail the keyword: it returns False so the cycle is skipped and retried next cadency"""
         mock_selenium.getText.side_effect = NoSuchElementException('missing')
-        result = navigator.get_total_results("key", False, "loc", "tpr", "d")
+        result = navigator.get_total_results("key", "loc", "tpr", "keywords")
         assert result is False
         mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
 
