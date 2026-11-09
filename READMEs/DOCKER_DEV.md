@@ -23,7 +23,7 @@ docker-compose logs -f
 docker-compose down
 ```
 
-> **Service discovery (MySQL / MongoDB / Ollama):** nothing is pinned to a compose hostname. Each client tries the host from `.env` first, then the container chain (`mysql_db`/`mongo_db` service name, `host.docker.internal`, `127.0.0.1`), then a cached LAN scan, so the same `.env` works whether the database runs in compose, on the Docker host or on another LAN machine. Workers call `wait_for_db()` at startup instead of exiting when MySQL is not up yet (compose only gates the first start). The scan result is cached in `./data/discovery/cache.json`, which every service mounts, so containers starting together perform one scan instead of one each. Add `COMMONLIB_DISCOVERY_SUBNETS` (comma-separated CIDRs) to extend the sweep.
+> **Service discovery (MySQL / MongoDB / Ollama):** in-container clients are pinned to their compose service names (`COMMONLIB_DB_HOST=mysql_db`, `MONGO_URI=mongodb://mongo_db:27017/`, `COMMONLIB_DB_DISCOVERY=False`), so a container start never triggers a LAN scan. For apps running on the host (scrapper) `.env` still works: each client tries the host from `.env` first, then the container chain (`mysql_db`/`mongo_db` service name, `host.docker.internal`, `127.0.0.1`), then a cached LAN scan, so the same `.env` works whether the database runs in compose, on the Docker host or on another LAN machine. Workers call `wait_for_db()` at startup instead of exiting when MySQL is not up yet (compose only gates the first start). The scan result is cached in `./data/discovery/cache.json`, which every service mounts, so containers starting together perform one scan instead of one each. Add `COMMONLIB_DISCOVERY_SUBNETS` (comma-separated CIDRs) to extend the sweep.
 
 ## With AI Services (AI Enrichment + Ollama)
 
@@ -106,7 +106,7 @@ docker-compose --profile aienrich --profile aiEnrichSkill up -d
 The `web` service resolves the backend API when it starts and keeps watching it:
 
 - It waits for the backend to answer `/health` before serving (bounded by `BACKEND_WAIT_TIMEOUT_SECONDS`, default 120). After a host reboot every container starts in parallel, so this wait is what keeps the API proxy from pointing at a dead target.
-- Candidates: `http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000`. The `host.docker.internal` alias is mapped through `extra_hosts: host.docker.internal=host-gateway`, so the containerized web also reaches a backend running on the host.
+- Candidates: `http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000`. Compose pins the first one in Docker (`BACKEND_URL=http://backend:8000`, `BACKEND_DISCOVERY=False`), so the container never scans the LAN. The `host.docker.internal` alias is mapped through `extra_hosts: host.docker.internal=host-gateway`, so the containerized web also reaches a backend running on the host.
 - A watchdog probes the current target every `BACKEND_CHECK_INTERVAL_SECONDS` (default 10) and, after `BACKEND_MAX_RETRIES` (default 3) failures, resolves the backend again and retargets the live proxy.
 - The web healthcheck asserts the API through the proxy (`/api/system/timezone`), so a broken proxy reports the container as unhealthy instead of healthy.
 
@@ -132,12 +132,12 @@ docker-compose up -d
 
 ### Web container: stale `node_modules`
 
-The web container keeps its installed dependencies in an anonymous Docker volume
-(`/app/node_modules`). Because that volume persists across rebuilds, a plain
-`docker-compose up -d --build web` after a dependency change can keep running the
-**old** package versions.
+The web container keeps its installed dependencies in the named Docker volume
+`web_node_modules` (mounted at `/app/node_modules`). Because that volume persists
+across rebuilds and recreates, a plain `docker-compose up -d --build web` after a
+dependency change can keep running the **old** package versions.
 
-The web image now ships an entrypoint (`apps/web/docker-entrypoint.sh`) that
+The web image ships an entrypoint (`apps/web/docker-entrypoint.sh`) that
 compares `package-lock.json` against a hash marker stored inside `node_modules`
 and re-runs `npm ci` only when they differ. So after a dependency update you can
 simply rebuild and restart:
@@ -150,17 +150,18 @@ The entrypoint detects the changed lockfile and reinstalls the fresh
 `node_modules` automatically — no manual volume cleanup needed. It logs
 `[web-entrypoint] Dependencies changed... Running npm ci...` when it does.
 
-Optional: for a full clean reset (e.g. corrupted `node_modules`), you can still
-force it by removing the web container's anonymous volumes (named volumes such as
-`mysql_data` are left untouched):
+Optional: for a full clean reset (e.g. corrupted `node_modules`), stop the
+container and drop only that volume:
 
 ```bash
-docker compose rm -sfv web && docker compose build web && docker compose up -d web
+docker compose rm -sf web
+docker volume rm ai_job_search_web_node_modules
+docker compose up -d --build web
 ```
 
 > **Warning**: do **not** use `docker-compose down -v` for this — it deletes all
-> named volumes for the project too, including your MySQL database
-> (`ai-job-search_mysql_data`).
+> named volumes for the project too, including your Mongo data
+> (`ai_job_search_mongo_data`).
 
 
 ## Related Documentation

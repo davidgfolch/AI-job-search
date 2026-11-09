@@ -34,14 +34,13 @@ the cached dependency layer. Keep that order, and keep `COPY apps/commonlib` bef
 
 ## Dependency-refresh caveats
 
-- **venv-volatile services** (`aienrich`, `aienrichskill`,
-  `aicvmatcher`, `aiformfiller`, `cron`): their `.venv` lives in an
-  **anonymous volume that survives rebuilds** — a dep bump with `--build` alone can
-  keep running stale packages. Refresh with `docker compose rm -sfv <svc>` then
-  `docker compose up -d --build <svc>`.
-- `backend` sets `UV_PROJECT_ENVIRONMENT=/app/venv`, which is baked into
-  the image rather than mounted, so it refreshes cleanly on rebuild.
+- Every Python service (`backend`, `aienrich`, `aienrichskill`, `aicvmatcher`,
+  `aiformfiller`, `cron`) sets `UV_PROJECT_ENVIRONMENT=/app/venv`, so the venv is
+  **baked into the image** instead of living under the bind-mounted app source. A
+  dep bump is picked up by `--build` alone, and recreating a container no longer
+  copies a multi-GB venv into a fresh anonymous volume.
 - `web` self-heals: `apps/web/docker-entrypoint.sh` hash-checks `package-lock.json`
-  and re-runs `npm ci` on mismatch.
+  and re-runs `npm ci` on mismatch; `node_modules` is the named volume
+  `web_node_modules`.
 
 Scrapper runs natively on the host (`apps/scrapper/run.sh`), not in Docker.

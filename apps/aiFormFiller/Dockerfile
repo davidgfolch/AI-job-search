@@ -20,6 +20,10 @@ RUN pip install -e .
 # Copy dependency manifests only, so the dependency install stays cached until
 # pyproject.toml/uv.lock change (the application source is copied after it).
 WORKDIR /app/apps/aiFormFiller
+# Keep the venv outside the bind-mounted app source. Otherwise Docker populates a
+# fresh anonymous volume with the whole venv on every container recreate.
+ENV UV_PROJECT_ENVIRONMENT="/app/venv"
+ENV PATH="/app/venv/bin:$PATH"
 COPY apps/aiFormFiller/pyproject.toml apps/aiFormFiller/uv.lock* apps/aiFormFiller/README.md ./
 RUN uv sync --no-install-project
 
