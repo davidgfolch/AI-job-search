@@ -128,6 +128,16 @@ class TestProcessJobSafeBackend:
         repo.update_enrichment.assert_called_once()
         assert repo.update_enrichment.call_args.args[4] == expected_modality
 
+    def test_ungrounded_technologies_never_reach_update_enrichment(self):
+        repo = enrich_repo()
+        payload = {"required_technologies": ["Java"], "optional_technologies": ["Docker", "Kubernetes"], "salary": None, "modality": ["REMOTE"]}
+        with process_job_patches(fake_save=False, fake_parse=True) as deps, \
+             patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Oferta con Java y Spring Boot")):
+            deps.query_and_parse.return_value = (payload, MagicMock())
+            _process_job_safe(repo, 1, 1, 0, "enrich")
+        repo.update_enrichment.assert_called_once()
+        assert repo.update_enrichment.call_args.args[1:] == (None, "Java", None, ["REMOTE"])
+
 
 class TestNotifyWatcherBackend:
     @patch("aiEnrich.dataExtractor.notify_backend_watcher")

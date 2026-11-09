@@ -5,7 +5,7 @@ import pytest
 
 from commonlib.ollama_client import OllamaResponse
 from ..extraction_contract import (
-    COMPANY_SCHEMA, EXTRACTION_SCHEMA, ExtractionValidationError, MAX_COMPANY_LEN, parse_company_result, parse_extraction_result, query_and_parse, query_company,
+    COMPANY_SCHEMA, EXTRACTION_PROMPT, EXTRACTION_SCHEMA, ExtractionValidationError, MAX_COMPANY_LEN, parse_company_result, parse_extraction_result, query_and_parse, query_company,
 )
 
 sut = parse_extraction_result
@@ -35,6 +35,16 @@ def test_modality_schema_is_an_array_of_known_values():
     assert EXTRACTION_SCHEMA["properties"]["modality"] == {
         "type": "array", "items": {"type": "string", "enum": ["HYBRID", "ON_SITE", "REMOTE"]}, "uniqueItems": True,
     }
+
+
+@pytest.mark.parametrize("instruction", [
+    "explicitly named in the offer text",
+    "Never include benefits, perks, soft skills",
+    "do not translate technology names",
+    "leave optional_technologies empty",
+])
+def test_extraction_prompt_forbids_inferred_technologies(instruction):
+    assert instruction in EXTRACTION_PROMPT
 
 
 def test_parses_json_code_fence():

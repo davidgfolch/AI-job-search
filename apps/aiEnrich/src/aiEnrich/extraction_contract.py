@@ -39,6 +39,10 @@ _REQUIRED_FIELDS = (*_TECHNOLOGY_FIELDS, "salary", "modality")
 
 EXTRACTION_PROMPT = """Analyze the following job offer and extract structured information.
 Return only one valid JSON object with exactly these fields: required_technologies, optional_technologies, salary, and modality.
+Only include software, hardware, data or engineering technologies explicitly named in the offer text: programming languages, frameworks, libraries, databases, cloud platforms, operating systems and tools.
+Never include benefits, perks, soft skills, academic degrees, disciplines or company-culture items.
+Never add technologies that are merely implied or commonly associated with the role, and do not translate technology names: keep them as written in the offer.
+If the offer does not clearly separate required from optional technologies, put every named technology in required_technologies and leave optional_technologies empty.
 Both technology fields must be JSON arrays of non-empty strings; use an empty array when none are stated.
 Salary must be a string or null. Modality must be a JSON array listing every work arrangement the offer allows,
 using only REMOTE, HYBRID, and ON_SITE; a job may allow several at once (for example ["REMOTE", "HYBRID"]),
