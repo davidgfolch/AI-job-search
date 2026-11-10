@@ -23,6 +23,7 @@ export const mockJobs: Job[] = [
     ai_enrich_error: null,
     duplicated_id: null,
     modality: null,
+    hybrid_info: null,
   },
   {
     id: 2,
@@ -57,6 +58,7 @@ export const mockJobs: Job[] = [
     ai_enrich_error: null,
     duplicated_id: null,
     modality: null,
+    hybrid_info: null,
   },
 ];
 

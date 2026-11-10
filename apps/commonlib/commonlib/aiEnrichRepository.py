@@ -88,13 +88,14 @@ class AiEnrichRepository:
             WHERE id=%s"""
         return self.mysql.fetchOne(query, id)
 
-    def update_enrichment(self, id: int, salary, required_tech, optional_tech, modality):
+    def update_enrichment(self, id: int, salary, required_tech, optional_tech, modality, hybrid_info):
         query = """
             UPDATE jobs SET
                 salary=COALESCE(%s, salary),
                 required_technologies=COALESCE(%s, required_technologies),
                 optional_technologies=COALESCE(%s, optional_technologies),
                 modality=COALESCE(%s, modality),
+                hybrid_info=COALESCE(%s, hybrid_info),
                 ai_enriched=1,
                 ai_enrich_error=NULL
             WHERE id=%s"""
@@ -103,8 +104,9 @@ class AiEnrichRepository:
                          required_tech,
                          optional_tech,
                          modalities_to_db(modality),
+                         hybrid_info,
                          id)),
-                        (200, 1000, 1000, 32, None))
+                        (200, 1000, 1000, 32, 500, None))
         self.mysql.updateFromAI(query, params)
 
     def update_enrichment_error(self, id: int, error_msg: str, is_enrichment: bool):

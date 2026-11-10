@@ -193,4 +193,11 @@ CREATE TABLE IF NOT EXISTS `company_synonyms` (
 --
 ALTER TABLE jobs MODIFY COLUMN modality SET('REMOTE', 'HYBRID', 'ON_SITE') DEFAULT NULL;
 
+--
+-- Migration: hybrid arrangement details extracted by aiEnrich.
+-- Free-text summary of the hybrid arrangement stated in the offer (e.g. "3 days
+-- remote / 2 days office"); NULL when the offer is not hybrid or states no detail.
+--
+ALTER TABLE jobs ADD COLUMN hybrid_info VARCHAR(500) DEFAULT NULL;
+
 

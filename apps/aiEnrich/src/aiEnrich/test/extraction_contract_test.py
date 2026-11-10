@@ -5,7 +5,7 @@ import pytest
 
 from commonlib.ollama_client import OllamaResponse
 from ..extraction_contract import (
-    COMPANY_SCHEMA, EXTRACTION_PROMPT, EXTRACTION_SCHEMA, ExtractionValidationError, MAX_COMPANY_LEN, parse_company_result, parse_extraction_result, query_and_parse, query_company,
+    COMPANY_SCHEMA, EXTRACTION_PROMPT, EXTRACTION_SCHEMA, ExtractionValidationError, MAX_COMPANY_LEN, MAX_HYBRID_INFO_LEN, parse_company_result, parse_extraction_result, query_and_parse, query_company,
 )
 
 sut = parse_extraction_result
@@ -15,6 +15,7 @@ VALID_RESULT = {
     "optional_technologies": ["Docker"],
     "salary": "50000 EUR",
     "modality": ["REMOTE"],
+    "hybrid_info": None,
 }
 
 
@@ -37,11 +38,38 @@ def test_modality_schema_is_an_array_of_known_values():
     }
 
 
+def test_hybrid_info_schema_is_an_optional_string():
+    assert EXTRACTION_SCHEMA["properties"]["hybrid_info"] == {"type": ["string", "null"]}
+    assert "hybrid_info" in EXTRACTION_SCHEMA["required"]
+
+
+@pytest.mark.parametrize("hybrid_info, expected", [
+    pytest.param("3 days remote / 2 days office", "3 days remote / 2 days office", id="text"),
+    pytest.param("  Hybrid, Full-time  ", "Hybrid, Full-time", id="trimmed"),
+    pytest.param("", None, id="empty"),
+    pytest.param("   ", None, id="blank"),
+    pytest.param(None, None, id="null"),
+])
+def test_normalizes_hybrid_info(hybrid_info, expected):
+    assert sut(json.dumps({**VALID_RESULT, "hybrid_info": hybrid_info}))["hybrid_info"] == expected
+
+
+def test_rejects_non_string_hybrid_info():
+    with pytest.raises(ExtractionValidationError, match="hybrid_info"):
+        sut(json.dumps({**VALID_RESULT, "hybrid_info": 3}))
+
+
+def test_rejects_too_long_hybrid_info():
+    with pytest.raises(ExtractionValidationError, match="exceeds"):
+        sut(json.dumps({**VALID_RESULT, "hybrid_info": "x" * (MAX_HYBRID_INFO_LEN + 1)}))
+
+
 @pytest.mark.parametrize("instruction", [
     "explicitly named in the offer text",
     "Never include benefits, perks, soft skills",
     "do not translate technology names",
     "leave optional_technologies empty",
+    "Hybrid_info must be a string or null",
 ])
 def test_extraction_prompt_forbids_inferred_technologies(instruction):
     assert instruction in EXTRACTION_PROMPT

@@ -81,6 +81,24 @@ def test_validateResult_normalizes_modality(value, expected):
     validateResult(result)
     assert result["modality"] == expected
 
+@pytest.mark.parametrize("value, expected", [
+    ("3 days remote / 2 days office", "3 days remote / 2 days office"),
+    ("  Hybrid, Full-time  ", "Hybrid, Full-time"),
+    ("   ", None),
+    ("", None),
+    (None, None),
+    ("x" * 600, "x" * 500),
+])
+def test_validateResult_normalizes_hybrid_info(value, expected):
+    result = {"hybrid_info": value}
+    validateResult(result)
+    assert result["hybrid_info"] == expected
+
+def test_validateResult_skips_hybrid_info_when_absent():
+    result = {}
+    validateResult(result)
+    assert "hybrid_info" not in result
+
 @pytest.mark.parametrize("value, expected", EXPAND_CASES)
 def test__expand_parenthesized_skills(value, expected):
     assert _expand_parenthesized_skills(value) == expected

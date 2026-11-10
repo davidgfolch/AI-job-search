@@ -42,8 +42,8 @@ class TestDataExtractor:
     def test_save(self, mock_deps):
         repo = MagicMock()
         with patch('aiEnrich.dataExtractor.validateResult'), patch('aiEnrich.dataExtractor._notify_watcher_backend') as notify:
-            _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': ['REMOTE']})
-        repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', ['REMOTE'])
+            _save(repo, 1, {'salary': '100k', 'required_technologies': 'T', 'optional_technologies': 'O', 'modality': ['REMOTE'], 'hybrid_info': '2 days office'})
+        repo.update_enrichment.assert_called_once_with(1, '100k', 'T', 'O', ['REMOTE'], '2 days office')
         notify.assert_called_once_with([1])
 
     @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1, 2]])
@@ -105,7 +105,7 @@ class TestProcessJobSafeBackend:
             _process_job_safe(repo, 1, 1, 0, "enrich")
         deps.ollama.assert_called_once()
         assert deps.ollama.call_args.kwargs["return_metadata"] is True
-        assert deps.ollama.call_args.kwargs["response_schema"]["required"] == ["required_technologies", "optional_technologies", "salary", "modality"]
+        assert deps.ollama.call_args.kwargs["response_schema"]["required"] == ["required_technologies", "optional_technologies", "salary", "modality", "hybrid_info"]
         deps.openrouter.assert_not_called()
         deps.save.assert_called_once()
 
@@ -121,7 +121,7 @@ class TestProcessJobSafeBackend:
         """LLM-inferred modality is passed to update_enrichment without being overwritten by extract_modalities.
         Valid LLM modality overwrites the scrape-time deterministic value; None/invalid keeps it via COALESCE."""
         repo = enrich_repo()
-        payload = {"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": llm_modality}
+        payload = {"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": llm_modality, "hybrid_info": None}
         with process_job_patches(fake_save=False, fake_parse=True) as deps:
             deps.query_and_parse.return_value = (payload, MagicMock())
             _process_job_safe(repo, 1, 1, 0, "enrich")
@@ -130,13 +130,13 @@ class TestProcessJobSafeBackend:
 
     def test_ungrounded_technologies_never_reach_update_enrichment(self):
         repo = enrich_repo()
-        payload = {"required_technologies": ["Java"], "optional_technologies": ["Docker", "Kubernetes"], "salary": None, "modality": ["REMOTE"]}
+        payload = {"required_technologies": ["Java"], "optional_technologies": ["Docker", "Kubernetes"], "salary": None, "modality": ["REMOTE"], "hybrid_info": None}
         with process_job_patches(fake_save=False, fake_parse=True) as deps, \
              patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Oferta con Java y Spring Boot")):
             deps.query_and_parse.return_value = (payload, MagicMock())
             _process_job_safe(repo, 1, 1, 0, "enrich")
         repo.update_enrichment.assert_called_once()
-        assert repo.update_enrichment.call_args.args[1:] == (None, "Java", None, ["REMOTE"])
+        assert repo.update_enrichment.call_args.args[1:] == (None, "Java", None, ["REMOTE"], None)
 
 
 class TestNotifyWatcherBackend:

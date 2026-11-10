@@ -60,6 +60,7 @@ export default function JobDetailInfo({ job, appliedCompanyJobs, loadingApplied,
             )}
             {job.location && <li className="info-row">Location: <span>{job.location}</span></li>}
             {job.modality && job.modality.length > 0 && <li className="info-row">Modality: <ModalityPills modalities={job.modality} /></li>}
+            {job.hybrid_info && <li className="info-row hybrid-info-row">Hybrid: <span>{job.hybrid_info}</span></li>}
             {job.salary ? (
                 <li className="info-row job-salary-row">Salary: <span className="salary-value-text">{job.salary}</span>
                     <button className="config-btn salary-toggle-btn" onClick={() => setShowHistory(true)} title="View salary history">📊 History</button>

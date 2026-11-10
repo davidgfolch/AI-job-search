@@ -184,6 +184,8 @@ When fetching a single job (`GET /api/jobs/{id}`), the response includes a `syno
 
 `modality` is a list of work arrangements (`["REMOTE", "HYBRID"]`, canonical order `REMOTE`, `HYBRID`, `ON_SITE`) or `null` when unknown, because an offer can allow more than one. It is stored in a MySQL `SET` column (`REMOTE,HYBRID,ON_SITE`); `GET /api/jobs?modality=REMOTE` matches any job whose set contains that value (`FIND_IN_SET`), and the update endpoints accept the array form (`PATCH /api/jobs/{id}` with `{"modality": ["REMOTE", "HYBRID"]}`, or `null` to clear it).
 
+`hybrid_info` is the free-text hybrid arrangement extracted by `aiEnrich` (e.g. `"3 days remote / 2 days office"`) or `null` when the offer is not hybrid or states no detail. It is stored in the `hybrid_info` column and rendered under the modality in the job detail.
+
 ## Metrics API
 
 | Method | Endpoint | Description |

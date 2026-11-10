@@ -12,6 +12,7 @@ from commonlib.observability import get_logger
 logger = get_logger("commonlib.ai_helpers")
 
 MAX_AI_ENRICH_ERROR_LEN = 500
+MAX_HYBRID_INFO_LEN = 500
 RETRY_ERROR_PREFIX = "RETRY ERROR: "
 MAX_AI_INPUT_CHARS = 30000
 TOO_LONG_CONTEXT_REASON = "too long context"
@@ -47,6 +48,16 @@ VALID_MODALITIES = set(MODALITIES)
 def _normalizeModality(result: dict) -> None:
     result['modality'] = normalize_modalities(result.get('modality')) or None
 
+def _normalize_hybrid_info(result: dict) -> None:
+    """Trim the extracted hybrid detail and drop blank values, capping it at the DB column size."""
+    if 'hybrid_info' not in result:
+        return
+    value = result.get('hybrid_info')
+    if not isinstance(value, str):
+        result['hybrid_info'] = None
+        return
+    result['hybrid_info'] = value.strip()[:MAX_HYBRID_INFO_LEN] or None
+
 def validateResult(result: dict[str, str]):
     salary = result.get('salary')
     if salary:  # infojobs
@@ -72,6 +83,7 @@ def validateResult(result: dict[str, str]):
     if not result.get('required_technologies') and not result.get('optional_technologies'):
         logger.warning("ai.no_technologies", reason="both_technology_fields_empty")
     _normalizeModality(result)
+    _normalize_hybrid_info(result)
     # Validate cv_match_percentage
     cv_match = result.get('cv_match_percentage')
     if cv_match:

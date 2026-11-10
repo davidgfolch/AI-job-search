@@ -20,6 +20,7 @@ class JobBase(BaseModel):
     ai_enrich_error: Optional[str] = None
     cv_match_percentage: Optional[float] = None
     modality: Optional[List[str]] = None
+    hybrid_info: Optional[str] = None
 
     @field_validator('modality', mode='before')
     @classmethod

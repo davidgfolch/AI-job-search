@@ -73,7 +73,7 @@ class TestResolveUnspecifiedCompany:
         assert query.call_count == get_max_validation_retries() + 1
 
 
-EXTRACTION_REPLY = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}'
+EXTRACTION_REPLY = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"], "hybrid_info": null}'
 
 
 def _ollama_reply(text: str) -> OllamaResponse:
@@ -140,7 +140,7 @@ class TestCompanyRequestWiring:
             _process_job_safe(repo, 1, 1, 0, "enrich")
         assert mock_ollama.call_count == 2
         extraction_schema, company_schema = (call.kwargs["response_schema"] for call in mock_ollama.call_args_list)
-        assert extraction_schema["required"] == ["required_technologies", "optional_technologies", "salary", "modality"]
+        assert extraction_schema["required"] == ["required_technologies", "optional_technologies", "salary", "modality", "hybrid_info"]
         assert extraction_schema["properties"]["modality"]["type"] == "array"
         assert company_schema["required"] == ["company"]
         assert set(company_schema["properties"]) == {"company"}

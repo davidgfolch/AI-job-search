@@ -1,7 +1,7 @@
 import json
 from typing import Any, Callable
 
-from commonlib.ai_helpers import VALID_MODALITIES
+from commonlib.ai_helpers import MAX_HYBRID_INFO_LEN, VALID_MODALITIES
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.json_helpers import strip_code_fence
 from commonlib.modality_extractor import normalize_modalities
@@ -18,8 +18,9 @@ EXTRACTION_SCHEMA = {
         "optional_technologies": {"type": "array", "items": {"type": "string"}},
         "salary": {"type": ["string", "null"]},
         "modality": {"type": "array", "items": {"type": "string", "enum": sorted(VALID_MODALITIES)}, "uniqueItems": True},
+        "hybrid_info": {"type": ["string", "null"]},
     },
-    "required": ["required_technologies", "optional_technologies", "salary", "modality"],
+    "required": ["required_technologies", "optional_technologies", "salary", "modality", "hybrid_info"],
     "additionalProperties": False,
 }
 
@@ -35,10 +36,10 @@ _UNKNOWN_COMPANIES = {UNSPECIFIED_COMPANY, "unknown", "n/a", "na", "none", "null
                       "no informado", "sin empresa", "empresa", "company", "the company"}
 
 _TECHNOLOGY_FIELDS = ("required_technologies", "optional_technologies")
-_REQUIRED_FIELDS = (*_TECHNOLOGY_FIELDS, "salary", "modality")
+_REQUIRED_FIELDS = (*_TECHNOLOGY_FIELDS, "salary", "modality", "hybrid_info")
 
 EXTRACTION_PROMPT = """Analyze the following job offer and extract structured information.
-Return only one valid JSON object with exactly these fields: required_technologies, optional_technologies, salary, and modality.
+Return only one valid JSON object with exactly these fields: required_technologies, optional_technologies, salary, modality, and hybrid_info.
 Only include software, hardware, data or engineering technologies explicitly named in the offer text: programming languages, frameworks, libraries, databases, cloud platforms, operating systems and tools.
 Never include benefits, perks, soft skills, academic degrees, disciplines or company-culture items.
 Never add technologies that are merely implied or commonly associated with the role, and do not translate technology names: keep them as written in the offer.
@@ -47,6 +48,9 @@ Both technology fields must be JSON arrays of non-empty strings; use an empty ar
 Salary must be a string or null. Modality must be a JSON array listing every work arrangement the offer allows,
 using only REMOTE, HYBRID, and ON_SITE; a job may allow several at once (for example ["REMOTE", "HYBRID"]),
 and the array must be empty when no arrangement is stated.
+Hybrid_info must be a string or null: when the offer allows hybrid work, summarize the concrete arrangement stated in the text
+(days per week in the office or remote, schedule, or the exact hybrid wording) in the offer's language, never inventing details;
+use null when the offer is not hybrid or states no arrangement details.
 Do not include markdown, explanations, nested objects, or any other fields.
 
 Job Offer:
@@ -82,6 +86,14 @@ def validate_extraction_result(result: Any) -> dict[str, Any]:
     if any(value.upper().strip() not in VALID_MODALITIES for value in modality):
         raise ExtractionValidationError("modality must be an array of REMOTE, HYBRID, or ON_SITE")
     result["modality"] = normalize_modalities(modality)
+    hybrid_info = result["hybrid_info"]
+    if hybrid_info is not None and not isinstance(hybrid_info, str):
+        raise ExtractionValidationError("hybrid_info must be a string or null")
+    if isinstance(hybrid_info, str):
+        hybrid_info = hybrid_info.strip()
+        if len(hybrid_info) > MAX_HYBRID_INFO_LEN:
+            raise ExtractionValidationError(f"hybrid_info exceeds {MAX_HYBRID_INFO_LEN} characters")
+        result["hybrid_info"] = hybrid_info or None
     return result
 
 

@@ -69,10 +69,11 @@ def test_get_job_to_retry():
 
 def test_update_enrichment():
     mock_mysql, repo = mockRepo()
-    repo.update_enrichment(1, "100k", "python", "java", ["REMOTE"])
+    repo.update_enrichment(1, "100k", "python", "java", ["REMOTE"], "2 days office")
     assert mock_mysql.update_called
     assert "COALESCE" in mock_mysql.last_query
-    assert mock_mysql.last_params[-2] == "REMOTE"
+    assert mock_mysql.last_params[3] == "REMOTE"
+    assert mock_mysql.last_params[4] == "2 days office"
 
 def test_update_enrichment_error():
     mock_mysql, repo = mockRepo()

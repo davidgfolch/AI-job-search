@@ -77,6 +77,24 @@ describe('JobDetail', () => {
         expect(screen.queryByText('Initial comment')).not.toBeInTheDocument();
     });
 
+    it('renders hybrid details right below the modality row', async () => {
+        const job: Job = { ...mockJob, modality: ['HYBRID'], hybrid_info: '3 days remote / 2 days office' };
+        renderWithProviders(<JobDetail job={job} />);
+        await waitFor(() => expect(screen.getByText('3 days remote / 2 days office')).toBeInTheDocument());
+
+        const rows = Array.from(document.querySelectorAll('.job-info > .info-row'));
+        const modalityIndex = rows.findIndex(row => row.textContent?.includes('Modality:'));
+        const hybridIndex = rows.findIndex(row => row.textContent?.includes('Hybrid:'));
+        expect(hybridIndex).toBe(modalityIndex + 1);
+    });
+
+    it('does not render the hybrid row when there is no hybrid info', async () => {
+        const job: Job = { ...mockJob, modality: ['HYBRID'], hybrid_info: null };
+        renderWithProviders(<JobDetail job={job} />);
+        await waitFor(() => expect(screen.getByText('Software Engineer')).toBeInTheDocument());
+        expect(screen.queryByText(/Hybrid:/)).not.toBeInTheDocument();
+    });
+
     it('forwards detailScrollRef to the scrollable content element', async () => {
         const detailScrollRef = { current: null } as RefObject<HTMLDivElement | null>;
         renderWithProviders(<JobDetail job={mockJob} detailScrollRef={detailScrollRef} />);

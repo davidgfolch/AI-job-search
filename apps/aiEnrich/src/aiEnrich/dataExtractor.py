@@ -190,7 +190,8 @@ def _process_job_safe(
 def _save(repo: AiEnrichRepository, id, result: dict):
     validateResult(result)
     repo.update_enrichment(id, result.get("salary", None), result.get("required_technologies", None),
-                           result.get("optional_technologies", None), result.get("modality", None))
+                           result.get("optional_technologies", None), result.get("modality", None),
+                           result.get("hybrid_info", None))
     _notify_watcher_backend([id])
 
 

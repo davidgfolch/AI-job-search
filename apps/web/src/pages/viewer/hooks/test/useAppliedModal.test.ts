@@ -41,6 +41,7 @@ const createMockJob = (overrides: Partial<Job> = {}): Job => ({
     easy_apply: null,
     cv_match_percentage: null,
     modality: null,
+    hybrid_info: null,
     ...overrides,
 });
 

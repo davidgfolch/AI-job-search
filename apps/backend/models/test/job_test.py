@@ -30,6 +30,11 @@ def test_job_update():
     job = JobUpdate(comments="Good position")
     assert job.comments == "Good position"
 
+@pytest.mark.parametrize("hybrid_info", ["3 days remote / 2 days office", None])
+def test_job_base_hybrid_info(hybrid_info):
+    job = JobBase(hybrid_info=hybrid_info)
+    assert job.hybrid_info == hybrid_info
+
 def test_job_list_response():
     jobs = [Job(id=1, title="Dev", company="ACME")]
     response = JobListResponse(items=jobs, total=1, page=1, size=20)

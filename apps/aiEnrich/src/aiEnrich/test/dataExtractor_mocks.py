@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from commonlib.ollama_client import OllamaResponse
 
-ENRICHMENT_JSON = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"]}'
+ENRICHMENT_JSON = '{"required_technologies": [], "optional_technologies": [], "salary": "100k", "modality": ["REMOTE"], "hybrid_info": null}'
 JOB_ROW = (1, "Job", "Desc", "Comp")
 MAPPED_JOB = ("Job", "Comp", "Desc")
 
