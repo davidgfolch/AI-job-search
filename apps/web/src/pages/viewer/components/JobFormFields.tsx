@@ -21,6 +21,7 @@ interface JobFormFieldsProps {
         requiredTechnologies: string;
         optionalTechnologies: string;
         modality: string[];
+        hybridInfo: string;
     };
     setters: {
         setTitle: Dispatch<SetStateAction<string>>;
@@ -35,6 +36,7 @@ interface JobFormFieldsProps {
         setRequiredTechnologies: Dispatch<SetStateAction<string>>;
         setOptionalTechnologies: Dispatch<SetStateAction<string>>;
         setModality: Dispatch<SetStateAction<string[]>>;
+        setHybridInfo: Dispatch<SetStateAction<string>>;
     };
     handleChange: (setter: Dispatch<SetStateAction<string>>, field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleCreate: () => void;
@@ -49,11 +51,11 @@ export default function JobFormFields({
 }: JobFormFieldsProps) {
     const {
         title, location, url, webPage, markdown, comments, salary, company, client,
-        requiredTechnologies, optionalTechnologies, modality
+        requiredTechnologies, optionalTechnologies, modality, hybridInfo
     } = formState;
     const {
         setTitle, setLocation, setUrl, setWebPage, setMarkdown, setComments, setSalary,
-        setCompany, setClient, setRequiredTechnologies, setOptionalTechnologies
+        setCompany, setClient, setRequiredTechnologies, setOptionalTechnologies, setHybridInfo
     } = setters;
     // Ref for textarea auto-resize
     const commentsRef = useRef<HTMLTextAreaElement>(null);
@@ -137,6 +139,17 @@ export default function JobFormFields({
                     </FormField>
                 )}
             </div>
+
+            {(mode === 'create' || showAllFields) && (
+                <FormField id={`${formIdPrefix}-hybridInfo`} label="Hybrid info">
+                    <input type="text"
+                        id={`${formIdPrefix}-hybridInfo`} name="hybridInfo"
+                        value={hybridInfo} onChange={handleChange(setHybridInfo, 'hybrid_info')}
+                        placeholder="e.g. 3 days remote / 2 days office"
+                        autoComplete="off"
+                    />
+                </FormField>
+            )}
 
             {(mode === 'create' || showAllFields) && (
                 <div className="form-row">
