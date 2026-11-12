@@ -16,6 +16,25 @@ MAX_HYBRID_INFO_LEN = 500
 RETRY_ERROR_PREFIX = "RETRY ERROR: "
 MAX_AI_INPUT_CHARS = 30000
 TOO_LONG_CONTEXT_REASON = "too long context"
+# Fragments of the extraction instructions. When the model states no arrangement it sometimes
+# echoes this wording instead of describing the offer, so such a value is discarded rather than
+# stored and rendered as if the offer had said it. The wording is checked case-insensitively.
+HYBRID_INFO_PROMPT_ECHO_PHRASES = (
+    "exact hybrid wording",
+    "offer's own hybrid wording",
+    "hybrid arrangement stated in the text",
+    "stated in the text",
+    "in the office or remote, schedule",
+    "offer's language",
+    "repeat or paraphrase",
+    "must be a string or null",
+    "when the offer allows hybrid work",
+    "states no arrangement details",
+    "días por semana en la oficina o en remoto, horario",
+    "redacción exacta",
+    "indicada en el texto",
+    "idioma de la oferta",
+)
 
 def get_max_ai_input_chars() -> int:
     """Read per call so a .env edit applies without a restart."""
@@ -48,15 +67,28 @@ VALID_MODALITIES = set(MODALITIES)
 def _normalizeModality(result: dict) -> None:
     result['modality'] = normalize_modalities(result.get('modality')) or None
 
+def is_hybrid_info_prompt_echo(value: str) -> bool:
+    """True when the hybrid detail repeats the extraction instructions instead of the offer."""
+    normalized = " ".join(str(value or "").casefold().replace("’", "'").split())
+    return any(phrase in normalized for phrase in HYBRID_INFO_PROMPT_ECHO_PHRASES)
+
+
 def _normalize_hybrid_info(result: dict) -> None:
-    """Trim the extracted hybrid detail and drop blank values, capping it at the DB column size."""
+    """Trim the extracted hybrid detail, capping it at the DB column size.
+    Blank values and prompt echoes become `None` so the job detail never shows
+    the instructions as if they were the offer's arrangement.
+    """
     if 'hybrid_info' not in result:
         return
     value = result.get('hybrid_info')
     if not isinstance(value, str):
         result['hybrid_info'] = None
         return
-    result['hybrid_info'] = value.strip()[:MAX_HYBRID_INFO_LEN] or None
+    value = value.strip()[:MAX_HYBRID_INFO_LEN]
+    if is_hybrid_info_prompt_echo(value):
+        logger.warning("ai.invalid_hybrid_info", reason="prompt_echo")
+        value = ""
+    result['hybrid_info'] = value or None
 
 def validateResult(result: dict[str, str]):
     salary = result.get('salary')

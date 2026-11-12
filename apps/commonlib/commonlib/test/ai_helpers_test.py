@@ -94,6 +94,35 @@ def test_validateResult_normalizes_hybrid_info(value, expected):
     validateResult(result)
     assert result["hybrid_info"] == expected
 
+@pytest.mark.parametrize("echo", [
+    "Hybrid work arrangement with days per week in the office or remote, schedule, or the exact hybrid wording stated in the text",
+    "exact hybrid wording stated in the text",
+    "days per week in the office or remote, schedule",
+    "Días por semana en la oficina o en remoto, horario o la redacción exacta indicada en el texto",
+])
+def test_validateResult_drops_hybrid_info_that_echoes_the_prompt(echo):
+    result = {"hybrid_info": echo}
+    validateResult(result)
+    assert result["hybrid_info"] is None
+
+
+def test_validateResult_logs_dropped_hybrid_info_prompt_echo():
+    with capture_logs() as records:
+        validateResult({"hybrid_info": "exact hybrid wording stated in the text"})
+    assert any(record["event"] == "ai.invalid_hybrid_info" and record.get("reason") == "prompt_echo" for record in records)
+
+
+@pytest.mark.parametrize("value", [
+    "3 days per week in the office, 2 days remote",
+    "2 días en la oficina y 3 en remoto",
+    "Hybrid, 2 days office / 3 days home office",
+])
+def test_validateResult_keeps_hybrid_arrangements(value):
+    result = {"hybrid_info": value}
+    validateResult(result)
+    assert result["hybrid_info"] == value
+
+
 def test_validateResult_skips_hybrid_info_when_absent():
     result = {}
     validateResult(result)

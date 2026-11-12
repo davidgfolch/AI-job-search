@@ -48,9 +48,10 @@ Both technology fields must be JSON arrays of non-empty strings; use an empty ar
 Salary must be a string or null. Modality must be a JSON array listing every work arrangement the offer allows,
 using only REMOTE, HYBRID, and ON_SITE; a job may allow several at once (for example ["REMOTE", "HYBRID"]),
 and the array must be empty when no arrangement is stated.
-Hybrid_info must be a string or null: when the offer allows hybrid work, summarize the concrete arrangement stated in the text
-(days per week in the office or remote, schedule, or the exact hybrid wording) in the offer's language, never inventing details;
-use null when the offer is not hybrid or states no arrangement details.
+Hybrid_info must be a string or null: when the offer allows hybrid work, describe the concrete arrangement the offer itself states
+(number of days per week in the office or remote, schedule, or the offer's own hybrid wording), in the offer's language.
+Never invent details and never repeat or paraphrase these instructions; quote only arrangement details from the offer.
+Use null when the offer is not hybrid or states no arrangement details.
 Do not include markdown, explanations, nested objects, or any other fields.
 
 Job Offer:
