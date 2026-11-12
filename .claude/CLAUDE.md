@@ -222,7 +222,7 @@ Agent skills are located in `.claude/skills/`:
 - `crawlee-page-analyst`: Analyze a source page that changed (DOM/URL redesign) with Crawlee before changing `apps/scrapper`, producing selector-level requirements
 - `view-backend-logs`: How to view backend logs using docker-compose
 - `version-bumper`: Bump the version of any apps/* module following semver
-- `dependabot-agent`: Process open GitHub Dependabot PRs
+- `dependabot-agent`: Process open GitHub Dependabot PRs in a throwaway sibling clone (`../ai_job_search_*`)
 - `gh-actions-debug`: Debug GitHub Actions / Dependabot run failures with the gh CLI
 
 ## CodeGraph (code intelligence)

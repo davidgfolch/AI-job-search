@@ -238,7 +238,7 @@ Agent skills are located in `.claude/skills/`:
 - `test-implementer`: Implement unit tests
 - `codegraph`: Query the CodeGraph code-intelligence index (explore/node/impact/affected); the default for codebase questions
 - `version-bumper`: Bump the version of any apps/* module following semver
-- `dependabot-agent`: Process open GitHub Dependabot PRs
+- `dependabot-agent`: Process open GitHub Dependabot PRs in a throwaway sibling clone (`../ai_job_search_*`)
 - `gh-actions-debug`: Debug GitHub Actions / Dependabot run failures with the gh CLI
 - `scrapling-implementer`: Scrapling library usage (fetching, parsing, spiders)
 - `crawlee-page-analyst`: Analyze a source page that changed (DOM/URL redesign) with Crawlee before changing `apps/scrapper`, producing selector-level requirements
