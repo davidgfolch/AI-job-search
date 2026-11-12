@@ -26,9 +26,30 @@ scripts** (`scripts/test.sh`, `scripts/test.bat`) — always include `commonlib`
 other modified `apps/*` module.
 
 Skip them when the change is limited to **documentation or non-test scripts/config**: CI
-workflows, coverage gates, install/sandbox helpers, agent rules and skills. Those files are
+workflows, coverage gates, install/sandbox/dev-workflow helpers, agent rules and skills. Those files are
 not exercised by the unit or e2e suites, so a run proves nothing; say so in the summary
 instead.
+
+## Parallel Development (sibling clones)
+
+`scripts/dev.sh` (Linux/Mac) and `scripts/dev.bat` (Windows) keep feature and Dependabot work
+in a throwaway sibling clone (`../ai_job_search-<name>`), so the main workspace, its branches,
+its gitignored lockfiles and its running stack are never touched:
+
+```bash
+./scripts/dev.sh new <name>     # clone + branch feat/<name> from staging, .env/.env.secrets/lockfiles copied
+./scripts/dev.sh dep <pr>       # clone ../ai_job_search-dependabot-<pr> and check the PR out
+./scripts/dev.sh sync           # fast-forward staging from master (run before Dependabot work)
+./scripts/dev.sh test web       # delegates to scripts/test.sh inside the clone
+./scripts/dev.sh sandbox backend
+./scripts/dev.sh commit "msg" | push | pr [title] [--base br] | merge [-k] | cleanup <name>
+./scripts/dev.sh list | status
+```
+
+`pr` defaults to the `staging` gate. `merge` waits for green checks, squash-merges, deletes the
+head branch and then the clone (keep it with `-k`). Deleting a clone is guarded: it must be a
+sibling of the repo named `ai_job_search-*` and a git work tree. `sync` never creates a merge
+commit — it aborts when `staging` and `master` have diverged.
 
 ## Static Analysis
 

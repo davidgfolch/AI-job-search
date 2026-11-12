@@ -1,11 +1,11 @@
 ---
 name: dependabot-agent
-description: Sync `staging` from `master` first, then process open GitHub Dependabot PRs inside a throwaway sibling clone (../ai_job_search_dependabot-<pr>, cloned from origin) so the main working tree is never touched: check the library changelog for breaking changes, make required changes and build, run all tests, sandbox-build AND run the affected docker-compose services, verify the logs are error-free, confirm the GitHub pipeline completes, then merge and delete the clone. Any sandbox error aborts the process. Requires the GitHub CLI (gh). Master is never pushed to directly — the persistent staging→master PR handles promotion.
+description: Sync staging from master first, then process open GitHub Dependabot PRs inside a throwaway sibling clone (../ai_job_search-dependabot-<pr>, created with scripts/dev.sh dep) so the main working tree is never touched: check the library changelog for breaking changes, make required changes and build, run all tests, sandbox-build AND run the affected docker-compose services, verify the logs are error-free, confirm the GitHub pipeline completes, then merge and delete the clone. Any sandbox error aborts the process. Requires the GitHub CLI (gh). Master is never pushed to directly — the persistent staging→master PR handles promotion.
 ---
 
 # Dependabot Agent Instructions
 
-This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search_dependabot-<pr>`) cloned from `origin` — the same per-feature clone pattern `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). While a PR is being handled the main workspace, its branches, its lockfiles and its running stack are never touched. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) auto-merges grouped `minor-patch`/`github-actions` PRs once CI is green, but it **skips semver-major PRs** and any PR whose CI fails. This agent acts where automation cannot: it does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, and pushes to the PR branch so auto-merge can proceed. It never pushes to `master`.
+This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search-dependabot-<pr>`) created with the shared dev workflow (`scripts/dev.sh`, or `scripts/dev.bat` on Windows) — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). While a PR is being handled the main workspace, its branches, its lockfiles and its running stack are never touched. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) auto-merges grouped `minor-patch`/`github-actions` PRs once CI is green, but it **skips semver-major PRs** and any PR whose CI fails. This agent acts where automation cannot: it does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, and pushes to the PR branch so auto-merge can proceed. It never pushes to `master`.
 
 ## Prerequisites
 
@@ -16,80 +16,42 @@ This skill automates the handling of Dependabot PRs in this monorepo. Every PR i
 
 ## Isolated workspace (sibling clone)
 
-One clone per PR, always a sibling of the project root and always prefixed `ai_job_search_`:
+One clone per PR, always a sibling of the project root and always prefixed `ai_job_search-`:
 
 ```
-<parent>/ai_job_search            # main workspace — NEVER modified by this skill
-<parent>/ai_job_search_dependabot-276
+<parent>/ai_job_search                      # main workspace — no file edits while a PR is handled
+<parent>/ai_job_search-dependabot-276       # clone for PR #276
 ```
 
 ```bash
-WORKSPACE="$(git rev-parse --show-toplevel)"          # main workspace
-CLONE="$(dirname "$WORKSPACE")/ai_job_search_dependabot-<n>"
+# From the main workspace (or any workspace copy): creates ../ai_job_search-dependabot-<n>,
+# runs `gh pr checkout <n>` (branch + upstream tracking), and copies the gitignored runtime
+# state the pipeline needs: .env, .env.secrets and apps/*/{uv,poetry}.lock, package-lock.json.
+# scripts/test.sh picks uv vs poetry by lockfile presence, so the lockfiles matter.
+./scripts/dev.sh dep <n>
+cd "$(dirname "$(git rev-parse --show-toplevel)")/ai_job_search-dependabot-<n>"
 
-if [ -d "$CLONE" ]; then
-    echo "Reusing existing clone: $CLONE"
-else
-    git clone "$(git -C "$WORKSPACE" remote get-url origin)" "$CLONE"
-fi
-
-cd "$CLONE"
-gh pr checkout <n>                                     # PR head branch + upstream tracking
-
-# Gitignored runtime state the pipeline needs — copied, never committed.
-cp -n "$WORKSPACE/.env" "$CLONE/.env" 2>/dev/null || true
-cp -n "$WORKSPACE/.env.secrets" "$CLONE/.env.secrets" 2>/dev/null || true
-# scripts/test.sh picks uv vs poetry by lockfile presence; those lockfiles are gitignored.
-for f in "$WORKSPACE"/apps/*/uv.lock "$WORKSPACE"/apps/*/poetry.lock; do
-    [ -f "$f" ] || continue
-    mod="$(basename "$(dirname "$f")")"
-    mkdir -p "$CLONE/apps/$mod" && cp "$f" "$CLONE/apps/$mod/"
-done
-```
-
-Windows users run the same steps in `cmd.exe`:
-
-```bat
-rem Run from the main workspace.
-for /f "delims=" %%i in ('git rev-parse --show-toplevel') do set "WORKSPACE=%%i"
-for /f "delims=" %%i in ('git -C "%WORKSPACE%" remote get-url origin') do set "ORIGIN=%%i"
-pushd "%WORKSPACE%\.."
-set "CLONE=%CD%\ai_job_search_dependabot-<n>"
-if not exist "%CLONE%" git clone "%ORIGIN%" "%CLONE%"
-popd
-if exist "%WORKSPACE%\.env" copy /Y "%WORKSPACE%\.env" "%CLONE%\.env" >nul
-if exist "%WORKSPACE%\.env.secrets" copy /Y "%WORKSPACE%\.env.secrets" "%CLONE%\.env.secrets" >nul
-for /d %%m in ("%WORKSPACE%\apps\*") do (
-    if exist "%%~fm\uv.lock" copy /Y "%%~fm\uv.lock" "%CLONE%\apps\%%~nxm\" >nul
-    if exist "%%~fm\poetry.lock" copy /Y "%%~fm\poetry.lock" "%CLONE%\apps\%%~nxm\" >nul
-)
-cd /d "%CLONE%"
-gh pr checkout <n>
+# Windows
+.\scripts\dev.bat dep <n>
 ```
 
 - Every command of the pipeline (tests, sandbox, commit, push) runs **with the clone as working directory**; `scripts/test.sh` and `scripts/test-sandbox.sh` resolve their modules, `.env` and `.docker-sandbox/` from their own location, so they operate on the clone.
 - Nothing is ever committed from the main workspace, and `.env.secrets` is never staged (it is gitignored in the clone too).
+- `./scripts/dev.sh list` shows the sibling clones; `./scripts/dev.sh status` prints branch, dirty state and ahead/behind.
 
 ## Workflow
 
 ### 0. Sync `staging` from `master` — always, before any other Dependabot action
 
-Dependabot PRs branch off `staging`, so a `staging` that is behind `master` makes every PR (and its CI) run against a stale base and drifts the `staging → master` promotion PR. Do this once per run, before listing or processing anything:
+Dependabot PRs branch off `staging`, so a `staging` that is behind `master` makes every PR (and its CI) run against a stale base and drifts the `staging → master` promotion PR. Run this once per batch, before listing or processing anything:
 
 ```bash
-WORKSPACE="$(git rev-parse --show-toplevel)"
-cd "$WORKSPACE"
-git fetch origin
-git checkout staging
-git pull --ff-only origin staging
-BEFORE="$(git rev-parse HEAD)"
-git merge --ff-only origin/master      # diverged (hotfix on master / promotion mid-flight) → stop and report
-[ "$(git rev-parse HEAD)" = "$BEFORE" ] || git push origin staging
+./scripts/dev.sh sync        # Windows: .\scripts\dev.bat sync
 ```
 
-- Fast-forward only. If `git merge --ff-only` fails, `staging` and `master` diverged: stop and report instead of creating a merge commit.
-- `staging` ahead of `master` is the normal pending-promotion state — the merge is a no-op and nothing is pushed.
-- Pushing the fast-forwarded `staging` is safe and does not touch `master`; the promotion PR simply picks it up.
+- `sync` fetches, checks out `staging`, pulls it, fast-forwards it to `master`, and pushes only when it actually advanced.
+- Fast-forward only. If `staging` and `master` diverged (hotfix on `master`, promotion mid-flight), it stops and reports instead of creating a merge commit — resolve that manually before continuing.
+- `staging` ahead of `master` is the normal pending-promotion state: the merge is a no-op and nothing is pushed.
 
 ### 1. List open Dependabot PRs
 
@@ -115,7 +77,11 @@ For each open staging PR:
 
 2. **Determine the semver level**: read the PR body/title for the `version-update:semver-(major|minor|patch)` tag. Grouped minor/patch PRs are auto-merge eligible; semver-major and ungrouped PRs are not.
 
-3. **Create the isolated clone and check out the PR branch**: run the setup block from [Isolated workspace](#isolated-workspace-sibling-clone) (`WORKSPACE`, `CLONE`, clone from origin, `gh pr checkout <n>`, then copy `.env`, `.env.secrets` and the gitignored lockfiles). From here on, every command runs inside the clone.
+3. **Create the isolated clone and check out the PR branch**:
+   ```bash
+   ./scripts/dev.sh dep <n>        # Windows: .\scripts\dev.bat dep <n>
+   ```
+   That creates/repopulates `../ai_job_search-dependabot-<n>`, copies the gitignored env + lockfiles, and leaves the PR branch checked out with its upstream set. From here on, every command runs inside that clone.
 
 ### 3. Changelog / breaking-change gate
 
@@ -132,12 +98,15 @@ For each open staging PR:
 
 This regenerates lockfiles/badges like CI does (`ci.yml` runs this matrix):
 ```bash
+# From the clone root.
 # Windows
 .\scripts\test.bat <module>
 # Linux/Mac
 ./scripts/test.sh <module>
+# Or via the dev workflow, which delegates to the same runner in this clone:
+./scripts/dev.sh test <module>
 ```
-For a `commonlib` bump run the full Python dependent set, e.g. `.\scripts\test.bat commonlib backend scrapper aiEnrich aiEnrichSkill aiCvMatcher aiFormFiller cron` (or `./scripts/test.sh` on Linux/Mac).
+For a `commonlib` bump run the full Python dependent set, e.g. `./scripts/test.sh commonlib backend scrapper aiEnrich aiEnrichSkill aiCvMatcher aiFormFiller cron`.
 
 Run it from the clone root — never from the main workspace — so the generated lockfiles/badges belong to the PR branch. The install step also regenerates the clone's gitignored lockfiles, which is why they were copied in first.
 
@@ -180,9 +149,9 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
 
 - Regenerate/commit any lockfile/badge churn the test run produced inside the clone (e.g. `poetry.lock`, `uv.lock`, `package-lock.json`):
   ```bash
-  git add -A && git commit -m "chore: regenerate lockfile for <module>" && git push
+  ./scripts/dev.sh commit "chore: regenerate lockfile for <module>" && ./scripts/dev.sh push
   ```
-  `gh pr checkout` set the upstream, so `git push` updates the PR head branch; never force-push.
+  `gh pr checkout` set the upstream, so the push updates the PR head branch; never force-push.
 - **Check GitHub pipeline completion** — this is the acceptance gate. Wait for CI and confirm the final `ci-gate` job (from `ci.yml`) passes:
   ```bash
   gh pr checks <n> --watch
@@ -190,7 +159,7 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
   Only treat the PR as green when the run is complete and `ci-gate` succeeded (and docker/log checks above passed).
 - For auto-merge-eligible PRs, verify merge is enabled — the merge to staging happens automatically once checks pass:
   ```bash
-  gh pr view <n> --json state,mergeStateStatus,autoMergeRequest
+  gh pr view <n> --json state,mergeStateStatus
   ```
 - For PRs that are not auto-merge eligible (semver-major guard, or ungrouped PR reviewed by a human), merge explicitly only when checks and `ci-gate` are green:
   ```bash
@@ -220,31 +189,12 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
 
 - **Delete the sibling clone** once the PR is safely merged (or on an explicit request to discard it):
   ```bash
-  WORKSPACE="$(git -C /path/to/ai_job_search rev-parse --show-toplevel)"
-  CLONE="$(dirname "$WORKSPACE")/ai_job_search_dependabot-<n>"
-  case "$(basename "$CLONE")" in
-      ai_job_search_*) ;;
-      *) echo "Refusing to delete $CLONE (not an ai_job_search_* sibling clone)"; exit 1 ;;
-  esac
-  [ "$(dirname "$CLONE")" = "$(dirname "$WORKSPACE")" ] || { echo "Refusing to delete $CLONE"; exit 1; }
-  git -C "$CLONE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "Not a git clone: $CLONE"; exit 1; }
-  rm -rf "$CLONE"
+  ./scripts/dev.sh cleanup dependabot-<n>      # Windows: .\scripts\dev.bat cleanup dependabot-<n>
   ```
-  Windows equivalent (same guards, `cmd.exe`, run from the main workspace):
-  ```bat
-  for /f "delims=" %%i in ('git rev-parse --show-toplevel') do set "WORKSPACE=%%i"
-  pushd "%WORKSPACE%\.."
-  set "CLONE=%CD%\ai_job_search_dependabot-<n>"
-  for %%i in ("%CLONE%") do set "CLONENAME=%%~nxi"
-  echo %CLONENAME%| findstr /b /c:"ai_job_search_" >nul || (echo Refusing to delete %CLONE% (not an ai_job_search_* sibling clone) & exit /b 1)
-  git -C "%CLONE%" rev-parse --is-inside-work-tree >nul 2>&1 || (echo Not a git clone: %CLONE% & exit /b 1)
-  rmdir /S /Q "%CLONE%"
-  popd
-  ```
-  If the delete fails (Windows editor/CodeGraph daemon holding files), stop the clone's CodeGraph daemon (`codegraph` CLI) and retry once. On a red result keep the clone for inspection and report its path instead of deleting it.
+  `cleanup` refuses anything that is not a sibling directory named `ai_job_search-*` holding a git work tree, so it cannot remove the main workspace. If the delete fails (Windows editor/CodeGraph daemon holding files), stop the clone's CodeGraph daemon and retry once. On a red result keep the clone for inspection and report its path instead of deleting it.
 - Back in the **main workspace**, refresh `staging` again to pick up the PR's own merge (step 0 already left the workspace on `staging`). Apart from the step-0 sync this is the only main-workspace action — no file edits or commits there:
   ```bash
-  cd "$WORKSPACE" && git pull --ff-only origin staging
+  git -C "$(git rev-parse --show-toplevel)" pull --ff-only origin staging
   ```
 - Verify the persistent `staging → master` PR is healthy (promotion is automatic via auto-merge). It closes on each merge, so if none is open and `staging` is ahead of `master`, recreate it (with gh on PATH):
   ```bash
@@ -257,7 +207,7 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
 ## Safety rules
 
 - Never push to `master` directly and never force-push.
-- Only ever delete sibling directories named `ai_job_search_*` that are git clones sitting next to the main workspace; never delete, reset or check out branches in the main workspace.
+- Only ever delete sibling directories named `ai_job_search-*` that are git clones sitting next to the main workspace (that is what `./scripts/dev.sh cleanup` enforces); never delete, reset or check out branches in the main workspace.
 - Never commit `.env.secrets` or any credentials.
 - Only change code required to make the dependency update pass; preserve existing style and structure.
 - If unsure whether a change is safe, leave the PR open with a comment instead of merging.

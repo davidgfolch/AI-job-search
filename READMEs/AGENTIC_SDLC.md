@@ -117,7 +117,7 @@ Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`
 
 ## Dependabot PR workflow
 
-The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). It runs entirely in a throwaway sibling clone (`../ai_job_search_dependabot-<pr>`, cloned from `origin`) so the main workspace, its branches and its running stack are never touched, and deletes that clone after the merge — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`. The agent:
+The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). It runs entirely in a throwaway sibling clone (`../ai_job_search_dependabot-<pr>`, cloned from `origin`) so the main workspace, its branches and its running stack are never touched, and deletes that clone after the merge — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`sync` for the `staging` refresh, `dep <pr>` to create the clone, `cleanup dependabot-<pr>` to delete it). The agent:
 
 1. Fast-forwards `staging` from `master` in the main workspace before anything else, so every PR is built on a current base.
 2. Runs the TDD pipeline for the affected module.
