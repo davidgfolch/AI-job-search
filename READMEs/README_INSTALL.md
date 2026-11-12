@@ -4,7 +4,7 @@
 
 - **Python**: 3.10 or newer is required (3.11 recommended).
   - Python 3.12 has incompatibilities with some libraries used.
-  - **Install Python 3.11** — it satisfies the 3.10 baseline of every module (all modules declare `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`backend`/`scrapper`/`cron`).
+  - **Install Python 3.11** — `backend` and `scrapper` require `>=3.11` because the security-fixed Pillow 13 ships no 3.10 wheels; every other module declares `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`cron`.
 - **Node.js**: LTS version (for `apps/web`).
 - **Docker**: For running services in containers.
 - **Ruff**: Optional locally, required by CI. Installed once for the whole repo with `uv tool install ruff` (step 7.3).
