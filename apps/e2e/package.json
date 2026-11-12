@@ -15,7 +15,7 @@
     "coverage-badges-cli": "^2.2.0",
     "eslint": "^10.12.0",
     "globals": "^17.13.0",
-    "monocart-coverage-reports": "^2.12.12",
+    "monocart-coverage-reports": "^3.2.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.71.2"
   }
