@@ -33,6 +33,17 @@ All tests run through the centralized runner — never `npm test`, `uv run pytes
 ./scripts/test.sh e2e
 ```
 
+### Parallel Development (sibling clones)
+Feature and Dependabot work runs in a throwaway sibling clone so the main tree stays clean:
+```bash
+./scripts/dev.sh new <name>     # ../ai_job_search-<name> + branch feat/<name> (from staging)
+./scripts/dev.sh dep <pr>       # ../ai_job_search-dependabot-<pr> with the PR checked out
+./scripts/dev.sh sync           # fast-forward staging from master before any Dependabot work
+./scripts/dev.sh test <module>  # scripts/test.sh inside the clone
+./scripts/dev.sh sandbox <svc>  # scripts/test-sandbox.sh inside the clone
+./scripts/dev.sh commit "msg" | push | pr [title] | merge [-k] | cleanup <name>
+```
+
 ### Full Suite & Coverage
 ```bash
 # All tests with coverage
@@ -222,7 +233,7 @@ Agent skills are located in `.claude/skills/`:
 - `crawlee-page-analyst`: Analyze a source page that changed (DOM/URL redesign) with Crawlee before changing `apps/scrapper`, producing selector-level requirements
 - `view-backend-logs`: How to view backend logs using docker-compose
 - `version-bumper`: Bump the version of any apps/* module following semver
-- `dependabot-agent`: Process open GitHub Dependabot PRs
+- `dependabot-agent`: Process open GitHub Dependabot PRs in a throwaway sibling clone (`../ai_job_search-dependabot-<pr>`)
 - `gh-actions-debug`: Debug GitHub Actions / Dependabot run failures with the gh CLI
 
 ## CodeGraph (code intelligence)

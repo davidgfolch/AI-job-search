@@ -27,7 +27,7 @@ All agent skills live in `.claude/skills/`. Core ones:
 - **`test-implementer`** — Implements unit tests following valid architecture and best practices.
 - **`codegraph`** — Queries and maintains the CodeGraph code-intelligence index (`explore`, `node`, `impact`, `affected`); the default for codebase questions.
 - **`version-bumper`** — Bumps the version of any `apps/*` module following semver.
-- **`dependabot-agent`** — Processes open GitHub Dependabot PRs.
+- **`dependabot-agent`** — Processes open GitHub Dependabot PRs in a throwaway sibling clone (`../ai_job_search_*`).
 - **`gh-actions-debug`** — Debugs GitHub Actions / Dependabot run failures with `gh`.
 - **`scrapling-implementer`** — Scrapling library usage (fetching, parsing, spiders).
 - **`crawlee-page-analyst`** — Uses Crawlee to analyze a source page after a site/DOM change and produce scrapper-change requirements before editing selectors.
@@ -117,12 +117,13 @@ Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`
 
 ## Dependabot PR workflow
 
-The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). The agent:
+The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). It runs entirely in a throwaway sibling clone (`../ai_job_search_dependabot-<pr>`, cloned from `origin`) so the main workspace, its branches and its running stack are never touched, and deletes that clone after the merge — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`sync` for the `staging` refresh, `dep <pr>` to create the clone, `cleanup dependabot-<pr>` to delete it). The agent:
 
-1. Runs the TDD pipeline for the affected module.
-2. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
-3. Aborts the whole process on any build/start/log error.
-4. Fixes failures and pushes so auto-merge can proceed.
+1. Fast-forwards `staging` from `master` in the main workspace before anything else, so every PR is built on a current base.
+2. Runs the TDD pipeline for the affected module.
+3. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
+4. Aborts the whole process on any build/start/log error.
+5. Fixes failures and pushes so auto-merge can proceed.
 
 Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
 
