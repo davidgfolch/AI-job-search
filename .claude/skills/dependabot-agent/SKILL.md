@@ -149,9 +149,9 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
 
 - Regenerate/commit any lockfile/badge churn the test run produced inside the clone (e.g. `poetry.lock`, `uv.lock`, `package-lock.json`):
   ```bash
-  ./scripts/dev.sh commit "chore: regenerate lockfile for <module>" && ./scripts/dev.sh push
+  git add -A && git commit -m "chore: regenerate lockfile for <module>" && git push
   ```
-  `gh pr checkout` set the upstream, so the push updates the PR head branch; never force-push.
+  `./scripts/dev.sh commit "..."` / `./scripts/dev.sh push` are the equivalents once the clone has the dev workflow. `gh pr checkout` set the upstream, so the push updates the PR head branch; never force-push.
 - **Check GitHub pipeline completion** — this is the acceptance gate. Wait for CI and confirm the final `ci-gate` job (from `ci.yml`) passes:
   ```bash
   gh pr checks <n> --watch
