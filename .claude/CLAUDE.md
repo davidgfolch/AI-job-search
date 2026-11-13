@@ -33,6 +33,17 @@ All tests run through the centralized runner — never `npm test`, `uv run pytes
 ./scripts/test.sh e2e
 ```
 
+### Parallel Development (sibling clones)
+Feature and Dependabot work runs in a throwaway sibling clone so the main tree stays clean:
+```bash
+./scripts/dev.sh new <name>     # ../ai_job_search-<name> + branch feat/<name> (from staging)
+./scripts/dev.sh dep <pr>       # ../ai_job_search-dependabot-<pr> with the PR checked out
+./scripts/dev.sh sync           # fast-forward staging from master before any Dependabot work
+./scripts/dev.sh test <module>  # scripts/test.sh inside the clone
+./scripts/dev.sh sandbox <svc>  # scripts/test-sandbox.sh inside the clone
+./scripts/dev.sh commit "msg" | push | pr [title] | merge [-k] | cleanup <name>
+```
+
 ### Full Suite & Coverage
 ```bash
 # All tests with coverage
@@ -211,6 +222,10 @@ Documentation is not a changelog: fix docs the change made wrong, and update the
 
 The `jobs` MySQL database is live production data: **never execute a data or schema mutation on your own initiative.** Measure first with read-only SQL (`SELECT`/`SHOW`/`EXPLAIN`), state the exact statement and the expected row count, then wait for the user's explicit "yes". Blocked without permission: `INSERT`/`UPDATE`/`DELETE`/`DROP`/`TRUNCATE`/`ALTER`/`CREATE`/`GRANT`, piping a `.sql` file into a client, mongo/redis writes, and volume-destroying commands (`docker compose down -v`, `docker volume rm`). The policy lives in `.claude/rules/db-mutation-permission.md` and is enforced in the tool call by `.claude/hooks/db-mutation.py` (Claude Code) and `.opencode/plugins/db-mutation.js` (opencode), which block it. After the user approves a specific statement, re-run it with the `AI_DB_WRITE_APPROVED` token in the command. Details: [READMEs/AGENTIC_SDLC.md](../READMEs/AGENTIC_SDLC.md#database-changes-require-user-permission-enforced-guardrail).
 
+## Branch Workflow
+
+`master` is the default branch for every non-Dependabot change (features, fixes, docs, CI, agent rules). `staging` is reserved for Dependabot sessions: sync `master` into `staging` when one starts, promote `staging` into `master` when it ends green, and never start a feature/fix/docs change on `staging`. The full policy lives in `.claude/rules/branch-workflow.md`.
+
 ## Skills
 
 Agent skills are located in `.claude/skills/`:
@@ -222,7 +237,7 @@ Agent skills are located in `.claude/skills/`:
 - `crawlee-page-analyst`: Analyze a source page that changed (DOM/URL redesign) with Crawlee before changing `apps/scrapper`, producing selector-level requirements
 - `view-backend-logs`: How to view backend logs using docker-compose
 - `version-bumper`: Bump the version of any apps/* module following semver
-- `dependabot-agent`: Process open GitHub Dependabot PRs
+- `dependabot-agent`: Process open GitHub Dependabot PRs in a throwaway sibling clone (`../ai_job_search-dependabot-<pr>`)
 - `gh-actions-debug`: Debug GitHub Actions / Dependabot run failures with the gh CLI
 
 ## CodeGraph (code intelligence)

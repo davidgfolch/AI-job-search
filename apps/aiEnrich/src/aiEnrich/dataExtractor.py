@@ -29,6 +29,7 @@ from .ollama_backend import (
 from .extraction_contract import build_extraction_prompt, query_and_parse
 from .companyExtractor import resolve_unspecified_company
 from .technology_grounding import filter_ungrounded_technologies
+from .hybrid_grounding import filter_ungrounded_hybrid_info
 
 logger = get_logger("aiEnrich.dataExtractor")
 collector = MetricsCollector()
@@ -165,6 +166,7 @@ def _process_job_safe(
                             logger.warning("job.ai_unreachable", job_id=id, title=title, company=company)
                     if result is not None:
                         filter_ungrounded_technologies(result, markdown, log=logger)
+                        filter_ungrounded_hybrid_info(result, markdown, log=logger)
                         _save(repo, id, result)
                         success = True
                         resolve_unspecified_company(repo, id, title, company, markdown, lambda p: _query_company(p, backend, model), log=logger)

@@ -93,9 +93,11 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 
 ### Promotion to master
 
+- `staging` is **only** the Dependabot gate. Every non-Dependabot change (features, fixes, docs) is committed and pushed to `master` directly; `staging` is brought up to date from `master` at the start of the next Dependabot session.
 - A **persistent `staging → master` PR** is kept open with native auto-merge (squash) enabled. GitHub re-evaluates it on every push to `staging`, so each validated batch is promoted automatically once the **full** CI matrix + e2e is green.
-- A regression on `staging` simply keeps that PR open — `master` stays clean and deployable.
-- Nothing writes to `master` except this PR's merge. Coverage badges are pushed to the dedicated `badges` branch by `update-badges`, so `master`'s required status checks (`ci-gate`) are never violated.
+- The `dependabot-agent` session syncs `master` into `staging` before processing PRs, and promotes `staging` back into `master` when the batch is green. A regression leaves the promotion PR open — `master` stays clean and deployable.
+- If the promotion PR reports `DIRTY`, merge `origin/master` into `staging` and push; the PR is re-evaluated.
+- Dependabot content reaches `master` only through this PR's merge. Coverage badges are pushed to the dedicated `badges` branch by `update-badges`, so `master`'s required status checks (`ci-gate`) are never violated.
 
 ### Sandbox verification (mandatory dependabot-agent gate)
 
