@@ -37,7 +37,7 @@ in a throwaway sibling clone (`../ai_job_search-<name>`), so the main workspace,
 its gitignored lockfiles and its running stack are never touched:
 
 ```bash
-./scripts/dev.sh new <name>     # clone + branch feat/<name> from staging, .env/.env.secrets/lockfiles copied
+./scripts/dev.sh new <name>     # clone + branch feat/<name> from master, .env/.env.secrets/lockfiles copied
 ./scripts/dev.sh dep <pr>       # clone ../ai_job_search-dependabot-<pr> and check the PR out
 ./scripts/dev.sh sync           # fast-forward staging from master (run before Dependabot work)
 ./scripts/dev.sh test web       # delegates to scripts/test.sh inside the clone
@@ -46,7 +46,7 @@ its gitignored lockfiles and its running stack are never touched:
 ./scripts/dev.sh list | status
 ```
 
-`pr` defaults to the `staging` gate. `merge` waits for green checks, squash-merges, deletes the
+`pr` defaults to `master` (pass `--base staging` for the Dependabot gate). `merge` waits for green checks, squash-merges, deletes the
 head branch and then the clone (keep it with `-k`). Deleting a clone is guarded: it must be a
 sibling of the repo named `ai_job_search-*` and a git work tree. `sync` never creates a merge
 commit — it aborts when `staging` and `master` have diverged.

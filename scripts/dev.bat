@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 rem ===== AI Job Search parallel development workflow (Windows) =====
 rem Usage: scripts\dev.bat <command> [args]  - same commands as scripts/dev.sh
-rem   new <name>              - clone ..\ai_job_search-<name>, branch feat/<name> from the gate branch, copy env + lockfiles
+rem   new <name>              - clone ..\ai_job_search-<name>, branch feat/<name> from master, copy env + lockfiles
 rem   dep <pr>                - clone ..\ai_job_search-dependabot-<pr> and check out that PR (used by dependabot-agent)
 rem   list                    - show sibling clones
 rem   checkout <branch>       - switch branch in the current clone
@@ -10,11 +10,11 @@ rem   test [modules]          - run scripts\test.bat here (no args = everything)
 rem   sandbox <service> [...] - run scripts\test-sandbox.bat here
 rem   commit "msg"            - git add -A && git commit
 rem   push                    - push the current branch (never staging/master)
-rem   pr [title] [--base br]  - open a PR (default base: the staging gate)
+rem   pr [title] [--base br]  - open a PR (default base: master)
 rem   merge [-k]              - wait for green checks, squash-merge, delete branch and clone (keep clone with -k)
 rem   sync                    - fast-forward staging from master and push it (run before dependabot work)
 rem   cleanup <name|path>     - delete a sibling clone by name, prefixed name, or path
-rem   status                  - branch, dirty state, ahead/behind vs the gate branch
+rem   status                  - branch, dirty state, ahead/behind vs master
 
 for %%i in ("%~dp0..") do set "ROOT=%%~fi"
 pushd "%ROOT%\.."
@@ -78,8 +78,8 @@ call :create_clone "!NAME!"
 cd /d "!CLONE!" || exit /b 1
 git fetch origin >nul 2>&1
 set "BRANCH=feat/!NAME!"
-git checkout -b "!BRANCH!" "origin/!DEV_GATE_BRANCH!" 2>nul
-if errorlevel 1 git checkout -b "!BRANCH!" "origin/!DEV_MAIN_BRANCH!" 2>nul
+git checkout -b "!BRANCH!" "origin/!DEV_MAIN_BRANCH!" 2>nul
+if errorlevel 1 git checkout -b "!BRANCH!" "origin/HEAD" 2>nul
 if errorlevel 1 git checkout "!BRANCH!"
 if errorlevel 1 (echo Error: could not set branch !BRANCH!. & exit /b 1)
 echo.
@@ -139,7 +139,7 @@ git push -u origin "!BR!"
 exit /b %errorlevel%
 
 :cmd_pr
-set "BASE=%DEV_GATE_BRANCH%"
+set "BASE=%DEV_MAIN_BRANCH%"
 set "TITLE=%~2"
 if /i "%~2"=="--base" (set "BASE=%~3" & set "TITLE=%~4")
 where gh >nul 2>&1 || (echo Error: 'gh' CLI is required. & exit /b 1)
@@ -166,8 +166,10 @@ set "MERGEABLE="
 for /f "delims=" %%i in ('gh pr view !PRNUM! --json mergeable --jq ".mergeable"') do set "MERGEABLE=%%i"
 if not "!MERGEABLE!"=="MERGEABLE" (
     echo PR is not mergeable; attempting to auto-resolve conflicts...
+    set "PR_BASE="
+    for /f "delims=" %%i in ('gh pr view !PRNUM! --json baseRefName --jq ".baseRefName"') do set "PR_BASE=%%i"
     git fetch origin
-    git rebase "origin/!DEV_GATE_BRANCH!"
+    git rebase "origin/!PR_BASE!"
     if errorlevel 1 (git rebase --abort & echo Could not auto-resolve conflicts. Clone kept. & exit /b 1)
     git push --force-with-lease origin "!BR!"
     if errorlevel 1 (echo Push after rebase failed. Clone kept. & exit /b 1)
@@ -240,7 +242,7 @@ echo Branch: !BR!
 echo.
 git status --short
 echo.
-git rev-list --left-right --count "origin/%DEV_GATE_BRANCH%...HEAD"
+git rev-list --left-right --count "origin/%DEV_MAIN_BRANCH%...HEAD"
 exit /b 0
 
 :usage

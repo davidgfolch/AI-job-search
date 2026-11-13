@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ===== AI Job Search parallel development workflow (Linux/Mac) =====
 # Usage: ./scripts/dev.sh <command> [args]
-#   new <name>              - clone ../ai_job_search-<name>, branch feat/<name> from the gate branch, copy env + lockfiles
+#   new <name>              - clone ../ai_job_search-<name>, branch feat/<name> from master, copy env + lockfiles
 #   dep <pr>                - clone ../ai_job_search-dependabot-<pr> and check out that PR (used by dependabot-agent)
 #   list                    - show sibling clones
 #   checkout <branch>       - switch branch in the current clone
@@ -9,11 +9,11 @@
 #   sandbox <service> [...] - run scripts/test-sandbox.sh here
 #   commit "msg"            - git add -A && git commit
 #   push                    - push the current branch (never staging/master)
-#   pr [title] [--base br]  - open a PR (default base: the staging gate)
+#   pr [title] [--base br]  - open a PR (default base: master)
 #   merge [-k]              - wait for green checks, squash-merge, delete branch and clone (keep clone with -k)
 #   sync                    - fast-forward staging from master and push it (run before dependabot work)
 #   cleanup <name|path>     - delete a sibling clone by name, prefixed name, or path
-#   status                  - branch, dirty state, ahead/behind vs the gate branch
+#   status                  - branch, dirty state, ahead/behind vs master
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -151,8 +151,8 @@ case "$CMD" in
         create_clone "$NAME"
         git fetch origin >/dev/null 2>&1 || true
         BRANCH="feat/$NAME"
-        BASE_REF="origin/$GATE"
-        git rev-parse --verify -q "$BASE_REF" >/dev/null || BASE_REF="origin/$MAIN"
+        BASE_REF="origin/$MAIN"
+        git rev-parse --verify -q "$BASE_REF" >/dev/null || BASE_REF="origin/HEAD"
         git checkout -b "$BRANCH" "$BASE_REF" 2>/dev/null || git checkout "$BRANCH" 2>/dev/null || { echo "Error: could not set branch $BRANCH."; exit 1; }
         echo
         echo "Clone ready: $CLONE"
@@ -203,7 +203,7 @@ case "$CMD" in
         case "$BR" in
             "$GATE"|"$MAIN") echo "Refusing to open a PR from $BR."; exit 1 ;;
         esac
-        BASE="$GATE"
+        BASE="$MAIN"
         TITLE=""
         while [ $# -gt 0 ]; do
             case "$1" in
@@ -247,8 +247,9 @@ case "$CMD" in
 
         if ! gh pr view "$PRNUM" --json mergeable --jq '.mergeable' | grep -q 'MERGEABLE'; then
             echo "PR is not mergeable yet; attempting to auto-resolve conflicts..."
-            git fetch origin "$GATE" >/dev/null 2>&1 || true
-            if git rebase "origin/$GATE"; then
+            PR_BASE="$(gh pr view "$PRNUM" --json baseRefName --jq '.baseRefName')"
+            git fetch origin "$PR_BASE" >/dev/null 2>&1 || true
+            if git rebase "origin/$PR_BASE"; then
                 echo "Rebase succeeded."
                 git push --force-with-lease origin "$BR" || { echo "Push after rebase failed. Clone kept."; exit 1; }
             else
@@ -314,7 +315,7 @@ case "$CMD" in
         echo
         git status --short
         echo
-        git rev-list --left-right --count "origin/$GATE...HEAD" 2>/dev/null || true
+        git rev-list --left-right --count "origin/$MAIN...HEAD" 2>/dev/null || true
         ;;
     *)
         usage

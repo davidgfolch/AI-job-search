@@ -45,7 +45,7 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 ### Parallel Development (sibling clones)
 `scripts/dev.sh` (Linux/Mac) and `scripts/dev.bat` (Windows) run feature work in a throwaway sibling clone, so the main workspace, its branches, its lockfiles and its running stack stay untouched:
 ```bash
-./scripts/dev.sh new <name>        # ../ai_job_search-<name>, branch feat/<name> from staging, env + lockfiles copied
+./scripts/dev.sh new <name>        # ../ai_job_search-<name>, branch feat/<name> from master, env + lockfiles copied
 ./scripts/dev.sh dep <pr>          # ../ai_job_search-dependabot-<pr> with that Dependabot PR checked out
 ./scripts/dev.sh list | status | sync | cleanup <name>
 ./scripts/dev.sh test [modules] | sandbox <service> | commit "msg" | push | pr [title] [--base br] | merge [-k]
@@ -53,7 +53,7 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 - Clones are named `ai_job_search-*`, live beside the repo, and `cleanup`/`merge` refuse to delete anything else.
 - `test` and `sandbox` delegate to the existing `scripts/test.sh` / `scripts/test-sandbox.sh` inside the clone they are called from.
 - `sync` fast-forwards `staging` from `master` and pushes it; run it before Dependabot work so PRs are built on a current base. It stops instead of creating a merge commit when the branches diverged.
-- `pr` defaults to the `staging` gate (`--base master` targets `master` directly); `merge` waits for green checks, squash-merges, deletes the branch and then the clone (keep it with `-k`).
+- `new` branches from `master` and `pr` targets `master` (pass `--base staging` only for the Dependabot gate); `merge` waits for green checks, squash-merges, deletes the branch and then the clone (keep it with `-k`).
 - Only one sandbox at a time: `dependabot-test` is a fixed compose project with fixed ports.
 
 ### Dependencies

@@ -36,7 +36,7 @@ All tests run through the centralized runner — never `npm test`, `uv run pytes
 ### Parallel Development (sibling clones)
 Feature and Dependabot work runs in a throwaway sibling clone so the main tree stays clean:
 ```bash
-./scripts/dev.sh new <name>     # ../ai_job_search-<name> + branch feat/<name> (from staging)
+./scripts/dev.sh new <name>     # ../ai_job_search-<name> + branch feat/<name> (from master)
 ./scripts/dev.sh dep <pr>       # ../ai_job_search-dependabot-<pr> with the PR checked out
 ./scripts/dev.sh sync           # fast-forward staging from master before any Dependabot work
 ./scripts/dev.sh test <module>  # scripts/test.sh inside the clone
