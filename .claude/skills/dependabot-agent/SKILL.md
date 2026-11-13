@@ -1,17 +1,19 @@
 ---
 name: dependabot-agent
-description: Sync staging from master first, then process open GitHub Dependabot PRs inside a throwaway sibling clone (../ai_job_search-dependabot-<pr>, created with scripts/dev.sh dep) so the main working tree is never touched: check the library changelog for breaking changes, make required changes and build, run all tests, sandbox-build AND run the affected docker-compose services, verify the logs are error-free, confirm the GitHub pipeline completes, then merge and delete the clone. Any sandbox error aborts the process. Requires the GitHub CLI (gh). Master is never pushed to directly — the persistent staging→master PR handles promotion.
+description: Run only in a Dependabot session on `staging` (every other change belongs on `master`). Sync master into staging first, process open GitHub Dependabot PRs inside a throwaway sibling clone (../ai_job_search-dependabot-<pr>, created with scripts/dev.sh dep) so the main working tree is never touched: check the library changelog for breaking changes, make required changes and build, run all tests, sandbox-build AND run the affected docker-compose services, verify the logs are error-free, confirm the GitHub pipeline completes, then merge and delete the clone and promote staging to master when everything is green. Any sandbox error aborts the process. Requires the GitHub CLI (gh).
 ---
 
 # Dependabot Agent Instructions
 
-This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search-dependabot-<pr>`) created with the shared dev workflow (`scripts/dev.sh`, or `scripts/dev.bat` on Windows) — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). While a PR is being handled the main workspace, its branches, its lockfiles and its running stack are never touched. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) auto-merges grouped `minor-patch`/`github-actions` PRs once CI is green, but it **skips semver-major PRs** and any PR whose CI fails. This agent acts where automation cannot: it does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, and pushes to the PR branch so auto-merge can proceed. It never pushes to `master`.
+This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search-dependabot-<pr>`) created with the shared dev workflow (`scripts/dev.sh`, or `scripts/dev.bat` on Windows) — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). While a PR is being handled the main workspace, its branches, its lockfiles and its running stack are never touched. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) auto-merges grouped `minor-patch`/`github-actions` PRs once CI is green, but it **skips semver-major PRs** and any PR whose CI fails. This agent acts where automation cannot: it does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, and pushes to the PR branch so auto-merge can proceed.
+
+`staging` is **only** for this session. Features, fixes, docs and any other non-Dependabot work are done on `master` (see `.claude/rules/branch-workflow.md`). Each session syncs `master` into `staging` at the start (step 0) and promotes `staging` back into `master` at the end when everything is green (step 8).
 
 ## Prerequisites
 
 - GitHub CLI installed and authenticated: `gh auth status`.
 - Local env ready: `docker-compose up -d` (MySQL) and `.env.secrets` present in the main workspace (copy `scripts/.env.secrets.example` if missing — **never commit it**).
-- The main workspace does **not** need a clean tree: step 0 fast-forwards `staging` there (branch move only, no file edits), and every other step runs in the sibling clone.
+- The main workspace does **not** need a clean tree: step 0 fast-forwards or merges `staging` there (branch move only, no file edits), and every other step runs in the sibling clone.
 - Only one sandbox at a time: `scripts/test-sandbox.*` always uses the fixed compose project `dependabot-test` with remapped ports, so never run a sandbox from the main checkout while the clone's sandbox is up.
 
 ## Isolated workspace (sibling clone)
@@ -43,15 +45,21 @@ cd "$(dirname "$(git rev-parse --show-toplevel)")/ai_job_search-dependabot-<n>"
 
 ### 0. Sync `staging` from `master` — always, before any other Dependabot action
 
-Dependabot PRs branch off `staging`, so a `staging` that is behind `master` makes every PR (and its CI) run against a stale base and drifts the `staging → master` promotion PR. Run this once per batch, before listing or processing anything:
+Dependabot PRs branch off `staging`, so a `staging` that is behind `master` makes every PR (and its CI) run against a stale base and dirties the `staging → master` promotion PR. Run this once per batch, before listing or processing anything:
 
 ```bash
 ./scripts/dev.sh sync        # Windows: .\scripts\dev.bat sync
 ```
 
 - `sync` fetches, checks out `staging`, pulls it, fast-forwards it to `master`, and pushes only when it actually advanced.
-- Fast-forward only. If `staging` and `master` diverged (hotfix on `master`, promotion mid-flight), it stops and reports instead of creating a merge commit — resolve that manually before continuing.
-- `staging` ahead of `master` is the normal pending-promotion state: the merge is a no-op and nothing is pushed.
+- `staging` ahead of `master` is the normal pending-promotion state: if it contains only commits that are already validated, the fast-forward is a no-op and nothing is pushed.
+- If the branches diverged (non-Dependabot work landed on `master`, or a promotion is mid-flight), the script stops instead of creating a merge commit. That divergence must be resolved before continuing: merge `origin/master` into `staging` and push, so the gate sits on current `master`:
+  ```bash
+  git checkout staging && git pull --ff-only origin staging
+  git merge origin/master
+  git push origin staging
+  ```
+  This is what un-dirties the persistent promotion PR. It only happens because a non-Dependabot change slipped onto `master` after the last batch; report it so the next session starts clean.
 
 ### 1. List open Dependabot PRs
 
@@ -185,28 +193,41 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
   gh pr comment <n> --body "<root cause and what was tried>"
   ```
 
-### 8. Wrap-up
+### 8. Wrap-up: delete the clone, then promote `staging` → `master` (session end)
 
 - **Delete the sibling clone** once the PR is safely merged (or on an explicit request to discard it):
   ```bash
   ./scripts/dev.sh cleanup dependabot-<n>      # Windows: .\scripts\dev.bat cleanup dependabot-<n>
   ```
   `cleanup` refuses anything that is not a sibling directory named `ai_job_search-*` holding a git work tree, so it cannot remove the main workspace. If the delete fails (Windows editor/CodeGraph daemon holding files), stop the clone's CodeGraph daemon and retry once. On a red result keep the clone for inspection and report its path instead of deleting it.
-- Back in the **main workspace**, refresh `staging` again to pick up the PR's own merge (step 0 already left the workspace on `staging`). Apart from the step-0 sync this is the only main-workspace action — no file edits or commits there:
+- Back in the **main workspace**, refresh `staging` again to pick up the PR's own merge (step 0 already left the workspace on `staging`). Apart from step 0 and this promotion, the main workspace is not edited — no commits there:
   ```bash
+  git -C "$(git rev-parse --show-toplevel)" checkout staging
   git -C "$(git rev-parse --show-toplevel)" pull --ff-only origin staging
   ```
-- Verify the persistent `staging → master` PR is healthy (promotion is automatic via auto-merge). It closes on each merge, so if none is open and `staging` is ahead of `master`, recreate it (with gh on PATH):
+- **If every PR processed in this session is green/merged**, promote the validated batch to `master` through the persistent `staging → master` PR (auto-merge squash):
   ```bash
-  gh pr list --base master --head staging --json number,state --jq '.[0].number'
+  gh pr list --base master --head staging --json number,state,mergeStateStatus
+  gh pr checks <n> --watch
+  ```
+  If no promotion PR is open and `staging` is ahead of `master`, create it and enable auto-merge (with gh on PATH):
+  ```bash
   gh pr create --base master --head staging --title "chore: promote staging to master" --body "Auto-generated persistent promotion PR from the staging gate. Auto-merge enabled."
   gh pr merge <new-pr-number> --auto --squash
   ```
-  If `staging` and `master` have identical content the PR cannot be created yet — wait for the next Dependabot merge into `staging`, then recreate.
+  If the PR reports `DIRTY`, merge `origin/master` into `staging` and push (step 0's divergence path), then let checks re-run.
+- **After the promotion lands**, sync both local branches to the same commit so the gate is clean for the next session:
+  ```bash
+  git checkout master && git pull --ff-only
+  git checkout staging && git merge --ff-only master
+  ```
+- **If the session ends red** (a PR could not be fixed or the sandbox/CI failed), do **not** promote: leave `staging` with the failing batch and the promotion PR open (auto-merge does not fire), and report the failure. `master` must stay clean and deployable.
+- If `staging` and `master` have identical content there is nothing to promote — that is the expected resting state between Dependabot sessions.
 
 ## Safety rules
 
-- Never push to `master` directly and never force-push.
+- Never start a non-Dependabot change on `staging`: features, fixes, docs and lockfile work belong on `master`.
+- Never push to `master` directly **within this session** and never force-push; the promotion PR handles `staging → master`.
 - Only ever delete sibling directories named `ai_job_search-*` that are git clones sitting next to the main workspace (that is what `./scripts/dev.sh cleanup` enforces); never delete, reset or check out branches in the main workspace.
 - Never commit `.env.secrets` or any credentials.
 - Only change code required to make the dependency update pass; preserve existing style and structure.

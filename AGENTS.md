@@ -244,6 +244,10 @@ The `jobs` MySQL database is live production data. **Never execute a data or sch
 
 Enforced by `.claude/rules/db-mutation-permission.md` + `.claude/hooks/db-mutation.py` (Claude Code) and `.opencode/plugins/db-mutation.js` (opencode), which **block the tool call**. After the user approves a specific statement, re-run it with the `AI_DB_WRITE_APPROVED` token in the command. Details: [READMEs/AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md#database-changes-require-user-permission-enforced-guardrail).
 
+## Branch Workflow
+
+`master` is the default branch for every non-Dependabot change (features, fixes, docs, CI, agent rules). `staging` is reserved for Dependabot sessions: sync `master` into `staging` when one starts, promote `staging` into `master` when it ends green, and never start a feature/fix/docs change on `staging`. The full policy lives in `.claude/rules/branch-workflow.md`.
+
 ## Skills
 
 Agent skills are located in `.claude/skills/`:

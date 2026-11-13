@@ -9,7 +9,7 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 | Directory | Purpose |
 |-----------|---------|
 | `.claude/skills/` | Canonical home for all agent skills |
-| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `docker-build.md`, `documentation-update.md`, `db-mutation-permission.md`, `test-enforcement.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
+| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `branch-workflow.md`, `docker-build.md`, `documentation-update.md`, `db-mutation-permission.md`, `test-enforcement.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
 | `.claude/hooks/` | Claude Code `PreToolUse` hooks (`docker-build.py`, `docs-sync.py`, `db-mutation.py`, `test-enforce.py`) and their shared logic (`lib/`) |
 | `.claude/CLAUDE.md` | Agent guidance for Claude Code (repo overview, build/test commands, code style) |
 | `.claude/settings.json` | Project-shared Claude Code settings (hooks) |
@@ -115,15 +115,24 @@ A runner invocation with **no** targets is left alone — the script already run
 
 Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`, the test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`), `.env*`, dependency manifests (`pyproject.toml`, `package.json`, `package-lock.json`, `uv.lock`, `poetry.lock`) and other `scripts/**` files. Changes that do **not** require it: documentation, CI workflows, coverage gates, install/sandbox helpers, agent rules and skills, and generated paths — state that reason in the summary when skipping.
 
+## Branch workflow (master vs staging)
+
+`master` is the default branch for every non-Dependabot change; `staging` is reserved for the Dependabot gate. The rule is defined once in `.claude/rules/branch-workflow.md` (always-on, loaded by both harnesses):
+
+- **Dependabot session** — starts by syncing `master` into `staging`, ends by promoting `staging` into `master` when the batch is green.
+- **Any other session** — starts and ends on `master`; never commit a feature/fix/docs change to `staging`.
+- If non-Dependabot commits end up on `staging`, promote them to `master` and fast-forward `staging` back to `master`.
+
 ## Dependabot PR workflow
 
-The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). It runs entirely in a throwaway sibling clone (`../ai_job_search_dependabot-<pr>`, cloned from `origin`) so the main workspace, its branches and its running stack are never touched, and deletes that clone after the merge — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`sync` for the `staging` refresh, `dep <pr>` to create the clone, `cleanup dependabot-<pr>` to delete it). The agent:
+The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR), and it is the **only** session that works on `staging` — every other change is done on `master` (see [branch workflow](#branch-workflow-master-vs-staging)). It runs entirely in a throwaway sibling clone (`../ai_job_search-dependabot-<pr>`, cloned from `origin`) so the main workspace, its branches and its running stack are never touched, and deletes that clone after the merge — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`sync` for the `staging` refresh, `dep <pr>` to create the clone, `cleanup dependabot-<pr>` to delete it). The agent:
 
-1. Fast-forwards `staging` from `master` in the main workspace before anything else, so every PR is built on a current base.
+1. Syncs `master` into `staging` in the main workspace before anything else, so every PR is built on a current base.
 2. Runs the TDD pipeline for the affected module.
 3. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
 4. Aborts the whole process on any build/start/log error.
 5. Fixes failures and pushes so auto-merge can proceed.
+6. When the batch is green, promotes `staging` into `master` through the promotion PR, then syncs both branches back to the same commit.
 
 Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
 
