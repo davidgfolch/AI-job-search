@@ -94,7 +94,7 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 ### Promotion to master
 
 - `staging` is **only** the Dependabot gate. Every non-Dependabot change (features, fixes, docs) is committed and pushed to `master` directly; `staging` is brought up to date from `master` at the start of the next Dependabot session.
-- A **persistent `staging → master` PR** is kept open with native auto-merge (squash) enabled. GitHub re-evaluates it on every push to `staging`, so each validated batch is promoted automatically once the **full** CI matrix + e2e is green.
+- A **persistent `staging → master` PR** is kept open with native auto-merge using a **merge commit** (never squash). GitHub re-evaluates it on every push to `staging`, so each validated batch is promoted once the **full** CI matrix + e2e is green. The merge commit keeps `staging` an ancestor of `master`; because `staging` forbids force-pushes, a squash would leave it permanently diverged instead of fast-forwardable.
 - The `dependabot-agent` session syncs `master` into `staging` before processing PRs, and promotes `staging` back into `master` when the batch is green. A regression leaves the promotion PR open — `master` stays clean and deployable.
 - If the promotion PR reports `DIRTY`, merge `origin/master` into `staging` and push; the PR is re-evaluated.
 - Dependabot content reaches `master` only through this PR's merge. Coverage badges are pushed to the dedicated `badges` branch by `update-badges`, so `master`'s required status checks (`ci-gate`) are never violated.
@@ -118,7 +118,7 @@ Before a Dependabot PR is merged, the agent **builds and runs** every affected c
 5. Create the persistent `staging → master` PR and enable auto-merge on it with the PAT:
    ```bash
    gh pr create --base master --head staging --title "chore: promote staging to master" --body "Auto-merge gate: promotes staging to master when the full CI matrix + e2e are green."
-   gh pr merge <number> --auto --squash --admin
+   gh pr merge <number> --auto --merge
    ```
 
 ### Notes & caveats

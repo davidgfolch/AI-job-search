@@ -205,15 +205,16 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
   git -C "$(git rev-parse --show-toplevel)" checkout staging
   git -C "$(git rev-parse --show-toplevel)" pull --ff-only origin staging
   ```
-- **If every PR processed in this session is green/merged**, promote the validated batch to `master` through the persistent `staging → master` PR (auto-merge squash):
+- **If every PR processed in this session is green/merged**, promote the validated batch to `master` through the persistent `staging → master` PR with a **merge commit** (never squash: `staging` is protected against force-pushes, and a merge commit keeps it an ancestor of `master` so it can be fast-forwarded back afterwards):
   ```bash
   gh pr list --base master --head staging --json number,state,mergeStateStatus
   gh pr checks <n> --watch
+  gh pr merge <n> --merge
   ```
-  If no promotion PR is open and `staging` is ahead of `master`, create it and enable auto-merge (with gh on PATH):
+  If no promotion PR is open and `staging` is ahead of `master`, create it and enable merge-commit auto-merge (with gh on PATH):
   ```bash
   gh pr create --base master --head staging --title "chore: promote staging to master" --body "Auto-generated persistent promotion PR from the staging gate. Auto-merge enabled."
-  gh pr merge <new-pr-number> --auto --squash
+  gh pr merge <new-pr-number> --auto --merge
   ```
   If the PR reports `DIRTY`, merge `origin/master` into `staging` and push (step 0's divergence path), then let checks re-run.
 - **After the promotion lands**, sync both local branches to the same commit so the gate is clean for the next session:

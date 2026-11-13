@@ -32,11 +32,12 @@ trigger: always_on
 
 ### Session end
 
-- **Dependabot session, everything green** — promote the gate through the persistent `staging → master` PR (find its number with `gh pr list --base master --head staging`):
+- **Dependabot session, everything green** — promote the gate through the persistent `staging → master` PR (find its number with `gh pr list --base master --head staging`) using a **merge commit**, never squash:
   ```bash
   gh pr checks <n> --watch                                                # wait for ci-gate
+  gh pr merge <n> --merge
   ```
-  Auto-merge (squash) lands it once the full matrix is green. If no promotion PR is open and `staging` is ahead of `master`, create it and enable auto-merge (see the skill). If it reports `DIRTY`, merge `origin/master` into `staging` and push. Once the promotion lands, sync both local branches to the same commit:
+  `staging` is protected against force-pushes, so a squash would leave it permanently diverged; the merge commit keeps `staging` an ancestor of `master`, which makes the post-promotion sync a fast-forward. If no promotion PR is open and `staging` is ahead of `master`, create it and enable merge-commit auto-merge (see the skill). If it reports `DIRTY`, merge `origin/master` into `staging` and push. Once the promotion lands, sync both local branches to the same commit:
   ```bash
   git checkout master && git pull --ff-only
   git checkout staging && git merge --ff-only master
