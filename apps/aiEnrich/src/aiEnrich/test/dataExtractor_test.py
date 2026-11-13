@@ -138,6 +138,17 @@ class TestProcessJobSafeBackend:
         repo.update_enrichment.assert_called_once()
         assert repo.update_enrichment.call_args.args[1:] == (None, "Java", None, ["REMOTE"], None)
 
+    def test_hallucinated_hybrid_info_never_reaches_update_enrichment(self):
+        repo = enrich_repo()
+        payload = {"required_technologies": ["Java"], "optional_technologies": [], "salary": None, "modality": ["REMOTE"],
+                   "hybrid_info": "Hybrid work, with 2 days per week in the office and 5 days per week remote, with a flexible schedule."}
+        with process_job_patches(fake_save=False, fake_parse=True) as deps, \
+             patch("aiEnrich.dataExtractor.mapJob", return_value=("Job", "Comp", "Remote, Full-time. Backend in Java.")):
+            deps.query_and_parse.return_value = (payload, MagicMock())
+            _process_job_safe(repo, 1, 1, 0, "enrich")
+        repo.update_enrichment.assert_called_once()
+        assert repo.update_enrichment.call_args.args[4:] == (["REMOTE"], None)
+
 
 class TestNotifyWatcherBackend:
     @patch("aiEnrich.dataExtractor.notify_backend_watcher")
