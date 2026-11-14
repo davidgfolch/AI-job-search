@@ -119,7 +119,7 @@ describe('Filters - Pills', () => {
             const pill = screen.getByText('Auto select all');
             const sideColumn = pill.closest('.filters-side-column');
             expect(sideColumn).toBeInTheDocument();
-            expect(screen.getByText('Selection:')).toBeInTheDocument();
+            expect(within(sideColumn as HTMLElement).getByText('Filter expanded')).toBeInTheDocument();
             const modalityGroup = sideColumn?.querySelector('.modality-filter-group');
             expect(modalityGroup).toBeInTheDocument();
             expect(modalityGroup!.compareDocumentPosition(pill) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -152,6 +152,46 @@ describe('Filters - Pills', () => {
             expect(screen.getByText('Auto select all')).toHaveAttribute(
                 'title',
                 'Auto select all jobs in the filter, including pages that are not loaded');
+        });
+    });
+
+    describe('Filter expanded pill', () => {
+        it('renders beside Auto select all without the Selection label', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            expect(screen.queryByText('Selection:')).not.toBeInTheDocument();
+            const pills = screen.getByText('Filter expanded').closest('.pills-section');
+            expect(within(pills as HTMLElement).getByText('Auto select all')).toBeInTheDocument();
+        });
+
+        it('enables the flag when clicked and keeps the panel expanded', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            fireEvent.click(screen.getByText('Filter expanded'));
+            expect(onFiltersChangeMock).toHaveBeenCalledWith({ filter_expanded: true });
+            expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        });
+
+        it('shows the active state when the flag is set', async () => {
+            await renderAndWait(<Filters filters={{ ...mockFilters, filter_expanded: true }} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            expect(screen.getByText('Filter expanded')).toHaveClass('active-true');
+        });
+
+        it('disables the flag and collapses the panel when clicked again, persisting null', async () => {
+            await renderAndWait(<Filters filters={{ ...mockFilters, filter_expanded: true }} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            fireEvent.click(screen.getByText('Filter expanded'));
+            expect(onFiltersChangeMock).toHaveBeenCalledWith({ filter_expanded: null });
+            expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
+        });
+
+        it('treats null as unselected', async () => {
+            await renderAndWait(<Filters filters={{ ...mockFilters, filter_expanded: null }} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            expect(screen.getByText('Filter expanded')).not.toHaveClass('active-true');
+        });
+
+        it('explains that it expands the panel when the configuration is loaded', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            expect(screen.getByText('Filter expanded')).toHaveAttribute(
+                'title',
+                'Expand the filters panel when this configuration is loaded');
         });
     });
 });

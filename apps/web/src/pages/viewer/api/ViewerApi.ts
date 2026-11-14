@@ -83,6 +83,8 @@ export interface JobListParams {
   // Configuration behaviour saved with the filter set, not sent to the jobs API:
   // `true` selects every matching job when the configuration loads, `null`/absent leaves it unselected.
   auto_select_all?: boolean | null;
+  // `true` expands the filters panel when the configuration loads, `null`/absent collapses it.
+  filter_expanded?: boolean | null;
 }
 
 export interface WatcherStats {

@@ -36,9 +36,9 @@ export const useJobsData = () => {
 
     const queryClient = useQueryClient();
 
-    // `auto_select_all` is configuration behaviour (selection, not a job filter): keeping it out of the
-    // query key and the request means toggling the pill never refetches or clears the list.
-    const { auto_select_all: _autoSelectAll, ...jobFilters } = filters;
+    // `auto_select_all` and `filter_expanded` are configuration behaviour (not job filters): keeping them
+    // out of the query key and the request means toggling the pills never refetches or clears the list.
+    const { auto_select_all: _autoSelectAll, filter_expanded: _filterExpanded, ...jobFilters } = filters;
 
     const { data, isLoading, error, refetch, isPlaceholderData, isFetching } = useQuery({
         queryKey: ['jobs', jobFilters],

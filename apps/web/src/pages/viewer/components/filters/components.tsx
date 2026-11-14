@@ -137,29 +137,6 @@ export function BooleanFilterGroups({ filters, onFiltersChange }: BooleanFilterG
     );
 }
 
-interface AutoSelectAllFilterProps {
-    filters: JobListParams;
-    onFiltersChange: (filters: Partial<JobListParams>) => void;
-}
-
-export function AutoSelectAllFilter({ filters, onFiltersChange }: AutoSelectAllFilterProps) {
-    return (
-        <div className="filter-group auto-select-all-filter-group">
-            <div className="filter-pills-row">
-                <div className="pills-section">
-                    <span className="section-label">Selection:</span>
-                    <button
-                        className={`filter-pill ${filters.auto_select_all === true ? 'active-true' : ''}`}
-                        title="Auto select all jobs in the filter, including pages that are not loaded"
-                        onClick={() => onFiltersChange({ auto_select_all: filters.auto_select_all === true ? null : true })}>
-                        Auto select all
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 interface ModalityFilterProps {
     filters: JobListParams;
     onFiltersChange: (filters: Partial<JobListParams>) => void;

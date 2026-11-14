@@ -122,12 +122,11 @@ describe('FilterConfigurations Interactions', () => {
     });
 
     it.each([
-        { regex: "initi8|primeit|Acid tango|Kairos", expectExpand: true, expectSelection: true },
-        { regex: null, expectExpand: false, expectSelection: false },
-    ])('By company config handles rlike pattern: $regex', async ({ regex, expectExpand, expectSelection }) => {
+        { regex: "initi8|primeit|Acid tango|Kairos", expectSelection: true },
+        { regex: null, expectSelection: false },
+    ])('By company config handles rlike pattern: $regex', async ({ regex, expectSelection }) => {
         const config = regex ? byCompanyConfigs.withRlike(regex) : byCompanyConfigs.withoutRlike;
-        const onToggleExpand = vi.fn();
-        const { input } = await setup([config], { onToggleExpand, isExpanded: false }, isLoadedRef);
+        const { input } = await setup([config], { isExpanded: false }, isLoadedRef);
         const sqlInput = document.createElement('input');
         sqlInput.id = 'filter-sql';
         sqlInput.value = config.filters.sql_filter!;
@@ -135,7 +134,6 @@ describe('FilterConfigurations Interactions', () => {
         try {
             fireEvent.focus(input);
             fireEvent.click(await screen.findByText('By company'));
-            if (expectExpand) expect(onToggleExpand).toHaveBeenCalled();
             await waitFor(() => expect(document.getElementById('filter-sql')).toHaveFocus());
             if (expectSelection) {
                 const selectedText = sqlInput.value.substring(sqlInput.selectionStart || 0, sqlInput.selectionEnd || 0);

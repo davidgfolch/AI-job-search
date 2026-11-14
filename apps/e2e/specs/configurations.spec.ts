@@ -128,6 +128,21 @@ test.describe('Filter Configurations E2E', () => {
         await expect(page.locator('#job-table-select-all')).toBeChecked();
     });
 
+    test('should expand the filters when loading a configuration with filter expanded', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await expect(page.locator('.filters-content')).toHaveCount(0);
+        await clickConfig(page, 'Expanded Filter');
+        await expect(page.locator('.filters-content')).toBeVisible();
+    });
+
+    test('should collapse the filters when loading a configuration without filter expanded', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await clickConfig(page, 'Expanded Filter');
+        await expect(page.locator('.filters-content')).toBeVisible();
+        await clickConfig(page, 'Backend Filter');
+        await expect(page.locator('.filters-content')).toHaveCount(0);
+    });
+
     test('should save the auto select all pill with the configuration', async ({ page }) => {
         await page.goto(BASE_URL);
         // Let the configurations load first: useFilterExpanded collapses the panel when the
@@ -144,5 +159,21 @@ test.describe('Filter Configurations E2E', () => {
         const request = await postRequest;
         expect(request.postDataJSON().name).toBe('Auto Select Config');
         expect(request.postDataJSON().filters.auto_select_all).toBe(true);
+    });
+
+    test('should save the filter expanded pill with the configuration', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await waitForFilterConfigurations(page);
+        await page.locator('.pinned-config-item').first().waitFor({ state: 'visible' });
+        await toggleFiltersIfNeeded(page);
+        await page.getByText('Filter expanded').click();
+        const configInput = page.locator('#filter-config-input');
+        await configInput.click();
+        await configInput.pressSequentially('Expanded Config');
+        const postRequest = page.waitForRequest(CONFIG_POST);
+        await page.getByTitle('Save current filters with the name above').click();
+        const request = await postRequest;
+        expect(request.postDataJSON().name).toBe('Expanded Config');
+        expect(request.postDataJSON().filters.filter_expanded).toBe(true);
     });
 });

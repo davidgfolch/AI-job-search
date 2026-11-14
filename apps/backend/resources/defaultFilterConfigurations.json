@@ -120,6 +120,7 @@
         "filters": {
             "like": null,
             "page": 1,
+            "filter_expanded": true,
             "seen": false,
             "size": 20,
             "order": "created desc",

@@ -205,5 +205,20 @@ describe('useJobsData', () => {
     expect(jobsApi.getJobs).toHaveBeenCalledTimes(1);
     expect(vi.mocked(jobsApi.getJobs).mock.calls[0][0]).not.toHaveProperty('auto_select_all');
   });
+
+  it('keeps filter_expanded out of the jobs request and does not refetch when toggled', async () => {
+    vi.mocked(jobsApi.getJobs).mockClear();
+    vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [], total: 0, page: 1, size: 20 });
+    const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
+    await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalledTimes(1));
+
+    act(() => {
+        result.current.setFilters(prev => ({ ...prev, filter_expanded: true }));
+    });
+
+    expect(result.current.filters.filter_expanded).toBe(true);
+    expect(jobsApi.getJobs).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(jobsApi.getJobs).mock.calls[0][0]).not.toHaveProperty('filter_expanded');
+  });
 });
 

@@ -36,6 +36,17 @@ export const MOCK_FILTER_CONFIGS = [
         created: '2023-01-01',
         modified: null,
     },
+    {
+        id: 104,
+        name: 'Expanded Filter',
+        filters: { search: 'React', page: 1, size: 20, filter_expanded: true },
+        pinned: false,
+        statistics: false,
+        watched: false,
+        ordering: 3,
+        created: '2023-01-01',
+        modified: null,
+    },
 ];
 
 export async function setupConfigurationsMocks(page: Page): Promise<JobListRequests> {

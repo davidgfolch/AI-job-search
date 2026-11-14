@@ -30,6 +30,7 @@
         "name": "By company",
         "filters": {
             "page": 1,
+            "filter_expanded": true,
             "size": 20,
             "search": "",
             "order": "created desc",

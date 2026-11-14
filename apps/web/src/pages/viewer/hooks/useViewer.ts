@@ -106,9 +106,9 @@ export const useViewer = () => {
     };
 
     const configKey = useMemo(() =>
-        // `auto_select_all` is selection behaviour, not a job filter: excluding it keeps toggling the pill from
-        // clearing the list, and the dedicated effect below arms the auto-selection instead.
-        JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([key]) => key !== 'page' && key !== 'auto_select_all'))),
+        // `auto_select_all` and `filter_expanded` are configuration behaviour, not job filters: excluding them
+        // keeps toggling the pills from clearing the list, and the dedicated effect below arms the auto-selection.
+        JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([key]) => key !== 'page' && key !== 'auto_select_all' && key !== 'filter_expanded'))),
     [filters]);
 
     useEffect(() => {

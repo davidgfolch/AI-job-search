@@ -59,7 +59,6 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         watcherResults,
         lastCheckTime,
         toggleWatcherActive,
-        savedConfigs,
         savedConfigName,
         reorderConfigurations,
         pinnedConfigs,
@@ -79,21 +78,9 @@ export default function FilterConfigurations({ currentFilters, onLoadConfig, onM
         onConfigsLoaded?.(pinnedConfigs.length);
     }, [pinnedConfigs.length, onConfigsLoaded]);
 
-    useEffect(() => {
-        if (savedConfigs.length > 0) {
-            const hasByCompany = savedConfigs.some(c => c.name === 'By company');
-            if (!hasByCompany) {
-                console.error('No "By company" filter configuration exists');
-            }
-        }
-    }, [savedConfigs]);
-
     const handleLoadConfiguration = (config: FilterConfig) => {
         loadConfiguration(config);
         if (config.name === 'By company') {
-            if (!isExpanded) {
-                onToggleExpand();
-            }
             setTimeout(() => {
                 const sqlInput = document.getElementById('filter-sql') as HTMLInputElement | null;
                 if (sqlInput) {

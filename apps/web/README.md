@@ -46,6 +46,14 @@ The "Auto select all" pill below the Modality box stores `auto_select_all` in th
 
 `auto_select_all` is configuration behaviour, not a job filter: `useJobsData` keeps it out of the jobs request and out of the `['jobs', …]` query key, so toggling the pill neither refetches nor clears the list.
 
+### Filter Expanded
+
+The "Filter expanded" pill next to "Auto select all" stores `filter_expanded` in the configuration's `filters` JSON, so it is saved, loaded, exported and migrated with the configuration. Loading a configuration expands the filters panel when the flag is `true` and collapses it otherwise (`null`/absent means collapsed); this covers dropdown entries, pinned configurations and the `Alt+#` shortcuts. Clicking the pill toggles the flag and the panel immediately. The header `Filters ▼/▶` toggle only opens or closes the panel and does not change the saved flag: use the pill to choose what a configuration does when it loads.
+
+The "By company" default configuration ships with `filter_expanded: true`, so it opens the panel without any name-based special case. Its SQL-input focus and `rlike` literal selection stay specific to that configuration.
+
+`filter_expanded` is configuration behaviour, not a job filter: `useJobsData` keeps it out of the jobs request and out of the `['jobs', …]` query key, and `useViewer` keeps it out of the list-reset key, so toggling the pill neither refetches nor clears the list.
+
 ### Reloading the Active Filter Configuration
 
 The job list query is keyed by its filters (`['jobs', filters]` in `src/pages/viewer/hooks/useJobsData.ts`), so applying the configuration that is already in effect produces the same query key. React Query then keeps serving the cached page for `staleTime` (30 s) and nothing refetches, which left the list showing the jobs it already had while the `+N` watcher badge was counting the new ones. Applying a *different* configuration changes the key, so it fetches — which is why switching away and back used to be the only way to see the new jobs.
