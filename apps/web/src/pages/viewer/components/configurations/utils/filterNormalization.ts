@@ -6,6 +6,7 @@ const RESETTABLE_FILTERS: (keyof JobListParams)[] = [
   'search',
   'salary',
   'sql_filter',
+  'auto_select_all',
   ...BOOLEAN_FILTER_KEYS,
 ];
 

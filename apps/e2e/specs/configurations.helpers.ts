@@ -25,6 +25,17 @@ export const MOCK_FILTER_CONFIGS = [
         created: '2023-01-01',
         modified: null,
     },
+    {
+        id: 103,
+        name: 'Auto Select Filter',
+        filters: { search: 'React', page: 1, size: 20, auto_select_all: true },
+        pinned: false,
+        statistics: false,
+        watched: false,
+        ordering: 2,
+        created: '2023-01-01',
+        modified: null,
+    },
 ];
 
 export async function setupConfigurationsMocks(page: Page): Promise<JobListRequests> {

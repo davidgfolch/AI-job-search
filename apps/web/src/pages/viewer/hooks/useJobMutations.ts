@@ -8,7 +8,7 @@ import { useBulkJobMutations } from "./useBulkJobMutations";
 export type TabType = "list" | "edit" | "create";
 
 type ConfirmModalState = { isOpen: boolean };
-export const getDeleteOldJobsMsg = (count: number) => `Going to delete ${count} older jobs (see sql filter)`;
+export const getDeleteOldJobsMsg = (count: number) => `Going to delete (move to snapshots) ${count} older jobs from the database. Are you sure?`;
 
 interface UseJobMutationsProps {
   filters: JobListParams;
@@ -54,16 +54,20 @@ export const useJobMutations = ({
     type: "success" | "error";
   } | null>(null);
 
+  function invalidateAndRefetch() {
+    queryClient.invalidateQueries({ queryKey: ["jobUpdates"] });
+    queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    queryClient.refetchQueries({ queryKey: ["jobs"], type: "active" });
+  }
+
+
   const { bulkUpdateMutation, bulkDeleteMutation } = useBulkJobMutations({
       onJobsDeleted,
       setMessage,
       setSelectionMode,
       setSelectedIds,
-      onUpdateSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["jobUpdates"] });
-          queryClient.invalidateQueries({ queryKey: ["jobs"] });
-          queryClient.refetchQueries({ queryKey: ["jobs"], type: "active" });
-      }
+      onUpdateSuccess: () => invalidateAndRefetch(),
+      onDeleteSuccess: () => invalidateAndRefetch()
   });
 
   const updateMutation = useMutation({
@@ -189,3 +193,4 @@ export const useJobMutations = ({
     bulkDeleteMutation,
   };
 };
+

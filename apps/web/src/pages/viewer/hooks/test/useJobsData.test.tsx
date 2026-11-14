@@ -190,5 +190,20 @@ describe('useJobsData', () => {
     });
     await waitFor(() => expect(result.current.isPlaceholderData).toBe(false));
   });
+
+  it('keeps auto_select_all out of the jobs request and does not refetch when toggled', async () => {
+    vi.mocked(jobsApi.getJobs).mockClear();
+    vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: [], total: 0, page: 1, size: 20 });
+    const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
+    await waitFor(() => expect(jobsApi.getJobs).toHaveBeenCalledTimes(1));
+
+    act(() => {
+        result.current.setFilters(prev => ({ ...prev, auto_select_all: true }));
+    });
+
+    expect(result.current.filters.auto_select_all).toBe(true);
+    expect(jobsApi.getJobs).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(jobsApi.getJobs).mock.calls[0][0]).not.toHaveProperty('auto_select_all');
+  });
 });
 

@@ -12,6 +12,7 @@ const CLEAN_OLD_JOBS_CONFIG = {
     "name": "Clean - Delete old jobs",
     "filters": {
         "page": 1,
+        "auto_select_all": true,
         "size": 20,
         "days_old": undefined,
         "search": "",

@@ -80,6 +80,9 @@ export interface JobListParams {
   sql_filter?: string;
   ids?: number[];
   created_after?: string;
+  // Configuration behaviour saved with the filter set, not sent to the jobs API:
+  // `true` selects every matching job when the configuration loads, `null`/absent leaves it unselected.
+  auto_select_all?: boolean | null;
 }
 
 export interface WatcherStats {

@@ -173,6 +173,17 @@
     max-width: 100%;
 }
 
+.filters-side-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.filters-side-column .auto-select-all-filter-group {
+    padding: 0 0.5rem;
+}
+
 .modality-filter-group .pills-section {
     display: flex;
     flex-wrap: wrap;

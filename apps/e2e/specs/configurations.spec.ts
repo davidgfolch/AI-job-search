@@ -1,6 +1,6 @@
 import { test, expect } from './coverage.fixtures';
 import { Page } from '@playwright/test';
-import { BASE_URL, setupPageLogging } from './viewer.helpers';
+import { BASE_URL, setupPageLogging, toggleFiltersIfNeeded, waitForFilterConfigurations } from './viewer.helpers';
 import { setupConfigurationsMocks, openConfigDropdown, type JobListRequests } from './configurations.helpers';
 
 test.use({
@@ -119,5 +119,30 @@ test.describe('Filter Configurations E2E', () => {
         await page.getByTitle('Save current filters with the name above').click();
         const request = await postRequest;
         expect(request.postDataJSON().name).toBe('New Config');
+    });
+
+    test('should select all jobs when loading a configuration with auto select all', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await clickConfig(page, 'Auto Select Filter');
+        await expect(page.locator('#job-row-1')).toBeVisible();
+        await expect(page.locator('#job-table-select-all')).toBeChecked();
+    });
+
+    test('should save the auto select all pill with the configuration', async ({ page }) => {
+        await page.goto(BASE_URL);
+        // Let the configurations load first: useFilterExpanded collapses the panel when the
+        // pinned-config count arrives, so expanding before that would close it again.
+        await waitForFilterConfigurations(page);
+        await page.locator('.pinned-config-item').first().waitFor({ state: 'visible' });
+        await toggleFiltersIfNeeded(page);
+        await page.getByText('Auto select all').click();
+        const configInput = page.locator('#filter-config-input');
+        await configInput.click();
+        await configInput.pressSequentially('Auto Select Config');
+        const postRequest = page.waitForRequest(CONFIG_POST);
+        await page.getByTitle('Save current filters with the name above').click();
+        const request = await postRequest;
+        expect(request.postDataJSON().name).toBe('Auto Select Config');
+        expect(request.postDataJSON().filters.auto_select_all).toBe(true);
     });
 });

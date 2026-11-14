@@ -57,6 +57,7 @@
         "name": "Clean - Delete old jobs",
         "filters": {
             "page": 1,
+            "auto_select_all": true,
             "size": 20,
             "search": "",
             "order": "created asc",
@@ -124,6 +125,7 @@
         "name": "Clean - Ignore jobs by title",
         "filters": {
             "page": 2,
+            "auto_select_all": true,
             "size": 20,
             "search": "",
             "order": "created desc",

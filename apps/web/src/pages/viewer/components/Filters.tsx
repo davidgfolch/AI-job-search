@@ -5,7 +5,7 @@ import './Filters.css';
 import FilterConfigurations from './FilterConfigurations';
 import SqlEditor from "../../common/components/core/SqlEditor";
 import { useFilterExpanded } from '../hooks/useFilterExpanded';
-import { GeneralFilters, BooleanFilterGroups, ModalityFilter } from './filters/components';
+import { GeneralFilters, BooleanFilterGroups, ModalityFilter, AutoSelectAllFilter } from './filters/components';
 import { isSameFilterSet } from './configurations/utils/filterNormalization';
 
 interface BooleanFiltersProps {
@@ -63,11 +63,17 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                 filters={filters} 
                                 onFiltersChange={onFiltersChange} 
                             />
-                            <ModalityFilter 
-                                filters={filters} 
-                                onFiltersChange={onFiltersChange} 
-                                modalityValues={modalityValues} 
-                            />
+                            <div className="filters-side-column">
+                                <ModalityFilter 
+                                    filters={filters} 
+                                    onFiltersChange={onFiltersChange} 
+                                    modalityValues={modalityValues} 
+                                />
+                                <AutoSelectAllFilter
+                                    filters={filters}
+                                    onFiltersChange={onFiltersChange}
+                                />
+                            </div>
                         </div>
                     </div>
                 )}

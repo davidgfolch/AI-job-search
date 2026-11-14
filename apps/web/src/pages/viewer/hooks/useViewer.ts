@@ -106,7 +106,9 @@ export const useViewer = () => {
     };
 
     const configKey = useMemo(() =>
-        JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([key]) => key !== 'page'))),
+        // `auto_select_all` is selection behaviour, not a job filter: excluding it keeps toggling the pill from
+        // clearing the list, and the dedicated effect below arms the auto-selection instead.
+        JSON.stringify(Object.fromEntries(Object.entries(filters).filter(([key]) => key !== 'page' && key !== 'auto_select_all'))),
     [filters]);
 
     useEffect(() => {
@@ -124,26 +126,23 @@ export const useViewer = () => {
                 }
                 return [...jobs, ...newItems];
             });
-            if (autoSelectAllAfterLoad.current && filters.page === 1) {
-                autoSelectAllAfterLoad.current = false;
-                setSelectionMode('all');
-            }
             setIsLoadingMore(false);
         }
-    }, [data, filters.page, isPlaceholderData, setSelectionMode, setAllJobs, setIsLoadingMore]);
+    }, [data, filters.page, isPlaceholderData, setAllJobs, setIsLoadingMore]);
+
+    // Arm the auto-selection whenever a filter set with `auto_select_all` is applied (config load, pill toggle or
+    // a filter change). It is disarmed once the selection is applied, so manually deselecting rows is respected
+    // until the next configuration/filter change.
+    useEffect(() => {
+        autoSelectAllAfterLoad.current = filters.auto_select_all === true;
+    }, [filters.auto_select_all, configKey]);
 
     useEffect(() => {
-        if (activeConfigName === 'Clean - Ignore jobs by title') {
-            if ((filters.page || 1) === 1 && data?.items && data.page === 1 && !isPlaceholderData && allJobs.length > 0) {
-                if (selectionMode !== 'all') {
-                    autoSelectAllAfterLoad.current = false;
-                    setSelectionMode('all');
-                }
-            } else if ((filters.page || 1) > 1) {
-                autoSelectAllAfterLoad.current = true;
-            }
-        }
-    }, [activeConfigName, filters.page, data, isPlaceholderData, allJobs.length, selectionMode, setSelectionMode]);
+        if (!autoSelectAllAfterLoad.current || isPlaceholderData) return;
+        if ((filters.page || 1) !== 1 || data?.page !== 1 || !data.items?.length) return;
+        autoSelectAllAfterLoad.current = false;
+        if (selectionMode !== 'all') setSelectionMode('all');
+    }, [data, filters.page, filters.auto_select_all, isPlaceholderData, configKey, selectionMode, setSelectionMode]);
 
     useEffect(() => {
         if (shouldSelectFirst && data?.items?.length) {
@@ -151,14 +150,6 @@ export const useViewer = () => {
             setShouldSelectFirst(false);
         }
     }, [shouldSelectFirst, data]);
-
-    useEffect(() => {
-        if (activeConfigName === 'Clean - Ignore jobs by title') {
-            autoSelectAllAfterLoad.current = true;
-        } else {
-            autoSelectAllAfterLoad.current = false;
-        }
-    }, [activeConfigName]);
 
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;
     const hasNext = (selectedIndex >= 0 && selectedIndex < allJobs.length - 1) || hasMorePages;

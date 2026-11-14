@@ -12,6 +12,11 @@ interface UseBulkJobMutationsProps {
     update: Partial<Job>;
     select_all?: boolean;
   }) => void;
+  onDeleteSuccess?: (variables: {
+    ids?: number[];
+    filters?: JobListParams;
+    select_all?: boolean;
+  }) => void;
 }
 
 export function useBulkJobMutations({
@@ -20,6 +25,7 @@ export function useBulkJobMutations({
   setSelectionMode,
   setSelectedIds,
   onUpdateSuccess,
+  onDeleteSuccess,
 }: UseBulkJobMutationsProps) {
 
   const bulkUpdateMutation = useMutation({
@@ -63,6 +69,7 @@ export function useBulkJobMutations({
       } else if (variables.ids && onJobsDeleted) {
         onJobsDeleted(variables.ids);
       }
+      onDeleteSuccess?.(variables);
     },
     onError: (err) => {
       setMessage({

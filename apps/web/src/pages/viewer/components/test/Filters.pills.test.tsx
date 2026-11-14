@@ -102,4 +102,46 @@ describe('Filters - Pills', () => {
             expect(onFiltersChangeMock).toHaveBeenCalledWith({ [filterKey]: undefined });
         });
     });
+
+    describe('Auto select all pill', () => {
+        it('renders below the modality box, right of the include/exclude box', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} modalityValues={['remote']} />);
+            const pill = screen.getByText('Auto select all');
+            const sideColumn = pill.closest('.filters-side-column');
+            expect(sideColumn).toBeInTheDocument();
+            expect(screen.getByText('Selection:')).toBeInTheDocument();
+            const modalityGroup = sideColumn?.querySelector('.modality-filter-group');
+            expect(modalityGroup).toBeInTheDocument();
+            expect(modalityGroup!.compareDocumentPosition(pill) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        });
+
+        it('enables the flag when clicked', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            fireEvent.click(screen.getByText('Auto select all'));
+            expect(onFiltersChangeMock).toHaveBeenCalledWith({ auto_select_all: true });
+        });
+
+        it('shows the active state when the flag is set', async () => {
+            await renderAndWait(<Filters filters={{ ...mockFilters, auto_select_all: true }} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            expect(screen.getByText('Auto select all')).toHaveClass('active-true');
+        });
+
+        it('disables the flag when clicked again, persisting null as unselected', async () => {
+            await renderAndWait(<Filters filters={{ ...mockFilters, auto_select_all: true }} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            fireEvent.click(screen.getByText('Auto select all'));
+            expect(onFiltersChangeMock).toHaveBeenCalledWith({ auto_select_all: null });
+        });
+
+        it('treats null as unselected', async () => {
+            await renderAndWait(<Filters filters={{ ...mockFilters, auto_select_all: null }} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            expect(screen.getByText('Auto select all')).not.toHaveClass('active-true');
+        });
+
+        it('explains that it selects the whole filter, not only the loaded pages', async () => {
+            await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+            expect(screen.getByText('Auto select all')).toHaveAttribute(
+                'title',
+                'Auto select all jobs in the filter, including pages that are not loaded');
+        });
+    });
 });

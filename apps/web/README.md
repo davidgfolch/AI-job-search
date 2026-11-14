@@ -8,6 +8,7 @@ The modern frontend for the AI Job Search application, built with **React**, **T
 - **Infinite Scroll Pagination**: The list keeps fetching pages on its own until it fills the screen, then again whenever the end of the list is scrolled into view.
 - **Next / Previous Job Navigation**: The ⏮ / ⏭ buttons and the `Alt+P` / `Alt+N` shortcuts move the selection, and the list scrolls whenever the new selection is outside the visible frame.
 - **Job Management**: Update job status (Applied, Interviewing, Rejected, etc.) and edit job data (title, company, location, salary, skills, modality, comments) via the job detail edit form — advanced fields are shown under the "Edit All" toggle. Modality is multi-select (checkbox group): a job can allow several arrangements at once (REMOTE/HYBRID/ON_SITE). For hybrid jobs the detail also shows the extracted arrangement (`hybrid_info`, e.g. "3 days remote / 2 days office") right below the modality.
+- **Filter Configurations**: Save the current filters under a name, then load, pin, watch or delete them from the configuration dropdown. A configuration can also opt into **auto select all**, so bulk actions apply to every matching job instead of only the loaded page — used by "Clean - Delete old jobs" and "Clean - Ignore jobs by title".
 - **Statistics**: Visual insights into your job search progress.
 - **Dashboard autorefresh**: The dashboard polls the backend every 30 s and shows a human-readable "Last updated" timestamp plus the autorefresh interval. The top row shows the configured AI backend, Ollama, Prometheus and Grafana health pills with status, IP/URL and LAN scope.
 - **Settings Page**: Manage environment variables and scrapper state directly from the browser.
@@ -33,7 +34,19 @@ Moving to the next or previous job — with the ⏮ / ⏭ buttons, the `Alt+P` /
 
 Because the scroll happens in a layout effect on the row that React has just committed, it also covers the job a newly loaded page starts at: stepping past the last loaded job appends the next page, selects its first job, and scrolls down to it.
 
-## Reloading the Active Filter Configuration
+## Filter Configurations
+
+Filter configurations are named filter sets stored by the backend (`filter_configurations`), listed in the dropdown at the top of the filters panel and optionally pinned as shortcuts. A configuration stores the filters that differ from the defaults; loading it merges them over the current filters and resets the list to page 1. `FilterConfigService` (`src/pages/viewer/hooks/FilterConfigService.ts`) owns loading, saving, exporting and migrating them, and the backend seeds the defaults from `resources/defaultFilterConfigurations.json`.
+
+Deleting jobs (single or bulk) invalidates and refetches the `['jobs']` query like a bulk update does, so the rows that were removed do not linger in the cached page after the confirmation dialog.
+
+### Auto Select All
+
+The "Auto select all" pill below the Modality box stores `auto_select_all` in the configuration's `filters` JSON, so it is saved, loaded, exported and migrated with the configuration (no backend or database change). `useViewer` arms the selection when the flag is applied and sets the selection mode to `all` once the page-1 results of that filter set are on screen, so a bulk action targets every matching job instead of only the loaded page. Manually deselecting rows is respected until the next configuration or filter change. Only `true` enables it: a configuration that omits the flag, or stores it as `null`, loads with the pill unselected.
+
+`auto_select_all` is configuration behaviour, not a job filter: `useJobsData` keeps it out of the jobs request and out of the `['jobs', …]` query key, so toggling the pill neither refetches nor clears the list.
+
+### Reloading the Active Filter Configuration
 
 The job list query is keyed by its filters (`['jobs', filters]` in `src/pages/viewer/hooks/useJobsData.ts`), so applying the configuration that is already in effect produces the same query key. React Query then keeps serving the cached page for `staleTime` (30 s) and nothing refetches, which left the list showing the jobs it already had while the `+N` watcher badge was counting the new ones. Applying a *different* configuration changes the key, so it fetches — which is why switching away and back used to be the only way to see the new jobs.
 

@@ -176,6 +176,7 @@
         "filters": {
             "like": null,
             "page": 2,
+            "auto_select_all": true,
             "seen": null,
             "size": 20,
             "order": "created desc",
@@ -315,6 +316,7 @@
         "filters": {
             "like": null,
             "page": 1,
+            "auto_select_all": true,
             "seen": null,
             "size": 20,
             "order": "created asc",
