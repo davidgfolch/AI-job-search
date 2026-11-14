@@ -108,8 +108,10 @@
 .pills-section {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.2rem;
-    /* flex-wrap: wrap; */
+    min-width: 0;
+    max-width: 100%;
 }
 
 .section-label {
@@ -129,6 +131,9 @@
     cursor: pointer;
     transition: all 0.2s;
     user-select: none;
+    white-space: nowrap;
+    flex: 0 1 auto;
+    max-width: 100%;
 }
 
 .filter-pill:hover {

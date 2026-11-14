@@ -70,3 +70,21 @@ export const BOOLEAN_FILTERS: BooleanFilterConfig[] = [
  * Array of just the filter keys for type-safe iteration
  */
 export const BOOLEAN_FILTER_KEYS: (keyof JobListParams)[] = BOOLEAN_FILTERS.map(f => f.key);
+
+/**
+ * Boolean filters whose include/exclude pills are hidden from the filter panel.
+ * The interview pipeline is managed from the job form's status buttons, so its
+ * pills are not repeated in the filter panel.
+ */
+export const HIDDEN_FILTER_PILL_KEYS: (keyof JobListParams)[] = [
+    'interview_rh',
+    'interview',
+    'interview_tech',
+    'interview_technical_test',
+    'interview_technical_test_done',
+];
+
+/**
+ * Boolean filters rendered as include/exclude pills in the filter panel
+ */
+export const FILTER_PILLS: BooleanFilterConfig[] = BOOLEAN_FILTERS.filter(f => !HIDDEN_FILTER_PILL_KEYS.includes(f.key));

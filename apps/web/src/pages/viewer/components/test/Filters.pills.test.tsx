@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Filters from '../Filters';
@@ -50,6 +50,16 @@ describe('Filters - Pills', () => {
         await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
         const excludeSection = screen.getAllByText(/Exclude:/)[0].closest('.pills-section');
         expect(excludeSection).toBeInTheDocument();
+    });
+
+    it('hides the interview pipeline pills from Include and Exclude sections', async () => {
+        await renderAndWait(<Filters filters={mockFilters} onFiltersChange={onFiltersChangeMock} configCount={0} />);
+        const sections = screen.getAllByText(/Include:|Exclude:/)
+            .map(label => label.closest('.pills-section') as HTMLElement);
+        const hiddenLabels = ['Interview (RH)', 'Interview', 'Interview (Tech)', 'Technical Test', 'Technical Test Done'];
+        sections.forEach(section => {
+            hiddenLabels.forEach(label => expect(within(section).queryByText(label)).not.toBeInTheDocument());
+        });
     });
 
     describe.each(['Flagged', 'Like', 'Applied'])('for %s pill', (pillName) => {
