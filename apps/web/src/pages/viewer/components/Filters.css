@@ -176,6 +176,8 @@
     padding: 0.5rem;
     flex: 0 1 auto;
     max-width: 100%;
+    align-self: stretch;
+    min-width: 0;
 }
 
 .filters-side-column {
@@ -183,16 +185,13 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 0.5rem;
+    min-width: 0;
+    /* Narrower panels shrink the column so the modality pills wrap instead of overflowing */
+    max-width: 34%;
 }
 
 .filters-side-column .behaviour-filters-group {
     padding: 0 0.5rem;
-}
-
-.modality-filter-group .pills-section {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
 }
 
 .btn-secondary {
@@ -240,6 +239,18 @@
     .boolean-filter-groups {
         padding: 0.4rem;
         gap: 0.4rem;
+    }
+
+    .filters-row {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+    }
+
+    .filters-side-column {
+        align-items: stretch;
+        width: 100%;
+        max-width: 100%;
     }
 
     .filter-pills-row {
