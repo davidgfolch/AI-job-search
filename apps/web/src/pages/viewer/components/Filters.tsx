@@ -6,6 +6,7 @@ import FilterConfigurations from './FilterConfigurations';
 import SqlEditor from "../../common/components/core/SqlEditor";
 import { useFilterExpanded } from '../hooks/useFilterExpanded';
 import { GeneralFilters, BooleanFilterGroups, ModalityFilter } from './filters/components';
+import { BehaviourFilters } from './filters/behaviourFilters';
 import { isSameFilterSet } from './configurations/utils/filterNormalization';
 
 interface BooleanFiltersProps {
@@ -33,6 +34,8 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                     <FilterConfigurations
                         currentFilters={filters}
                         onLoadConfig={(loadedFilters, name) => {
+                            // The configuration stores whether the panel opens; absent/undefined collapses it.
+                            setIsExpanded(loadedFilters.filter_expanded === true);
                             // Mirrors what Viewer.handleFiltersChange ends up with, so a configuration that only
                             // stores part of the filters is still recognised as the one already in effect. Compared
                             // against the filters as they are: a deeper page already changes the query key, and the
@@ -63,11 +66,18 @@ export default function BooleanFilters({ filters, onFiltersChange, onMessage, on
                                 filters={filters} 
                                 onFiltersChange={onFiltersChange} 
                             />
-                            <ModalityFilter 
-                                filters={filters} 
-                                onFiltersChange={onFiltersChange} 
-                                modalityValues={modalityValues} 
-                            />
+                            <div className="filters-side-column">
+                                <ModalityFilter 
+                                    filters={filters} 
+                                    onFiltersChange={onFiltersChange} 
+                                    modalityValues={modalityValues} 
+                                />
+                                <BehaviourFilters
+                                    filters={filters}
+                                    onFiltersChange={onFiltersChange}
+                                    onExpandChange={setIsExpanded}
+                                />
+                            </div>
                         </div>
                     </div>
                 )}

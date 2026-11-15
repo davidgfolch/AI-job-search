@@ -1,4 +1,4 @@
-import { render, act } from '@testing-library/react';
+import { render, act, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import type { JobListParams } from '../../api/ViewerApi';
@@ -98,5 +98,32 @@ describe('Filters - reloading the active configuration', () => {
 
         expect(() => loadConfig({ search: 'Backend', ai_enriched: true, page: 1 })).not.toThrow();
         expect(onFiltersChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('expands the panel when the configuration stores filter_expanded', () => {
+        renderFilters(createMockFilters(), { configCount: 5 });
+        expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
+
+        loadConfig({ search: 'Backend', page: 1, filter_expanded: true });
+
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+    });
+
+    it('collapses the panel when the configuration does not store filter_expanded', () => {
+        renderFilters(createMockFilters(), { configCount: 0 });
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+
+        loadConfig({ search: 'Backend', page: 1 });
+
+        expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
+    });
+
+    it('collapses the panel when the configuration stores filter_expanded as null', () => {
+        renderFilters(createMockFilters({ filter_expanded: true }), { configCount: 0 });
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+
+        loadConfig({ search: 'Backend', page: 1, filter_expanded: null });
+
+        expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
     });
 });

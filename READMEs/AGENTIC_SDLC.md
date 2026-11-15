@@ -119,20 +119,20 @@ Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`
 
 `master` is the default branch for every non-Dependabot change; `staging` is reserved for the Dependabot gate. The rule is defined once in `.claude/rules/branch-workflow.md` (always-on, loaded by both harnesses):
 
-- **Dependabot session** — starts by syncing `master` into `staging`, ends by promoting `staging` into `master` when the batch is green.
+- **Dependabot session** — starts by syncing `master` into `staging` and ends by promoting `staging` into `master` when the batch is green; both happen in a dedicated session clone, never in the main workspace.
 - **Any other session** — starts and ends on `master`; never commit a feature/fix/docs change to `staging`.
 - If non-Dependabot commits end up on `staging`, promote them to `master` and fast-forward `staging` back to `master`.
 
 ## Dependabot PR workflow
 
-The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR), and it is the **only** session that works on `staging` — every other change is done on `master` (see [branch workflow](#branch-workflow-master-vs-staging)). It runs entirely in a throwaway sibling clone (`../ai_job_search-dependabot-<pr>`, cloned from `origin`) so the main workspace, its branches and its running stack are never touched, and deletes that clone after the merge — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`sync` for the `staging` refresh, `dep <pr>` to create the clone, `cleanup dependabot-<pr>` to delete it). The agent:
+The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR), and it is the **only** session that works on `staging` — every other change is done on `master` (see [branch workflow](#branch-workflow-master-vs-staging)). It runs entirely in throwaway sibling clones — a `../ai_job_search-dependabot-session` clone for the `staging` sync and the promotion, and one `../ai_job_search-dependabot-<pr>` clone per PR — so the main workspace, its branches and its running stack are never touched; the PR clones are deleted after their merge and the session clone after the promotion. This is the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`new dependabot-session`, `sync` for the `staging` refresh, `dep <pr>` to create a PR clone, `cleanup dependabot-<pr>` / `cleanup dependabot-session` to delete them). The agent:
 
-1. Syncs `master` into `staging` in the main workspace before anything else, so every PR is built on a current base.
-2. Runs the TDD pipeline for the affected module.
+1. Syncs `master` into `staging` inside the session clone before anything else, so every PR is built on a current base; the main workspace is never checked out, pulled or pushed.
+2. Runs the TDD pipeline for the affected module (installing it first, as `ci.yml` does).
 3. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
 4. Aborts the whole process on any build/start/log error.
-5. Fixes failures and pushes so auto-merge can proceed.
-6. When the batch is green, promotes `staging` into `master` through the promotion PR, then syncs both branches back to the same commit.
+5. Fixes failures and pushes, then merges each PR explicitly (auto-merge cannot run for Dependabot-triggered workflows: no repository secrets and a read-only token).
+6. When the batch is green, promotes `staging` into `master` through the promotion PR from the session clone, syncs both branches to the same commit, and deletes the session clone.
 
 Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
 

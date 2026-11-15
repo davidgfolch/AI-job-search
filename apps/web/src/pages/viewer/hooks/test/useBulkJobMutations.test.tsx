@@ -27,6 +27,7 @@ describe('useBulkJobMutations', () => {
     setSelectionMode: vi.fn(),
     setSelectedIds: vi.fn(),
     onUpdateSuccess: vi.fn(),
+    onDeleteSuccess: vi.fn(),
   };
 
   beforeEach(() => {
@@ -71,6 +72,16 @@ describe('useBulkJobMutations', () => {
       await waitFor(() => expect(result.current.bulkDeleteMutation.isSuccess).toBe(true));
       expect(mockProps.setMessage).toHaveBeenCalledWith({ text: 'Deleted 3 jobs', type: 'success' });
       expect(mockProps.onJobsDeleted).toHaveBeenCalledWith([1, 2, 3]);
+      expect(mockProps.onDeleteSuccess).toHaveBeenCalledWith({ ids: [1, 2, 3] });
+    });
+
+    it('notifies the delete success handler on a select_all delete', async () => {
+      vi.mocked(jobsApi.deleteJobs).mockResolvedValue({ deleted: 10 });
+      const { result } = renderHook(() => useBulkJobMutations(mockProps), { wrapper: createWrapper() });
+      result.current.bulkDeleteMutation.mutate({ select_all: true, filters: { search: 'old' } });
+      await waitFor(() => expect(result.current.bulkDeleteMutation.isSuccess).toBe(true));
+      expect(mockProps.onJobsDeleted).toHaveBeenCalledWith('all');
+      expect(mockProps.onDeleteSuccess).toHaveBeenCalledWith({ select_all: true, filters: { search: 'old' } });
     });
 
     it('handles delete errors', async () => {
@@ -79,6 +90,7 @@ describe('useBulkJobMutations', () => {
       result.current.bulkDeleteMutation.mutate({ ids: [1] });
       await waitFor(() => expect(result.current.bulkDeleteMutation.isError).toBe(true));
       expect(mockProps.setMessage).toHaveBeenCalledWith({ text: 'Delete failed', type: 'error' });
+      expect(mockProps.onDeleteSuccess).not.toHaveBeenCalled();
     });
   });
 });
