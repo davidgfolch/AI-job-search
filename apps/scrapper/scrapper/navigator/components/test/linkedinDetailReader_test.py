@@ -1,6 +1,7 @@
 import sys
 import pytest
 from unittest.mock import MagicMock, patch
+from scrapper.core.baseScrapper import htmlToMarkdown
 from scrapper.navigator.components.linkedinDetailReader import (
     LinkedinDetailReader, CSS_SEL_JOB_TITLE_LINK, CSS_SEL_DETAIL_COMPANY, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_FIT_PREFERENCES,
     CSS_SEL_JOB_DESCRIPTION_LEGACY, CSS_SEL_JOB_DESCRIPTION_BOX,
@@ -126,8 +127,20 @@ class TestLinkedinDetailReader:
         mock_selenium.getAttr.return_value = 'u'
         mock_selenium.getElms.return_value = [MagicMock(), MagicMock()]
         mock_selenium.getHtml.return_value = 'job_html'
-        assert reader.read()[4] == 'Remote, Full-timejob_html'
+        assert reader.read()[4] == '<p>Remote, Full-time</p>job_html'
         mock_selenium.getElms.assert_called_with(CSS_SEL_JOB_FIT_PREFERENCES)
+
+    @pytest.mark.parametrize("description_html", [
+        'En SEREM buscamos incorporar un/a Full Stack Developer',   # inline text: used to glue onto the preferences
+        '<strong>This position</strong> is listed on behalf of a partner company',
+        '<p>Desde ISPROX buscamos para uno de nuestros clientes</p>',  # block start: already separated
+    ])
+    def test_fit_preferences_never_glue_to_the_description(self, reader, mock_selenium, description_html):
+        mock_selenium.getText.side_effect = ['Title', 'Company', 'Location', 'Remote', 'Full-time']
+        mock_selenium.getAttr.return_value = 'u'
+        mock_selenium.getElms.return_value = [MagicMock(), MagicMock()]
+        mock_selenium.driver.execute_script.side_effect = [None, description_html]
+        assert htmlToMarkdown(reader.read()[4]).startswith('Remote, Full-time\n\n')
 
     @pytest.mark.parametrize("href, expected", [
         ('https://www.linkedin.com/jobs/view/4477175173/?trackingId=x', '4477175173'),

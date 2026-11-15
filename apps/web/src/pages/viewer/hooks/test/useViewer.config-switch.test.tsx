@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useViewer } from '../useViewer';
 import { useJobsData } from '../useJobsData';
@@ -78,46 +78,32 @@ describe('useViewer regression', () => {
         expect((updater as any)([])).toEqual(jvmData.items);
     });
 
-    it('regression: auto-select-all applies only when the Clean config real data loads and is not leaked on switch away', () => {
+    it('regression: auto-select-all is driven by filters.auto_select_all and not by the config name', () => {
         const mockSetAllJobs = vi.fn();
         const cleanData = { items: [{ id: 1 }], page: 1, total: 1 };
         const jvmData = { items: [{ id: 200 }], page: 1, total: 1 };
 
-        (useJobSelection as any).mockReturnValue({
-            ...mockJobSelection,
-            setSelectionMode: mockJobSelection.setSelectionMode,
-        });
-        mockJobSelection.setSelectionMode.mockClear();
-
+        // A configuration with auto_select_all selects every matching job as soon as its page-1 data is shown.
         (useJobsData as any).mockReturnValue({
             ...mockJobsData,
-            filters: { ...mockJobsData.filters, sql_filter: 'jvm', page: 1 },
-            data: jvmData,
-            isPlaceholderData: false,
-            allJobs: jvmData.items,
-            setAllJobs: mockSetAllJobs,
-        });
-
-        const { rerender, result } = renderHook(() => useViewer());
-
-        // Load the 'Clean - Ignore jobs by title' config and let its real data arrive
-        act(() => { result.current.actions.setActiveConfigName('Clean - Ignore jobs by title'); });
-        (useJobsData as any).mockReturnValue({
-            ...mockJobsData,
-            filters: { ...mockJobsData.filters, sql_filter: 'clean', page: 1 },
+            filters: { ...mockJobsData.filters, sql_filter: 'clean', page: 1, auto_select_all: true },
             data: cleanData,
             isPlaceholderData: false,
             allJobs: cleanData.items,
             setAllJobs: mockSetAllJobs,
         });
-        rerender();
 
+        const { rerender } = renderHook(() => useViewer());
         expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('all');
 
+        // Manually deselecting is respected until the next configuration/filter change.
         mockJobSelection.setSelectionMode.mockClear();
+        (useJobSelection as any).mockReturnValue({ ...mockJobSelection, selectionMode: 'none' });
+        rerender();
+        expect(mockJobSelection.setSelectionMode).not.toHaveBeenCalledWith('all');
 
-        // Switch away to another config: its data must NOT auto-select all
-        act(() => { result.current.actions.setActiveConfigName('JVM Spring'); });
+        // Switching to a configuration without the flag never selects all.
+        (useJobSelection as any).mockReturnValue({ ...mockJobSelection, selectionMode: 'manual' });
         (useJobsData as any).mockReturnValue({
             ...mockJobsData,
             filters: { ...mockJobsData.filters, sql_filter: 'jvm', page: 1 },
@@ -127,7 +113,36 @@ describe('useViewer regression', () => {
             setAllJobs: mockSetAllJobs,
         });
         rerender();
-
         expect(mockJobSelection.setSelectionMode).not.toHaveBeenCalledWith('all');
+    });
+
+    it('auto-selects all when the pill is toggled on with data already loaded', () => {
+        const jvmData = { items: [{ id: 200 }], page: 1, total: 1 };
+        const baseFilters = { ...mockJobsData.filters, sql_filter: 'jvm', page: 1 };
+
+        (useJobsData as any).mockReturnValue({
+            ...mockJobsData,
+            filters: baseFilters,
+            data: jvmData,
+            isPlaceholderData: false,
+            allJobs: jvmData.items,
+            setAllJobs: vi.fn(),
+        });
+
+        const { rerender } = renderHook(() => useViewer());
+        expect(mockJobSelection.setSelectionMode).not.toHaveBeenCalledWith('all');
+
+        mockJobSelection.setSelectionMode.mockClear();
+        (useJobsData as any).mockReturnValue({
+            ...mockJobsData,
+            filters: { ...baseFilters, auto_select_all: true },
+            data: jvmData,
+            isPlaceholderData: false,
+            allJobs: jvmData.items,
+            setAllJobs: vi.fn(),
+        });
+        rerender();
+
+        expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('all');
     });
 });
