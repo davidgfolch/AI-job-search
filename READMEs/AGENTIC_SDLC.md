@@ -9,7 +9,7 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 | Directory | Purpose |
 |-----------|---------|
 | `.claude/skills/` | Canonical home for all agent skills |
-| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `docker-build.md`, `documentation-update.md`, `db-mutation-permission.md`, `test-enforcement.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
+| `.claude/rules/` | Shared rule files (`architecture-guidelines.md`, `branch-workflow.md`, `docker-build.md`, `documentation-update.md`, `db-mutation-permission.md`, `test-enforcement.md`); opencode loads them all via `instructions` in `.opencode/opencode.json` |
 | `.claude/hooks/` | Claude Code `PreToolUse` hooks (`docker-build.py`, `docs-sync.py`, `db-mutation.py`, `test-enforce.py`) and their shared logic (`lib/`) |
 | `.claude/CLAUDE.md` | Agent guidance for Claude Code (repo overview, build/test commands, code style) |
 | `.claude/settings.json` | Project-shared Claude Code settings (hooks) |
@@ -27,7 +27,7 @@ All agent skills live in `.claude/skills/`. Core ones:
 - **`test-implementer`** — Implements unit tests following valid architecture and best practices.
 - **`codegraph`** — Queries and maintains the CodeGraph code-intelligence index (`explore`, `node`, `impact`, `affected`); the default for codebase questions.
 - **`version-bumper`** — Bumps the version of any `apps/*` module following semver.
-- **`dependabot-agent`** — Processes open GitHub Dependabot PRs.
+- **`dependabot-agent`** — Processes open GitHub Dependabot PRs in a throwaway sibling clone (`../ai_job_search_*`).
 - **`gh-actions-debug`** — Debugs GitHub Actions / Dependabot run failures with `gh`.
 - **`scrapling-implementer`** — Scrapling library usage (fetching, parsing, spiders).
 - **`crawlee-page-analyst`** — Uses Crawlee to analyze a source page after a site/DOM change and produce scrapper-change requirements before editing selectors.
@@ -115,14 +115,24 @@ A runner invocation with **no** targets is left alone — the script already run
 
 Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`, the test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`), `.env*`, dependency manifests (`pyproject.toml`, `package.json`, `package-lock.json`, `uv.lock`, `poetry.lock`) and other `scripts/**` files. Changes that do **not** require it: documentation, CI workflows, coverage gates, install/sandbox helpers, agent rules and skills, and generated paths — state that reason in the summary when skipping.
 
+## Branch workflow (master vs staging)
+
+`master` is the default branch for every non-Dependabot change; `staging` is reserved for the Dependabot gate. The rule is defined once in `.claude/rules/branch-workflow.md` (always-on, loaded by both harnesses):
+
+- **Dependabot session** — starts by syncing `master` into `staging` and ends by promoting `staging` into `master` when the batch is green; both happen in a dedicated session clone, never in the main workspace.
+- **Any other session** — starts and ends on `master`; never commit a feature/fix/docs change to `staging`.
+- If non-Dependabot commits end up on `staging`, promote them to `master` and fast-forward `staging` back to `master`.
+
 ## Dependabot PR workflow
 
-The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR). The agent:
+The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR), and it is the **only** session that works on `staging` — every other change is done on `master` (see [branch workflow](#branch-workflow-master-vs-staging)). It runs entirely in throwaway sibling clones — a `../ai_job_search-dependabot-session` clone for the `staging` sync and the promotion, and one `../ai_job_search-dependabot-<pr>` clone per PR — so the main workspace, its branches and its running stack are never touched; the PR clones are deleted after their merge and the session clone after the promotion. This is the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`new dependabot-session`, `sync` for the `staging` refresh, `dep <pr>` to create a PR clone, `cleanup dependabot-<pr>` / `cleanup dependabot-session` to delete them). The agent:
 
-1. Runs the TDD pipeline for the affected module.
-2. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
-3. Aborts the whole process on any build/start/log error.
-4. Fixes failures and pushes so auto-merge can proceed.
+1. Syncs `master` into `staging` inside the session clone before anything else, so every PR is built on a current base; the main workspace is never checked out, pulled or pushed.
+2. Runs the TDD pipeline for the affected module (installing it first, as `ci.yml` does).
+3. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
+4. Aborts the whole process on any build/start/log error.
+5. Fixes failures and pushes, then merges each PR explicitly (auto-merge cannot run for Dependabot-triggered workflows: no repository secrets and a read-only token).
+6. When the batch is green, promotes `staging` into `master` through the promotion PR from the session clone, syncs both branches to the same commit, and deletes the session clone.
 
 Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
 

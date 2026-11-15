@@ -51,6 +51,7 @@ and the array must be empty when no arrangement is stated.
 Hybrid_info must be a string or null: when the offer allows hybrid work, describe the concrete arrangement the offer itself states
 (number of days per week in the office or remote, schedule, or the offer's own hybrid wording), in the offer's language.
 Never invent details and never repeat or paraphrase these instructions; quote only arrangement details from the offer.
+A fully remote offer is not hybrid, and neither is one that merely says hybrid without stating an arrangement: use null.
 Use null when the offer is not hybrid or states no arrangement details.
 Do not include markdown, explanations, nested objects, or any other fields.
 

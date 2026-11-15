@@ -36,9 +36,13 @@ export const useJobsData = () => {
 
     const queryClient = useQueryClient();
 
+    // `auto_select_all` and `filter_expanded` are configuration behaviour (not job filters): keeping them
+    // out of the query key and the request means toggling the pills never refetches or clears the list.
+    const { auto_select_all: _autoSelectAll, filter_expanded: _filterExpanded, ...jobFilters } = filters;
+
     const { data, isLoading, error, refetch, isPlaceholderData, isFetching } = useQuery({
-        queryKey: ['jobs', filters],
-        queryFn: () => jobsApi.getJobs(filters),
+        queryKey: ['jobs', jobFilters],
+        queryFn: () => jobsApi.getJobs(jobFilters),
         placeholderData: keepPreviousData,
         staleTime: 1000 * 30, // 30 seconds
     });
