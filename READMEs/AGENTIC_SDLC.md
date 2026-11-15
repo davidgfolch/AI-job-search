@@ -131,7 +131,7 @@ The `dependabot-agent` skill processes open Dependabot PRs (they target `staging
 2. Runs the TDD pipeline for the affected module (installing it first, as `ci.yml` does).
 3. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
 4. Aborts the whole process on any build/start/log error.
-5. Fixes failures and pushes, then merges each PR explicitly (auto-merge cannot run for Dependabot-triggered workflows: no repository secrets and a read-only token).
+5. Fixes failures and pushes, then confirms the merge (grouped minor/patch PRs squash-merge automatically once `ci-gate` is green via `dependabot-auto-merge.yml`; everything else is merged explicitly).
 6. When the batch is green, promotes `staging` into `master` through the promotion PR from the session clone, syncs both branches to the same commit, and deletes the session clone.
 
 Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).

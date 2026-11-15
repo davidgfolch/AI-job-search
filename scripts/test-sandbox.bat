@@ -122,7 +122,7 @@ if "%KEEP%"=="1" (
 )
 echo Tearing down sandbox project '%PROJECT%'...
 docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% rm -sfv
-docker volume rm %PROJECT%_mongo_data_sandbox >nul 2>&1
+docker volume rm %PROJECT%_mongo_data_sandbox %PROJECT%_web_node_modules >nul 2>&1
 rmdir /s /q "%SANDBOX_DIR%" >nul 2>&1
 if "%FAILED%"=="1" (
     echo Sandbox verification FAILED.

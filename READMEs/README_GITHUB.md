@@ -83,7 +83,8 @@ The `.github/workflows/dependabot-auto-merge.yml` workflow enables GitHub's nati
 
 ### Behavior
 
-- It runs when a Dependabot PR is opened, labeled, updated, or reopened against `staging`.
+- It runs when a Dependabot PR is opened, labeled, updated, reopened, or marked ready for review against `staging`.
+- It uses `pull_request_target` (not `pull_request`): workflows triggered by Dependabot get a read-only token and no repository secrets, so the previous `pull_request` version could never enable auto-merge. `pull_request_target` runs in the base repository context with a write-capable `github.token`; nothing from the PR is checked out, and the token is only used for the merge call.
 - It only acts on **grouped** minor/patch PRs (branch names contain the group identifiers `minor-patch` or `github-actions`).
 - It enables auto-merge with **squash** merging.
 - GitHub only performs the merge once **all required checks pass** (green CI).
@@ -114,8 +115,8 @@ Before a Dependabot PR is merged, the agent **builds and runs** every affected c
 1. **Repo Settings → General → Pull Requests**: enable **"Allow auto-merge"**.
 2. Create the `staging` branch from `master`.
 3. Add a **branch protection rule / Ruleset** on `master` that **requires the `CI` check**. Without a branch protection requirement the auto-merge action cannot enable auto-merge.
-4. Create a fine-grained PAT with `contents: write` and `pull-requests: write` on this repo, and store it as the `AUTOMERGE_TOKEN` secret. It is used by `dependabot-auto-merge.yml` and when enabling auto-merge on the persistent `staging → master` PR, so the resulting merges **do** trigger downstream workflows (badges, promotion re-checks).
-5. Create the persistent `staging → master` PR and enable auto-merge on it with the PAT:
+4. No PAT secret is needed: `dependabot-auto-merge.yml` uses the built-in `github.token`. Merges performed by that token **do not trigger downstream `push` workflows** (GitHub's recursion guard); the persistent promotion PR is merged locally by the `dependabot-agent` session, so its push does trigger CI on `master`.
+5. Create the persistent `staging → master` PR and enable auto-merge on it (any account with write access, e.g. the agent's `gh` login, since the token above is scoped to the auto-merge workflow):
    ```bash
    gh pr create --base master --head staging --title "chore: promote staging to master" --body "Auto-merge gate: promotes staging to master when the full CI matrix + e2e are green."
    gh pr merge <number> --auto --merge

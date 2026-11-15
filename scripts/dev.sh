@@ -125,6 +125,16 @@ stop_codegraph_daemon() {
     fi
 }
 
+# Containers leave root-owned files inside a clone (sandbox datadir, container logs,
+# __pycache__), which a plain `rm -rf` as the invoking user cannot delete. Clear the tree
+# as root through the mysql image (already pulled for the sandbox), then drop the dir.
+clear_clone_as_root() {
+    local target="$1"
+    command -v docker >/dev/null 2>&1 || return 1
+    docker run --rm --entrypoint sh -v "$target:/c" mysql:9 -c 'rm -rf /c/* /c/.[!.]*' >/dev/null 2>&1 || return 1
+    rmdir "$target" 2>/dev/null
+}
+
 delete_clone() {
     local target="$1"
     stop_codegraph_daemon "$target/.codegraph/daemon.pid"
@@ -132,7 +142,10 @@ delete_clone() {
     echo "Deleting clone $target..."
     rm -rf "$target" 2>/dev/null || true
     if [ -e "$target" ]; then
-        echo "Error: could not delete $target (is a terminal or CodeGraph daemon holding it?)."
+        clear_clone_as_root "$target" || true
+    fi
+    if [ -e "$target" ]; then
+        echo "Error: could not delete $target (is a terminal or CodeGraph daemon holding it, or root-owned files left by the sandbox?)."
         return 1
     fi
     echo "Clone deleted."

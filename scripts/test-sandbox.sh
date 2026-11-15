@@ -62,6 +62,24 @@ if module_disabled "$TARGET"; then
     exit $?
 fi
 
+# MySQL/Node initialise the bind-mounted data as root, so a plain `rm -rf` as the invoking
+# user leaves the sandbox dir behind and the next run starts from a dirty datadir. Clear it
+# as root through the mysql image (already pulled for the sandbox) before giving up.
+remove_sandbox_dir() {
+    [ -e "$SANDBOX_DIR" ] || return 0
+    rm -rf "$SANDBOX_DIR" 2>/dev/null || true
+    [ -e "$SANDBOX_DIR" ] || return 0
+    if command -v docker >/dev/null 2>&1; then
+        docker run --rm --entrypoint sh -v "$SANDBOX_DIR:/d" mysql:9 -c 'rm -rf /d/* /d/.[!.]*' > /dev/null 2>&1 || true
+        rm -rf "$SANDBOX_DIR" 2>/dev/null || true
+    fi
+    if [ -e "$SANDBOX_DIR" ]; then
+        echo "Warning: could not remove $SANDBOX_DIR (root-owned files)." >&2
+        echo "Remove it with: docker run --rm --entrypoint sh -v \"$SANDBOX_DIR:/d\" mysql:9 -c 'rm -rf /d/* /d/.[!.]*'" >&2
+    fi
+    return 0
+}
+
 cleanup() {
     if [ "$KEEP" -eq 1 ]; then
         echo "Keep mode: leaving sandbox running in project '$PROJECT'."
@@ -69,8 +87,10 @@ cleanup() {
     fi
     echo "Tearing down sandbox project '$PROJECT'..."
     docker compose $FILES $PROFILE_ARGS -p "$PROJECT" rm -sfv > /dev/null 2>&1
-    docker volume rm "${PROJECT}_mongo_data_sandbox" > /dev/null 2>&1
-    rm -rf "$SANDBOX_DIR"
+    # web_node_modules is a project-scoped copy of node_modules created by the web service;
+    # without this it accumulates a full install per sandbox run.
+    docker volume rm "${PROJECT}_mongo_data_sandbox" "${PROJECT}_web_node_modules" > /dev/null 2>&1
+    remove_sandbox_dir
     echo "Sandbox removed."
 }
 trap cleanup EXIT

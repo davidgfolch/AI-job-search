@@ -7,6 +7,7 @@ from commonlib.test.architecture.architecture_layers import check_layer
 from commonlib.test.architecture.architecture_structure import get_files_without_sibling_test, get_test_location_violations
 from commonlib.test.architecture.architecture_naming import get_test_naming_violations
 from commonlib.test.architecture.architecture_logging import get_console_violations, get_print_violations
+from commonlib.test.architecture.architecture_scripts import get_non_executable_scripts
 from commonlib.terminalColor import YELLOW, RED, ORANGE, RESET
 
 def test_files_exceed_200_lines():
@@ -25,6 +26,15 @@ def test_files_exceed_200_lines():
             
         message = "\nFound files with more than 200 lines:\n" + "\n".join(format_line(f) for f in files)
         warnings.warn(UserWarning(message), stacklevel=2)
+
+def test_shell_scripts_are_executable():
+    violations = get_non_executable_scripts()
+    if violations:
+        message = f"{YELLOW}Shell scripts stored without the executable bit (fresh clones cannot run them):{RESET}\n"
+        for path in violations:
+            message += f"{RED}{path}{RESET}\n"
+        message += f"{YELLOW}Fix with: git update-index --chmod=+x <path>{RESET}"
+        pytest.fail(message)
 
 @pytest.mark.parametrize("layer_name, required_deps, forbidden_deps, ignore_files", [
     ('api',

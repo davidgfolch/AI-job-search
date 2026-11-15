@@ -5,7 +5,7 @@ description: Run only in a Dependabot session on `staging` (every other change b
 
 # Dependabot Agent Instructions
 
-This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search-dependabot-<pr>`) created with the shared dev workflow (`scripts/dev.sh`, or `scripts/dev.bat` on Windows) — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). The main workspace is **never touched at all — not even by a branch move**: the `staging` sync (step 0) and the `staging → master` promotion (step 8) run in a dedicated session clone (`../ai_job_search-dependabot-session`) next to it. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) is meant to auto-merge grouped `minor-patch`/`github-actions` PRs once CI is green, but as written it only runs on Dependabot-triggered `pull_request` events, which receive **no repository secrets and a read-only token** (`GH_TOKEN` resolves empty, `/repos/.../dependabot/secrets` is empty), so its `gh pr merge --auto` step fails with exit 4 whenever it fires. Treat auto-merge as unavailable and merge every PR explicitly. This agent acts where automation cannot: it does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, and pushes to the PR branch.
+This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search-dependabot-<pr>`) created with the shared dev workflow (`scripts/dev.sh`, or `scripts/dev.bat` on Windows) — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). The main workspace is **never touched at all — not even by a branch move**: the `staging` sync (step 0) and the `staging → master` promotion (step 8) run in a dedicated session clone (`../ai_job_search-dependabot-session`) next to it. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) enables squash auto-merge for grouped `minor-patch`/`github-actions` PRs once `ci-gate` is green; it runs on `pull_request_target` because Dependabot-triggered `pull_request` runs get a read-only token and no secrets. Verify the merge actually happened instead of assuming it: this agent does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, pushes to the PR branch, and merges explicitly when auto-merge did not fire.
 
 `staging` is **only** for this session. Features, fixes, docs and any other non-Dependabot work are done on `master` (see `.claude/rules/branch-workflow.md`). Each session syncs `master` into `staging` at the start (step 0) and promotes `staging` back into `master` at the end when everything is green (step 8) — **both inside sibling clones, never in the main workspace**.
 
@@ -203,11 +203,12 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
   gh pr checks <n> --watch
   ```
   Only treat the PR as green when the run is complete and `ci-gate` succeeded (and docker/log checks above passed).
-- **Auto-merge is not available for Dependabot PRs** (the workflow's `gh pr merge --auto` fails: no secrets, read-only token). Do not wait for it and do not rely on `gh pr view --json mergeStateStatus` becoming `CLEAN` on its own; merge explicitly:
+- **Merge** — grouped `minor-patch`/`github-actions` PRs have squash auto-merge enabled by `dependabot-auto-merge.yml`, which merges as soon as `ci-gate` passes. Re-check the state instead of assuming it fired, and merge explicitly when it did not (semver-major and ungrouped PRs always need it):
   ```bash
-  gh pr merge <n> --squash
+  gh pr view <n> --json state --jq .state          # MERGED?
+  gh pr merge <n> --squash                         # only if still OPEN and everything is green
   ```
-  Do this for every PR (grouped minor/patch, semver-major or ungrouped) only once tests, sandbox and `ci-gate` are green. Report the broken auto-merge workflow in the session summary; fixing it is a CI change on `master`, not part of this batch.
+  Merge a PR only once tests, sandbox and `ci-gate` are green.
 - Post a short summary comment on the PR documenting what changed and that docker/log/pipeline checks passed.
 
 ### 7. Red result
