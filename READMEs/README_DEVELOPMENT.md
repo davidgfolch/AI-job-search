@@ -39,7 +39,8 @@ its gitignored lockfiles and its running stack are never touched:
 ```bash
 ./scripts/dev.sh new <name>     # clone + branch feat/<name> from master, .env/.env.secrets/lockfiles copied
 ./scripts/dev.sh dep <pr>       # clone ../ai_job_search-dependabot-<pr> and check the PR out
-./scripts/dev.sh sync           # fast-forward staging from master (run before Dependabot work)
+./scripts/dev.sh new dependabot-session  # session clone for the staging sync + promotion
+./scripts/dev.sh sync           # fast-forward staging from master (inside the session clone)
 ./scripts/dev.sh test web       # delegates to scripts/test.sh inside the clone
 ./scripts/dev.sh sandbox backend
 ./scripts/dev.sh commit "msg" | push | pr [title] [--base br] | merge [-k] | cleanup <name>

@@ -117,12 +117,40 @@ export async function setupStateChangeJobsRoute(page: Page) {
 }
 
 export async function setupBulkJobsRoute(page: Page) {
+    let deleted = false;
     await page.route(/.*\/api\/jobs\/bulk.*/, async (route) => {
         if (route.request().url().includes('/bulk/delete')) {
+            deleted = true;
             await route.fulfill({ json: { deleted: 2 } });
         } else {
             await route.fulfill({ json: { updated: 2 } });
         }
+    });
+    // The list is refetched after a bulk mutation, so the jobs route has to reflect the deletion; otherwise the
+    // stale mock would put the deleted rows back in the list.
+    await page.route(/.*\/api\/jobs.*/, async (route) => {
+        const url = route.request().url();
+        if (/\/api\/jobs\/bulk/.test(url)) {
+            await route.fallback();
+            return;
+        }
+        if (url.includes('/applied-by-company')) {
+            await route.fulfill({ json: [] });
+            return;
+        }
+        if (/\/api\/jobs\/\d+$/.test(url)) {
+            await route.fulfill({ json: MOCK_JOB_1 });
+            return;
+        }
+        if (url.includes('/history')) {
+            await route.fulfill({ json: [] });
+            return;
+        }
+        if (/\/api\/jobs(\?|$)/.test(url)) {
+            await route.fulfill({ json: deleted ? { ...MOCK_JOBS_LIST, items: [], total: 0 } : MOCK_JOBS_LIST });
+            return;
+        }
+        await route.fallback();
     });
 }
 
@@ -138,22 +166,23 @@ export async function setupJobUpdateRoute(page: Page) {
 
 export async function toggleFiltersIfNeeded(page: Page) {
     const filterContent = page.locator('.filters-content');
-    const isExpanded = await filterContent.count() > 0;
-    if (!isExpanded) {
-        // Ensure the toggle button is fully hydrated and visible before clicking,
-        // otherwise WebKit can miss the React state update that expands the panel.
-        await page.locator('#toggle-filters').waitFor({ state: 'visible', timeout: 10000 });
-        // Use dispatchEvent to fire a real DOM click event; Playwright's click()
-        // and page.evaluate().click() can fail to trigger React's synthetic
-        // onClick on WebKit. Retry until the panel appears, as WebKit may need
-        // multiple attempts to register the click and re-render.
-        for (let attempt = 0; attempt < 5; attempt++) {
-            await page.locator('#toggle-filters').dispatchEvent('click');
-            if (await filterContent.count() > 0) break;
-            await page.waitForTimeout(300);
+    // Ensure the toggle button is fully hydrated and visible before clicking,
+    // otherwise WebKit can miss the React state update that expands the panel.
+    const toggle = page.locator('#toggle-filters');
+    await toggle.waitFor({ state: 'visible', timeout: 10000 });
+    // Use dispatchEvent to fire a real DOM click event; Playwright's click()
+    // and page.evaluate().click() can fail to trigger React's synthetic
+    // onClick on WebKit. Retry until the panel stays open: the configurations load
+    // asynchronously and useFilterExpanded collapses the panel again when their count
+    // arrives, which can happen right after a manual expansion.
+    for (let attempt = 0; attempt < 10; attempt++) {
+        if (await filterContent.count() === 0) {
+            await toggle.dispatchEvent('click');
         }
-        await filterContent.waitFor({ state: 'visible', timeout: 10000 });
+        await page.waitForTimeout(200);
+        if (await filterContent.count() > 0) break;
     }
+    await filterContent.waitFor({ state: 'visible', timeout: 10000 });
     await page.locator('#filter-search').waitFor({ state: 'visible', timeout: 10000 });
 }
 

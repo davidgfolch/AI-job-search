@@ -38,7 +38,8 @@ Feature and Dependabot work runs in a throwaway sibling clone so the main tree s
 ```bash
 ./scripts/dev.sh new <name>     # ../ai_job_search-<name> + branch feat/<name> (from master)
 ./scripts/dev.sh dep <pr>       # ../ai_job_search-dependabot-<pr> with the PR checked out
-./scripts/dev.sh sync           # fast-forward staging from master before any Dependabot work
+./scripts/dev.sh new dependabot-session  # session clone for the staging sync + promotion
+./scripts/dev.sh sync           # fast-forward staging from master (inside the session clone)
 ./scripts/dev.sh test <module>  # scripts/test.sh inside the clone
 ./scripts/dev.sh sandbox <svc>  # scripts/test-sandbox.sh inside the clone
 ./scripts/dev.sh commit "msg" | push | pr [title] | merge [-k] | cleanup <name>

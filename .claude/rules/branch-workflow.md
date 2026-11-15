@@ -8,13 +8,15 @@ trigger: always_on
 
 | Session | Working branch | Start | End |
 |---|---|---|---|
-| Dependabot processing | `staging` | Sync `master` → `staging` | Promote `staging` → `master` when green |
+| Dependabot processing | `staging` | Sync `master` → `staging` from a session clone | Promote `staging` → `master` from the session clone when green |
 | Anything else | `master` | `git pull --ff-only` | Commit and push to `master` |
 
 ### Session start
 
-- **Dependabot session** — before touching any PR, sync `master` into `staging` so the gate starts from the current release state. Use the repo helper when the branches can fast-forward:
+- **Dependabot session** — before touching any PR, sync `master` into `staging` so the gate starts from the current release state. Do it in a dedicated session clone, **never in the main workspace** (the main workspace's branches are not touched at all):
   ```bash
+  ./scripts/dev.sh new dependabot-session
+  cd ../ai_job_search-dependabot-session
   ./scripts/dev.sh sync        # Windows: .\scripts\dev.bat sync
   ```
   It fast-forwards `staging` to `master` and pushes only when it advanced. If it reports divergence (non-Dependabot work landed on `master`, or a promotion is mid-flight), merge `master` into `staging` and push instead — the gate must sit on current `master`:
@@ -32,15 +34,16 @@ trigger: always_on
 
 ### Session end
 
-- **Dependabot session, everything green** — promote the gate through the persistent `staging → master` PR (find its number with `gh pr list --base master --head staging`) using a **merge commit**, never squash:
+- **Dependabot session, everything green** — promote the gate through the persistent `staging → master` PR (find its number with `gh pr list --base master --head staging`) using a **merge commit**, never squash. Run the git commands in the session clone:
   ```bash
   gh pr checks <n> --watch                                                # wait for ci-gate
   gh pr merge <n> --merge
   ```
-  `staging` is protected against force-pushes, so a squash would leave it permanently diverged; the merge commit keeps `staging` an ancestor of `master`, which makes the post-promotion sync a fast-forward. If no promotion PR is open and `staging` is ahead of `master`, create it and enable merge-commit auto-merge (see the skill). If it reports `DIRTY`, merge `origin/master` into `staging` and push. Once the promotion lands, sync both local branches to the same commit:
+  `staging` is protected against force-pushes, so a squash would leave it permanently diverged; the merge commit keeps `staging` an ancestor of `master`, which makes the post-promotion sync a fast-forward. If no promotion PR is open and `staging` is ahead of `master`, create it and enable merge-commit auto-merge (see the skill). If it reports `DIRTY`, merge `origin/master` into `staging` and push. Once the promotion lands, sync both branches **inside the session clone**, then delete it:
   ```bash
   git checkout master && git pull --ff-only
   git checkout staging && git merge --ff-only master
+  ./scripts/dev.sh cleanup dependabot-session
   ```
 - **Dependabot session, something red** — **do not promote**: leave `staging` with the failing batch and the promotion PR open (auto-merge simply does not fire), and report the failure. `master` stays clean and deployable.
 - **Any other session** — commit and push to `master` directly (a maintainer may push; the required `ci-gate` check gates the promotion PR, not local work). `staging` is brought up to date by the next Dependabot session start.
