@@ -110,6 +110,13 @@ For each open staging PR:
    ```
    `git pull --ff-only` fails after the rebase force-push — always `reset --hard` the clean clone onto `origin/<branch>`. Repeat the rebase just-in-time whenever an earlier merge has moved `staging` again (notably the PRs that touch the same manifest, e.g. several `apps/scrapper/pyproject.toml` pulls).
 
+Dependabot stops reacting to the command once its rebase rate limit is hit (a batch of PRs exhausts it: no 👀 reaction and no force-push within ~5 minutes). Fall back to merging the current base into the branch and pushing it, which is not a history rewrite and still gives a fresh CI run on the current base:
+
+```bash
+git merge origin/staging -m "chore: merge staging into the dependabot branch"
+git push
+```
+
 ### 3. Changelog / breaking-change gate
 
 - For **auto-merge-eligible PRs** (grouped minor/patch), trust the grouping; no changelog review is required before proceeding.
