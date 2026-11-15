@@ -19,6 +19,31 @@ describe('normalizeFilters', () => {
     expect(result.sql_filter).toBeUndefined();
   });
 
+  it('should reset auto_select_all when the configuration does not store it', () => {
+    const result = normalizeFilters({ page: 1 });
+    expect(result).toHaveProperty('auto_select_all', undefined);
+  });
+
+  it('should keep auto_select_all set to null, which means explicitly unselected', () => {
+    const result = normalizeFilters({ page: 1, auto_select_all: null });
+    expect(result.auto_select_all).toBeNull();
+  });
+
+  it('should reset filter_expanded when the configuration does not store it', () => {
+    const result = normalizeFilters({ page: 1 });
+    expect(result).toHaveProperty('filter_expanded', undefined);
+  });
+
+  it('should keep filter_expanded set to null, which means explicitly collapsed', () => {
+    const result = normalizeFilters({ page: 1, filter_expanded: null });
+    expect(result.filter_expanded).toBeNull();
+  });
+
+  it('should keep filter_expanded set to true', () => {
+    const result = normalizeFilters({ page: 1, filter_expanded: true });
+    expect(result.filter_expanded).toBe(true);
+  });
+
   it('should not override existing boolean filters', () => {
     const filters: JobListParams = { flagged: true, like: false };
     const result = normalizeFilters(filters);

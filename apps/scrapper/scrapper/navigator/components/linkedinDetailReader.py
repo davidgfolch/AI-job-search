@@ -95,7 +95,10 @@ class LinkedinDetailReader:
 
     def _fit_preferences_html(self) -> str:
         buttons = self.selenium.getElms(CSS_SEL_JOB_FIT_PREFERENCES)
-        return ', '.join(map(lambda b: self.selenium.getText(b), buttons))
+        preferences = ', '.join(map(lambda b: self.selenium.getText(b), buttons))
+        # The description can start with an inline node (raw text, <span>, <strong>), so the preferences need
+        # their own block or markdown glues them to the first paragraph ("Remote, Full-timeEn SEREM...").
+        return f'<p>{preferences}</p>' if preferences else ''
 
     def _expand_description(self) -> int:
         try:

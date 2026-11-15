@@ -1,5 +1,5 @@
 import type { JobListParams } from '../../api/ViewerApi';
-import { BOOLEAN_FILTERS } from "../../constants";
+import { FILTER_PILLS } from "../../constants";
 import HistoryInput from "../../../common/components/core/HistoryInput";
 import { FormField } from "../../../common/components/core/FormField";
 
@@ -109,7 +109,7 @@ export function BooleanFilterGroups({ filters, onFiltersChange }: BooleanFilterG
                 <div className="filter-pills-row">
                     <div className="pills-section">
                         <span className="section-label">Include:</span>
-                        {BOOLEAN_FILTERS.map((filter) => (
+                        {FILTER_PILLS.map((filter) => (
                             <button key={`${filter.key}-true`}
                                 className={`filter-pill ${filters[filter.key] === true ? 'active-true' : ''}`}
                                 onClick={() => handlePillClick(filter.key, true)}>
@@ -123,7 +123,7 @@ export function BooleanFilterGroups({ filters, onFiltersChange }: BooleanFilterG
                 <div className="filter-pills-row">
                     <div className="pills-section">
                         <span className="section-label">Exclude:</span>
-                        {BOOLEAN_FILTERS.map((filter) => (
+                        {FILTER_PILLS.map((filter) => (
                             <button key={`${filter.key}-false`}
                                 className={`filter-pill ${filters[filter.key] === false ? 'active-false' : ''}`}
                                 onClick={() => handlePillClick(filter.key, false)}>

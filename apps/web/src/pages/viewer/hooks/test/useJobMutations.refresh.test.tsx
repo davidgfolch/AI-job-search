@@ -46,7 +46,7 @@ const createWrapper = () => {
   );
 };
 
-describe('useJobMutations - select_all ignore refreshes list', () => {
+describe('useJobMutations - select_all refreshes list', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -76,5 +76,28 @@ describe('useJobMutations - select_all ignore refreshes list', () => {
       filters: {},
       update: { ignored: true },
     });
+  });
+
+  it('invalidates the ["jobs"] query on a select_all delete', async () => {
+    vi.mocked(jobsApi.deleteJobs).mockResolvedValue({ deleted: 3 });
+    const wrapper = createWrapper();
+
+    client.setQueryData(['jobs', {}], { items: [{ id: 1 }, { id: 2 }, { id: 3 }], total: 3 });
+
+    const useProbe = () => {
+      const { data } = useQuery({
+        queryKey: ['jobs', {}],
+        queryFn: async () => ({ items: [], total: 0 }),
+      });
+      return data;
+    };
+    const { result: probeResult } = renderHook(useProbe, { wrapper });
+    expect(probeResult.current?.total).toBe(3);
+
+    const { result } = renderHook(() => useJobMutations(makeProps()), { wrapper });
+    await act(async () => result.current.deleteSelected(3));
+
+    await waitFor(() => expect(probeResult.current?.total).toBe(0));
+    expect(jobsApi.deleteJobs).toHaveBeenCalledWith({ select_all: true, filters: {} });
   });
 });
