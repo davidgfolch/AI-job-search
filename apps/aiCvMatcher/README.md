@@ -10,6 +10,8 @@ This module handles fast CV matching against job descriptions using local Huggin
 
 ## Quickstart
 
+Dependencies are installed from the repository root with `./scripts/install.sh` (Linux/Mac) or `.\scripts\install.bat` (Windows).
+
 Configure `.env` with:
 ```env
 AI_CVMATCHER_ENABLED=True
@@ -20,7 +22,8 @@ Then run via Docker:
 docker-compose up -d aicvmatcher
 ```
 
-Or manually:
+There is no `run.sh` runner for this module. On the host, install the dependencies as above and run it directly:
+
 ```bash
 cd apps/aiCvMatcher
 uv run aicvmatcher

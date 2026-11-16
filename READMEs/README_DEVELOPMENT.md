@@ -159,7 +159,8 @@ The same rules run before the commit, on the changed files only, through
 | `eslint-e2e` | `eslint` over `apps/e2e` with the app's own config |
 
 The two ESLint hooks are *local* hooks: they call the `eslint` already installed
-in `apps/web` and `apps/e2e`, so `npm install` must have been run in both before
+in `apps/web` and `apps/e2e`, so the workspace dependencies must be installed
+(`./scripts/install.sh` / `.\scripts\install.bat`) before
 the first commit. The hooks never reformat — ruff only applies safe fixes and
 eslint runs without `--fix` — so a finding fails the commit instead of rewriting
 the code behind the author's back.

@@ -20,14 +20,20 @@ FastAPI-based backend for the AI Job Search application. It serves the data to t
 
 ### Installation
 
+From the repository root:
+
 ```bash
-uv sync
+./scripts/install.sh    # Linux/Mac
+.\scripts\install.bat   # Windows
 ```
 
 ### Running Development Server
 
+From the repository root:
+
 ```bash
-uv run uvicorn main:app --reload --port 8000
+./apps/backend/run.sh    # Linux/Mac
+.\apps\backend\run.bat   # Windows
 ```
 
 The API will be available at `http://localhost:8000`.

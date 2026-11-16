@@ -23,6 +23,7 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 All agent skills live in `.claude/skills/`. Core ones:
 
 - **`skill-builder`** — Creates new agent skills. Ask the agent to "create a new skill named [skill-name]".
+- **`docs-writer`** — Writes/updates documentation under three rules: short root `README.md`, one canonical source per fact (DRY, links instead of copies) and operations documented through the centralized `scripts/*` entry points.
 - **`e2e-implementer`** — Creates/reruns Playwright E2E tests in `apps/e2e`.
 - **`test-implementer`** — Implements unit tests following valid architecture and best practices.
 - **`codegraph`** — Queries and maintains the CodeGraph code-intelligence index (`explore`, `node`, `impact`, `affected`); the default for codebase questions.

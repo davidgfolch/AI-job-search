@@ -25,9 +25,9 @@ This is a monorepo containing several applications and packages:
 | ---------------- | ---------------------------------------------------- | --------------------------------------------------------- | ---------------------------- |
 | **Common Lib**   | [`apps/commonlib`](apps/commonlib/README.md)         | Shared Python utilities and database logic.               | Python, Poetry               |
 | **Web UI**       | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.                 | React, TypeScript, Vite, npm |
-| **Backend API**  | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.                       | Python, FastAPI, Poetry      |
+| **Backend API**  | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.                       | Python, FastAPI, uv          |
 | **Cron**         | [`apps/cron`](apps/cron/README.md)                   | Background scheduler for periodic cron jobs.              | Python, uv, MongoDB          |
-| **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                              | Python, Selenium, Poetry     |
+| **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium + Scrapling job scrapers.                        | Python, Selenium, Poetry     |
 | **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI enrichment using Ollama or OpenRouter                  | Python, Ollama/OpenRouter, uv |
 | **AI Enrich Skill**| [`apps/aiEnrichSkill`](apps/aiEnrichSkill/README.md) | Local AI skill enrichment (Ollama & HuggingFace).        | Python, Transformers, uv     |
 | **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)     | Local fast CV matching.                                   | Python, SentenceTransformers |
@@ -43,7 +43,7 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of the company when a job board publishes the offer without one (stored as `unspecified` until inferred)
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
-- **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes `data/logs/<app>.jsonl`, scraped by Prometheus (`:9090`) → Grafana (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging))
+- **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes `data/logs/<app>.jsonl`, scraped by Prometheus (`:9090`) → Grafana (`:3000`, admin/admin); Prometheus text endpoint at `GET /api/metrics` (see [Metrics & Observability](READMEs/README_METRICS.md))
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 - **Distributed execution & LAN service auto-discovery**: run the stack on one machine with Docker Compose (the default, no IPs to set), split services across machines, or keep the AI workers in Docker against an Ollama on the host or another LAN machine — MySQL/MongoDB, the backend, Ollama and the health probes are resolved automatically (see [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md))
@@ -120,55 +120,7 @@ docker-compose logs -f
 ./apps/scrapper/run.sh    # or .\apps\scrapper\run.bat
 ```
 
-Open the UI at [http://localhost:5173](http://localhost:5173). AI service profiles, the scrapper and Docker troubleshooting: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
-
-## Run Manually (Using Helper Scripts)
-
-Each application includes convenience scripts (`run.sh` / `run.bat`) to start them easily.
-
-### Linux / macOS (`.sh`)
-
-```bash
-# 1. Database
-./scripts/runMysql.sh
-
-# 2. Scrappers
-./apps/scrapper/run.sh
-
-# 3. AI Enrichment
-# (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
-./apps/aiEnrich/run.sh
-# (Local Fast CV Matcher)
-./apps/aiCvMatcher/run.sh
-# (AI Form Filler backend)
-./apps/aiFormFiller/run.sh
-
-# 4. New UI (Backend + Web)
-./apps/backend/run.sh
-./apps/web/run.sh
-```
-
-### Windows (`.bat`)
-
-```cmd
-:: 1. Database
-docker compose up -d
-
-:: 2. Scrappers
-.\apps\scrapper\run.bat
-
-:: 3. AI Enrichment
-:: (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
-.\apps\aiEnrich\run.bat
-:: (Local Fast CV Matcher)
-.\apps\aiCvMatcher\run.bat
-:: (AI Form Filler backend)
-.\apps\aiFormFiller\run.bat
-
-:: 4. New UI (Backend + Web)
-.\apps\backend\run.bat
-.\apps\web\run.bat
-```
+Open the UI at [http://localhost:5173](http://localhost:5173). AI service profiles, the host-native runners and Docker troubleshooting: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md#host-native-apps).
 
 ## Developer tooling
 

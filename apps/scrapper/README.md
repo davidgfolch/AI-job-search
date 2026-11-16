@@ -39,17 +39,29 @@ Both implementations share the same selector strategy for the detail page (`vj-j
 
 See [README INSTALL](../../READMEs/README_INSTALL.md)
 
-- Python 3.10+
+- Python 3.11+
 - Google Chrome installed.
 - Optional: [Gmail account](#gmail-configuration) with 2FA enabled for Indeed scraper.
 
 ### Installation
 
+From the repository root:
+
 ```bash
-poetry install
+./scripts/install.sh    # Linux/Mac
+.\scripts\install.bat   # Windows
 ```
 
-`scrapling` is declared as `scrapling[fetchers]`: `scrapper/services/scrapling/scraplingService.py` imports `scrapling.fetchers`, and scrapling only declares that extra's runtime deps (`browserforge`, `apify-fingerprint-datapoints`, `protego`, `curl-cffi`, `playwright`, `patchright`, `msgspec`) behind the `fetchers` extra. Installing plain `scrapling` collects fine but crashes the test suite at import with `ModuleNotFoundError: No module named 'browserforge'`.
+`scrapling` is declared as `scrapling[fetchers]` in `pyproject.toml`: `scrapper/services/scrapling/scraplingService.py` imports `scrapling.fetchers`, and scrapling only declares that extra's runtime deps (`browserforge`, `apify-fingerprint-datapoints`, `protego`, `curl-cffi`, `playwright`, `patchright`, `msgspec`) behind the `fetchers` extra. Installing plain `scrapling` collects fine but crashes the test suite at import with `ModuleNotFoundError: No module named 'browserforge'`.
+
+### Running
+
+From the repository root (pass a platform to run only that site):
+
+```bash
+./apps/scrapper/run.sh    # Linux/Mac
+.\apps\scrapper\run.bat   # Windows
+```
 
 ### Configuration
 

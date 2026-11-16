@@ -144,26 +144,31 @@ The web app resolves the backend API URL when the Vite dev server starts, and ke
 
 ### Prerequisites
 
-Ensure you have `Node.js` (LTS recommended) and `npm` installed.
+Ensure you have `Node.js` 22.12+ (Node 24 recommended) and `npm` installed.
 
 ### Installation
 
+From the repository root:
+
 ```bash
-cd apps/web
-npm install
+./scripts/install.sh    # Linux/Mac
+.\scripts\install.bat   # Windows
 ```
 
 ### Running Development Server
 
+From the repository root:
+
 ```bash
-npm run dev
+./apps/web/run.sh    # Linux/Mac
+.\apps\web\run.bat   # Windows
 ```
 
 The application will be available at `http://localhost:5173`.
 
 ## Scripts
 
-- `npm run dev`: Start the development server.
+- `npm run dev`: Start the development server (wrapped by `./apps/web/run.sh` / `.\apps\web\run.bat`).
 - `npm run build`: Build the application for production.
 - `npm run preview`: Preview the production build locally.
 - `npm run lint` / `npm run typecheck`: run together by `./scripts/lint.sh web` from the repo root.

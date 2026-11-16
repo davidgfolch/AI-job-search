@@ -20,22 +20,17 @@ Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table
 docker-compose --profile aiEnrichSkill up -d aienrichskill
 ```
 
-The worker auto-discovers a MySQL host, an Ollama server (when the Ollama backend is selected) and the backend, so it runs unchanged on the host, in Docker or on another LAN machine. Workers stay in Docker: to pin a remote server set `AI_ENRICH_OLLAMA_BASE_URL=http://<ollama-ip>:11434` in `.env` (compose maps it to `AI_ENRICSKILL_OLLAMA_BASE_URL`), or use `auto` to go straight to the LAN scan. Chains, subnets and the Ollama-side `OLLAMA_HOST`/firewall requirements: [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md).
+The worker auto-discovers a MySQL host, an Ollama server (when the Ollama backend is selected) and the backend, so it runs unchanged on the host, in Docker or on another LAN machine. Workers stay in Docker: to pin a remote server set `AI_ENRICH_OLLAMA_BASE_URL=http://<ollama-ip>:11434` in `.env` (compose maps it to `AI_ENRICHSKILL_OLLAMA_BASE_URL`), or use `auto` to go straight to the LAN scan. Chains, subnets and the Ollama-side `OLLAMA_HOST`/firewall requirements: [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md).
 
-### Windows
-```cmd
-run.bat
-```
+### Host runner
 
-### Linux / Mac
 ```bash
-./run.sh
+# From the repository root
+./apps/aiEnrichSkill/run.sh    # Linux/Mac
+.\apps\aiEnrichSkill\run.bat   # Windows
 ```
 
-### Manual
-```bash
-uv run aienrichskill
-```
+Dependencies are installed by the centralized installer (`./scripts/install.sh` / `.\scripts\install.bat`); see [Setup Guide](../../READMEs/README_INSTALL.md).
 
 ## Configuration
 
@@ -57,25 +52,7 @@ Set these in your `.env` or `.env.secrets`:
 
 The three knobs above are shared with `aiEnrich` through `commonlib/ollama_config.py` and are not module-scoped: the first one set in `AI_ENRICH_*` → `AI_ENRICHSKILL_*` order wins, so an `AI_ENRICH_NUM_CTX` in `.env` also applies here.
 
-Pull the default model before running:
-
-Non-dockerized (local Ollama server):
-```bash
-ollama pull qwen2.5:3b
-```
-
-Dockerized (Ollama container, models persisted via the mounted `~/.ollama` volume):
-```bash
-docker exec ai-job-search-ollama ollama pull qwen2.5:3b
-```
-
-> **ISP blocking the Ollama registry (e.g. Movistar)**: if `ollama pull` hangs with `dial tcp ...:443: i/o timeout`, the download host `r2.cloudflarestorage.com` is blocked. Pull the same model from HuggingFace and alias it instead:
-> ```bash
-> ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
-> ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
-> ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m   # temp tag shares the same files, remove to keep the list clean
-> ```
-> For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
+Pull the default model before running — the HuggingFace fallback for ISPs that block the Ollama registry is documented once in [Setup Guide — Ollama & required models](../../READMEs/README_INSTALL.md#6-install-ollama--required-models).
 
 ### HuggingFace Backend
 - `AI_ENRICHSKILL_HF_MODEL_ID` — Model ID (default: `Qwen/Qwen2.5-1.5B-Instruct`)

@@ -15,30 +15,14 @@ Each cycle enriches pending jobs in this priority order: first the pending jobs 
 
 ## Installation
 
-### 1. Install `uv` Package Manager
-
-AiEnrich uses `uv` for dependency management.
+`aiEnrich` uses `uv` for dependency management. Install the whole workspace (including the host tools and the default Ollama model pull) through the centralized installer:
 
 ```bash
-# Windows
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
+./scripts/install.sh    # Linux/Mac
+.\scripts\install.bat   # Windows
 ```
 
-After installation, update shell:
-
-```bash
-uv tool update-shell
-```
-
-### 2. Install Project Dependencies
-
-```bash
-cd apps/aiEnrich
-uv sync
-```
+Host prerequisites (Python, uv, npm, Docker) and `.env` setup: [Setup Guide](../../READMEs/README_INSTALL.md).
 
 ## Running
 
@@ -54,17 +38,9 @@ The worker auto-discovers a MySQL host, an Ollama server and the backend (config
 ### Automated Loop (host)
 
 ```bash
-# Linux (from project root)
-./apps/aiEnrich/run.sh
-
-# Windows (from project root)
-.\apps\aiEnrich\run.bat
-```
-
-### Manual Run (Dev)
-
-```bash
-uv run aienrich
+# From the repository root
+./apps/aiEnrich/run.sh    # Linux/Mac
+.\apps\aiEnrich\run.bat   # Windows
 ```
 
 ## Structured logging
@@ -115,25 +91,7 @@ The Ollama server URL is centralized as `OLLAMA_HOST_BASE_URL` in `commonlib` an
 | `ollama/phi3.5:3b` | Very Fast | Moderate |
 | `ollama/llama3.2:1b` | Fastest | Lower |
 
-Make sure the model is pulled in Ollama:
-
-Non-dockerized (local Ollama server):
-```bash
-ollama pull qwen2.5:3b
-```
-
-Dockerized (Ollama container, models persisted via the mounted `~/.ollama` volume):
-```bash
-docker exec ai-job-search-ollama ollama pull qwen2.5:3b
-```
-
-> **ISP blocking the Ollama registry (e.g. Movistar)**: if `ollama pull` hangs with `dial tcp ...:443: i/o timeout`, the download host `r2.cloudflarestorage.com` is blocked. Pull the same model from HuggingFace and alias it instead:
-> ```bash
-> ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
-> ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
-> ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m   # temp tag shares the same files, remove to keep the list clean
-> ```
-> For the Dockerized server, prefix each command with `docker exec ai-job-search-ollama ollama`.
+Make sure the model is pulled in Ollama: [Setup Guide — Ollama & required models](../../READMEs/README_INSTALL.md#6-install-ollama--required-models), including the HuggingFace fallback for ISPs that block the Ollama registry.
 
 #### OpenRouter backend (cloud)
 

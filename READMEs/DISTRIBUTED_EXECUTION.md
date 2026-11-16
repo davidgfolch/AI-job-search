@@ -41,7 +41,7 @@ Compose pins the in-container DB/Mongo to the compose service names, and those `
 |---|---|
 | Everything on one machine (default) | `docker-compose up -d` |
 | Scrapper on a separate machine | `COMMONLIB_DB_HOST=<mysql-host>` (or `auto`) in its `.env`, then `./apps/scrapper/run.sh` |
-| UI only on a client machine | run Vite natively there: `cd apps/web && BACKEND_URL=http://<main-box-ip>:8000 npm run dev` (the `web` container is pinned to `backend:8000` by compose) |
+| UI only on a client machine | run Vite natively there: `BACKEND_URL=http://<main-box-ip>:8000 ./apps/web/run.sh` (the `web` container is pinned to `backend:8000` by compose) |
 | AI workers on another machine | run them natively there: `COMMONLIB_DB_HOST=<mysql-host> ./apps/aiEnrich/run.sh` (same for `aiEnrichSkill`), or keep them in Docker on the main box and point them at a LAN Ollama |
 
 ## Ollama: host, container or another LAN machine

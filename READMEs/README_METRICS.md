@@ -39,7 +39,7 @@ Metrics enable answering:
 2. An in-process `MetricsCollector` singleton maintains a rolling window of the last 1000 durations per module and persists aggregates to `data/metrics/enrichment_metrics.json`
 3. The backend FastAPI server serves `/api/metrics` which combines:
    - **Snapshot metrics** from `MetricsCollector` (aggregate p50/p90/p99/avg per module)
-   - **Log metrics** by reading each app's `app.jsonl` file and extracting recent `job.result` events with durations
+   - **Log metrics** by reading each app's `<app>.jsonl` file (e.g. `aiEnrich.jsonl`, falling back to the legacy `app.jsonl`) and extracting recent `job.result` events with durations
 4. Prometheus scrapes `/api/metrics` every 15s and stores time series
 5. Grafana queries Prometheus for dashboard visualization
 
@@ -83,7 +83,7 @@ Two functions generate Prometheus-formatted metrics:
 
 ### Log Format
 
-Each enrichment app writes structured JSONL logs to `data/logs/app.jsonl` (container-local, bind-mounted to host). The structlog library adds ISO timestamps automatically.
+Each enrichment app writes structured JSONL logs to `data/logs/<app>.jsonl` (`aiEnrich.jsonl`, `aiEnrichSkill.jsonl`; container-local, bind-mounted to the host). A module that logged before its app name was set wrote `app.jsonl` instead, and the readers fall back to it. The structlog library adds ISO timestamps automatically.
 
 Key log events:
 ```json
@@ -103,7 +103,7 @@ The `duration` field was added to `job.result` events across the enrichment apps
 
 ## Infrastructure
 
-### Prometheus (`docker-compose.yml:318`)
+### Prometheus (`docker-compose.yml`)
 
 - Image: `prom/prometheus:latest`
 - Config: `docker/prometheus/prometheus.yml`
@@ -111,7 +111,7 @@ The `duration` field was added to `job.result` events across the enrichment apps
 - Volume: `prometheus_data` for time series storage
 - Port: `${PROMETHEUS_PORT:-9090}`
 
-### Grafana (`docker-compose.yml:334`)
+### Grafana (`docker-compose.yml`)
 
 - Image: `grafana/grafana:latest`
 - Datasources (provisioned): `docker/grafana/datasources/prometheus.yml`
@@ -177,11 +177,11 @@ To add metrics for a new enrichment app (e.g., `aiEnrich4`):
 ## Troubleshooting
 
 **No metrics in Prometheus/Grafana:**
-- Verify backend is running: `curl http://localhost:8000/metrics`
+- Verify backend is running: `curl http://localhost:8000/api/metrics`
 - Check Prometheus targets UI: `http://localhost:9090/targets`
-- Verify log files exist: `ls apps/aiEnrich/data/logs/app.jsonl`
+- Verify log files exist: `ls apps/aiEnrich/data/logs/aiEnrich.jsonl`
 
 **No per-job duration data:**
 - Check that the enrichment app has run and processed jobs
-- Verify `duration` field appears in log entries: `tail -5 apps/aiEnrich/data/logs/app.jsonl | grep job.result`
+- Verify `duration` field appears in log entries: `tail -5 apps/aiEnrich/data/logs/aiEnrich.jsonl | grep job.result`
 - Check log mounts in backend container: `docker exec ai-job-search-backend ls /logs/aienrich/`

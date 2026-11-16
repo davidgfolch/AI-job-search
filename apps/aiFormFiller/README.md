@@ -45,12 +45,7 @@ Edit `cv/looking-for.txt` with your preferences:
 
 ### 2. Start the backend
 
-```bash
-cd apps/aiFormFiller
-uv run uvicorn aiFormFiller.main:app --host 127.0.0.1 --port 8080
-```
-
-Or use the run script:
+From the repository root:
 
 ```bash
 # Windows
@@ -167,11 +162,7 @@ The service handles the CV and the LLM conversation, so **nothing from the docum
 
 ## Development
 
-```bash
-# Install dependencies (inside apps/aiFormFiller)
-cd apps/aiFormFiller
-uv sync
-```
+Dependencies are installed from the repository root with `./scripts/install.sh` (Linux/Mac) or `.\scripts\install.bat` (Windows).
 
 ```bash
 # From the repo root: tests through the centralized runner

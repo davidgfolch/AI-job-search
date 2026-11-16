@@ -1,6 +1,6 @@
 # Common Library
 
-Shared Python library used across the AI Job Search monorepo components (`apps/backend`, `apps/scrapper`, `apps/viewer`, etc.).
+Shared Python library used across the AI Job Search monorepo components (`apps/backend`, `apps/scrapper`, the AI workers, etc.).
 
 ## Contents
 
@@ -13,7 +13,7 @@ This package provides utility modules for:
 - **Utilities**: General purpose helpers (`util.py`, `decorator/`, `stopWatch.py`).
 - **System**: Power management utilities (`keep_system_awake.py`, `wake_timer.py`) to keep the system running during long scrap jobs.
 - **Terminal**: Console output coloring (`terminalColor.py`).
-- **Observability**: Structured logging via `structlog` (`observability.py`), runtime metrics collection (`services/metrics_collector.py`), and Prometheus text-format export (`prometheus_exporter.py` — converts the in-memory snapshot to `prometheus_client` format for the backend's `/metrics` endpoint).
+- **Observability**: Structured logging via `structlog` (`observability.py`), runtime metrics collection (`services/metrics_collector.py`), and Prometheus text-format export (`prometheus_exporter.py` — converts the in-memory snapshot to `prometheus_client` format for the backend's `/api/metrics` endpoint).
 - **Ollama**: Centralized server URL config and fallback chain (`ollama_config.py`) plus the shared HTTP client used by the Ollama-backed modules, split by responsibility between `ollama_client.py` (payload, dispatch with retries, reply normalization) and `ollama_probe.py` (server selection: fallback candidates, LAN discovery, liveness and inference probing; `resolve_ollama_url()` / `ping_ollama()` stay re-exported from `ollama_client`, so existing importers do not change). `get_configured_ollama_url()` is the single reader for the configured primary (`AI_ENRICH_OLLAMA_BASE_URL` → `AI_ENRICHSKILL_OLLAMA_BASE_URL` → `OLLAMA_BASE_URL`, first set wins), so anything resolving the same server — including `scripts/install.sh`, which drives the model pull — agrees with the modules on which host to use. `resolve_ollama_url()` / `ping_ollama()` ping each candidate (`GET /api/tags`, 5s) and return the first reachable one (primary first, then `host.docker.internal`, `localhost`, then the containerized service); when none of them answers, the LAN is scanned for an Ollama server on port 11434 (`network/ollama_discovery.py`), which `COMMONLIB_OLLAMA_DISCOVERY=False` disables (default: enabled) and `auto` (or `discover`) as the configured URL goes straight to. The scan covers the local subnet plus the common LAN subnets (`192.168.0.x`, `192.168.1.x`) so an Ollama server on another LAN machine is found automatically even from inside a Docker container; `COMMONLIB_DISCOVERY_SUBNETS` (comma-separated CIDRs, shared with MySQL/Mongo) adds any further subnets; `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` is the legacy Ollama-only alias. Candidates are deduplicated by host IP, so a server already probed under another name (`host.docker.internal` versus its gateway IP) is not tried twice. Before sending a job, `query_ollama()` picks its server through `ollama_probe.healthy_urls()`, which runs a one-token `/api/generate` probe (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s) on the candidate and only yields a server that answers it — a runner that is stuck (it serves `/api/tags` but never returns from `/api/generate`) is skipped in seconds instead of blocking the whole generation timeout. The probe reuses the job's own options, because a different `num_ctx` makes Ollama reload the model once for the probe and again for the job (~20s per job on a CPU runner). A successful probe is remembered per server for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300), so the following jobs are dispatched straight to inference without re-connecting; a failed probe or a job timeout drops that server from the cache so the next job probes it again. `ollama.response` carries `load_duration` alongside `prompt_eval_count`/`eval_count`, so a slow job can be told apart from a slow generation. The request knobs (`get_num_predict()`, `get_num_ctx()`, `get_repeat_penalty()`) are shared by every Ollama-backed module and are not module-scoped: the first env var set in `AI_ENRICH_*` → `AI_ENRICHSKILL_*` order wins, so setting e.g. `AI_ENRICH_NUM_CTX` also applies to `aiEnrichSkill`. The same module exposes `backend_candidate_urls()` (`backend:8000` → `host.docker.internal:8000` → `localhost:8000`), the fallback chain `aiEnrich` uses to reach the backend API for watcher notifications.
 - **Watcher notifications**: shared worker→backend client (`watcher_notify.py`). `notify_watcher(job_ids, base_url, ...)` POSTs enriched IDs to `/api/jobs/notify-watcher` so the backend matcher re-evaluates them; it is best-effort, returning `False` and logging `watcher.notify_failed` (unreachable) or `watcher.notify_rejected` (non-2xx) instead of raising, because the job is already persisted.
 
@@ -103,7 +103,7 @@ logger.warning("cv.file_not_found", location=self.cv_location)
 
 - `module` is stamped from the caller by `stamp_caller_module`, so a shared helper's record still names the app module. No call site may pass `module=` (the architecture test rejects it); data read from the stamped value uses `source_module`.
 - `job_log_context(id)` binds `job_id` for every record emitted inside the block, including shared helpers; an explicit `job_id=` wins.
-- `metrics_collector` (`services/metrics_collector.py`) keeps a per-module snapshot (`jobs_processed`, `jobs_failed`, `backend_unreachable`, …) persisted to `AI_ENRICH_METRICS_FILE` every 60 s; `prometheus_exporter.py` renders it for the backend's `/metrics` endpoint. See [Metrics](../../READMEs/README_METRICS.md).
+- `metrics_collector` (`services/metrics_collector.py`) keeps a per-module snapshot (`jobs_processed`, `jobs_failed`, `backend_unreachable`, …) persisted to `AI_ENRICH_METRICS_FILE` every 60 s; `prometheus_exporter.py` renders it for the backend's `/api/metrics` endpoint. See [Metrics](../../READMEs/README_METRICS.md).
 - A failed `log_writer.append_jsonl` write is never fatal and never silent: the record is dropped and reported once per path as `logs.write_failed` with a `chown` hint. `metrics_collector.persist()` mirrors this with `metrics.persist_failed`.
 - `print()` stays only for presentational output: in-place terminal progress (`terminalUtil.py`, `decorator/retry.py`) and the `sync/mysql_sync.py` dry-run summary. `PRINT_ALLOWLIST` in the architecture test enforces this.
 - `environmentUtil.py` cannot import `observability` at module scope (circular import), so it resolves its logger lazily and logs `env.loaded` / `env.reloaded` with dotenv paths only, never values.
@@ -112,10 +112,11 @@ logger.warning("cv.file_not_found", location=self.cv_location)
 
 ## Installation
 
-This package is managed with **Poetry**.
+This package is managed with **Poetry**. Install the whole workspace (commonlib first) through the centralized installer:
 
 ```bash
-poetry install
+./scripts/install.sh    # Linux/Mac
+.\scripts\install.bat   # Windows
 ```
 
 ## Usage

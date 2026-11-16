@@ -11,12 +11,15 @@ AI-powered job search monorepo with multi-platform scraping, AI enrichment, and 
 | Component | Path | Tech Stack | Package Manager |
 |-----------|------|------------|----------------|
 | **commonlib** | `apps/commonlib/` | Python utilities | Poetry |
-| **scrapper** | `apps/scrapper/` | Python, Selenium | Poetry |
+| **scrapper** | `apps/scrapper/` | Python, Selenium + Scrapling | Poetry |
 | **backend** | `apps/backend/` | Python, FastAPI | uv |
 | **aiEnrich** | `apps/aiEnrich/` | Python, Ollama | uv |
 | **aiEnrichSkill** | `apps/aiEnrichSkill/` | Python, Ollama & HuggingFace | uv |
 | **aiCvMatcher** | `apps/aiCvMatcher/` | Python, SentenceTransformers | uv |
+| **aiFormFiller** | `apps/aiFormFiller/` | Python, FastAPI + browser extension | uv |
+| **cron** | `apps/cron/` | Python, MongoDB-backed scheduler | uv |
 | **web** | `apps/web/` | React, TypeScript, Vite | npm |
+| **e2e** | `apps/e2e/` | Playwright | npm |
 
 ## Build & Test Commands
 
@@ -61,23 +64,18 @@ Feature and Dependabot work runs in a throwaway sibling clone so the main tree s
 ./scripts/test.sh e2e
 ```
 
-### Development & Linting
+### Development, Linting & Running Apps
 ```bash
-# Web frontend
-cd apps/web
-npm run dev        # Vite dev server (port 5173)
-npm run build      # Production build
-npm run typecheck  # tsc -b (type check only)
+# Dependencies (whole workspace, commonlib first)
+./scripts/install.sh    # or .\scripts\install.bat
 
-# Backend (uv)
-cd apps/backend
-uv sync            # Install deps
-uv run uvicorn main:app --reload --port 8000
-
-# Legacy apps (Poetry)
-cd apps/scrapper
-poetry install
+# Dev servers (per-module wrappers; .bat equivalents on Windows)
+./apps/backend/run.sh      # FastAPI + reload, port 8000
+./apps/web/run.sh          # Vite dev server, port 5173
+./apps/scrapper/run.sh     # scrapper (pass a platform to run just that one)
 ```
+
+Web production build (`npm run build` in `apps/web`) and the per-module details are in [apps/web/README.md](../apps/web/README.md) and [README_DEVELOPMENT.md](../READMEs/README_DEVELOPMENT.md).
 
 ### Static Analysis (blocking CI gate)
 ```bash
@@ -87,7 +85,7 @@ poetry install
 ./scripts/lint.sh web      # eslint + tsc -b over apps/web
 ./scripts/lint.sh e2e      # eslint over apps/e2e
 ```
-Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rule set, unused-argument conventions, pre-commit hooks and VS Code wiring: [README_DEVELOPMENT.md#static-analysis](../READMEs/README_DEVELOPMENT.md#static-analysis).
+Ruff is installed once for the whole repo by `scripts/install.*`; no app needs it in its own environment. Rule set, unused-argument conventions, pre-commit hooks and VS Code wiring: [README_DEVELOPMENT.md#static-analysis](../READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ## Code Style Guidelines
 
@@ -198,7 +196,7 @@ Before marking any task as complete, always verify:
 
 ```bash
 # Full stack development
-docker-compose up -d  # MySQL, Backend, Web, aicvmatcher, aiformfiller
+docker-compose up -d  # MySQL, MongoDB, Backend, Web, aicvmatcher, aiformfiller, cron, Prometheus, Grafana
 
 # Ollama is opt-in (`--profile ollama`): the Ollama-backed modules auto-detect a
 # host-installed server via the fallback chain in commonlib/ollama_config.py, so
@@ -231,6 +229,7 @@ The `jobs` MySQL database is live production data: **never execute a data or sch
 
 Agent skills are located in `.claude/skills/`:
 - `skill-builder`: Create new agent skills
+- `docs-writer`: Write/update docs (short root README, one canonical source + links, `scripts/*` entry points)
 - `e2e-implementer`: Create Playwright E2E tests
 - `test-implementer`: Implement unit tests
 - `codegraph`: Query the CodeGraph code-intelligence index (explore/node/impact/affected); the default for codebase questions

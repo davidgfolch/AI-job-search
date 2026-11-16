@@ -50,8 +50,12 @@ Shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/RE
 ## Running
 
 ```bash
-uv run cron
+# From the repository root
+./apps/cron/run.sh    # Linux/Mac
+.\apps\cron\run.bat   # Windows
 ```
+
+Dependencies are installed by the centralized installer (`./scripts/install.sh` / `.\scripts\install.bat`); see [Setup Guide](../../READMEs/README_INSTALL.md).
 
 ## Docker
 

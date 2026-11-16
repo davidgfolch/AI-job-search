@@ -6,12 +6,12 @@ The `docker-compose.yml` defines several service profiles to control which conta
 
 | Profile        | Services                          | Description                      |
 | -------------- | --------------------------------- | -------------------------------- |
-| _(default)_    | `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`, `prometheus`, `grafana` | Unprofiled core services (always start) |
+| _(default)_    | `mysql_db`, `backend`, `web`, `aicvmatcher`, `aiformfiller`, `mongo_db`, `cron`, `prometheus`, `grafana` | Unprofiled core services (always start) |
 | `ollama`       | `ollama`                          | Containerized Ollama server (opt-in; see the note below) |
 | `aienrich`     | `aienrich`                        | Ollama AI enrichment             |
 | `aiEnrichSkill`| `aienrichskill`                   | AI skill enrichment (Ollama & HuggingFace) |
 
-## Core Services (Backend + Web + Viewer)
+## Core Services (Backend + Web)
 ```bash
 # Start core services
 docker-compose up -d
@@ -55,35 +55,27 @@ docker-compose --profile ollama --profile aienrich up -d
 # Ollama uses models from your host (defaults to ~/.ollama)
 # For Windows, set in .env: OLLAMA_MODELS_PATH=C:/Users/YOUR_USERNAME/.ollama
 
-# Pull the models required by aiEnrich / aiEnrichSkill.
-# Non-dockerized (host Ollama):
-ollama pull qwen2.5:3b # required default
-# ollama pull phi3.5:3b  # optional faster alternative
-# ollama pull llama3.2:1b # optional fastest alternative
-
-# Dockerized (pull inside the container):
-docker exec ai-job-search-ollama ollama pull qwen2.5:3b
-
-# If your ISP blocks the Ollama model CDN (r2.cloudflarestorage.com, e.g. Movistar),
-# `ollama pull` hangs with "dial tcp ... i/o timeout". Pull from HuggingFace
-# instead and alias the model to the expected tag:
-docker exec ai-job-search-ollama ollama pull hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m
-docker exec ai-job-search-ollama ollama cp hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m qwen2.5:3b
-docker exec ai-job-search-ollama ollama rm hf.co/Qwen/Qwen2.5-3B-Instruct-GGUF:q4_k_m   # temp tag shares the same files
-
 # Test Ollama connection (URL defaults to centralized `OLLAMA_HOST_BASE_URL` in commonlib; unreachable configured URLs fall back to the host server)
 curl <Ollama-URL>/api/tags
 ```
 
-## Scrapper (runs on the host, not in Docker)
+Model pull (including the Dockerized case and the HuggingFace fallback for ISPs that block the Ollama CDN): [README_INSTALL.md](README_INSTALL.md#6-install-ollama--required-models).
 
-The scrapper is **not** a Docker service. Run it natively in a terminal:
+## Host-native apps
 
-```bash
-./apps/scrapper/run.sh   # or .\apps\scrapper\run.bat on Windows
-```
+The scrapper always runs on the host; the backend, web and AI workers can too for development. Each app has a runner in its own directory, invoked from the repository root (`run.bat` on Windows):
 
-See [README_INSTALL.md](README_INSTALL.md#71-install-google-chrome--system-libraries-scrapper) for the required Chrome/system libraries.
+| App | Runner |
+|-----|--------|
+| Scrapper | `./apps/scrapper/run.sh [platform]` |
+| Backend | `./apps/backend/run.sh` |
+| Web | `./apps/web/run.sh` |
+| aiEnrich | `./apps/aiEnrich/run.sh` |
+| aiEnrichSkill | `./apps/aiEnrichSkill/run.sh` |
+| aiFormFiller | `./apps/aiFormFiller/run.sh` |
+| Cron | `./apps/cron/run.sh` |
+
+`apps/aiCvMatcher` has no runner: start it with Docker (`docker-compose up -d aicvmatcher`) or `uv run aicvmatcher` from `apps/aiCvMatcher`. The scrapper needs Google Chrome and its system libraries on the host — see [README_INSTALL.md](README_INSTALL.md#71-install-google-chrome--system-libraries-scrapper). Per-module flags and configuration: each `apps/<module>/README.md`.
 
 ## All Services
 ```bash
@@ -94,7 +86,6 @@ docker-compose --profile aienrich --profile aiEnrichSkill up -d
 ## Service URLs
 - **Web (React)**: http://localhost:5173
 - **Backend (FastAPI)**: http://localhost:8000/docs
-- **Viewer (Streamlit)**: http://localhost:8501
 - **MySQL**: localhost:3306
 - **Ollama**: `OLLAMA_HOST_BASE_URL` (centralized in `commonlib`); resolved automatically from the configured URL, the Docker/host fallbacks or the LAN (see [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md#ollama-host-container-or-another-lan-machine))
 
@@ -102,7 +93,6 @@ docker-compose --profile aienrich --profile aiEnrichSkill up -d
 - Code changes are automatically detected (hot-reload enabled)
 - Backend: Uvicorn auto-reloads on Python file changes
 - Web: Vite HMR refreshes browser on code changes
-- Viewer: Streamlit auto-reruns on file changes
 
 ## Web: backend discovery and reconnects
 The `web` service resolves the backend API when it starts and keeps watching it:
@@ -126,11 +116,12 @@ docker-compose logs -f backend
 # Restart a service
 docker-compose restart backend
 
-# Clean rebuild
-docker-compose down -v
+# Clean rebuild of the images (keeps the named volumes and their data)
 docker-compose build --no-cache
 docker-compose up -d
 ```
+
+> **Warning**: do **not** use `docker-compose down -v` as a "clean" step — it deletes every named volume of the project, including your Mongo data (`ai_job_search_mongo_data`) and MySQL data. To reset a single volume, remove only that volume (see below).
 
 ### Web container: stale `node_modules`
 
@@ -160,10 +151,6 @@ docker compose rm -sf web
 docker volume rm ai_job_search_web_node_modules
 docker compose up -d --build web
 ```
-
-> **Warning**: do **not** use `docker-compose down -v` for this — it deletes all
-> named volumes for the project too, including your Mongo data
-> (`ai_job_search_mongo_data`).
 
 
 ## Related Documentation

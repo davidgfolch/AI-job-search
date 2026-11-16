@@ -6,6 +6,8 @@ trigger: always_on
 
 Keep documentation accurate and useful. Prefer fixing only what's wrong over documenting every change.
 
+Workflow: use the `docs-writer` skill (`.claude/skills/docs-writer/SKILL.md`) — short root README, one canonical source per fact linked instead of copied, and operations documented through the centralized `scripts/*` entry points.
+
 ### When to update docs
 
 - **Fix if wrong**: If your change makes existing documentation factually incorrect, fix it in the same session.

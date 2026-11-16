@@ -56,7 +56,7 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 ### Web Frontend (apps/web)
 ```bash
 # Dev server
-npm run dev
+./apps/web/run.sh   # Windows: .\apps\web\run.bat
 
 # Lint (from the repo root)
 ./scripts/lint.sh web
@@ -121,27 +121,20 @@ Static analysis is a blocking CI gate (`static-analysis` job). Run it locally wi
 ./scripts/lint.sh web      # eslint + tsc -b over apps/web
 ./scripts/lint.sh e2e      # eslint over apps/e2e
 ```
-Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rule set (Ruff selectors, bugbear rules), the unused-argument conventions, pre-commit hooks and VS Code wiring are documented once in [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
+Ruff is installed once for the whole repo by `scripts/install.*`; no app needs it in its own environment. Rule set (Ruff selectors, bugbear rules), the unused-argument conventions, pre-commit hooks and VS Code wiring are documented once in [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ### Running Individual Apps
+Each app has a runner in its own directory (`run.sh` on Linux/Mac, `run.bat` on Windows):
 ```bash
-# Backend API
-uv run uvicorn main:app --reload --port 8000  # from apps/backend
-
-# Web UI
-npm run dev  # from apps/web, runs on localhost:5173
-
-# Scrapper (loop mode)
-.\apps\scrapper\run.bat  # or run.sh
-
-# Scrapper (single platform)
-.\apps\scrapper\run.bat linkedin
-
-# AI Enrichment
-.\apps\aiEnrich\run.bat  # or run.sh
-.\apps\aiEnrichSkill\run.bat  # or run.sh
-.\apps\aiCvMatcher\run.bat  # or run.sh
+./apps/backend/run.sh          # FastAPI + reload, port 8000
+./apps/web/run.sh              # Vite dev server, port 5173
+./apps/scrapper/run.sh         # scrapper loop; pass a platform (e.g. linkedin) to run only that site
+./apps/aiEnrich/run.sh
+./apps/aiEnrichSkill/run.sh
+./apps/aiFormFiller/run.sh
+./apps/cron/run.sh
 ```
+`apps/aiCvMatcher` has no runner: start it with Docker (`docker-compose up -d aicvmatcher`) or `uv run aicvmatcher` from `apps/aiCvMatcher`. Module-specific flags and configuration: each `apps/<module>/README.md`.
 
 ## Architecture
 
@@ -152,6 +145,8 @@ commonlib ← scrapper
 commonlib ← aiEnrich
 commonlib ← aiEnrichSkill
 commonlib ← aiCvMatcher
+commonlib ← aiFormFiller
+commonlib ← cron
 backend ← web (via REST API)
 ```
 
@@ -246,6 +241,7 @@ Enforced by `.claude/rules/db-mutation-permission.md` + `.claude/hooks/db-mutati
 
 Agent skills are located in `.claude/skills/`:
 - `skill-builder`: Create new agent skills
+- `docs-writer`: Write/update docs (short root README, one canonical source + links, `scripts/*` entry points)
 - `e2e-implementer`: Create Playwright E2E tests
 - `test-implementer`: Implement unit tests
 - `codegraph`: Query the CodeGraph code-intelligence index (explore/node/impact/affected); the default for codebase questions
