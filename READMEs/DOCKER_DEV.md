@@ -23,7 +23,11 @@ docker-compose logs -f
 docker-compose down
 ```
 
-> **Service discovery (MySQL / MongoDB / Ollama):** in-container clients are pinned to their compose service names (`COMMONLIB_DB_HOST=mysql_db`, `MONGO_URI=mongodb://mongo_db:27017/`, `COMMONLIB_DB_DISCOVERY=False`), so a container start never triggers a LAN scan. For apps running on the host (scrapper) `.env` still works: each client tries the host from `.env` first, then the container chain (`mysql_db`/`mongo_db` service name, `host.docker.internal`, `127.0.0.1`), then a cached LAN scan, so the same `.env` works whether the database runs in compose, on the Docker host or on another LAN machine. Workers call `wait_for_db()` at startup instead of exiting when MySQL is not up yet (compose only gates the first start). The scan result is cached in `./data/discovery/cache.json`, which every service mounts, so containers starting together perform one scan instead of one each. Add `COMMONLIB_DISCOVERY_SUBNETS` (comma-separated CIDRs) to extend the sweep.
+> **Service discovery:** in-container clients are pinned to their compose service names (`COMMONLIB_DB_HOST=mysql_db`, `MONGO_URI=mongodb://mongo_db:27017/`, `COMMONLIB_DB_DISCOVERY=False`), so a container start never triggers a LAN scan; host-native apps and other machines use the shared fallback chain. The scan result is cached in `./data/discovery/cache.json`, which every service mounts. Workers call `wait_for_db()` at startup instead of exiting when MySQL is not up yet (compose only gates the first start). Chains, `.env` pins and subnets: [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md).
+
+## Distributed execution
+
+Everything runs on one machine by default; the scrapper, the UI or the AI workers can also run on other machines, and LAN auto-discovery fills the gaps. Topologies, fallback order, `.env` pins and the Ollama host/container/LAN setup are documented once in [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md).
 
 ## With AI Services (AI Enrichment + Ollama)
 
@@ -31,13 +35,11 @@ docker-compose down
 **Skill enrichment:** `aienrichskill` service enriches the `job_skills` table with Ollama or HuggingFace (profile: `aiEnrichSkill`).
 **CV Matcher:** `aicvmatcher` service uses sentence transformers to rapidly match your cv (runs by default if configured in .env).
 
-> Note: the `ollama` service is **opt-in** (`--profile ollama`) and no module hard-depends on it, so it is never started implicitly - useful when Ollama already runs on your host. The Ollama-backed modules probe the configured URL, then `host.docker.internal`, `localhost` and `ollama:11434`, and use the first one that answers. Each job is only sent to a server that answers a one-token generation probe (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s), so a stalled runner is skipped instead of blocking the whole job timeout; that verdict is remembered per server for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300), so the following jobs go straight to inference instead of re-connecting every time. The workers take that URL from `.env` (`docker-compose.yml` only defaults to `http://ollama:11434` when it is unset), so pointing them at Ollama on your host or on another machine is `AI_ENRICH_OLLAMA_BASE_URL=http://<host>:11434` in `.env` plus a worker restart (`docker compose up -d --force-recreate aienrich aienrichskill`).
+> Note: the `ollama` service is **opt-in** (`--profile ollama`) and no module hard-depends on it, so it is never started implicitly - useful when Ollama already runs on your host or on another LAN machine. Server resolution and the probe/caching behavior: [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md#ollama-host-container-or-another-lan-machine).
 
 > **Windows 11 / Docker Desktop:** no Windows Defender change is needed while the workers and Ollama run in the same compose project - `aienrich`/`aienrichskill` default to `AI_ENRICH_OLLAMA_BASE_URL=http://ollama:11434` and reach the container by name on the compose network, and the published `11434:11434` covers the host itself (`localhost:11434`, `host.docker.internal:11434`). Allow inbound TCP 11434 only when *other machines* must reach this PC's Ollama (Private network profile, or as admin: `New-NetFirewallRule -DisplayName "Ollama" -Direction Inbound -Protocol TCP -LocalPort 11434 -Action Allow`), then verify from that machine with `Test-NetConnection <windows-ip> -Port 11434`.
 >
 > Docker Desktop exposes no GPU to containers by default, so containerized Ollama is CPU-only: set `COMMONLIB_OLLAMA_PROBE_TIMEOUT` higher (e.g. `120`) so a cold model load is not mistaken for a stalled runner, and keep the model warm with `OLLAMA_KEEP_ALIVE` (e.g. `30m`) in the `ollama` service environment to avoid reloading it between jobs.
->
-> **Discovery stops at the Docker network:** inside a container the LAN sweep covers only the container's own subnets (e.g. `172.19.x`), so it finds sibling containers and the Docker gateway but *not* an Ollama on the physical LAN. Reaching a machine like `192.168.1.211` from a container therefore requires pinning `AI_ENRICH_OLLAMA_BASE_URL`, listing the subnet in `COMMONLIB_DISCOVERY_SUBNETS` (e.g. `192.168.1.0/24`), or running the worker with `network_mode: host`, even though the container can route to it.
 
 ```bash
 # Start core services
@@ -94,7 +96,7 @@ docker-compose --profile aienrich --profile aiEnrichSkill up -d
 - **Backend (FastAPI)**: http://localhost:8000/docs
 - **Viewer (Streamlit)**: http://localhost:8501
 - **MySQL**: localhost:3306
-- **Ollama**: `OLLAMA_HOST_BASE_URL` (centralized in `commonlib`; modules fall back from the containerized `ollama:11434` to the host server)
+- **Ollama**: `OLLAMA_HOST_BASE_URL` (centralized in `commonlib`); resolved automatically from the configured URL, the Docker/host fallbacks or the LAN (see [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md#ollama-host-container-or-another-lan-machine))
 
 ## Development Tips
 - Code changes are automatically detected (hot-reload enabled)

@@ -140,12 +140,14 @@ Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL
 
 ## Network Discovery
 
-- **Scrapper MySQL**: `COMMONLIB_DB_HOST` supports single IPs, CIDR, ranges, and comma-separated combinations; the configured host is tried first, then the container chain (`mysql_db` → `host.docker.internal` → `127.0.0.1`), then an automatic LAN fallback. See [commonlib docs](../apps/commonlib/README.md#mysql-connection).
-- **MongoDB**: `MONGO_URI` resolves the same way (`mongo_db` → `host.docker.internal` → `127.0.0.1`, then LAN on 27017; `auto` scans first). See [commonlib docs](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
-- **Web Backend API**: The web app resolves the backend at startup and watches it (`http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000` in Docker; reverse order on host). It waits for readiness (`BACKEND_WAIT_TIMEOUT_SECONDS`, default 120) and retries via watchdog (`BACKEND_CHECK_INTERVAL_SECONDS`, default 10, `BACKEND_MAX_RETRIES`, default 3). Pin with `BACKEND_URL`, allow LAN scan with `BACKEND_DISCOVERY=True`. See [web docs](../apps/web/README.md#backend-discovery).
-- **Ollama**: Modules probe the configured URL (`AI_ENRICH_OLLAMA_BASE_URL`), then `host.docker.internal`, `localhost`, `ollama:11434`, then LAN scan on 11434 (disable with `COMMONLIB_OLLAMA_DISCOVERY=False`). Set `AI_ENRICH_OLLAMA_BASE_URL=auto` to scan directly. A one-token probe gates job submission (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). Add subnets with `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (e.g. `10.0.0.0/24`). See [commonlib docs](../apps/commonlib/README.md).
-- **Watcher notifications**: After enrichment, `aiEnrich` POSTs enriched job IDs to the backend via `commonlib.watcher_notify` (auto-discovered like Ollama; pin with `AI_ENRICH_BACKEND_URL`). Best-effort (failures logged, enrichment continues). See [aiEnrich docs](../apps/aiEnrich/README.md#watcher-notification).
-- **Dashboard health**: Backend probes Prometheus/Grafana on refresh (`GET /-/healthy`, `GET /api/health`). Configure `PROMETHEUS_URL` (default `http://host.docker.internal:9090`) and `GRAFANA_URL` (default `http://host.docker.internal:3000`).
+Fallback chains, `.env` pins and LAN-scan knobs are documented once in [Distributed Execution & LAN Service Auto-Discovery](DISTRIBUTED_EXECUTION.md). Entry points per concern:
+
+- **MySQL**: `COMMONLIB_DB_HOST` — [commonlib docs](../apps/commonlib/README.md#mysql-connection).
+- **MongoDB**: `MONGO_URI` — [commonlib docs](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
+- **Web Backend API**: `BACKEND_URL` / `BACKEND_DISCOVERY`, readiness wait and watchdog — [web docs](../apps/web/README.md#backend-discovery).
+- **Ollama**: `AI_ENRICH_OLLAMA_BASE_URL`, `COMMONLIB_OLLAMA_*` knobs — [commonlib docs](../apps/commonlib/README.md).
+- **Watcher notifications**: `AI_ENRICH_BACKEND_URL`, best-effort delivery — [aiEnrich docs](../apps/aiEnrich/README.md#watcher-notification).
+- **Dashboard health**: `PROMETHEUS_URL` / `GRAFANA_URL` — [DOCKER_DEV.md](DOCKER_DEV.md).
 
 ## Related Documentation
 

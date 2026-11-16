@@ -20,7 +20,7 @@ Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table
 docker-compose --profile aiEnrichSkill up -d aienrichskill
 ```
 
-The worker auto-discovers a MySQL host, an Ollama server (when the Ollama backend is selected) and the backend. See [Network discovery](../../README.md#network-discovery).
+The worker auto-discovers a MySQL host, an Ollama server (when the Ollama backend is selected) and the backend, so it runs unchanged on the host, in Docker or on another LAN machine. Workers stay in Docker: to pin a remote server set `AI_ENRICH_OLLAMA_BASE_URL=http://<ollama-ip>:11434` in `.env` (compose maps it to `AI_ENRICSKILL_OLLAMA_BASE_URL`), or use `auto` to go straight to the LAN scan. Chains, subnets and the Ollama-side `OLLAMA_HOST`/firewall requirements: [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md).
 
 ### Windows
 ```cmd

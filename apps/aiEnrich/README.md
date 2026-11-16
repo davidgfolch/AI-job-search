@@ -49,7 +49,7 @@ uv sync
 docker-compose --profile aienrich up -d aienrich
 ```
 
-The worker auto-discovers a MySQL host, an Ollama server and the backend (configured URL → Docker/host fallbacks → LAN scan), so the same command works with Ollama on the host or in a container. See [Network discovery](../../README.md#network-discovery) for the full chain.
+The worker auto-discovers a MySQL host, an Ollama server and the backend (configured URL → Docker/host fallbacks → LAN scan), so the same command works with Ollama on the host, in a container or on another LAN machine. Workers stay in Docker: to pin a remote server set `AI_ENRICH_OLLAMA_BASE_URL=http://<ollama-ip>:11434` in `.env`, or use `auto` to go straight to the LAN scan. Chains, subnets and the Ollama-side `OLLAMA_HOST`/firewall requirements: [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md).
 
 ### Automated Loop (host)
 
@@ -103,7 +103,7 @@ AI_ENRICH_BACKEND=ollama
 AI_ENRICH_OLLAMA_MODEL=ollama/phi3.5:3b
 ```
 
-The Ollama server URL is centralized as `OLLAMA_HOST_BASE_URL` in `commonlib` and can be overridden with `AI_ENRICH_OLLAMA_BASE_URL`. The module resolves the first reachable server once per cycle (configured URL first, then `host.docker.internal`, `localhost`, and the containerized `ollama:11434`) and reuses it for the whole batch — so a missing containerized Ollama transparently falls back to a host server instead of failing. When none of those answers, an Ollama server is searched for on the LAN (port 11434, disabled with `COMMONLIB_OLLAMA_DISCOVERY=False`); setting `AI_ENRICH_OLLAMA_BASE_URL=auto` skips the fixed candidates and goes straight to the LAN scan. Every job is preceded by a one-token generation probe on the server, so a stalled Ollama runner is skipped in `COMMONLIB_OLLAMA_PROBE_TIMEOUT` seconds (default 30) instead of consuming the whole `AI_ENRICH_TIMEOUT_JOB`. The probe runs with the job's own `num_ctx` (a different one would make Ollama reload the model for the probe and again for the job) and its verdict is remembered for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300), so the server is learned once and the following jobs are dispatched without re-connecting.
+The Ollama server URL is centralized as `OLLAMA_HOST_BASE_URL` in `commonlib` and can be overridden with `AI_ENRICH_OLLAMA_BASE_URL` (set it to `auto` to skip the fixed candidates and go straight to the LAN scan). Server resolution, LAN/subnet behavior and the probe/caching knobs are documented once in [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md#ollama-host-container-or-another-lan-machine).
 
 > or change it in http://localhost:5173/settings (docker with web/backend must be running, see [DOCKER_DEV.md](../../READMEs/DOCKER_DEV.md))
 

@@ -16,13 +16,7 @@ docker-compose up -d
 ```
 
 ### Ollama: host vs container
-The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434`, then a LAN scan for port 11434 (`COMMONLIB_OLLAMA_DISCOVERY`, default on; `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan) — first reachable wins, reused for the whole batch. Each job is only sent after a one-token generation probe on that server (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s, reusing the job's own `num_ctx` so Ollama does not reload the model twice), so a wedged runner is skipped instead of blocking the whole job timeout; the verdict is cached per server for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300) and dropped again on a failed probe or a job timeout. The workers take the URL from `.env` (`docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset), and because a container's LAN scan only covers the Docker subnets, an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL` rather than discovered.
-```bash
-# Ollama on the host (nothing extra to start)
-docker-compose --profile aienrich up -d aienrich
-# Ollama containerized as well
-docker-compose --profile ollama --profile aienrich up -d
-```
+The `ollama` service is opt-in (`--profile ollama`) and no module hard-depends on it, so it never starts implicitly. The workers can stay in Docker with Ollama on the host, in a container or on another LAN machine: they resolve the server at startup (configured URL → Docker/host fallbacks → LAN scan) and probe it before sending a batch. Setup, `.env` pins, subnets and probe knobs are documented once in [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md#ollama-host-container-or-another-lan-machine).
 Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
 
 ### Sandboxed Docker Verification (dependabot-agent)

@@ -46,30 +46,13 @@ This is a monorepo containing several applications and packages:
 - **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes `data/logs/<app>.jsonl`, scraped by Prometheus (`:9090`) → Grafana (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging))
 - **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
+- **Distributed execution & LAN service auto-discovery**: run the stack on one machine with Docker Compose (the default, no IPs to set), split services across machines, or keep the AI workers in Docker against an Ollama on the host or another LAN machine — MySQL/MongoDB, the backend, Ollama and the health probes are resolved automatically (see [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md))
 
 ## CI / GitHub Automation
 
 The CI pipeline, Dependabot version updates, and automatic merging of dependency PRs are documented in [GitHub Automation](READMEs/README_GITHUB.md). In short: CI only tests the modules affected by a change, Dependabot groups non-breaking updates per app, and green minor/patch Dependabot PRs auto-merge (majors stay manual; failing PRs never merge).
 
 A separate `static-analysis` job is a **required check**: it lints every Python app with [Ruff](https://docs.astral.sh/ruff/), lints the frontend and the e2e suite with ESLint, and type-checks `apps/web` with `tsc`. Run the same checks locally with `./scripts/lint.sh` (see [Static Analysis](READMEs/README_DEVELOPMENT.md#static-analysis)).
-
-## Distributed execution
-
-You can set a specific MySQL host in `.env` via `COMMONLIB_DB_HOST` and run the scrapper on a separate machine connected to it (Linux recommended). Run only the web UI on a client machine:
-
-```bash
-docker-compose up -d --no-deps web
-```
-
-To run Ollama-backed workers on another machine in the same LAN (outside Docker):
-
-```bash
-./apps/aiEnrich/run.sh & ./apps/aiEnrichSkill/run.sh
-```
-
-### Network discovery
-
-The MySQL host (`COMMONLIB_DB_HOST`), the web backend API, the Ollama server, the watcher notifications and the dashboard health probes are all auto-discovered on the LAN. Each concern, with its variables and fallback order, is documented once in [Network Discovery](READMEs/AGENTIC_SDLC.md#network-discovery) and in the module READMEs it points to.
 
 ## Screenshots
 
@@ -121,21 +104,9 @@ The MySQL host (`COMMONLIB_DB_HOST`), the web backend API, the Ollama server, th
 
 ### Docker Compose Profiles
 
-The `docker-compose.yml` groups services into profiles: the core services start by default, and the AI services (`aienrich`, `aiEnrichSkill`) plus the opt-in `ollama` server are selected with `--profile`. The profile table, the exact commands and the service URLs live in [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
+The `docker-compose.yml` groups services into profiles: the core services start by default, and the AI services (`aienrich`, `aiEnrichSkill`) plus the opt-in `ollama` server are selected with `--profile`. The profile table, the exact commands and the service URLs live in [DOCKER_DEV.md](READMEs/DOCKER_DEV.md). Ollama can run on the host, in Docker or on another LAN machine, and the stack auto-discovers it; hosts are only pinned in `.env` when discovery cannot reach them — see [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md).
 
 The `web` service waits for the backend to answer before it serves, and reconnects to it when it moves, so it works with the backend containerized or running on the host (see [web backend discovery](apps/web/README.md#backend-discovery)).
-
-#### Ollama: host vs container
-
-The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they probe the configured URL, then `host.docker.internal`, `localhost`, the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`), and finally the LAN on port 11434 (see [Ollama server resolution](READMEs/AGENTIC_SDLC.md#network-discovery)). No module hard-depends on the `ollama` container, so it is never started implicitly.
-
-```bash
-# Ollama already installed on the host (nothing extra to start)
-docker-compose --profile aienrich up -d aienrich
-
-# Ollama containerized as well
-docker-compose --profile ollama --profile aienrich up -d
-```
 
 ### Install & run
 
