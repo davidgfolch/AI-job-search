@@ -1,9 +1,19 @@
-from typing import Callable
+import json
+import re
+from typing import Callable, List
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.skill_context import get_skill_context
+from commonlib.skill_learning_path import URL_RE, dedupe_urls, split_learning_path_section
 from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.skill_enricher_service")
+
+DESCRIPTION_UPDATE = "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1 WHERE name = %s"
+DESCRIPTION_AND_PATH_UPDATE = (
+    "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1, "
+    "learning_path = CASE WHEN (learning_path IS NULL OR JSON_LENGTH(learning_path) = 0) "
+    "THEN %s ELSE learning_path END WHERE name = %s"
+)
 
 def log_no_pending_skills(limit: int) -> None:
     """The one record an idle skill cycle logs, shared by the ollama and huggingface paths."""
@@ -61,26 +71,25 @@ def process_skill_enrichment(
             # Re-fetch context inside try block to be safe, though duplicate
             # context = get_skill_context(mysql, name) # Already fetched above
             result = generate_description_fn(name, context)
-            description = ""
-            category = None
-            if isinstance(result, tuple) and len(result) == 2:
-                description, category = result
-            elif isinstance(result, str):
-                description = result
-                category = None
-            else:
+            normalized = _normalize_generation_result(result)
+            if normalized is None:
                 logger.warning("skill.invalid_result", name=name, result_type=type(result).__name__)
                 continue
+            description, category, learning_path = normalized
             if description and "Error" not in description:
                 # Log Result
                 result_log = {
                     "description": description[:100] + "..." if len(description) > 100 else description,
-                    "category": category
+                    "category": category,
+                    "learning_path": len(learning_path)
                 }
                 logger.debug("skill.enriched", name=name, result=result_log)
-                logger.debug("skill.persisting", name=name, fields=["description", "category"])
-                update_query = "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1 WHERE name = %s"
-                mysql.executeAndCommit(update_query, [description, category, name])
+                fields = ["description", "category"] + (["learning_path"] if learning_path else [])
+                logger.debug("skill.persisting", name=name, fields=fields)
+                if learning_path:
+                    mysql.executeAndCommit(DESCRIPTION_AND_PATH_UPDATE, [description, category, json.dumps(learning_path), name])
+                else:
+                    mysql.executeAndCommit(DESCRIPTION_UPDATE, [description, category, name])
                 count += 1
             else:
                 logger.warning("skill.description_failed", name=name)
@@ -91,12 +100,14 @@ def process_skill_enrichment(
     logger.info("skill.enrich_completed", updated=count, count=len(rows))
     return count
 
-def parse_skill_llm_output(result: str) -> tuple[str, str]:
+def parse_skill_llm_output(result: str) -> tuple[str, str, List[str]]:
     """
-    Parses the LLM output to extract description and category.
-    Robust against various formatting issues.
+    Parses the LLM output into (description, category, learning_path).
+    Robust against various formatting issues; the Learning Path section is removed
+    before the description/category split so its URLs never leak into the description.
     """
-    import re
+    result, learning_path_body = split_learning_path_section(result)
+    learning_path = dedupe_urls(URL_RE.findall(learning_path_body)) if learning_path_body else []
     category = "Other"
     description = result
     # Try to find "Category: ..." pattern
@@ -104,12 +115,11 @@ def parse_skill_llm_output(result: str) -> tuple[str, str]:
     match = re.search(r'(?:^|\n)[#*]*\s*Category\s*[#*]*\s*:\s*(.+)', result, re.IGNORECASE)
     if match:
         category_part = match.group(1).strip()
-        # Clean up if there are trailing characters or it captured too much (e.g. end of line)
-        # Just take the first line of the matched group
+        # Clean up if it captured too much (e.g. end of line): keep only the first line
         category_part = category_part.split('\n')[0].strip()
         # Remove common markdown clutter
         category = category_part.replace('*', '').replace('`', '').strip()
-        
+
         # Split description to be everything BEFORE the category line
         # If Category is at the start, take everything AFTER it instead
         start_index = match.start()
@@ -117,4 +127,16 @@ def parse_skill_llm_output(result: str) -> tuple[str, str]:
             description = result[match.end():].strip()
         else:
             description = result[:start_index].strip()
-    return description, category
+    return description, category, learning_path
+
+
+def _normalize_generation_result(result) -> tuple[str, str | None, List[str]] | None:
+    """Accepts the (description, category[, learning_path]) tuple or a bare description string."""
+    if isinstance(result, tuple) and len(result) in (2, 3):
+        description, category = result[0], result[1]
+        learning_path = result[2] if len(result) == 3 else []
+        return description, category, list(learning_path or [])
+    if isinstance(result, str):
+        return result, None, []
+    return None
+

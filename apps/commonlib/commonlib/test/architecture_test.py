@@ -64,6 +64,22 @@ def test_backend_layered_architecture(layer_name, required_deps, forbidden_deps,
     if error_msg:
         pytest.fail(error_msg)
 
+
+@pytest.mark.parametrize("module, layer_name, forbidden_deps", [
+    ('aiEnrichSkill', 'services',
+        [('commonlib.sql.mysqlUtil', "Direct Database Access (should use Repository).")]),
+    ('aiEnrichSkill', 'repositories',
+        [('services', "Imports Service layer (circular dependency risk).")]),
+])
+def test_app_module_layered_architecture(module, layer_name, forbidden_deps):
+    root_dir = get_project_root()
+    module_dir = root_dir / 'apps' / module / 'src' / module
+    if not module_dir.exists():
+        return # Skip modules that do not use the layered layout
+    error_msg = check_layer(module_dir / layer_name, root_dir, forbidden_deps=forbidden_deps)
+    if error_msg:
+        pytest.fail(error_msg)
+
 def test_sibling_test_folder_exists():
     violations = get_files_without_sibling_test()
     if violations:

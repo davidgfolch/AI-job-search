@@ -2,7 +2,7 @@
 
 Decoupled skill enrichment module supporting **Ollama** and **HuggingFace** backends.
 
-Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table (description and category generation).
+Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table (description, category and learning-path links).
 
 ## Backends
 
@@ -63,16 +63,33 @@ Pull the default model before running — the HuggingFace fallback for ISPs that
 - `AI_ENRICHSKILL_GPU_CLEANUP` — Clear GPU cache after batch (default: `True`)
 - `AI_ENRICHSKILL_INPUT_MAX_LEN` — Max input length (default: `12000`)
 
+### Learning paths
+
+The model proposes links, and the worker validates them over outbound HTTPS before persisting: unreachable deep links degrade to the trusted domain root, and a fully dead set degrades to a DuckDuckGo search URL, so an empty column is never left after a pass. Existing user-curated links are never overwritten (updates only run when `learning_path IS NULL OR JSON_LENGTH(learning_path) = 0`).
+
+- `AI_ENRICHSKILL_LEARNING_PATHS` — Enable the whole feature (default: `True`). `False` removes the prompt section and disables the idle backfill.
+- `AI_ENRICHSKILL_LEARNING_PATH_MAX` — Links requested/persisted per skill (default: `3`)
+- `AI_ENRICHSKILL_LEARNING_PATH_BATCH` — Skills per idle backfill pass (default: `1`)
+- `AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT` — HTTP probe timeout for link validation, in seconds (default: `5`). The links-only generation call uses `AI_ENRICHSKILL_TIMEOUT`.
+- `AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES` — Consecutive failures before the idle pass backs off for the process lifetime (default: `3`)
+- `AI_ENRICHSKILL_LEARNING_DOMAINS` — Comma-separated trusted-domain allowlist override (defaults to the built-in documentation/course/video list in `config.py`)
+
 ## Architecture
 
 ```
-main.py → enrich_skills() loop
-  └─ services/enrichment_service.py
-       ├─ backend == "ollama"      → commonlib.ollama_client (resolve once, reuse) + commonlib.process_skill_enrichment
-       └─ backend == "huggingface" → llm_client.py + llm_utils.py batch processing
+main.py → loop
+  ├─ repositories/skill_repository.py — every job_skills query (services never import MysqlUtil)
+  ├─ tier 1 (interactive): enrich_skills()  → skills with ai_enriched = 0
+  │    └─ services/enrichment_service.py
+  │         ├─ backend == "ollama"      → commonlib.ollama_client (resolve once, reuse) + commonlib.process_skill_enrichment
+  │         └─ backend == "huggingface" → services/hf_enrichment.py + llm_client.py + llm_utils.py batch processing
+  └─ tier 2 (idle): enrich_learning_paths() → ai_enriched = 1 AND learning_path empty
+       └─ services/learning_path_service.py (links-only prompt, validated by services/link_validator.py)
 ```
 
-Each idle cycle is one line: the enrichment service logs `jobs.skipped` (`message='No skills pending.'`, `reason=no_pending_skills`, `limit`) when nothing is pending, and the main loop then waits with `ai_helpers.idleWait()` — in containers the wait itself is silent, on a `WakeableTimer` that a shutdown signal cuts short, so `docker-compose logs` shows that single record per cycle; on interactive terminals `idleWait` keeps the in-place countdown. When Ollama is unreachable, `ollama.unreachable` is logged and the retry countdown runs on both paths (up to `AI_ENRICHSKILL_MAX_OLLAMA_FAILURES`, then exit).
+Tier 1 runs on user action (a new skill or *Auto-fill with AI*) and produces description, category and links in that same call. Tier 2 is the low-priority backfill for already-enriched skills. It uses the shared `data/metrics` mount as an inference slot (`commonlib/ollama_activity.py`): normal requests hold a shared lock, the backfill needs it exclusively, so it starts only while the model is free, never overlaps another request, and re-checks between items so real work preempts it. Tier 2 is Ollama-only; the HuggingFace path writes links during tier 1. The backfill writes legitimate worker output to `job_skills`, so it needs outbound HTTPS from the container.
+
+Each idle cycle is one line: the enrichment service logs `jobs.skipped` (`message='No skills pending.'`, `reason=no_pending_skills`, `limit`) when nothing is pending, and the main loop then waits with `ai_helpers.idleWait()` — in containers the wait itself is silent, on a `WakeableTimer` that a shutdown signal cuts short, so `docker-compose logs` shows that single record per cycle; on interactive terminals `idleWait` keeps the in-place countdown. When the model is busy the loop retries every ~3 s and logs `skill.learning_path.deferred` once per busy streak (`reason=model_busy`, `model_busy_seconds`), and every backfilled skill logs `skill.learning_path.saved` (`skill`, `links`, `duration`). When Ollama is unreachable, `ollama.unreachable` is logged and the retry countdown runs on both paths (up to `AI_ENRICHSKILL_MAX_OLLAMA_FAILURES`, then exit).
 
 ## Dependencies
 

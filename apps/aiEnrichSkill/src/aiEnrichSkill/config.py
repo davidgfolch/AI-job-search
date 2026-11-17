@@ -66,8 +66,51 @@ def get_max_ollama_failures() -> int:
     return int(getEnv("AI_ENRICHSKILL_MAX_OLLAMA_FAILURES", "3"))
 
 
+def get_learning_paths_enabled() -> bool:
+    return getEnvBool("AI_ENRICHSKILL_LEARNING_PATHS", True)
+
+
+def get_learning_path_max() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_MAX", "3"))
+
+
+def get_learning_path_batch() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_BATCH", "1"))
+
+
+def get_learning_path_timeout() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT", "5"))
+
+
+def get_learning_path_max_failures() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES", "3"))
+
+
+DEFAULT_LEARNING_DOMAINS = (
+    "developer.mozilla.org", "docs.python.org", "python.org", "dev.java", "docs.oracle.com",
+    "go.dev", "golang.org", "rust-lang.org", "doc.rust-lang.org", "typescriptlang.org",
+    "react.dev", "vuejs.org", "angular.dev", "nodejs.org", "nextjs.org", "svelte.dev",
+    "djangoproject.com", "flask.palletsprojects.com", "fastapi.tiangolo.com", "spring.io",
+    "kubernetes.io", "docker.com", "docs.docker.com", "terraform.io", "developer.hashicorp.com",
+    "aws.amazon.com", "cloud.google.com", "learn.microsoft.com", "azure.microsoft.com",
+    "postgresql.org", "mysql.com", "dev.mysql.com", "mongodb.com", "redis.io", "elastic.co",
+    "grafana.com", "prometheus.io", "jenkins.io", "git-scm.com", "kernel.org", "linux.org",
+    "coursera.org", "udemy.com", "edx.org", "freecodecamp.org", "roadmap.sh", "youtube.com",
+    "youtu.be", "w3schools.com", "baeldung.com", "digitalocean.com", "martinfowler.com",
+    "refactoring.guru", "devdocs.io", "readthedocs.io",
+)
+
+
+def get_learning_domains() -> tuple[str, ...]:
+    configured = getEnv("AI_ENRICHSKILL_LEARNING_DOMAINS", "")
+    if not configured.strip():
+        return DEFAULT_LEARNING_DOMAINS
+    return tuple(d.strip().lower().removeprefix("www.") for d in configured.split(",") if d.strip())
+
+
 def get_skill_system_prompt() -> str:
     categories = get_skill_categories()
+    learning_path = _learning_path_instructions() if get_learning_paths_enabled() else ""
     return f"""You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
 The structure MUST be:
@@ -78,4 +121,31 @@ The structure MUST be:
    - Key Modules/Components
    - Integration with co-occurring technologies
 3. **Category**: One or more of [{categories}] (comma separated).
-Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
+{learning_path}Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
+
+
+def _learning_path_instructions() -> str:
+    max_links = get_learning_path_max()
+    return f"""4. **Learning Path**: exactly {max_links} URLs, one per line, each prefixed with "- ":
+   - the official documentation for the skill
+   - a hands-on tutorial or guided course
+   - a video playlist or channel
+Only real, existing URLs from trusted learning/documentation sites. No placeholders, no search-result links.
+Start this section with a 'Learning Path:' header line.
+"""
+
+
+def get_learning_path_system_prompt() -> str:
+    max_links = get_learning_path_max()
+    return f"""You are an expert technical recruiter and software engineer.
+List {max_links} learning resources for a given technical skill.
+The structure MUST be:
+Learning Path:
+- <official documentation URL>
+- <hands-on tutorial or guided course URL>
+- <video playlist or channel URL>
+Rules:
+- Output ONLY the 'Learning Path:' header line and the URLs, one per line, prefixed with "- ".
+- No explanations, no titles, no conversational text.
+- Only real, existing URLs from trusted learning/documentation sites. No placeholders, no search-result links."""
+

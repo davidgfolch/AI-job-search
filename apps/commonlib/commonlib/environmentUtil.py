@@ -6,6 +6,20 @@ import threading
 
 env_lock = threading.Lock()
 
+ENV_LOGGER_NAME = "commonlib.environmentUtil"
+
+
+def _logger():
+    """Return the shared structured logger.
+
+    This module is imported by `commonlib.observability` (directly and through
+    `console_render`) while that module is still initializing, so `get_logger` cannot be
+    imported at module level without a circular import. Importing it here runs only when
+    a record is actually emitted, after observability has finished loading.
+    """
+    from commonlib.observability import get_logger
+    return get_logger(ENV_LOGGER_NAME)
+
 # Resolve .env paths relative to this file: 
 # apps/commonlib/commonlib/environmentUtil.py -> ../../../.env (Root)
 ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env'
@@ -19,10 +33,6 @@ def getEnvModified() -> float | None:
     mtime = max(_get_mtime(ENV_PATH), _get_mtime(ENV_SECRETS_PATH))
     return mtime if mtime > 0 else None
 
-def _logEvent(method: str, event: str, **fields):
-    from commonlib.observability import get_logger
-    getattr(get_logger("commonlib.environmentUtil"), method)(event, **fields)
-
 _envLoadedLogged = False
 _envReloading = False
 
@@ -31,7 +41,8 @@ def _logEnvLoaded():
     if _envLoadedLogged or _envReloading:
         return
     _envLoadedLogged = True
-    _logEvent('debug', 'env.loaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
+    logger = _logger()
+    logger.info('env.loaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
 
 # Real process environment (Docker Compose `environment:`, shell exports) captured
 # before the first dotenv load. It outranks the dotenv files, so it is re-asserted
@@ -61,7 +72,7 @@ def checkEnvReload():
         load_dotenv(dotenv_path=ENV_SECRETS_PATH, override=True)
         _restoreProcessEnv()
         envLastModified = getEnvModified()
-        _logEvent('info', 'env.reloaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
+        _logger().info('env.reloaded', paths=[str(ENV_PATH), str(ENV_SECRETS_PATH)])
     finally:
         _envReloading = False
 

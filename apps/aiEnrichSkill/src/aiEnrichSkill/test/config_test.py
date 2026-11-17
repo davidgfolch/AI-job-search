@@ -1,4 +1,5 @@
 import os
+import pytest
 from unittest.mock import patch
 
 from commonlib.test.ollama_constants import OLLAMA_TEST_URL
@@ -20,6 +21,14 @@ from ..config import (
     get_skill_categories,
     get_enrich_limit,
     get_skill_system_prompt,
+    get_learning_paths_enabled,
+    get_learning_path_max,
+    get_learning_path_batch,
+    get_learning_path_timeout,
+    get_learning_path_max_failures,
+    get_learning_domains,
+    get_learning_path_system_prompt,
+    DEFAULT_LEARNING_DOMAINS,
 )
 
 
@@ -123,8 +132,67 @@ def test_get_enrich_limit_default(mock_env):
     assert get_enrich_limit() == 10
 
 
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_skill_system_prompt_includes_categories(mock_env):
-    mock_env.return_value = "Language, Framework"
+@patch("aiEnrichSkill.config.get_learning_path_max", return_value=3)
+@patch("aiEnrichSkill.config.get_learning_paths_enabled", return_value=False)
+@patch("aiEnrichSkill.config.get_skill_categories", return_value="Language, Framework")
+def test_get_skill_system_prompt_includes_categories(_categories, _enabled, _max):
     prompt = get_skill_system_prompt()
     assert "Language, Framework" in prompt
+
+
+def test_get_learning_paths_enabled_default_true():
+    os.environ.pop("AI_ENRICHSKILL_LEARNING_PATHS", None)
+    assert get_learning_paths_enabled() is True
+
+
+@patch("aiEnrichSkill.config.getEnvBool", return_value=False)
+def test_get_learning_paths_enabled_false(mock_env):
+    assert get_learning_paths_enabled() is False
+    mock_env.assert_called_once_with("AI_ENRICHSKILL_LEARNING_PATHS", True)
+
+
+@pytest.mark.parametrize("getter, env_name, raw, expected, default", [
+    (get_learning_path_max, "AI_ENRICHSKILL_LEARNING_PATH_MAX", "5", 5, "3"),
+    (get_learning_path_batch, "AI_ENRICHSKILL_LEARNING_PATH_BATCH", "2", 2, "1"),
+    (get_learning_path_timeout, "AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT", "9", 9, "5"),
+    (get_learning_path_max_failures, "AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES", "4", 4, "3"),
+])
+@patch("aiEnrichSkill.config.getEnv")
+def test_learning_path_int_getters(mock_env, getter, env_name, raw, expected, default):
+    mock_env.return_value = raw
+    assert getter() == expected
+    mock_env.assert_called_once_with(env_name, default)
+
+
+@patch("aiEnrichSkill.config.getEnv", return_value="")
+def test_get_learning_domains_defaults(_mock_env):
+    assert get_learning_domains() == DEFAULT_LEARNING_DOMAINS
+
+
+@patch("aiEnrichSkill.config.getEnv", return_value="www.Python.org, docs.python.org ,,")
+def test_get_learning_domains_configured_override(_mock_env):
+    assert get_learning_domains() == ("python.org", "docs.python.org")
+
+
+@patch("aiEnrichSkill.config.get_learning_path_max", return_value=3)
+@patch("aiEnrichSkill.config.get_skill_categories", return_value="Language, Framework")
+@patch("aiEnrichSkill.config.get_learning_paths_enabled", return_value=True)
+def test_skill_system_prompt_includes_learning_path_when_enabled(_enabled, _categories, _max):
+    prompt = get_skill_system_prompt()
+    assert "Learning Path" in prompt
+    assert "exactly 3 URLs" in prompt
+
+
+@patch("aiEnrichSkill.config.get_learning_paths_enabled", return_value=False)
+@patch("aiEnrichSkill.config.get_skill_categories", return_value="Language, Framework")
+def test_skill_system_prompt_omits_learning_path_when_disabled(_categories, _enabled):
+    prompt = get_skill_system_prompt()
+    assert "Learning Path" not in prompt
+
+
+@patch("aiEnrichSkill.config.get_learning_path_max", return_value=2)
+def test_learning_path_system_prompt_requests_links_only(_max):
+    prompt = get_learning_path_system_prompt()
+    assert "List 2 learning resources" in prompt
+    assert "Learning Path:" in prompt
+    assert "No explanations" in prompt

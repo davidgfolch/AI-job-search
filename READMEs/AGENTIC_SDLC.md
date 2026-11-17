@@ -96,7 +96,7 @@ Honest limits: the guardrail matches clients, SQL keywords, and destructive volu
 
 ## The test suite must run after code changes (enforced guardrail)
 
-`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), backend layering, test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script** — a runner call that omits `commonlib` silently skips every architecture check.
+`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), backend and app-module layering (services must reach the database through a repository), test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script** — a runner call that omits `commonlib` silently skips every architecture check.
 
 The requirement is therefore enforced in the tool call, so it does not depend on the agent remembering it:
 
