@@ -9,6 +9,7 @@ from commonlib.test.architecture.architecture_structure import get_files_without
 from commonlib.test.architecture.architecture_naming import get_test_naming_violations
 from commonlib.test.architecture.architecture_logging import get_console_violations, get_print_violations
 from commonlib.test.architecture.architecture_scripts import get_non_executable_scripts
+from commonlib.test.architecture.architecture_services import get_misplaced_layer_symbols
 from commonlib.terminalColor import YELLOW, RED, ORANGE, RESET
 
 def test_files_exceed_200_lines():
@@ -52,6 +53,14 @@ def test_layer_rules_cover_all_modules():
     defined = {rule.key for rule in LAYER_RULES}
     assert discovered <= defined, f"Layers without architecture rules: {sorted(discovered - defined)}"
     assert defined <= discovered, f"Rules for non-existent layers: {sorted(defined - discovered)}"
+
+def test_service_and_repository_symbols_live_in_their_layers():
+    violations = get_misplaced_layer_symbols()
+    if violations:
+        message = f"\n{YELLOW}Found service/repository symbols outside their layer directories:{RESET}\n"
+        for path, symbol, layer in violations:
+            message += f"{RED}{path.relative_to(get_project_root())}: {symbol} belongs in {layer}/{RESET}\n"
+        pytest.fail(message)
 
 def test_sibling_test_folder_exists():
     violations = get_files_without_sibling_test()

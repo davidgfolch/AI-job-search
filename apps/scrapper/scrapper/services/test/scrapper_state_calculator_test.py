@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.core.scrapper_config import TIMER
-from scrapper.core.scrapper_state_calculator import ScrapperStateCalculator
+from scrapper.services.scrapper_state_calculator import ScrapperStateCalculator
 from datetime import datetime
 
 @pytest.fixture
@@ -21,8 +21,8 @@ class TestScrapperStateCalculator:
         (True, 'Infojobs', 'Linkedin', 3600, 5000, (999999999, "Skipped (Start)", "-", "Default", "1h")), # Starting other
     ])
     def test_calculate(self, mocks, starting, startingAt, name, timer, lapsed, expected_state):
-        with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=10000):
-            with patch('scrapper.core.scrapper_state_calculator.parseDatetime', return_value=10000-lapsed):
+        with patch('scrapper.services.scrapper_state_calculator.getDatetimeNow', return_value=10000):
+            with patch('scrapper.services.scrapper_state_calculator.parseDatetime', return_value=10000-lapsed):
                  mocks['pm'].get_last_execution.return_value = "some_date"
                  props = {TIMER: timer}
                  calculator = ScrapperStateCalculator(name, props, mocks['pm'])
@@ -39,8 +39,8 @@ class TestScrapperStateCalculator:
         exec_lapsed = 1000
         now = 10000
         
-        with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=now):
-            with patch('scrapper.core.scrapper_state_calculator.parseDatetime') as mock_parse:
+        with patch('scrapper.services.scrapper_state_calculator.getDatetimeNow', return_value=now):
+            with patch('scrapper.services.scrapper_state_calculator.parseDatetime') as mock_parse:
                 def side_effect_parse(date_str):
                     if date_str == "last_exec": return now - exec_lapsed
                     if date_str == "last_error": return now - error_lapsed
@@ -66,8 +66,8 @@ class TestScrapperStateCalculator:
         now = 10000
         lapsed = 8000  # Large enough to make seconds_remaining = 0 (900-8000=0)
         
-        with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=now):
-            with patch('scrapper.core.scrapper_state_calculator.parseDatetime', return_value=now-lapsed):
+        with patch('scrapper.services.scrapper_state_calculator.getDatetimeNow', return_value=now):
+            with patch('scrapper.services.scrapper_state_calculator.parseDatetime', return_value=now-lapsed):
                 mocks['pm'].get_last_execution.return_value = "last_exec"
                 mocks['pm'].get_failed_keywords.return_value = ["keyword1", "keyword2"]
                 mocks['pm'].get_state.return_value = {}  # No error, only failed keywords
@@ -93,9 +93,9 @@ class TestScrapperStateCalculator:
          # The env_vars in parametrize are simplified to be what getEnvByPrefix would return
          # i.e., keys are suffixes, not full env vars
         calculator = ScrapperStateCalculator('Infojobs', {}, mocks['pm'])
-        with patch('scrapper.core.scrapper_state_calculator.getEnvByPrefix', return_value=env_vars):
+        with patch('scrapper.services.scrapper_state_calculator.getEnvByPrefix', return_value=env_vars):
             ts = self.get_timestamp_for_hour(current_hour)
-            with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=ts):
+            with patch('scrapper.services.scrapper_state_calculator.getDatetimeNow', return_value=ts):
                 actual_timer, actual_range = calculator.resolve_timer(default_timer)
                 assert actual_timer == expected_timer
                 assert actual_range == expected_range
@@ -106,8 +106,8 @@ class TestScrapperStateCalculator:
     ])
     def test_resolve_timer_error(self, mocks, env_vars):
         calculator = ScrapperStateCalculator('Infojobs', {}, mocks['pm'])
-        with patch('scrapper.core.scrapper_state_calculator.getEnvByPrefix', return_value=env_vars):
-            with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=100000): # Any time
+        with patch('scrapper.services.scrapper_state_calculator.getEnvByPrefix', return_value=env_vars):
+            with patch('scrapper.services.scrapper_state_calculator.getDatetimeNow', return_value=100000): # Any time
                 with pytest.raises(ValueError):
                     calculator.resolve_timer(3600)
 
@@ -118,7 +118,7 @@ class TestScrapperStateCalculator:
     ])
     def test_resolve_timer_uses_correct_prefix(self, mocks, name, expected_prefix):
         calculator = ScrapperStateCalculator(name, {}, mocks['pm'])
-        with patch('scrapper.core.scrapper_state_calculator.getEnvByPrefix', return_value={}) as mock_get_env:
-            with patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=100000):
+        with patch('scrapper.services.scrapper_state_calculator.getEnvByPrefix', return_value={}) as mock_get_env:
+            with patch('scrapper.services.scrapper_state_calculator.getDatetimeNow', return_value=100000):
                 calculator.resolve_timer(3600)
                 mock_get_env.assert_called_once_with(expected_prefix)

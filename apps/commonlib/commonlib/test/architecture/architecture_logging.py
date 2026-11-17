@@ -23,7 +23,7 @@ PRINT_ALLOWLIST = {
     "apps/commonlib/commonlib/terminalColor.py",
     "apps/commonlib/commonlib/terminalUtil.py",
     "apps/scrapper/scrapper/core/baseScrapper.py",
-    "apps/scrapper/scrapper/core/scrapper_scheduler.py",
+    "apps/scrapper/scrapper/orchestration/scrapper_scheduler.py",
     "apps/scrapper/scrapper/executor/GlassdoorExecutor.py",
     "apps/scrapper/scrapper/executor/IndeedExecutor.py",
     "apps/scrapper/scrapper/executor/IndeedScraplingExecutor.py",

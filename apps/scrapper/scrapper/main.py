@@ -8,7 +8,7 @@ from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from commonlib.terminalColor import cyan, red, yellow
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.executor.executor_factory import process_page_url
-from scrapper.core.scrapper_scheduler import ScrapperScheduler
+from scrapper.orchestration.scrapper_scheduler import ScrapperScheduler
 from scrapper.core.scrapper_config import SCRAPPERS
 
 configure_logging("scrapper", console=CONSOLE_MESSAGE)

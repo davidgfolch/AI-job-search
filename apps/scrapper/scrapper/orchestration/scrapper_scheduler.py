@@ -9,7 +9,7 @@ from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.core.utils import runPreload
 from scrapper.executor.executor_factory import create_executor
-from scrapper.core.scrapper_state_calculator import ScrapperStateCalculator
+from scrapper.services.scrapper_state_calculator import ScrapperStateCalculator
 from scrapper.util.terminalTableUtil import print_failed_info_table
 
 logger = get_logger("scrapper.scrapper_scheduler")

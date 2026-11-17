@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 from scrapper.core.scrapper_config import (
     AUTORUN, SCRAPPERS, TIMER, DEBUG
 )
-from scrapper.core.scrapper_scheduler import ScrapperScheduler
+from scrapper.orchestration.scrapper_scheduler import ScrapperScheduler
 
 @pytest.fixture
 def mocks():
@@ -41,7 +41,7 @@ def run_mocks():
 
 @pytest.fixture(autouse=True)
 def mock_selenium_service():
-    with patch('scrapper.core.scrapper_scheduler.SeleniumService') as mock:
+    with patch('scrapper.orchestration.scrapper_scheduler.SeleniumService') as mock:
         mock.return_value.__enter__.return_value = MagicMock()
         yield mock
 
@@ -73,9 +73,9 @@ def test_get_properties(scheduler, arg, props_ok):
     (False, None, lambda d: 4000 if 'infojobs' in d else 11000, True, False),
     (True, 'Linkedin', lambda d: 9000, False, True)
 ])
-@patch('scrapper.core.scrapper_scheduler.consoleTimer')
-@patch('scrapper.core.scrapper_state_calculator.getDatetimeNow', return_value=12000)
-@patch('scrapper.core.scrapper_state_calculator.parseDatetime')
+@patch('scrapper.orchestration.scrapper_scheduler.consoleTimer')
+@patch('scrapper.services.scrapper_state_calculator.getDatetimeNow', return_value=12000)
+@patch('scrapper.services.scrapper_state_calculator.parseDatetime')
 def test_run_scenarios(mock_parse, mock_now, mock_timer, scheduler, mocks, run_mocks, starting, start_at, p_date, info_called, link_called):
     mock_parse.side_effect = p_date
     mocks['pm'].get_last_execution.side_effect = lambda n: f"last_run_{n.lower()}" if n in ['Infojobs', 'Linkedin'] else None
@@ -112,8 +112,8 @@ def test_execute_scrappers(scheduler, run_mocks):
     (False, None, False, False),  # returns false on preload error
     (True, True, None, True),     # executes on preload success
 ])
-@patch('scrapper.core.scrapper_scheduler.get_debug', return_value=False)
-@patch('scrapper.core.scrapper_scheduler.create_executor')
+@patch('scrapper.orchestration.scrapper_scheduler.get_debug', return_value=False)
+@patch('scrapper.orchestration.scrapper_scheduler.create_executor')
 def test_preload_execution(mock_create, mock_debug, scheduler, preload_res, preloaded_val, expect_cont, expect_exec):
     mock_ex = MagicMock()
     mock_create.return_value = mock_ex

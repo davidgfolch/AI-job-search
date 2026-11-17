@@ -6,7 +6,7 @@ from commonlib.test.architecture.architecture_util import EXCLUDES
 
 LAYER_DIRS = frozenset({
     'api', 'config', 'core', 'decorator', 'domain', 'executor', 'jobs', 'middleware', 'models',
-    'navigator', 'network', 'repositories', 'selectors', 'services', 'sql', 'sync', 'util', 'utils',
+    'navigator', 'network', 'orchestration', 'repositories', 'selectors', 'services', 'sql', 'sync', 'util', 'utils',
 })
 FILE_LAYER_SUFFIXES = {
     'services': ('_service.py', 'Service.py'),
@@ -73,8 +73,9 @@ LAYER_RULES = (
     LayerRule(COMMONLIB, 'commonlib', 'services', forbidden=(NO_API, NO_DB)),
     LayerRule(COMMONLIB, 'commonlib', 'sql', forbidden=(NO_SERVICES, NO_API)),
     LayerRule(COMMONLIB, 'commonlib', 'sync', forbidden=(NO_API, NO_SERVICES, ('sql', "Sync layer must not import SQL layer."))),
-    LayerRule(SCRAPPER, 'scrapper', 'core', forbidden=(('navigator', "Core layer must not import Navigator."), ('selectors', "Core layer must not import Selectors."))),
+    LayerRule(SCRAPPER, 'scrapper', 'core', forbidden=(('navigator', "Core layer must not import Navigator."), ('selectors', "Core layer must not import Selectors."), ('executor', "Core layer must not import Executor."), NO_SERVICES, ('util', "Core layer must not import Util."))),
     LayerRule(SCRAPPER, 'scrapper', 'executor', forbidden=(('selectors', "Executor layer must not import Selectors."),)),
+    LayerRule(SCRAPPER, 'scrapper', 'orchestration', forbidden=()),
     LayerRule(SCRAPPER, 'scrapper', 'navigator', forbidden=(('executor', "Navigator layer must not import Executor."), ('selectors', "Navigator layer must not import Selectors."))),
     LayerRule(SCRAPPER, 'scrapper', 'services', forbidden=(('navigator', "Service layer must not import Navigator."), ('executor', "Service layer must not import Executor."), ('selectors', "Service layer must not import Selectors."))),
     LayerRule(SCRAPPER, 'scrapper', 'util', forbidden=(NO_SERVICES, ('navigator', "Util layer must not import Navigator."), ('executor', "Util layer must not import Executor."), ('selectors', "Util layer must not import Selectors."))),
@@ -86,7 +87,7 @@ LAYER_RULES = (
     LayerRule(FORM, 'aiFormFiller', 'models', forbidden=(NO_API, NO_SERVICES, NO_REPOSITORIES)),
     LayerRule(FORM, 'aiFormFiller', 'services', forbidden=(NO_API, NO_DB)),
     LayerRule(ENRICH, 'aiEnrich', 'config', forbidden=(NO_API, NO_SERVICES, NO_REPOSITORIES)),
-    LayerRule(CRON, 'cron', 'jobs', forbidden=(NO_API, NO_SERVICES)),
+    LayerRule(CRON, 'cron', 'jobs', forbidden=(NO_API, NO_SERVICES, NO_DB)),
 )
 
 
