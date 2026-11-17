@@ -45,3 +45,16 @@ def parse_learning_path_urls(text: str) -> List[str]:
     _, body = split_learning_path_section(text)
     source = body if body else text
     return dedupe_urls(URL_RE.findall(source))
+
+
+def parse_skill_llm_output(result: str) -> tuple[str, str, List[str]]:
+    """Parse LLM output into (description, category, learning_path), stripping the learning-path section first."""
+    result, learning_path_body = split_learning_path_section(result)
+    learning_path = dedupe_urls(URL_RE.findall(learning_path_body)) if learning_path_body else []
+    category = "Other"
+    description = result
+    match = re.search(r'(?:^|\n)[#*]*\s*Category\s*[#*]*\s*:\s*(.+)', result, re.IGNORECASE)
+    if match:
+        category = match.group(1).strip().split('\n')[0].strip().replace('*', '').replace('`', '').strip()
+        description = result[match.end():].strip() if match.start() == 0 else result[:match.start()].strip()
+    return description, category, learning_path

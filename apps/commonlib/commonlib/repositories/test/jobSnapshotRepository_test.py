@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from datetime import datetime
-from commonlib.jobSnapshotRepository import JobSnapshotRepository
+from commonlib.repositories.jobSnapshotRepository import JobSnapshotRepository
 
 
 @pytest.fixture
@@ -104,6 +104,6 @@ def test_build_snapshot_query_empty_job():
 
 
 def test_default_mysql_creates_instance():
-    with patch("commonlib.jobSnapshotRepository.MysqlUtil") as mock_mysql_cls:
+    with patch("commonlib.repositories.jobSnapshotRepository.MysqlUtil") as mock_mysql_cls:
         JobSnapshotRepository()
         mock_mysql_cls.assert_called_once()

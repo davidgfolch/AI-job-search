@@ -1,7 +1,7 @@
 import time
 from typing import Any, Dict, List
 
-from commonlib.skill_enricher_service import log_no_pending_skills
+from commonlib.services.skill_enricher_service import log_no_pending_skills
 from commonlib.stopWatch import StopWatch
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector

@@ -1,4 +1,4 @@
-from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.repositories.aiEnrichRepository import AiEnrichRepository
 
 
 class MockMysqlUtil:

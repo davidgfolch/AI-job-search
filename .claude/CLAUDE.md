@@ -155,7 +155,7 @@ models/       - Pydantic models
 
 ## Required Architecture Tests
 
-`apps/commonlib/commonlib/test/architecture_test.py` is the only place the repo's architecture rules are enforced (file length, backend layering, test-file naming, sibling-test correspondence, bare `print()`, the `console=` logging contract). It lives in commonlib, so it runs **only** when commonlib is one of the modules passed to the centralized test script — always include it:
+`apps/commonlib/commonlib/test/architecture_test.py` is the only place the repo's architecture rules are enforced (file length, layered architecture across Python modules, test-file naming, sibling-test correspondence, bare `print()`, the `console=` logging contract). It lives in commonlib, so it runs **only** when commonlib is one of the modules passed to the centralized test script — always include it:
 
 ```bash
 # Linux/Mac

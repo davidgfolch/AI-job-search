@@ -1,7 +1,7 @@
 
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
 from commonlib.ai_helpers import TOO_LONG_CONTEXT_REASON
-from commonlib.test.aiEnrichRepository_fixtures import mockRepo
+from commonlib.repositories.test.aiEnrichRepository_fixtures import mockRepo
 
 
 def test_count_pending_enrichment():

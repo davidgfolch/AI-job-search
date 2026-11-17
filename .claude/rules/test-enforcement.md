@@ -4,7 +4,7 @@ trigger: always_on
 
 ## The centralized test suite must run after every code or test change
 
-`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), backend layering, test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script**.
+`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), layered architecture across Python modules, test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script**.
 
 Therefore, after any change to production code or test code, the agent must run the centralized suite through `scripts/test.sh` (Linux/Mac) or `scripts/test.bat` (Windows) — never `poetry run pytest`, `uv run pytest`, or `npm test` directly — and it must always include `commonlib`:
 

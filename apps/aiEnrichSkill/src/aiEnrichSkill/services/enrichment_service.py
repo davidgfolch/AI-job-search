@@ -2,6 +2,7 @@ import time
 
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
+from commonlib.services.skill_enricher_service import process_skill_enrichment
 
 from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_enrich_limit
 from ..repositories.skill_repository import SkillRepository
@@ -58,7 +59,8 @@ def _enrich_ollama(repository: SkillRepository, ollama_base_url=None) -> int:
             collector.record_job("aiEnrichSkill", duration, False)
             collector.record_error("aiEnrichSkill", str(e))
             return ("", "Other", [])
-    return repository.run_pending_enrichment(
+    return process_skill_enrichment(
+        repository,
         timed_generate,
         limit=get_enrich_limit(),
         check_empty_description_only=True,

@@ -72,14 +72,6 @@ def test_save_skill_result(learning_path, expected_args, has_learning_path_field
     assert ("learning_path" in args[0]) is has_learning_path_field
 
 
-@patch("aiEnrichSkill.repositories.skill_repository.process_skill_enrichment", return_value=3)
-def test_run_pending_enrichment_delegates_to_shared_loop(mock_process):
-    mysql = MagicMock()
-    generate = MagicMock()
-    assert SkillRepository(mysql).run_pending_enrichment(generate, limit=4, check_empty_description_only=False) == 3
-    mock_process.assert_called_once_with(mysql, generate, limit=4, check_empty_description_only=False)
-
-
 @patch("aiEnrichSkill.repositories.skill_repository.get_skill_context", return_value="Django, Flask")
 def test_fetch_skill_context_delegates_to_commonlib(mock_context):
     mysql = MagicMock()

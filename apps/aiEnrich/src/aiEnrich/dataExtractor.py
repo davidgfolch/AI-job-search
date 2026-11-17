@@ -14,7 +14,7 @@ from commonlib.ai_helpers import (
     is_context_too_long,
 )
 from commonlib.terminalColor import cyan
-from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.repositories.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger, job_log_context
 from commonlib.services.metrics_collector import MetricsCollector
 from .aiEnrich_config import (

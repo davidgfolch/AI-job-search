@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 def capture_process_batch_callbacks(mock_process_batch):
@@ -26,11 +26,11 @@ def run_enrich_ollama(repository=None, name="Python", context="context"):
     from ..enrichment_service import _enrich_ollama
     repository = repository or MagicMock()
     generator_called = []
-    def side_effect(generate_fn, limit, check_empty_description_only):
+    def side_effect(repo, generate_fn, limit, check_empty_description_only):
         generator_called.append(generate_fn(name, context))
         return 1
-    repository.run_pending_enrichment.side_effect = side_effect
-    return _enrich_ollama(repository), generator_called
+    with patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment", side_effect=side_effect):
+        return _enrich_ollama(repository), generator_called
 
 
 def assert_failure_metric(mock_collector, check_duration=False, module="aiEnrichSkill"):

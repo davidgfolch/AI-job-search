@@ -1,6 +1,6 @@
 import pytest
 
-from commonlib.skill_learning_path import dedupe_urls, parse_learning_path_urls, split_learning_path_section
+from commonlib.skill_learning_path import dedupe_urls, parse_learning_path_urls, parse_skill_llm_output, split_learning_path_section
 
 
 @pytest.mark.parametrize("text, expected_body", [
@@ -62,3 +62,33 @@ def test_parse_learning_path_urls_ignores_urls_outside_section():
 ])
 def test_dedupe_urls(urls, expected):
     assert dedupe_urls(urls) == expected
+
+
+@pytest.mark.parametrize("output, expected_desc, expected_category, expected_links", [
+    ("**Summary**: Python is a language.\n**Category**: Programming Language", "Python is a language", "Programming Language", []),
+    ("Category: Cloud Platform\n\n**Summary**: GCP is a cloud platform.", "GCP is a cloud platform", "Cloud Platform", []),
+    ("Just a description without category", "Just a description without category", "Other", []),
+    ("", "", "Other", []),
+    ("## Category: Framework\nDesc here", "Desc here", "Framework", []),
+    ("**Category**: `DevOps`\nSome description", "Some description", "DevOps", []),
+    ("**Summary**: Python.\n**Category**: Language\n**Learning Path**:\n- https://docs.python.org/3/\n- https://www.freecodecamp.org/", "Python", "Language", ["https://docs.python.org/3/", "https://www.freecodecamp.org/"]),
+])
+def test_parse_skill_llm_output(output, expected_desc, expected_category, expected_links):
+    desc, category, links = parse_skill_llm_output(output)
+    assert expected_desc in desc
+    assert category == expected_category
+    assert links == expected_links
+
+
+def test_parse_skill_llm_output_strips_links_from_description():
+    desc, category, links = parse_skill_llm_output("**Summary**: Python is a language.\n**Learning Path**:\n- https://docs.python.org/\n**Category**: Language")
+    assert "https://" not in desc
+    assert category == "Language"
+    assert links == ["https://docs.python.org/"]
+
+
+def test_parse_skill_llm_output_learning_path_only():
+    desc, category, links = parse_skill_llm_output("Learning Path:\n- https://roadmap.sh/python\n- https://roadmap.sh/python/\n- https://roadmap.sh/python#intro")
+    assert desc == ""
+    assert category == "Other"
+    assert links == ["https://roadmap.sh/python", "https://roadmap.sh/python#intro"]

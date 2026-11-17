@@ -8,7 +8,7 @@ from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.modality_extractor import modalities_to_db
 from commonlib.observability import get_logger
 
-logger = get_logger("commonlib.aiEnrichRepository")
+logger = get_logger("commonlib.repositories.aiEnrichRepository")
 
 class AiEnrichRepository:
     PENDING_ENRICHMENT_QUERY = """SELECT id 

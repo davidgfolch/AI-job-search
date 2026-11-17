@@ -4,6 +4,7 @@ import warnings
 from commonlib.test.architecture.architecture_util import get_project_root
 from commonlib.test.architecture.architecture_metrics import getLongFiles
 from commonlib.test.architecture.architecture_layers import check_layer
+from commonlib.test.architecture.architecture_layer_rules import LAYER_RULES, discover_layer_keys
 from commonlib.test.architecture.architecture_structure import get_files_without_sibling_test, get_test_location_violations
 from commonlib.test.architecture.architecture_naming import get_test_naming_violations
 from commonlib.test.architecture.architecture_logging import get_console_violations, get_print_violations
@@ -36,49 +37,21 @@ def test_shell_scripts_are_executable():
         message += f"{YELLOW}Fix with: git update-index --chmod=+x <path>{RESET}"
         pytest.fail(message)
 
-@pytest.mark.parametrize("layer_name, required_deps, forbidden_deps, ignore_files", [
-    ('api',
-        [('services', "Missing Service layer import.")],
-        [('repositories', "Direct Repository layer import (skip Service layer).")],
-        {'__init__.py', 'main.py'}),
-    ('services',
-        [],
-        [('api', "Imports API layer (circular dependency risk)."),
-         ('commonlib.sql.mysqlUtil', "Direct Database Access (should use Repository).")],
-        None),
-    ('repositories',
-        [],
-        [('services', "Imports Service layer (circular dependency risk)."),
-        ('api', "Imports API layer (circular dependency risk).")],
-        None),
-])
-def test_backend_layered_architecture(layer_name, required_deps, forbidden_deps, ignore_files):
+@pytest.mark.parametrize("rule", LAYER_RULES, ids=lambda rule: f"{rule.module}:{rule.layer}")
+def test_layered_architecture(rule):
     root_dir = get_project_root()
-    backend_dir = root_dir / 'apps' / 'backend'
-    if not backend_dir.exists():
-        return # Skip if backend directory doesn't exist
-    error_msg = check_layer(backend_dir / layer_name, root_dir,
-        required_deps=required_deps,
-        forbidden_deps=forbidden_deps,
-        ignore_files=ignore_files)
+    error_msg = check_layer(rule.path(root_dir), root_dir, package=rule.package,
+        required_deps=rule.required, forbidden_deps=rule.forbidden, ignore_files=rule.ignore_files,
+        extra_files=rule.extra_files(root_dir))
     if error_msg:
         pytest.fail(error_msg)
 
-
-@pytest.mark.parametrize("module, layer_name, forbidden_deps", [
-    ('aiEnrichSkill', 'services',
-        [('commonlib.sql.mysqlUtil', "Direct Database Access (should use Repository).")]),
-    ('aiEnrichSkill', 'repositories',
-        [('services', "Imports Service layer (circular dependency risk).")]),
-])
-def test_app_module_layered_architecture(module, layer_name, forbidden_deps):
+def test_layer_rules_cover_all_modules():
     root_dir = get_project_root()
-    module_dir = root_dir / 'apps' / module / 'src' / module
-    if not module_dir.exists():
-        return # Skip modules that do not use the layered layout
-    error_msg = check_layer(module_dir / layer_name, root_dir, forbidden_deps=forbidden_deps)
-    if error_msg:
-        pytest.fail(error_msg)
+    discovered = discover_layer_keys(root_dir)
+    defined = {rule.key for rule in LAYER_RULES}
+    assert discovered <= defined, f"Layers without architecture rules: {sorted(discovered - defined)}"
+    assert defined <= discovered, f"Rules for non-existent layers: {sorted(defined - discovered)}"
 
 def test_sibling_test_folder_exists():
     violations = get_files_without_sibling_test()

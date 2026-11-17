@@ -68,12 +68,13 @@ def test_generate_skill_description_ollama_failure(mock_query, mock_build):
     assert result == ("", "Other", [])
 
 
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment", return_value=5)
 @patch("aiEnrichSkill.services.enrichment_service.get_backend", return_value="ollama")
-def test_enrich_ollama_delegates_to_repository(_mock_backend):
+def test_enrich_ollama_delegates_to_shared_service(_mock_backend, mock_process):
     repository = MagicMock()
-    repository.run_pending_enrichment.return_value = 5
     assert enrich_skills(repository) == 5
-    assert repository.run_pending_enrichment.call_count == 1
+    mock_process.assert_called_once()
+    assert mock_process.call_args[0][0] is repository
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")

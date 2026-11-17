@@ -1,12 +1,8 @@
 import json
-from typing import Callable, List
+from typing import List
 
+from commonlib.repositories.skill_repository import DESCRIPTION_AND_PATH_UPDATE, DESCRIPTION_UPDATE
 from commonlib.skill_context import get_skill_context
-from commonlib.skill_enricher_service import (
-    DESCRIPTION_AND_PATH_UPDATE,
-    DESCRIPTION_UPDATE,
-    process_skill_enrichment,
-)
 from commonlib.sql.mysqlUtil import MysqlUtil
 
 PENDING_ENRICHMENT_QUERY = "SELECT name FROM job_skills WHERE COALESCE(ai_enriched, 0) = 0{description_filter} LIMIT %s"
@@ -56,10 +52,6 @@ class SkillRepository:
             self._mysql.executeAndCommit(DESCRIPTION_AND_PATH_UPDATE, [description, category, json.dumps(learning_path), name])
         else:
             self._mysql.executeAndCommit(DESCRIPTION_UPDATE, [description, category, name])
-
-    def run_pending_enrichment(self, generate_description_fn: Callable[[str, str], tuple[str, str]], limit: int, check_empty_description_only: bool = True) -> int:
-        """Run the shared commonlib enrichment loop over this connection, keeping the DB handle out of services."""
-        return process_skill_enrichment(self._mysql, generate_description_fn, limit=limit, check_empty_description_only=check_empty_description_only)
 
 
 def _first_column(rows) -> List[str]:
