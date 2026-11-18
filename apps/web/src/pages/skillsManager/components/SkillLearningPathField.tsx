@@ -10,6 +10,7 @@ interface SkillLearningPathFieldProps {
   setNewLinkInput: (val: string) => void;
   handleAddLink: () => void;
   handleRemoveLink: (index: number) => void;
+  handleClearAllLinks: () => void;
   handleLinkInputKeyDown: (e: React.KeyboardEvent) => void;
 }
 
@@ -21,19 +22,44 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
   setNewLinkInput,
   handleAddLink,
   handleRemoveLink,
+  handleClearAllLinks,
   handleLinkInputKeyDown
 }) => {
   return (
     <FormField id="learning-path-input" label="Learning Path" className="form-group">
       {isViewMode ? (
         <div className="links-list">
-          {(skillLearningPath && skillLearningPath.length > 0) ? skillLearningPath.map((link, i) => (
-            <div key={i} className="link-item" style={{ justifyContent: 'flex-start' }}>
-              <a href={link} target="_blank" rel="noopener noreferrer" className="link-url" style={{ textDecoration: 'underline', color: 'var(--primary-color)' }}>
-                {link}
-              </a>
-            </div>
-          )) : <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No learning path links</div>}
+          {(skillLearningPath && skillLearningPath.length > 0) ? (
+            <>
+              <div className="links-list-header">
+                <button
+                  className="btn-icon delete clear-all"
+                  onClick={() => {
+                    if (window.confirm('Remove all learning path links?')) {
+                      handleClearAllLinks();
+                    }
+                  }}
+                  title="Clear all links"
+                >
+                  Clear all
+                </button>
+              </div>
+              {skillLearningPath.map((link, i) => (
+                <div key={i} className="link-item">
+                  <a href={link} target="_blank" rel="noopener noreferrer" className="link-url" style={{ textDecoration: 'underline', color: 'var(--primary-color)' }}>
+                    {link}
+                  </a>
+                  <button
+                    className="btn-icon delete link-remove"
+                    onClick={() => handleRemoveLink(i)}
+                    title="Remove link"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </>
+          ) : <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No learning path links</div>}
         </div>
       ) : (
         <div className="links-list">

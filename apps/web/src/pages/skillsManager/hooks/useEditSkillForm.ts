@@ -67,6 +67,10 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     setLearningPath(newPath);
   };
 
+  const handleClearAllLinks = () => {
+    setLearningPath([]);
+  };
+
   useEffect(() => {
     if (!isPolling || !name.trim()) return;
     const interval = setInterval(async () => {
@@ -133,6 +137,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     isNewSkill,
     handleAddLink,
     handleRemoveLink,
+    handleClearAllLinks,
     handleSave,
     handleAutoFill,
     handleReload,

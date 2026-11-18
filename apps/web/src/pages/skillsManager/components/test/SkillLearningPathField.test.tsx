@@ -11,6 +11,7 @@ describe('SkillLearningPathField', () => {
         setNewLinkInput: vi.fn(),
         handleAddLink: vi.fn(),
         handleRemoveLink: vi.fn(),
+        handleClearAllLinks: vi.fn(),
         handleLinkInputKeyDown: vi.fn(),
     };
 

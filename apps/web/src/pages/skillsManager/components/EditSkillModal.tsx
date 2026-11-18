@@ -31,6 +31,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
     isNewSkill,
     handleAddLink,
     handleRemoveLink,
+    handleClearAllLinks,
     handleSave,
     handleAutoFill,
     handleReload,
@@ -169,6 +170,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
         setNewLinkInput={setNewLinkInput}
         handleAddLink={handleAddLink}
         handleRemoveLink={handleRemoveLink}
+        handleClearAllLinks={handleClearAllLinks}
         handleLinkInputKeyDown={handleLinkInputKeyDown}
       />
       {!isViewMode && (
