@@ -13,6 +13,11 @@ export class ViewerPage {
     get locationHeader(): Locator { return this.page.locator('#job-table-location-header'); }
     get modalityHeader(): Locator { return this.page.locator('#job-table-modality-header'); }
     get detailTitle(): Locator { return this.page.locator('#job-detail-title'); }
+    get tabButtons(): Locator { return this.page.locator('#viewer-toolbar .tab-buttons'); }
+    get listTab(): Locator { return this.page.locator('#tab-button-list'); }
+    get editTab(): Locator { return this.page.locator('#tab-button-edit'); }
+    get createTab(): Locator { return this.page.locator('#tab-button-create'); }
+    get detailPanel(): Locator { return this.page.locator('#viewer-right'); }
 
     jobRow(id: number): Locator { return this.page.locator(`#job-row-${id}`); }
     locationCell(id: number): Locator { return this.page.locator(`#job-location-${id}`); }

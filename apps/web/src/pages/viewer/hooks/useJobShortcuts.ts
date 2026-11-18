@@ -80,14 +80,21 @@ export const useJobShortcuts = ({ onAction, onPinnedConfigShortcut }: UseJobShor
             if (trackAlt && (isAltKey(e) || !e.altKey)) setModifierPressed(false);
             if (trackCtrl && (isCtrlKey(e) || !e.ctrlKey)) setModifierPressed(false);
         };
-        const onFocus = () => setModifierPressed(false);
+        // Firefox/Linux can consume the bare Alt keydown when its menu bar activates,
+        // and fires window focus events while Alt is still down. Mouse events always
+        // carry the modifier state, so use them to keep the badge hints in sync and
+        // never clear the state on focus.
+        const onMouseMove = (e: MouseEvent) => {
+            if (!enabled) return;
+            if ((trackAlt && e.altKey) || (trackCtrl && e.ctrlKey)) setModifierPressed(true);
+        };
         window.addEventListener('keydown', onKeyDown);
         window.addEventListener('keyup', onKeyUp);
-        window.addEventListener('focus', onFocus);
+        window.addEventListener('mousemove', onMouseMove);
         return () => {
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup', onKeyUp);
-            window.removeEventListener('focus', onFocus);
+            window.removeEventListener('mousemove', onMouseMove);
         };
     }, [enabled, shortcuts]);
 

@@ -3,12 +3,11 @@ import { useCallback, useRef, useState } from "react";
 import JobList from './components/JobList';
 import JobEditForm from './components/JobEditForm';
 import JobDetailPanels from './components/JobDetailPanels';
-import JobActions from './components/JobActions';
+import ViewerToolbar from './components/ViewerToolbar';
 import ShortcutBadge from './components/ShortcutBadge';
 import AppliedModal from './components/AppliedModal';
 import Filters from './components/Filters';
 import MessageContainer from '../common/components/core/MessageContainer';
-import ViewTabs from './components/ViewTabs';
 import PanelDivider from './components/PanelDivider';
 import ConfirmModal from '../common/components/core/ConfirmModal';
 import './Viewer.css';
@@ -56,6 +55,7 @@ export default function Viewer() {
         }
         actions.setFilters({ ...state.filters, ...newFilters, page: newPage });
     }, [actions.setFilters, state.filters]);
+    const detailVisibleMobile = state.activeTab === 'list' && !!state.selectedJob;
 
 const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
         actions.setMessage({ text, type });
@@ -92,50 +92,39 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onConfigsLoaded={setConfigCount}
                             onPinnedShortcutReady={handlePinnedShortcutReady}
                             modalityValues={state.modalityValues} />
+                        <ViewerToolbar
+                            activeTab={state.activeTab}
+                            onTabChange={actions.setActiveTab}
+                            onDelete={(count) => {
+                                if (state.selectionMode === 'all' || state.selectedIds.size > 0) {
+                                    actions.deleteSelected(count);
+                                } else if (state.selectedJob) {
+                                    actions.deleteJob();
+                                }
+                            }}
+                            selectedCount={state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}
+                            hasSelection={!!(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0)}
+                            loadedCount={state.allJobs.length}
+                            totalCount={state.data?.total || 0}
+                            isLoadingMore={status.isLoadingMore}
+                            job={state.selectedJob}
+                            filters={state.filters}
+                            onSeen={actions.seenJob}
+                            onApplied={actions.appliedJob}
+                            onDiscarded={actions.discardedJob}
+                            onClosed={actions.closedJob}
+                            onIgnore={isBulk ? actions.ignoreSelected : actions.ignoreJob}
+                            onNext={actions.nextJob}
+                            onPrevious={actions.previousJob}
+                            hasNext={status.hasNext}
+                            hasPrevious={status.hasPrevious}
+                            isBulk={isBulk}
+                            onCloseMobile={actions.closeSelectedJob}
+                            showDetailClose={!!state.selectedJob && state.activeTab === 'list'}
+                        />
                         <div className="viewer-content" {...contentProps}>
-                            <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: leftHidden ? 'none' : 'flex' }}>
+                            <div id="viewer-left" className={`viewer-left ${detailVisibleMobile ? 'mobile-hidden' : ''}`} style={{ display: leftHidden && state.activeTab === 'list' ? 'none' : 'flex' }}>
                                 <div className="tab-group">
-                                    <div className="tab-buttons">
-                                        <ViewTabs 
-                                            activeTab={state.activeTab} 
-                                            onTabChange={actions.setActiveTab} 
-                                            onDelete={(count) => {
-                                                if (state.selectionMode === 'all' || state.selectedIds.size > 0) {
-                                                    actions.deleteSelected(count);
-                                                } else if (state.selectedJob) {
-                                                    actions.deleteJob();
-                                                }
-                                            }}
-                                            selectedCount={state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}
-                                            hasSelection={!!(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0)}
-                                        />
-                                        {state.activeTab === 'list' && (
-                                            <div className="list-summary">
-                                                <div className="spinner" style={{position: 'relative', float: 'left', visibility: status.isLoadingMore ? 'visible' : 'hidden'}}></div>
-                                                <span className="green">{state.allJobs.length}</span>/<span className="green">{state.data?.total || 0}</span> loaded
-                                                <br/>
-                                                <span className="green">{state.selectionMode === 'all' ? (state.data?.total || 0) : state.selectedIds.size}</span> Selected
-                                            </div>
-                                        )}
-                                        {(state.selectedJob || state.selectionMode === 'all' || state.selectedIds.size > 0) && (
-                                            <div className="list-header-actions">
-                                                <JobActions
-                                                    job={state.selectedJob}
-                                                    filters={state.filters}
-                                                    onSeen={actions.seenJob}
-                                                    onApplied={actions.appliedJob}
-                                                    onDiscarded={actions.discardedJob}
-                                                    onClosed={actions.closedJob}
-                                                    onIgnore={isBulk ? actions.ignoreSelected : actions.ignoreJob}
-                                                    onNext={actions.nextJob}
-                                                    onPrevious={actions.previousJob}
-                                                    hasNext={status.hasNext}
-                                                    hasPrevious={status.hasPrevious}
-                                                    isBulk={isBulk}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
                                     <div className="tab-content">
                                         <div style={{ display: state.activeTab === 'list' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
                                             <JobList
@@ -172,24 +161,14 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             </div>
                             <PanelDivider {...dividerProps} onReset={resetPanels} />
                                 <JobDetailPanels
+                                    mobileHidden={!detailVisibleMobile}
                                     selectedJob={state.selectedJob}
                                     duplicatedJob={state.duplicatedJob}
                                     collapsedPanel={collapsedPanel}
-                                    filters={state.filters}
                                     detailScrollRef={detailScrollRef}
                                     onUpdate={actions.updateJob}
                                     onOpenDuplicated={actions.openDuplicatedJob}
-                                    onCloseMobile={actions.closeSelectedJob}
                                     onCloseDuplicated={actions.closeDuplicatedJob}
-                                    onNext={actions.nextJob}
-                                    onPrevious={actions.previousJob}
-                                    hasNext={status.hasNext}
-                                    hasPrevious={status.hasPrevious}
-                                    onSeen={actions.seenJob}
-                                    onApplied={actions.appliedJob}
-                                    onDiscarded={actions.discardedJob}
-                                    onClosed={actions.closedJob}
-                                    onIgnore={actions.ignoreJob}
                                 />
                         </div>
                     </div>

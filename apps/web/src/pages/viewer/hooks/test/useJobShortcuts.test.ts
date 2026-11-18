@@ -174,12 +174,20 @@ describe('useJobShortcuts', () => {
         expect(result.current.modifierPressed).toBe(false);
     });
 
-    it('resets modifierPressed on window focus', () => {
+    it('keeps modifierPressed while alt is held even when the window regains focus', () => {
         const { result } = render();
         fireEvent.keyDown(window, { key: 'Alt' });
         expect(result.current.modifierPressed).toBe(true);
         fireEvent.focus(window);
-        expect(result.current.modifierPressed).toBe(false);
+        expect(result.current.modifierPressed).toBe(true);
+    });
+
+    it('picks up modifierPressed from mouse events when the key event was consumed', () => {
+        const { result } = render();
+        fireEvent.mouseMove(window, { altKey: true });
+        expect(result.current.modifierPressed).toBe(true);
+        fireEvent.mouseMove(window, { altKey: false });
+        expect(result.current.modifierPressed).toBe(true);
     });
 
     it('tracks modifierPressed via altKey state regardless of key name', () => {

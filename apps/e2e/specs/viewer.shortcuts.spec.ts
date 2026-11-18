@@ -131,6 +131,20 @@ test.describe('Viewer Shortcut Hints E2E', () => {
         await page.keyboard.up('Alt');
         await expect(page.locator('.shortcut-badge')).toHaveCount(0);
     });
+
+    test('should keep shortcut hints visible when the window regains focus with Alt held', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await page.locator('#job-row-1').click();
+
+        await page.keyboard.down('Alt');
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+I' })).toBeVisible();
+        await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+I' })).toBeVisible();
+        await page.mouse.move(300, 300);
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+I' })).toBeVisible();
+        await page.keyboard.up('Alt');
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+    });
 });
 
 test.describe('Viewer Pinned Filter Keyboard Shortcuts E2E', () => {

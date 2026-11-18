@@ -33,8 +33,8 @@
   border-bottom: 2px solid var(--primary-color);
 }
 
-.job-table th,
-.job-table td {
+.job-table th > :not(input[type="checkbox"]),
+.job-table td > :not(input[type="checkbox"]) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -206,6 +206,6 @@
     padding: 0.4rem 0.5rem;
   }
   .status-column {
-    padding: 0.4rem 0.25rem !important;
+    display: none;
   }
 }
