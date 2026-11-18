@@ -17,12 +17,14 @@ Therefore, after any change to production code or test code, the agent must run 
 
 A runner invocation with **no** targets already executes commonlib first, then every other module, then the e2e suite.
 
+Changes under `apps/web/src/**` must also include `e2e` — the guardrail adds it automatically. When a web change affects a user-visible flow, add or update an E2E spec for it (see the `e2e-implementer` skill) before finishing.
+
 ### Which changes require the suites
 
 | Change | Requires the suite |
 |--------|--------------------|
 | Python source or tests under `apps/**/*.py` | yes |
-| Frontend source under `apps/web/src/**` | yes |
+| Frontend source under `apps/web/src/**` | yes, plus `e2e` |
 | E2E specs under `apps/e2e/**` | yes |
 | The test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`) | yes |
 | Environment files (`.env`, `.env.secrets`, `.env.*`) | yes — they change test behavior |
@@ -40,7 +42,7 @@ The requirement is enforced in the tool call, so it does not depend on the agent
 | Mechanism | Harness | What it does |
 |-----------|---------|--------------|
 | `.claude/rules/test-enforcement.md` | all | Canonical policy: which changes require the suite, and how it must be invoked |
-| `.claude/hooks/test-enforce.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit` and on `Bash`) | Tracks the changed files, adds `commonlib` and the pending modules to a `scripts/test.sh` / `scripts/test.bat` invocation, and injects a reminder with the exact command to run |
+| `.claude/hooks/test-enforce.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit` and on `Bash`) | Tracks the changed files, adds `commonlib` and the pending modules (plus `e2e` for web changes) to a `scripts/test.sh` / `scripts/test.bat` invocation, and injects a reminder with the exact command to run |
 | `.opencode/plugins/test-enforce.js` | opencode | Same behavior: injects the missing targets into a test-runner call and prints the reminder once on the next shell call |
 
 Both are registered automatically: the hook in `.claude/settings.json`, the plugin in `.opencode/opencode.json`. They mirror each other.

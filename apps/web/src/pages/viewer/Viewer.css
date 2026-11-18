@@ -15,6 +15,7 @@
 }
 
 .viewer-content {
+  --divider-width: 2.5rem;
   flex: 1;
   display: flex;
   overflow: hidden;
@@ -23,7 +24,7 @@
 }
 
 .viewer-left {
-  flex: 1;
+  flex: 0 0 calc((100% - var(--divider-width)) * var(--list-ratio, 0.5));
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -32,7 +33,7 @@
 }
 
 .viewer-right {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -203,6 +204,7 @@
   }
 
   .viewer-left {
+    flex: 1 1 auto;
     padding-right: 0;
   }
 

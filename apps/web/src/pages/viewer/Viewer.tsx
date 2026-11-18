@@ -20,6 +20,7 @@ import { useJobShortcuts } from './hooks/useJobShortcuts';
 import ShortcutsControls from './components/ShortcutsControls';
 import { useViewerShortcuts } from './hooks/useViewerShortcuts';
 import { ShortcutsContext } from './shortcutsContext';
+import { usePanelResize } from './hooks/usePanelResize';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
@@ -28,8 +29,7 @@ export default function Viewer() {
     const jobListRef = useRef<HTMLDivElement>(null);
     const detailScrollRef = useRef<HTMLDivElement>(null);
     const [configCount, setConfigCount] = useState<number>();
-    const [collapsedPanel, setCollapsedPanel] = useState<'none' | 'left' | 'right'>('none');
-
+    const { collapsedPanel, leftHidden, contentProps, dividerProps, resetPanels } = usePanelResize(!!state.duplicatedJob);
     const handleShortcut = useViewerShortcuts(actions, state.selectedJob, isBulk, jobListRef, detailScrollRef);
     const loadPinnedByPositionRef = useRef<(index: number) => void>(() => {});
     const [pinnedShortcuts, setPinnedShortcuts] = useState<{ name: string; index: number }[]>([]);
@@ -92,8 +92,8 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                             onConfigsLoaded={setConfigCount}
                             onPinnedShortcutReady={handlePinnedShortcutReady}
                             modalityValues={state.modalityValues} />
-                        <div className="viewer-content">
-                            <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: state.duplicatedJob ? 'none' : collapsedPanel === 'left' ? 'none' : 'flex' }}>
+                        <div className="viewer-content" {...contentProps}>
+                            <div className={`viewer-left ${state.selectedJob ? 'mobile-hidden' : ''}`} style={{ display: leftHidden ? 'none' : 'flex' }}>
                                 <div className="tab-group">
                                     <div className="tab-buttons">
                                         <ViewTabs 
@@ -170,7 +170,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
                                     </div>
                                 </div>
                             </div>
-                            <PanelDivider collapsedPanel={collapsedPanel} onCollapse={setCollapsedPanel} onReset={() => setCollapsedPanel('none')} />
+                            <PanelDivider {...dividerProps} onReset={resetPanels} />
                                 <JobDetailPanels
                                     selectedJob={state.selectedJob}
                                     duplicatedJob={state.duplicatedJob}

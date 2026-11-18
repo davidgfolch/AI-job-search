@@ -4,9 +4,10 @@ The modern frontend for the AI Job Search application, built with **React**, **T
 
 ## Features
 
-- **Job Listing**: View and filter job offers scraped from various platforms.
+- **Job Listing**: View and filter job offers scraped from various platforms. The list shows Location and Modality (R/H/O initials) next to Company; columns flex with the available list width and the extra ones hide automatically in a narrow panel or on a small screen.
 - **Infinite Scroll Pagination**: The list keeps fetching pages on its own until it fills the screen, then again whenever the end of the list is scrolled into view.
 - **Next / Previous Job Navigation**: The ⏮ / ⏭ buttons and the `Alt+P` / `Alt+N` shortcuts move the selection, and the list scrolls whenever the new selection is outside the visible frame.
+- **Resizable Panels**: Drag the divider (or focus it and use the arrow keys) between the job list and the detail panel to adjust their widths. The ratio is remembered across reloads; the ↔ button or a double-click on the divider restores 50/50. The ‹ / › buttons toggle the list/detail panels off and back on. On mobile the panels stay stacked and the divider is hidden.
 - **Job Management**: Update job status (Applied, Interviewing, Rejected, etc.) and edit job data (title, company, location, salary, skills, modality, comments) via the job detail edit form — advanced fields are shown under the "Edit All" toggle. Modality is multi-select (checkbox group): a job can allow several arrangements at once (REMOTE/HYBRID/ON_SITE). For hybrid jobs the detail also shows the extracted arrangement (`hybrid_info`, e.g. "3 days remote / 2 days office") right below the modality.
 - **Filter Configurations**: Save the current filters under a name, then load, pin, watch, stats or delete them from the configuration dropdown.
 - **Statistics**: Visual insights into your job search progress.

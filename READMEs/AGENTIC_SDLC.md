@@ -109,12 +109,12 @@ The requirement is therefore enforced in the tool call, so it does not depend on
 Both are registered automatically: the hook in `.claude/settings.json`, the plugin in `.opencode/opencode.json`. They mirror each other, and both work the same way:
 
 1. An edit to a file that requires the suite is recorded, together with the module it belongs to.
-2. The next `scripts/test.sh` / `scripts/test.bat` invocation gets `commonlib` plus every recorded module added to its target list (`./scripts/test.sh web` → `./scripts/test.sh commonlib web`), so the architecture tests always execute.
+2. The next `scripts/test.sh` / `scripts/test.bat` invocation gets `commonlib` plus every recorded module added to its target list (`./scripts/test.sh web` → `./scripts/test.sh commonlib web e2e`), so the architecture tests always execute. Web changes also pull in `e2e`; user-visible web changes must come with an added or updated E2E spec (`e2e-implementer` skill).
 3. If the agent runs any other shell command first, the reminder is prepended once, naming the exact command to run.
 
 A runner invocation with **no** targets is left alone — the script already runs commonlib first, then every other module, then the e2e suite. Only real invocations are rewritten: a runner path that is a quoted string or an argument of another command (`echo "./scripts/test.sh web"`, `cat scripts/test.sh`) is left untouched, and every invocation of a compound command (`a && ./scripts/test.sh web && ./scripts/test.sh e2e`) is fixed.
 
-Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`, the test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`), `.env*`, dependency manifests (`pyproject.toml`, `package.json`, `package-lock.json`, `uv.lock`, `poetry.lock`) and other `scripts/**` files. Changes that do **not** require it: documentation, CI workflows, coverage gates, install/sandbox helpers, agent rules and skills, and generated paths — state that reason in the summary when skipping.
+Changes that require the suite: `apps/**/*.py`, `apps/web/src/**` (also runs `e2e`), `apps/e2e/**`, the test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`), `.env*`, dependency manifests (`pyproject.toml`, `package.json`, `package-lock.json`, `uv.lock`, `poetry.lock`) and other `scripts/**` files. Changes that do **not** require it: documentation, CI workflows, coverage gates, install/sandbox helpers, agent rules and skills, and generated paths — state that reason in the summary when skipping.
 
 ## Branch workflow (master vs staging)
 
