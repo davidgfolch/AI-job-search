@@ -65,7 +65,7 @@ Pull the default model before running — the HuggingFace fallback for ISPs that
 
 ### Learning paths
 
-The model proposes links, and the worker validates them over outbound HTTPS before persisting: unreachable deep links degrade to the trusted domain root, and a fully dead set degrades to a DuckDuckGo search URL, so an empty column is never left after a pass. Existing user-curated links are never overwritten (updates only run when `learning_path IS NULL OR JSON_LENGTH(learning_path) = 0`).
+The model proposes links, and the worker validates them over outbound HTTPS before persisting: bare homepages and links unrelated to the skill are dropped, and the surviving links are ordered documentation → tutorial/course → video/social (secondary). Unreachable links degrade to a skill-scoped documentation search, plus a skill-specific video search when a video was requested; a bare domain root is never persisted. Existing user-curated links are never overwritten (updates only run when `learning_path IS NULL OR JSON_LENGTH(learning_path) = 0`).
 
 - `AI_ENRICHSKILL_LEARNING_PATHS` — Enable the whole feature (default: `True`). `False` removes the prompt section and disables the idle backfill.
 - `AI_ENRICHSKILL_LEARNING_PATH_MAX` — Links requested/persisted per skill (default: `3`)

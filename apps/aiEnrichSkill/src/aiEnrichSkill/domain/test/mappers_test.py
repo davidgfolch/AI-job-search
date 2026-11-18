@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch
 
+from ...config import get_learning_path_system_prompt, get_skill_system_prompt
 from ..mappers import build_learning_path_prompt_messages, build_skill_prompt_messages
 
 
@@ -50,3 +51,22 @@ def test_build_learning_path_prompt_messages_context_optional():
     with patch("aiEnrichSkill.domain.mappers.get_learning_path_system_prompt", return_value="prompt"):
         messages = build_learning_path_prompt_messages("Python")
     assert len(messages) == 2
+
+
+def test_learning_path_prompt_requires_deep_links_and_docs_first():
+    with patch("aiEnrichSkill.config.get_learning_path_max", return_value=3):
+        prompt = get_learning_path_system_prompt()
+    assert "official documentation" in prompt
+    assert "bare homepage" in prompt
+    assert "secondary alternative" in prompt
+    assert "context line" in prompt
+
+
+@patch("aiEnrichSkill.config.get_learning_path_max", return_value=3)
+@patch("aiEnrichSkill.config.get_skill_categories", return_value="Language")
+@patch("aiEnrichSkill.config.get_learning_paths_enabled", return_value=True)
+def test_skill_prompt_forbids_generic_homepages(_enabled, _categories, _max):
+    prompt = get_skill_system_prompt()
+    assert "deep link" in prompt
+    assert "bare homepage" in prompt
+    assert "secondary to documentation" in prompt

@@ -10,7 +10,7 @@ select count(*) from jobs;
 
 select * from jobs WHERE
  -- not ai_enriched and not ignored AND
-  id in (506547)
+  id in (601249)
 
 select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
 -- update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
@@ -289,6 +289,9 @@ order by snapshot_at desc
 
 select * from job_skills where ai_enriched = 1 and category is null or category = '' limit 10;
 select * from job_skills where job_skills.name like '%Fix protocol%';
+select * from job_skills where job_skills.name = '4Gl';
+select no_learning_path, total_skills from (select count(*) as no_learning_path from job_skills WHERE learning_path IS NULL OR JSON_LENGTH(learning_path) = 0) as a
+cross join (select count(*) as total_skills from job_skills) as b;
 update job_skills set ai_enriched = null, category = null, description = null, learning_path=null
 where name = 'Fix protocol';
 where name like '%idempotency%' limit 1;

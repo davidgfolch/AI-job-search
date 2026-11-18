@@ -1,9 +1,11 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from ..link_validator import SEARCH_FALLBACK, build_learning_path, http_probe, validate_learning_paths
+from ..link_validator import SEARCH_FALLBACK, VIDEO_SEARCH_FALLBACK, build_learning_path, http_probe, validate_learning_paths
 
-DOMAINS = ("docs.python.org", "python.org", "realpython.com")
+DOMAINS = ("docs.python.org", "python.org", "realpython.com", "youtube.com", "coursera.org")
+PYTHON_DOCS = "https://docs.python.org/3/library/asyncio.html"
+PYTHON_VIDEO = "https://www.youtube.com/watch?v=python-basics"
 
 
 def probe_from(ok_urls):
@@ -14,19 +16,19 @@ def probe_from(ok_urls):
 
 @pytest.mark.parametrize("urls, ok_urls, max_links, expected", [
     pytest.param(
-        ["https://docs.python.org/3/", "https://realpython.com/"],
-        {"https://docs.python.org/3/", "https://realpython.com/"},
+        [PYTHON_DOCS, "https://realpython.com/python-asyncio/"],
+        {PYTHON_DOCS, "https://realpython.com/python-asyncio/"},
         3,
-        ["https://docs.python.org/3/", "https://realpython.com/"],
+        [PYTHON_DOCS, "https://realpython.com/python-asyncio/"],
         id="all_reachable"),
     pytest.param(
-        ["https://docs.python.org/3/library/asyncio.html"],
-        {"https://docs.python.org/"},
+        [PYTHON_DOCS],
+        set(),
         3,
-        ["https://docs.python.org/"],
-        id="dead_deep_link_degrades_to_root"),
+        [SEARCH_FALLBACK.format(query="Python")],
+        id="dead_deep_link_degrades_to_docs_search"),
     pytest.param(
-        ["https://docs.python.org/1/", "https://realpython.com/"],
+        ["https://docs.python.org/1/", "https://realpython.com/python-asyncio/"],
         set(),
         3,
         [SEARCH_FALLBACK.format(query="Python")],
@@ -38,23 +40,47 @@ def probe_from(ok_urls):
         [SEARCH_FALLBACK.format(query="Python")],
         id="disallowed_domain_is_dropped"),
     pytest.param(
-        ["https://docs.python.org/3/", "https://realpython.com/", "https://python.org/"],
-        {"https://docs.python.org/3/", "https://realpython.com/", "https://python.org/"},
+        [PYTHON_DOCS, "https://realpython.com/python-asyncio/", "https://python.org/about/"],
+        {PYTHON_DOCS, "https://realpython.com/python-asyncio/", "https://python.org/about/"},
         2,
-        ["https://docs.python.org/3/", "https://realpython.com/"],
+        [PYTHON_DOCS, "https://realpython.com/python-asyncio/"],
         id="caps_at_max_links"),
     pytest.param(
-        ["https://docs.python.org/3/#intro", "https://docs.python.org/3/"],
-        {"https://docs.python.org/3/"},
+        [PYTHON_DOCS + "#intro", PYTHON_DOCS],
+        {PYTHON_DOCS},
         3,
-        ["https://docs.python.org/3/"],
+        [PYTHON_DOCS],
         id="dedupes_same_page"),
     pytest.param(
-        ["http://docs.python.org/3/"],
-        {"http://docs.python.org/3/"},
+        ["http://docs.python.org/3/library/asyncio.html"],
+        {"http://docs.python.org/3/library/asyncio.html"},
         3,
-        ["http://docs.python.org/3/"],
+        ["http://docs.python.org/3/library/asyncio.html"],
         id="accepts_http"),
+    pytest.param(
+        ["https://www.youtube.com/"],
+        {"https://www.youtube.com/"},
+        3,
+        [SEARCH_FALLBACK.format(query="Python"), VIDEO_SEARCH_FALLBACK.format(query="Python")],
+        id="homepage_becomes_docs_plus_scoped_video_search"),
+    pytest.param(
+        ["https://www.youtube.com/watch?v=abc123"],
+        {"https://www.youtube.com/watch?v=abc123"},
+        3,
+        [SEARCH_FALLBACK.format(query="Python"), VIDEO_SEARCH_FALLBACK.format(query="Python")],
+        id="unrelated_video_becomes_scoped_search"),
+    pytest.param(
+        [PYTHON_VIDEO, PYTHON_DOCS],
+        {PYTHON_VIDEO, PYTHON_DOCS},
+        3,
+        [PYTHON_DOCS, PYTHON_VIDEO],
+        id="docs_first_video_secondary"),
+    pytest.param(
+        [PYTHON_VIDEO, "https://www.coursera.org/learn/python", PYTHON_DOCS],
+        {PYTHON_VIDEO, "https://www.coursera.org/learn/python", PYTHON_DOCS},
+        3,
+        [PYTHON_DOCS, "https://www.coursera.org/learn/python", PYTHON_VIDEO],
+        id="orders_docs_tutorial_video"),
 ], ids=lambda value: None)
 def test_build_learning_path(urls, ok_urls, max_links, expected):
     result = build_learning_path("Python", urls, probe=probe_from(ok_urls), domains=DOMAINS, max_links=max_links)
@@ -63,12 +89,12 @@ def test_build_learning_path(urls, ok_urls, max_links, expected):
 
 def test_build_learning_path_probe_exception_is_a_dead_link():
     def probe(url, _timeout):
-        if url == "https://docs.python.org/3/":
+        if url == PYTHON_DOCS:
             raise RuntimeError("boom")
         return True
 
-    result = build_learning_path("Python", ["https://docs.python.org/3/"], probe=probe, domains=DOMAINS)
-    assert result == ["https://docs.python.org/"]
+    result = build_learning_path("Python", [PYTHON_DOCS], probe=probe, domains=DOMAINS)
+    assert result == [SEARCH_FALLBACK.format(query="Python")]
 
 
 def test_build_learning_path_search_fallback_encodes_skill_name():

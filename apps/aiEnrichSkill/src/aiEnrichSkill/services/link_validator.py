@@ -7,11 +7,13 @@ import requests
 from commonlib.observability import get_logger
 
 from ..config import get_learning_domains, get_learning_path_max, get_learning_path_timeout, get_learning_paths_enabled
+from ..domain.url_relevance import DOC_TIER, TIER_ORDER, VIDEO_TIER, is_generic_url, mentions_skill, url_tier
 
 logger = get_logger("aiEnrichSkill.link_validator")
 
 ProbeFn = Callable[[str, int], bool]
 SEARCH_FALLBACK = "https://duckduckgo.com/?q={query}+official+documentation"
+VIDEO_SEARCH_FALLBACK = "https://www.youtube.com/results?search_query={query}"
 MAX_PROBE_WORKERS = 4
 
 
@@ -36,11 +38,6 @@ def _normalize(urls: Sequence[str], domains: Sequence[str]) -> List[str]:
     return result
 
 
-def _root(url: str) -> str:
-    parsed = urlparse(url)
-    return f"{parsed.scheme}://{parsed.netloc}/"
-
-
 def _safe_probe(probe: ProbeFn, url: str, timeout: int) -> bool:
     try:
         return bool(probe(url, timeout))
@@ -61,22 +58,40 @@ def _search_fallback(skill_name: str) -> str:
     return SEARCH_FALLBACK.format(query=quote_plus(skill_name.strip() or "technology"))
 
 
+def _video_fallback(skill_name: str) -> str:
+    return VIDEO_SEARCH_FALLBACK.format(query=quote_plus(skill_name.strip()))
+
+
+def _is_relevant(skill_name: str, url: str) -> bool:
+    return url_tier(url) == DOC_TIER or mentions_skill(url, skill_name)
+
+
+def _dedupe(urls: List[str]) -> List[str]:
+    seen = set()
+    result = []
+    for url in urls:
+        key = url.rstrip("/").lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(url)
+    return result
+
+
 def build_learning_path(skill_name: str, urls: Sequence[str], *, probe: ProbeFn, domains: Sequence[str], max_links: int = 3, timeout: int = 5) -> List[str]:
-    """Keep only allowlisted, reachable URLs; a dead deep link degrades to its trusted root, and a fully dead
-    set degrades to one search URL so the column is never left empty after a pass."""
+    """Keep allowlisted, reachable, skill-specific deep links in docs → tutorial → video order.
+    Generic homepages and unrelated links are dropped; dead links degrade to a skill-scoped
+    documentation search plus a video search when one was requested, never to a domain root."""
     candidates = _normalize(urls, domains)
-    reachable = _probe_all(probe, candidates, timeout)
-    selected: List[str] = []
-    for url in candidates:
-        if len(selected) >= max_links:
-            break
-        if reachable.get(url):
-            selected.append(url)
-            continue
-        root = _root(url)
-        if root not in selected and _safe_probe(probe, root, timeout):
-            selected.append(root)
-    return selected[:max_links] or [_search_fallback(skill_name)]
+    relevant = [url for url in candidates if not is_generic_url(url) and _is_relevant(skill_name, url)]
+    video_requested = any(url_tier(url) == VIDEO_TIER for url in candidates)
+    reachable = _probe_all(probe, relevant, timeout)
+    selected = [url for url in relevant if reachable.get(url)]
+    if not any(url_tier(url) == DOC_TIER for url in selected):
+        selected.insert(0, _search_fallback(skill_name))
+    if video_requested and skill_name.strip() and not any(url_tier(url) == VIDEO_TIER for url in selected):
+        selected.append(_video_fallback(skill_name))
+    ordered = sorted(_dedupe(selected), key=lambda url: TIER_ORDER[url_tier(url)])
+    return ordered[:max_links]
 
 
 def http_probe(url: str, timeout: int) -> bool:
@@ -106,4 +121,3 @@ def validate_learning_paths(skill_name: str, urls: Sequence[str]) -> List[str]:
         max_links=get_learning_path_max(),
         timeout=get_learning_path_timeout(),
     )
-
