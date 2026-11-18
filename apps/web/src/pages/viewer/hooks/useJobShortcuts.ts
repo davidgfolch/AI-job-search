@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useEnvSettings } from '../../common/hooks/useEnvSettings';
-import { resolveShortcuts, SHORTCUT_ACTIONS, type ShortcutAction } from '../shortcutsConfig';
+import { pinnedShortcutPosition, resolveShortcuts, SHORTCUT_ACTIONS, type ShortcutAction } from '../shortcutsConfig';
 import { UI_SHORTCUTS_ENABLED_KEY, UI_SHORTCUTS_STORAGE_KEY } from '../shortcutsConfig';
 
 const isEditableTarget = (target: EventTarget | null): boolean => {
@@ -50,9 +50,12 @@ export const useJobShortcuts = ({ onAction, onPinnedConfigShortcut }: UseJobShor
                     return;
                 }
             }
-            if (!e.ctrlKey && e.altKey && key >= '1' && key <= '9' && onPinnedConfigShortcut) {
-                e.preventDefault();
-                onPinnedConfigShortcut(Number(key));
+            if (onPinnedConfigShortcut && !e.ctrlKey && e.altKey) {
+                const pinnedPosition = pinnedShortcutPosition(key);
+                if (pinnedPosition !== null) {
+                    e.preventDefault();
+                    onPinnedConfigShortcut(pinnedPosition);
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);

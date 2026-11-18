@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import HeaderMenu from '../HeaderMenu';
 
@@ -56,5 +56,38 @@ describe('HeaderMenu', () => {
     
     fireEvent.click(screen.getByText('Statistics'));
     expect(screen.queryByText('Statistics')).not.toBeInTheDocument();
+  });
+
+  const shortcuts = {
+    enabled: true,
+    onToggle: vi.fn(),
+    shortcuts: [{ label: 'Ignore job', description: 'Mark selected job as ignored', display: 'Alt+I' }],
+  };
+
+  it('does not show the Shortcuts item without shortcut data', () => {
+    renderWithRouter(<HeaderMenu />);
+
+    fireEvent.click(screen.getByText('Menu'));
+    expect(screen.queryByText('Shortcuts')).not.toBeInTheDocument();
+  });
+
+  it('opens the shortcuts popup from the menu item', () => {
+    renderWithRouter(<HeaderMenu shortcuts={shortcuts} />);
+
+    fireEvent.click(screen.getByText('Menu'));
+    fireEvent.click(screen.getByText('Shortcuts'));
+    expect(screen.getByText('Keyboard shortcuts')).toBeInTheDocument();
+    expect(screen.getByText('Alt+I')).toBeInTheDocument();
+    expect(screen.queryByText('Statistics')).not.toBeInTheDocument();
+  });
+
+  it('toggles shortcuts from the popup header', () => {
+    const onToggle = vi.fn();
+    renderWithRouter(<HeaderMenu shortcuts={{ ...shortcuts, onToggle }} />);
+
+    fireEvent.click(screen.getByText('Menu'));
+    fireEvent.click(screen.getByText('Shortcuts'));
+    fireEvent.click(screen.getByTitle('Keyboard shortcuts enabled'));
+    expect(onToggle).toHaveBeenCalledOnce();
   });
 });

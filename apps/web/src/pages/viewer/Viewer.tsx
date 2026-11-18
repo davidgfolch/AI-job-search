@@ -16,7 +16,7 @@ import { BOOLEAN_FILTERS } from './constants';
 import type { JobListParams } from './api/ViewerApi';
 import { useDefaultComment } from '../common/hooks/useDefaultComment';
 import { useJobShortcuts } from './hooks/useJobShortcuts';
-import ShortcutsControls from './components/ShortcutsControls';
+import { pinnedShortcutDisplay, SHORTCUT_ACTIONS } from './shortcutsConfig';
 import { useViewerShortcuts } from './hooks/useViewerShortcuts';
 import { ShortcutsContext } from './shortcutsContext';
 import { usePanelResize } from './hooks/usePanelResize';
@@ -45,6 +45,12 @@ export default function Viewer() {
         loadPinnedByPositionRef.current(index);
     }, []);
     const { enabled: shortcutsEnabled, toggleEnabled: toggleShortcuts, shortcuts, modifierPressed } = useJobShortcuts({ onAction: handleShortcut, onPinnedConfigShortcut: handlePinnedConfigShortcut });
+    const shortcutsMenu = {
+        enabled: shortcutsEnabled,
+        onToggle: toggleShortcuts,
+        shortcuts: SHORTCUT_ACTIONS.map(info => ({ label: info.label, description: info.description, display: shortcuts[info.action].display })),
+        pinnedShortcuts: pinnedShortcuts.map(config => ({ name: config.name, display: pinnedShortcutDisplay(config.index) })),
+    };
 
     const handleFiltersChange = useCallback((newFilters: JobListParams) => {
         const isSearchOrFilterChange = newFilters.search !== state.filters.search || 
@@ -63,9 +69,7 @@ const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
 
     return (
         <ShortcutsContext.Provider value={{ shortcuts, modifierPressed }}>
-            <PageHeader title="Jobs">
-                <ShortcutsControls enabled={shortcutsEnabled} onToggle={toggleShortcuts} shortcuts={shortcuts} pinnedShortcuts={pinnedShortcuts} />
-            </PageHeader>
+            <PageHeader title="Jobs" shortcuts={shortcutsMenu} />
             <main className="app-main">
                 <div className="viewer">
                     <ConfirmModal

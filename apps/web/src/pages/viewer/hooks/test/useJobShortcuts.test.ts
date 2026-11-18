@@ -110,6 +110,12 @@ describe('useJobShortcuts', () => {
         expect(onPinnedConfigShortcut).toHaveBeenCalledWith(3);
     });
 
+    it('maps alt+0 to the tenth pinned config', () => {
+        render();
+        fireEvent.keyDown(window, { key: '0', altKey: true });
+        expect(onPinnedConfigShortcut).toHaveBeenCalledWith(10);
+    });
+
     it('does not fire pinned config shortcut without alt', () => {
         render();
         fireEvent.keyDown(window, { key: '2' });
