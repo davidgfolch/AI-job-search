@@ -1,6 +1,6 @@
 
 from commonlib.company_normalizer import UNSPECIFIED_COMPANY
-from commonlib.ai_helpers import TOO_LONG_CONTEXT_REASON
+from commonlib.ai_helpers import RETRY_ERROR_PREFIX, TOO_LONG_CONTEXT_REASON
 from commonlib.repositories.test.aiEnrichRepository_fixtures import mockRepo
 
 
@@ -168,3 +168,10 @@ def test_get_enrichment_error_id_retry_excludes_too_long_context():
     mock_mysql.fetch_all_result = []
     repo.get_enrichment_error_id_retry()
     assert f"ai_enrich_error != '{TOO_LONG_CONTEXT_REASON}'" in mock_mysql.last_query
+
+def test_get_enrichment_error_id_retry_excludes_already_retried_errors():
+    """The retry pass must not hand the same job back forever: an error it already retried is skipped."""
+    mock_mysql, repo = mockRepo()
+    mock_mysql.fetch_all_result = []
+    repo.get_enrichment_error_id_retry()
+    assert f"ai_enrich_error NOT LIKE '{RETRY_ERROR_PREFIX}%'" in mock_mysql.last_query

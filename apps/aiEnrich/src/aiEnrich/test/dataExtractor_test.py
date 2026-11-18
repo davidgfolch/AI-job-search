@@ -2,6 +2,8 @@ import pytest
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
+from commonlib.ai_helpers import RETRY_ERROR_PREFIX
+
 from ..dataExtractor import dataExtractor, retry_failed_jobs, _save, _process_job_safe, _notify_watcher_backend
 
 from .dataExtractor_fixtures import (
@@ -31,13 +33,16 @@ class TestDataExtractor:
         mock_deps['save'].assert_not_called()
 
     @patch('aiEnrich.dataExtractor._getJobBatches', return_value=[[1]])
-    def test_retries_job_when_ollama_returns_none(self, mock_ids, mock_deps):
+    def test_marks_job_error_when_ollama_is_up_but_returns_none(self, mock_ids, mock_deps):
+        """A backend that answers the probe but never replies must not keep the job pending."""
         mock_deps['repo'].count_pending_enrichment.return_value = 1
         mock_deps['repo'].get_job_to_enrich.return_value = JOB_ROW
-        mock_deps['ollama'].side_effect = [None, ENRICHMENT_JSON]
+        mock_deps['ollama'].return_value = None
         assert dataExtractor() == 1
-        mock_deps['save'].assert_called_once()
-        assert mock_deps['ollama'].call_count == 2
+        mock_deps['save'].assert_not_called()
+        assert mock_deps['ollama'].call_count == 1
+        mock_deps['repo'].update_enrichment_error.assert_called_once()
+        assert mock_deps['repo'].update_enrichment_error.call_args.args[1].startswith("no response from ollama")
 
     def test_save(self, mock_deps):
         repo = MagicMock()
@@ -217,6 +222,31 @@ class TestProcessJobSafeTooLongContext:
         deps.save.assert_not_called()
         footer.assert_called_once()
 
+    @pytest.mark.parametrize("process_name, prefix", [("enrich", ""), ("retry", "RETRY ERROR: ")])
+    def test_backend_up_without_a_reply_marks_ai_enrich_error(self, process_name, prefix):
+        repo = enrich_repo()
+        with process_job_patches() as deps:
+            deps.ollama.return_value = None
+            _process_job_safe(repo, 1, 1, 0, process_name)
+        repo.update_enrichment_error.assert_called_once()
+        error_msg, is_enrichment = repo.update_enrichment_error.call_args.args[1:]
+        assert error_msg.startswith(f"{prefix}no response from ollama (timeout ")
+        assert is_enrichment is True
+        assert deps.ollama.call_count == 1
+        deps.save.assert_not_called()
+
+    def test_backend_going_down_mid_job_waits_instead_of_marking_an_error(self):
+        repo = enrich_repo()
+        with process_job_patches() as deps, \
+             patch("aiEnrich.dataExtractor.ping_backend", side_effect=[True, False, True]), \
+             patch("aiEnrich.dataExtractor.logIdleWait") as idle:
+            deps.ollama.side_effect = [None, ollama_response()]
+            _process_job_safe(repo, 1, 1, 0, "enrich")
+        idle.assert_called_once()
+        assert idle.call_args.kwargs == {"reason": "backend_unavailable"}
+        repo.update_enrichment_error.assert_not_called()
+        deps.save.assert_called_once()
+
     def test_short_context_still_calls_the_model(self, monkeypatch):
         monkeypatch.setenv("AI_ENRICH_INPUT_MAX_LEN", "100000")
         repo = enrich_repo()
@@ -225,3 +255,44 @@ class TestProcessJobSafeTooLongContext:
             _process_job_safe(repo, 1, 1, 0, "enrich")
         repo.skip_enrichment.assert_not_called()
         deps.ollama.assert_called_once()
+
+
+class TestErrorRetryPass:
+    """A job Ollama cannot answer leaves the queue after one retry pass instead of looping forever.
+
+    The repository double mirrors the guard the real query applies (an error already prefixed with
+    RETRY_ERROR_PREFIX is not selected again); aiEnrichRepository_test asserts that guard in the SQL.
+    """
+
+    @staticmethod
+    def _repo(job_id: int):
+        state = {"error": ""}
+        repo = enrich_repo(job_id)
+        repo.config_for_job.return_value = None
+        repo.count_pending_enrichment.return_value = 0
+        repo.update_enrichment_error.side_effect = lambda _id, msg, _flag: state.update(error=msg) or 1
+        repo.get_enrichment_error_id_retry.side_effect = lambda: job_id if state["error"] and not state["error"].startswith(RETRY_ERROR_PREFIX) else None
+        return repo, state
+
+    def test_marked_job_is_retried_once_and_then_left_alone(self):
+        job_id = 42
+        repo, state = self._repo(job_id)
+        with process_job_patches() as deps, \
+             patch("aiEnrich.dataExtractor.MysqlUtil"), \
+             patch("aiEnrich.dataExtractor.AiEnrichRepository", return_value=repo), \
+             patch("aiEnrich.dataExtractor._check_backend_available", return_value=True):
+            deps.ollama.return_value = None
+            # The enrich pass writes an unprefixed error, which is exactly what the retry pass selects.
+            _process_job_safe(repo, job_id, 1, 0, "enrich")
+            assert state["error"].startswith("no response from ollama")
+            assert not state["error"].startswith(RETRY_ERROR_PREFIX)
+
+            assert retry_failed_jobs() == 1
+            assert state["error"].startswith(f"{RETRY_ERROR_PREFIX}no response from ollama")
+            assert repo.get_job_to_retry.call_count == 1
+
+            # Second pass: the prefixed error is no longer selected, so the job never reaches Ollama again.
+            deps.ollama.reset_mock()
+            assert retry_failed_jobs() == 0
+            assert repo.get_job_to_retry.call_count == 1
+            deps.ollama.assert_not_called()

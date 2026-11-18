@@ -5,6 +5,14 @@ from commonlib.stopWatch import StopWatch
 logger = get_logger("commonlib.services.skill_enricher_service")
 
 
+class BackendUnavailable(Exception):
+    """Raised by a generator when the model server is down mid-batch.
+
+    The batch stops on it: nothing is written, so the items still to do stay pending and are
+    retried once the server answers again instead of being written off as unenrichable.
+    """
+
+
 def log_no_pending_skills(limit: int) -> None:
     """The one record an idle skill cycle logs, shared by the ollama and huggingface paths."""
     logger.info("jobs.skipped", message="No skills pending.", reason="no_pending_skills", limit=limit)
@@ -52,6 +60,10 @@ def process_skill_enrichment(
                 count += 1
             else:
                 logger.warning("skill.description_failed", name=name)
+        except BackendUnavailable:
+            # The server went away mid-batch: stop here and leave the rest pending.
+            logger.error("skill.enrich_aborted", name=name, reason="backend_unavailable", remaining=len(names) - i - 1)
+            break
         except Exception:
             logger.exception("skill.enrich_failed", name=name)
         stop_watch.end()

@@ -60,6 +60,14 @@ def test_save_learning_path_serializes_json_and_guards_curated_links():
     assert "JSON_LENGTH(learning_path) = 0" in UPDATE_LEARNING_PATH_QUERY
 
 
+def test_skip_skill_marks_enriched_so_it_leaves_the_pending_queue():
+    mysql = MagicMock()
+    SkillRepository(mysql).skip_skill("Python")
+    query, params = mysql.executeAndCommit.call_args[0]
+    assert "SET ai_enriched = 1" in query
+    assert params == ["Python"]
+
+
 @pytest.mark.parametrize("learning_path, expected_args, has_learning_path_field", [
     pytest.param([], ["Desc", "Cat", "Python"], False, id="no_links"),
     pytest.param(["https://python.org"], ["Desc", "Cat", json.dumps(["https://python.org"]), "Python"], True, id="with_links"),

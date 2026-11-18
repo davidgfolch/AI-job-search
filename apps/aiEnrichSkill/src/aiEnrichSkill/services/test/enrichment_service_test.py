@@ -1,8 +1,16 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from ..enrichment_service import enrich_skills, generate_skill_description_ollama
+from commonlib.services.skill_enricher_service import BackendUnavailable
+from ..enrichment_service import _enrich_ollama, enrich_skills, generate_skill_description_ollama
 from .enrichment_service_fixtures import assert_failure_metric, make_ollama_mocks, run_enrich_ollama
+
+
+@pytest.fixture(autouse=True)
+def ollama_answers():
+    """No test may probe a real Ollama server; individual tests override this with their own patch."""
+    with patch("aiEnrichSkill.services.enrichment_service.ping_ollama", return_value=True):
+        yield
 
 
 @pytest.mark.parametrize("backend, expected, called_mock", [
@@ -98,6 +106,52 @@ def test_enrich_ollama_records_metric_on_failure(mock_build, mock_query, mock_co
     make_ollama_mocks(mock_build, mock_query, query_result=None)
     run_enrich_ollama(name="Unknown", context="")
     assert_failure_metric(mock_collector)
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
+@patch("aiEnrichSkill.services.enrichment_service.ping_ollama", return_value=False)
+def test_enrich_ollama_defers_the_cycle_when_ollama_is_down(mock_ping, mock_process, mock_collector):
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = True
+    assert _enrich_ollama(repository) == 0
+    mock_process.assert_not_called()
+    mock_collector.record_backend_unreachable.assert_called_once_with("aiEnrichSkill")
+
+
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
+@pytest.mark.parametrize("pending", [True, False])
+def test_enrich_ollama_does_not_probe_when_there_is_no_work(_mock_process, pending):
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = pending
+    with patch("aiEnrichSkill.services.enrichment_service.ping_ollama", return_value=True) as ping:
+        _enrich_ollama(repository)
+    assert ping.called is pending
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama", return_value=None)
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+def test_unanswerable_skill_leaves_the_queue_when_ollama_is_up(mock_build, mock_query, _mock_collector):
+    """Ollama answers but produced no description: retrying the same skill every cycle would block the queue."""
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = True
+    make_ollama_mocks(mock_build, mock_query, query_result=None)
+    run_enrich_ollama(repository=repository)
+    repository.skip_skill.assert_called_once_with("Python")
+
+
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama", return_value=None)
+@patch("aiEnrichSkill.services.enrichment_service.ping_ollama", side_effect=[True, False])
+def test_backend_going_down_mid_batch_leaves_the_skill_pending(_mock_ping, mock_query, mock_build):
+    """A server that died between the cycle probe and the request is waited for, never marked."""
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = True
+    make_ollama_mocks(mock_build, mock_query, query_result=None)
+    with pytest.raises(BackendUnavailable):
+        run_enrich_ollama(repository=repository)
+    repository.skip_skill.assert_not_called()
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")

@@ -20,7 +20,7 @@ from commonlib.services.metrics_collector import MetricsCollector
 from .aiEnrich_config import (
     get_job_enabled, get_model, get_max_validation_retries,
     get_backend, get_openrouter_model,
-    get_max_ollama_failures, get_backend_url,
+    get_max_ollama_failures, get_backend_url, get_timeout_job,
 )
 from .ollama_backend import (
     ping_backend, _check_backend_available, _query_job, _query_company,
@@ -154,16 +154,21 @@ def _process_job_safe(
                 else:
                     while response is None:
                         if not ping_backend():
-                            logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=get_max_ollama_failures())
-                            collector.record_backend_unreachable("aiEnrich")
-                            logIdleWait(cyan('Backend unavailable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+                            _wait_for_unavailable_backend(backend)
                             continue
                         result, response = query_and_parse(
                             lambda retry_prompt: _query_job(retry_prompt, backend, model), prompt,
                             max_attempts=get_max_validation_retries() + 1, log=logger,
                         )
-                        if response is None:
-                            logger.warning("job.ai_unreachable", job_id=id, title=title, company=company)
+                        if response is None and not ping_backend():
+                            # The server died between the probe and the request: wait for it, the job stays pending.
+                            _wait_for_unavailable_backend(backend)
+                        elif response is None:
+                            # The backend still answers the probe but produced no reply for this job (typically it does
+                            # not finish within AI_ENRICH_TIMEOUT_JOB). Retrying it here re-ran the same request forever
+                            # and blocked the whole batch, so the job leaves the pending queue with an error instead.
+                            _mark_enrich_error(repo, id, title, company, f"no response from {backend} (timeout {get_timeout_job()}s)", process_name)
+                            break
                     if result is not None:
                         filter_ungrounded_technologies(result, markdown, log=logger)
                         filter_ungrounded_hybrid_info(result, markdown, log=logger)
@@ -208,15 +213,37 @@ def _notify_watcher_backend(job_ids: List[int]) -> None:
     notify_backend_watcher(job_ids, base_url=get_backend_url())
 
 
-def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):
-    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex), config=repo.config_for_job(id) or "NONE")
-    jobErrors.add((id, f"{title} - {company}: {ex}"))
+def _wait_for_unavailable_backend(backend: str) -> None:
+    """An unreachable backend is waited for, never turned into a job error: the job stays pending."""
+    logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=get_max_ollama_failures())
+    collector.record_backend_unreachable("aiEnrich")
+    logIdleWait(cyan('Backend unavailable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+
+
+def _mark_enrich_error(repo: AiEnrichRepository, id, title, company, reason: str, process_name: str):
+    """Store a job-level error so the job leaves the pending queue instead of blocking the batch.
+
+    Only used while the backend is up (its probe answers): a backend that is down is waited for by
+    _wait_for_unavailable_backend. The retry pass picks the error up once and re-marks it with
+    RETRY_ERROR_PREFIX if it fails again, which keeps a job that can never be enriched from looping.
+    """
+    logger.error("job.enrich_failed", job_id=id, title=title, company=company, reason=reason, config=repo.config_for_job(id) or "NONE")
+    jobErrors.add((id, f"{title} - {company}: {reason}"))
+    _persist_enrich_error(repo, id, reason, process_name)
+
+
+def _persist_enrich_error(repo: AiEnrichRepository, id, error_msg, process_name: str):
     prefix = RETRY_ERROR_PREFIX if process_name == "retry" else ""
-    error_msg = f"{prefix}{ex}"
-    if repo.update_enrichment_error(id, error_msg, True) == 0:
+    if repo.update_enrichment_error(id, f"{prefix}{error_msg}", True) == 0:
         logger.error("job.error_update_failed", job_id=id)
     else:
         logger.warning("job.error_set", job_id=id)
+
+
+def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name):
+    logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex), config=repo.config_for_job(id) or "NONE")
+    jobErrors.add((id, f"{title} - {company}: {ex}"))
+    _persist_enrich_error(repo, id, ex, process_name)
 
 
 def _getJobBatches(repo: AiEnrichRepository):

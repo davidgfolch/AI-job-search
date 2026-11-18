@@ -50,7 +50,7 @@ Records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the b
 - **Progress**: `footer()` logs one `ai.batch_completed` record per job with the `n/m` counters and the human line in `console=`, so `docker-compose logs` reads as a progress line while the counters stay queryable.
 - **Idle**: `logIdleWait()` logs `jobs.skipped` (`no_pending_jobs`) or `ai.retry_wait` (`backend_unavailable`) on a `WakeableTimer` instead of sleeping; interactive terminals keep the countdown.
 - **Sleeping backend**: consecutive `ai.unreachable` failures wait for the server instead of exiting. A cached server that stops answering is re-resolved (`ollama.resolved_unreachable`) and counted in the `backend_unreachable` metric. `AI_ENRICH_MAX_OLLAMA_FAILURES` (default `3`) only aborts while no server has ever been resolved.
-- **Provider failures mid-job**: `job.ai_unreachable` retries the same job without advancing progress; it stays pending until it succeeds or fails with a real error.
+- **Provider failures mid-job**: retry/defer only happens while the backend is unreachable (the job stays pending and the worker waits). If the backend still answers the probe but produces no reply for a job — typically one that cannot finish within `AI_ENRICH_TIMEOUT_JOB` — the job is marked with `ai_enrich_error` (`job.enrich_failed`) and leaves the pending queue, so a single job that can never be enriched does not block the batch.
 - **Attribution**: each job runs inside `job_log_context(id)`, so related records share `job_id`.
 
 ## Configuration

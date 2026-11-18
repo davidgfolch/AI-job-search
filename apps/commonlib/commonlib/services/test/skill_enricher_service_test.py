@@ -2,7 +2,7 @@ import pytest
 from structlog.testing import capture_logs
 from unittest.mock import MagicMock, patch
 from commonlib.repositories.skill_repository import DESCRIPTION_AND_PATH_UPDATE, DESCRIPTION_UPDATE, SkillRepository
-from commonlib.services.skill_enricher_service import process_skill_enrichment
+from commonlib.services.skill_enricher_service import BackendUnavailable, process_skill_enrichment
 
 
 @pytest.mark.parametrize("limit", [10], ids=["default_limit"])
@@ -65,6 +65,23 @@ def test_process_skill_enrichment_error_in_generation():
         gen_fn = MagicMock(side_effect=Exception("LLM error"))
         count = process_skill_enrichment(SkillRepository(mysql), gen_fn)
         assert count == 0
+
+
+def test_process_skill_enrichment_stops_the_batch_when_the_backend_goes_down():
+    """Nothing is written when the server dies mid-batch: the remaining items stay pending for the next cycle."""
+    mysql = MagicMock()
+    mysql.fetchAll.return_value = [("Skill1",), ("Skill2",)]
+    calls = []
+
+    def gen_fn(name, _context):
+        calls.append(name)
+        raise BackendUnavailable(name)
+
+    with patch("commonlib.repositories.skill_repository.get_skill_context", return_value="Context"):
+        count = process_skill_enrichment(SkillRepository(mysql), gen_fn)
+    assert calls == ["Skill1"]
+    assert count == 0
+    mysql.executeAndCommit.assert_not_called()
 
 
 def test_process_skill_enrichment_error_in_context():

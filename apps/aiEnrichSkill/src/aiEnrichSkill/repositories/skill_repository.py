@@ -17,6 +17,7 @@ UPDATE_LEARNING_PATH_QUERY = (
     "AND (learning_path IS NULL OR JSON_LENGTH(learning_path) = 0)"
 )
 PENDING_PRIORITY_QUERY = f"SELECT name FROM job_skills WHERE COALESCE(ai_enriched, 0) = 0{EMPTY_DESCRIPTION_FILTER} LIMIT 1"
+SKIP_SKILL_QUERY = "UPDATE job_skills SET ai_enriched = 1 WHERE name = %s"
 
 
 class SkillRepository:
@@ -43,6 +44,11 @@ class SkillRepository:
 
     def fetch_skill_context(self, name: str) -> str:
         return get_skill_context(self._mysql, name)
+
+    def skip_skill(self, name: str) -> None:
+        """Mark a skill the model could not describe as done: `ai_enriched = 1` is what takes it out
+        of the pending query, so it stops occupying the head of the queue every cycle."""
+        self._mysql.executeAndCommit(SKIP_SKILL_QUERY, [name])
 
     def save_learning_path(self, name: str, learning_path: List[str]) -> None:
         self._mysql.executeAndCommit(UPDATE_LEARNING_PATH_QUERY, [json.dumps(learning_path), name])
