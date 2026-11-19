@@ -55,6 +55,8 @@ services:
       - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
       - ./apps/cron/data/logs:/logs/cron:ro
       - ./apps/aiFormFiller/data/logs:/logs/aiformfiller:ro
+      # scrapper runs on the host; its keyword-search JSONL is read-only here for /api/statistics/keywords
+      - ./apps/scrapper/data/logs:/logs/scrapper:ro
     ports:
       - "8000:8000"
     environment:
@@ -63,6 +65,7 @@ services:
       # In-container addresses; .env targets localhost (correct for host-run apps only).
       - COMMONLIB_DB_HOST=mysql_db
       - COMMONLIB_DB_DISCOVERY=False
+      - SCRAPPER_LOG_DIR=/logs/scrapper
       - MONGO_URI=mongodb://mongo_db:27017/
       - COMMONLIB_DISCOVERY_CACHE=/app/data/discovery/cache.json
       - TZ=${GLOBAL_TZ}

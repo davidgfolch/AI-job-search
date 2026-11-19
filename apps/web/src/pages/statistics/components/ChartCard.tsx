@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-    getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats
+    getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats, getKeywordStats
 } from '../api/StatisticsApi';
-import type { HistoryStat, SourceDateStat, SourceHourStat, SourceWeekdayStat, FilterConfigStat } from '../api/StatisticsApi';
+import type { HistoryStat, SourceDateStat, SourceHourStat, SourceWeekdayStat, FilterConfigStat, KeywordStat } from '../api/StatisticsApi';
 import { processChartData, getDateRange, type ChartDataset } from '../utils/chartUtils';
 import StatisticsFilters from './StatisticsFilters';
 
-type ChartData = HistoryStat[] | SourceDateStat[] | SourceHourStat[] | SourceWeekdayStat[] | FilterConfigStat[];
+type ChartData = HistoryStat[] | SourceDateStat[] | SourceHourStat[] | SourceWeekdayStat[] | FilterConfigStat[] | KeywordStat[];
 
 interface ChartCardProps {
     title: string;
     children: React.ReactNode | ((data: ChartDataset | null) => React.ReactNode);
-    chartType: 'weekday' | 'date' | 'hour' | 'filterConfig' | 'history';
+    chartType: 'weekday' | 'date' | 'hour' | 'filterConfig' | 'history' | 'keyword';
     parentTimeRange: string;
     parentIncludeOldJobs: boolean;
     onExpandChange: (chartTitle: string | null) => void;
@@ -39,12 +39,13 @@ const ChartCard: React.FC<ChartCardProps> = ({
             case 'hour': return getSourcesByHour(startDate, endDate, localIncludeOldJobs);
             case 'weekday': return getSourcesByWeekday(startDate, endDate, localIncludeOldJobs);
             case 'filterConfig': return getFilterConfigStats(startDate, endDate);
+            case 'keyword': return getKeywordStats(startDate, endDate);
         }
     }, [chartType, startDate, endDate, localIncludeOldJobs]);
 
     const { data: rawData, isFetching } = useQuery<ChartData>({
-        // The filter-configs endpoint does not take includeOldJobs, so it is not part of the cache key.
-        queryKey: chartType === 'filterConfig'
+        // The filter-configs and keyword endpoints do not take includeOldJobs, so it is not part of the cache key.
+        queryKey: chartType === 'filterConfig' || chartType === 'keyword'
             ? ['statistics', chartType, startDate, endDate]
             : ['statistics', chartType, startDate, endDate, localIncludeOldJobs],
         queryFn: fetchData,

@@ -8,6 +8,7 @@ import './Statistics.css';
 import { useStatistics } from './useStatistics';
 import type { ChartDataset } from './utils/chartUtils';
 import PageHeader from '../common/components/PageHeader';
+import KeywordChart from './components/KeywordChart';
 
 const Statistics = () => {
     const [columns, setColumns] = useState(2);
@@ -47,6 +48,7 @@ const Statistics = () => {
         sourcesWeekdayWide,
         sourcesWeekdayKeys,
         filterConfigData,
+        keywordStats,
     } = useStatistics();
 
     React.useEffect(() => {
@@ -147,6 +149,18 @@ const Statistics = () => {
                         expandedChart={expandedChart}
                     >
                         {(data: ChartDataset | null) => renderHistoryChart(data || historyData || [])}
+                    </ChartCard>
+
+                    <ChartCard
+                        title="Keyword totals & duplicates by date"
+                        chartType="keyword"
+                        parentTimeRange={timeRange}
+                        parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange}
+                        onFilterChange={handleFilterChange}
+                        expandedChart={expandedChart}
+                    >
+                        {(data: ChartDataset | null) => <KeywordChart rows={data || keywordStats || []} />}
                     </ChartCard>
 
                 </div>

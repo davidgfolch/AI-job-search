@@ -25,6 +25,7 @@ describe('useStatistics', () => {
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getKeywordStats).mockResolvedValue([]);
     });
 
     it('returns default time range', async () => {
@@ -127,6 +128,13 @@ describe('useStatistics', () => {
         const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         
         await waitFor(() => expect(result.current.filterConfigData).toEqual(mockFilterConfigData));
+    });
+
+    it('returns keyword stats from the log-based endpoint', async () => {
+        const keywordData = [{ date: '2026-11-19', site: 'Indeed', keyword: 'python', reported_total: 40, processed: 20, new: 18, duplicates: 2, duplicate_ids: '91,92' }];
+        vi.mocked(StatisticsApi.getKeywordStats).mockResolvedValue(keywordData);
+        const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
+        await waitFor(() => expect(result.current.keywordStats).toEqual(keywordData));
     });
 
     it('computes allSources from multiple keys', async () => {

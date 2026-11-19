@@ -8,6 +8,7 @@ from api import salary
 from api import ddl
 from api import statistics
 from api import statistics_archived
+from api import keyword_stats
 from api import skills
 from api import filter_configurations
 from api import settings
@@ -42,6 +43,7 @@ app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 app.include_router(salary.router, prefix="/api/salary", tags=["salary"])
 app.include_router(ddl.router, prefix="/api/ddl", tags=["ddl"])
 app.include_router(statistics.router, prefix="/api/statistics", tags=["statistics"])
+app.include_router(keyword_stats.router, prefix="/api/statistics", tags=["statistics"])
 app.include_router(
     statistics_archived.router,
     prefix="/api/statistics-archived",

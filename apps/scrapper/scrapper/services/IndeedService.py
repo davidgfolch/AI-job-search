@@ -78,7 +78,7 @@ class IndeedService(BaseService):
                           console=f"{job_id}, {title}, {cyan(company)}, easy_apply={easy_apply} - ", end="")
             # Double check existence with the final canonical ID
             if self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None:
-                logger.info("indeed.job.already_exists", job_id=job_id,
+                logger.info("scraper.job.already_exists", job_id=job_id,
                             console=yellow(f"Job id={job_id} already exists in DB (late check), IGNORED."), end="")
                 return True
             if validate(title, url, company, md, self.debug):

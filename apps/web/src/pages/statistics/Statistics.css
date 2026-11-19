@@ -150,3 +150,45 @@
     display: flex;
     align-items: center;
 }
+
+.keyword-chart {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.keyword-chart-canvas {
+    flex: 1;
+    min-height: 140px;
+}
+
+.keyword-duplicates {
+    max-height: 35%;
+    overflow-y: auto;
+    margin-top: 8px;
+}
+
+.keyword-duplicates h3 {
+    margin: 6px 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.keyword-duplicates-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+
+.keyword-duplicates-table th, .keyword-duplicates-table td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.keyword-empty {
+    color: var(--text-secondary);
+    padding: 12px;
+}

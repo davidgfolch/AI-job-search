@@ -117,6 +117,25 @@ logger.info("linkedin.job.duplicated", job_id=job_id, duplicated_id=duplicated_i
 
 Console text obeys the logging rules: OTP codes, email subjects, and URL query strings are never printed (only host + path, and `*_length` for codes), and `LinkedinService` prints the HTML/markdown lengths rather than the documents.
 
+### Per-Keyword Run Statistics
+
+Every `SCRAPPER_JOBS_SEARCH` keyword runs inside a log context that stamps its events with `scrapper` (site) and `keyword`. The JSONL therefore records, for each scrape date (the record's `timestamp[:10]`):
+
+- `*.results_found` — total results reported by the site.
+- `scraper.results_loaded` — job cards actually processed.
+- `*.job.inserted` — new jobs stored.
+- `scraper.job.already_exists` — jobs already in the database, with their `job_id`.
+
+Repeated total/loaded events take the highest value, and duplicate ids are deduplicated per date/site/keyword. The web [/statistics chart](../web/README.md) reads the same logs through `GET /api/statistics/keywords`; no database schema or data is touched.
+
+The same aggregation is available from the repository root:
+
+```bash
+python scripts/scrapper_keyword_stats.py --days 7 --site Indeed --keyword python --csv /tmp/keywords.csv
+```
+
+`--date YYYY-MM-DD`, `--max-ids N` and a custom `--log-dir` are also supported. When all rotation slots of `scrapper.jsonl*` are in use the report warns that older dates may be unavailable.
+
 ## Gmail Configuration
 
 1. **Enable 2FA on Gmail**: Make sure 2FA is enabled on your Gmail account

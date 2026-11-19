@@ -113,8 +113,8 @@ class TestLinkedinService:
     def test_print_job_logs_lengths_not_blobs(self, service):
         with patch('scrapper.services.LinkedinService.logger') as log:
             service.print_job('T', 'C', 'L', 'U', 123, '<h1>x</h1>', 'MD')
-        assert_logged(log, 'debug', 'linkedin.job.already_exists', job_id=123, title='T', company='C', location='L', url='U', html_length=10, markdown_length=2)
-        assert_console_text(log, 'debug', 'linkedin.job.already_exists', 'TITLE=T')
+        assert_logged(log, 'info', 'scraper.job.already_exists', job_id=123, title='T', company='C', location='L', url='U', html_length=10, markdown_length=2)
+        assert_console_text(log, 'info', 'scraper.job.already_exists', 'TITLE=T')
 
     def test_update_job_logs_event(self, service, mock_mysql):
         with patch('scrapper.services.LinkedinService.logger') as log:

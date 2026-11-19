@@ -149,6 +149,23 @@ def job_log_context(job_id: int):
         structlog.contextvars.unbind_contextvars("job_id")
 
 
+@contextmanager
+def keyword_log_context(site: str, keyword: str):
+    """Stamp `scrapper` and `keyword` on every record logged inside the block.
+
+    Wrapping one keyword of a scraper run attributes all the per-row records the site
+    services emit (totals, loaded counts, inserts and already-in-DB detections) to the
+    search that produced them, without changing the call sites. Explicit fields at a
+    call site still win, and the values are unbound on exit so batch-level records that
+    follow the loop do not inherit them.
+    """
+    structlog.contextvars.bind_contextvars(scrapper=site, keyword=keyword)
+    try:
+        yield
+    finally:
+        structlog.contextvars.unbind_contextvars("scrapper", "keyword")
+
+
 def configure_logging(app_name: str | None = None, console: str | None = None) -> str:
     """Configure structlog once and name the JSONL output after `app_name`.
 

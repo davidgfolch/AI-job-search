@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats } from './api/StatisticsApi';
+import { getHistoryStats, getSourcesByDate, getSourcesByHour, getSourcesByWeekday, getFilterConfigStats, getKeywordStats } from './api/StatisticsApi';
 import { processChartData, getDateRange } from './utils/chartUtils';
 
 export const useStatistics = () => {
@@ -13,8 +13,9 @@ export const useStatistics = () => {
     const { data: sourcesDateData } = useQuery({ queryKey: ['statistics', 'sourcesDate', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByDate(startDate, endDate, includeOldJobs) });
     const { data: sourcesHourData } = useQuery({ queryKey: ['statistics', 'sourcesHour', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByHour(startDate, endDate, includeOldJobs) });
     const { data: sourcesWeekdayData } = useQuery({ queryKey: ['statistics', 'sourcesWeekday', startDate, endDate, includeOldJobs], queryFn: () => getSourcesByWeekday(startDate, endDate, includeOldJobs) });
-    // The filter-configs endpoint does not take includeOldJobs, so it is not part of the cache key.
+    // The filter-configs and keyword endpoints do not take includeOldJobs, so it is not part of the cache key.
     const { data: filterConfigData } = useQuery({ queryKey: ['statistics', 'filterConfigs', startDate, endDate], queryFn: () => getFilterConfigStats(startDate, endDate) });
+    const { data: keywordStats } = useQuery({ queryKey: ['statistics', 'keyword', startDate, endDate], queryFn: () => getKeywordStats(startDate, endDate) });
     
     // Process data to unify sources and handle colors
     const { processedData: sourcesDateWide, keys: sourcesDateKeys } = React.useMemo(
@@ -50,6 +51,7 @@ export const useStatistics = () => {
         sourcesWeekdayWide,
         sourcesWeekdayKeys,
         filterConfigData,
+        keywordStats,
         allSources
     };
 };
