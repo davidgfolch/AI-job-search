@@ -202,4 +202,21 @@ ALTER TABLE jobs MODIFY COLUMN modality SET('REMOTE', 'HYBRID', 'ON_SITE') DEFAU
 --
 ALTER TABLE jobs ADD COLUMN hybrid_info VARCHAR(500) DEFAULT NULL;
 
+--
+-- Migration: index the pending AI-enrichment scan.
+-- The aiEnrich watcher selects `id` for jobs that are not enriched yet, ordered by
+-- created DESC. `created_index` alone only serves the ORDER BY, so with nothing
+-- pending the query still walks every index entry (~8.2k rows, ~50 ms per cycle);
+-- leading with ai_enriched restricts it to the two pending ranges (NULL and 0).
+--
+ALTER TABLE jobs ADD INDEX idx_jobs_pending_created (ai_enriched, created);
+
+--
+-- Migration: index the snapshot date range used by the combined statistics.
+-- Stats filter snapshots with original_created_at >= / <= (sargable) but the column
+-- had no index, so the range was a full table scan of ~105k rows. platform is added
+-- second so the per-source COUNT(*) reads the index instead of the rows.
+--
+ALTER TABLE job_snapshots ADD INDEX idx_snapshots_original_created_at (original_created_at, platform);
+
 
