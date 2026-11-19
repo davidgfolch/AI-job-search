@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Any
 from commonlib.sql.mysqlUtil import (
     MysqlUtil,
     getConnection,
+    getReadConnection,
 )
 from repositories.queries.jobs_query_builder import (
     build_jobs_where_clause,
@@ -16,8 +17,8 @@ def _execute_with_error_handler(where_str: str, params: list, callback, include_
 
 
 class JobsRepository:
-    def get_db(self):
-        return MysqlUtil(getConnection())
+    def get_db(self, read_only: bool = False):
+        return MysqlUtil(getReadConnection() if read_only else getConnection())
 
     def list_jobs(self, page: int, size: int,
         search: Optional[str] = None,
@@ -38,7 +39,7 @@ class JobsRepository:
         where_clauses, params = build_jobs_where_clause(search, status, not_status, days_old,
             salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date, modality)
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             result = _execute_with_error_handler(
                 where_str, params,
                 lambda: {"items": self._fetch_jobs(db, where_str, params, order, size, offset),
@@ -67,7 +68,7 @@ class JobsRepository:
         where_clauses, params = build_jobs_where_clause(search, status, not_status, days_old,
             salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date, modality)
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             result = _execute_with_error_handler(
                 where_str, params,
                 lambda: self._count_jobs(db, where_str, params),

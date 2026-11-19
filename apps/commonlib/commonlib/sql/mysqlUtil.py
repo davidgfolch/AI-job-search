@@ -12,7 +12,7 @@ from typing import Any, Callable
 from mysql.connector import MySQLConnection
 
 from ..observability import get_logger
-from .connection_manager import get_connection, getConnection  # noqa: F401 - getConnection is re-exported for legacy importers
+from .connection_manager import get_connection, get_read_connection, getConnection, getReadConnection  # noqa: F401 - camelCase wrappers are re-exported for legacy importers
 from .transaction_manager import TransactionManager
 from .query_executor import QueryExecutor
 from .job_repository import JobRepository

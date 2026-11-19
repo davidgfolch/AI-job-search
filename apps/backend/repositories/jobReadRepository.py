@@ -1,5 +1,5 @@
 from typing import Optional
-from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection, getReadConnection
 from repositories.queries.jobs_query_builder import (
     build_jobs_where_clause,
     parse_job_order,
@@ -7,8 +7,8 @@ from repositories.queries.jobs_query_builder import (
 
 
 class JobReadRepository:
-    def get_db(self):
-        return MysqlUtil(getConnection())
+    def get_db(self, read_only: bool = False):
+        return MysqlUtil(getReadConnection() if read_only else getConnection())
 
     def list_jobs(
         self,
@@ -44,7 +44,7 @@ class JobReadRepository:
             modality,
         )
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             total = self._count_jobs(db, where_str, params)
             items = self._fetch_jobs(db, where_str, params, order, size, offset)
         return {"items": items, "total": total, "page": page, "size": size}
@@ -79,7 +79,7 @@ class JobReadRepository:
             modality,
         )
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             return self._count_jobs(db, where_str, params)
 
     def _count_jobs(self, db: MysqlUtil, where: str, params: list) -> int:

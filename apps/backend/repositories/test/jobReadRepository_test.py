@@ -4,7 +4,8 @@ from repositories.jobReadRepository import JobReadRepository
 
 @patch("repositories.jobReadRepository.MysqlUtil")
 @patch("repositories.jobReadRepository.getConnection")
-def test_list_jobs(mock_get_conn, mock_mysql_util_cls):
+@patch("repositories.jobReadRepository.getReadConnection")
+def test_list_jobs(mock_get_read_conn, mock_get_conn, mock_mysql_util_cls):
     repo = JobReadRepository()
     mock_db = MagicMock()
     mock_mysql_util_cls.return_value = mock_db
