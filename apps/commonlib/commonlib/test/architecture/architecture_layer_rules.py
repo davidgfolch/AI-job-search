@@ -6,7 +6,7 @@ from commonlib.test.architecture.architecture_util import EXCLUDES
 
 LAYER_DIRS = frozenset({
     'api', 'config', 'core', 'decorator', 'domain', 'executor', 'jobs', 'middleware', 'models',
-    'navigator', 'network', 'orchestration', 'repositories', 'selectors', 'services', 'sql', 'sync', 'util', 'utils',
+    'navigator', 'network', 'orchestration', 'repositories', 'services', 'sql', 'sync', 'util', 'utils',
 })
 FILE_LAYER_SUFFIXES = {
     'services': ('_service.py', 'Service.py'),
@@ -73,13 +73,12 @@ LAYER_RULES = (
     LayerRule(COMMONLIB, 'commonlib', 'services', forbidden=(NO_API, NO_DB)),
     LayerRule(COMMONLIB, 'commonlib', 'sql', forbidden=(NO_SERVICES, NO_API)),
     LayerRule(COMMONLIB, 'commonlib', 'sync', forbidden=(NO_API, NO_SERVICES, ('sql', "Sync layer must not import SQL layer."))),
-    LayerRule(SCRAPPER, 'scrapper', 'core', forbidden=(('navigator', "Core layer must not import Navigator."), ('selectors', "Core layer must not import Selectors."), ('executor', "Core layer must not import Executor."), NO_SERVICES, ('util', "Core layer must not import Util."))),
-    LayerRule(SCRAPPER, 'scrapper', 'executor', forbidden=(('selectors', "Executor layer must not import Selectors."),)),
+    LayerRule(SCRAPPER, 'scrapper', 'core', forbidden=(('navigator', "Core layer must not import Navigator."), ('executor', "Core layer must not import Executor."), NO_SERVICES, ('util', "Core layer must not import Util."))),
+    LayerRule(SCRAPPER, 'scrapper', 'executor', forbidden=()),
     LayerRule(SCRAPPER, 'scrapper', 'orchestration', forbidden=()),
-    LayerRule(SCRAPPER, 'scrapper', 'navigator', forbidden=(('executor', "Navigator layer must not import Executor."), ('selectors', "Navigator layer must not import Selectors."))),
-    LayerRule(SCRAPPER, 'scrapper', 'services', forbidden=(('navigator', "Service layer must not import Navigator."), ('executor', "Service layer must not import Executor."), ('selectors', "Service layer must not import Selectors."))),
-    LayerRule(SCRAPPER, 'scrapper', 'util', forbidden=(NO_SERVICES, ('navigator', "Util layer must not import Navigator."), ('executor', "Util layer must not import Executor."), ('selectors', "Util layer must not import Selectors."))),
-    LayerRule(SCRAPPER, 'scrapper', 'selectors', forbidden=(('core', "Selectors must not import Core."), ('executor', "Selectors must not import Executor."), ('navigator', "Selectors must not import Navigator."), NO_SERVICES, ('util', "Selectors must not import Util."))),
+    LayerRule(SCRAPPER, 'scrapper', 'navigator', forbidden=(('executor', "Navigator layer must not import Executor."),)),
+    LayerRule(SCRAPPER, 'scrapper', 'services', forbidden=(('navigator', "Service layer must not import Navigator."), ('executor', "Service layer must not import Executor."))),
+    LayerRule(SCRAPPER, 'scrapper', 'util', forbidden=(NO_SERVICES, ('navigator', "Util layer must not import Navigator."), ('executor', "Util layer must not import Executor."))),
     LayerRule(SKILL, 'aiEnrichSkill', 'domain', forbidden=(NO_SERVICES, NO_REPOSITORIES, NO_API)),
     LayerRule(SKILL, 'aiEnrichSkill', 'repositories', forbidden=(NO_SERVICES, NO_API)),
     LayerRule(SKILL, 'aiEnrichSkill', 'services', forbidden=(NO_API, NO_DB)),

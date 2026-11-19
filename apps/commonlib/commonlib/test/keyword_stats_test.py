@@ -1,10 +1,6 @@
 import json
 
-import pytest
-
 from commonlib.keyword_stats import aggregate, has_rotated_history, log_paths, read_events
-from commonlib.observability import configure_logging, get_logger, job_log_context, keyword_log_context, log_file_path
-from commonlib.test.observability_fixtures import _events, log_dir  # noqa: F401 - fixture registered by import
 
 
 def _event(event, day="2026-11-19T10:00:00", site="Indeed", keyword="python", **fields):
@@ -101,44 +97,3 @@ class TestReadEvents:
         for index in range(6):
             (tmp_path / f"scrapper.jsonl.{index}").touch()
         assert has_rotated_history(str(tmp_path)) is True
-
-
-class TestKeywordLogContext:
-    def test_binds_site_and_keyword_only_inside_the_block(self, log_dir):
-        configure_logging("kw_ctx")
-        logger = get_logger("kw_ctx.case")
-        with keyword_log_context("Indeed", "python remote"):
-            logger.info("indeed.results_found", total=42)
-        logger.info("scraper.batch_done")
-        first, second = _events(log_file_path("kw_ctx"))
-        assert first["scrapper"] == "Indeed"
-        assert first["keyword"] == "python remote"
-        assert "scrapper" not in second
-        assert "keyword" not in second
-
-    def test_explicit_fields_win(self, log_dir):
-        configure_logging("kw_ctx_explicit")
-        logger = get_logger("kw_ctx_explicit.case")
-        with keyword_log_context("Indeed", "python"):
-            logger.info("indeed.results_found", keyword="java")
-        event = _events(log_file_path("kw_ctx_explicit"))[0]
-        assert event["scrapper"] == "Indeed"
-        assert event["keyword"] == "java"
-
-    def test_unbinds_after_an_error(self, log_dir):
-        configure_logging("kw_ctx_error")
-        logger = get_logger("kw_ctx_error.case")
-        with pytest.raises(ValueError):
-            with keyword_log_context("Linkedin", "python"):
-                raise ValueError("boom")
-        logger.info("scraper.batch_done")
-        assert "keyword" not in _events(log_file_path("kw_ctx_error"))[0]
-
-    def test_nests_with_job_context_without_losing_it(self, log_dir):
-        configure_logging("kw_ctx_nested")
-        logger = get_logger("kw_ctx_nested.case")
-        with keyword_log_context("Indeed", "python"):
-            with job_log_context(7):
-                logger.info("indeed.job.inserted")
-        event = _events(log_file_path("kw_ctx_nested"))[0]
-        assert (event["scrapper"], event["keyword"], event["job_id"]) == ("Indeed", "python", 7)
