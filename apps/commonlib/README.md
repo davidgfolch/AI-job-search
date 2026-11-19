@@ -40,6 +40,8 @@ When the pool is temporarily exhausted, `get_connection()` retries `COMMONLIB_DB
 
 SELECT-only code paths take their connections from a second pool, `jobsReadPool`, via `get_read_connection()`, so a burst of reads cannot exhaust the write pool. It targets the host the write pool resolved unless `COMMONLIB_DB_READ_HOST` points somewhere else (e.g. a replica), and its size is `COMMONLIB_DB_READ_POOL_SIZE`, defaulting to `COMMONLIB_DB_POOL_SIZE`.
 
+Every statement run through `QueryExecutor` is timed: one slower than `COMMONLIB_DB_SLOW_QUERY_MS` (default 200, `0` disables it) logs `db.query_slow` with the `operation`, `duration_ms` and the statement collapsed to one truncated line — parameters are never logged, since they carry search terms and scraped content.
+
 Workers call `wait_for_db()` (`sql/db_wait.py`) at startup instead of exiting when MySQL is not up yet: compose only gates the start it orchestrates, so a resumed stack would otherwise turn a missing database into a restart storm. It waits forever by default (`COMMONLIB_DB_WAIT_TIMEOUT=0`), logging `db.waiting` every `COMMONLIB_DB_WAIT_LOG_SECONDS`.
 
 ### Supported host formats

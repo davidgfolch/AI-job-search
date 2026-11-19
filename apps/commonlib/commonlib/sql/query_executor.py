@@ -2,6 +2,8 @@ from typing import TypeVar, Union, Sequence, Dict
 from mysql.connector.types import RowItemType
 import mysql.connector as mysqlConnector
 from contextlib import contextmanager
+import os
+import time
 
 from commonlib.sqlUtil import getColumnTranslated
 from ..observability import get_logger
@@ -9,6 +11,39 @@ from ..observability import get_logger
 logger = get_logger("query_executor")
 
 T = TypeVar("T")
+
+SLOW_QUERY_MS_ENV = "COMMONLIB_DB_SLOW_QUERY_MS"
+DEFAULT_SLOW_QUERY_MS = 200.0
+SLOW_QUERY_MAX_CHARS = 200
+
+
+def slow_query_threshold_ms() -> float:
+    """`COMMONLIB_DB_SLOW_QUERY_MS`, or the default when unset or unparsable.
+
+    Zero or a negative value disables the slow-query record entirely.
+    """
+    raw = (os.getenv(SLOW_QUERY_MS_ENV, "") or "").strip()
+    if not raw:
+        return DEFAULT_SLOW_QUERY_MS
+    try:
+        return float(raw)
+    except ValueError:
+        return DEFAULT_SLOW_QUERY_MS
+
+
+def _log_slow_query(query: str, started_at: float, operation: str) -> None:
+    """Emit `db.query_slow` for a statement that outlived the threshold.
+
+    The SQL is collapsed to one line and truncated, and parameters are left out
+    because they carry search terms and scraped content.
+    """
+    threshold = slow_query_threshold_ms()
+    if threshold <= 0:
+        return
+    duration_ms = (time.perf_counter() - started_at) * 1000
+    if duration_ms < threshold:
+        return
+    logger.warning("db.query_slow", operation=operation, duration_ms=round(duration_ms, 1), query=" ".join(query.split())[:SLOW_QUERY_MAX_CHARS])
 
 
 class QueryExecutor:
@@ -28,7 +63,7 @@ class QueryExecutor:
         Returns:
             Count value or None on error
         """
-        return self._execute_query(lambda c: (c.execute(query, params), c.fetchone()[0])[1])
+        return self._execute_query(lambda c: (c.execute(query, params), c.fetchone()[0])[1], query, "count")
 
     def fetch_one(self, query: str, id: int | str) -> Dict[str, RowItemType]:
         """
@@ -41,7 +76,7 @@ class QueryExecutor:
         Returns:
             Row dict or None on error
         """
-        return self._execute_query(lambda c: (c.execute(query, [id]), c.fetchone())[1])
+        return self._execute_query(lambda c: (c.execute(query, [id]), c.fetchone())[1], query, "fetch_one")
 
     def fetch_all(self, query: str, params: tuple = None) -> list:
         """
@@ -54,7 +89,7 @@ class QueryExecutor:
         Returns:
             List of rows or None on error
         """
-        return self._execute_query(lambda c: (c.execute(query, params), c.fetchall())[1])
+        return self._execute_query(lambda c: (c.execute(query, params), c.fetchall())[1], query, "fetch_all")
 
     def fetch_all_with_columns(self, query: str, params: tuple = None) -> tuple[list[str], list]:
         """Fetch all rows plus the column names of the executed SELECT.
@@ -65,7 +100,7 @@ class QueryExecutor:
         def op(cursor):
             cursor.execute(query, params)
             return list(cursor.column_names or []), cursor.fetchall()
-        return self._execute_query(op)
+        return self._execute_query(op, query, "fetch_all_with_columns")
 
     def update_from_ai(self, query: str, params: tuple) -> None:
         """
@@ -90,7 +125,7 @@ class QueryExecutor:
                     from commonlib.sqlUtil import error
                     error(Exception('No rows affected'))
 
-            self._execute_transaction(op)
+            self._execute_transaction(op, query, "update_from_ai")
 
         _update()
 
@@ -109,21 +144,31 @@ class QueryExecutor:
         columns = [getColumnTranslated(c) for c in columns]
         return columns
 
-    def _execute_query(self, callback: callable):
-        """Execute a query callback with cursor management."""
-        with self._get_cursor() as (_, cursor):
-            return callback(cursor)
+    def _execute_query(self, callback: callable, query: str = "", operation: str = "query"):
+        """Execute a query callback with cursor management, timing it for the slow log."""
+        started_at = time.perf_counter()
+        try:
+            with self._get_cursor() as (_, cursor):
+                return callback(cursor)
+        finally:
+            if query:
+                _log_slow_query(query, started_at, operation)
 
-    def _execute_transaction(self, callback: callable):
-        """Execute a callback within a transaction."""
-        with self._get_cursor() as (conn, cursor):
-            try:
-                result = callback(cursor)
-                conn.commit()
-                return result
-            except Exception as ex:
-                conn.rollback()
-                raise ex
+    def _execute_transaction(self, callback: callable, query: str = "", operation: str = "transaction"):
+        """Execute a callback within a transaction, timing it for the slow log."""
+        started_at = time.perf_counter()
+        try:
+            with self._get_cursor() as (conn, cursor):
+                try:
+                    result = callback(cursor)
+                    conn.commit()
+                    return result
+                except Exception as ex:
+                    conn.rollback()
+                    raise ex
+        finally:
+            if query:
+                _log_slow_query(query, started_at, operation)
 
     @contextmanager
     def _get_cursor(self):
