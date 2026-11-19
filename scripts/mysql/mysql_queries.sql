@@ -287,11 +287,16 @@ order by snapshot_at desc
 
 --- SKILL MANAGER
 
+select * from job_skills;
 select * from job_skills where ai_enriched = 1 and category is null or category = '' limit 10;
 select * from job_skills where job_skills.name like '%Fix protocol%';
 select * from job_skills where job_skills.name = '4Gl';
 select no_learning_path, total_skills from (select count(*) as no_learning_path from job_skills WHERE learning_path IS NULL OR JSON_LENGTH(learning_path) = 0) as a
 cross join (select count(*) as total_skills from job_skills) as b;
+select count(*)  from job_skills WHERE learning_path IS NULL OR JSON_LENGTH(learning_path) = 0
+union all select count(*) as total_skills from job_skills;
+select distinct learning_path, GROUP_CONCAT(name,',') from job_skills GROUP BY learning_path,name;
+update job_skills set learning_path = null;
 update job_skills set ai_enriched = null, category = null, description = null, learning_path=null
 where name = 'Fix protocol';
 where name like '%idempotency%' limit 1;
