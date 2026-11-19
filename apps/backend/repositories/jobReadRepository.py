@@ -96,8 +96,9 @@ class JobReadRepository:
     ) -> list:
         sort_col, sort_dir = parse_job_order(order)
         query = f"SELECT * FROM jobs WHERE {where} ORDER BY {sort_col} {sort_dir}, id DESC LIMIT %s OFFSET %s"
-        rows = db.fetchAll(query, params + [size, offset])
-        columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
+        columns, rows = db.fetchAllWithColumns(query, params + [size, offset])
+        if not rows or not columns:
+            return []
         return [dict(zip(columns, row, strict=True)) for row in rows]
 
     def fetch_job_row(self, db: MysqlUtil, job_id: int) -> Optional[tuple]:

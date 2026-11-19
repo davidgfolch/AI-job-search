@@ -56,6 +56,17 @@ class QueryExecutor:
         """
         return self._execute_query(lambda c: (c.execute(query, params), c.fetchall())[1])
 
+    def fetch_all_with_columns(self, query: str, params: tuple = None) -> tuple[list[str], list]:
+        """Fetch all rows plus the column names of the executed SELECT.
+
+        `cursor.column_names` comes from the statement itself, so callers that need
+        dict rows do not run a second `SHOW COLUMNS` round trip per request.
+        """
+        def op(cursor):
+            cursor.execute(query, params)
+            return list(cursor.column_names or []), cursor.fetchall()
+        return self._execute_query(op)
+
     def update_from_ai(self, query: str, params: tuple) -> None:
         """
         Execute an update query with retry logic.

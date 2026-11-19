@@ -136,6 +136,10 @@ class MysqlUtil:
         """Fetch all matching rows."""
         return self._query_executor.fetch_all(query, params)
 
+    def fetchAllWithColumns(self, query: str, params: tuple = None) -> tuple[list[str], list]:
+        """Fetch all rows plus the SELECT's column names in a single round trip."""
+        return self._query_executor.fetch_all_with_columns(query, params)
+
     def updateFromAI(self, query: str, params: tuple) -> None:
         """Execute update with retry logic."""
         self._query_executor.update_from_ai(query, params)

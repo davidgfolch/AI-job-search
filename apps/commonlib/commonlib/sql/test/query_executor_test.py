@@ -39,6 +39,17 @@ class TestQueryExecutor:
             mock_execute.return_value = None
             assert query_executor.fetch_all('SELECT * FROM jobs') is None
 
+    def test_fetch_all_with_columns_uses_the_select_column_names(self, query_executor):
+        mock_cursor = MagicMock()
+        mock_cursor.column_names = ['id', 'title']
+        mock_cursor.fetchall.return_value = [(1, 'Job')]
+        with patch.object(query_executor, '_get_cursor') as mock_get_cursor:
+            mock_get_cursor.return_value.__enter__ = MagicMock(return_value=(MagicMock(), mock_cursor))
+            mock_get_cursor.return_value.__exit__ = MagicMock(return_value=False)
+            result = query_executor.fetch_all_with_columns('SELECT id, title FROM jobs')
+        assert result == (['id', 'title'], [(1, 'Job')])
+        mock_cursor.execute.assert_called_once()
+
     def test_get_table_ddl_column_names_returns_columns(self, query_executor):
         with patch.object(query_executor, 'fetch_all') as mock_fetch:
             mock_fetch.return_value = [('id',), ('title',), ('company',)]

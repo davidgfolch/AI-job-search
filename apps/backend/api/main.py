@@ -72,13 +72,16 @@ def start_watcher_matcher():
     logger.info("watcher.background_matcher_started_on_startup")
 
 
+# Both are dependency-free on purpose: as `async def` they never wait for an AnyIO
+# worker, so a burst of blocking DB requests cannot stall the Docker healthcheck or
+# the frontend's backend watchdog (#threadpool starvation).
 @app.get("/health")
-def health_check():
+async def health_check():
     return {"status": "ok"}
 
 
 @app.get("/api/system/timezone", tags=["system"])
-def get_timezone():
+async def get_timezone():
     """
     Returns the server's UTC offset in minutes.
     Example: UTC+1 returns 60.

@@ -16,7 +16,7 @@ JOB_COLUMNS = pytest.JOB_COLUMNS
 def test_list_jobs_with_regex_date_filters(mock_db_session, client, query_param, expected_query_part, expected_param_value):
     request_jobs(client, query_param)
     assert expected_query_part in get_query_from_mock(mock_db_session)
-    calls = [c for c in mock_db_session.fetchAll.call_args_list if "SELECT" in str(c[0][0])]
+    calls = [c for c in mock_db_session.fetchAllWithColumns.call_args_list if "SELECT" in str(c[0][0])]
     assert calls and expected_param_value in calls[0][0][1]
 
 
@@ -40,7 +40,7 @@ def test_list_jobs_with_single_filters(mock_get_db, client, query_param, expecte
     mock_db = create_mock_db(count=1, fetchAll=[(1, 'Job Title', 'Company', 'Location', None, None, None, None, None, None)], columns=['id', 'title', 'company', 'location', 'salary', 'url', 'markdown', 'web_page', 'created', 'modified'])
     mock_get_db.return_value = mock_db
     assert client.get(f"/api/jobs?{query_param}").status_code == 200
-    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    queries = [str(call[0][0]) for call in mock_db.fetchAllWithColumns.call_args_list]
     assert any(expected_query_part in q for q in queries), f"Expected '{expected_query_part}' in queries: {queries}"
 
 
@@ -77,10 +77,9 @@ def test_list_jobs_with_combined_filters(mock_get_db, client, query_params, expe
 @patch('repositories.jobs_repository.JobsRepository.get_db')
 def test_list_jobs_by_ids(mock_get_db, client):
     mock_db = create_mock_db(count=2)
-    mock_db.fetchAll.side_effect = [[
+    mock_db.fetchAllWithColumns.side_effect = [(JOB_COLUMNS, [
         (1, 'Target Job 1', 'Company A', 'Remote', None, None, None, None, None, None),
-        (3, 'Target Job 3', 'Company B', 'Remote', None, None, None, None, None, None)],
-        [(col,) for col in JOB_COLUMNS]]
+        (3, 'Target Job 3', 'Company B', 'Remote', None, None, None, None, None, None)])]
     mock_get_db.return_value = mock_db
     response = client.get("/api/jobs?ids=1&ids=3")
     assert response.status_code == 200
@@ -89,7 +88,7 @@ def test_list_jobs_by_ids(mock_get_db, client):
     assert len(data['items']) == 2
     assert data['items'][0]['id'] == 1
     assert data['items'][1]['id'] == 3
-    query, params = mock_db.fetchAll.call_args_list[0][0]
+    query, params = mock_db.fetchAllWithColumns.call_args_list[0][0]
     assert "id IN (%s, %s)" in query
     assert 1 in params
     assert 3 in params
@@ -99,7 +98,7 @@ def test_list_jobs_with_created_after(mock_db_session, client):
     cutoff = "2023-01-01T00:00:00"
     assert client.get(f"/api/jobs?created_after={cutoff}").status_code == 200
     assert "created > %s" in get_query_from_mock(mock_db_session)
-    calls = [c for c in mock_db_session.fetchAll.call_args_list if "SELECT" in str(c[0][0])]
+    calls = [c for c in mock_db_session.fetchAllWithColumns.call_args_list if "SELECT" in str(c[0][0])]
     assert calls and cutoff in calls[0][0][1]
 
 

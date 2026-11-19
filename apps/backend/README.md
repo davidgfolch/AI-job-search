@@ -91,7 +91,8 @@ and every log call is wrapped so the middleware can never raise.
 
 | Event | Level | When |
 |---|---|---|
-| `http.request_completed` | `info` | Once per request that produced a response, with `method`, `path`, `status_code`, `duration_ms`. |
+| `http.request_completed` | `info` | Once per request that produced a response, with `method`, `path`, `status_code`, `duration_ms`. Not emitted for `text/event-stream` responses. |
+| `http.stream_completed` | `info` | Once per SSE response, same fields. An SSE handler only returns when the client disconnects, so this record keeps long-lived connections out of the request-latency series. |
 | `http.request_failed` | `warning` | Additionally, when the status is outside 200-399, with the same fields. |
 | `http.request_failed` | `error` | An unhandled exception: the record carries `error` plus the traceback, and the exception keeps propagating to Starlette's `ServerErrorMiddleware` (so a 500 raised there produces this record and no duplicate completed record). |
 
@@ -129,7 +130,7 @@ jq -c 'select(.event == "http.request_failed")' apps/backend/data/logs/backend.j
 | `ollama.probe_failed` | `debug` | `services/dashboard_service.py`. |
 | `metrics.timestamp_unparsed` | `debug` | `services/dashboard_service.py`. |
 
-The request middleware emits `http.request_completed` (and `http.request_failed` for a non-2xx/3xx status or an unhandled exception) from `middleware/request_logging.py`. Its `module` is stamped from the caller like any other record. The dashboard repository reads other apps' records, so it re-emits the source app's stamped name as **`source_module`**, and the API keeps exposing it as `module`; the two names mean different things — `module` is always "the app module that logged this line", never "the app this line was about".
+The request middleware emits `http.request_completed` (and `http.request_failed` for a non-2xx/3xx status or an unhandled exception) from `middleware/request_logging.py`; SSE responses emit `http.stream_completed` instead, so their connection lifetime is not counted as request latency. Its `module` is stamped from the caller like any other record. The dashboard repository reads other apps' records, so it re-emits the source app's stamped name as **`source_module`**, and the API keeps exposing it as `module`; the two names mean different things — `module` is always "the app module that logged this line", never "the app this line was about".
 
 ### Testing log output
 

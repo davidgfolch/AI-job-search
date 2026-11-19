@@ -13,11 +13,11 @@ FAILURE_STATUSES = [400, 404, 422, 500, 502]
 QUERY_STRING = b"search=secret-token"
 
 
-def _asgi_app(status=200, chunks=((b"payload", False),), error=None):
+def _asgi_app(status=200, chunks=((b"payload", False),), error=None, content_type=b"text/plain"):
     async def app(scope, receive, send):
         if error is not None:
             raise error
-        await send({"type": "http.response.start", "status": status, "headers": [(b"content-type", b"text/plain")]})
+        await send({"type": "http.response.start", "status": status, "headers": [(b"content-type", content_type)]})
         for body, more_body in chunks:
             await send({"type": "http.response.body", "body": body, "more_body": more_body})
     return app
@@ -102,8 +102,7 @@ def test_method_and_path_are_recorded(log_records, method, path):
 def test_query_string_and_body_are_never_logged(log_records):
     _call(_asgi_app(chunks=((b"secret-body", False),)))
     raw = log_records.path.read_text(encoding="utf-8")
-    assert "secret-token" not in raw
-    assert "secret-body" not in raw
+    assert "secret-token" not in raw and "secret-body" not in raw
     assert "?" not in log_records(event="http.request_completed")[0]["path"]
 
 
@@ -114,6 +113,12 @@ def test_streaming_chunks_are_forwarded_untouched(log_records):
     assert [message["body"] for message in sent[1:]] == [b"one", b"two", b"three"]
     assert [message["more_body"] for message in sent[1:]] == [True, True, False]
     assert len(log_records(event="http.request_completed")) == 1
+
+
+def test_sse_is_not_counted_as_latency(log_records):
+    _call(_asgi_app(content_type=b"text/event-stream"))
+    assert log_records(event="http.request_completed") == []
+    assert len(log_records(event="http.stream_completed")) == 1
 
 
 def test_unhandled_exception_is_logged_and_repropagated(log_records):
@@ -190,6 +195,6 @@ def test_wired_into_an_app_error_status_logs_warning(log_records):
 
 def test_wired_into_an_app_streaming(log_records):
     response = _client_app().get("/stream")
-    assert response.status_code == 200
-    assert response.content == b"onetwo"
+    assert response.status_code == 200 and response.content == b"onetwo"
     assert len(log_records(event="http.request_completed")) == 1
+

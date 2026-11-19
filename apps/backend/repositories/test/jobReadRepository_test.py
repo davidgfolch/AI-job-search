@@ -11,7 +11,7 @@ def test_list_jobs(mock_get_conn, mock_mysql_util_cls):
     mock_db.__enter__ = MagicMock(return_value=mock_db)
     mock_db.__exit__ = MagicMock(return_value=False)
     mock_db.count.return_value = 10
-    mock_db.fetchAll.return_value = []
+    mock_db.fetchAllWithColumns.return_value = (["id"], [])
 
     result = repo.list_jobs(page=1, size=10)
 

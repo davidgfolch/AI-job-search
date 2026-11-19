@@ -40,7 +40,7 @@ Metrics enable answering:
 3. The backend FastAPI server serves `/api/metrics` which combines:
    - **Snapshot metrics** from `MetricsCollector` (aggregate p50/p90/p99/avg per module)
    - **Log metrics** by reading each app's `<app>.jsonl` file (e.g. `aiEnrich.jsonl`, falling back to the legacy `app.jsonl`) and extracting recent `job.result` events with durations
-4. Prometheus scrapes `/api/metrics` every 15s and stores time series
+4. Prometheus scrapes `/api/metrics` every 15s and stores time series. The response is cached in-process for `BACKEND_METRICS_CACHE_SECONDS` (default `10`) so a scrape does not rebuild the registry or re-read the JSONL files
 5. Grafana queries Prometheus for dashboard visualization
 
 ## Metrics Pipeline

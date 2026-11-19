@@ -36,7 +36,9 @@ def request_jobs(client, query_params):
 
 
 def get_query_from_mock(mock_db):
-    queries = [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
+    """Return the paged SELECT from wherever the repository issued it."""
+    queries = [str(call[0][0]) for call in mock_db.fetchAllWithColumns.call_args_list]
+    queries += [str(call[0][0]) for call in mock_db.fetchAll.call_args_list]
     return next((q for q in queries if "SELECT" in q and "FROM" in q), "")
 
 
