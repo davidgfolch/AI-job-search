@@ -41,6 +41,7 @@ async function setupDashboardMocks(page: Page) {
                     isLan: true,
                     recentErrors: [],
                 },
+                llmBackend: 'ollama',
                 prometheus: { reachable: true, url: 'http://host.docker.internal:9090' },
                 grafana: { reachable: true, url: 'http://host.docker.internal:3000' },
                 deployment: 'docker',
@@ -83,6 +84,11 @@ test.describe('Dashboard E2E', () => {
         const cvCard = page.locator('.service-card').filter({ hasText: 'CV Matcher' });
         await expect(cvCard).toBeVisible();
         await expect(cvCard.locator('.service-card-tag--deployment')).toContainText('Host');
+    });
+
+    test('should show the configured LLM backend pill', async ({ page }) => {
+        await page.goto(`${BASE_URL}/dashboard`);
+        await expect(page.locator('.service-pill').filter({ hasText: 'LLM Backend' })).toContainText('ollama');
     });
 
     test('should show services running grid', async ({ page }) => {

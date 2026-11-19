@@ -10,6 +10,7 @@ from commonlib.ollama_config import (
 OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_DEFAULT_MODEL = "openrouter/free"
 OPENROUTER_DEFAULT_FALLBACK_MODEL = "nex-agi/nex-n2.5-pro:free"
+LLM_BACKEND_ENV = "AI_ENRICH_LLM_BACKEND"
 
 _BACKEND_URL_CACHE: str | None = None
 
@@ -46,8 +47,14 @@ def get_max_validation_retries() -> int:
     return int(getEnv("AI_ENRICH_MAX_VALIDATION_RETRIES", "1"))
 
 
+def get_llm_backend() -> str:
+    """LLM provider for enrichment (`ollama` or `openrouter`), not the FastAPI backend."""
+    return getEnv(LLM_BACKEND_ENV, "ollama")
+
+
 def get_backend() -> str:
-    return getEnv("AI_ENRICH_BACKEND", "ollama")
+    """Deprecated alias of `get_llm_backend`; kept for existing callers."""
+    return get_llm_backend()
 
 
 def get_backend_url() -> str:

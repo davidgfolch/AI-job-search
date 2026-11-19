@@ -43,8 +43,8 @@ export default function Dashboard() {
                 <div className="dashboard-top-row">
                     <div className="service-pill service-pill--ai-backend">
                         <span className="status-dot status-dot--running" />
-                        <span className="service-pill-label">AI Backend</span>
-                        <span className="service-pill-value">{data.aiBackend}</span>
+                        <span className="service-pill-label">LLM Backend</span>
+                        <span className="service-pill-value">{data.llmBackend}</span>
                     </div>
                     <div className="service-pill service-pill--ollama">
                         <span className={`status-dot status-dot--${data.ollama.reachable ? 'running' : 'error'}`} />

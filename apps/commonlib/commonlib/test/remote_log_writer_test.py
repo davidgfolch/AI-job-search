@@ -32,9 +32,23 @@ def test_local_backend_does_not_enable_shipping():
     assert writer._config is None
 
 
-def test_remote_url_comes_from_env(monkeypatch):
-    monkeypatch.setenv(writer.LOG_BACKEND_ENV, "http://192.168.1.20:8000/")
-    assert writer.configure_remote_logging(start_thread=False) is True
+@pytest.mark.parametrize("discovered, expected", [
+    (None, False),
+    ("http://localhost:8000", False),
+    ("http://192.168.1.20:8000/", True),
+])
+def test_discovered_backend_drives_shipping(discovered, expected):
+    with patch.object(writer, "_discovered_backend_url", return_value=discovered):
+        assert writer.configure_remote_logging(start_thread=False) is expected
+    assert (writer._config is not None) is expected
+    if expected:
+        assert writer._config["base_url"] == "http://192.168.1.20:8000"
+
+
+def test_explicit_base_url_skips_discovery():
+    with patch.object(writer, "_discovered_backend_url") as discover:
+        assert writer.configure_remote_logging("http://192.168.1.20:8000/", start_thread=False) is True
+    discover.assert_not_called()
     assert writer._config["base_url"] == "http://192.168.1.20:8000"
 
 

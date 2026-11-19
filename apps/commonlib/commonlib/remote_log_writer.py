@@ -5,13 +5,13 @@ backend that serves ``/api/statistics/keywords``. This module buffers the record
 structlog already writes and POSTs them in batches to the backend, which appends them
 to the same JSONL file the statistics endpoint reads.
 
-Shipping is opt-in through ``SCRAPPER_LOG_BACKEND_URL`` and is ignored for loopback
-URLs: a local backend already shares the log directory through Compose, so shipping
-would duplicate every record.
+The backend is resolved by ``commonlib.backend_discovery`` using the shared
+``BACKEND_URL`` / ``BACKEND_PORT`` / ``BACKEND_DISCOVERY`` settings. Shipping is
+skipped for a loopback target: a local backend already shares the log directory
+through Compose, so shipping would duplicate every record.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SCRAPPER_LOG_BACKEND_URL` | unset | Base URL of the backend receiving scrapper logs |
 | `SCRAPPER_LOG_BATCH_SIZE` | `200` | Records per POST |
 | `SCRAPPER_LOG_FLUSH_SECONDS` | `5` | Background flush interval |
 """
@@ -26,7 +26,6 @@ import requests
 from commonlib.environmentUtil import getEnv
 from commonlib.log_writer import public_record
 
-LOG_BACKEND_ENV = "SCRAPPER_LOG_BACKEND_URL"
 BATCH_SIZE_ENV = "SCRAPPER_LOG_BATCH_SIZE"
 FLUSH_SECONDS_ENV = "SCRAPPER_LOG_FLUSH_SECONDS"
 INGEST_PATH = "/api/scrapper/logs"
@@ -91,10 +90,15 @@ def _flush_loop(interval: float) -> None:
         flush_remote_logs()
 
 
+def _discovered_backend_url() -> str | None:
+    from commonlib.backend_discovery import get_backend_url  # local: discovery imports observability
+    return get_backend_url()
+
+
 def configure_remote_logging(base_url: str = None, app_name: str = "scrapper", timeout: float = DEFAULT_TIMEOUT, start_thread: bool = True) -> bool:
-    """Enable shipping to `base_url` (or the configured env var) and return whether it is active."""
+    """Enable shipping to `base_url` (or the discovered backend) and return whether it is active."""
     global _config
-    url = base_url if base_url is not None else getEnv(LOG_BACKEND_ENV)
+    url = base_url if base_url is not None else _discovered_backend_url()
     with _lock:
         _buffer.clear()
     if not is_remote_url(url):

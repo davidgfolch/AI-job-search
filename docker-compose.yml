@@ -187,7 +187,7 @@ services:
       - AI_ENRICH_NUM_CTX=${AI_ENRICH_NUM_CTX:-16384}
       - AI_ENRICH_MAX_VALIDATION_RETRIES=${AI_ENRICH_MAX_VALIDATION_RETRIES:-1}
       - AI_ENRICH_METRICS_FILE=/app/data/metrics/enrichment_metrics.json
-      - HEALTHCHECK_BACKEND=${AI_ENRICH_BACKEND:-ollama}
+      - HEALTHCHECK_BACKEND=${AI_ENRICH_LLM_BACKEND:-ollama}
     depends_on:
       mysql_db:
         condition: service_healthy

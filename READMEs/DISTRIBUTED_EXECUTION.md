@@ -15,10 +15,10 @@ Every client tries the configured value first, then the compose/host fallbacks, 
 | Backend API | `BACKEND_URL` | when set, that URL only; when unset `backend:8000` → `host.docker.internal:8000` → `localhost:8000` (reverse on the host), then a LAN scan if `BACKEND_DISCOVERY=True` |
 | Ollama | `AI_ENRICH_OLLAMA_BASE_URL` (`auto` scans directly) | configured URL → `host.docker.internal` → `localhost` → `ollama:11434` → LAN scan on 11434 |
 | Watcher notifications | `AI_ENRICH_BACKEND_URL` | configured URL → `backend:8000` → `host.docker.internal:8000` → `localhost:8000` |
-| Scrapper logs | `SCRAPPER_LOG_BACKEND_URL` | when set to a non-loopback URL, batches are POSTed to that backend; unset/loopback keeps logs local |
+| Scrapper logs | `BACKEND_URL`, `BACKEND_PORT`, `BACKEND_DISCOVERY` | the same backend discovery as the web; a loopback target keeps logs local |
 | Dashboard health | `PROMETHEUS_URL`, `GRAFANA_URL` | those URLs (defaults point at `host.docker.internal`) |
 
-The DB/Ollama scans are cached in `./data/discovery/cache.json`, which every service mounts, so containers starting together scan once instead of once each. Details: [commonlib service discovery](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama), [agent docs](AGENTIC_SDLC.md#network-discovery) and each module README.
+The DB/Ollama/backend scans are cached in `./data/discovery/cache.json`, which every service mounts, so containers starting together scan once instead of once each. Details: [commonlib service discovery](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama), [agent docs](AGENTIC_SDLC.md#network-discovery) and each module README.
 
 ## Pinning a host (optional)
 
@@ -38,14 +38,14 @@ Compose pins the in-container DB/Mongo to the compose service names, and those `
 
 ### Scrapper logs on a remote backend
 
-The [/statistics keyword chart](../apps/web/README.md) reads the scrapper's JSONL through the backend. When the scrapper runs on another machine that file stays there, so set `SCRAPPER_LOG_BACKEND_URL=http://<main-box-ip>:8000` on the scrapper box. The scrapper then batches its records to `POST /api/scrapper/logs` (every 5s or 200 records); the backend appends them to `SCRAPPER_LOG_DIR` (the Compose-mounted `apps/scrapper/data/logs`). Loopback URLs and an unset value keep the current local-only behaviour, so a single-machine install ships nothing. `SCRAPPER_LOG_BATCH_SIZE` and `SCRAPPER_LOG_FLUSH_SECONDS` tune the batching. Shipping is best-effort: a failed POST only logs a warning and retries with the next batch.
+The [/statistics keyword chart](../apps/web/README.md) reads the scrapper's JSONL through the backend. When the scrapper runs on another machine that file stays there; the scrapper reuses the backend discovery above (`BACKEND_URL` to pin it, otherwise the usual candidates and a LAN scan when `BACKEND_DISCOVERY=True`) and batches its records to `POST /api/scrapper/logs` (every 5s or 200 records). The backend appends them to `SCRAPPER_LOG_DIR` (the Compose-mounted `apps/scrapper/data/logs`). A loopback target or an unreachable backend keeps the current local-only behaviour, so a single-machine install ships nothing. `SCRAPPER_LOG_BATCH_SIZE` and `SCRAPPER_LOG_FLUSH_SECONDS` tune the batching. Shipping is best-effort: a failed POST only logs a warning and retries with the next batch.
 
 ## Topologies
 
 | Scenario | Setup |
 |---|---|
 | Everything on one machine (default) | `docker-compose up -d` |
-| Scrapper on a separate machine | `COMMONLIB_DB_HOST=<mysql-host>` (or `auto`) in its `.env`, then `./apps/scrapper/run.sh`; add `SCRAPPER_LOG_BACKEND_URL=http://<main-box-ip>:8000` so its JSONL reaches the statistics chart |
+| Scrapper on a separate machine | `COMMONLIB_DB_HOST=<mysql-host>` (or `auto`) in its `.env`, then `./apps/scrapper/run.sh`; the shared backend discovery ships its JSONL to the statistics chart |
 | UI only on a client machine | run Vite natively there: `BACKEND_URL=http://<main-box-ip>:8000 ./apps/web/run.sh` (the `web` container is pinned to `backend:8000` by compose) |
 | AI workers on another machine | run them natively there: `COMMONLIB_DB_HOST=<mysql-host> ./apps/aiEnrich/run.sh` (same for `aiEnrichSkill`), or keep them in Docker on the main box and point them at a LAN Ollama |
 

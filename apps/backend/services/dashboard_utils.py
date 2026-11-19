@@ -57,7 +57,7 @@ def _determine_status(now: datetime, last_processed: str | None, last_error_at: 
 
 def _display_name(module: str) -> str:
     if module == "aienrich":
-        backend = getEnv("AI_ENRICH_BACKEND", "ollama").strip().lower()
+        backend = getEnv("AI_ENRICH_LLM_BACKEND", "ollama").strip().lower()
         label = BACKEND_LABELS.get(backend) or backend.replace("_", " ").title() or "Ollama"
         return f"AI Enrich ({label})"
     names = {

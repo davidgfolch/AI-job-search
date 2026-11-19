@@ -71,7 +71,7 @@ All three use the same primitives (`network/discovery.py`: local IP/subnet detec
 - `COMMONLIB_DISCOVERY_MAX_HOSTS` — cap hosts per scan (default 0 = no cap).
 - `COMMONLIB_DISCOVERY_LOCK_SECONDS` / `COMMONLIB_DISCOVERY_LOCK_STALE_SECONDS` — cross-process scan lock timeout and stale takeover.
 
-Ollama's chain and knobs are documented under **Ollama** above; MongoDB resolves `MONGO_URI` the same way (`mongo_db` → `host.docker.internal` → `127.0.0.1`, then LAN on 27017, `auto` to scan first) in `commonlib/mongo_config.py`.
+Ollama's chain and knobs are documented under **Ollama** above; MongoDB resolves `MONGO_URI` the same way (`mongo_db` → `host.docker.internal` → `127.0.0.1`, then LAN on 27017, `auto` to scan first) in `commonlib/mongo_config.py`. `backend_discovery.get_backend_url()` applies the same primitives to the FastAPI backend (`BACKEND_URL` / `BACKEND_PORT` / `BACKEND_DISCOVERY`); remote scrapper log shipping uses it instead of a dedicated URL setting — see [Distributed execution](../../READMEs/DISTRIBUTED_EXECUTION.md#scrapper-logs-on-a-remote-backend).
 
 The worker healthchecks (`scripts/healthcheck/ollama_healthcheck.py`) read the cached Ollama host first, so a container that reached a LAN server through discovery is reported healthy instead of being judged against the static fallback URLs only (the healthcheck never starts a scan).
 

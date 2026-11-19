@@ -25,7 +25,7 @@ OLLAMA_MODULES = {"aienrich", "aienrichskill"}
 OLLAMA_ERROR_WINDOW_SECONDS = 1800
 PROMETHEUS_URL = getEnv("PROMETHEUS_URL", "http://host.docker.internal:9090").strip().rstrip("/")
 GRAFANA_URL = getEnv("GRAFANA_URL", "http://host.docker.internal:3000").strip().rstrip("/")
-AI_BACKEND = getEnv("AI_ENRICH_BACKEND", "ollama").strip().lower()
+LLM_BACKEND = getEnv("AI_ENRICH_LLM_BACKEND", "ollama").strip().lower()
 
 
 def get_services_status() -> dict:
@@ -68,7 +68,7 @@ def get_services_status() -> dict:
             **ollama_info,
             "recentErrors": ollama_errors,
         },
-        "aiBackend": AI_BACKEND,
+        "llmBackend": LLM_BACKEND,
         "prometheus": _probe_service(PROMETHEUS_URL, "/-/healthy"),
         "grafana": _probe_service(GRAFANA_URL, "/api/health"),
         "timestamp": now.isoformat(),

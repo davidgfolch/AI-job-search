@@ -38,7 +38,7 @@ class TestCheckBackendAvailable:
 
 class TestPingBackend:
     def test_routes_to_ollama(self, monkeypatch):
-        os.environ["AI_ENRICH_BACKEND"] = "ollama"
+        os.environ["AI_ENRICH_LLM_BACKEND"] = "ollama"
         from aiEnrich import ollama_backend
         monkeypatch.setattr(ollama_backend, "_resolved_ollama_url", None)
         monkeypatch.setattr(ollama_backend, "_ollama_server_known", False)
@@ -79,7 +79,7 @@ class TestPingBackend:
         assert ollama_backend._ollama_server_known is True
 
     def test_routes_to_openrouter(self):
-        os.environ["AI_ENRICH_BACKEND"] = "openrouter"
+        os.environ["AI_ENRICH_LLM_BACKEND"] = "openrouter"
         from aiEnrich import ollama_backend
         with patch.object(ollama_backend, "probe_resolve_ollama_url", return_value=None) as mock_resolve, \
              patch.object(ollama_backend, "ping_openrouter", return_value=True) as mock_ping_or:

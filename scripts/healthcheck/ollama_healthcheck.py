@@ -52,7 +52,7 @@ def check_openrouter() -> bool:
 
 
 def check_backend() -> bool:
-    backend = getEnv("HEALTHCHECK_BACKEND", getEnv("AI_ENRICH_BACKEND", getEnv("AI_ENRICHSKILL_BACKEND", "ollama")))
+    backend = getEnv("HEALTHCHECK_BACKEND", getEnv("AI_ENRICH_LLM_BACKEND", getEnv("AI_ENRICHSKILL_BACKEND", "ollama")))
     if backend == "openrouter":
         return check_openrouter()
     return check_ollama()

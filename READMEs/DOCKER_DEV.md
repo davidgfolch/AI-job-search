@@ -31,7 +31,7 @@ Everything runs on one machine by default; the scrapper, the UI or the AI worker
 
 ## With AI Services (AI Enrichment + Ollama)
 
-**Ollama CPU/GPU:** `aienrich` service uses Ollama by default (profile: `aienrich`). Set `AI_ENRICH_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
+**Ollama CPU/GPU:** `aienrich` service uses Ollama by default (profile: `aienrich`). Set `AI_ENRICH_LLM_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
 **Skill enrichment:** `aienrichskill` service enriches the `job_skills` table with Ollama or HuggingFace (profile: `aiEnrichSkill`).
 **CV Matcher:** `aicvmatcher` service uses sentence transformers to rapidly match your cv (runs by default if configured in .env).
 

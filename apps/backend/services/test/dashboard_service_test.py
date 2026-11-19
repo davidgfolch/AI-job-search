@@ -19,6 +19,7 @@ def test_get_services_status_running(mock_probe, mock_repo, mock_collector):
 
     assert "services" in result
     assert "ollama" in result
+    assert result["llmBackend"] == dashboard_service.LLM_BACKEND
     services = result["services"]
     assert len(services) == 3
     names = [s["name"] for s in services]

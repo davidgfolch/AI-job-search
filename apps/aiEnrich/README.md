@@ -4,7 +4,7 @@ Job data enrichment service using Ollama LLMs (local) or OpenRouter (cloud).
 
 ## Overview
 
-This application enriches job data (e.g., extracting salary, technologies); a job may have several modalities at once (REMOTE/HYBRID/ON_SITE) and the LLM extracts the full set (overwriting the deterministic scrape-time value when valid, otherwise the scrape-time value is kept). Two backends are supported, selected with the `AI_ENRICH_BACKEND` environment variable:
+This application enriches job data (e.g., extracting salary, technologies); a job may have several modalities at once (REMOTE/HYBRID/ON_SITE) and the LLM extracts the full set (overwriting the deterministic scrape-time value when valid, otherwise the scrape-time value is kept). Two LLM providers are supported, selected with the `AI_ENRICH_LLM_BACKEND` environment variable:
 
 - **Ollama** (`ollama`, default): local models, free, no API key required. Communicates over Ollama's `/api/generate` HTTP API.
 - **OpenRouter** (`openrouter`): cloud models via the OpenAI-compatible API at openrouter.ai. Requires an API key, no local model/server needed.
@@ -59,7 +59,7 @@ Records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the b
 
 ### LLM Backend Selection
 
-Select the backend with `AI_ENRICH_BACKEND` in your `.env` file. The default is `ollama`.
+Select the LLM provider with `AI_ENRICH_LLM_BACKEND` in your `.env` file. The default is `ollama`. This is separate from `AI_ENRICH_BACKEND_URL`, which points at the FastAPI backend.
 
 ### Watcher notification
 
@@ -75,7 +75,7 @@ AI_ENRICH_BACKEND_URL=http://backend:8000
 The default model is `ollama/qwen2.5:3b` (optimized for CPU inference). To change the model, set the `AI_ENRICH_OLLAMA_MODEL` environment variable in your `.env` file:
 
 ```bash
-AI_ENRICH_BACKEND=ollama
+AI_ENRICH_LLM_BACKEND=ollama
 AI_ENRICH_OLLAMA_MODEL=ollama/phi3.5:3b
 ```
 
@@ -100,7 +100,7 @@ Use cloud models without running a local Ollama server. No Ollama installation o
 Set in `.env`:
 
 ```bash
-AI_ENRICH_BACKEND=openrouter
+AI_ENRICH_LLM_BACKEND=openrouter
 AI_ENRICH_OPENROUTER_BASE_URL=https://openrouter.ai/api/v1   # optional, has default
 AI_ENRICH_OPENROUTER_MODEL=openrouter/free                    # optional, has default
 AI_ENRICH_OPENROUTER_FALLBACK_MODEL=nex-agi/nex-n2.5-pro:free # optional, has default
