@@ -1,5 +1,5 @@
 import { Page } from '@playwright/test';
-import { setupApiSafetyNet, setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock } from './common.helpers';
+import { setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock } from './common.helpers';
 
 export const MOCK_ENV_SETTINGS = {
     SCRAPPER_JOBS_SEARCH: 'react, python',
@@ -14,7 +14,6 @@ export const MOCK_SCRAPPER_STATE = {
 };
 
 export async function setupSettingsMocks(page: Page) {
-    await setupApiSafetyNet(page);
     await setupAppBootstrapMocks(page);
     await setupTimezoneMock(page);
     await setupModalityMock(page);

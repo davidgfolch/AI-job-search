@@ -9,13 +9,12 @@ import {
     markJobAsApplied,
     verifyNoRefresh
 } from './watcher_refresh.helpers';
-import { setupApiSafetyNet, setupModalityMock, setupSalaryHistoryMocks, setupAppBootstrapMocks } from './common.helpers';
+import { setupModalityMock, setupSalaryHistoryMocks, setupAppBootstrapMocks } from './common.helpers';
 
 test.describe('Watcher Stability', () => {
     test('should NOT refresh list with new watcher items when changing job state', async ({ page }) => {
         const counters = { statsRequestCount: 0, listRequestCount: 0 };
         setupPageLogging(page);
-        await setupApiSafetyNet(page);
         await setupAppBootstrapMocks(page);
         await setupModalityMock(page);
         await setupSalaryHistoryMocks(page);

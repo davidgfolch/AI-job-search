@@ -1,13 +1,12 @@
 import { test, expect } from './coverage.fixtures';
 import { Page } from '@playwright/test';
-import { BASE_URL, setupPageLogging, setupApiSafetyNet, setupAppBootstrapMocks } from './common.helpers';
+import { BASE_URL, setupPageLogging, setupAppBootstrapMocks } from './common.helpers';
 
 test.use({
     bypassCSP: true,
 });
 
 async function setupDashboardMocks(page: Page) {
-    await setupApiSafetyNet(page);
     await setupAppBootstrapMocks(page);
     await page.route(/.*\/api\/dashboard\/services/, async (route) => {
         await route.fulfill({

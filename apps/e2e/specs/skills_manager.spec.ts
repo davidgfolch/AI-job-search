@@ -1,6 +1,6 @@
 import { test, expect } from './coverage.fixtures';
 import { Page } from '@playwright/test';
-import { BASE_URL, setupPageLogging, setupApiSafetyNet, setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock } from './common.helpers';
+import { BASE_URL, setupPageLogging, setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock } from './common.helpers';
 import { MOCK_SKILLS } from './skills.mocks';
 
 test.use({
@@ -11,7 +11,6 @@ const SKILLS_POST = (req: { method(): string; url(): string }) => req.method() =
 const SKILLS_PUT = (req: { method(): string; url(): string }) => req.method() === 'PUT' && /\/api\/skills\/.+/.test(req.url());
 
 async function setupSkillsMocks(page: Page) {
-    await setupApiSafetyNet(page);
     await setupAppBootstrapMocks(page);
     await setupTimezoneMock(page);
     await setupModalityMock(page);

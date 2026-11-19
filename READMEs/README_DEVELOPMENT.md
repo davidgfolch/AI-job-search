@@ -30,6 +30,10 @@ workflows, coverage gates, install/sandbox/dev-workflow helpers, agent rules and
 not exercised by the unit or e2e suites, so a run proves nothing; say so in the summary
 instead.
 
+### E2E isolation from the live stack
+
+E2E specs mock every API call. The runner starts its own Vite server on port 5174 pinned to an unreachable backend (`BACKEND_URL=http://127.0.0.1:1`) and never reuses an existing server, so a leaked request cannot reach the live backend or its database. In addition, a shared auto-fixture returns 404 for unmocked reads and **fails the test** on any unmocked `POST`/`PUT`/`PATCH`/`DELETE` to `/api/`; add an explicit `page.route` mock in the spec instead. The Docker sandbox (`scripts/test-sandbox.sh` / `dev.sh sandbox`) is for Dependabot verification, not E2E.
+
 ## Parallel Development (sibling clones)
 
 `scripts/dev.sh` (Linux/Mac) and `scripts/dev.bat` (Windows) keep feature and Dependabot work

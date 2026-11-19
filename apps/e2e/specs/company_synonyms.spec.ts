@@ -1,13 +1,12 @@
 import { test, expect } from './coverage.fixtures';
 import { Page } from '@playwright/test';
-import { BASE_URL, setupPageLogging, setupApiSafetyNet, setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock } from './common.helpers';
+import { BASE_URL, setupPageLogging, setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock } from './common.helpers';
 
 test.use({
     bypassCSP: true,
 });
 
 async function setupSynonymsMocks(page: Page) {
-    await setupApiSafetyNet(page);
     await setupAppBootstrapMocks(page);
     await setupTimezoneMock(page);
     await setupModalityMock(page);

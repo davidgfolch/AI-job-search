@@ -70,6 +70,8 @@ The dev server resolves the backend API at startup (`apps/web/src/common/backend
 # Run Playwright tests through the centralized runner
 ./scripts/test.sh e2e
 
+E2E never touches the live backend/DB: the runner pins its dev server to an unreachable backend and a shared guard fails unmocked writes. See [E2E isolation](READMEs/README_DEVELOPMENT.md#e2e-isolation-from-the-live-stack).
+
 # Interactive UI mode (inside apps/e2e)
 npm run test:ui
 
