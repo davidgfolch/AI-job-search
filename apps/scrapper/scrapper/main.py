@@ -4,6 +4,7 @@ from importlib.metadata import version as _v
 from typing import Callable, Optional
 
 from commonlib.observability import CONSOLE_MESSAGE, configure_logging, get_logger, log_file_path
+from commonlib.remote_log_writer import configure_remote_logging
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from commonlib.terminalColor import cyan, red, yellow
 from scrapper.util.persistence_manager import PersistenceManager
@@ -34,6 +35,7 @@ def hasArgument(args: list, name: str, info: Callable[[], str] = lambda: "", exp
 
 
 def main(args):
+    configure_remote_logging(app_name="scrapper")
     logFile = os.path.abspath(log_file_path())
     logger.info("logging.file_opened", path=logFile, console=cyan(f"Log file: {logFile}"))
     logger.info("cli.started", version=_v('scrapper'), console=cyan(f"Scrapper v{_v('scrapper')}"))

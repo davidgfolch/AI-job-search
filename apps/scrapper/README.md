@@ -136,6 +136,8 @@ python scripts/scrapper_keyword_stats.py --days 7 --site Indeed --keyword python
 
 `--date YYYY-MM-DD`, `--max-ids N` and a custom `--log-dir` are also supported. When all rotation slots of `scrapper.jsonl*` are in use the report warns that older dates may be unavailable.
 
+When the scrapper runs on another LAN machine, set `SCRAPPER_LOG_BACKEND_URL=http://<main-box-ip>:8000` so those records also reach the backend's statistics chart. Records are batched to `POST /api/scrapper/logs` and appended to the backend's `SCRAPPER_LOG_DIR`; a local/loopback backend needs no setting because it already reads the local log folder. See [Distributed execution](../../READMEs/DISTRIBUTED_EXECUTION.md#scrapper-logs-on-a-remote-backend).
+
 ## Gmail Configuration
 
 1. **Enable 2FA on Gmail**: Make sure 2FA is enabled on your Gmail account

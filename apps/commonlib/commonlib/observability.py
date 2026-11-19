@@ -66,6 +66,7 @@ from commonlib.console_render import CONSOLE_MESSAGE, color_enabled  # noqa: F40
 from commonlib.console_render import render_console, set_console_mode, split_console_text
 from commonlib.environmentUtil import getEnv
 from commonlib.log_writer import get_log_dir, make_jsonl_writer
+from commonlib.remote_log_writer import remote_log_processor
 
 DEFAULT_LOG_LEVEL = 20
 DEFAULT_APP_NAME = "app"
@@ -195,6 +196,7 @@ def configure_logging(app_name: str | None = None, console: str | None = None) -
             structlog.processors.dict_tracebacks,
             split_console_text,
             make_jsonl_writer(log_file_path, _stamp_app_name),
+            remote_log_processor,
             render_console,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),

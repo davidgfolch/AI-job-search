@@ -55,8 +55,9 @@ services:
       - ./apps/aiCvMatcher/data/logs:/logs/aicvmatcher:ro
       - ./apps/cron/data/logs:/logs/cron:ro
       - ./apps/aiFormFiller/data/logs:/logs/aiformfiller:ro
-      # scrapper runs on the host; its keyword-search JSONL is read-only here for /api/statistics/keywords
-      - ./apps/scrapper/data/logs:/logs/scrapper:ro
+      # scrapper runs on the host or another LAN box; its JSONL is read here for /api/statistics/keywords
+      # and written here when a remote scrapper ships its logs to POST /api/scrapper/logs
+      - ./apps/scrapper/data/logs:/logs/scrapper
     ports:
       - "8000:8000"
     environment:
