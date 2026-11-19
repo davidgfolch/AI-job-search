@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Iterator
 
 from commonlib.environmentUtil import getEnv
+from commonlib.file_lock import try_lock, unlock
 from commonlib.observability import get_logger
 
 logger = get_logger("commonlib.ollama_activity")
@@ -93,50 +94,10 @@ def _lock_path() -> Path:
     return activity_dir() / LOCK_NAME
 
 
-def _try_lock(fd: int, shared: bool) -> bool:
-    try:
-        import fcntl
-    except ImportError:  # Windows hosts: exclusive locking only, still correct but stricter
-        return _try_lock_windows(fd)
-    flags = (fcntl.LOCK_SH if shared else fcntl.LOCK_EX) | fcntl.LOCK_NB
-    try:
-        fcntl.flock(fd, flags)
-        return True
-    except OSError:
-        return False
-
-
-def _try_lock_windows(fd: int) -> bool:
-    try:
-        import msvcrt
-        os.lseek(fd, 0, os.SEEK_SET)
-        msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-        return True
-    except (ImportError, OSError):
-        return False
-
-
-def _unlock(fd: int) -> None:
-    try:
-        import fcntl
-        fcntl.flock(fd, fcntl.LOCK_UN)
-        return
-    except ImportError:
-        pass
-    except OSError:
-        return
-    try:
-        import msvcrt
-        os.lseek(fd, 0, os.SEEK_SET)
-        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
-    except (ImportError, OSError):
-        pass
-
-
 def _acquire(fd: int, shared: bool, timeout: float) -> bool:
     deadline = time.monotonic() + timeout
     while True:
-        if _try_lock(fd, shared):
+        if try_lock(fd, shared):
             return True
         if not shared:
             return False
@@ -196,7 +157,7 @@ def request_slot(priority: str = HIGH_PRIORITY, timeout: float = SLOT_WAIT_SECON
             if acquired:
                 _write_marker(False)
             if fd is not None:
-                _unlock(fd)
+                unlock(fd)
                 os.close(fd)
     finally:
         _leave()

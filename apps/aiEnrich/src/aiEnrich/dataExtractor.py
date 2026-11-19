@@ -1,7 +1,6 @@
 import time
 from typing import List
 
-from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.stopWatch import StopWatch
 from commonlib.watcher_notify import notify_watcher as notify_backend_watcher
 from commonlib.ai_helpers import (
@@ -18,12 +17,12 @@ from commonlib.repositories.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger, job_log_context
 from commonlib.services.metrics_collector import MetricsCollector
 from .aiEnrich_config import (
-    get_job_enabled, get_model, get_max_validation_retries,
+    get_model, get_max_validation_retries,
     get_backend, get_openrouter_model,
     get_max_ollama_failures, get_backend_url, get_timeout_job,
 )
 from .ollama_backend import (
-    ping_backend, _check_backend_available, _query_job, _query_company,
+    ping_backend, _query_job, _query_company,
     ollama_consecutive_failures,
 )
 from .extraction_contract import build_extraction_prompt, query_and_parse
@@ -42,80 +41,11 @@ jobErrors = set[tuple[int, str]]()
 _batch_start = 0.0
 
 
-def dataExtractor() -> int:
-    global totalCount, jobErrors, _batch_start
-    if not get_job_enabled():
-        return 0
-    if not _check_backend_available():
-        return -1
-    with MysqlUtil() as mysql:
-        repo = AiEnrichRepository(mysql)
-        total = repo.count_pending_enrichment()
-        if total is None or total == 0:
-            return 0
-        logger.info("jobs.found", total=total)
-        collector.set_pending("aiEnrich", total)
-        stopWatch.start()
-        _batch_start = time.time()
-        idx = 0
-        from commonlib.sql.filter_config_selector import FilterConfigSelector
-        selector = FilterConfigSelector(mysql)
-        for batch in _getJobBatches(repo):
-            for id in batch:
-                try:
-                    original_config = repo.config_for_job(id)
-                    if original_config:
-                        configs = selector.load_configs()
-                        if configs:
-                            matched_name = None
-                            for cfg in configs:
-                                if selector.match_ids(cfg["filters"], limit=1, job_id=id):
-                                    matched_name = cfg["name"]
-                                    break
-                            if matched_name is None:
-                                idx += 1
-                                continue
-                            repo._job_configs[id] = matched_name
-                except Exception:
-                    logger.exception("job.fc_recheck_failed", job_id=id)
-                _process_job_safe(repo, id, total, idx, "enrich")
-                idx += 1
-        return total
-
-
-def retry_failed_jobs() -> int:
-    global totalCount, jobErrors, _batch_start
-    if not get_job_enabled():
-        return 0
-    if not _check_backend_available():
-        return -1
-    with MysqlUtil() as mysql:
-        repo = AiEnrichRepository(mysql)
-        error_id = repo.get_enrichment_error_id_retry()
-        if error_id is None:
-            return 0
-        try:
-            from commonlib.sql.filter_config_selector import FilterConfigSelector
-            selector = FilterConfigSelector(mysql)
-            original_config = repo.config_for_job(error_id)
-            if original_config:
-                configs = selector.load_configs()
-                if configs:
-                    matched_name = None
-                    for cfg in configs:
-                        if selector.match_ids(cfg["filters"], limit=1, job_id=error_id):
-                            matched_name = cfg["name"]
-                            break
-                    if matched_name is None:
-                        return 1
-                    repo._job_configs[error_id] = matched_name
-        except Exception:
-            logger.exception("job.fc_recheck_failed", job_id=error_id)
-        logger.info("job.retry", job_id=error_id)
-        stopWatch.start()
-        _batch_start = time.time()
-        _process_job_safe(repo, error_id, 1, 0, "retry")
-        return 1
+def begin_batch() -> None:
+    """Start the batch clock the footer reports against; the loops call it once per pass."""
+    global _batch_start
+    stopWatch.start()
+    _batch_start = time.time()
 
 
 def _process_job_safe(
@@ -244,7 +174,3 @@ def _handle_error(repo: AiEnrichRepository, id, title, company, ex, process_name
     logger.exception("job.failed", job_id=id, title=title, company=company, error=str(ex), config=repo.config_for_job(id) or "NONE")
     jobErrors.add((id, f"{title} - {company}: {ex}"))
     _persist_enrich_error(repo, id, ex, process_name)
-
-
-def _getJobBatches(repo: AiEnrichRepository):
-    return repo.iter_pending_enrichment_batches()

@@ -1,3 +1,34 @@
+import pytest
+from unittest.mock import patch, MagicMock
+
+create_mock_db = pytest.create_mock_db
+
+
+@pytest.fixture
+def mock_db_session():
+    mock_db = create_mock_db(count=1, fetchAll=[], columns=['id', 'title'])
+    with patch('repositories.jobs_repository.JobsRepository.get_db', return_value=mock_db):
+        yield mock_db
+
+
+@pytest.fixture
+def mock_jobs_service(client):
+    from api.jobs import get_service
+    mock_service = MagicMock()
+    client.app.dependency_overrides[get_service] = lambda: mock_service
+    yield mock_service
+    client.app.dependency_overrides.pop(get_service, None)
+
+
+@pytest.fixture
+def mock_watcher_service(client):
+    from api.watcher import get_watcher_service
+    mock_watcher = MagicMock()
+    client.app.dependency_overrides[get_watcher_service] = lambda: mock_watcher
+    yield mock_watcher
+    client.app.dependency_overrides.pop(get_watcher_service, None)
+
+
 def request_jobs(client, query_params):
     response = client.get(f"/api/jobs?{query_params}")
     assert response.status_code == 200

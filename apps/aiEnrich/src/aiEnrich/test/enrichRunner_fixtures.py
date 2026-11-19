@@ -9,11 +9,11 @@ from .dataExtractor_mocks import MAPPED_JOB
 
 @pytest.fixture
 def mock_deps():
-    with patch('aiEnrich.dataExtractor.MysqlUtil') as mysql_util, \
+    with patch('aiEnrich.enrichRunner.MysqlUtil') as mysql_util, \
          patch('aiEnrich.dataExtractor._save') as save_chk, \
          patch('aiEnrich.dataExtractor.footer') as footer_chk, patch('aiEnrich.dataExtractor.StopWatch'), \
          patch('aiEnrich.dataExtractor.mapJob') as map_job, \
-         patch('aiEnrich.dataExtractor.AiEnrichRepository') as repo_cls, \
+         patch('aiEnrich.enrichRunner.AiEnrichRepository') as repo_cls, \
          patch('aiEnrich.dataExtractor.ping_backend', return_value=True), \
          patch('aiEnrich.dataExtractor.get_backend', return_value='ollama'), \
          patch('aiEnrich.ollama_backend.query_ollama') as mock_ollama, \
@@ -40,7 +40,7 @@ def mock_deps():
 @pytest.fixture(autouse=True)
 def clean_env():
     env_vars = [
-        "AI_ENRICH_BACKEND", "AI_ENRICH_OPENROUTER_BASE_URL", "AI_ENRICH_OPENROUTER_MODEL",
+        "AI_ENRICH_LLM_BACKEND", "AI_ENRICH_OPENROUTER_BASE_URL", "AI_ENRICH_OPENROUTER_MODEL",
         "AI_ENRICH_OPENROUTER_FALLBACK_MODEL", "AI_ENRICH_MAX_VALIDATION_RETRIES",
     ]
     original = {k: os.environ.get(k) for k in env_vars}

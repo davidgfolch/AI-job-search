@@ -56,64 +56,23 @@ def test_get_backend_huggingface(mock_env):
     assert get_backend() == "huggingface"
 
 
+@pytest.mark.parametrize("getter, raw, expected", [
+    (get_ollama_model, "ollama/qwen2.5:3b", "ollama/qwen2.5:3b"),
+    (get_ollama_base_url, OLLAMA_TEST_URL, OLLAMA_TEST_URL),
+    (get_max_new_tokens, "2048", 2048),
+    (get_hf_model_id, "Qwen/Qwen2.5-1.5B-Instruct", "Qwen/Qwen2.5-1.5B-Instruct"),
+    (get_hf_temperature, "0.1", 0.1),
+    (get_hf_top_p, "0.9", 0.9),
+    (get_hf_repetition_penalty, "1.1", 1.1),
+    (get_batch_size, "10", 10),
+    (get_input_max_len, "12000", 12000),
+    (get_timeout, "90", 90.0),
+    (get_enrich_limit, "10", 10),
+])
 @patch("aiEnrichSkill.config.getEnv")
-def test_get_ollama_model_default(mock_env):
-    mock_env.return_value = "ollama/qwen2.5:3b"
-    assert get_ollama_model() == "ollama/qwen2.5:3b"
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_ollama_base_url_default(mock_env):
-    mock_env.return_value = OLLAMA_TEST_URL
-    assert get_ollama_base_url() == OLLAMA_TEST_URL
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_max_new_tokens_default(mock_env):
-    mock_env.return_value = "2048"
-    assert get_max_new_tokens() == 2048
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_hf_model_id_default(mock_env):
-    mock_env.return_value = "Qwen/Qwen2.5-1.5B-Instruct"
-    assert get_hf_model_id() == "Qwen/Qwen2.5-1.5B-Instruct"
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_hf_temperature_default(mock_env):
-    mock_env.return_value = "0.1"
-    assert get_hf_temperature() == 0.1
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_hf_top_p_default(mock_env):
-    mock_env.return_value = "0.9"
-    assert get_hf_top_p() == 0.9
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_hf_repetition_penalty_default(mock_env):
-    mock_env.return_value = "1.1"
-    assert get_hf_repetition_penalty() == 1.1
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_batch_size_default(mock_env):
-    mock_env.return_value = "10"
-    assert get_batch_size() == 10
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_input_max_len_default(mock_env):
-    mock_env.return_value = "12000"
-    assert get_input_max_len() == 12000
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_timeout_default(mock_env):
-    mock_env.return_value = "90"
-    assert get_timeout() == 90.0
+def test_getenv_backed_getters(mock_env, getter, raw, expected):
+    mock_env.return_value = raw
+    assert getter() == expected
 
 
 def test_get_gpu_cleanup_default_true():
@@ -126,12 +85,6 @@ def test_get_skill_categories(mock_env):
     mock_env.return_value = "Language, Framework"
     assert get_skill_categories() == "Language, Framework"
     mock_env.assert_called_with("AI_ENRICHSKILL_CATEGORIES", required=True)
-
-
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_enrich_limit_default(mock_env):
-    mock_env.return_value = "10"
-    assert get_enrich_limit() == 10
 
 
 @patch("aiEnrichSkill.config.get_learning_path_max", return_value=3)

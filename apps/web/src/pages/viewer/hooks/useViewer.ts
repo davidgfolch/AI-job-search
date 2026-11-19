@@ -4,6 +4,7 @@ import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
 import { useAppliedModal } from './useAppliedModal';
 import { useModalityValues } from '../../common/hooks/useModalityValues';
+import { toggleJobSelection } from './selectionToggle';
 import { type Job, jobsApi } from '../api/ViewerApi';
 import { STATE_FIELDS } from '../constants';
 
@@ -164,33 +165,7 @@ export const useViewer = () => {
             ignoreJob: () => handleJobUpdate({ ignored: true }), seenJob: () => handleJobUpdate({ seen: true }),
             appliedJob: openAppliedModal, discardedJob: () => handleJobUpdate({ discarded: true }), closedJob: () => handleJobUpdate({ closed: true }),
             deleteJob: deleteSingleJob, nextJob: () => navigateJob('next'), previousJob: () => navigateJob('previous'), loadMore: handleLoadMore,
-            toggleSelectJob: (id: number) => {
-                if (selectionMode === 'all') {
-                    // Deselecting one row while all are selected: switch to manual with every loaded job except this one
-                    const newSelected = new Set<number>();
-                    for (const job of allJobs) {
-                        if (job.id !== id) newSelected.add(job.id);
-                    }
-                    setSelectionMode('manual');
-                    setSelectedIds(newSelected);
-                    const job = allJobs.find(j => j.id === id);
-                    if (job) setSelectedJob(job);
-                    return;
-                }
-                const newSelected = new Set(selectedIds);
-                if (newSelected.has(id)) {
-                    newSelected.delete(id);
-                    if (newSelected.size === 0) {
-                        setSelectionMode('none');
-                    }
-                } else {
-                    newSelected.add(id);
-                    setSelectionMode('manual');
-                    const job = allJobs.find(j => j.id === id);
-                    if (job) setSelectedJob(job);
-                }
-                setSelectedIds(newSelected);
-            },
+            toggleSelectJob: (id: number) => toggleJobSelection({ id, selectionMode, selectedIds, allJobs, setSelectionMode, setSelectedIds, setSelectedJob }),
             toggleSelectAll: () => selectionMode === 'all' ? (setSelectionMode('none'), setSelectedIds(new Set())) : setSelectionMode('all'),
             ignoreSelected, deleteSelected, setActiveConfigName, closeConfirmModal: () => confirmModal.close(), dismissMessage: handleDismissMessage,
             createJob: async (data: Partial<Job>) => {
