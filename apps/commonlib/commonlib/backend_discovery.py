@@ -9,10 +9,9 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 
-import requests
-
+from commonlib.direct_http import session as direct_session
 from commonlib.environmentUtil import getEnv, getEnvBool
-from commonlib.network.discovery import MAX_WORKERS, SCAN_TIMEOUT, get_local_subnets, scan_port, subnet_hosts
+from commonlib.network.discovery import MAX_WORKERS, SCAN_TIMEOUT, get_local_ip, get_local_subnets, scan_port, subnet_hosts
 from commonlib.network.discovery_cache import cached_discover
 from commonlib.observability import get_logger
 from commonlib.ollama_config import backend_candidate_urls
@@ -22,9 +21,12 @@ logger = get_logger("commonlib.backend_discovery")
 BACKEND_URL_ENV = "BACKEND_URL"
 BACKEND_PORT_ENV = "BACKEND_PORT"
 BACKEND_DISCOVERY_ENV = "BACKEND_DISCOVERY"
+PROBE_TIMEOUT_ENV = "BACKEND_PROBE_TIMEOUT"
 DEFAULT_BACKEND_PORT = 8000
+DEFAULT_PROBE_TIMEOUT = 10.0
 HEALTH_PATH = "/health"
-PROBE_TIMEOUT = 2.0
+PROBE_TIMEOUT = float(os.getenv(PROBE_TIMEOUT_ENV, str(DEFAULT_PROBE_TIMEOUT)) or DEFAULT_PROBE_TIMEOUT)
+_HTTP = direct_session()
 
 
 def _port() -> int:
@@ -50,11 +52,11 @@ def candidate_urls() -> tuple[str, ...]:
 
 
 def verify_backend(url: str, timeout: float = PROBE_TIMEOUT) -> bool:
-    """True when `url` answers the backend health endpoint."""
+    """True when `url` answers the backend health endpoint (direct, no proxy)."""
     try:
-        return requests.get(f"{url.rstrip('/')}{HEALTH_PATH}", timeout=timeout).ok
+        return _HTTP.get(f"{url.rstrip('/')}{HEALTH_PATH}", timeout=timeout).ok
     except Exception as ex:
-        logger.debug("backend.probe_failed", url=url, error=str(ex))
+        logger.warning("backend.probe_failed", url=url, error=str(ex))
         return False
 
 
@@ -69,14 +71,14 @@ def _scan_hosts(hosts: list[str], port: int) -> list[str]:
     return found
 
 
-def _discover_host(port: int, timeout: float) -> str | None:
+def _discover_host(port: int, timeout: float, tried=()) -> str | None:
     def verify(host: str) -> bool:
         return verify_backend(f"http://{host}:{port}", timeout)
 
     def scan() -> list[str]:
         return _scan_hosts(subnet_hosts(get_local_subnets(), kind="backend"), port)
 
-    return cached_discover("backend", verify, scan)
+    return cached_discover("backend", verify, scan, tried=tried)
 
 
 def get_backend_url(timeout: float = PROBE_TIMEOUT) -> str | None:
@@ -90,5 +92,6 @@ def get_backend_url(timeout: float = PROBE_TIMEOUT) -> str | None:
     if not getEnvBool(BACKEND_DISCOVERY_ENV, False):
         return None
     port = _port()
-    host = _discover_host(port, timeout)
+    own_ip = get_local_ip()
+    host = _discover_host(port, timeout, tried=(own_ip,) if own_ip else ())
     return f"http://{host}:{port}" if host else None

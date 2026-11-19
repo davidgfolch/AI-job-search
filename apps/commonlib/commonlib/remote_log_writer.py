@@ -21,8 +21,7 @@ import threading
 import time
 from urllib.parse import urlparse
 
-import requests
-
+from commonlib.direct_http import session as direct_session
 from commonlib.environmentUtil import getEnv
 from commonlib.log_writer import public_record
 
@@ -39,6 +38,7 @@ _lock = threading.Lock()
 _buffer: list = []
 _config: dict | None = None
 _local = threading.local()
+_HTTP = direct_session()
 
 
 def is_remote_url(url: str | None) -> bool:
@@ -48,13 +48,17 @@ def is_remote_url(url: str | None) -> bool:
     return bool(host) and not local
 
 
-def _warning(event: str, **fields) -> None:
+def _log(event: str, level: str, **fields) -> None:
     from commonlib.observability import get_logger  # local: observability imports this module
     _local.shipping = True
     try:
-        get_logger("commonlib.remote_log_writer").warning(event, **fields)
+        getattr(get_logger("commonlib.remote_log_writer"), level)(event, **fields)
     finally:
         _local.shipping = False
+
+
+def _warning(event: str, **fields) -> None:
+    _log(event, "warning", **fields)
 
 
 def flush_remote_logs() -> None:
@@ -69,7 +73,7 @@ def flush_remote_logs() -> None:
     payload = json.dumps({"app": config["app_name"], "records": batch}, default=str)
     _local.shipping = True
     try:
-        response = requests.post(
+        response = _HTTP.post(
             f"{config['base_url']}{INGEST_PATH}", data=payload,
             headers={"Content-Type": "application/json"}, timeout=config["timeout"])
     except Exception as ex:
@@ -103,6 +107,7 @@ def configure_remote_logging(base_url: str = None, app_name: str = "scrapper", t
         _buffer.clear()
     if not is_remote_url(url):
         _config = None
+        _log("remote_logs.disabled", "info", reason="local_or_unreachable_backend", url=url)
         return False
     _config = {
         "base_url": url.rstrip("/"),
@@ -110,6 +115,7 @@ def configure_remote_logging(base_url: str = None, app_name: str = "scrapper", t
         "batch_size": max(1, int(getEnv(BATCH_SIZE_ENV, DEFAULT_BATCH_SIZE))),
         "timeout": float(timeout),
     }
+    _log("remote_logs.enabled", "info", base_url=_config["base_url"], app_name=app_name)
     if start_thread:
         interval = float(getEnv(FLUSH_SECONDS_ENV, DEFAULT_FLUSH_SECONDS))
         threading.Thread(target=_flush_loop, args=(interval,), daemon=True, name="remote-log-shipper").start()

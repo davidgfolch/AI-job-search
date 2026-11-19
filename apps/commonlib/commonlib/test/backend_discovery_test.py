@@ -45,9 +45,9 @@ def test_probes_candidates_in_order(monkeypatch):
 def test_lan_discovery_is_the_last_resort(monkeypatch):
     monkeypatch.setenv(sut.BACKEND_DISCOVERY_ENV, "True")
     monkeypatch.setenv(sut.BACKEND_PORT_ENV, "9000")
-    with patch.object(sut, "verify_backend", return_value=False), patch.object(sut, "_discover_host", return_value="192.168.1.20") as discover:
+    with patch.object(sut, "verify_backend", return_value=False), patch.object(sut, "get_local_ip", return_value="192.168.1.10"), patch.object(sut, "_discover_host", return_value="192.168.1.20") as discover:
         assert sut.get_backend_url() == "http://192.168.1.20:9000"
-    discover.assert_called_once_with(9000, sut.PROBE_TIMEOUT)
+    discover.assert_called_once_with(9000, sut.PROBE_TIMEOUT, tried=("192.168.1.10",))
 
 
 def test_discovery_can_be_disabled(monkeypatch):
@@ -62,6 +62,6 @@ def test_discovery_can_be_disabled(monkeypatch):
     (OSError("offline"), False),
 ], ids=["healthy", "unhealthy", "error"])
 def test_verify_backend(response, expected):
-    with patch.object(sut.requests, "get", side_effect=response if isinstance(response, Exception) else None, return_value=response if not isinstance(response, Exception) else None) as get:
+    with patch.object(sut._HTTP, "get", side_effect=response if isinstance(response, Exception) else None, return_value=response if not isinstance(response, Exception) else None) as get:
         assert sut.verify_backend("http://backend:8000/") is expected
     assert get.call_args.args[0] == "http://backend:8000/health"

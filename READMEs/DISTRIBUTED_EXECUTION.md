@@ -15,7 +15,7 @@ Every client tries the configured value first, then the compose/host fallbacks, 
 | Backend API | `BACKEND_URL` | when set, that URL only; when unset `backend:8000` → `host.docker.internal:8000` → `localhost:8000` (reverse on the host), then a LAN scan if `BACKEND_DISCOVERY=True` |
 | Ollama | `AI_ENRICH_OLLAMA_BASE_URL` (`auto` scans directly) | configured URL → `host.docker.internal` → `localhost` → `ollama:11434` → LAN scan on 11434 |
 | Watcher notifications | `AI_ENRICH_BACKEND_URL` | configured URL → `backend:8000` → `host.docker.internal:8000` → `localhost:8000` |
-| Scrapper logs | `BACKEND_URL`, `BACKEND_PORT`, `BACKEND_DISCOVERY` | the same backend discovery as the web; a loopback target keeps logs local |
+| Scrapper logs | `BACKEND_URL`, `BACKEND_PORT`, `BACKEND_DISCOVERY`, `BACKEND_PROBE_TIMEOUT` | the same backend discovery as the web; a loopback target keeps logs local |
 | Dashboard health | `PROMETHEUS_URL`, `GRAFANA_URL` | those URLs (defaults point at `host.docker.internal`) |
 
 The DB/Ollama/backend scans are cached in `./data/discovery/cache.json`, which every service mounts, so containers starting together scan once instead of once each. Details: [commonlib service discovery](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama), [agent docs](AGENTIC_SDLC.md#network-discovery) and each module README.
@@ -39,6 +39,8 @@ Compose pins the in-container DB/Mongo to the compose service names, and those `
 ### Scrapper logs on a remote backend
 
 The [/statistics keyword chart](../apps/web/README.md) reads the scrapper's JSONL through the backend. When the scrapper runs on another machine that file stays there; the scrapper reuses the backend discovery above (`BACKEND_URL` to pin it, otherwise the usual candidates and a LAN scan when `BACKEND_DISCOVERY=True`) and batches its records to `POST /api/scrapper/logs` (every 5s or 200 records). The backend appends them to `SCRAPPER_LOG_DIR` (the Compose-mounted `apps/scrapper/data/logs`). A loopback target or an unreachable backend keeps the current local-only behaviour, so a single-machine install ships nothing. `SCRAPPER_LOG_BATCH_SIZE` and `SCRAPPER_LOG_FLUSH_SECONDS` tune the batching. Shipping is best-effort: a failed POST only logs a warning and retries with the next batch.
+
+Discovery probes and log POSTs connect directly to the target IP and ignore `HTTP(S)_PROXY`/`NO_PROXY`, so a proxy on the scraper box cannot silently swallow LAN requests. The `/health` probe timeout is `BACKEND_PROBE_TIMEOUT` (default `10s`, raised from `2s` because a busy backend can answer that slowly). Each run logs one `remote_logs.enabled` (with the resolved `base_url`) or `remote_logs.disabled` event; a failed probe logs `backend.probe_failed` with the URL and error. Those lines are the first thing to check when remote stats are missing.
 
 ## Topologies
 
