@@ -1,6 +1,6 @@
-import json
-from typing import List
+from typing import List, Sequence
 from commonlib.skill_context import get_skill_context
+from commonlib.skill_learning_path import LearningPathLink, serialize_learning_path
 from commonlib.sql.mysqlUtil import MysqlUtil
 
 DESCRIPTION_UPDATE = "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1 WHERE name = %s"
@@ -27,8 +27,8 @@ class SkillRepository:
     def fetch_skill_context(self, name: str) -> str:
         return get_skill_context(self._mysql, name)
 
-    def save_skill_result(self, name: str, description: str, category: str, learning_path: List[str]) -> None:
+    def save_skill_result(self, name: str, description: str, category: str, learning_path: Sequence[LearningPathLink | str]) -> None:
         if learning_path:
-            self._mysql.executeAndCommit(DESCRIPTION_AND_PATH_UPDATE, [description, category, json.dumps(learning_path), name])
+            self._mysql.executeAndCommit(DESCRIPTION_AND_PATH_UPDATE, [description, category, serialize_learning_path(learning_path), name])
         else:
             self._mysql.executeAndCommit(DESCRIPTION_UPDATE, [description, category, name])

@@ -8,7 +8,7 @@ vi.mock('../../../../skillsManager/components/EditSkillModal', () => ({
     EditSkillModal: ({ skill, onSave, onClose, onNext, onPrevious, hasNext, hasPrevious }: any) => (
         <div data-testid="edit-skill-modal">
             <span data-testid="modal-skill-name">{skill.name}</span>
-            <button onClick={() => onSave({ description: 'New Desc', learningPath: ['link1'] })}>Save</button>
+            <button onClick={() => onSave({ description: 'New Desc', learningPath: [{ url: 'link1', source: 'manual' }] })}>Save</button>
             <button onClick={onClose}>Close</button>
             <button onClick={onNext} disabled={!hasNext} data-testid="next-btn">Next</button>
             <button onClick={onPrevious} disabled={!hasPrevious} data-testid="prev-btn">Previous</button>
@@ -100,7 +100,7 @@ describe('SkillsList', () => {
         expect(mockSaveSkill).toHaveBeenCalledWith(expect.objectContaining({
             name: 'React',
             description: 'New Desc',
-            learningPath: ['link1']
+            learningPath: [{ url: 'link1', source: 'manual' }]
         }));
         
         // Modal should close (or at least state update, checking if it renders null might require rerender or waitFor if it was async, but here it's sync state update)

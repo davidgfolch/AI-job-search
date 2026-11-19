@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable
 from commonlib.observability import get_logger
 from commonlib.stopWatch import StopWatch
 
@@ -72,7 +72,7 @@ def process_skill_enrichment(
     return count
 
 
-def _normalize_generation_result(result) -> tuple[str, str | None, List[str]] | None:
+def _normalize_generation_result(result) -> tuple[str, str | None, list] | None:
     """Accepts the (description, category[, learning_path]) tuple or a bare description string."""
     if isinstance(result, tuple) and len(result) in (2, 3):
         description, category = result[0], result[1]

@@ -92,9 +92,10 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove, onRemoveLearn
                 <div className="links-list read-only">
                   {skill.learningPath && skill.learningPath.map((link, i) => (
                     <div key={i} className="link-item">
-                      <a href={link} target="_blank" rel="noopener noreferrer" className="link-url text-no-wrap">
-                        {link}
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="link-url text-no-wrap">
+                        {link.url}
                       </a>
+                      <span className="link-source" title={`Source: ${link.source}`}>{link.source}</span>
                       <button
                         className="btn-icon delete link-remove"
                         onClick={(e) => {

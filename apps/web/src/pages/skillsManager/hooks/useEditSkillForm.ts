@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Skill } from './useLearnList';
-import { skillsApi } from "../api/SkillsManagerApi";
+import { skillsApi, type LearningPathLink } from "../api/SkillsManagerApi";
 
 interface UseEditSkillFormProps {
   skill: Skill;
@@ -14,7 +14,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
   const [name, setName] = useState(skill.name || '');
   const [category, setCategory] = useState(skill.category || '');
   const [description, setDescription] = useState(skill.description || '');
-  const [learningPath, setLearningPath] = useState<string[]>(skill.learningPath || []);
+  const [learningPath, setLearningPath] = useState<LearningPathLink[]>(skill.learningPath || []);
   const [newLinkInput, setNewLinkInput] = useState('');
   const [isPolling, setIsPolling] = useState(false);
   
@@ -56,7 +56,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
 
   const handleAddLink = () => {
     if (newLinkInput.trim()) {
-      setLearningPath([...learningPath, newLinkInput.trim()]);
+      setLearningPath([...learningPath, { url: newLinkInput.trim(), source: 'manual' }]);
       setNewLinkInput('');
     }
   };

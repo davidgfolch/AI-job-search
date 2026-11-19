@@ -1,6 +1,11 @@
+import json
 import pytest
 
-from commonlib.skill_learning_path import dedupe_urls, parse_learning_path_urls, parse_skill_llm_output, split_learning_path_section
+from commonlib.skill_learning_path import (
+    SOURCE_DUCKDUCKGO, SOURCE_LLM, SOURCE_MANUAL, SOURCE_UNKNOWN, LearningPathLink,
+    dedupe_urls, deserialize_learning_path, learning_path_as_dicts,
+    parse_learning_path_urls, parse_skill_llm_output, serialize_learning_path, split_learning_path_section,
+)
 
 
 @pytest.mark.parametrize("text, expected_body", [
@@ -92,3 +97,33 @@ def test_parse_skill_llm_output_learning_path_only():
     assert desc == ""
     assert category == "Other"
     assert links == ["https://roadmap.sh/python", "https://roadmap.sh/python#intro"]
+
+
+@pytest.mark.parametrize("raw, expected", [
+    pytest.param(None, [], id="none"),
+    pytest.param([], [], id="empty"),
+    pytest.param(["https://docs.python.org/3/"], [LearningPathLink("https://docs.python.org/3/", SOURCE_UNKNOWN)], id="legacy_strings"),
+    pytest.param('["https://docs.python.org/3/"]', [LearningPathLink("https://docs.python.org/3/", SOURCE_UNKNOWN)], id="legacy_json_string"),
+    pytest.param([{"url": "https://docs.python.org/3/", "source": "llm"}], [LearningPathLink("https://docs.python.org/3/", SOURCE_LLM)], id="tagged_objects"),
+    pytest.param([LearningPathLink("https://x.dev", SOURCE_DUCKDUCKGO)], [LearningPathLink("https://x.dev", SOURCE_DUCKDUCKGO)], id="namedtuples"),
+    pytest.param([{"url": " https://x.dev ", "source": "MANUAL"}], [LearningPathLink("https://x.dev", SOURCE_MANUAL)], id="normalizes_case_and_spaces"),
+    pytest.param([{"url": "https://x.dev", "source": "made_up"}], [LearningPathLink("https://x.dev", SOURCE_UNKNOWN)], id="unknown_source_coerced"),
+    pytest.param([{"url": ""}, "", {"source": "llm"}], [], id="empty_items_dropped"),
+    pytest.param("not-json", [], id="malformed_json"),
+    pytest.param({"url": "https://x.dev"}, [], id="non_list"),
+])
+def test_deserialize_learning_path(raw, expected):
+    assert deserialize_learning_path(raw) == expected
+
+
+@pytest.mark.parametrize("links, expected", [
+    pytest.param([], None, id="empty_returns_none"),
+    pytest.param(None, None, id="none_returns_none"),
+    pytest.param(["https://x.dev"], '[{"url": "https://x.dev", "source": "unknown"}]', id="legacy_strings_tagged_unknown"),
+    pytest.param([LearningPathLink("https://x.dev", SOURCE_LLM)], '[{"url": "https://x.dev", "source": "llm"}]', id="tagged_link"),
+    pytest.param([{"url": "https://x.dev", "source": "duckduckgo"}], '[{"url": "https://x.dev", "source": "duckduckgo"}]', id="tagged_dict"),
+])
+def test_serialize_learning_path(links, expected):
+    assert serialize_learning_path(links) == expected
+    if expected is not None:
+        assert json.loads(expected) == learning_path_as_dicts(links)

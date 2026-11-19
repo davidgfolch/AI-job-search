@@ -1,8 +1,8 @@
-import json
-from typing import List
+from typing import List, Sequence
 
 from commonlib.repositories.skill_repository import DESCRIPTION_AND_PATH_UPDATE, DESCRIPTION_UPDATE
 from commonlib.skill_context import get_skill_context
+from commonlib.skill_learning_path import LearningPathLink, serialize_learning_path
 from commonlib.sql.mysqlUtil import MysqlUtil
 
 PENDING_ENRICHMENT_QUERY = "SELECT name FROM job_skills WHERE COALESCE(ai_enriched, 0) = 0{description_filter} LIMIT %s"
@@ -50,12 +50,12 @@ class SkillRepository:
         of the pending query, so it stops occupying the head of the queue every cycle."""
         self._mysql.executeAndCommit(SKIP_SKILL_QUERY, [name])
 
-    def save_learning_path(self, name: str, learning_path: List[str]) -> None:
-        self._mysql.executeAndCommit(UPDATE_LEARNING_PATH_QUERY, [json.dumps(learning_path), name])
+    def save_learning_path(self, name: str, learning_path: Sequence[LearningPathLink | str]) -> None:
+        self._mysql.executeAndCommit(UPDATE_LEARNING_PATH_QUERY, [serialize_learning_path(learning_path), name])
 
-    def save_skill_result(self, name: str, description: str, category: str, learning_path: List[str]) -> None:
+    def save_skill_result(self, name: str, description: str, category: str, learning_path: Sequence[LearningPathLink | str]) -> None:
         if learning_path:
-            self._mysql.executeAndCommit(DESCRIPTION_AND_PATH_UPDATE, [description, category, json.dumps(learning_path), name])
+            self._mysql.executeAndCommit(DESCRIPTION_AND_PATH_UPDATE, [description, category, serialize_learning_path(learning_path), name])
         else:
             self._mysql.executeAndCommit(DESCRIPTION_UPDATE, [description, category, name])
 

@@ -1,6 +1,7 @@
 import time
 
 from commonlib.observability import get_logger
+from commonlib.skill_learning_path import LearningPathLink
 from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.services.skill_enricher_service import BackendUnavailable, process_skill_enrichment
 
@@ -16,7 +17,7 @@ logger = get_logger("aiEnrichSkill.enrichment")
 collector = MetricsCollector()
 
 
-def generate_skill_description_ollama(skill_name, context="", ollama_base_url=None) -> tuple[str, str, list[str]]:
+def generate_skill_description_ollama(skill_name, context="", ollama_base_url=None) -> tuple[str, str, list[LearningPathLink]]:
     logger.info("skill.started", skill=skill_name, has_context=bool(context))
     messages = build_skill_prompt_messages(skill_name, context)
     system = messages[0]["content"]

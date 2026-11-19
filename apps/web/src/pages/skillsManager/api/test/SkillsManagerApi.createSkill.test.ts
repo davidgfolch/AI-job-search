@@ -32,7 +32,7 @@ describe('skillsApi - createSkill', () => {
         const skill = {
             name: 'Python',
             description: 'A programming language',
-            learningPath: ['Learn variables'],
+            learningPath: [{ url: 'Learn variables', source: 'manual' as const }],
         };
         
         const result = await skillsApi.createSkill(skill);
@@ -43,7 +43,7 @@ describe('skillsApi - createSkill', () => {
             expect.objectContaining({
                 name: 'Python',
                 description: 'A programming language',
-                learning_path: ['Learn variables'],
+                learning_path: [{ url: 'Learn variables', source: 'manual' }],
             })
         );
     });

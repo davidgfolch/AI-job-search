@@ -38,12 +38,12 @@ describe('skillsApi - updateSkill', () => {
     it('should transform learningPath to learning_path', async () => {
         mocks.put.mockResolvedValueOnce({ data: 'Updated' });
         
-        await skillsApi.updateSkill('Python', { learningPath: ['New path'] });
+        await skillsApi.updateSkill('Python', { learningPath: [{ url: 'New path', source: 'manual' }] });
         
         expect(mocks.put).toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({
-                learning_path: ['New path'],
+                learning_path: [{ url: 'New path', source: 'manual' }],
             })
         );
     });

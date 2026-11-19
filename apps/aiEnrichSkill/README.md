@@ -65,14 +65,18 @@ Pull the default model before running — the HuggingFace fallback for ISPs that
 
 ### Learning paths
 
-The model proposes links, and the worker validates them over outbound HTTPS before persisting: bare homepages and links unrelated to the skill are dropped, and the surviving links are ordered documentation → tutorial/course → video/social (secondary). Unreachable links degrade to a skill-scoped documentation search, plus a skill-specific video search when a video was requested; a bare domain root is never persisted. Existing user-curated links are never overwritten (updates only run when `learning_path IS NULL OR JSON_LENGTH(learning_path) = 0`).
+The model proposes links, and the worker loads every candidate page (bounded GET) before persisting: a link survives only if it is a substantive page whose title/headings or repeated body text is about the exact skill, and a docs-tier URL must also show documentation signals in its path or headings. Bare homepages, search/listing/login paths, error and interstitial pages ("page not found", bot challenges, cookie/JavaScript walls), thin pages, soft-404s, playlists and dead videos (checked via YouTube oEmbed) are dropped — including when a redirect lands on one. When the model leaves gaps, DuckDuckGo supplies candidates that go through the same page-loading check; the search URL itself is never stored. Surviving links are ordered documentation → tutorial/course → video (secondary). If nothing verifies, no links are stored. Existing user-curated links are never overwritten (updates only run when `learning_path IS NULL OR JSON_LENGTH(learning_path) = 0`).
+
+`job_skills.learning_path` is a JSON array of `{"url": "...", "source": "..."}` objects. Sources are `llm` (proposed by the model), `duckduckgo` (found by search), `manual` (added in the web UI) and `unknown` (legacy plain-string links read back without a recorded source). Readers accept the old string-array format; new writes always include a source.
 
 - `AI_ENRICHSKILL_LEARNING_PATHS` — Enable the whole feature (default: `True`). `False` removes the prompt section and disables the idle backfill.
 - `AI_ENRICHSKILL_LEARNING_PATH_MAX` — Links requested/persisted per skill (default: `3`)
 - `AI_ENRICHSKILL_LEARNING_PATH_BATCH` — Skills per idle backfill pass (default: `1`)
-- `AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT` — HTTP probe timeout for link validation, in seconds (default: `5`). The links-only generation call uses `AI_ENRICHSKILL_TIMEOUT`.
+- `AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT` — HTTP fetch/search timeout for link validation, in seconds (default: `5`). The links-only generation call uses `AI_ENRICHSKILL_TIMEOUT`.
+- `AI_ENRICHSKILL_LEARNING_PATH_SEARCH` — Fill missing tiers with DuckDuckGo results verified by loading each page (default: `True`)
+- `AI_ENRICHSKILL_LEARNING_PATH_SEARCH_RESULTS` — Search results inspected per missing tier (default: `10`)
 - `AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES` — Consecutive failures before the idle pass backs off for the process lifetime (default: `3`)
-- `AI_ENRICHSKILL_LEARNING_DOMAINS` — Comma-separated trusted-domain allowlist override (defaults to the built-in documentation/course/video list in `config.py`)
+- `AI_ENRICHSKILL_LEARNING_DOMAINS` — Comma-separated preferred domains that rank ahead of other verified pages (defaults to the built-in documentation/course/video list in `config.py`). A URL outside this list is still accepted when its loaded content is verified as being about the skill.
 
 ## Architecture
 

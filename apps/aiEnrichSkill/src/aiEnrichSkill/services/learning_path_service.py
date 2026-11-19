@@ -57,11 +57,11 @@ def enrich_learning_paths(repository: SkillRepository, ollama_base_url: Optional
                     return updated
                 scheduler.note_started()
                 urls = generate_learning_path_ollama(name, fetch_skill_context_safe(repository, name), ollama_base_url)
-            if not urls:
-                # No links proposed: leave the column untouched and count it as a failure so a
-                # silent model backs off instead of rewriting an empty array every idle cycle.
-                raise ValueError("no learning path links proposed")
             learning_path = validate_learning_paths(name, urls)
+            if not learning_path:
+                # Nothing verifiable: leave the column untouched and count it as a failure so a
+                # silent model or an unreachable search backs off instead of retrying every idle cycle.
+                raise ValueError("no verified learning path links")
             repository.save_learning_path(name, learning_path)
             duration = time.time() - start
             collector.record_job(MODULE, duration, True)

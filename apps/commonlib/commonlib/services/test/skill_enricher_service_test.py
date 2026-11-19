@@ -23,7 +23,8 @@ def test_process_skill_enrichment_no_skills(mock_context, limit):
 @pytest.mark.parametrize("gen_result, expected_args, expected_query", [
     pytest.param(("Description", "Category"), ["Description", "Category", "Skill1"], DESCRIPTION_UPDATE, id="two_tuple_no_links"),
     pytest.param(("Description", "Category", []), ["Description", "Category", "Skill1"], DESCRIPTION_UPDATE, id="three_tuple_empty_links"),
-    pytest.param(("Description", "Category", ["https://python.org"]), ["Description", "Category", '["https://python.org"]', "Skill1"], DESCRIPTION_AND_PATH_UPDATE, id="three_tuple_with_links"),
+    pytest.param(("Description", "Category", ["https://python.org"]), ["Description", "Category", '[{"url": "https://python.org", "source": "unknown"}]', "Skill1"], DESCRIPTION_AND_PATH_UPDATE, id="three_tuple_with_links"),
+    pytest.param(("Description", "Category", [{"url": "https://python.org", "source": "llm"}]), ["Description", "Category", '[{"url": "https://python.org", "source": "llm"}]', "Skill1"], DESCRIPTION_AND_PATH_UPDATE, id="three_tuple_with_source"),
     pytest.param("Just a description", ["Just a description", None, "Skill1"], DESCRIPTION_UPDATE, id="bare_string"),
 ], ids=lambda value: None)
 def test_process_skill_enrichment_success(gen_result, expected_args, expected_query):

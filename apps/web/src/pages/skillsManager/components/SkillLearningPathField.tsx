@@ -1,10 +1,11 @@
 import React from 'react';
 import { FormField } from '../../common/components/core/FormField';
+import type { LearningPathLink } from '../api/SkillsManagerApi';
 
 
 interface SkillLearningPathFieldProps {
-  learningPath: string[]; // This is the edited state
-  skillLearningPath: string[]; // This is the original skill state (safe to access if view mode, but we can pass the relevant list based on view mode)
+  learningPath: LearningPathLink[]; // This is the edited state
+  skillLearningPath: LearningPathLink[]; // This is the original skill state (safe to access if view mode, but we can pass the relevant list based on view mode)
   isViewMode: boolean;
   newLinkInput: string;
   setNewLinkInput: (val: string) => void;
@@ -46,9 +47,10 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
               </div>
               {skillLearningPath.map((link, i) => (
                 <div key={i} className="link-item">
-                  <a href={link} target="_blank" rel="noopener noreferrer" className="link-url" style={{ textDecoration: 'underline', color: 'var(--primary-color)' }}>
-                    {link}
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="link-url" style={{ textDecoration: 'underline', color: 'var(--primary-color)' }}>
+                    {link.url}
                   </a>
+                  <span className="link-source" title={`Source: ${link.source}`}>{link.source}</span>
                   <button
                     className="btn-icon delete link-remove"
                     onClick={() => handleRemoveLink(i)}
@@ -65,7 +67,8 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
         <div className="links-list">
           {learningPath.map((link, i) => (
             <div key={i} className="link-item">
-              <span className="link-url">{link}</span>
+              <span className="link-url">{link.url}</span>
+              <span className="link-source" title={`Source: ${link.source}`}>{link.source}</span>
               <button
                 className="btn-icon delete"
                 onClick={() => handleRemoveLink(i)}

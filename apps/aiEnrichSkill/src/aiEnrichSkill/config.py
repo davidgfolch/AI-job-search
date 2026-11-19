@@ -82,6 +82,14 @@ def get_learning_path_timeout() -> int:
     return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT", "5"))
 
 
+def get_learning_path_search_enabled() -> bool:
+    return getEnvBool("AI_ENRICHSKILL_LEARNING_PATH_SEARCH", True)
+
+
+def get_learning_path_search_results() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_SEARCH_RESULTS", "10"))
+
+
 def get_learning_path_max_failures() -> int:
     return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES", "3"))
 
@@ -129,7 +137,7 @@ def _learning_path_instructions() -> str:
     return f"""4. **Learning Path**: exactly {max_links} URLs, one per line, each prefixed with "- ":
    - first: a deep link to the official documentation or reference page for this exact skill
    - second: a hands-on tutorial or guided course about this exact skill
-   - third: a video, playlist or channel about this exact skill (secondary alternative)
+   - third: a single video watch URL about this exact skill (secondary alternative), not a playlist or channel
 Every URL must be a real, existing deep link whose path or query names the skill.
 A bare homepage like https://www.youtube.com/ is invalid; a video or social link is always secondary to documentation.
 No placeholders, no generic landing pages, no search-result links. Use the context line to disambiguate similar names.
@@ -145,7 +153,7 @@ The structure MUST be:
 Learning Path:
 - <official documentation or reference deep link for this exact skill>
 - <hands-on tutorial or guided course about this exact skill>
-- <video, playlist or channel about this exact skill, as a secondary alternative>
+- <single video watch URL about this exact skill, as a secondary alternative; no playlists or channels>
 Rules:
 - Output ONLY the 'Learning Path:' header line and the URLs, one per line, prefixed with "- ".
 - No explanations, no titles, no conversational text.

@@ -1,5 +1,6 @@
+import json
 import re
-from typing import List, Tuple
+from typing import List, NamedTuple, Tuple
 
 URL_RE = re.compile(r'https?://[^\s<>"\']+')
 _SECTION_PREFIX = r'[ \t>*#-]*(?:\d+[.)][ \t]*)?[ \t>*#-]*'
@@ -9,6 +10,17 @@ LEARNING_PATH_SECTION_RE = re.compile(
     re.IGNORECASE | re.DOTALL | re.MULTILINE,
 )
 _TRAILING_CHARS = '.,;:!?)]}>"\'`*'
+
+SOURCE_LLM = "llm"
+SOURCE_DUCKDUCKGO = "duckduckgo"
+SOURCE_MANUAL = "manual"
+SOURCE_UNKNOWN = "unknown"
+LEARNING_PATH_SOURCES = (SOURCE_LLM, SOURCE_DUCKDUCKGO, SOURCE_MANUAL, SOURCE_UNKNOWN)
+
+
+class LearningPathLink(NamedTuple):
+    url: str
+    source: str = SOURCE_UNKNOWN
 
 
 def _clean_url(url: str) -> str:
@@ -58,3 +70,47 @@ def parse_skill_llm_output(result: str) -> tuple[str, str, List[str]]:
         category = match.group(1).strip().split('\n')[0].strip().replace('*', '').replace('`', '').strip()
         description = result[match.end():].strip() if match.start() == 0 else result[:match.start()].strip()
     return description, category, learning_path
+
+
+def _known_source(value) -> str:
+    source = str(value or SOURCE_UNKNOWN).strip().lower()
+    return source if source in LEARNING_PATH_SOURCES else SOURCE_UNKNOWN
+
+
+def _to_link(item) -> LearningPathLink | None:
+    """Accept new objects, legacy plain strings and anything with url/source attributes."""
+    if isinstance(item, str):
+        url = item.strip()
+        return LearningPathLink(url, SOURCE_UNKNOWN) if url else None
+    if isinstance(item, dict):
+        url = str(item.get("url") or "").strip()
+        return LearningPathLink(url, _known_source(item.get("source"))) if url else None
+    url = str(getattr(item, "url", "") or "").strip()
+    if not url:
+        return None
+    return LearningPathLink(url, _known_source(getattr(item, "source", SOURCE_UNKNOWN)))
+
+
+def deserialize_learning_path(raw) -> List[LearningPathLink]:
+    """Read both the new [{url, source}] shape and legacy string arrays without losing either."""
+    if not raw:
+        return []
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except (ValueError, TypeError):
+            return []
+    if not isinstance(raw, list):
+        return []
+    return [link for item in raw if (link := _to_link(item)) is not None]
+
+
+def learning_path_as_dicts(raw) -> List[dict]:
+    """Plain dicts for API models, which do not validate namedtuples from arbitrary objects."""
+    return [link._asdict() for link in deserialize_learning_path(raw)]
+
+
+def serialize_learning_path(links) -> str | None:
+    """Persist url + source for every link; None means 'no links' for the SQL column."""
+    items = [link._asdict() for link in deserialize_learning_path(links)]
+    return json.dumps(items) if items else None

@@ -25,6 +25,8 @@ from ..config import (
     get_learning_path_max,
     get_learning_path_batch,
     get_learning_path_timeout,
+    get_learning_path_search_enabled,
+    get_learning_path_search_results,
     get_learning_path_max_failures,
     get_learning_domains,
     get_learning_path_system_prompt,
@@ -151,10 +153,22 @@ def test_get_learning_paths_enabled_false(mock_env):
     mock_env.assert_called_once_with("AI_ENRICHSKILL_LEARNING_PATHS", True)
 
 
+def test_get_learning_path_search_enabled_default_true():
+    os.environ.pop("AI_ENRICHSKILL_LEARNING_PATH_SEARCH", None)
+    assert get_learning_path_search_enabled() is True
+
+
+@patch("aiEnrichSkill.config.getEnvBool", return_value=False)
+def test_get_learning_path_search_enabled_false(mock_env):
+    assert get_learning_path_search_enabled() is False
+    mock_env.assert_called_once_with("AI_ENRICHSKILL_LEARNING_PATH_SEARCH", True)
+
+
 @pytest.mark.parametrize("getter, env_name, raw, expected, default", [
     (get_learning_path_max, "AI_ENRICHSKILL_LEARNING_PATH_MAX", "5", 5, "3"),
     (get_learning_path_batch, "AI_ENRICHSKILL_LEARNING_PATH_BATCH", "2", 2, "1"),
     (get_learning_path_timeout, "AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT", "9", 9, "5"),
+    (get_learning_path_search_results, "AI_ENRICHSKILL_LEARNING_PATH_SEARCH_RESULTS", "7", 7, "10"),
     (get_learning_path_max_failures, "AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES", "4", 4, "3"),
 ])
 @patch("aiEnrichSkill.config.getEnv")

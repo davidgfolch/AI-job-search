@@ -1,4 +1,3 @@
-import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -56,7 +55,7 @@ def test_save_learning_path_serializes_json_and_guards_curated_links():
     SkillRepository(mysql).save_learning_path("Python", ["https://docs.python.org/"])
     args = mysql.executeAndCommit.call_args[0]
     assert args[0] == UPDATE_LEARNING_PATH_QUERY
-    assert args[1] == [json.dumps(["https://docs.python.org/"]), "Python"]
+    assert args[1] == ['[{"url": "https://docs.python.org/", "source": "unknown"}]', "Python"]
     assert "JSON_LENGTH(learning_path) = 0" in UPDATE_LEARNING_PATH_QUERY
 
 
@@ -70,7 +69,8 @@ def test_skip_skill_marks_enriched_so_it_leaves_the_pending_queue():
 
 @pytest.mark.parametrize("learning_path, expected_args, has_learning_path_field", [
     pytest.param([], ["Desc", "Cat", "Python"], False, id="no_links"),
-    pytest.param(["https://python.org"], ["Desc", "Cat", json.dumps(["https://python.org"]), "Python"], True, id="with_links"),
+    pytest.param(["https://python.org"], ["Desc", "Cat", '[{"url": "https://python.org", "source": "unknown"}]', "Python"], True, id="with_links"),
+    pytest.param([{"url": "https://python.org", "source": "duckduckgo"}], ["Desc", "Cat", '[{"url": "https://python.org", "source": "duckduckgo"}]', "Python"], True, id="with_source"),
 ])
 def test_save_skill_result(learning_path, expected_args, has_learning_path_field):
     mysql = MagicMock()

@@ -8,7 +8,7 @@ export const mockUpdateSkill = vi.fn();
 
 export const initialSkills: Skill[] = [
   { name: 'React', description: 'Frontend Lib', learningPath: [], disabled: false },
-  { name: 'TypeScript', description: 'Typed JS', learningPath: ['https://ts.dev'], disabled: false },
+  { name: 'TypeScript', description: 'Typed JS', learningPath: [{ url: 'https://ts.dev', source: 'llm' }], disabled: false },
   { name: 'Node.js', description: 'Backend', learningPath: [], disabled: false }
 ];
 

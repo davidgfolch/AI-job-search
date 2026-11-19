@@ -1,4 +1,3 @@
-import json
 from unittest.mock import MagicMock, patch
 import pytest
 from commonlib.repositories.skill_repository import DESCRIPTION_AND_PATH_UPDATE, DESCRIPTION_UPDATE, SkillRepository
@@ -30,17 +29,18 @@ def test_fetch_skill_context_delegates(mock_context):
     mock_context.assert_called_once_with(mysql, "Python")
 
 
-@pytest.mark.parametrize("learning_path, expected_query, include_json", [
-    pytest.param([], DESCRIPTION_UPDATE, False, id="no_links"),
-    pytest.param(["https://python.org"], DESCRIPTION_AND_PATH_UPDATE, True, id="with_links"),
+@pytest.mark.parametrize("learning_path, expected_query, expected_json", [
+    pytest.param([], DESCRIPTION_UPDATE, None, id="no_links"),
+    pytest.param(["https://python.org"], DESCRIPTION_AND_PATH_UPDATE, '[{"url": "https://python.org", "source": "unknown"}]', id="with_links"),
+    pytest.param([{"url": "https://python.org", "source": "llm"}], DESCRIPTION_AND_PATH_UPDATE, '[{"url": "https://python.org", "source": "llm"}]', id="with_source"),
 ])
-def test_save_skill_result(learning_path, expected_query, include_json):
+def test_save_skill_result(learning_path, expected_query, expected_json):
     mysql = MagicMock()
     SkillRepository(mysql).save_skill_result("Python", "Desc", "Cat", learning_path)
     query, args = mysql.executeAndCommit.call_args[0]
     assert query == expected_query
     assert args[0] == "Desc" and args[1] == "Cat" and args[-1] == "Python"
-    assert (json.dumps(learning_path) in args) is include_json
+    assert (expected_json in args) is (expected_json is not None)
 
 
 def test_path_update_guards_curated_links():

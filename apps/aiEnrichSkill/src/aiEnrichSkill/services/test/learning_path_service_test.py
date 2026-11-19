@@ -105,14 +105,26 @@ def test_enrich_learning_paths_records_failure_and_stops(_generate, mock_collect
 
 
 @patch("aiEnrichSkill.services.learning_path_service.collector")
+@patch("aiEnrichSkill.services.learning_path_service.validate_learning_paths", return_value=[])
 @patch("aiEnrichSkill.services.learning_path_service.generate_learning_path_ollama", return_value=[])
-def test_enrich_learning_paths_does_not_persist_empty_result(_generate, mock_collector, repository):
+def test_enrich_learning_paths_does_not_persist_empty_result(_generate, _validate, mock_collector, repository):
     scheduler = MagicMock()
     scheduler.note_failure.return_value = True
     assert enrich_learning_paths(repository, scheduler=scheduler) == 0
     repository.save_learning_path.assert_not_called()
     assert mock_collector.record_job.call_args[0][2] is False
     scheduler.note_failure.assert_called_once()
+
+
+@patch("aiEnrichSkill.services.learning_path_service.collector")
+@patch("aiEnrichSkill.services.learning_path_service.validate_learning_paths", return_value=[])
+@patch("aiEnrichSkill.services.learning_path_service.generate_learning_path_ollama", return_value=["https://docs.python.org/"])
+def test_enrich_learning_paths_runs_search_even_when_model_returns_no_usable_links(_generate, _validate, mock_collector, repository):
+    scheduler = MagicMock()
+    scheduler.note_failure.return_value = True
+    assert enrich_learning_paths(repository, scheduler=scheduler) == 0
+    _validate.assert_called_once_with("Python", ["https://docs.python.org/"])
+    repository.save_learning_path.assert_not_called()
 
 
 @pytest.mark.parametrize("names, expected_calls", [
