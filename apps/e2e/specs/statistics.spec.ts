@@ -4,8 +4,10 @@ import { BASE_URL, setupPageLogging, setupAppBootstrapMocks } from './common.hel
 
 const KEYWORD_STATS = {
     items: [
-        { date: '2026-11-19', site: 'Indeed', keyword: 'python', reported_total: 40, processed: 20, new: 18, duplicates: 2, duplicate_ids: '91,92' },
-        { date: '2026-11-19', site: 'Indeed', keyword: 'java', reported_total: 10, processed: 5, new: 5, duplicates: 0, duplicate_ids: '' },
+        { date: '2026-11-19', site: 'Linkedin', keyword: 'python', reported_total: 40, processed: 20, new: 18, duplicates: 2, duplicate_ids: '91,92' },
+        { date: '2026-11-19', site: 'Linkedin', keyword: 'java', reported_total: 10, processed: 5, new: 5, duplicates: 0, duplicate_ids: '' },
+        { date: '2026-11-19', site: 'Indeed', keyword: 'python', reported_total: 5, processed: 5, new: 1, duplicates: 4, duplicate_ids: '7,8,9,10' },
+        { date: '2026-11-19', site: 'Glassdoor', keyword: 'python', reported_total: 99, processed: 99, new: 50, duplicates: 49, duplicate_ids: '77' },
     ],
     truncated: false,
 };
@@ -24,12 +26,17 @@ test.describe('Statistics E2E', () => {
         await setupStatisticsMocks(page);
     });
 
-    test('shows the keyword totals chart and the duplicate ids table', async ({ page }) => {
+    test('shows keyword totals for the default site and filters by site', async ({ page }) => {
         await page.goto(`${BASE_URL}/statistics`);
         await expect(page.getByText('Keyword totals & duplicates by date')).toBeVisible();
-        await expect(page.getByText('Already-in-DB duplicates by keyword')).toBeVisible();
-        await expect(page.getByRole('columnheader', { name: 'Duplicate ids' })).toBeVisible();
+        await expect(page.getByLabel('Site')).toHaveValue('Linkedin');
         await expect(page.getByText('91,92')).toBeVisible();
+        await expect(page.getByText('7,8,9,10')).toHaveCount(0);
         await expect(page.getByText('python', { exact: true }).first()).toBeVisible();
+
+        await page.getByLabel('Site').selectOption('(All)');
+        await expect(page.getByText('91,92')).toBeVisible();
+        await expect(page.getByText('7,8,9,10')).toBeVisible();
+        await expect(page.getByText('77')).toHaveCount(0);
     });
 });

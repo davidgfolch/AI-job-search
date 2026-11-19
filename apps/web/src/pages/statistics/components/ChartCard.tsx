@@ -6,6 +6,7 @@ import {
 import type { HistoryStat, SourceDateStat, SourceHourStat, SourceWeekdayStat, FilterConfigStat, KeywordStat } from '../api/StatisticsApi';
 import { processChartData, getDateRange, type ChartDataset } from '../utils/chartUtils';
 import StatisticsFilters from './StatisticsFilters';
+import { ALL_SITES, KEYWORD_SITES, SCRAPER_SITES } from '../sites';
 
 type ChartData = HistoryStat[] | SourceDateStat[] | SourceHourStat[] | SourceWeekdayStat[] | FilterConfigStat[] | KeywordStat[];
 
@@ -15,13 +16,17 @@ interface ChartCardProps {
     chartType: 'weekday' | 'date' | 'hour' | 'filterConfig' | 'history' | 'keyword';
     parentTimeRange: string;
     parentIncludeOldJobs: boolean;
+    site?: string;
     onExpandChange: (chartTitle: string | null) => void;
     onFilterChange: (timeRange: string, includeOldJobs: boolean) => void;
     expandedChart: string | null;
 }
 
+const allowed = new Set(SCRAPER_SITES);
+const keywordAllowed = new Set(KEYWORD_SITES);
+
 const ChartCard: React.FC<ChartCardProps> = ({
-    title, children, chartType, parentTimeRange, parentIncludeOldJobs, onExpandChange, onFilterChange, expandedChart
+    title, children, chartType, parentTimeRange, parentIncludeOldJobs, site = ALL_SITES, onExpandChange, onFilterChange, expandedChart
 }) => {
     const [localTimeRange, setLocalTimeRange] = useState(parentTimeRange);
     const [localIncludeOldJobs, setLocalIncludeOldJobs] = useState(parentIncludeOldJobs);
@@ -43,13 +48,14 @@ const ChartCard: React.FC<ChartCardProps> = ({
         }
     }, [chartType, startDate, endDate, localIncludeOldJobs]);
 
+    const usesSite = chartType === 'date' || chartType === 'hour' || chartType === 'weekday' || chartType === 'keyword';
     const { data: rawData, isFetching } = useQuery<ChartData>({
         // The filter-configs and keyword endpoints do not take includeOldJobs, so it is not part of the cache key.
-        queryKey: chartType === 'filterConfig' || chartType === 'keyword'
-            ? ['statistics', chartType, startDate, endDate]
-            : ['statistics', chartType, startDate, endDate, localIncludeOldJobs],
+        queryKey: chartType === 'filterConfig' || chartType === 'history'
+            ? (chartType === 'history' ? ['statistics', chartType, startDate, endDate, localIncludeOldJobs] : ['statistics', chartType, startDate, endDate])
+            : ['statistics', chartType, startDate, endDate, localIncludeOldJobs, site],
         queryFn: fetchData,
-        enabled: isThisChartExpanded && hasLocalFiltersChanged
+        enabled: isThisChartExpanded && (hasLocalFiltersChanged || usesSite)
     });
 
     useEffect(() => {
@@ -85,16 +91,23 @@ const ChartCard: React.FC<ChartCardProps> = ({
         if (!rawData) return null;
         switch (chartType) {
             case 'date': {
-                const { processedData } = processChartData(rawData as ChartDataset, 'dateCreated', 'source', 'total');
+                const rows = ((rawData as SourceDateStat[]) || []).filter(r => allowed.has(r.source) && (site === ALL_SITES || r.source === site));
+                const { processedData } = processChartData(rows, 'dateCreated', 'source', 'total');
                 return processedData;
             }
             case 'hour': {
-                const { processedData } = processChartData(rawData as ChartDataset, 'hour', 'source', 'total');
+                const rows = ((rawData as SourceHourStat[]) || []).filter(r => allowed.has(r.source) && (site === ALL_SITES || r.source === site));
+                const { processedData } = processChartData(rows, 'hour', 'source', 'total');
                 return processedData;
             }
             case 'weekday': {
-                const { processedData } = processChartData(rawData as ChartDataset, 'weekday', 'source', 'total');
+                const rows = ((rawData as SourceWeekdayStat[]) || []).filter(r => allowed.has(r.source) && (site === ALL_SITES || r.source === site));
+                const { processedData } = processChartData(rows, 'weekday', 'source', 'total');
                 return processedData;
+            }
+            case 'keyword': {
+                const rows = ((rawData as KeywordStat[]) || []).filter(r => keywordAllowed.has(String(r.site ?? '')));
+                return site === ALL_SITES ? rows : rows.filter(r => String(r.site ?? '') === site);
             }
             default:
                 return rawData;

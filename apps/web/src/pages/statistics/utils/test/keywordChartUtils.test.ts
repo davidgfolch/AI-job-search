@@ -13,14 +13,57 @@ describe('buildKeywordChartData', () => {
         const { data, series } = buildKeywordChartData(rows);
         expect(series).toHaveLength(2);
         expect(data.map(row => row.date)).toEqual(['2026-11-19', '2026-11-20']);
-        expect(data[0]['new:Indeed|python']).toBe(18);
-        expect(data[0]['dupes:Indeed|python']).toBe(2);
-        expect(data[1]['total:Indeed|python']).toBe(50);
-        expect(data[0]['dupes:Indeed|java']).toBe(0);
+        expect(data[0]['new:python']).toBe(18);
+        expect(data[0]['dupes:python']).toBe(2);
+        expect(data[1]['total:python']).toBe(50);
+        expect(data[0]['dupes:java']).toBe(0);
     });
 
     it('returns empty data for no rows', () => {
         expect(buildKeywordChartData([])).toEqual({ data: [], series: [] });
+    });
+
+    it('aggregates the same keyword across sites for (All) view', () => {
+        const mixed = [
+            { date: '2026-11-19', site: 'Linkedin', keyword: 'java', reported_total: 10, processed: 10, new: 3, duplicates: 7 },
+            { date: '2026-11-19', site: 'Infojobs', keyword: 'java', reported_total: 5, processed: 5, new: 1, duplicates: 4 },
+        ] as ChartDataset;
+        const { data, series } = buildKeywordChartData(mixed);
+        expect(series.map(s => s.label)).toEqual(['java']);
+        expect(data[0]['new:java']).toBe(4);
+        expect(data[0]['dupes:java']).toBe(11);
+        expect(data[0]['total:java']).toBe(15);
+    });
+
+    it('drops all-zero rows so empty sites/keywords do not render', () => {
+        const mixed = [
+            { date: '2026-11-19', site: 'Stub', keyword: 'java', reported_total: 0, processed: 0, new: 0, duplicates: 0 },
+            { date: '2026-11-19', site: 'Linkedin', keyword: 'java', reported_total: 10, processed: 10, new: 3, duplicates: 7 },
+        ] as ChartDataset;
+        const { series } = buildKeywordChartData(mixed);
+        expect(series.map(s => s.label)).toEqual(['java']);
+    });
+
+    it('caps to the most recent maxDates', () => {
+        const manyDates = Array.from({ length: 40 }, (_, i) => {
+            const d = new Date(2026, 0, 1 + i);
+            const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            return { date, site: 'Linkedin', keyword: 'java', reported_total: 1, processed: 1, new: 1, duplicates: 0 };
+        }) as ChartDataset;
+        const { data } = buildKeywordChartData(manyDates, 30);
+        expect(data).toHaveLength(30);
+        expect(data[0].date).toBe('2026-01-11');
+        expect(data[29].date).toBe('2026-02-09');
+    });
+
+    it('keeps only the top maxSeries keywords by volume', () => {
+        const many = [
+            { date: '2026-11-19', site: 'Linkedin', keyword: 'big', reported_total: 100, processed: 100, new: 50, duplicates: 50 },
+            { date: '2026-11-19', site: 'Linkedin', keyword: 'small', reported_total: 1, processed: 1, new: 1, duplicates: 0 },
+            { date: '2026-11-19', site: 'Linkedin', keyword: 'medium', reported_total: 10, processed: 10, new: 5, duplicates: 5 },
+        ] as ChartDataset;
+        const { series } = buildKeywordChartData(many, 30, 2);
+        expect(series.map(s => s.label)).toEqual(['big', 'medium']);
     });
 });
 

@@ -98,27 +98,18 @@ describe('useStatistics', () => {
         expect(result.current.sourcesWeekdayWide).toEqual([]);
     });
 
-    it('processes API data correctly', async () => {
-        const mockSourcesDateData = [
-            { dateCreated: '2024-01-01', source: 'LinkedIn', total: 10 },
+    it('defaults to the Linkedin site filter and filters source charts', async () => {
+        vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([
+            { dateCreated: '2024-01-01', source: 'Linkedin', total: 10 },
             { dateCreated: '2024-01-01', source: 'Indeed', total: 5 },
-        ];
-        const mockSourcesHourData = [
-            { hour: 9, source: 'LinkedIn', total: 8 },
-        ];
-        const mockSourcesWeekdayData = [
-            { weekday: 1, source: 'LinkedIn', total: 3 },
-        ];
-        
-        vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue(mockSourcesDateData);
-        vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue(mockSourcesHourData);
-        vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue(mockSourcesWeekdayData);
-
+            { dateCreated: '2024-01-01', source: 'Glassdoor', total: 3 },
+        ]);
         const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
-        
         await waitFor(() => expect(result.current.sourcesDateWide.length).toBeGreaterThan(0));
-        expect(result.current.sourcesDateKeys).toContain('LinkedIn');
-        expect(result.current.sourcesDateKeys).toContain('Indeed');
+        expect(result.current.site).toBe('Linkedin');
+        expect(result.current.sourcesDateKeys).toEqual(['Linkedin']);
+        await act(async () => { result.current.setSite('(All)'); });
+        await waitFor(() => expect(result.current.sourcesDateKeys).toEqual(['Linkedin', 'Indeed']));
     });
 
     it('returns filter config data', async () => {
@@ -130,27 +121,28 @@ describe('useStatistics', () => {
         await waitFor(() => expect(result.current.filterConfigData).toEqual(mockFilterConfigData));
     });
 
-    it('returns keyword stats from the log-based endpoint', async () => {
-        const keywordData = [{ date: '2026-11-19', site: 'Indeed', keyword: 'python', reported_total: 40, processed: 20, new: 18, duplicates: 2, duplicate_ids: '91,92' }];
+    it('filters keyword stats by site and allows scraper sites in (All)', async () => {
+        const keywordData = [
+            { date: '2026-11-19', site: 'Linkedin', keyword: 'python', reported_total: 40, processed: 20, new: 18, duplicates: 2, duplicate_ids: '91,92' },
+            { date: '2026-11-19', site: 'Indeed', keyword: 'python', reported_total: 5, processed: 5, new: 1, duplicates: 4, duplicate_ids: '7' },
+            { date: '2026-11-19', site: 'Glassdoor', keyword: 'python', reported_total: 99, processed: 99, new: 50, duplicates: 49, duplicate_ids: '77' },
+        ];
         vi.mocked(StatisticsApi.getKeywordStats).mockResolvedValue(keywordData);
         const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
-        await waitFor(() => expect(result.current.keywordStats).toEqual(keywordData));
+        await waitFor(() => expect(result.current.keywordStats).toHaveLength(1));
+        expect(result.current.keywordStats).toEqual([keywordData[0]]);
+        await act(async () => { result.current.setSite('(All)'); });
+        await waitFor(() => expect(result.current.keywordStats).toHaveLength(2));
+        expect(result.current.keywordStats).toEqual([keywordData[0], keywordData[1]]);
     });
 
-    it('computes allSources from multiple keys', async () => {
-        const mockSourcesDateData = [{ dateCreated: '2024-01-01', source: 'LinkedIn', total: 10 }];
-        const mockSourcesHourData = [{ hour: 9, source: 'Indeed', total: 8 }];
-        const mockSourcesWeekdayData = [{ weekday: 1, source: 'Glassdoor', total: 3 }];
-        
-        vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue(mockSourcesDateData);
-        vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue(mockSourcesHourData);
-        vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue(mockSourcesWeekdayData);
-
+    it('computes allSources from allowed sites across charts', async () => {
+        vi.mocked(StatisticsApi.getSourcesByDate).mockResolvedValue([{ dateCreated: '2024-01-01', source: 'Linkedin', total: 10 }]);
+        vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([{ hour: 9, source: 'Indeed', total: 8 }]);
+        vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([{ weekday: 1, source: 'Infojobs', total: 3 }]);
         const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
-        
+        await act(async () => { result.current.setSite('(All)'); });
         await waitFor(() => expect(result.current.allSources.length).toBe(3));
-        expect(result.current.allSources).toContain('LinkedIn');
-        expect(result.current.allSources).toContain('Indeed');
-        expect(result.current.allSources).toContain('Glassdoor');
+        expect(result.current.allSources).toEqual(expect.arrayContaining(['Linkedin', 'Indeed', 'Infojobs']));
     });
 });

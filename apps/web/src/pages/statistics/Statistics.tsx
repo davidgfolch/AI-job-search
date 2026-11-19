@@ -36,19 +36,9 @@ const Statistics = () => {
     const prevFiltersRef = useRef<{ timeRange: string; includeOldJobs: boolean }>({ timeRange: '', includeOldJobs: false });
 
     const {
-        timeRange,
-        setTimeRange,
-        includeOldJobs,
-        setIncludeOldJobs,
-        historyData,
-        sourcesDateWide,
-        sourcesDateKeys,
-        sourcesHourWide,
-        sourcesHourKeys,
-        sourcesWeekdayWide,
-        sourcesWeekdayKeys,
-        filterConfigData,
-        keywordStats,
+        timeRange, setTimeRange, includeOldJobs, setIncludeOldJobs, site, setSite,
+        historyData, sourcesDateWide, sourcesDateKeys, sourcesHourWide, sourcesHourKeys,
+        sourcesWeekdayWide, sourcesWeekdayKeys, filterConfigData, keywordStats,
     } = useStatistics();
 
     React.useEffect(() => {
@@ -64,7 +54,6 @@ const Statistics = () => {
             const filterChanged = fullScreenFilters &&
                 (fullScreenFilters.timeRange !== prevFilters.timeRange ||
                  fullScreenFilters.includeOldJobs !== prevFilters.includeOldJobs);
-
             if (filterChanged) {
                 setTimeRange(fullScreenFilters.timeRange);
                 setIncludeOldJobs(fullScreenFilters.includeOldJobs);
@@ -82,87 +71,54 @@ const Statistics = () => {
         <div className="statistics-page">
             <PageHeader title="Statistics" />
             <StatisticsControls
-                timeRange={timeRange}
-                setTimeRange={setTimeRange}
-                includeOldJobs={includeOldJobs}
-                setIncludeOldJobs={setIncludeOldJobs}
-                columns={columns}
-                setColumns={setColumns}
+                timeRange={timeRange} setTimeRange={setTimeRange}
+                includeOldJobs={includeOldJobs} setIncludeOldJobs={setIncludeOldJobs}
+                site={site} setSite={setSite}
+                columns={columns} setColumns={setColumns}
             />
             <main className="statistics-content" ref={contentRef}>
                 <div className="charts-grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridAutoRows: `${rowHeight}px` } as React.CSSProperties}>
-                    <ChartCard
-                        title="Job Postings by Source & Day of Week"
-                        chartType="weekday"
-                        parentTimeRange={timeRange}
-                        parentIncludeOldJobs={includeOldJobs}
-                        onExpandChange={handleExpandChange}
-                        onFilterChange={handleFilterChange}
-                        expandedChart={expandedChart}
-                    >
-                        {(data: ChartDataset | null) => renderWeekdayChart(data || sourcesWeekdayWide, sourcesWeekdayKeys)}
-                    </ChartCard>
-
-                    <ChartCard
-                        title="Job Postings by Source & Created Date"
-                        chartType="date"
-                        parentTimeRange={timeRange}
-                        parentIncludeOldJobs={includeOldJobs}
-                        onExpandChange={handleExpandChange}
-                        onFilterChange={handleFilterChange}
-                        expandedChart={expandedChart}
-                    >
-                        {(data: ChartDataset | null) => renderDateChart(data || sourcesDateWide, sourcesDateKeys)}
-                    </ChartCard>
-
-                    <ChartCard
-                        title="Job Postings by Source & Day Time"
-                        chartType="hour"
-                        parentTimeRange={timeRange}
-                        parentIncludeOldJobs={includeOldJobs}
-                        onExpandChange={handleExpandChange}
-                        onFilterChange={handleFilterChange}
-                        expandedChart={expandedChart}
-                    >
-                        {(data: ChartDataset | null) => renderHourChart(data || sourcesHourWide, sourcesHourKeys)}
-                    </ChartCard>
-
-                    <ChartCard
-                        title="Filter Configurations & Job Counts"
-                        chartType="filterConfig"
-                        parentTimeRange={timeRange}
-                        parentIncludeOldJobs={includeOldJobs}
-                        onExpandChange={handleExpandChange}
-                        onFilterChange={handleFilterChange}
-                        expandedChart={expandedChart}
-                    >
-                        {(data: ChartDataset | null) => renderFilterConfigChart(data || filterConfigData || [])}
-                    </ChartCard>
-
-                    <ChartCard
-                        title="Applied vs Discarded Jobs (History)"
-                        chartType="history"
-                        parentTimeRange={timeRange}
-                        parentIncludeOldJobs={includeOldJobs}
-                        onExpandChange={handleExpandChange}
-                        onFilterChange={handleFilterChange}
-                        expandedChart={expandedChart}
-                    >
-                        {(data: ChartDataset | null) => renderHistoryChart(data || historyData || [])}
-                    </ChartCard>
-
-                    <ChartCard
-                        title="Keyword totals & duplicates by date"
-                        chartType="keyword"
-                        parentTimeRange={timeRange}
-                        parentIncludeOldJobs={includeOldJobs}
-                        onExpandChange={handleExpandChange}
-                        onFilterChange={handleFilterChange}
-                        expandedChart={expandedChart}
+                    <ChartCard title="Keyword totals & duplicates by date" chartType="keyword"
+                        parentTimeRange={timeRange} parentIncludeOldJobs={includeOldJobs} site={site}
+                        onExpandChange={handleExpandChange} onFilterChange={handleFilterChange} expandedChart={expandedChart}
                     >
                         {(data: ChartDataset | null) => <KeywordChart rows={data || keywordStats || []} />}
                     </ChartCard>
 
+                    <ChartCard title="Job Postings by Source & Day of Week" chartType="weekday"
+                        parentTimeRange={timeRange} parentIncludeOldJobs={includeOldJobs} site={site}
+                        onExpandChange={handleExpandChange} onFilterChange={handleFilterChange} expandedChart={expandedChart}
+                    >
+                        {(data: ChartDataset | null) => renderWeekdayChart(data || sourcesWeekdayWide, sourcesWeekdayKeys)}
+                    </ChartCard>
+
+                    <ChartCard title="Job Postings by Source & Created Date" chartType="date"
+                        parentTimeRange={timeRange} parentIncludeOldJobs={includeOldJobs} site={site}
+                        onExpandChange={handleExpandChange} onFilterChange={handleFilterChange} expandedChart={expandedChart}
+                    >
+                        {(data: ChartDataset | null) => renderDateChart(data || sourcesDateWide, sourcesDateKeys)}
+                    </ChartCard>
+
+                    <ChartCard title="Job Postings by Source & Day Time" chartType="hour"
+                        parentTimeRange={timeRange} parentIncludeOldJobs={includeOldJobs} site={site}
+                        onExpandChange={handleExpandChange} onFilterChange={handleFilterChange} expandedChart={expandedChart}
+                    >
+                        {(data: ChartDataset | null) => renderHourChart(data || sourcesHourWide, sourcesHourKeys)}
+                    </ChartCard>
+
+                    <ChartCard title="Filter Configurations & Job Counts" chartType="filterConfig"
+                        parentTimeRange={timeRange} parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange} onFilterChange={handleFilterChange} expandedChart={expandedChart}
+                    >
+                        {(data: ChartDataset | null) => renderFilterConfigChart(data || filterConfigData || [])}
+                    </ChartCard>
+
+                    <ChartCard title="Applied vs Discarded Jobs (History)" chartType="history"
+                        parentTimeRange={timeRange} parentIncludeOldJobs={includeOldJobs}
+                        onExpandChange={handleExpandChange} onFilterChange={handleFilterChange} expandedChart={expandedChart}
+                    >
+                        {(data: ChartDataset | null) => renderHistoryChart(data || historyData || [])}
+                    </ChartCard>
                 </div>
             </main>
         </div>

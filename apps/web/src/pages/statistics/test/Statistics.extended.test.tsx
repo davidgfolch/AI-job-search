@@ -48,7 +48,8 @@ describe('Statistics - Extended', () => {
 
     it('renders date range selector with all options', () => {
         render(<Statistics />, { wrapper: wrapper });
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getByLabelText('Site')).toBeInTheDocument();
         
         expect(screen.getByText('Last year')).toBeInTheDocument();
         expect(screen.getByText('Last 6 months')).toBeInTheDocument();

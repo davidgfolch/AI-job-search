@@ -9,26 +9,57 @@ export interface KeywordSeries {
     color: string;
 }
 
-const seriesKey = (row: ChartRow) => `${row.site ?? ''}|${row.keyword ?? ''}`;
+const num = (value: ChartRow[string]) => Number(value ?? 0);
+const rowVolume = (row: ChartRow) => num(row.reported_total) + num(row.processed) + num(row.new) + num(row.duplicates);
 
-/** Pivots keyword stats into one x-axis point per date with stacked new/duplicate bars and a reported-total line per keyword. */
-export function buildKeywordChartData(rows: ChartDataset): { data: ChartDataset; series: KeywordSeries[] } {
-    const dates = Array.from(new Set(rows.map(row => String(row.date ?? '')))).filter(Boolean).sort();
-    const keys = Array.from(new Set(rows.map(seriesKey))).filter(key => key !== '|');
-    const series: KeywordSeries[] = keys.map(key => {
-        const [site, keyword] = key.split('|');
-        return {
-            key, label: `${site} · ${keyword}`, newKey: `new:${key}`, duplicateKey: `dupes:${key}`,
-            totalKey: `total:${key}`, color: getColorForSource(key)
-        };
+const aggregateByDateKeyword = (rows: ChartDataset): ChartDataset => {
+    const map = new Map<string, ChartRow>();
+    rows.forEach(row => {
+        const date = String(row.date ?? '');
+        const keyword = String(row.keyword ?? '');
+        if (!date || !keyword) return;
+        const key = `${date}|${keyword}`;
+        const current = map.get(key) ?? { date, keyword, reported_total: 0, processed: 0, new: 0, duplicates: 0 };
+        current.reported_total = num(current.reported_total) + num(row.reported_total);
+        current.processed = num(current.processed) + num(row.processed);
+        current.new = num(current.new) + num(row.new);
+        current.duplicates = num(current.duplicates) + num(row.duplicates);
+        map.set(key, current);
     });
+    return Array.from(map.values());
+};
+
+const keepTopSeries = (rows: ChartDataset, maxSeries: number): ChartDataset => {
+    const totals = new Map<string, number>();
+    rows.forEach(row => {
+        const keyword = String(row.keyword ?? '');
+        totals.set(keyword, (totals.get(keyword) ?? 0) + rowVolume(row));
+    });
+    const top = new Set(Array.from(totals.entries()).sort((a, b) => b[1] - a[1]).slice(0, maxSeries).map(([keyword]) => keyword));
+    return rows.filter(row => top.has(String(row.keyword ?? '')));
+};
+
+/** Aggregates keyword stats by date and keyword, capping dates/series for readability. */
+export function buildKeywordChartData(rows: ChartDataset, maxDates = 30, maxSeries = 8): { data: ChartDataset; series: KeywordSeries[] } {
+    const active = rows.filter(row => rowVolume(row) > 0);
+    let aggregated = aggregateByDateKeyword(active);
+    aggregated = keepTopSeries(aggregated, maxSeries);
+    const allDates = Array.from(new Set(aggregated.map(row => String(row.date ?? '')))).filter(Boolean).sort();
+    const dates = allDates.slice(-maxDates);
+    const dateSet = new Set(dates);
+    aggregated = aggregated.filter(row => dateSet.has(String(row.date ?? '')));
+    const keywords = Array.from(new Set(aggregated.map(row => String(row.keyword ?? '')))).filter(Boolean).sort();
+    const series: KeywordSeries[] = keywords.map(keyword => ({
+        key: keyword, label: keyword, newKey: `new:${keyword}`, duplicateKey: `dupes:${keyword}`,
+        totalKey: `total:${keyword}`, color: getColorForSource(keyword)
+    }));
     const data: ChartDataset = dates.map(date => {
         const row: ChartRow = { date };
         series.forEach(item => {
-            const match = rows.find(candidate => String(candidate.date ?? '') === date && seriesKey(candidate) === item.key);
-            row[item.newKey] = Number(match?.new ?? 0);
-            row[item.duplicateKey] = Number(match?.duplicates ?? 0);
-            row[item.totalKey] = Number(match?.reported_total ?? 0);
+            const match = aggregated.find(candidate => String(candidate.date ?? '') === date && String(candidate.keyword ?? '') === item.key);
+            row[item.newKey] = num(match?.new);
+            row[item.duplicateKey] = num(match?.duplicates);
+            row[item.totalKey] = num(match?.reported_total);
         });
         return row;
     });

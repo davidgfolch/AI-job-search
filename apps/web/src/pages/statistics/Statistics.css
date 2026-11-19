@@ -97,7 +97,9 @@
     border: none;
     cursor: pointer;
     color: var(--text-secondary);
-    padding: 4px;
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
     border-radius: 4px;
     transition: all 0.2s;
     display: flex;
@@ -160,11 +162,11 @@
 
 .keyword-chart-canvas {
     flex: 1;
-    min-height: 140px;
+    min-height: 240px;
 }
 
 .keyword-duplicates {
-    max-height: 35%;
+    max-height: 30%;
     overflow-y: auto;
     margin-top: 8px;
 }

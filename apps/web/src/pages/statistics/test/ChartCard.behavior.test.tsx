@@ -72,7 +72,7 @@ describe('ChartCard Behavior', () => {
             fireEvent.change(select, { target: { value: 'Last week' } });
 
             await waitFor(() => {
-                expect(screen.getByTestId(`data-${type}`)).toHaveTextContent('Has Data');
+                expect(screen.getAllByTestId(`data-${type}`)[0]).toHaveTextContent('Has Data');
             });
         });
     });
@@ -99,7 +99,7 @@ describe('ChartCard Behavior', () => {
             fireEvent.change(select, { target: { value: range } });
 
             await waitFor(() => {
-                expect(screen.getByTestId('data')).toHaveTextContent('Has Data');
+                expect(screen.getAllByTestId('data')[0]).toHaveTextContent('Has Data');
             });
         });
     });
