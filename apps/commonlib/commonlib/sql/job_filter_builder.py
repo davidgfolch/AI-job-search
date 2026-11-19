@@ -27,8 +27,10 @@ def get_search_conditions(search_term_provider: str, alias: str = "") -> str:
 
 
 def get_days_old_condition(days_provider: str, alias: str = "") -> str:
+    # Compared directly against the DATE_SUB bound, not DATE(created): wrapping the
+    # column in a function makes the predicate non-sargable and rules out index use.
     col = f"{alias}.created" if alias else "created"
-    return f"DATE({col}) >= DATE_SUB(CURDATE(), INTERVAL {days_provider} DAY)"
+    return f"{col} >= DATE_SUB(CURDATE(), INTERVAL {days_provider} DAY)"
 
 
 def get_salary_condition(salary_provider: str, alias: str = "") -> str:

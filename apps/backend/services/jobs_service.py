@@ -84,10 +84,9 @@ class JobsService:
 
     def get_job(self, job_id: int) -> Optional[Dict[str, Any]]:
         with self.repo.get_db() as db:
-            row = self.repo.fetch_job_row(db, job_id)
+            columns, row = self.repo.fetch_job_with_columns(db, job_id)
             if not row:
                 return None
-            columns = self.repo.fetch_columns(db)
             result = {col: val for col, val in zip(columns, row, strict=True)}
             company = result.get("company")
             if company:

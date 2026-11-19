@@ -10,7 +10,7 @@ JOB_COLUMNS = pytest.JOB_COLUMNS
 
 
 @pytest.mark.parametrize("query_param, expected_query_part, expected_param_value", [
-    ("days_old=7", "DATE(created) >= DATE_SUB(CURDATE(), INTERVAL %s DAY)", 7),
+    ("days_old=7", "created >= DATE_SUB(CURDATE(), INTERVAL %s DAY)", 7),
     ("salary=50k", "salary RLIKE %s", "50k"),
 ], ids=["days_old", "salary"])
 def test_list_jobs_with_regex_date_filters(mock_db_session, client, query_param, expected_query_part, expected_param_value):

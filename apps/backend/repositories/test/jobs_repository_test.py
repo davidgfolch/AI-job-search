@@ -160,12 +160,17 @@ def test_create_job(repo, mock_db):
     assert result == mock_db.insertJob.return_value
 
 
-def test_fetch_job_row_and_columns():
-    default_db = create_mock_db(fetchOne=(1, "Job 1"))
-    repo = JobsRepository()
-    with patch.object(repo, "get_db", return_value=default_db):
-        row = repo.fetch_job_row(default_db, 1)
-        columns = repo.fetch_columns(default_db)
+def test_fetch_job_with_columns_avoids_show_columns(repo, mock_db):
+    mock_db.fetchAllWithColumns.side_effect = lambda *args, **kwargs: (["id", "title"], [(1, "Job 1")])
 
+    columns, row = repo.fetch_job_with_columns(mock_db, 1)
+
+    assert columns == ["id", "title"]
     assert row == (1, "Job 1")
-    assert columns == ["id", "title", "company"]
+    mock_db.fetchAll.assert_not_called()
+
+
+def test_fetch_job_with_columns_missing_job(repo, mock_db):
+    mock_db.fetchAllWithColumns.side_effect = lambda *args, **kwargs: (["id", "title"], [])
+
+    assert repo.fetch_job_with_columns(mock_db, 99) == ([], None)

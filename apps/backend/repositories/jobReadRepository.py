@@ -101,8 +101,9 @@ class JobReadRepository:
             return []
         return [dict(zip(columns, row, strict=True)) for row in rows]
 
-    def fetch_job_row(self, db: MysqlUtil, job_id: int) -> Optional[tuple]:
-        return db.fetchOne("SELECT * FROM jobs WHERE id = %s", job_id)
-
-    def fetch_columns(self, db: MysqlUtil) -> list:
-        return [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
+    def fetch_job_with_columns(self, db: MysqlUtil, job_id: int) -> tuple[list, Optional[tuple]]:
+        """Fetch one job plus its column names in a single round trip."""
+        columns, rows = db.fetchAllWithColumns("SELECT * FROM jobs WHERE id = %s", [job_id])
+        if not rows or not columns:
+            return [], None
+        return list(columns), rows[0]
