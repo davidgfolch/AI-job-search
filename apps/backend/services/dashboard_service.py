@@ -6,7 +6,7 @@ from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.systemUtil import isDocker
 from repositories.dashboard_repository import DashboardRepository
 
-from .dashboard_probe import _probe_ollama
+from .dashboard_health import get_infrastructure_status
 from .dashboard_utils import (
     _determine_status, _display_name, _pick_freshest,
 )
@@ -22,9 +22,6 @@ MODULE_METRIC_KEYS = {
     "aicvmatcher": "aiCvMatcher",
 }
 OLLAMA_MODULES = {"aienrich", "aienrichskill"}
-OLLAMA_ERROR_WINDOW_SECONDS = 1800
-PROMETHEUS_URL = getEnv("PROMETHEUS_URL", "http://host.docker.internal:9090").strip().rstrip("/")
-GRAFANA_URL = getEnv("GRAFANA_URL", "http://host.docker.internal:3000").strip().rstrip("/")
 LLM_BACKEND = getEnv("AI_ENRICH_LLM_BACKEND", "ollama").strip().lower()
 
 
@@ -60,28 +57,27 @@ def get_services_status() -> dict:
             },
             "recentErrors": recent_errors,
         })
-    ollama_errors = _repo.check_ollama_errors(3, within_seconds=OLLAMA_ERROR_WINDOW_SECONDS)
-    ollama_info = _probe_ollama()
+    infrastructure = get_infrastructure_status(_repo)
+    by_name = {entry["name"]: entry for entry in infrastructure}
+    ollama = by_name["ollama"]
     return {
         "services": services,
+        "infrastructure": infrastructure,
         "ollama": {
-            **ollama_info,
-            "recentErrors": ollama_errors,
+            "reachable": ollama["reachable"],
+            "serverUrl": ollama.get("serverUrl"),
+            "serverIp": ollama.get("serverIp"),
+            "isLan": ollama.get("isLan", False),
+            "recentErrors": ollama.get("recentErrors", []),
         },
         "llmBackend": LLM_BACKEND,
-        "prometheus": _probe_service(PROMETHEUS_URL, "/-/healthy"),
-        "grafana": _probe_service(GRAFANA_URL, "/api/health"),
+        "prometheus": _health_alias(by_name["prometheus"]),
+        "grafana": _health_alias(by_name["grafana"]),
         "timestamp": now.isoformat(),
         "deployment": "docker" if isDocker() else "host",
     }
 
 
-def _probe_service(base_url: str, health_path: str) -> dict:
-    """Probe a service health endpoint; returns {reachable, url}."""
-    try:
-        import urllib.request
-        with urllib.request.urlopen(f"{base_url.rstrip('/')}{health_path}", timeout=3) as resp:
-            return {"reachable": resp.status == 200, "url": base_url}
-    except Exception as e:
-        logger.debug("service.probe_failed", error=str(e), url=base_url)
-        return {"reachable": False, "url": base_url}
+def _health_alias(entry: dict) -> dict:
+    """Keep the pre-unification health fields stable for API consumers."""
+    return {"reachable": entry["reachable"], "url": entry["url"]}

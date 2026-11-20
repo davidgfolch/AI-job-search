@@ -212,7 +212,7 @@ When fetching a single job (`GET /api/jobs/{id}`), the response includes a `syno
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/dashboard/services` | Returns the status of every AI module plus Ollama reachability and deployment mode. |
+| `GET` | `/api/dashboard/services` | Returns the status of every AI module plus the health of all infrastructure services and deployment mode. |
 
 The response shape is:
 
@@ -230,6 +230,12 @@ The response shape is:
       "recentErrors": []
     }
   ],
+  "infrastructure": [
+    { "name": "ollama", "displayName": "Ollama", "kind": "ollama", "reachable": true, "url": "http://192.168.1.45:11434", "detail": "Ollama server", "lastActivity": null, "serverIp": "192.168.1.45", "isLan": true, "recentErrors": [] },
+    { "name": "backend", "displayName": "Backend", "kind": "http", "reachable": true, "url": "http://backend:8000", "detail": "/health", "lastActivity": null },
+    { "name": "mysql", "displayName": "MySQL", "kind": "database", "reachable": true, "url": "mysql://mysql_db:3306", "detail": "Connected", "lastActivity": null },
+    { "name": "cron", "displayName": "Cron", "kind": "activity", "reachable": false, "url": "/logs/cron/cron.jsonl", "detail": "No activity logged", "lastActivity": null }
+  ],
   "ollama": {
     "reachable": true,
     "serverUrl": "http://192.168.1.45:11434",
@@ -242,11 +248,13 @@ The response shape is:
   "grafana": { "reachable": true, "url": "http://host.docker.internal:3000" },
   "deployment": "docker",
   "timestamp": "2026-01-01T10:00:00Z"
+}
 ```
 
 - `ollama.serverIp` / `ollama.isLan` report the reachable Ollama server, discovered through the configured URL (`AI_ENRICH_OLLAMA_BASE_URL`), the Docker fallbacks (`host.docker.internal`, `localhost`, `ollama`) or the LAN scan — so an Ollama server running on another machine in the LAN is identified and shown by its IP. The last-known server address is saved in memory and shared across all modules via `commonlib.ollama_probe.get_last_ollama_server()`; the dashboard probes it fresh (no cache) on every refresh, so a server that came back up is detected immediately. When nothing is reachable, the last-known address is kept with `reachable: false` instead of going blank. The LAN scan covers the Docker bridge subnet plus the common LAN subnets (`192.168.0.x`, `192.168.1.x`) automatically, even when the dashboard runs inside a Docker container; if your LAN uses a different subnet, set `COMMONLIB_DISCOVERY_SUBNETS` (comma-separated CIDRs, e.g. `10.0.0.0/24`; `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` is the legacy Ollama-only alias).
-- `prometheus` / `grafana` report the health of Prometheus (`GET /-/healthy`) and Grafana (`GET /api/health`) as `{ reachable, url }`. The target URLs come from `PROMETHEUS_URL` (default `http://host.docker.internal:9090`) and `GRAFANA_URL` (default `http://host.docker.internal:3000`); override them in `.env` if your services run elsewhere.
-- `llmBackend` reports the configured LLM provider for `aiEnrich` (`AI_ENRICH_LLM_BACKEND`, default `"ollama"`): `"ollama"` or `"openrouter"`. It is shown on the dashboard's top row as an informational pill alongside the Ollama health pill.
+- `infrastructure` is the unified health list rendered by the dashboard: Ollama, Backend, Web, MySQL, MongoDB, AI Form Filler, Cron, Scrapper, Prometheus and Grafana. Each entry has `name`, `displayName`, `kind` (`ollama` | `http` | `database` | `activity`), `reachable`, `url`, `detail` and `lastActivity`; Ollama entries also carry `serverIp`, `isLan` and `recentErrors`. `http` entries probe a health path (`/health`, `/`, `/api/health`, `/-/healthy`), `database` entries run a read-only ping (`SELECT 1` for MySQL, `ping` for MongoDB), and `activity` entries derive `reachable` from the freshness of the service's JSONL log (window: `DASHBOARD_ACTIVITY_WINDOW_SECONDS`, default `86400`). Optional URL overrides: `DASHBOARD_BACKEND_URL`, `DASHBOARD_WEB_URL`, `DASHBOARD_FORM_FILLER_URL`, `PROMETHEUS_URL`, `GRAFANA_URL`; MongoDB uses `MONGO_URI`. Database URLs never expose credentials.
+- `ollama` / `prometheus` / `grafana` are kept as compatibility aliases of the matching `infrastructure` entries (`{ reachable, url }`, plus the Ollama discovery fields).
+- `llmBackend` reports the configured LLM provider for `aiEnrich` (`AI_ENRICH_LLM_BACKEND`, default `"ollama"`): `"ollama"` or `"openrouter"`. It is shown on the dashboard's top row as an informational pill.
 - `deployment` is `"docker"` when the process runs inside a container (`/.dockerenv` or `/proc/1/cgroup`) and `"host"` otherwise. It is reported per service (from that module's own metrics collector) and at the top level for the dashboard itself.
 
 ## Watcher API

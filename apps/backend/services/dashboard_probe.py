@@ -8,7 +8,18 @@ from commonlib.ollama_probe import get_last_ollama_server, resolve_ollama_url
 logger = get_logger("backend.services.dashboard_probe")
 
 OLLAMA_PROBE_TIMEOUT_SECONDS = 3
+SERVICE_PROBE_TIMEOUT_SECONDS = 3
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "host.docker.internal", "ollama"}
+
+
+def _probe_service(base_url: str, health_path: str) -> dict:
+    """Probe a service health endpoint; returns {reachable, url}."""
+    try:
+        with urllib.request.urlopen(f"{base_url.rstrip('/')}{health_path}", timeout=SERVICE_PROBE_TIMEOUT_SECONDS) as resp:
+            return {"reachable": resp.status == 200, "url": base_url}
+    except Exception as e:
+        logger.debug("service.probe_failed", error=str(e), url=base_url)
+        return {"reachable": False, "url": base_url}
 
 
 def _host_ip(url: str) -> str | None:

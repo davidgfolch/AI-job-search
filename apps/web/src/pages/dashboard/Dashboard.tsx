@@ -1,6 +1,7 @@
 import PageHeader from '../common/components/PageHeader';
 import { useDashboard, REFRESH_INTERVAL_MS } from './hooks/useDashboard';
 import ServiceCard from './components/ServiceCard';
+import InfrastructurePanel from './components/InfrastructurePanel';
 import RecentErrors from './components/RecentErrors';
 import './Dashboard.css';
 
@@ -46,35 +47,9 @@ export default function Dashboard() {
                         <span className="service-pill-label">LLM Backend</span>
                         <span className="service-pill-value">{data.llmBackend}</span>
                     </div>
-                    <div className="service-pill service-pill--ollama">
-                        <span className={`status-dot status-dot--${data.ollama.reachable ? 'running' : 'error'}`} />
-                        <span className="service-pill-label">Ollama</span>
-                        <span className={`service-pill-value ${data.ollama.reachable ? '' : 'service-pill-value--error'}`}>
-                            {data.ollama.reachable ? 'Connected' : 'Disconnected'}
-                        </span>
-                        {data.ollama.serverIp && (
-                            <span className="service-pill-address">
-                                {data.ollama.serverIp} <span className="service-pill-scope">· {data.ollama.isLan ? 'LAN' : 'local'}</span>
-                            </span>
-                        )}
-                    </div>
-                    <div className="service-pill service-pill--prometheus">
-                        <span className={`status-dot status-dot--${data.prometheus.reachable ? 'running' : 'error'}`} />
-                        <span className="service-pill-label">Prometheus</span>
-                        <span className={`service-pill-value ${data.prometheus.reachable ? '' : 'service-pill-value--error'}`}>
-                            {data.prometheus.reachable ? 'Up' : 'Down'}
-                        </span>
-                        <span className="service-pill-address">{data.prometheus.url}</span>
-                    </div>
-                    <div className="service-pill service-pill--grafana">
-                        <span className={`status-dot status-dot--${data.grafana.reachable ? 'running' : 'error'}`} />
-                        <span className="service-pill-label">Grafana</span>
-                        <span className={`service-pill-value ${data.grafana.reachable ? '' : 'service-pill-value--error'}`}>
-                            {data.grafana.reachable ? 'Up' : 'Down'}
-                        </span>
-                        <span className="service-pill-address">{data.grafana.url}</span>
-                    </div>
                 </div>
+
+                <InfrastructurePanel entries={data.infrastructure ?? []} />
 
                 <div className="dashboard-services-grid">
                     {data.services.map(service => (
