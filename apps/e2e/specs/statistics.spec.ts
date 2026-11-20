@@ -26,17 +26,17 @@ test.describe('Statistics E2E', () => {
         await setupStatisticsMocks(page);
     });
 
-    test('shows keyword totals for the default site and filters by site', async ({ page }) => {
+    test('shows keyword lines for the default site and filters by site', async ({ page }) => {
         await page.goto(`${BASE_URL}/statistics`);
         await expect(page.getByText('Keyword totals & duplicates by date')).toBeVisible();
+        await expect(page.locator('.keyword-chart .recharts-line')).toHaveCount(2);
+        await expect(page.locator('.keyword-chart .recharts-bar')).toHaveCount(0);
         await expect(page.getByLabel('Site')).toHaveValue('Linkedin');
-        await expect(page.getByText('91,92')).toBeVisible();
-        await expect(page.getByText('7,8,9,10')).toHaveCount(0);
         await expect(page.getByText('python', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText('Already-in-DB duplicates by keyword')).toHaveCount(0);
 
         await page.getByLabel('Site').selectOption('(All)');
-        await expect(page.getByText('91,92')).toBeVisible();
-        await expect(page.getByText('7,8,9,10')).toBeVisible();
-        await expect(page.getByText('77')).toHaveCount(0);
+        await expect(page.getByText('python', { exact: true }).first()).toBeVisible();
+        await expect(page.locator('.keyword-chart .recharts-line')).toHaveCount(2);
     });
 });
