@@ -2,8 +2,8 @@
 setlocal EnableDelayedExpansion
 rem ===== AI Job Search parallel development workflow (Windows) =====
 rem Usage: scripts\dev.bat <command> [args]  - same commands as scripts/dev.sh
-rem   new <name>              - clone ..\ai_job_search-<name>, branch feat/<name> from master, copy env + lockfiles
-rem   dep <pr>                - clone ..\ai_job_search-dependabot-<pr> and check out that PR (used by dependabot-agent)
+rem   new <name>              - clone ..\ai_job_search-<name>, branch feat/<name> from master, copy runtime state + sync deps
+rem   dep <pr>                - clone ..\ai_job_search-dependabot-<pr>, check out PR, refresh deps for its base
 rem   list                    - show sibling clones
 rem   checkout <branch>       - switch branch in the current clone
 rem   test [modules]          - run scripts\test.bat here (no args = everything)
@@ -57,7 +57,7 @@ if exist "!CLONE!" (
     git clone "!ORIGIN!" "!CLONE!"
     if errorlevel 1 (echo Error: clone failed. & exit /b 1)
 )
-if exist "%ROOT%\.env" if not exist "!CLONE!\.env" copy /Y "%ROOT%\.env" "!CLONE!\.env" >nul
+rem .env is tracked, so the clone already has it.
 if exist "%ROOT%\.env.secrets" if not exist "!CLONE!\.env.secrets" copy /Y "%ROOT%\.env.secrets" "!CLONE!\.env.secrets" >nul
 for /d %%m in ("%ROOT%\apps\*") do (
     for %%f in (uv.lock poetry.lock package-lock.json) do (
@@ -65,6 +65,60 @@ for /d %%m in ("%ROOT%\apps\*") do (
             if not exist "!CLONE!\apps\%%~nxm\" mkdir "!CLONE!\apps\%%~nxm\"
             copy /Y "%%~fm\%%f" "!CLONE!\apps\%%~nxm\%%f" >nul
         )
+    )
+    if exist "%%~fm\node_modules" if not exist "!CLONE!\apps\%%~nxm\node_modules" (
+        if not exist "!CLONE!\apps\%%~nxm\" mkdir "!CLONE!\apps\%%~nxm\"
+        robocopy "%%~fm\node_modules" "!CLONE!\apps\%%~nxm\node_modules" /E /COPY:DAT /R:0 /W:0 /NFL /NDL /NJH /NJS /NP >nul
+        if errorlevel 8 (echo Error: could not copy node_modules for %%~nxm. & exit /b 1)
+        echo Copied apps\%%~nxm\node_modules
+    )
+)
+if exist "%ROOT%\.codegraph\codegraph.db" (
+    if not exist "!CLONE!\.codegraph\" mkdir "!CLONE!\.codegraph\"
+    python -c "import sqlite3,sys,pathlib; s=sqlite3.connect(pathlib.Path(sys.argv[1]).as_uri()+'?mode=ro',uri=True); d=sqlite3.connect(sys.argv[2]); s.backup(d); d.close(); s.close()" "%ROOT%\.codegraph\codegraph.db" "!CLONE!\.codegraph\codegraph.db" >nul 2>&1
+    if not errorlevel 1 (echo Copied CodeGraph index snapshot) else (echo Warning: could not snapshot CodeGraph index)
+)
+exit /b 0
+
+:prepare_runtime
+set "DST=%~1"
+set "MODE=%~2"
+for /d %%d in ("!DST!\apps\*") do (
+    if exist "%%~fd\uv.lock" (
+        echo Preparing %%~nxd dependencies (uv, offline)...
+        pushd "%%~fd"
+        uv sync --offline
+        if errorlevel 1 (
+            echo Offline sync failed for %%~nxd; retrying with network.
+            uv sync
+        )
+        popd
+    )
+)
+if exist "!DST!\apps\scrapper\poetry.lock" (
+    echo Preparing scrapper dependencies (poetry)...
+    pushd "!DST!\apps\scrapper"
+    poetry install --no-interaction
+    if errorlevel 1 (poetry lock && poetry install --no-interaction)
+    popd
+)
+if /i "!MODE!"=="dep" (
+    for %%m in (web e2e) do (
+        if exist "!DST!\apps\%%m\package.json" (
+            echo Preparing %%m dependencies (npm, prefer offline)...
+            pushd "!DST!\apps\%%m"
+            npm ci --prefer-offline
+            if errorlevel 1 npm install --prefer-offline
+            popd
+        )
+    )
+)
+if exist "!DST!\.codegraph\codegraph.db" (
+    where codegraph >nul 2>&1
+    if not errorlevel 1 (
+        echo Refreshing CodeGraph index...
+        codegraph sync "!DST!"
+        if errorlevel 1 echo Warning: could not refresh CodeGraph index
     )
 )
 exit /b 0
@@ -82,6 +136,7 @@ git checkout -b "!BRANCH!" "origin/!DEV_MAIN_BRANCH!" 2>nul
 if errorlevel 1 git checkout -b "!BRANCH!" "origin/HEAD" 2>nul
 if errorlevel 1 git checkout "!BRANCH!"
 if errorlevel 1 (echo Error: could not set branch !BRANCH!. & exit /b 1)
+call :prepare_runtime "!CLONE!" new
 echo.
 echo Clone ready: !CLONE!
 echo Branch: !BRANCH!
@@ -96,6 +151,7 @@ call :create_clone "dependabot-!PR!"
 cd /d "!CLONE!" || exit /b 1
 gh pr checkout !PR!
 if errorlevel 1 exit /b 1
+call :prepare_runtime "!CLONE!" dep
 echo.
 echo Clone ready: !CLONE! ^(PR #!PR! checked out^)
 exit /b 0

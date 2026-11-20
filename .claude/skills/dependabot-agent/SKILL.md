@@ -28,15 +28,16 @@ Every clone is a sibling of the project root, always prefixed `ai_job_search-`:
 
 ```bash
 # Session clone for the staging sync and the promotion. Run from the main workspace or any
-# workspace copy: it only creates the sibling clone (branch feat/dependabot-session from master)
-# and copies .env, .env.secrets and the gitignored lockfiles. The main workspace is not modified.
+# workspace copy: it only creates the sibling clone (branch feat/dependabot-session from master),
+# copies gitignored runtime state (.env.secrets, lockfiles, node_modules, CodeGraph snapshot)
+# and rebuilds Python envs offline. The main workspace is not modified.
 ./scripts/dev.sh new dependabot-session
 cd "$(dirname "$(git rev-parse --show-toplevel)")/ai_job_search-dependabot-session"
 
 # Per-PR clone: creates ../ai_job_search-dependabot-<n>, runs `gh pr checkout <n>`
-# (branch + upstream tracking) and copies the same gitignored runtime state.
-# scripts/test.sh picks uv vs poetry by lockfile presence, so the lockfiles matter.
-# It can be launched from any clone; it never edits the caller's working tree.
+# (branch + upstream tracking), copies the same runtime state and then refreshes npm deps
+# and CodeGraph for the PR's manifest changes. It can be launched from any clone; it never
+# edits the caller's working tree.
 ./scripts/dev.sh dep <n>
 cd "$(dirname "$(git rev-parse --show-toplevel)")/ai_job_search-dependabot-<n>"
 
@@ -100,7 +101,7 @@ For each open staging PR:
    ```bash
    ./scripts/dev.sh dep <n>        # Windows: .\scripts\dev.bat dep <n>
    ```
-   That creates/repopulates `../ai_job_search-dependabot-<n>`, copies the gitignored env + lockfiles, and leaves the PR branch checked out with its upstream set. From here on, every command runs inside that clone.
+   That creates/repopulates `../ai_job_search-dependabot-<n>`, copies gitignored runtime state, refreshes deps for the PR's manifest changes and leaves the PR branch checked out with its upstream set. From here on, every command runs inside that clone.
 
 4. **Rebase the PR onto the fresh `staging` before validating it** (step 0 moved the base, so the branch is behind):
    ```bash
@@ -130,7 +131,7 @@ git push
 
 ### 4. Run the TDD pipeline for the module
 
-`scripts/test.sh` only **runs** the suites; it does not install. Install the module first exactly as `ci.yml` does, from the clone root:
+`scripts/dev.sh dep` already synced every app's deps from the local cache (`uv sync --offline`, `poetry install`, `npm ci --prefer-offline`, with online fallback for bumped versions) when it created the clone, so no full install is needed. `scripts/test.sh` only **runs** the suites; it does not install. If a bump still leaves a lockfile stale, regenerate it exactly as `ci.yml` does, from the clone root:
 
 ```bash
 # Poetry modules (commonlib, scrapper)
@@ -141,7 +142,7 @@ git push
 (cd apps/<module> && npm install)
 ```
 
-The clone inherits gitignored lockfiles from the caller, and a dependency bump makes `poetry install` refuse until `poetry lock` regenerates them (that is the expected lockfile churn, committed in step 6).
+That lockfile churn is expected and committed in step 6.
 
 Then run the suite. This regenerates lockfiles/badges like CI does (`ci.yml` runs this matrix):
 ```bash
@@ -270,7 +271,7 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
 
 - Never start a non-Dependabot change on `staging`: features, fixes, docs and lockfile work belong on `master`.
 - Never push to `master` directly **within this session** and never force-push; the promotion PR handles `staging → master`.
-- **Never run git commands that move a branch in the main workspace** (`checkout`, `pull`, `merge`, `reset`, `commit`, `push`). The staging sync and the promotion both happen in the session clone; the main workspace is only read to copy `.env`, `.env.secrets` and lockfiles into a clone.
+- **Never run git commands that move a branch in the main workspace** (`checkout`, `pull`, `merge`, `reset`, `commit`, `push`). The staging sync and the promotion both happen in the session clone; the main workspace is only read to copy gitignored runtime state (`.env.secrets`, lockfiles, `node_modules`, CodeGraph snapshot) into a clone.
 - Only ever delete sibling directories named `ai_job_search-*` that are git clones sitting next to the main workspace (that is what `./scripts/dev.sh cleanup` enforces).
 - Never commit `.env.secrets` or any credentials.
 - Only change code required to make the dependency update pass; preserve existing style and structure.

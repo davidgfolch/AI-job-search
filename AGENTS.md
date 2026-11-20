@@ -39,19 +39,20 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 ### Parallel Development (sibling clones)
 `scripts/dev.sh` (Linux/Mac) and `scripts/dev.bat` (Windows) run feature work in a throwaway sibling clone, so the main workspace, its branches, its lockfiles and its running stack stay untouched:
 ```bash
-./scripts/dev.sh new <name>        # ../ai_job_search-<name>, branch feat/<name> from master, env + lockfiles copied
-./scripts/dev.sh dep <pr>          # ../ai_job_search-dependabot-<pr> with that Dependabot PR checked out
+./scripts/dev.sh new <name>        # ../ai_job_search-<name>, branch feat/<name> from master, runtime state copied + deps synced
+./scripts/dev.sh dep <pr>          # ../ai_job_search-dependabot-<pr>, PR checked out, deps refreshed for its base
 ./scripts/dev.sh list | status | sync | cleanup <name>
 ./scripts/dev.sh test [modules] | sandbox <service> | commit "msg" | push | pr [title] [--base br] | merge [-k]
 ```
 - Clones are named `ai_job_search-*`, live beside the repo, and `cleanup`/`merge` refuse to delete anything else.
+- Git state comes from a clean `git clone`; the clone then inherits `.env.secrets`, gitignored lockfiles, `node_modules` and a consistent CodeGraph DB snapshot from the caller. Python envs are rebuilt in-place with `uv sync --offline` / `poetry install` (online fallback if a bumped version is not cached), so no reinstall is needed in a clone. `dep <pr>` additionally runs `npm ci --prefer-offline` and refreshes the CodeGraph index for the PR's dependency changes.
 - `test` and `sandbox` delegate to the existing `scripts/test.sh` / `scripts/test-sandbox.sh` inside the clone they are called from.
 - `sync` fast-forwards `staging` from `master` and pushes it; run it before Dependabot work so PRs are built on a current base. It stops instead of creating a merge commit when the branches diverged.
 - `new` branches from `master` and `pr` targets `master` (pass `--base staging` only for the Dependabot gate); `merge` waits for green checks, squash-merges, deletes the branch and then the clone (keep it with `-k`).
 - Only one sandbox at a time: `dependabot-test` is a fixed compose project with fixed ports.
 
 ### Dependencies
-[README_INSTALL.md](READMEs/README_INSTALL.md) covers the dependency install, automated by the setup script or per app. Package managers: Poetry (`commonlib`, `scrapper`), uv (`backend`, `aiEnrich`, `aiEnrichSkill`, `aiCvMatcher`, `aiFormFiller`, `cron`) and npm (`web`, `e2e`).
+[README_INSTALL.md](READMEs/README_INSTALL.md) covers the dependency install, automated by the setup script or per app. Package managers: Poetry (`scrapper`), uv (`commonlib`, `backend`, `aiEnrich`, `aiEnrichSkill`, `aiCvMatcher`, `aiFormFiller`, `cron`) and npm (`web`, `e2e`).
 
 ### Web Frontend (apps/web)
 ```bash

@@ -241,6 +241,8 @@ You can use the helper script in the project root:
 
 > **Note**: If you run the web app via Docker, its image auto-detects changed `package-lock.json` and reinstalls `node_modules` on start (see `apps/web/docker-entrypoint.sh`), so `docker-compose up -d --build web` after a dependency change is enough. See [DOCKER_DEV.md](DOCKER_DEV.md).
 
+> **Note**: Sibling development clones created by `scripts/dev.sh` / `scripts/dev.bat` do not need a separate install — they inherit `node_modules` and a CodeGraph snapshot from the caller and rebuild the Python envs offline in place. See [Parallel Development](../AGENTS.md#parallel-development-sibling-clones).
+
 ### 8.1 Uninstall Project Dependencies
 
 `scripts/uninstall.bat` (Windows) / `scripts/uninstall.sh` (Linux) remove what the
