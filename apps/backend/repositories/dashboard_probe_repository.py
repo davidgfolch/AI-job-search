@@ -22,6 +22,7 @@ class DashboardProbeRepository:
             cursor = conn.cursor()
             try:
                 cursor.execute(MYSQL_QUERY)
+                cursor.fetchall()
                 return True, "SELECT 1 ok"
             finally:
                 cursor.close()
@@ -30,7 +31,11 @@ class DashboardProbeRepository:
             return False, str(e)[:MAX_ERROR_LENGTH]
         finally:
             if conn is not None:
-                conn.close()
+                try:
+                    conn.consume_results()
+                    conn.close()
+                except Exception as e:
+                    logger.debug("datastore.probe_close_failed", error=str(e), source_module="mysql")
 
     def probe_mongo(self, uri: str) -> tuple[bool, str]:
         client = None
@@ -43,7 +48,10 @@ class DashboardProbeRepository:
             return False, str(e)[:MAX_ERROR_LENGTH]
         finally:
             if client is not None:
-                client.close()
+                try:
+                    client.close()
+                except Exception as e:
+                    logger.debug("datastore.probe_close_failed", error=str(e), source_module="mongo")
 
     @staticmethod
     def display_url(name: str, uri: str) -> str:
