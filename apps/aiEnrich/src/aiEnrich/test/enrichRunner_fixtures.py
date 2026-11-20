@@ -29,11 +29,9 @@ def mock_deps():
         dataExtractor_module.totalCount = 0
         dataExtractor_module.jobErrors = set()
         ollama_backend_module._resolved_ollama_url = None
-        ollama_backend_module._ollama_server_known = False
         ollama_backend_module.ollama_consecutive_failures = 0
         yield {'mysql': mysql, 'save': save_chk, 'repo': repo, 'ollama': mock_ollama, 'ping': mock_ping, 'footer': footer_chk}
         ollama_backend_module._resolved_ollama_url = None
-        ollama_backend_module._ollama_server_known = False
         ollama_backend_module.ollama_consecutive_failures = 0
 
 

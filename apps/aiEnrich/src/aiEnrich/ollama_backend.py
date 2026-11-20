@@ -1,5 +1,3 @@
-import sys
-
 from commonlib.ollama_client import query_ollama
 from commonlib.ollama_probe import forget_server
 from commonlib.ollama_probe import resolve_ollama_url as probe_resolve_ollama_url
@@ -14,7 +12,6 @@ from .openrouter_client import ping_openrouter, query_openrouter
 logger = get_logger("aiEnrich.ollama_backend")
 
 _resolved_ollama_url: str | None = None
-_ollama_server_known = False
 ollama_consecutive_failures = 0
 
 
@@ -44,7 +41,7 @@ def _query_company(prompt: str, backend: str, model: str):
 
 
 def ping_backend() -> bool:
-    global _resolved_ollama_url, _ollama_server_known
+    global _resolved_ollama_url
     if get_backend() == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
     # Liveness checks reuse the cached server while it answers. When it stops
@@ -56,8 +53,6 @@ def ping_backend() -> bool:
         logger.warning("ollama.resolved_unreachable", base_url=_resolved_ollama_url)
         forget_server(_resolved_ollama_url)
     _resolved_ollama_url = url
-    if _resolved_ollama_url is not None:
-        _ollama_server_known = True
     return _resolved_ollama_url is not None
 
 
@@ -70,12 +65,8 @@ def _check_backend_available() -> bool:
     backend = get_backend()
     max_failures = get_max_ollama_failures()
     logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-    # A server this process already reached may just be asleep (e.g. a LAN host that
-    # suspends), and Docker restarts cannot help there: keep waiting for it instead
-    # of exiting. Only abort while no server has ever been resolved, so a genuinely
-    # unreachable startup still self-heals through the container restart policy.
-    known_server = backend == "ollama" and _ollama_server_known
-    if ollama_consecutive_failures >= max_failures and not known_server:
-        logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
-        sys.exit(1)
+    if ollama_consecutive_failures == max_failures:
+        # Keep waiting: exiting here turned a sleeping Ollama server into a restart
+        # storm that starved the database on resume. Discovery needs another chance.
+        logger.critical("ollama.waiting_after_failures", consecutive_failures=ollama_consecutive_failures)
     return False
