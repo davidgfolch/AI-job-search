@@ -3,8 +3,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.core.baseScrapper import htmlToMarkdown
 from scrapper.navigator.components.linkedinDetailReader import (
-    LinkedinDetailReader, CSS_SEL_JOB_TITLE_LINK, CSS_SEL_DETAIL_COMPANY, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_FIT_PREFERENCES,
-    CSS_SEL_JOB_DESCRIPTION_LEGACY, CSS_SEL_JOB_DESCRIPTION_BOX,
+    LinkedinDetailReader, CSS_SEL_JOB_DETAIL, CSS_SEL_JOB_TITLE_LINK, CSS_SEL_DETAIL_COMPANY, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_FIT_PREFERENCES,
+    CSS_SEL_JOB_DESCRIPTION_LEGACY, CSS_SEL_JOB_DESCRIPTION_BOX, JS_FIND_ABOUT_THE_JOB_SECTION, JS_READ_FIRST_TEXT_BOX,
 )
 from selenium.common.exceptions import NoSuchElementException
 
@@ -141,6 +141,20 @@ class TestLinkedinDetailReader:
         mock_selenium.getElms.return_value = [MagicMock(), MagicMock()]
         mock_selenium.driver.execute_script.side_effect = [None, description_html]
         assert htmlToMarkdown(reader.read()[4]).startswith('Remote, Full-time\n\n')
+
+    def test_detail_pane_selector_targets_open_job_lazy_column(self):
+        """The nth-child path was removed; the pane is the componentkey-bearing lazy-column holding the open job's title link"""
+        assert 'data-testid="lazy-column"' in CSS_SEL_JOB_DETAIL
+        assert 'componentkey' in CSS_SEL_JOB_DETAIL
+        assert ':has(a[href*="/jobs/view/"])' in CSS_SEL_JOB_DETAIL
+        assert CSS_SEL_JOB_TITLE_LINK.startswith(CSS_SEL_JOB_DETAIL)
+
+    @pytest.mark.parametrize("source", [JS_FIND_ABOUT_THE_JOB_SECTION, JS_READ_FIRST_TEXT_BOX])
+    def test_read_scripts_scope_to_the_detail_pane(self, source):
+        assert 'data-testid="lazy-column"' in source and 'componentkey' in source
+
+    def test_heading_anchor_covers_localized_ui(self):
+        assert 'acerca del empleo' in JS_FIND_ABOUT_THE_JOB_SECTION
 
     @pytest.mark.parametrize("href, expected", [
         ('https://www.linkedin.com/jobs/view/4477175173/?trackingId=x', '4477175173'),

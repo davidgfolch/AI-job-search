@@ -8,8 +8,10 @@ logger = get_logger("scrapper.linkedinDetailReader")
 
 JOB_URL_RE = r'/jobs/view/(\d+)'
 
-# JOB DETAIL: right pane, same layout for list clicks and direct currentJobId urls
-CSS_SEL_JOB_DETAIL = 'main > div > div:nth-child(2) > div > div:nth-child(2) > div > div > div > div > div > div[componentkey]'
+# JOB DETAIL: right pane, same layout for list clicks and direct currentJobId urls.
+# LinkedIn rebuilt the column: the old nth-child path silently matched nothing, so every click "timed out" in wait_for_job.
+# The search list is another lazy-column, so require the componentkey-bearing one that actually holds the open job's title link.
+CSS_SEL_JOB_DETAIL = '[data-testid="lazy-column"][componentkey]:has(a[href*="/jobs/view/"])'
 CSS_SEL_JOB_TITLE_LINK = f'{CSS_SEL_JOB_DETAIL} a[href*="/jobs/view/"]'
 CSS_SEL_DETAIL_COMPANY = f'{CSS_SEL_JOB_DETAIL} p a[href*="/company/"]'
 CSS_SEL_DETAIL_LOCATION = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p > span:first-child'
@@ -23,9 +25,11 @@ CSS_SEL_DETAIL_LOCATION_WIDE = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jo
 CSS_SEL_JOB_DESCRIPTION_LEGACY = f'{CSS_SEL_JOB_DETAIL} div[id^="JobDetails_AboutTheJob_"]'
 CSS_SEL_JOB_DESCRIPTION_BOX = f'{CSS_SEL_JOB_DETAIL} [data-testid="expandable-text-box"]'
 CSS_SEL_JOB_EXPAND_BUTTONS = f'{CSS_SEL_JOB_DETAIL} button[data-testid="expandable-text-button"]'
+JS_DETAIL_PANE = f"document.querySelector('{CSS_SEL_JOB_DETAIL}') || document"
 JS_FIND_ABOUT_THE_JOB_SECTION = (
-    'const pane = document.querySelector(\'[data-testid="lazy-column"]\') || document;'
-    'const heading = Array.from(pane.querySelectorAll("h2, h3")).find(h => (h.textContent || "").trim().toLowerCase() === "about the job");'
+    f'const pane = {JS_DETAIL_PANE};'
+    'const aboutHeadings = ["about the job", "acerca del empleo", "sobre el empleo"];'
+    'const heading = Array.from(pane.querySelectorAll("h2, h3")).find(h => aboutHeadings.includes((h.textContent || "").trim().toLowerCase()));'
     'const firstBox = pane.querySelector(\'[data-testid="expandable-text-box"]\');'
     'const findSection = () => {'
     ' let el = heading ? heading.parentElement : (firstBox ? firstBox.parentElement : null);'
@@ -44,7 +48,7 @@ JS_READ_ABOUT_THE_JOB_SECTION = JS_FIND_ABOUT_THE_JOB_SECTION + (
     'const clone = section.cloneNode(true); ' + JS_STRIP_EXPANDER + ' return clone.innerHTML;'
 )
 JS_READ_FIRST_TEXT_BOX = (
-    'const pane = document.querySelector(\'[data-testid="lazy-column"]\') || document;'
+    f'const pane = {JS_DETAIL_PANE};'
     'const box = pane.querySelector(\'[data-testid="expandable-text-box"]\'); if (!box) return null;'
     'const clone = box.cloneNode(true); ' + JS_STRIP_EXPANDER + ' return clone.innerHTML;'
 )
