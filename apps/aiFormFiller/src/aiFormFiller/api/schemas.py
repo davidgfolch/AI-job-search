@@ -10,6 +10,7 @@ class FollowUpRequest(BaseModel):
     original_question: str
     clarification_answer: str
     context_key: str | None = None
+    provider: str = "auto"
 
 
 class AnswerResponse(BaseModel):

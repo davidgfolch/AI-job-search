@@ -61,6 +61,7 @@ class TestQuestionAnsweringService(unittest.TestCase):
         sp = kwargs["system_prompt"]
         self.assertIn("INFERIR", sp)
         self.assertIn("PRIMERA PERSONA", sp)
+        self.assertIn("limitado a español o inglés", sp)
 
     @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
     @patch("aiFormFiller.services.question_answering_service.cfg")
@@ -69,6 +70,11 @@ class TestQuestionAnsweringService(unittest.TestCase):
         mock_hf.return_value = make_mock_provider(text="Updated answer")
         result = self.service.follow_up("¿Años de Java?", "Tengo 2 años con Spring Boot 3")
         self.assertEqual(result.text, "Updated answer")
+
+    def test_follow_up_uses_selected_provider(self):
+        self.service._get_provider = MagicMock(return_value=make_mock_provider())
+        self.service.follow_up("question", "info", "openrouter")
+        self.service._get_provider.assert_called_once_with("openrouter")
 
     @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
     @patch("aiFormFiller.services.question_answering_service.cfg")

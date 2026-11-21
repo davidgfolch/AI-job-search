@@ -63,29 +63,51 @@ The backend starts on `http://127.0.0.1:8080`. API docs at `/docs`.
 
 ### 3. Install the browser extension
 
-**Chrome:**
-1. Go to `chrome://extensions/`
-2. Enable "Developer mode" (top right)
-3. Click "Load unpacked" → select `apps/aiFormFiller/extension/`
+Run the installer from the repository root. It packs the extension into a signed CRX (Chrome) and an XPI (Firefox) and registers it for all existing profiles, so a browser restart is all that is needed:
 
-**Firefox:**
-1. Go to `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Select `apps/aiFormFiller/extension/manifest.json`
+```bash
+# Windows
+.\apps\aiFormFiller\install-extension.bat
+
+# Linux/macOS
+./apps/aiFormFiller/install-extension.sh
+```
+
+Use `--browser chrome|firefox` to install only one browser, and `--dry-run` to preview the changes. The generated packages and signing key live in `~/.ai-form-filler` (`%LOCALAPPDATA%\ai-form-filler` on Windows); keep them so reinstalls keep the same extension ID.
+
+| Browser | Platform | Mechanism | Rights |
+|---|---|---|---|
+| Chrome | Linux | [External extensions](https://developer.chrome.com/extensions/external_extensions) (user-removable) | `sudo` |
+| Chrome | Windows/macOS | `ExtensionInstallForcelist` policy (must be removed with the uninstall script) | admin / `sudo` |
+| Firefox | all | `policies.json` → `Extensions.Install` | admin / `sudo` |
+
+To remove the registration and the generated packages:
+
+```bash
+# Windows
+.\apps\aiFormFiller\uninstall-extension.bat
+
+# Linux/macOS
+./apps/aiFormFiller/uninstall-extension.sh
+```
+
+Manual development install is still available: load `apps/aiFormFiller/extension/` unpacked in Chrome under `chrome://extensions` with Developer mode enabled. The Firefox package built by the script adds the gecko manifest keys and a small API shim that the shared source manifest does not contain, so use the script for Firefox.
 
 ## Usage
 
 1. Navigate to any job application form
-2. Click on a text field (input or textarea)
-3. Right-click → **"Answer with AI"**
-4. The side panel opens with the detected question
-5. Click **"Responder"** to get an AI-generated answer
-6. If the AI needs more info, a clarification box appears — type the missing info and click **"Enviar y responder"**
-7. Click **"Rellenar campo"** to fill the original form field, or **"Copiar"** to copy manually
+2. Right-click a form field → **"Answer with AI"**
+3. The side panel opens with the questions detected in that form
+4. Choose a **Provider** if needed, then click **"Answer All"**
+5. Click **"Fill All"** to write the answers back into the form
+
+The panel is tab-specific: it opens only on tabs where you used "Answer with AI", hides when you switch to other tabs, and shows each form tab's own questions and answers when you return to it.
 
 ## AI Providers
 
 Configure via `.env`:
+
+The side panel **Provider** dropdown overrides the backend default for that browser profile; **Auto (backend)** follows `AI_FORM_PROVIDER`. The selection is stored locally in the browser and applies to answer, batch and follow-up requests.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -108,6 +130,8 @@ Configure via `.env`:
 - `openai` — Uses OpenAI API. Requires `OPENAI_API_KEY`.
 - `openrouter` — Uses OpenRouter API. Requires `OPENROUTER_API_KEY`. Supports many models (Claude, Gemini, GPT, etc.).
 - `auto` — Tries local first, falls back to configured provider.
+
+For low-latency inference without a local model, set `AI_FORM_PROVIDER=openrouter` and `OPENROUTER_MODEL=<model>:free` (e.g. `nvidia/nemotron-3.5-lightning:free`); reasoning is disabled automatically for `:free` models so the response is a plain answer. Free providers may rate-limit requests.
 
 ## API Endpoints
 

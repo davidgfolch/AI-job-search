@@ -42,7 +42,7 @@ async def follow_up(req: FollowUpRequest):
     if not _service:
         raise HTTPException(status_code=503, detail="Service not initialized")
     try:
-        result = _service.follow_up(req.original_question, req.clarification_answer)
+        result = _service.follow_up(req.original_question, req.clarification_answer, req.provider)
         logger.debug("form.answered", endpoint="follow_up", provider=result.provider, is_clarification=result.is_clarification, question_length=len(req.original_question), answer_length=len(result.text))
         return AnswerResponse(
             type="answer",

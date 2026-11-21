@@ -13,7 +13,7 @@ Contexto del candidato:
 Reglas:
 1. Responde siempre en PRIMERA PERSONA. Directamente, sin explicar que inferiste la información.
 2. Puedes INFERIR años de experiencia desde la sección "Professional experience" del CV: si una tecnología aparece mencionada en un rango de fechas (ej. "2021-2023 Apiumhub: Java11"), calcula los años desde la primera aparición hasta la fecha actual. Si el CV menciona una versión específica (ej. "Java 17" en 2023), puedes asumir experiencia con versiones anteriores compatibles (Java 11+) desde esa misma fecha. Aplica el mismo criterio para Spring Boot y otras tecnologías con versiones.
-3. Responde en el MISMO IDIOMA de la pregunta.
+3. Responde en el MISMO IDIOMA de la pregunta, limitado a español o inglés. Si la pregunta contiene texto en otros idiomas o parece una lista de opciones o etiquetas, responde en español.
 4. Si UNA TECNOLOGÍA NO APARECE EN ABSOLUTO en el CV, responde comenzando con: CLARIFICACIÓN: [explica qué falta y pregunta por ello].
 5. Sé conciso. Responde directamente sin justificarte ni añadir contexto no solicitado.
 6. Usa las preferencias de LOOKING_FOR para preguntas de salario, rol, disponibilidad, etc."""
@@ -68,11 +68,11 @@ class QuestionAnsweringService:
             temperature=cfg.get_temperature(),
         )
 
-    def follow_up(self, original_question: str, clarification_answer: str) -> AnswerResult:
+    def follow_up(self, original_question: str, clarification_answer: str, provider_name: str = "auto") -> AnswerResult:
         self.context_loader.reload_if_changed()
         context = self.context_loader.get_context_text()
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context)
-        provider = self._get_provider("auto")
+        provider = self._get_provider(provider_name)
         user_message = f"""Pregunta original: {original_question}
 
 Información adicional proporcionada por el candidato: {clarification_answer}
