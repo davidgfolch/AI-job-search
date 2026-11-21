@@ -1,4 +1,4 @@
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry
 from commonlib.observability import get_logger
@@ -108,11 +108,15 @@ class InfojobsNavigator(BaseNavigator):
         self.selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
         self.selenium.waitUntilPageIsLoaded()
 
-    def waitForSecurityFilterUserResolved(self):
-        logger.warning("infojobs.auth.security_filter_pending", console=yellow('Waiting for security filter to be resolved'))
-        self.dismiss_overlays()
+    def clickOptionalFilter(self, cssSel: str, name: str):
+        """A filter click that times out must not restart the whole search and re-enter the keyword."""
+        try:
+            self.dismiss_overlays()
+            self.selenium.waitAndClick(cssSel, scrollIntoView=True)
+        except TimeoutException:
+            logger.warning("infojobs.filter.click_timeout", filter=name, console=yellow(f'Could not apply {name} filter, continuing'))
 
-    @retry(retries=50, delay=2, exceptionFnc=lambda self, *args, **kwargs: self.waitForSecurityFilterUserResolved())
+    @retry(retries=3, delay=2, exceptionFnc=lambda self, *args, **kwargs: self.waitForSearchReady())
     def load_filtered_search_results(self, keywords: str):
         self.click_on_search_jobs()
         self.dismiss_overlays()
@@ -126,8 +130,7 @@ class InfojobsNavigator(BaseNavigator):
         self.dismiss_overlays()
         self.selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
         sleep(1, 2)
-        self.dismiss_overlays()
-        self.selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
+        self.clickOptionalFilter('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', 'last 7 days')
         sleep(1, 2)
         if self.selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
             logger.info("infojobs.no_results", keywords=keywords, console=yellow(f'No results for keyword={keywords}'))
@@ -137,10 +140,13 @@ class InfojobsNavigator(BaseNavigator):
         self.filterByRemote()
         return True
 
+    def waitForSearchReady(self):
+        logger.warning("infojobs.search.retrying", console=yellow('Retrying InfoJobs search setup after an error'))
+        self.dismiss_overlays()
+
     def filterByRemote(self):
         if len(self.selenium.getElms('.ij-SidebarFilter #check-teleworking--2')) > 0:
-            self.dismiss_overlays()
-            self.selenium.waitAndClick('.ij-SidebarFilter #check-teleworking--2', scrollIntoView=True)
+            self.clickOptionalFilter('.ij-SidebarFilter #check-teleworking--2', 'remote')
             sleep(1, 2)
 
     @retry(retries=3, delay=1, exceptionFnc=lambda self, *args, **kwargs: self.scroll_to_bottom())

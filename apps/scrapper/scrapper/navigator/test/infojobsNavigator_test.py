@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock, patch
+from selenium.common.exceptions import TimeoutException
 from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DETAIL, SEARCH_URL, OVERLAY_REMOVE_SCRIPT
 
 class TestInfojobsNavigator:
@@ -105,10 +106,31 @@ class TestInfojobsNavigator:
         mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
         mock_selenium.waitAndClick.assert_called_once_with(link)
 
-    def test_wait_for_security_filter_dismisses_overlays(self, navigator):
+    def test_wait_for_search_ready_dismisses_overlays(self, navigator):
         with patch.object(navigator, 'dismiss_overlays') as mock_dismiss:
-            navigator.waitForSecurityFilterUserResolved()
+            navigator.waitForSearchReady()
         mock_dismiss.assert_called_once()
+
+    @pytest.mark.parametrize('name', ['last 7 days', 'remote'])
+    def test_click_optional_filter_swallows_timeout(self, navigator, mock_selenium, name):
+        mock_selenium.waitAndClick.side_effect = TimeoutException('filter not clickable')
+        with patch.object(navigator, 'dismiss_overlays') as mock_dismiss:
+            navigator.clickOptionalFilter('.ij-SidebarFilter input', name)
+        mock_dismiss.assert_called_once()
+
+    @pytest.mark.parametrize('remote_available', [True, False])
+    def test_date_filter_timeout_does_not_restart_keyword_search(self, navigator, mock_selenium, remote_available):
+        mock_selenium.sendKeys.return_value = True
+        mock_selenium.getElms.side_effect = lambda selector: ['remote'] if 'check-teleworking' in selector and remote_available else []
+        def click(cssSel, **kwargs):
+            if '_7_DAYS' in cssSel:
+                raise TimeoutException('date filter not clickable')
+        mock_selenium.waitAndClick.side_effect = click
+        with patch.object(navigator, 'click_on_search_jobs'):
+            with patch('scrapper.navigator.infojobsNavigator.sleep'):
+                result = navigator.load_filtered_search_results('Agentic Coding')
+        assert result is True
+        mock_selenium.sendKeys.assert_called_once()
 
     @pytest.mark.parametrize('remote_available,expected_calls', [(True, 4), (False, 3)])
     def test_load_filtered_search_results_dismisses_overlays(self, navigator, mock_selenium, remote_available, expected_calls):
