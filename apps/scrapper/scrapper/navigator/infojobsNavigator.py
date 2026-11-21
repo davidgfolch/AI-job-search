@@ -10,6 +10,10 @@ from .baseNavigator import BaseNavigator
 logger = get_logger("scrapper.infojobsNavigator")
 
 LOGIN_PAGE = 'https://www.infojobs.net/candidate/candidate-login/candidate-login.xhtml'
+SEARCH_URL = 'https://www.infojobs.net/ofertas-trabajo'
+# Cookie consent and the "Prime for push" layer are fixed full-viewport overlays: they swallow clicks on the search link, filters and offer cards.
+# The consent click is done in JS because the popup is injected after page load and physical clicks on it are unreliable with undetected Chrome.
+OVERLAY_REMOVE_SCRIPT = "const b=document.querySelector('#didomi-notice-agree-button > span'); if(b)b.click(); document.querySelectorAll('#didomi-host, iframe[title=\"Prime for push\"], .push-wrapper').forEach(e => e.remove()); document.body.classList.remove('didomi-popup-open')"
 
 CSS_SEL_SECURITY_FILTER1 = 'body > div > div > div > div > div > div > p:nth-child(3) > span.break > a'
 # CSS_SEL_SECURITY_FILTER1 = 'body > div > div > div > div > div > div > p:nth-child(3) > span.break > a'
@@ -48,9 +52,14 @@ class InfojobsNavigator(BaseNavigator):
         sleep(2, 4)
         print()
 
+    def dismiss_overlays(self):
+        """Remove the consent/push layers before any click they could intercept."""
+        self.selenium.driver.execute_script(OVERLAY_REMOVE_SCRIPT)
+
     def security_filter(self):
         if self.selenium.usesUndetectedDriver():
             self.accept_cookies()
+            self.dismiss_overlays()
             return
         self.selenium.waitUntilPageIsLoaded()
         sleep(4, 4)
@@ -60,6 +69,7 @@ class InfojobsNavigator(BaseNavigator):
             self.accept_cookies()
         except NoSuchElementException:
             logger.warning("infojobs.cookies.not_accepted", console=yellow('Could not accept cookies'))
+        self.dismiss_overlays()
         self.selenium.waitUntilPageUrlContains('https://www.infojobs.net', 60)
 
     def get_total_results(self, keywords: str) -> int:
@@ -79,21 +89,22 @@ class InfojobsNavigator(BaseNavigator):
     @retry(retries=5, delay=3, exception=NoSuchElementException, raiseException=False)
     def click_next_page(self):
         """Click on next to load next page."""
+        self.dismiss_overlays()
         self.selenium.waitAndClick(CSS_SEL_NEXT_PAGE_BUTTON)
         return True
 
     def load_search_page(self):
-        if self.selenium.getUrl().find('infojobs.net') == -1:
+        if SEARCH_URL not in self.selenium.getUrl():
             logger.info("infojobs.search.page_loading", console='Loading search-jobs page')
-            self.selenium.loadPage('https://www.infojobs.net/')
+            self.selenium.loadPage(SEARCH_URL)
             self.selenium.waitUntilPageIsLoaded()
-        logger.info("infojobs.search.button_click", console='Click on search-jobs button')
-        self.click_on_search_jobs()
+        self.dismiss_overlays()
 
     @retry(retries=10, delay=5, exceptionFnc=lambda self, *args, **kwargs: self.security_filter())
     def click_on_search_jobs(self, forcePageLoad=False):
         if (not forcePageLoad) and self.selenium.getUrl().find('/ofertas-trabajo') > 0:
             return
+        self.dismiss_overlays()
         self.selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
         self.selenium.waitUntilPageIsLoaded()
 
@@ -110,8 +121,10 @@ class InfojobsNavigator(BaseNavigator):
         sleep(0.5, 1)
         self.selenium.sendEscapeKey()
         sleep(0.5, 1)
+        self.dismiss_overlays()
         self.selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
         sleep(1, 2)
+        self.dismiss_overlays()
         self.selenium.waitAndClick('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', scrollIntoView=True)
         sleep(1, 2)
         if self.selenium.getElms('.ij-OfferList-NoResults-title').__len__() > 0:
@@ -124,8 +137,9 @@ class InfojobsNavigator(BaseNavigator):
 
     def filterByRemote(self):
         if len(self.selenium.getElms('.ij-SidebarFilter #check-teleworking--2')) > 0:
+            self.dismiss_overlays()
             self.selenium.waitAndClick('.ij-SidebarFilter #check-teleworking--2', scrollIntoView=True)
-            sleep(1, 2)        
+            sleep(1, 2)
 
     @retry(retries=3, delay=1, exceptionFnc=lambda self, *args, **kwargs: self.scroll_to_bottom())
     def scroll_jobs_list(self, idx):
@@ -149,6 +163,7 @@ class InfojobsNavigator(BaseNavigator):
         
     @retry()
     def click_job_link(self, element: WebElement):
+        self.dismiss_overlays()
         self.selenium.waitAndClick(element)
 
     def get_job_data(self):

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock, patch
-from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DETAIL
+from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DETAIL, SEARCH_URL, OVERLAY_REMOVE_SCRIPT
 
 class TestInfojobsNavigator:
 
@@ -61,21 +61,31 @@ class TestInfojobsNavigator:
     def test_click_next_page(self, navigator, mock_selenium):
         result = navigator.click_next_page()
         assert result is True
+        mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
         mock_selenium.waitAndClick.assert_called_with(CSS_SEL_NEXT_PAGE_BUTTON)
 
-    def test_load_search_page_existing(self, navigator, mock_selenium):
-        mock_selenium.getUrl.return_value = 'https://www.infojobs.net/somepath'
-        with patch.object(navigator, 'click_on_search_jobs') as mock_click:
-            navigator.load_search_page()
-            mock_selenium.loadPage.assert_not_called()
-            mock_click.assert_called_once()
+    @pytest.mark.parametrize('url', [SEARCH_URL, f'{SEARCH_URL}?keyword=python&page=2'])
+    def test_load_search_page_already_loaded(self, navigator, mock_selenium, url):
+        mock_selenium.getUrl.return_value = url
+        navigator.load_search_page()
+        mock_selenium.loadPage.assert_not_called()
+        mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
 
-    def test_load_search_page_new(self, navigator, mock_selenium):
-        mock_selenium.getUrl.return_value = 'google.com'
-        with patch.object(navigator, 'click_on_search_jobs') as mock_click:
-            navigator.load_search_page()
-            mock_selenium.loadPage.assert_called_with('https://www.infojobs.net/')
-            mock_click.assert_called_once()
+    @pytest.mark.parametrize('url', ['google.com', 'https://www.infojobs.net/', 'https://www.infojobs.net/candidate/candidate-login/candidate-login.xhtml'])
+    def test_load_search_page_new(self, navigator, mock_selenium, url):
+        mock_selenium.getUrl.return_value = url
+        navigator.load_search_page()
+        mock_selenium.loadPage.assert_called_once_with(SEARCH_URL)
+        mock_selenium.waitUntilPageIsLoaded.assert_called_once()
+        mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
+
+    @pytest.mark.parametrize('undetected', [True, False])
+    def test_security_filter_dismisses_overlays(self, navigator, mock_selenium, undetected):
+        mock_selenium.usesUndetectedDriver.return_value = undetected
+        with patch('scrapper.navigator.infojobsNavigator.sleep'):
+            with patch.object(navigator, 'accept_cookies'):
+                navigator.security_filter()
+        mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
 
     def test_click_on_search_jobs_already_there(self, navigator, mock_selenium):
         mock_selenium.getUrl.return_value = 'https://www.infojobs.net/ofertas-trabajo'
@@ -85,8 +95,25 @@ class TestInfojobsNavigator:
     def test_click_on_search_jobs_navigate(self, navigator, mock_selenium):
         mock_selenium.getUrl.return_value = 'https://www.infojobs.net/'
         navigator.click_on_search_jobs()
+        mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
         mock_selenium.waitAndClick.assert_called_with('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
         mock_selenium.waitUntilPageIsLoaded.assert_called()
+
+    def test_click_job_link_dismisses_overlays(self, navigator, mock_selenium):
+        link = MagicMock()
+        navigator.click_job_link(link)
+        mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
+        mock_selenium.waitAndClick.assert_called_once_with(link)
+
+    @pytest.mark.parametrize('remote_available,expected_calls', [(True, 3), (False, 2)])
+    def test_load_filtered_search_results_dismisses_overlays(self, navigator, mock_selenium, remote_available, expected_calls):
+        mock_selenium.sendKeys.return_value = True
+        mock_selenium.getElms.side_effect = lambda selector: ['remote'] if 'check-teleworking' in selector and remote_available else []
+        with patch.object(navigator, 'click_on_search_jobs'):
+            with patch.object(navigator, 'dismiss_overlays') as mock_dismiss:
+                with patch('scrapper.navigator.infojobsNavigator.sleep'):
+                    navigator.load_filtered_search_results("python")
+        assert mock_dismiss.call_count == expected_calls
 
     def test_load_filtered_search_results_success(self, navigator, mock_selenium):
         mock_selenium.sendKeys.return_value = True
