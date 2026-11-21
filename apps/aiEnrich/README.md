@@ -11,7 +11,9 @@ This application enriches job data (e.g., extracting salary, technologies); a jo
 
 ## Job selection
 
-Each cycle enriches pending jobs in this priority order: first the pending jobs matching the stored **watched filter configurations** (the same filters used by the web UI), processing the configurations in `ordering ASC`, honoring each configuration's `order` (falling back to `created desc`); the first configuration is drained until it yields nothing, later ones one job at a time (details in `apps/commonlib/README.md`). Finally every other pending job is processed in the same chunked fashion in `created desc`. The `ai_enriched` condition is always removed from a configuration, because this module is what sets that flag, and every candidate must still be unenriched and free of a previous `ai_enrich_error` (and not ignored/discarded/closed). When no watched configurations exist, the module falls back to the plain pending query. The selection lives in the shared `commonlib.aiEnrichRepository`, so every enrichment cycle picks the pending jobs in the same order. The selector logs the watched configurations in order (`enrich.selection_source`, `enrich.config_working`) and each job is logged with its originating configuration (`job.filter_config`, `NONE` when it comes from the fallback queue).
+Pending jobs matching the stored **watched filter configurations** (the same filters used in the web UI) are enriched before the
+rest. Jobs with a previous `ai_enrich_error` or marked ignored/discarded/closed are skipped; when no watched configurations
+exist, all pending jobs are processed. Selection is shared through `commonlib`, so every cycle uses the same filters.
 
 ## Installation
 
@@ -33,7 +35,10 @@ Host prerequisites (Python, uv, npm, Docker) and `.env` setup: [Setup Guide](../
 docker-compose --profile aienrich up -d aienrich
 ```
 
-The worker auto-discovers a MySQL host, an Ollama server and the backend (configured URL → Docker/host fallbacks → LAN scan), so the same command works with Ollama on the host, in a container or on another LAN machine. Workers stay in Docker: to pin a remote server set `AI_ENRICH_OLLAMA_BASE_URL=http://<ollama-ip>:11434` in `.env`, or use `auto` to go straight to the LAN scan. Chains, subnets and the Ollama-side `OLLAMA_HOST`/firewall requirements: [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md).
+The worker auto-discovers a MySQL host, an Ollama server and the backend, so the same command works with Ollama on the host, in
+a container or on another LAN machine. Workers stay in Docker: to pin a remote server set
+`AI_ENRICH_OLLAMA_BASE_URL=http://<ollama-ip>:11434` in `.env`, or use `auto` to go straight to the LAN scan. Chains, subnets
+and the Ollama-side `OLLAMA_HOST`/firewall requirements: [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md).
 
 ### Automated Loop (host)
 
@@ -47,11 +52,14 @@ The worker auto-discovers a MySQL host, an Ollama server and the backend (config
 
 Records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the backend dashboard and the Prometheus exporter read. The shared event/level/`LOG_*` rules are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging); app-specific behaviour:
 
-- **Progress**: `footer()` logs one `ai.batch_completed` record per job with the `n/m` counters and the human line in `console=`, so `docker-compose logs` reads as a progress line while the counters stay queryable.
-- **Idle**: `logIdleWait()` logs `jobs.skipped` (`no_pending_jobs`) or `ai.retry_wait` (`backend_unavailable`) on a `WakeableTimer` instead of sleeping; interactive terminals keep the countdown.
-- **Sleeping backend**: consecutive `ai.unreachable` failures wait for the server instead of exiting, including on a cold start before discovery finds one. A cached server that stops answering is re-resolved (`ollama.resolved_unreachable`) and counted in the `backend_unreachable` metric. Past `AI_ENRICH_MAX_OLLAMA_FAILURES` (default `3`) the worker logs `ollama.waiting_after_failures` once and keeps waiting, so a sleeping LAN server never turns into a container restart storm.
-- **Provider failures mid-job**: retry/defer only happens while the backend is unreachable (the job stays pending and the worker waits). If the backend still answers the probe but produces no reply for a job — typically one that cannot finish within `AI_ENRICH_TIMEOUT_JOB` — the job is marked with `ai_enrich_error` (`job.enrich_failed`) and leaves the pending queue, so a single job that can never be enriched does not block the batch.
-- **Attribution**: each job runs inside `job_log_context(id)`, so related records share `job_id`.
+- **Progress**: `docker-compose logs` shows one progress line per job with `n/m` counters; the counters stay queryable in the JSONL.
+- **Idle**: the worker waits instead of sleeping, keeping the countdown in interactive terminals.
+- **Sleeping backend**: an unreachable Ollama server is waited for instead of exiting. Past `AI_ENRICH_MAX_OLLAMA_FAILURES`
+  (default `3`) consecutive failures the worker keeps waiting rather than restart-looping.
+- **Provider failures mid-job**: a job is deferred while the backend is unreachable. If the backend answers but produces no
+  reply within `AI_ENRICH_TIMEOUT_JOB`, the job is marked with `ai_enrich_error` and leaves the pending queue, so one job that
+  can never be enriched does not block the batch.
+- **Attribution**: related records for a job share its `job_id`.
 
 ## Configuration
 
@@ -63,7 +71,10 @@ Select the LLM provider with `AI_ENRICH_LLM_BACKEND` in your `.env` file. The de
 
 ### Watcher notification
 
-After a job is successfully enriched, `aiEnrich` tells the backend to enqueue the job for watcher matching so the watcher badge updates in the UI. The worker calls the shared `commonlib.watcher_notify.notify_watcher` client, which POSTs to `POST /api/jobs/notify-watcher`. The backend URL is read from `AI_ENRICH_BACKEND_URL` when set; otherwise the worker auto-discovers it by probing `http://backend:8000` (Docker), `http://host.docker.internal:8000`, then `http://localhost:8000`, caching the first reachable one — so it works both on the host and inside Docker Compose without any env changes. The notification is best-effort: if the backend is unreachable the enrichment run continues and only a `watcher.notify_failed` warning is logged; a non-2xx answer logs `watcher.notify_rejected`.
+After a job is successfully enriched, `aiEnrich` tells the backend to enqueue it for watcher matching so the watcher badge
+updates in the UI, via `POST /api/jobs/notify-watcher`. The backend URL is read from `AI_ENRICH_BACKEND_URL` when set; otherwise
+it is auto-discovered as described in [Distributed execution & LAN service auto-discovery](../../READMEs/DISTRIBUTED_EXECUTION.md).
+Notification is best-effort: if the backend is unreachable the enrichment run continues and only a warning is logged.
 
 ```bash
 # Optional override (e.g. when the backend is on another host):
@@ -120,18 +131,26 @@ Get an API key at [openrouter.ai](https://openrouter.ai/keys).
 AI_ENRICH_OPENROUTER_MODEL=google/gemini-2.5-flash-lite   # ~$0.10/$0.40 per M tokens, high rate limits
 ```
 
-**Fallback model: `nex-agi/nex-n2.5-pro:free`**. When the primary model returns invalid/non-JSON output (e.g. a `:free` route refuses with plain text), `aiEnrich` retries the request with this reliable free model in JSON mode (`response_format: {"type": "json_object"}`). Override it with `AI_ENRICH_OPENROUTER_FALLBACK_MODEL` in `.env`.
+**Fallback model: `nex-agi/nex-n2.5-pro:free`**. When the primary model returns invalid or non-JSON output, `aiEnrich` retries
+with this free model. Override it with `AI_ENRICH_OPENROUTER_FALLBACK_MODEL` in `.env`.
 
-Any OpenRouter slug works — `openai/gpt-4o-mini`, `anthropic/claude-3.5-sonnet`, `google/gemini-flash-1.5`, etc. The same `AI_ENRICH_MAX_NEW_TOKENS` and `AI_ENRICH_TIMEOUT_JOB` variables apply. Both the extraction prompt and JSON output format are identical to the Ollama backend.
+Any OpenRouter slug works — `openai/gpt-4o-mini`, `anthropic/claude-3.5-sonnet`, `google/gemini-flash-1.5`, etc. The same `AI_ENRICH_MAX_NEW_TOKENS` and `AI_ENRICH_TIMEOUT_JOB` variables apply.
 
-**Note on JSON output**: The Ollama backend enables native JSON mode (`format: json` in the prompt); OpenRouter does not send `response_format: json_object` to the primary model by default (`json_mode` defaults to `False`) because several free-model routes reject it — the fallback model does use it. The returned content is parsed by the same `rawToJson` parser in `commonlib` (which strips markdown fences, extra text, and fixes common quirks) in both backends.
+**Context window**: set `AI_ENRICH_NUM_CTX` (e.g. `32768`) when your Ollama model supports a bigger window; too small a context is the usual cause of truncated model output.
 
-**Context window**: `aiEnrich` tells Ollama exactly how much context it needs on every request via the `num_ctx` option (auto-bucketed from prompt length + `AI_ENRICH_MAX_NEW_TOKENS`, capped at `32768`). Override with `AI_ENRICH_NUM_CTX` (e.g. `32768`) when your Ollama model supports a bigger window, or the defaults spool extra KV cache. A small `num_ctx` is the usual cause of truncated model output.
+**Oversized inputs**: jobs whose prompt exceeds `AI_ENRICH_INPUT_MAX_LEN` characters (default `30000`) are not sent to the model;
+they are marked with `ai_enrich_error='too long context'` instead. The web UI's **Force Re-enrich** clears the error to retry
+such a job manually.
 
-**Oversized inputs**: jobs whose extraction prompt exceeds `AI_ENRICH_INPUT_MAX_LEN` characters (default `30000`) are not sent to the model — they are marked `ai_enriched=1` with `ai_enrich_error='too long context'` (event `job.context_too_long`) and leave the pending/retry queue. The scrapper logs `job.markdown_too_long` when a scraped description crosses the same cap, which usually means a page DOM change pulled site chrome into the markdown; the job is still inserted. The web UI's **Force Re-enrich** clears the error to retry a job manually.
+**Repetition penalty**: `AI_ENRICH_REPEAT_PENALTY` defaults to `1.0` (disabled); raise it only if you observe a repetition loop.
+The knob is shared with `aiEnrichSkill` (see [aiEnrichSkill](../aiEnrichSkill/README.md#ollama-backend)).
 
-**Repetition penalty**: the Ollama backend sends `repeat_penalty=1.0` by default, i.e. **disabled**. Ollama's `repeat_penalty` penalizes tokens that already appear in the prompt, so any value above `1.0` makes repeating the offer's own technologies more expensive than emitting an empty list: at `1.3` the extraction collapsed to the shortest schema-valid output (`required_technologies: []`, `optional_technologies: []`, `salary: null`) for a large share of jobs. Degenerate repetition loops are handled without it: `num_predict` bounds the reply, and a response truncated at that limit is detected through Ollama's `done_reason="length"` and retried by the strict extraction step. Override with `AI_ENRICH_REPEAT_PENALTY` only if you observe a real loop. The knob is shared with `aiEnrichSkill` and is not module-scoped (see [aiEnrichSkill](../aiEnrichSkill/README.md#ollama-backend)).
+**Strict extraction**: the model's reply is validated before saving; invalid replies are retried
+(`AI_ENRICH_MAX_VALIDATION_RETRIES`, default `1`) and a job whose reply never validates is not enriched rather than saved
+partially. Technology lists are de-duplicated, `modality` is upper-cased, and salary and `hybrid_info` values that are not
+grounded in the offer text are discarded — e.g. a salary with no digits and an arrangement the offer does not state are not
+stored.
 
-**Strict extraction**: the response is validated against `EXTRACTION_SCHEMA` in `extraction_contract.py` (all five fields required, `additionalProperties: false`, `modality` must be `REMOTE`/`HYBRID`/`ON_SITE`, `hybrid_info` is a free-text string or `null`, markdown code fences stripped) and sent to Ollama as a native JSON schema, so the model is constrained server-side instead of relying on prompt wording alone. When validation fails (invalid JSON, missing/extra field, wrong `modality`, or output truncated at the `num_predict` limit) the request is retried once with an explicit "the previous response was invalid" instruction. Tune with `AI_ENRICH_MAX_VALIDATION_RETRIES` (default `1`, so two attempts total; `0` disables the retry). After the last attempt the job is not saved and the reason is logged as `ai.structured_retry` / the final `ai.extract_failed` error, instead of persisting a partial row. Once the response is valid, `commonlib.ai_helpers.validateResult` normalizes it before saving: technology lists are flattened and de-duplicated, `modality` is upper-cased, `hybrid_info` is trimmed (blank becomes `null`, capped at 500 characters, and a value that merely repeats the extraction instructions is discarded as `ai.invalid_hybrid_info` reason `prompt_echo`), and a **salary without any digit is discarded** (logged as `ai.invalid_salary`), so qualitative phrases such as "salario según experiencia" are intentionally not stored. An extraction that yields no technologies at all is logged as `ai.no_technologies`. Technologies are then grounded against the offer text (`technology_grounding.py`), and `hybrid_info` goes through the same deterministic treatment (`hybrid_grounding.py`): the value only survives when every side it names (office/remote) and every number it cites appear in the offer and the claimed office+remote days fit in a week, so the model cannot store invented arrangements such as "2 days in the office and 5 days remote" for a remote-only offer (logged as `ai.invalid_hybrid_info` and saved as `null`). `hybrid_info` therefore only carries the arrangement the offer itself states (e.g. "3 days remote / 2 days office") and stays `null` otherwise.
-
-**Company resolution**: some job boards publish offers without a company (e.g. Tecnoempleo), and the scrapper stores them with the company set to `unspecified` instead of discarding the offer. When a job is enriched and its company is still `unspecified`, a second, independent request (`companyExtractor.py`) asks the same backend for the company only, validated against `COMPANY_SCHEMA` (`{"company": "..." | null}`) and capped to 4000 characters of the job text. If a company is returned it is saved with `AiEnrichRepository.update_unspecified_company()`, which only writes while the company is still `unspecified`, and `AiEnrichRepository.refresh_duplicated_of()` then re-runs the duplicate check with the real company (deferred at scrape time, while the company was generic). When no company can be determined, or the request fails, the job keeps `unspecified` and is enriched normally: a failed guess never marks the job as failed to enrich. Events are logged as `company.resolved`, `company.unresolved`, and `company.resolution_failed`.
+**Company resolution**: offers published without a company are stored as `unspecified`. During enrichment a second request tries
+to resolve the company; when it succeeds the job is updated and its duplicate check re-run with the real company. When no
+company can be determined the job keeps `unspecified` and is still enriched — a failed guess never marks the job as failed.

@@ -23,7 +23,8 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 All agent skills live in `.claude/skills/`. Core ones:
 
 - **`skill-builder`** — Creates new agent skills. Ask the agent to "create a new skill named [skill-name]".
-- **`docs-writer`** — Writes/updates documentation under three rules: short root `README.md`, one canonical source per fact (DRY, links instead of copies) and operations documented through the centralized `scripts/*` entry points.
+- **`docs-writer`** — Writes/updates documentation under four rules: short root `README.md`, one canonical source per fact (DRY, links instead of copies),
+  operations documented through the centralized `scripts/*` entry points and never documenting what the code already says.
 - **`e2e-implementer`** — Creates/reruns Playwright E2E tests in `apps/e2e`.
 - **`test-implementer`** — Implements unit tests following valid architecture and best practices.
 - **`codegraph`** — Queries and maintains the CodeGraph code-intelligence index (`explore`, `node`, `impact`, `affected`); the default for codebase questions.
@@ -56,11 +57,15 @@ Documentation must stay accurate and useful — it is not a changelog. The polic
 
 | Mechanism | Harness | What it does |
 |-----------|---------|--------------|
-| `.claude/rules/documentation-update.md` | all | Canonical policy: fix what is wrong, user-visible/setup changes, high-level scope |
+| `.claude/rules/documentation-update.md` | all | Canonical policy: fix what is wrong, user-visible/setup changes, high-level scope, no implementation detail |
 | `.claude/hooks/docs-sync.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit`) | Reminds once per session when a compose/env/manifest/apps/scripts path is edited |
 | `.opencode/plugins/docs-sync.js` | opencode | Same reminder, printed once on the next bash call |
 
-In practice: fix docs the change made factually wrong; update root `README.md` or `apps/<module>/README.md` only for user-visible features, API/UI contracts and setup/run steps; update this file plus the affected rule for hooks, guards, skills and workflows; skip refactors, tests and internals (use CodeGraph to explore the code). Keep the user-facing READMEs high-level and link here for mechanics.
+In practice: fix docs the change made factually wrong; update root `README.md` or `apps/<module>/README.md` only for user-visible features, UI flows and setup/run steps;
+update this file plus the affected rule for hooks, guards, skills and workflows; skip refactors, tests and internals (use CodeGraph to explore the code).
+Never restate in a README what the code already says — selectors, internal call chains, retry counts and fix history belong in code and tests.
+DDL, API endpoints and JSON payloads are code-owned too: `scripts/mysql/ddl.sql` owns the schema and CodeGraph owns the contracts.
+Keep the user-facing READMEs high-level and link here for mechanics.
 
 `.codegraph/` is generated, machine-local output: refresh it with `codegraph sync`/`codegraph index`, never hand-edit it, and never count it as documentation.
 

@@ -55,7 +55,7 @@ Follow these steps when a scrapper broke because the source page changed its DOM
     - Apply the agreed requirements in `apps/scrapper` following the existing architecture (navigator/service split, feature flags, `.env` config).
     - Keep implementations isolated per fetching technology (Selenium vs Scrapling vs Crawlee); do not share execution paths that assume a specific driver.
     - Update or add parameterized unit tests with mocked HTTP/browser responses (no live servers in CI) and run them via the centralized script: `./scripts/test.sh commonlib scrapper` (Linux/Mac) or `.\scripts\test.bat commonlib scrapper` (Windows).
-    - Update `apps/scrapper/README.md` if selectors, fallbacks, or flags changed.
+    - Keep selectors, fallbacks and their rationale in code and tests. Update `apps/scrapper/README.md` only for a user-visible flag or behaviour change (see `.claude/rules/documentation-update.md`).
 
 ## Usage
 Use this skill when the user reports that "the site changed", "the scraper broke after a redesign", "selectors stopped matching", or asks to "analyze the page changes before fixing the scrapper".

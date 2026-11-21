@@ -135,54 +135,12 @@ For low-latency inference without a local model, set `AI_FORM_PROVIDER=openroute
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/health` | Health check + provider/context status |
-| `POST` | `/api/answer` | Ask a question, get an answer or clarification |
-| `POST` | `/api/answer/follow-up` | Provide additional info after a clarification |
-
-### POST /api/answer
-
-```json
-// Request
-{ "question": "¿Cuántos años de Java tienes?", "provider": "auto" }
-
-// Response (direct answer)
-{ "type": "answer", "text": "Tengo 5 años de experiencia con Java...", "provider": "local", "confidence": "high" }
-
-// Response (clarification needed)
-{ "type": "clarification", "text": "CLARIFICACIÓN: Tu CV no menciona Spring Boot 3.x...", "provider": "local", "confidence": "low" }
-```
-
-### POST /api/answer/follow-up
-
-```json
-// Request
-{ "original_question": "¿Cuántos años de Spring Boot 3?", "clarification_answer": "Sí, desde 2023" }
-
-// Response
-{ "type": "answer", "text": "Tengo 2 años de experiencia con Spring Boot 3.x...", "provider": "local", "confidence": "high" }
-```
+The backend exposes health, answer, follow-up and batch endpoints; see [routes.py](src/aiFormFiller/api/routes.py) and [schemas.py](src/aiFormFiller/api/schemas.py) for the routes and payload shapes.
 
 ## Structured logging
 
-Telemetry goes through `commonlib.observability` instead of `print()`. Because `main.py` builds the app at module level (`app = create_app()`), `configure_logging("aiFormFiller")` runs at module level right after the imports, so the import-time events from `create_app()` land in `aiFormFiller.jsonl` too; every module then binds a logger at module level:
-
-```python
-logger = get_logger("aiFormFiller.routes")
-logger.exception("provider.failed", endpoint="answer", provider=req.provider)
-```
-
-Console output goes to stdout and every record is mirrored to a JSONL file, one JSON object per line, at `data/logs/aiFormFiller.jsonl` relative to the working directory - `apps/aiFormFiller/data/logs/aiFormFiller.jsonl` on the host, since the container mounts the app directory.
-
-| Module | Events |
-|---|---|
-| `main` | `app.created` (info); `app.context_loaded` (info, booleans for the CV and looking-for documents); `app.started` (info, version, host and port) |
-| `api/routes` | `form.answered` (debug, one per request, with the endpoint, provider, clarification flag and the question/answer lengths); `provider.rejected` (warning, a `ValueError` such as a missing API key, becomes HTTP 400); `provider.failed` (exception - records the traceback, becomes HTTP 500) |
-| `context_loader` | `context.cv_loaded`, `context.looking_for_loaded` (info); `context.cv_reloaded`, `context.looking_for_reloaded` (info, the documents are re-read on every request when their mtime changes); `context.file_not_found`, `context.file_empty` (warning) |
-| `models/local_hf` | `model.loading`, `model.loaded` (info, provider and model id; the pipeline is built once and cached) |
-
-The service handles the CV and the LLM conversation, so **nothing from the documents, the prompts, the questions or the model answers is ever logged** - only lengths, counts, flags, provider names and paths. The `provider.failed` record is what makes provider failures visible, because the 500 response body alone does not say which provider broke. Event names, levels, and the shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging); set `LOG_LEVEL=10` for the per-request `form.answered` records.
+Telemetry goes through `commonlib.observability`; see [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging) for event conventions, output layout and shared `LOG_*` variables.
+The service handles the CV and the LLM conversation, so **nothing from the documents, the prompts, the questions or the model answers is ever logged**.
 
 ## Development
 

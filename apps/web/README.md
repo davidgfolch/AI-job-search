@@ -16,54 +16,26 @@ The modern frontend for the AI Job Search application, built with **React**, **T
 - **Responsive Design**: Modern UI using CSS and standard React components.
 - **Real-time Updates**: The watcher badge receives near-realtime updates via Server-Sent Events (`GET /api/jobs/watcher-events`). When the backend creates, updates, or deletes a job, it broadcasts an SSE event and the frontend debounces a stats refetch (~200 ms), so the `+N` / `-M` watcher badge reflects new matches within seconds instead of waiting up to 5 minutes for the next poll.
 
-## Infinite Scroll Pagination
-
-The job list is paginated by the backend (`page` / `size` query params) and `useAutoLoadMore` (`src/pages/viewer/hooks/useAutoLoadMore.ts`) requests the following pages. It is driven by two viewport-relative signals, so it works regardless of font size, screen height, or which element actually scrolls:
-
-- **Fill**: while the end of the list is already on screen there is nothing to scroll to, so the next page is fetched. Every appended page re-checks, which keeps loading until the list overflows the screen or runs out of jobs.
-- **Scroll**: the next page is fetched when the end of the list comes within a `200px` prefetch margin of the bottom of the viewport. This is driven by an `IntersectionObserver` rooted at the viewport (not at the list container) plus a capture-phase `scroll` listener, because Firefox does not report intersection changes caused by a nested container scroll. A `ResizeObserver` on the table re-checks the fill case after a window resize or a font-size change.
-
-Both signals observe a stable `<div className="job-table-sentinel">` rendered after the table. It must not be a table row: appending a page makes the last row a mid-list element, so an observer bound to it would watch the wrong node and pagination would stop after the first page.
-
-Requests are latched, so at most one page is in flight even when several signals fire in the same frame. An empty list is skipped as well: with no rows the end of the list is trivially on screen and its geometry says nothing about whether more is needed. A page that comes back with only already-known jobs would leave the list length unchanged and the fill loop would never end, so `useJobsData.handleLoadMore` also refuses pages past the last one implied by the server `total`.
-
-## Keeping the Selected Job Visible
-
-Moving to the next or previous job — with the ⏮ / ⏭ buttons, the `Alt+P` / `Alt+N` shortcuts, or the auto-selection that follows a state change — selects a row that is usually outside the visible frame. `useScrollSelectedIntoView` (`src/pages/viewer/hooks/useScrollSelectedIntoView.ts`) scrolls `.job-table-container`, the scroll container of the list, by the smallest amount that brings the row back inside it, in both directions and also horizontally.
-
-`Element.scrollIntoView` is deliberately not used: `block: 'nearest'` aligns the row with the nearest edge of the scroll port, and for an upward step that edge is the one the sticky `<thead>` floats over, so the row ends up behind the header and still reads as missing. The hook measures the frame between the bottom of that header and the bottom edge of the list instead. It is a no-op while the row is already readable, it skips lists that report no layout (a hidden tab or a collapsed panel), and it anchors a row taller than the frame right below the header.
-
-Because the scroll happens in a layout effect on the row that React has just committed, it also covers the job a newly loaded page starts at: stepping past the last loaded job appends the next page, selects its first job, and scrolls down to it.
-
 ## Filter Configurations
 
-Filter configurations are named filter sets stored by the backend (`filter_configurations`), listed in the dropdown at the top of the filters panel and optionally pinned as shortcuts. A configuration stores the filters that differ from the defaults; loading it merges them over the current filters and resets the list to page 1. `FilterConfigService` (`src/pages/viewer/hooks/FilterConfigService.ts`) owns loading, saving, exporting and migrating them, and the backend seeds the defaults from `resources/defaultFilterConfigurations.json`.
-
-Deleting jobs (single or bulk) invalidates and refetches the `['jobs']` query like a bulk update does, so the rows that were removed do not linger in the cached page after the confirmation dialog.
+Filter configurations are named filter sets stored by the backend, listed in the dropdown at the top of the filters panel and optionally pinned as shortcuts.
+A configuration stores the filters that differ from the defaults; loading it merges them over the current filters and resets the list to page 1.
 
 ### Auto Select All
 
-The "Auto select all" pill below the Modality box stores `auto_select_all` in the configuration's `filters` JSON, so it is saved, loaded, exported and migrated with the configuration (no backend or database change). `useViewer` arms the selection when the flag is applied and sets the selection mode to `all` once the page-1 results of that filter set are on screen, so a bulk action targets every matching job instead of only the loaded page. Manually deselecting rows is respected until the next configuration or filter change. Only `true` enables it: a configuration that omits the flag, or stores it as `null`, loads with the pill unselected.
-
-`auto_select_all` is configuration behaviour, not a job filter: `useJobsData` keeps it out of the jobs request and out of the `['jobs', …]` query key, so toggling the pill neither refetches nor clears the list.
+The "Auto select all" pill below the Modality box stores `auto_select_all` in the configuration's `filters` JSON, so it is saved, loaded, exported and migrated with the configuration.
+When enabled, a bulk action targets every matching job instead of only the loaded page. Manually deselecting rows is respected until the next configuration or filter change.
+Only `true` enables it: a configuration that omits the flag, or stores it as `null`, loads with the pill unselected.
 
 ### Filter Expanded
 
-The "Filter expanded" pill next to "Auto select all" stores `filter_expanded` in the configuration's `filters` JSON, so it is saved, loaded, exported and migrated with the configuration. Loading a configuration expands the filters panel when the flag is `true` and collapses it otherwise (`null`/absent means collapsed); this covers dropdown entries, pinned configurations and the `Alt+#` shortcuts. Clicking the pill toggles the flag and the panel immediately. The header `Filters ▼/▶` toggle only opens or closes the panel and does not change the saved flag: use the pill to choose what a configuration does when it loads.
+The "Filter expanded" pill next to "Auto select all" stores `filter_expanded` in the configuration's `filters` JSON, so it is saved, loaded, exported and migrated with the configuration.
+Loading a configuration expands the filters panel when the flag is `true` and collapses it otherwise (`null`/absent means collapsed);
+this covers dropdown entries, pinned configurations and the `Alt+#` shortcuts.
+Clicking the pill toggles the flag and the panel immediately. The header `Filters ▼/▶` toggle only opens or closes the panel
+and does not change the saved flag: use the pill to choose what a configuration does when it loads.
 
-The "By company" default configuration ships with `filter_expanded: true`, so it opens the panel without any name-based special case. Its SQL-input focus and `rlike` literal selection stay specific to that configuration.
-
-`filter_expanded` is configuration behaviour, not a job filter: `useJobsData` keeps it out of the jobs request and out of the `['jobs', …]` query key, and `useViewer` keeps it out of the list-reset key, so toggling the pill neither refetches nor clears the list.
-
-### Reloading the Active Filter Configuration
-
-The job list query is keyed by its filters (`['jobs', filters]` in `src/pages/viewer/hooks/useJobsData.ts`), so applying the configuration that is already in effect produces the same query key. React Query then keeps serving the cached page for `staleTime` (30 s) and nothing refetches, which left the list showing the jobs it already had while the `+N` watcher badge was counting the new ones. Applying a *different* configuration changes the key, so it fetches — which is why switching away and back used to be the only way to see the new jobs.
-
-`Filters.tsx` therefore compares what the configuration would produce against the filters already applied, and reloads the current page when nothing changes. The comparison is done on the merged result rather than on the stored configuration, because a configuration only saves the filters that differ from the defaults and inherits the rest from the current ones.
-
-The reload is `useJobsData.reloadCurrentPage`, which calls `refetch()` on the observed query. It deliberately does **not** use `refreshJobs` / `hardRefresh`, whose `queryClient.resetQueries({ queryKey: ['jobs'] })` resets *every* filter set in the cache: the previously active configuration gets refetched too and can come back as the visible list. `refetch()` touches one query, so no other configuration can be resurrected.
-
-The selected job is kept: reloading is not a reset, so the detail panel stays on the job it had. The watcher badge for the configuration is cleared at the same time by `useFilterWatcher.resetWatcher`, which keeps the badge and the refreshed list consistent. Loading a configuration from a page deeper than the first already changes the query key, so no reload is triggered there.
+The "By company" default configuration ships with `filter_expanded: true`, so it opens the panel, focuses the SQL input and selects the `rlike` literal.
 
 ### Watcher Badge
 
@@ -72,13 +44,18 @@ Each watched filter configuration shows a badge next to its name in the configur
 - `+{N}` (green) — N new jobs matching the filter since the last check cutoff
 - `-{N}` (gray) — N jobs that left the filter or were deleted since the last check
 
-The badge reads from `GET /api/jobs/watcher-stats`, which queries the `watcher_match` table (O(1) count instead of rebuilding MySQL views). On any job write through the backend API, an SSE event is broadcast (`GET /api/jobs/watcher-events`) and the frontend triggers a debounced refetch (~200 ms), so the badge stays near-realtime. A 5-minute poll runs as a safety net if the SSE connection drops.
+The badge reads from `GET /api/jobs/watcher-stats`. On any job write through the backend API, an SSE event is broadcast
+(`GET /api/jobs/watcher-events`) and the frontend triggers a debounced refetch (~200 ms), so the badge stays near-realtime.
+A 5-minute poll runs as a safety net if the SSE connection drops.
 
-Every configuration carries **its own cutoff**, sent as a `from_<config_id>` param and honoured as such by the backend. The cutoff is the instant up to which the user has already seen the matches ("seen up to now"):
+Every configuration carries **its own cutoff**, sent as a `from_<config_id>` param and honoured as such by the backend.
+The cutoff is the instant up to which the user has already seen the matches ("seen up to now"):
 
 - The global start time (restored from the persisted last check) is the cutoff of every configuration until one of them is reloaded.
-- Reloading a configuration (`useFilterWatcher.resetWatcher`) moves **only that configuration's** cutoff to the current instant and clears its badge. The other configurations keep their own cutoffs, so reloading one does not change what the others report.
-- The count returned by the backend is shown as it is — it is never masked out. A reloaded configuration therefore starts counting (and notifying) again as soon as a new match arrives, instead of staying muted.
+- Reloading a configuration moves **only that configuration's** cutoff to the current instant and clears its badge.
+  The other configurations keep their own cutoffs, so reloading one does not change what the others report.
+- The count returned by the backend is shown as it is — it is never masked out. A reloaded configuration therefore starts
+  counting (and notifying) again as soon as a new match arrives, instead of staying muted.
 
 ## Settings Page
 

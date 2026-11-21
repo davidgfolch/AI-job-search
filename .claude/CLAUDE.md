@@ -215,7 +215,10 @@ docker-compose --profile ollama --profile aienrich up -d
 
 ## Documentation Policy (fix if wrong, high-level only)
 
-Documentation is not a changelog: fix docs the change made wrong, and update the user-facing READMEs only for user-visible features, API/UI contracts and setup/run steps. The policy is defined once in `.claude/rules/documentation-update.md` and described in [READMEs/AGENTIC_SDLC.md](../READMEs/AGENTIC_SDLC.md#documentation-policy-fix-if-wrong-high-level-only); don't duplicate mechanics across `README.md`, `AGENTS.md` and this file.
+Documentation is not a changelog: fix docs the change made wrong, and update the user-facing READMEs only for user-visible features, UI flows and setup/run steps.
+SQL DDL, API endpoints and JSON payloads are code-owned (`scripts/mysql/ddl.sql`, route handlers, CodeGraph) — link to the source rather than copying them.
+The policy is defined once in `.claude/rules/documentation-update.md` and described in [READMEs/AGENTIC_SDLC.md](../READMEs/AGENTIC_SDLC.md#documentation-policy-fix-if-wrong-high-level-only);
+don't duplicate mechanics across `README.md`, `AGENTS.md` and this file.
 
 ## Database Safety (ask before any write)
 

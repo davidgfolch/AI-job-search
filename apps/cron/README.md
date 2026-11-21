@@ -8,29 +8,14 @@ Python 3.12, uv, pytest, MongoDB (`pymongo`), MySQL (`mysql-connector-python`)
 
 ## How it works
 
-The scheduler runs in a loop, checking every 60s whether each registered job is due to run based on its cadency. Cadency is parsed from strings like `1h`, `30m`, `3600s`. Job state (last run, cursor position, error status) is persisted in MongoDB's `cron_state` collection.
+The scheduler runs in a loop, checking whether each registered job is due to run based on its cadency.
 
-On first tick after container restart, all jobs run immediately (ignoring cadency) so backfills start without waiting.
+On first tick after container restart, all jobs run immediately (ignoring cadency) so backfills start without waiting. Failed jobs are retried on the next tick.
 
 ## Structured logging
 
-Telemetry goes through `commonlib.observability` instead of `print()`. `run()` calls `configure_logging("cron")` as its first statement, before the Mongo provider is built, because `structlog` freezes the level on the first log call; every module then binds a logger at module level:
-
-```python
-logger = get_logger("cron.scheduler")
-logger.info("cron.job_started", job=job.name)
-```
-
-Console output goes to stdout and every record is mirrored to a JSONL file, one JSON object per line, at `data/logs/cron.jsonl` relative to the working directory — `apps/cron/data/logs/cron.jsonl` on the host, since the container mounts the app directory.
-
-| Module | Events |
-|---|---|
-| `main` | `cron.started`, `cron.jobs_registered` (info); `cron.tick` (info); `cron.job_registered` (debug, one per job) |
-| `scheduler` | `cron.job_started`, `cron.job_completed` (info); `cron.job_failed` (exception — records the traceback, the job name and the error message) |
-| `jobs/company_salary_history/job` | `cron.scan_started`, `cron.scan_completed` (info); `cron.scan_no_records` (debug) |
-| `jobs/company_salary_history/scanner` | `cron.scanner.jobs_fetched`, `cron.scanner.records_saved`, `cron.scanner.updates_checked`, `cron.scanner.updates_saved` (info); `cron.scanner.no_new_jobs`, `cron.scanner.salary_recorded` (debug, one per changed job) |
-
-Mongo URIs and other env values are never logged — only derived counts, cadencies and job ids. `cron.job_failed` is the event to alert on: job failures are recorded at `error` level and the scheduler still persists `status=error` in `cron_state`, so the job is retried on the next tick. Event names, levels, and the shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
+Telemetry goes through `commonlib.observability`; see [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging) for event conventions and output layout.
+Mongo URIs and other env values are never logged.
 
 ## Configuration
 
@@ -38,7 +23,7 @@ Mongo URIs and other env values are never logged — only derived counts, cadenc
 |---|---|---|
 | `MONGO_URI` | `mongodb://root:rootPass@localhost:27017/` | MongoDB URI |
 | `MONGO_DATABASE` | `jobs` | MongoDB database name |
-| `CRON_SALARY_CADENCY` | `1h` | Run interval for the salary history scanner |
+| `CRON_SALARY_CADENCY` | `1h` | Run interval for the salary history scanner; accepts `1h`, `30m`, `3600s` |
 | `COMMONLIB_DB_HOST` | `127.0.0.1` | MySQL host for job data |
 
 Shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging).
