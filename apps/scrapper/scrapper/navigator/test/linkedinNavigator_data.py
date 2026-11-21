@@ -14,3 +14,19 @@ CHECK_RESULTS_CASES = [
 ]
 
 EASY_APPLY_CASES = [(["yes"], True), ([], False)]
+
+GET_TOTAL_RESULTS_CASES = [
+    ('3 resultados', 3),  # exact, Spanish
+    ('12 results', 12),  # exact, English
+    ('100+ results', 100),  # legacy capped header
+    ('Más de 99 resultados', 99),  # new localized "more than" header
+    ('Mǭs de 99 resultados', 99),  # mangled capture seen in the production log
+    ('More than 99 results', 99),
+    ('Plus de 99 résultats', 99),
+    ('Mehr als 99 Ergebnisse', 99),
+    ('Mais de 99 vagas', 99),
+    ('超过99个结果', 99),
+    ('Más de 1.000 resultados', 1000),  # grouped thousands, Spanish
+    ('More than 1,000 results', 1000),  # grouped thousands, English
+    ('Nenhum resultado', False),  # no digits: retries, then the cycle is skipped
+]

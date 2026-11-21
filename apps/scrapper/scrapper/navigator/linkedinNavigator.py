@@ -25,6 +25,15 @@ def job_id_from_componentkey(componentkey: str) -> str:
         raise NoSuchElementException(f'No job id in componentkey {componentkey}')
     return match.group(1)
 
+TOTAL_RESULTS_RE = re.compile(r'\d{1,3}(?:[.,\s]\d{3})+|\d+')
+
+
+def extract_total_results(header: str) -> int:
+    match = TOTAL_RESULTS_RE.search(header or '')
+    if not match:
+        raise NoSuchElementException(f'No result count in header {header!r}')
+    return int(re.sub(r'\D', '', match.group(0)))
+
 CSS_SEL_LOGIN_USER = 'input[type=email]'
 CSS_SEL_LOGIN_PWD = 'input[type=password]'
 CSS_SEL_LOGIN_BUTTON = 'button[type=button]'  # login form is rendered twice, the submit is the last button of the last copy
@@ -112,12 +121,12 @@ class LinkedinNavigator(BaseNavigator):
 
     @retry(exception=NoSuchElementException, retries=6, delay=3, raiseException=False)
     def get_total_results(self, keywords: str, location, f_TPR, query_mode) -> int:
-        total = self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND).split(' ')[0].replace('+', '')
+        total = extract_total_results(self.selenium.getText(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND))
         printHR(green)
         logger.info("linkedin.results_found", total=total, keywords=keywords, query_mode=query_mode, location=location, last=f_TPR,
                     console=green(join(f'{total} total results for search: {keywords}', f'(query_mode={query_mode}, location={location}, last={f_TPR})')))
         printHR(green)
-        return int(total.replace('+', ''))
+        return total
 
     def scroll_jobs_list(self, idx) -> WebElement:
         cards = self._get_cards(idx)

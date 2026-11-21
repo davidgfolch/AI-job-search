@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.navigator.linkedinNavigator import CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_CARD, CSS_SEL_NEXT_PAGE_BUTTON
 from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
-from scrapper.navigator.test.linkedinNavigator_data import CHECK_RESULTS_CASES, EASY_APPLY_CASES, LOGIN_SUBMIT_CASES
+from scrapper.navigator.test.linkedinNavigator_data import CHECK_RESULTS_CASES, EASY_APPLY_CASES, GET_TOTAL_RESULTS_CASES, LOGIN_SUBMIT_CASES
 
 TEST_URL = "http://url"
 
@@ -78,11 +78,11 @@ class TestLinkedinNavigator:
         result = navigator.check_results("key", "url", "loc", "tpr", "keywords")
         assert result is expected
 
-    def test_get_total_results(self, navigator, mock_selenium):
-        mock_selenium.getText.return_value = "100+ results"
-        result = navigator.get_total_results("key", "loc", "tpr", "keywords")
-        assert result == 100
-        mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
+    @patch('commonlib.decorator.retry.sleep')
+    @pytest.mark.parametrize("header_text, expected", GET_TOTAL_RESULTS_CASES)
+    def test_get_total_results(self, mock_retry_sleep, navigator, mock_selenium, header_text, expected):
+        mock_selenium.getText.return_value = header_text
+        assert navigator.get_total_results("key", "loc", "tpr", "keywords") == expected
 
     @patch('commonlib.decorator.retry.sleep')
     def test_get_total_results_missing_header_returns_false(self, mock_retry_sleep, navigator, mock_selenium):
