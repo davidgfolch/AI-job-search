@@ -110,10 +110,12 @@ class InfojobsNavigator(BaseNavigator):
 
     def waitForSecurityFilterUserResolved(self):
         logger.warning("infojobs.auth.security_filter_pending", console=yellow('Waiting for security filter to be resolved'))
+        self.dismiss_overlays()
 
     @retry(retries=50, delay=2, exceptionFnc=lambda self, *args, **kwargs: self.waitForSecurityFilterUserResolved())
     def load_filtered_search_results(self, keywords: str):
         self.click_on_search_jobs()
+        self.dismiss_overlays()
         if not self.selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2), clear=True):
             logger.warning("infojobs.search.keyword_set_failed", keywords=keywords, console=yellow('Could not set search keyword, reloading search page'))
             self.click_on_search_jobs(forcePageLoad=True)

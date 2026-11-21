@@ -105,7 +105,12 @@ class TestInfojobsNavigator:
         mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
         mock_selenium.waitAndClick.assert_called_once_with(link)
 
-    @pytest.mark.parametrize('remote_available,expected_calls', [(True, 3), (False, 2)])
+    def test_wait_for_security_filter_dismisses_overlays(self, navigator):
+        with patch.object(navigator, 'dismiss_overlays') as mock_dismiss:
+            navigator.waitForSecurityFilterUserResolved()
+        mock_dismiss.assert_called_once()
+
+    @pytest.mark.parametrize('remote_available,expected_calls', [(True, 4), (False, 3)])
     def test_load_filtered_search_results_dismisses_overlays(self, navigator, mock_selenium, remote_available, expected_calls):
         mock_selenium.sendKeys.return_value = True
         mock_selenium.getElms.side_effect = lambda selector: ['remote'] if 'check-teleworking' in selector and remote_available else []
