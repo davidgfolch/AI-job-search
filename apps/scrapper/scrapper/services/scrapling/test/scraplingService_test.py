@@ -171,6 +171,7 @@ class TestScraplingService:
         service, _ = _make_service(mock_session_cls)
         kwargs = service._build_kwargs()
         assert "proxy" not in kwargs
+        assert "new_context" not in kwargs
 
     def test_build_kwargs_registers_page_setup(self, mock_session_cls):
         service, _ = _make_service(mock_session_cls, proxies=[])

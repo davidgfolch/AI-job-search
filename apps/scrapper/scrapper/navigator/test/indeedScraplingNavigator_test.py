@@ -99,6 +99,19 @@ class TestIndeedScraplingNavigator:
             assert url == "https://example.com/job"
             assert html == "<b>Description</b>"
 
+    @pytest.mark.parametrize("pay", [
+        pytest.param("De 25.000 € a 40.000 € al año", id="euro-range"),
+        pytest.param("Hasta 35.000 € al año", id="up-to-euros"),
+        pytest.param("46,000", id="bare-number"),
+    ])
+    def test_get_job_data_structured_summary_salary(self, pay):
+        navigator = _make_navigator()
+        page = _new_dom_page()
+        original_css = page.css.side_effect
+        page.css.side_effect = lambda sel: MockSelector(pay) if "structured-job-summary" in sel else original_css(sel)
+        navigator.current_page = page
+        assert navigator.get_job_data()[3] == pay
+
     def test_get_job_data_without_salary(self):
         mock_service = create_mock_scrapling_service()
         with pytest.MonkeyPatch.context() as m:
