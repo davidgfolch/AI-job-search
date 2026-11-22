@@ -56,11 +56,14 @@ def _save(entries: dict) -> None:
         logger.debug("discovery.cache_write_failed", path=str(path), error=str(e))
 
 
-def read_entry(kind: str) -> dict | None:
-    """Fresh cache entry for `kind` (`{"host": ...}`), or None when missing/expired."""
+def read_entry(kind: str, *, ignore_ttl: bool = False) -> dict | None:
+    """Cache entry for `kind` (`{"host": ...}`), or None when missing/expired.
+    `ignore_ttl` is for liveness probes that verify the host directly."""
     entry = _load().get(kind)
     if not isinstance(entry, dict):
         return None
+    if ignore_ttl:
+        return entry
     ttl = POSITIVE_TTL if entry.get("host") else NEGATIVE_TTL
     try:
         age = time.time() - float(entry.get("ts", 0))

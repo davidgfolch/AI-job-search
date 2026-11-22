@@ -3,11 +3,11 @@
 Returns exit code 0 if the configured backend (Ollama or OpenRouter) is reachable, 1 otherwise.
 Used by Docker HEALTHCHECK to mark container as unhealthy when the backend is down.
 
-The host discovery already found is probed first: the workers resolve Ollama at
-runtime (`resolve_ollama_url`), so a healthcheck limited to the static fallback
+The last discovered host is probed first: the workers resolve Ollama at runtime
+(`resolve_ollama_url`), so a healthcheck limited to the static fallback
 candidates would report a working worker as unhealthy whenever the server lives
-on the LAN. Only the cached entry is read here — no scan is started from a
-healthcheck."""
+on the LAN. The cached host is used even when its TTL expired — idle workers do
+not refresh it, and the HTTP probe verifies it anyway. No scan is started here."""
 import sys
 import requests
 
@@ -20,8 +20,8 @@ OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 def discovered_ollama_url() -> str | None:
-    """The cached discovery host, when there is a fresh one."""
-    entry = read_entry("ollama") or {}
+    """The last discovered Ollama host, if any (the HTTP probe checks it)."""
+    entry = read_entry("ollama", ignore_ttl=True) or {}
     host = entry.get("host")
     return f"http://{host}:{DEFAULT_OLLAMA_PORT}" if host else None
 
