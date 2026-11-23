@@ -83,6 +83,7 @@ The column is in [scripts/mysql/ddl.sql](../../scripts/mysql/ddl.sql) and the st
 - `AI_ENRICHSKILL_LEARNING_PATH_SEARCH` — Fill missing tiers with DuckDuckGo results verified by loading each page (default: `True`)
 - `AI_ENRICHSKILL_LEARNING_PATH_SEARCH_RESULTS` — Search results inspected per missing tier (default: `10`)
 - `AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES` — Consecutive failures before the idle pass backs off (default: `3`)
+- `AI_ENRICHSKILL_LEARNING_PATH_RETRY_SECONDS` — Backoff duration before one retry; a failed trial restarts the wait (default: `900`, 15 minutes)
 - `AI_ENRICHSKILL_LEARNING_DOMAINS` — Comma-separated preferred domains that rank ahead of other verified pages (defaults to a
   built-in documentation/course/video list). A URL outside this list is still accepted when its loaded content is verified as
   being about the skill.

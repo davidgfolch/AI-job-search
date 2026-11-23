@@ -28,6 +28,7 @@ from ..config import (
     get_learning_path_search_enabled,
     get_learning_path_search_results,
     get_learning_path_max_failures,
+    get_learning_path_retry_seconds,
     get_learning_domains,
     get_learning_path_system_prompt,
     DEFAULT_LEARNING_DOMAINS,
@@ -123,6 +124,7 @@ def test_get_learning_path_search_enabled_false(mock_env):
     (get_learning_path_timeout, "AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT", "9", 9, "5"),
     (get_learning_path_search_results, "AI_ENRICHSKILL_LEARNING_PATH_SEARCH_RESULTS", "7", 7, "10"),
     (get_learning_path_max_failures, "AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES", "4", 4, "3"),
+    (get_learning_path_retry_seconds, "AI_ENRICHSKILL_LEARNING_PATH_RETRY_SECONDS", "60", 60, "900"),
 ])
 @patch("aiEnrichSkill.config.getEnv")
 def test_learning_path_int_getters(mock_env, getter, env_name, raw, expected, default):

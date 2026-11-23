@@ -94,6 +94,10 @@ def get_learning_path_max_failures() -> int:
     return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES", "3"))
 
 
+def get_learning_path_retry_seconds() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_RETRY_SECONDS", "900"))
+
+
 DEFAULT_LEARNING_DOMAINS = (
     "developer.mozilla.org", "docs.python.org", "python.org", "dev.java", "docs.oracle.com",
     "go.dev", "golang.org", "rust-lang.org", "doc.rust-lang.org", "typescriptlang.org",

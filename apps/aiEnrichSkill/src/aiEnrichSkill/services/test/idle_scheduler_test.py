@@ -81,3 +81,54 @@ def test_should_not_run_when_breaker_open(_enabled):
     scheduler = LearningPathScheduler(max_failures=1)
     scheduler.note_failure()
     assert should_run_learning_paths(scheduler) is False
+
+
+@patch("aiEnrichSkill.services.idle_scheduler.time.monotonic")
+@pytest.mark.parametrize("elapsed, expected_ready", [
+    pytest.param(0, False, id="before_window"),
+    pytest.param(899, False, id="just_before_window"),
+    pytest.param(900, True, id="at_window"),
+], ids=lambda value: None)
+def test_scheduler_retries_after_cooldown(mock_time, elapsed, expected_ready):
+    mock_time.return_value = 1000.0
+    scheduler = LearningPathScheduler(max_failures=1, retry_seconds=900)
+    scheduler.note_failure()
+    mock_time.return_value = 1000.0 + elapsed
+    assert scheduler.ready() is expected_ready
+
+
+@patch("aiEnrichSkill.services.idle_scheduler.logger")
+@patch("aiEnrichSkill.services.idle_scheduler.time.monotonic", return_value=1000.0)
+def test_scheduler_logs_retry_once_per_open_window(_mock_time, mock_logger):
+    scheduler = LearningPathScheduler(max_failures=1, retry_seconds=0)
+    scheduler.note_failure()
+    assert scheduler.ready() is True
+    assert scheduler.ready() is True
+    retry = [c for c in mock_logger.info.call_args_list if c.args and c.args[0] == "skill.learning_path.retry"]
+    assert len(retry) == 1
+
+
+@patch("aiEnrichSkill.services.idle_scheduler.time.monotonic")
+def test_failed_trial_reopens_breaker_with_fresh_window(mock_time):
+    mock_time.return_value = 1000.0
+    scheduler = LearningPathScheduler(max_failures=1, retry_seconds=900)
+    scheduler.note_failure()
+    mock_time.return_value = 1900.0
+    assert scheduler.ready() is True
+    mock_time.return_value = 2000.0
+    assert scheduler.note_failure() is True
+    mock_time.return_value = 2800.0
+    assert scheduler.ready() is False
+    mock_time.return_value = 2900.0
+    assert scheduler.ready() is True
+
+
+@patch("aiEnrichSkill.services.idle_scheduler.time.monotonic", return_value=1000.0)
+def test_success_after_retry_resets_failure_count(_mock_time):
+    scheduler = LearningPathScheduler(max_failures=2, retry_seconds=0)
+    scheduler.note_failure()
+    scheduler.note_failure()
+    assert scheduler.ready() is True
+    scheduler.note_success()
+    assert scheduler.note_failure() is False
+    assert scheduler.ready() is True
