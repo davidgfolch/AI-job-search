@@ -85,6 +85,7 @@ export default function SkillsList({ skills, allJobSkills }: SkillsListProps) {
                         key={skill}
                         skill={skill}
                         description={skillObj?.description}
+                        learningPath={skillObj?.learningPath}
                         isInLearnList={isInLearnList(skill)}
                         onToggle={toggleSkill}
                         onViewDetail={handleViewDetail}

@@ -47,10 +47,10 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
               </div>
               {skillLearningPath.map((link, i) => (
                 <div key={i} className="link-item">
+                  <span className="link-source" title={`Source: ${link.source}`}>{link.source}</span>
                   <a href={link.url} target="_blank" rel="noopener noreferrer" className="link-url" style={{ textDecoration: 'underline', color: 'var(--primary-color)' }}>
                     {link.url}
                   </a>
-                  <span className="link-source" title={`Source: ${link.source}`}>{link.source}</span>
                   <button
                     className="btn-icon delete link-remove"
                     onClick={() => handleRemoveLink(i)}
@@ -67,8 +67,8 @@ export const SkillLearningPathField: React.FC<SkillLearningPathFieldProps> = ({
         <div className="links-list">
           {learningPath.map((link, i) => (
             <div key={i} className="link-item">
-              <span className="link-url">{link.url}</span>
               <span className="link-source" title={`Source: ${link.source}`}>{link.source}</span>
+              <span className="link-url">{link.url}</span>
               <button
                 className="btn-icon delete"
                 onClick={() => handleRemoveLink(i)}
