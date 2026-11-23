@@ -132,3 +132,18 @@ def test_success_after_retry_resets_failure_count(_mock_time):
     scheduler.note_success()
     assert scheduler.note_failure() is False
     assert scheduler.ready() is True
+
+
+@patch("aiEnrichSkill.services.idle_scheduler.time.monotonic")
+@pytest.mark.parametrize("elapsed, expected_skip", [
+    pytest.param(0, True, id="before_window"),
+    pytest.param(899, True, id="just_before_window"),
+    pytest.param(900, False, id="at_window"),
+], ids=lambda value: None)
+def test_failed_skill_is_skipped_until_cooldown(mock_time, elapsed, expected_skip):
+    mock_time.return_value = 1000.0
+    scheduler = LearningPathScheduler(retry_seconds=900)
+    scheduler.note_failed_skill("Galting")
+    mock_time.return_value = 1000.0 + elapsed
+    assert scheduler.should_skip("Galting") is expected_skip
+    assert scheduler.should_skip("Bicep") is False

@@ -19,6 +19,10 @@ collector = MetricsCollector()
 MODULE = "aiEnrichSkillLearningPath"
 
 
+class UnverifiableLearningPath(Exception):
+    """One skill has no verifiable links: rotate it out instead of stalling the whole backfill."""
+
+
 def generate_learning_path_ollama(skill_name: str, context: str = "", ollama_base_url: Optional[str] = None) -> List[str]:
     messages = build_learning_path_prompt_messages(skill_name, context)
     prompt = f"{messages[0]['content']}\n\n{messages[1]['content']}"
@@ -39,12 +43,16 @@ def generate_learning_path_ollama(skill_name: str, context: str = "", ollama_bas
 def enrich_learning_paths(repository: SkillRepository, ollama_base_url: Optional[str] = None, scheduler: Optional[LearningPathScheduler] = None) -> int:
     """Low-priority backfill: starts only while the model is free and yields as soon as priority work appears."""
     scheduler = scheduler or LearningPathScheduler()
-    names = repository.fetch_pending_learning_path_names(get_learning_path_batch())
-    if not names:
+    batch = get_learning_path_batch()
+    names = repository.fetch_pending_learning_path_names(max(batch * 5, 10))
+    candidates = [name for name in names if not scheduler.should_skip(name)]
+    if not candidates:
         scheduler.note_stopped()
         return 0
     updated = 0
-    for name in names:
+    for name in candidates:
+        if updated >= batch:
+            break
         if repository.has_pending_enrichment():
             logger.info("skill.learning_path.yielded", skill=name, reason="priority_work")
             scheduler.note_stopped()
@@ -59,15 +67,19 @@ def enrich_learning_paths(repository: SkillRepository, ollama_base_url: Optional
                 urls = generate_learning_path_ollama(name, fetch_skill_context_safe(repository, name), ollama_base_url)
             learning_path = validate_learning_paths(name, urls)
             if not learning_path:
-                # Nothing verifiable: leave the column untouched and count it as a failure so a
-                # silent model or an unreachable search backs off instead of retrying every idle cycle.
-                raise ValueError("no verified learning path links")
+                raise UnverifiableLearningPath()
             repository.save_learning_path(name, learning_path)
             duration = time.time() - start
             collector.record_job(MODULE, duration, True)
             logger.info("skill.learning_path.saved", skill=name, links=len(learning_path), duration=duration)
             scheduler.note_success()
             updated += 1
+        except UnverifiableLearningPath:
+            duration = time.time() - start
+            collector.record_job(MODULE, duration, False)
+            collector.record_error(MODULE, "no verified learning path links")
+            logger.info("skill.learning_path.skipped", skill=name, reason="no_verified_links", retry_after_seconds=scheduler.retry_seconds)
+            scheduler.note_failed_skill(name)
         except Exception as exc:
             duration = time.time() - start
             collector.record_job(MODULE, duration, False)

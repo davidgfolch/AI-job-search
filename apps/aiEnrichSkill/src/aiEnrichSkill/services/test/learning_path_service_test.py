@@ -93,38 +93,36 @@ def test_enrich_learning_paths_defers_when_the_model_is_busy(mock_generate, repo
 @patch("aiEnrichSkill.services.learning_path_service.generate_learning_path_ollama", side_effect=RuntimeError("model down"))
 def test_enrich_learning_paths_records_failure_and_stops(_generate, mock_collector, repository):
     repository.fetch_pending_learning_path_names.return_value = ["Python", "Docker"]
-    scheduler = MagicMock()
-    scheduler.note_failure.side_effect = lambda: True
+    scheduler = LearningPathScheduler(max_failures=1)
     assert enrich_learning_paths(repository, scheduler=scheduler) == 0
     repository.save_learning_path.assert_not_called()
     mock_collector.record_job.assert_called_once()
     assert mock_collector.record_job.call_args[0][0] == MODULE
     assert mock_collector.record_job.call_args[0][2] is False
     mock_collector.record_error.assert_called_once_with(MODULE, "model down")
-    scheduler.note_failure.assert_called_once()
+    assert scheduler.ready() is False
 
 
 @patch("aiEnrichSkill.services.learning_path_service.collector")
 @patch("aiEnrichSkill.services.learning_path_service.validate_learning_paths", return_value=[])
 @patch("aiEnrichSkill.services.learning_path_service.generate_learning_path_ollama", return_value=[])
 def test_enrich_learning_paths_does_not_persist_empty_result(_generate, _validate, mock_collector, repository):
-    scheduler = MagicMock()
-    scheduler.note_failure.return_value = True
+    scheduler = LearningPathScheduler()
     assert enrich_learning_paths(repository, scheduler=scheduler) == 0
     repository.save_learning_path.assert_not_called()
     assert mock_collector.record_job.call_args[0][2] is False
-    scheduler.note_failure.assert_called_once()
+    assert scheduler.should_skip("Python") is True
 
 
 @patch("aiEnrichSkill.services.learning_path_service.collector")
 @patch("aiEnrichSkill.services.learning_path_service.validate_learning_paths", return_value=[])
 @patch("aiEnrichSkill.services.learning_path_service.generate_learning_path_ollama", return_value=["https://docs.python.org/"])
 def test_enrich_learning_paths_runs_search_even_when_model_returns_no_usable_links(_generate, _validate, mock_collector, repository):
-    scheduler = MagicMock()
-    scheduler.note_failure.return_value = True
+    scheduler = LearningPathScheduler()
     assert enrich_learning_paths(repository, scheduler=scheduler) == 0
     _validate.assert_called_once_with("Python", ["https://docs.python.org/"])
     repository.save_learning_path.assert_not_called()
+    assert scheduler.should_skip("Python") is True
 
 
 @pytest.mark.parametrize("names, expected_calls", [
@@ -136,6 +134,20 @@ def test_enrich_learning_paths_runs_search_even_when_model_returns_no_usable_lin
 @patch("aiEnrichSkill.services.learning_path_service.fetch_skill_context_safe", return_value="")
 def test_enrich_learning_paths_processes_each_pending_name(_context, mock_generate, _validate, repository, names, expected_calls):
     repository.fetch_pending_learning_path_names.return_value = names
-    assert enrich_learning_paths(repository, scheduler=LearningPathScheduler()) == expected_calls
+    with patch("aiEnrichSkill.services.learning_path_service.get_learning_path_batch", return_value=expected_calls):
+        assert enrich_learning_paths(repository, scheduler=LearningPathScheduler()) == expected_calls
     assert mock_generate.call_count == expected_calls
     assert repository.save_learning_path.call_count == expected_calls
+
+
+@patch("aiEnrichSkill.services.learning_path_service.collector")
+@patch("aiEnrichSkill.services.learning_path_service.validate_learning_paths", side_effect=[[], ["https://docs.python.org/"]])
+@patch("aiEnrichSkill.services.learning_path_service.generate_learning_path_ollama", return_value=["https://docs.python.org/"])
+@patch("aiEnrichSkill.services.learning_path_service.fetch_skill_context_safe", return_value="")
+def test_unverifiable_skill_rotates_to_next_candidate(_context, _generate, _validate, _collector, repository):
+    repository.fetch_pending_learning_path_names.return_value = ["Galting", "Bicep"]
+    scheduler = LearningPathScheduler(retry_seconds=900)
+    assert enrich_learning_paths(repository, scheduler=scheduler) == 1
+    repository.save_learning_path.assert_called_once_with("Bicep", ["https://docs.python.org/"])
+    assert scheduler.should_skip("Galting") is True
+    assert scheduler.ready() is True

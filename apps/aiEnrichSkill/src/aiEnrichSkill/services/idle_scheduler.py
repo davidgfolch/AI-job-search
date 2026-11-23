@@ -25,6 +25,7 @@ class LearningPathScheduler:
         self._open = False
         self._opened_at: float | None = None
         self._state = None
+        self._failed_skills: dict[str, float] = {}
 
     def note_deferred(self, reason: str) -> None:
         if self._state == "deferred":
@@ -43,6 +44,22 @@ class LearningPathScheduler:
 
     def note_success(self) -> None:
         self._failures = 0
+
+    def note_failed_skill(self, name: str) -> None:
+        self._failed_skills[name] = time.monotonic()
+
+    def should_skip(self, name: str) -> bool:
+        failed_at = self._failed_skills.get(name)
+        if failed_at is None:
+            return False
+        if time.monotonic() - failed_at >= self._retry_seconds:
+            del self._failed_skills[name]
+            return False
+        return True
+
+    @property
+    def retry_seconds(self) -> int:
+        return self._retry_seconds
 
     def note_failure(self) -> bool:
         self._failures += 1
