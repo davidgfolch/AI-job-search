@@ -16,7 +16,8 @@ Reglas:
 3. Responde en el MISMO IDIOMA de la pregunta, limitado a español o inglés. Si la pregunta contiene texto en otros idiomas o parece una lista de opciones o etiquetas, responde en español.
 4. Si UNA TECNOLOGÍA NO APARECE EN ABSOLUTO en el CV, responde comenzando con: CLARIFICACIÓN: [explica qué falta y pregunta por ello].
 5. Sé conciso. Responde directamente sin justificarte ni añadir contexto no solicitado.
-6. Usa las preferencias de LOOKING_FOR para preguntas de salario, rol, disponibilidad, etc."""
+6. Usa las preferencias de LOOKING_FOR para preguntas de salario, rol, disponibilidad, etc.
+7. Para campos de selección (select/radio/checkbox), devuelve exactamente el valor de la opción que mejor encaje. Para checkbox o selección múltiple, devuelve varias opciones separadas por coma."""
 
 
 class QuestionAnsweringService:
@@ -52,17 +53,31 @@ class QuestionAnsweringService:
         context = self.context_loader.get_context_text()
         return self._answer_single(question, context, provider_name)
 
-    def answer_batch(self, questions: list[str], provider_name: str = "auto") -> list[AnswerResult]:
+    def answer_batch(self, questions: list[str | dict], provider_name: str = "auto") -> list[AnswerResult]:
         self.context_loader.reload_if_changed()
         context = self.context_loader.get_context_text()
         return [self._answer_single(q, context, provider_name) for q in questions]
 
-    def _answer_single(self, question: str, context: str, provider_name: str) -> AnswerResult:
+    def _format_user_message(self, question: str | dict) -> str:
+        if isinstance(question, str):
+            return question
+        text = str(question.get("question", ""))
+        field_type = str(question.get("type", "text"))
+        options = question.get("options") or []
+        if not options:
+            return text
+        labels = [str(o).strip() for o in options if str(o).strip()]
+        if not labels:
+            return text
+        options_text = "\n".join(f"- {label}" for label in labels)
+        return f"{text}\n\nTipo de campo: {field_type}\nOpciones válidas:\n{options_text}\n\nResponde solo con la opción/opciones válidas."
+
+    def _answer_single(self, question: str | dict, context: str, provider_name: str) -> AnswerResult:
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context)
         provider = self._get_provider(provider_name)
         return provider.generate(
             system_prompt=system_prompt,
-            user_message=question,
+            user_message=self._format_user_message(question),
             timeout=cfg.get_timeout(),
             max_tokens=cfg.get_max_tokens(),
             temperature=cfg.get_temperature(),

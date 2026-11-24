@@ -27,8 +27,15 @@ class HealthResponse(BaseModel):
     looking_for_loaded: bool
 
 
+class BatchField(BaseModel):
+    question: str
+    type: str = "text"
+    options: list[str] = []
+
+
 class BatchAnswerRequest(BaseModel):
-    questions: list[str]
+    questions: list[str] = []
+    fields: list[BatchField] = []
     provider: str = "auto"
 
 

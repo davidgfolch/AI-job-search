@@ -23,6 +23,23 @@ logger = get_logger("aiEnrichSkill.main")
 collector = MetricsCollector()
 
 
+def _resolve_ollama_url() -> str:
+    """Resolve Ollama with the same bounded wait the worker uses at startup."""
+    ollama_consecutive_failures = 0
+    while True:
+        resolved_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
+        if resolved_url is not None:
+            return resolved_url
+        ollama_consecutive_failures += 1
+        max_failures = get_max_ollama_failures()
+        logger.error("ollama.unreachable", base_url=get_ollama_base_url(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
+        if ollama_consecutive_failures == max_failures:
+            # Keep waiting: exiting here turned a sleeping Ollama server into a
+            # container restart storm that starved the database on resume.
+            logger.critical("ollama.waiting_after_failures", consecutive_failures=ollama_consecutive_failures)
+        logIdleWait(cyan('Ollama unreachable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+
+
 def run():
     logger.info("startup", version=_v('aiEnrichSkill'))
 
@@ -31,25 +48,17 @@ def run():
         return
 
     wait_for_db(log=logger)
-    ollama_base_url = get_ollama_base_url()
-    if get_backend() == "ollama":
-        ollama_consecutive_failures = 0
-        while True:
-            resolved_url = resolve_ollama_url(primary_url=get_ollama_base_url(), log=logger)
-            if resolved_url is not None:
-                ollama_base_url = resolved_url
-                break
-            ollama_consecutive_failures += 1
-            max_failures = get_max_ollama_failures()
-            logger.error("ollama.unreachable", base_url=get_ollama_base_url(), consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-            if ollama_consecutive_failures == max_failures:
-                # Keep waiting: exiting here turned a sleeping Ollama server into a
-                # container restart storm that starved the database on resume.
-                logger.critical("ollama.waiting_after_failures", consecutive_failures=ollama_consecutive_failures)
-            logIdleWait(cyan('Ollama unreachable, retrying... '), '10s', "ai.retry_wait", reason="backend_unavailable")
+    active_backend = get_backend()
+    ollama_base_url = _resolve_ollama_url() if active_backend == "ollama" else get_ollama_base_url()
 
     scheduler = LearningPathScheduler()
     while True:
+        backend = get_backend()
+        if backend != active_backend:
+            active_backend = backend
+            if backend == "ollama":
+                # A live switch back from HuggingFace needs a fresh URL in this process.
+                ollama_base_url = _resolve_ollama_url()
         collector.record_heartbeat("aiEnrichSkill")
         with MysqlUtil() as mysql:
             repository = SkillRepository(mysql)

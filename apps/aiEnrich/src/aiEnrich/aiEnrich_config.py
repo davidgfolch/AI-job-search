@@ -1,6 +1,7 @@
 import requests
 
 from commonlib.environmentUtil import getEnv, getEnvBool
+from commonlib.envFileUtil import getEnvFile
 from commonlib.ollama_config import (
     BACKEND_HOST_BASE_URL,
     OLLAMA_HOST_BASE_URL,
@@ -48,8 +49,12 @@ def get_max_validation_retries() -> int:
 
 
 def get_llm_backend() -> str:
-    """LLM provider for enrichment (`ollama` or `openrouter`), not the FastAPI backend."""
-    return getEnv(LLM_BACKEND_ENV, "ollama")
+    """LLM provider for enrichment (`ollama` or `openrouter`), not the FastAPI backend.
+
+    Reads the .env file so a provider changed in Settings applies to the next job
+    even though Compose injected the startup value into the container environment.
+    """
+    return getEnvFile(LLM_BACKEND_ENV, "ollama")
 
 
 def get_backend() -> str:

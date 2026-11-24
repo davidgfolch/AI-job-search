@@ -46,14 +46,13 @@ def test_get_enabled_false(mock_env):
     assert get_enabled() is False
 
 
-def test_get_backend_default_ollama():
-    os.environ.pop("AI_ENRICHSKILL_BACKEND", None)
+@patch("aiEnrichSkill.config.getEnvFile", return_value="ollama")
+def test_get_backend_default_ollama(_mock_env):
     assert get_backend() == "ollama"
 
 
-@patch("aiEnrichSkill.config.getEnv")
-def test_get_backend_huggingface(mock_env):
-    mock_env.return_value = "huggingface"
+@patch("aiEnrichSkill.config.getEnvFile", return_value="huggingface")
+def test_get_backend_huggingface(_mock_env):
     assert get_backend() == "huggingface"
 
 

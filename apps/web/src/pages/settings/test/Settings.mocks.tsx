@@ -21,6 +21,7 @@ export const setupSettingsMocks = () => {
     });
     vi.mocked(settingsApi.getEnvSettings).mockResolvedValue(mockEnvSettings);
     vi.mocked(settingsApi.getScrapperState).mockResolvedValue(mockScrapperState);
+    vi.mocked(settingsApi.updateEnvSetting).mockImplementation(async (key, value) => ({ [key]: value }));
     vi.mocked(settingsApi.updateEnvSettingsBulk).mockImplementation(async (settings) => settings);
     vi.mocked(settingsApi.updateScrapperState).mockImplementation(async (state) => state);
 };

@@ -6,6 +6,12 @@ export const MOCK_ENV_SETTINGS = {
     UI_GROSS_YEAR_URL: 'https://example.com/calculator',
     GLOBAL_TZ: 'Europe/Madrid',
     AI_ENRICHSKILL_HF_MODEL_ID: 'Qwen/Qwen2.5-1.5B-Instruct',
+    AI_ENRICH_LLM_BACKEND: 'ollama',
+    AI_ENRICHSKILL_BACKEND: 'ollama',
+    AI_FORM_PROVIDER: 'local',
+    OPENAI_API_KEY: 'sk-openai-test',
+    OPENROUTER_API_KEY: 'sk-or-test',
+    OPENROUTER_MODEL: 'openai/gpt-4o-mini',
 };
 
 export const MOCK_SCRAPPER_STATE = {

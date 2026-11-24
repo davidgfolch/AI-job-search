@@ -16,8 +16,25 @@ type CodeEditorProps = { value: string; onValueChange: (code: string) => void; h
 
 const Editor = ((EditorImport as unknown as { default?: unknown }).default ?? EditorImport) as React.ComponentType<CodeEditorProps>;
 
+const LLM_PROVIDERS: { key: string; label: string; options: { value: string; label: string }[]; fields: string[] }[] = [
+    { key: 'AI_ENRICH_LLM_BACKEND', label: 'aiEnrich', fields: [], options: [
+        { value: 'ollama', label: 'Ollama (local/LAN)' },
+        { value: 'openrouter', label: 'OpenRouter (cloud)' }
+    ] },
+    { key: 'AI_ENRICHSKILL_BACKEND', label: 'aiEnrichSkill', fields: [], options: [
+        { value: 'ollama', label: 'Ollama (local/LAN)' },
+        { value: 'huggingface', label: 'HuggingFace (local)' }
+    ] },
+    { key: 'AI_FORM_PROVIDER', label: 'aiFormFiller', fields: ['OPENAI_API_KEY', 'OPENROUTER_MODEL'], options: [
+        { value: 'local', label: 'Local (HuggingFace)' },
+        { value: 'openrouter', label: 'OpenRouter (cloud)' },
+        { value: 'openai', label: 'OpenAI (cloud)' }
+    ] }
+];
+const SHARED_PROVIDER_FIELDS = ['OPENROUTER_API_KEY'];
+
 export default function Settings() {
-    const { data: envSettingsData, isError: isEnvError } = useEnvSettings();
+    const { data: envSettingsData, isError: isEnvError, updateSettings } = useEnvSettings();
     const [envSettings, setEnvSettings] = useState<Record<string, string>>({});
     const [scrapperState, setScrapperState] = useState<string>('');
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -50,6 +67,14 @@ export default function Settings() {
         catch { setMessage({ text: 'Failed to refresh scrapper state', type: 'error' }); }
     };
 
+    const handleProviderChange = async (key: string, value: string) => {
+        const previous = envSettings[key];
+        setEnvSettings({ ...envSettings, [key]: value });
+        try { await updateSettings(key, value); setMessage({ text: `${key} switched to ${value}`, type: 'success' }); }
+        catch { setEnvSettings({ ...envSettings, [key]: previous }); setMessage({ text: `Failed to switch ${key}`, type: 'error' }); }
+        setTimeout(() => setMessage(null), 3000);
+    };
+
     const handleEnvUpdateAll = async () => {
         try { const updated = await settingsApi.updateEnvSettingsBulk(envSettings); setEnvSettings(updated); setMessage({ text: `Settings saved successfully`, type: 'success' }); setTimeout(() => setMessage(null), 3000); }
         catch { setMessage({ text: `Failed to update settings`, type: 'error' }); }
@@ -62,7 +87,9 @@ export default function Settings() {
 
     if (isLoading) return <div className="settings-loading">Loading settings...</div>;
 
-    const groupedSettings = groupSettingsByKey(envSettings);
+    const rawGroups = groupSettingsByKey(envSettings);
+    const providerKeys = LLM_PROVIDERS.flatMap(p => [p.key, ...p.fields]).concat(SHARED_PROVIDER_FIELDS);
+    const groupedSettings = Object.fromEntries(Object.entries(rawGroups).map(([group, keys]) => [group, keys.filter(key => !providerKeys.includes(key))]));
     const sortedGroupNames = Object.keys(groupedSettings).sort((a, b) => {
         const order = ['System & Base', 'UI Frontend', 'Scrapper', 'AI Enrichment', 'Other'];
         const getIdx = (k: string) => (i => i === -1 ? order.length : i)(order.indexOf(k));
@@ -78,6 +105,25 @@ export default function Settings() {
             <main className="settings-main">
                 <MessageContainer message={message} error={null} onDismissMessage={() => setMessage(null)} />
                 <div className="settings-container">
+                    <div className="settings-section llm-providers-section">
+                        <h2>LLM Providers</h2>
+                        <div className="llm-providers-flex">
+                            {LLM_PROVIDERS.map(provider => (
+                                <div key={provider.key} className="llm-provider-group">
+                                    <FormField id={`llm-provider-${provider.key}`} label={<span className="env-key-label">{provider.label}</span>} className="env-item inline-item">
+                                        <select id={`llm-provider-${provider.key}`} name={provider.key} className="env-input compact-input" value={envSettings[provider.key] || 'ollama'} onChange={e => handleProviderChange(provider.key, e.target.value)}>
+                                            {provider.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                        </select>
+                                    </FormField>
+                                    {provider.fields.map(field => renderInlineItem(field, envSettings, setEnvSettings))}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="llm-provider-related">
+                            {SHARED_PROVIDER_FIELDS.map(field => renderInlineItem(field, envSettings, setEnvSettings))}
+                        </div>
+                        <p className="llm-providers-hint">Selectors apply on the next worker cycle — no Save click needed.</p>
+                    </div>
                     <div className="settings-section env-variables-section">
                         <div className="env-section-header"><h2>Environment Variables (.env)</h2><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
                         <div className="env-groups-container">
@@ -118,7 +164,7 @@ function sortSubGroups(a: string, b: string, groupName: string) {
 }
 
 function renderInlineItem(key: string, envSettings: Record<string, string>, setEnvSettings: SetStateAction<Record<string, string>>) {
-    const isPassword = key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL');
+    const isPassword = key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') || key.includes('API_KEY');
     return (<FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item"><input id={`env-${key}`} name={key} className="env-input compact-input" type={isPassword ? "password" : "text"} value={envSettings[key] || ''} onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })} /></FormField>);
 }
 

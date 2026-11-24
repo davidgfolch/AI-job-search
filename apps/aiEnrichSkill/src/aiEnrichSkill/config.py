@@ -1,4 +1,5 @@
 from commonlib.environmentUtil import getEnv, getEnvBool
+from commonlib.envFileUtil import getEnvFile
 from commonlib.ollama_config import OLLAMA_HOST_BASE_URL
 
 
@@ -7,7 +8,8 @@ def get_enabled() -> bool:
 
 
 def get_backend() -> str:
-    return getEnv("AI_ENRICHSKILL_BACKEND", "ollama")
+    """Read the provider from .env so Settings switches apply on the next cycle."""
+    return getEnvFile("AI_ENRICHSKILL_BACKEND", "ollama")
 
 
 def get_ollama_model() -> str:

@@ -7,6 +7,7 @@ test.use({
 });
 
 const ENV_BULK_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/settings\/env-bulk/.test(req.url());
+const ENV_SINGLE_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/settings\/env(\?|$)/.test(req.url());
 const SCRAPPER_STATE_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/settings\/scrapper-state/.test(req.url());
 
 test.describe('Settings E2E', () => {
@@ -31,6 +32,50 @@ test.describe('Settings E2E', () => {
         const request = await postRequest;
         expect(request.postDataJSON().updates.SCRAPPER_JOBS_SEARCH).toBe('react, python, go');
         await expect(page.locator('.message')).toContainText('Settings saved successfully');
+    });
+
+    test('should switch each LLM provider independently', async ({ page }) => {
+        await page.goto(`${BASE_URL}/settings`);
+        await expect(page.locator('#llm-provider-AI_ENRICH_LLM_BACKEND')).toHaveValue('ollama');
+        await expect(page.locator('#llm-provider-AI_ENRICHSKILL_BACKEND')).toHaveValue('ollama');
+        await expect(page.locator('#llm-provider-AI_FORM_PROVIDER')).toHaveValue('local');
+
+        const firstPost = page.waitForRequest(ENV_SINGLE_POST);
+        await page.locator('#llm-provider-AI_ENRICH_LLM_BACKEND').selectOption('openrouter');
+        expect((await firstPost).postDataJSON()).toEqual({ key: 'AI_ENRICH_LLM_BACKEND', value: 'openrouter' });
+        await expect(page.locator('#llm-provider-AI_ENRICHSKILL_BACKEND')).toHaveValue('ollama');
+
+        const secondPost = page.waitForRequest(ENV_SINGLE_POST);
+        await page.locator('#llm-provider-AI_ENRICHSKILL_BACKEND').selectOption('huggingface');
+        expect((await secondPost).postDataJSON()).toEqual({ key: 'AI_ENRICHSKILL_BACKEND', value: 'huggingface' });
+        await expect(page.locator('#llm-provider-AI_ENRICH_LLM_BACKEND')).toHaveValue('openrouter');
+
+        const thirdPost = page.waitForRequest(ENV_SINGLE_POST);
+        await page.locator('#llm-provider-AI_FORM_PROVIDER').selectOption('openai');
+        expect((await thirdPost).postDataJSON()).toEqual({ key: 'AI_FORM_PROVIDER', value: 'openai' });
+        await expect(page.locator('#llm-provider-AI_ENRICH_LLM_BACKEND')).toHaveValue('openrouter');
+        await expect(page.locator('#llm-provider-AI_ENRICHSKILL_BACKEND')).toHaveValue('huggingface');
+        await expect(page.locator('.message')).toContainText('AI_FORM_PROVIDER switched to openai');
+    });
+
+    test('should group provider fields with the selectors', async ({ page }) => {
+        await page.goto(`${BASE_URL}/settings`);
+        await expect(page.locator('.llm-providers-section #env-OPENAI_API_KEY')).toHaveValue('sk-openai-test');
+        await expect(page.locator('.llm-providers-section #env-OPENROUTER_API_KEY')).toHaveValue('sk-or-test');
+        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_FORM_PROVIDER) #env-OPENAI_API_KEY')).toHaveValue('sk-openai-test');
+        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_FORM_PROVIDER) #env-OPENROUTER_MODEL')).toHaveValue('openai/gpt-4o-mini');
+        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_ENRICH_LLM_BACKEND) #env-OPENAI_API_KEY')).toHaveCount(0);
+        await expect(page.locator('.env-variables-section #env-OPENAI_API_KEY')).toHaveCount(0);
+        await expect(page.locator('.env-variables-section #env-OPENROUTER_API_KEY')).toHaveCount(0);
+        await expect(page.locator('.env-variables-section #env-OPENROUTER_MODEL')).toHaveCount(0);
+    });
+
+    test('should save the OpenAI API key from the provider section', async ({ page }) => {
+        await page.goto(`${BASE_URL}/settings`);
+        await page.locator('#env-OPENAI_API_KEY').fill('sk-new-key');
+        const postRequest = page.waitForRequest(ENV_BULK_POST);
+        await page.locator('.env-section-footer .env-save-btn').click();
+        expect((await postRequest).postDataJSON().updates.OPENAI_API_KEY).toBe('sk-new-key');
     });
 
     test('should save scrapper state', async ({ page }) => {

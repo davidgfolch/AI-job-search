@@ -5,11 +5,12 @@ import { runInNewContext } from "node:vm";
 
 const source = readFileSync(new URL("../extension/background.js", import.meta.url), "utf8");
 
-function load({ activeTabId = 1, stored = {}, panelTabs = [] } = {}) {
+function load({ activeTabId = 1, stored = {}, panelTabs = [], fetchImpl } = {}) {
   const listeners = { installed: [], activation: [], contextMenu: [], message: [] };
   const sent = [];
   const tabMessages = [];
   const panelCalls = [];
+  const fetchCalls = [];
   let session = { panelTabs, ...stored };
   const sandbox = {
     chrome: {
@@ -36,11 +37,15 @@ function load({ activeTabId = 1, stored = {}, panelTabs = [] } = {}) {
         open: options => { panelCalls.push({ method: "open", options }); return Promise.resolve(); }
       }
     },
-    fetch: () => Promise.resolve(),
+    fetch: async (url, options) => {
+      fetchCalls.push({ url, options });
+      if (fetchImpl) return fetchImpl(url, options);
+      return { json: async () => ({}) };
+    },
     console
   };
   runInNewContext(source, sandbox);
-  return { listeners, sent, tabMessages, panelCalls, session: () => session };
+  return { listeners, sent, tabMessages, panelCalls, fetchCalls, session: () => session };
 }
 
 async function dispatch(app, msg) {
@@ -141,4 +146,15 @@ test("falls back to the active tab when no tab was tracked", async () => {
   const app = load({ activeTabId: 7 });
   await dispatch(app, { action: "detect-all-questions" });
   assert.equal(app.tabMessages[0].tabId, 7);
+});
+
+test("answer-batch forwards field metadata payload", async () => {
+  const app = load({ fetchImpl: async () => ({ json: async () => ({ answers: [] }) }) });
+  let response;
+  app.listeners.message[0]({ action: "answer-batch", questions: [{ question: "Q?", type: "radio", options: ["Yes"] }], provider: "auto" }, {}, value => { response = value; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(response, { answers: [] });
+  const body = JSON.parse(app.fetchCalls[0].options.body);
+  assert.deepEqual(body.fields, [{ question: "Q?", type: "radio", options: ["Yes"] }]);
+  assert.equal(body.provider, "auto");
 });

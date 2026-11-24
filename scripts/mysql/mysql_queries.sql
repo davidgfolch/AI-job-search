@@ -35,7 +35,7 @@ WHERE trim(lower(j.title)) != trim(lower(d.title)) OR trim(lower(j.company)) != 
 select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 
-select * from jobs where jobs.company='Michael Page' and applied order by created DESC;
+select title, company, markdown, url from jobs where jobs.web_page rlike 'linkedin' and jobs.title rlike 'forward';
 
 select * from jobs where jobs.web_page='Indeed' order by created DESC;
 

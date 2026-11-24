@@ -42,7 +42,6 @@ def _enrich_huggingface(repository: SkillRepository) -> int:
         )
         count += processed_count
 
-    print("-" * 50)
     return count
 
 

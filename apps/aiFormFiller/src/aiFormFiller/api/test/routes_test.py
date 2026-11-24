@@ -86,6 +86,13 @@ class TestApiRoutes(unittest.TestCase):
         response = self.client.post("/api/answer/batch", json={"questions": []})
         self.assertEqual(response.json()["answers"], [])
 
+    @patch("aiFormFiller.api.routes._service")
+    def test_batch_answer_with_field_metadata(self, mock_service):
+        mock_service.answer_batch.return_value = [MagicMock(text="Yes", is_clarification=False, provider="local")]
+        response = self.client.post("/api/answer/batch", json={"fields": [{"question": "Authorized?", "type": "radio", "options": ["Yes", "No"]}]})
+        self.assertEqual(response.status_code, 200)
+        mock_service.answer_batch.assert_called_with([{"question": "Authorized?", "type": "radio", "options": ["Yes", "No"]}], "auto")
+
     def test_health_no_cv_file(self):
         import os
         os.remove(self.temp.cv_path)

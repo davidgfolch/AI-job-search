@@ -87,16 +87,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-async function callBatchAnswerAPI(questions, provider) {
+async function callBatchAnswerAPI(payload, provider) {
+  const isFields = Array.isArray(payload) && payload.length > 0 && typeof payload[0] === "object";
+  const body = isFields
+    ? { fields: payload, provider: provider || "auto" }
+    : { questions: payload, provider: provider || "auto" };
   try {
     const resp = await fetch(`${API_BASE}/api/answer/batch`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questions, provider: provider || "auto" }),
+      body: JSON.stringify(body),
     });
     return await resp.json();
   } catch (e) {
-    return { answers: questions.map((_, i) => ({ index: i, type: "error", text: `Connection error: ${e.message}`, provider: "none" })) };
+    const count = Array.isArray(payload) ? payload.length : 0;
+    return { answers: Array.from({ length: count }, (_, i) => ({ index: i, type: "error", text: `Connection error: ${e.message}`, provider: "none" })) };
   }
 }
 

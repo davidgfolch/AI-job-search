@@ -47,6 +47,35 @@
     margin-bottom: 0.5rem;
 }
 
+.llm-providers-section {
+    flex-basis: 100%;
+}
+
+.llm-providers-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.llm-provider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.llm-provider-related {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 12px;
+}
+
+.llm-providers-hint {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
 .env-section-header h2 {
     margin: 0;
     font-size: 1.25rem;

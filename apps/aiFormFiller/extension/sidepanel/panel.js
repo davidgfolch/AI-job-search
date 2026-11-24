@@ -81,6 +81,10 @@ async function initActiveTab() {
   await showTab(tabId);
 }
 
+function fieldTypeLabel(field) {
+  return field.type || "text";
+}
+
 function renderFields() {
   container.innerHTML = "";
   if (fields.length === 0) {
@@ -94,13 +98,21 @@ function renderFields() {
 
     const label = document.createElement("div");
     label.className = "q-label";
-    label.textContent = `${fields.indexOf(f) + 1} of ${fields.length}`;
+    const type = fieldTypeLabel(f);
+    label.textContent = `${fields.indexOf(f) + 1} of ${fields.length}${type && type !== "text" ? ` · ${type}` : ""}`;
     item.appendChild(label);
 
     const qText = document.createElement("div");
     qText.className = "q-text";
     qText.textContent = f.question;
     item.appendChild(qText);
+
+    if (Array.isArray(f.options) && f.options.length > 0) {
+      const opts = document.createElement("div");
+      opts.className = "q-options";
+      opts.textContent = `Options: ${f.options.map(o => o.label || o.value).filter(Boolean).join(" | ")}`;
+      item.appendChild(opts);
+    }
 
     const aText = document.createElement("div");
     aText.className = "a-text pending";
@@ -131,8 +143,8 @@ async function answerAll() {
   answerAllBtn.textContent = "Pensando...";
   hideError();
 
-  const questions = fields.map(f => f.question);
-  const resp = await chrome.runtime.sendMessage({ action: "answer-batch", questions, provider: selectedProvider });
+  const payload = fields.map(f => ({ question: f.question, type: f.type || "text", options: (f.options || []).map(o => o.label || o.value).filter(Boolean) }));
+  const resp = await chrome.runtime.sendMessage({ action: "answer-batch", questions: payload, provider: selectedProvider });
 
   answerAllBtn.disabled = false;
   answerAllBtn.textContent = "Answer All";

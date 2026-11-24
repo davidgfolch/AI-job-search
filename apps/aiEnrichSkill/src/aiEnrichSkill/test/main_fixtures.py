@@ -16,7 +16,7 @@ def loop():
          patch("aiEnrichSkill.main.MysqlUtil") as mysql, \
          patch("aiEnrichSkill.main.get_enabled") as enabled, \
          patch("aiEnrichSkill.main.cyan", side_effect=lambda x: x), \
-         patch("aiEnrichSkill.main.get_backend", return_value="ollama"), \
+         patch("aiEnrichSkill.main.get_backend", return_value="ollama") as backend, \
          patch("aiEnrichSkill.main.resolve_ollama_url", return_value="http://host:11434") as resolve, \
          patch("aiEnrichSkill.main.idleWait") as idle, \
          patch("aiEnrichSkill.main.enrich_skills") as enrich, \
@@ -29,5 +29,5 @@ def loop():
         enabled.return_value = True
         mysql.return_value.__enter__.return_value = MagicMock()
         scheduler.return_value.deferred = False
-        yield SimpleNamespace(collector=collector, mysql=mysql, enabled=enabled, resolve=resolve, idle=idle,
+        yield SimpleNamespace(collector=collector, mysql=mysql, enabled=enabled, backend=backend, resolve=resolve, idle=idle,
                              enrich=enrich, log_idle=log_idle, should=should, paths=paths, scheduler=scheduler)

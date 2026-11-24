@@ -1,8 +1,10 @@
 import os
-from pathlib import Path
-from dotenv import load_dotenv, dotenv_values, set_key
-
+import re
 import threading
+from pathlib import Path
+from dotenv import load_dotenv, dotenv_values
+
+from commonlib.envWriteUtil import set_keys
 
 env_lock = threading.Lock()
 
@@ -25,6 +27,13 @@ def _logger():
 ENV_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env'
 ENV_SECRETS_PATH = Path(__file__).resolve().parent.parent.parent.parent / '.env.secrets'
 ENV_SECRETS_EXAMPLE_PATH = Path(__file__).resolve().parent.parent.parent.parent / 'scripts' / '.env.secrets.example'
+
+_SECRET_KEY_LINE = re.compile(r"^\s*#?\s*([A-Za-z_][A-Za-z0-9_]*)\s*=")
+
+def _secret_env_keys() -> set[str]:
+    if not ENV_SECRETS_EXAMPLE_PATH.exists():
+        return set()
+    return {m.group(1) for line in ENV_SECRETS_EXAMPLE_PATH.read_text(encoding='utf-8').splitlines() if (m := _SECRET_KEY_LINE.match(line))}
 
 def _get_mtime(path: Path) -> float:
     return path.stat().st_mtime if path.exists() else 0
@@ -116,7 +125,7 @@ def getEnvAll() -> dict[str, str]:
     actual_main = dotenv_values(ENV_PATH) if ENV_PATH.exists() else {}
     actual_secrets = dotenv_values(ENV_SECRETS_PATH) if ENV_SECRETS_PATH.exists() else {}
     example_values = example_secrets
-    actual_values = {**actual_secrets, **actual_main}
+    actual_values = {**actual_main, **actual_secrets}
     if not example_values:
         return actual_values
     result = {}
@@ -127,31 +136,33 @@ def getEnvAll() -> dict[str, str]:
             result[k] = v
     return result
 
-def setEnv(key: str, value: str):
-    """Updates a single key in the .env file and reloads the environment"""
-    with env_lock:
-        if ENV_PATH.exists():
-            set_key(str(ENV_PATH), key, value)
-        else:
-            with open(ENV_PATH, 'w', encoding='utf-8') as f:
+def _write_keys(path: Path, updates: dict[str, str]):
+    if not updates:
+        return
+    if path.exists():
+        set_keys(path, updates)
+    else:
+        with open(path, 'w', encoding='utf-8') as f:
+            for key, value in updates.items():
                 f.write(f"{key}={value}\n")
+
+
+def _apply_env_updates(updates: dict[str, str]):
     global envLastModified
+    secret_keys = _secret_env_keys()
+    with env_lock:
+        _write_keys(ENV_PATH, {k: v for k, v in updates.items() if k not in secret_keys})
+        _write_keys(ENV_SECRETS_PATH, {k: v for k, v in updates.items() if k in secret_keys})
     load_dotenv(dotenv_path=ENV_PATH, override=True)
+    load_dotenv(dotenv_path=ENV_SECRETS_PATH, override=True)
     _restoreProcessEnv()
     envLastModified = getEnvModified()
 
+def setEnv(key: str, value: str):
+    """Updates a single key in .env or .env.secrets and reloads the environment"""
+    _apply_env_updates({key: value})
+
 def setEnvBulk(updates: dict[str, str]):
-    """Updates multiple keys in the .env file and reloads the environment"""
-    with env_lock:
-        if ENV_PATH.exists():
-            for key, value in updates.items():
-                set_key(str(ENV_PATH), key, value)
-        else:
-            with open(ENV_PATH, 'w', encoding='utf-8') as f:
-                for key, value in updates.items():
-                    f.write(f"{key}={value}\n")
-    global envLastModified
-    load_dotenv(dotenv_path=ENV_PATH, override=True)
-    _restoreProcessEnv()
-    envLastModified = getEnvModified()
+    """Updates multiple keys in .env or .env.secrets and reloads the environment"""
+    _apply_env_updates(updates)
 

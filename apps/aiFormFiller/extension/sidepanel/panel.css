@@ -22,6 +22,7 @@ h1 { font-size: 16px; color: #16213e; }
 .question-item { background: white; border: 1px solid #ddd; border-radius: 6px; padding: 10px; }
 .question-item .q-text { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; word-break: break-word; }
 .question-item .q-label { font-size: 11px; color: #999; margin-bottom: 6px; }
+.question-item .q-options { font-size: 11px; color: #666; margin-bottom: 6px; line-height: 1.4; word-break: break-word; }
 .question-item .a-text { font-size: 13px; color: #1a1a2e; white-space: pre-wrap; line-height: 1.5; padding: 6px 8px; border-radius: 4px; margin-top: 4px; }
 .question-item .a-text.answer { background: #eafaf1; border-left: 3px solid #2ecc71; }
 .question-item .a-text.clarification { background: #fff8e1; border-left: 3px solid #f39c12; }

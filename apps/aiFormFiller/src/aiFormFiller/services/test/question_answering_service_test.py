@@ -128,3 +128,15 @@ class TestQuestionAnsweringService(unittest.TestCase):
         self.assertFalse(results[0].is_clarification)
         self.assertEqual(results[0].text, "5 años")
         self.assertTrue(results[1].is_clarification)
+
+    @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
+    @patch("aiFormFiller.services.question_answering_service.cfg")
+    def test_answer_batch_formats_field_options(self, mock_cfg, mock_hf):
+        make_mock_cfg(mock_cfg)
+        mock_hf.return_value = make_mock_provider(text="Yes")
+        self.service.answer_batch([{"question": "Authorized?", "type": "radio", "options": ["Yes", "No"]}])
+        _, kwargs = mock_hf.return_value.generate.call_args
+        self.assertIn("Tipo de campo: radio", kwargs["user_message"])
+        self.assertIn("- Yes", kwargs["user_message"])
+        self.assertIn("- No", kwargs["user_message"])
+        self.assertIn("Responde solo con la opción/opciones válidas.", kwargs["user_message"])

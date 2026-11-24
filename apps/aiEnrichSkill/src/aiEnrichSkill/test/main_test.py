@@ -62,6 +62,17 @@ def test_run_unreachable_backend_waits_before_enriching(mock_logger, loop):
     assert mock_logger.critical.call_args.args[0] == "ollama.waiting_after_failures"
 
 
+def test_run_resolves_ollama_after_live_backend_switch(loop):
+    loop.backend.side_effect = ["huggingface", "ollama", "ollama"]
+    loop.enrich.side_effect = [0, Exception("BreakLoop")]
+
+    _run_until_break()
+
+    # No resolution at startup (HuggingFace), one when the selector switches to Ollama.
+    loop.resolve.assert_called_once()
+    assert loop.enrich.call_count == 2
+
+
 def test_run_persists_after_each_enrich_cycle(loop):
     loop.enrich.side_effect = [5, 2, 0, Exception("BreakLoop")]
 

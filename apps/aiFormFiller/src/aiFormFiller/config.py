@@ -1,8 +1,10 @@
+from commonlib.envFileUtil import getEnvFile
 from commonlib.environmentUtil import getEnv
 
 
 def get_provider() -> str:
-    return getEnv("AI_FORM_PROVIDER", "local")
+    # Read the file so Settings switches apply without a container restart.
+    return getEnvFile("AI_FORM_PROVIDER", "local")
 
 
 def get_port() -> int:
@@ -14,7 +16,7 @@ def get_hf_model() -> str:
 
 
 def get_openai_api_key() -> str | None:
-    return getEnv("OPENAI_API_KEY")
+    return getEnvFile("OPENAI_API_KEY")
 
 
 def get_openai_model() -> str:
@@ -22,7 +24,7 @@ def get_openai_model() -> str:
 
 
 def get_openrouter_api_key() -> str | None:
-    return getEnv("OPENROUTER_API_KEY")
+    return getEnvFile("OPENROUTER_API_KEY")
 
 
 def get_openrouter_model() -> str:

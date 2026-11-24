@@ -37,15 +37,21 @@ def test_openrouter_default_constants():
     assert OPENROUTER_DEFAULT_FALLBACK_MODEL == "nex-agi/nex-n2.5-pro:free"
 
 
-@pytest.mark.parametrize("env_val, expected", [
+@pytest.mark.parametrize("file_val, expected", [
     pytest.param(None, "ollama", id="default_ollama"),
     pytest.param("openrouter", "openrouter", id="explicit_openrouter"),
     pytest.param("ollama", "ollama", id="explicit_ollama"),
 ])
-def test_get_llm_backend(env_val, expected):
-    _set_or_unset(LLM_BACKEND_ENV, env_val)
+def test_get_llm_backend(monkeypatch, file_val, expected):
+    monkeypatch.setattr(aiEnrich_config, "getEnvFile", lambda key, default: file_val or default)
     assert get_llm_backend() == expected
     assert get_backend() == expected
+
+
+def test_get_llm_backend_reads_file_not_process_env(monkeypatch):
+    monkeypatch.setenv(LLM_BACKEND_ENV, "ollama")
+    monkeypatch.setattr(aiEnrich_config, "getEnvFile", lambda key, default: "openrouter")
+    assert get_llm_backend() == "openrouter"
 
 
 @pytest.mark.parametrize("env_val, expected", [

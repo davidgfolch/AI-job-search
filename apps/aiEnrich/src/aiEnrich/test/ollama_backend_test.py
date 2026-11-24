@@ -1,4 +1,3 @@
-import os
 from unittest.mock import patch
 
 
@@ -33,8 +32,8 @@ class TestCheckBackendAvailable:
 
 class TestPingBackend:
     def test_routes_to_ollama(self, monkeypatch):
-        os.environ["AI_ENRICH_LLM_BACKEND"] = "ollama"
         from aiEnrich import ollama_backend
+        monkeypatch.setattr(ollama_backend, "get_backend", lambda: "ollama")
         monkeypatch.setattr(ollama_backend, "_resolved_ollama_url", None)
         with patch.object(ollama_backend, "probe_resolve_ollama_url", return_value="http://host:11434") as mock_resolve, \
              patch.object(ollama_backend, "ping_openrouter") as mock_ping_or:
@@ -68,9 +67,9 @@ class TestPingBackend:
         mock_forget.assert_called_once_with("http://192.168.1.50:11434")
         assert ollama_backend._resolved_ollama_url is None
 
-    def test_routes_to_openrouter(self):
-        os.environ["AI_ENRICH_LLM_BACKEND"] = "openrouter"
+    def test_routes_to_openrouter(self, monkeypatch):
         from aiEnrich import ollama_backend
+        monkeypatch.setattr(ollama_backend, "get_backend", lambda: "openrouter")
         with patch.object(ollama_backend, "probe_resolve_ollama_url", return_value=None) as mock_resolve, \
              patch.object(ollama_backend, "ping_openrouter", return_value=True) as mock_ping_or:
             assert ollama_backend.ping_backend() is True

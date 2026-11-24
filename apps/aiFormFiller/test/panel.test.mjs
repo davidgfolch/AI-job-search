@@ -52,7 +52,7 @@ function load({ storedProvider = "auto", backendProvider = "openrouter", fieldsB
           if (msg.action === "health") response = { status: "ok", provider: backendProvider, cv_loaded: true, looking_for_loaded: false };
           else if (msg.action === "active-tab") response = activeTabId;
           else if (msg.action === "detect-all-questions") response = responses[msg.tabId] || [];
-          else if (msg.action === "answer-batch") response = { answers: msg.questions.map((q, i) => ({ index: i, type: "answer", text: `A-${q}`, provider: "openrouter" })) };
+          else if (msg.action === "answer-batch") response = { answers: msg.questions.map((q, i) => ({ index: i, type: "answer", text: `A-${typeof q === "string" ? q : q.question}`, provider: "openrouter" })) };
           return Promise.resolve(response);
         }
       },

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """Healthcheck script for AI-backend-dependent services.
-Returns exit code 0 if the configured backend (Ollama or OpenRouter) is reachable, 1 otherwise.
+Returns exit code 0 if the live backend (Ollama, OpenRouter or in-process HuggingFace) is usable, 1 otherwise.
 Used by Docker HEALTHCHECK to mark container as unhealthy when the backend is down.
 
 The last discovered host is probed first: the workers resolve Ollama at runtime
@@ -12,11 +12,16 @@ import sys
 import requests
 
 from commonlib.environmentUtil import getEnv
+from commonlib.envFileUtil import getEnvFile
 from commonlib.network.discovery_cache import read_entry
 from commonlib.network.ollama_discovery import DEFAULT_OLLAMA_PORT
 from commonlib.ollama_config import ollama_probe_urls
 
 OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
+MODULE_BACKEND_ENVS = {
+    "aienrich": "AI_ENRICH_LLM_BACKEND",
+    "aienrichskill": "AI_ENRICHSKILL_BACKEND",
+}
 
 
 def discovered_ollama_url() -> str | None:
@@ -41,7 +46,7 @@ def check_ollama() -> bool:
 
 def check_openrouter() -> bool:
     base_url = getEnv("AI_ENRICH_OPENROUTER_BASE_URL", OPENROUTER_DEFAULT_BASE_URL)
-    api_key = getEnv("AI_ENRICH_OPENROUTER_API_KEY") or getEnv("OPENROUTER_API_KEY", "")
+    api_key = getEnvFile("OPENROUTER_API_KEY", "")
     timeout = int(getEnv("HEALTHCHECK_TIMEOUT", "5"))
     try:
         resp = requests.get(f"{base_url.rstrip('/')}/models", headers={"Authorization": f"Bearer {api_key}"}, timeout=timeout)
@@ -52,7 +57,11 @@ def check_openrouter() -> bool:
 
 
 def check_backend() -> bool:
-    backend = getEnv("HEALTHCHECK_BACKEND", getEnv("AI_ENRICH_LLM_BACKEND", getEnv("AI_ENRICHSKILL_BACKEND", "ollama")))
+    """Follow the live provider from .env; huggingface runs in-process."""
+    key = MODULE_BACKEND_ENVS.get(getEnv("HEALTHCHECK_MODULE", ""))
+    backend = getEnvFile(key, "ollama") if key else getEnv("HEALTHCHECK_BACKEND", "ollama")
+    if backend == "huggingface":
+        return True
     if backend == "openrouter":
         return check_openrouter()
     return check_ollama()

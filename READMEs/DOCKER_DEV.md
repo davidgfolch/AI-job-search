@@ -33,6 +33,7 @@ Everything runs on one machine by default; the scrapper, the UI or the AI worker
 
 **Ollama CPU/GPU:** `aienrich` service uses Ollama by default (profile: `aienrich`). Set `AI_ENRICH_LLM_BACKEND=openrouter` in `.env` to use OpenRouter cloud models instead (no Ollama needed for aienrich).
 **Skill enrichment:** `aienrichskill` service enriches the `job_skills` table with Ollama or HuggingFace (profile: `aiEnrichSkill`).
+**Live provider switch:** both workers read their provider from `.env` on every cycle, so the independent **Settings → LLM Providers** selectors in the web UI take effect without a container restart. Container healthchecks follow the live provider too.
 **CV Matcher:** `aicvmatcher` service uses sentence transformers to rapidly match your cv (runs by default if configured in .env).
 
 > Note: the `ollama` service is **opt-in** (`--profile ollama`) and no module hard-depends on it, so it is never started implicitly - useful when Ollama already runs on your host or on another LAN machine. Server resolution and the probe/caching behavior: [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md#ollama-host-container-or-another-lan-machine).

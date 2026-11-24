@@ -11,6 +11,8 @@ Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table
 | Ollama (default) | `ollama` | Ollama server running (URL configured in `.env`; see [Ollama Backend](#ollama-backend)) |
 | HuggingFace | `huggingface` | Local transformers, GPU recommended |
 
+The backend can be switched live in the web **Settings → LLM Providers** page; the worker picks up the change on its next cycle and re-resolves Ollama when switching back to it. The selector controls skill descriptions only — the idle learning-path backfill keeps using Ollama.
+
 ## Usage
 
 ### Docker (recommended)

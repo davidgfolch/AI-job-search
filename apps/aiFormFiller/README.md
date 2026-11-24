@@ -105,13 +105,13 @@ The panel is tab-specific: it opens only on tabs where you used "Answer with AI"
 
 ## AI Providers
 
-Configure via `.env`:
+Configure via `.env` or the web **Settings → LLM Providers → aiFormFiller** selector, which writes `AI_FORM_PROVIDER` immediately and applies to the next request. API keys are editable in that section too: `OPENAI_API_KEY` and `OPENROUTER_MODEL` sit with aiFormFiller, while the shared `OPENROUTER_API_KEY` sits beside all three selectors. Changes apply to the next request without a restart.
 
 The side panel **Provider** dropdown overrides the backend default for that browser profile; **Auto (backend)** follows `AI_FORM_PROVIDER`. The selection is stored locally in the browser and applies to answer, batch and follow-up requests.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AI_FORM_PROVIDER` | `local` | `local`, `openai`, `openrouter`, or `auto` |
+| `AI_FORM_PROVIDER` | `local` | `local`, `openai`, `openrouter` |
 | `AI_FORM_HF_MODEL` | `Qwen/Qwen2.5-1.5B-Instruct` | Local HuggingFace model |
 | `OPENAI_API_KEY` | — | OpenAI API key |
 | `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model name |
@@ -129,7 +129,7 @@ The side panel **Provider** dropdown overrides the backend default for that brow
 - `local` — Uses HuggingFace transformers with the model from `AI_FORM_HF_MODEL`. Works offline, no API key needed.
 - `openai` — Uses OpenAI API. Requires `OPENAI_API_KEY`.
 - `openrouter` — Uses OpenRouter API. Requires `OPENROUTER_API_KEY`. Supports many models (Claude, Gemini, GPT, etc.).
-- `auto` — Tries local first, falls back to configured provider.
+- `auto` — Side-panel option that follows the backend default; no fallback chain.
 
 For low-latency inference without a local model, set `AI_FORM_PROVIDER=openrouter` and `OPENROUTER_MODEL=<model>:free` (e.g. `nvidia/nemotron-3.5-lightning:free`); reasoning is disabled automatically for `:free` models so the response is a plain answer. Free providers may rate-limit requests.
 

@@ -67,7 +67,7 @@ Records go to stdout and are mirrored to `data/logs/aiEnrich.jsonl`, which the b
 
 ### LLM Backend Selection
 
-Select the LLM provider with `AI_ENRICH_LLM_BACKEND` in your `.env` file. The default is `ollama`. This is separate from `AI_ENRICH_BACKEND_URL`, which points at the FastAPI backend.
+Select the LLM provider with `AI_ENRICH_LLM_BACKEND` in your `.env` file. The default is `ollama`. This is separate from `AI_ENRICH_BACKEND_URL`, which points at the FastAPI backend. You can also switch it live in the web **Settings → LLM Providers** page: the worker re-reads `.env` on its next job, no restart needed. OpenRouter uses the shared `OPENROUTER_API_KEY`, which can be set in **Settings → LLM Providers** or in `.env.secrets`.
 
 ### Watcher notification
 
@@ -117,10 +117,10 @@ AI_ENRICH_OPENROUTER_MODEL=openrouter/free                    # optional, has de
 AI_ENRICH_OPENROUTER_FALLBACK_MODEL=nex-agi/nex-n2.5-pro:free # optional, has default
 ```
 
-And in `.env.secrets`:
+And the shared `OPENROUTER_API_KEY`, in **Settings → LLM Providers** or `.env.secrets`:
 
 ```bash
-AI_ENRICH_OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_API_KEY=sk-or-...
 ```
 
 Get an API key at [openrouter.ai](https://openrouter.ai/keys).
