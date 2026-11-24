@@ -38,8 +38,12 @@ CSS_SEL_LOGIN_USER = 'input[type=email]'
 CSS_SEL_LOGIN_PWD = 'input[type=password]'
 CSS_SEL_LOGIN_BUTTON = 'button[type=button]'  # login form is rendered twice, the submit is the last button of the last copy
 CSS_SEL_LOGIN_BUTTON_LEGACY = 'button[type=submit]'
-# "keep me signed in" is a custom ARIA toggle: classes are hashed, aria-label is localized, so match on role/aria-checked
-CSS_SEL_LOGIN_REMEMBER_ME = 'div[role=checkbox][aria-checked="true"]'
+# "keep me signed in" moved from an ARIA toggle to a native checkbox; classes/ids are hashed and aria-label is localized
+CSS_SEL_LOGIN_REMEMBER_ME = ', '.join([
+    'div[role=checkbox][aria-checked="true"]',
+    'input[type=checkbox][checked]',
+])
+REMEMBER_ME_LABEL_HINTS = ('remember', 'signed in', 'keep me', 'mantener', 'recordar', 'sesion')
 CSS_SEL_SEARCH_RESULT_ITEMS_FOUND = 'main header div[componentkey=searchResultsHeaderComponent] p'
 CSS_SEL_MESSAGES_HIDE = 'aside#msg-overlay div.msg-overlay-bubble-header__controls button:last-child'
 CSS_SEL_GLOBAL_ALERT_HIDE = 'section.artdeco-global-alert__body button:first-child'
@@ -81,9 +85,24 @@ class LinkedinNavigator(BaseNavigator):
     def uncheck_remember_me(self):
         elms = self.selenium.getElms(CSS_SEL_LOGIN_REMEMBER_ME)
         if not elms:
+            elms = self._find_remember_me_by_label()
+        if not elms:
             logger.info("linkedin.login.remember_me_absent", console=yellow('"Remember me" checkbox not found or already unchecked'))
             return
-        try_or_warn(lambda: self.selenium.checkboxUnselect(elms.pop()), 'Could not uncheck "remember me" checkbox')
+        for elm in elms:
+            try_or_warn(lambda e=elm: self.selenium.checkboxUnselect(e), 'Could not uncheck "remember me" checkbox')
+
+    def _find_remember_me_by_label(self):
+        for elm in self.selenium.getElms('input[type=checkbox], div[role=checkbox]'):
+            label = ' '.join(filter(None, [
+                self.selenium.getAttr(elm, 'aria-label'),
+                self.selenium.getAttr(elm, 'aria-labelledby'),
+                self.selenium.getAttr(elm, 'name'),
+                self.selenium.getAttr(elm, 'id'),
+            ])).lower()
+            if any(hint in label for hint in REMEMBER_ME_LABEL_HINTS):
+                return [elm]
+        return []
 
     @retry()
     def loginSubmit(self):
