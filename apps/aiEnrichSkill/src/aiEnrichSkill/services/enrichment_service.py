@@ -5,11 +5,12 @@ from commonlib.skill_learning_path import LearningPathLink
 from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.services.skill_enricher_service import BackendUnavailable, process_skill_enrichment
 
-from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_enrich_limit
+from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_enrich_limit, is_cloud_backend
 from ..repositories.skill_repository import SkillRepository
 from commonlib.ollama_client import ping_ollama, query_ollama
 from ..domain.mappers import build_skill_prompt_messages
 from ..domain.parsers import parse_skill_enrichment_result
+from .cloud_enrichment import _enrich_cloud
 from .hf_enrichment import _enrich_huggingface
 from .link_validator import validate_learning_paths
 
@@ -98,6 +99,8 @@ def enrich_skills(repository: SkillRepository, ollama_base_url=None) -> int:
         return _enrich_ollama(repository, ollama_base_url)
     elif backend == "huggingface":
         return _enrich_huggingface(repository)
+    elif is_cloud_backend():
+        return _enrich_cloud(repository)
     else:
         logger.error("unknown_backend", backend=backend)
         return 0

@@ -11,6 +11,10 @@ BACKEND_LABELS = {
     "ollama_cloud": "Ollama Cloud",
     "openai": "OpenAI",
     "openrouter": "OpenRouter",
+    "gemini": "Gemini",
+    "groq": "Groq",
+    "cerebras": "Cerebras",
+    "hf-inference": "HuggingFace Inference",
 }
 
 

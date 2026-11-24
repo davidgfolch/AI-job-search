@@ -39,6 +39,15 @@ def test_enrich_skills(mock_hf, mock_ollama, mock_backend, backend, expected, ca
         mock_hf.assert_not_called()
 
 
+def test_enrich_skills_routes_cloud_provider():
+    repository = MagicMock()
+    with patch("aiEnrichSkill.services.enrichment_service.get_backend", return_value="groq"), \
+         patch("aiEnrichSkill.services.enrichment_service.is_cloud_backend", return_value=True), \
+         patch("aiEnrichSkill.services.enrichment_service._enrich_cloud", return_value=7) as mock_cloud:
+        assert enrich_skills(repository) == 7
+    mock_cloud.assert_called_once_with(repository)
+
+
 @patch("aiEnrichSkill.services.enrichment_service.validate_learning_paths")
 @patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
 @patch("aiEnrichSkill.services.enrichment_service.query_ollama")

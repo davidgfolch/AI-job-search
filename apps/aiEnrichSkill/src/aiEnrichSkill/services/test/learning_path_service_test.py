@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from ..idle_scheduler import LearningPathScheduler
-from ..learning_path_service import MODULE, enrich_learning_paths, generate_learning_path_ollama
+from ..learning_path_service import MODULE, enrich_learning_paths, generate_learning_path_cloud, generate_learning_path_ollama
 
 
 @pytest.fixture(autouse=True)
@@ -40,6 +40,29 @@ def test_generate_learning_path_ollama(mock_build, mock_query, mock_parse):
 def test_generate_learning_path_ollama_no_response(mock_build, _mock_query):
     mock_build.return_value = [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}]
     assert generate_learning_path_ollama("Python") == []
+
+
+@patch("aiEnrichSkill.services.learning_path_service.parse_learning_path_result", return_value=["https://docs.python.org/"])
+@patch("aiEnrichSkill.services.learning_path_service.get_backend", return_value="groq")
+@patch("aiEnrichSkill.services.learning_path_service.chat", return_value="https://docs.python.org/")
+def test_generate_learning_path_cloud(mock_chat, _backend, mock_parse):
+    assert generate_learning_path_cloud("Python", "Django") == ["https://docs.python.org/"]
+    assert mock_chat.call_args.args[0] == "groq"
+    mock_parse.assert_called_once_with("https://docs.python.org/")
+
+
+@pytest.mark.parametrize("provider,generator", [
+    ("groq", "generate_learning_path_cloud"),
+    ("huggingface", "generate_learning_path_huggingface"),
+])
+def test_enrich_learning_paths_follows_selected_provider(repository, inference_slot, provider, generator):
+    target = f"aiEnrichSkill.services.learning_path_service.{generator}"
+    with patch("aiEnrichSkill.services.learning_path_service.get_backend", return_value=provider), \
+         patch(target, return_value=["https://docs.python.org/"]) as mock_generate, \
+         patch("aiEnrichSkill.services.learning_path_service.validate_learning_paths", return_value=["https://docs.python.org/"]):
+        assert enrich_learning_paths(repository, scheduler=LearningPathScheduler()) == 1
+    mock_generate.assert_called_once()
+    inference_slot.assert_not_called()
 
 
 @patch("aiEnrichSkill.services.learning_path_service.collector")

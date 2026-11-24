@@ -13,6 +13,18 @@ def _setup(mock_repo, mock_collector, mock_infra, infra=None, errors=None):
     mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
 
 
+@pytest.mark.parametrize("module,backend,expected", [
+    ("aienrich", "ollama", True),
+    ("aienrich", "groq", False),
+    ("aienrichskill", "huggingface", False),
+    ("aicvmatcher", "ollama", False),
+])
+@patch("services.dashboard_service.getEnvFile")
+def test_uses_ollama_follows_live_provider(mock_env, module, backend, expected):
+    mock_env.return_value = backend
+    assert dashboard_service._uses_ollama(module) is expected
+
+
 @patch("services.dashboard_service.get_infrastructure_status")
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")

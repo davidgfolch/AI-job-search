@@ -1,6 +1,6 @@
 # aiEnrichSkill
 
-Decoupled skill enrichment module supporting **Ollama** and **HuggingFace** backends.
+Decoupled skill enrichment module supporting **Ollama**, **HuggingFace** and free-tier cloud providers.
 
 Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table (description, category and learning-path links).
 
@@ -10,8 +10,9 @@ Extracted from `aiEnrich` — provides AI-based enrichment of `job_skills` table
 |---------|-----------|-------------|
 | Ollama (default) | `ollama` | Ollama server running (URL configured in `.env`; see [Ollama Backend](#ollama-backend)) |
 | HuggingFace | `huggingface` | Local transformers, GPU recommended |
+| Cloud | `openrouter`, `gemini`, `groq`, `cerebras`, `hf-inference` | API key in `.env.secrets`; see [LLM providers](../../READMEs/LLM_PROVIDERS.md) |
 
-The backend can be switched live in the web **Settings → LLM Providers** page; the worker picks up the change on its next cycle and re-resolves Ollama when switching back to it. The selector controls skill descriptions only — the idle learning-path backfill keeps using Ollama.
+The backend can be switched live in the web **Settings → LLM Providers** page; the worker picks up the change on its next cycle and re-resolves Ollama when switching back to it. Both the interactive pass and the idle learning-path backfill use the selected provider; only the Ollama pass takes the shared low-priority model slot.
 
 ## Usage
 
@@ -93,9 +94,9 @@ The column is in [scripts/mysql/ddl.sql](../../scripts/mysql/ddl.sql) and the st
 ## Architecture
 
 There are two enrichment passes: an interactive one triggered by a new skill or *Auto-fill with AI*, which produces description,
-category and links, and a low-priority idle backfill for already-enriched skills with no learning paths. The backfill is
-Ollama-only (the HuggingFace path writes links during the interactive pass), runs only while the model is free so real work
-preempts it, and writes legitimate worker output to `job_skills`, so the container needs outbound HTTPS.
+category and links, and a low-priority idle backfill for already-enriched skills with no learning paths. The backfill uses the
+selected provider; with Ollama it runs only while the shared model slot is free so real work preempts it. It writes legitimate
+worker output to `job_skills`, so the container needs outbound HTTPS.
 
 In containers the wait between idle cycles is silent and `docker-compose logs` shows one record per cycle; interactive terminals
 keep the countdown. An unreachable Ollama is waited for instead of exiting (`AI_ENRICHSKILL_MAX_OLLAMA_FAILURES` controls when

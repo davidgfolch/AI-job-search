@@ -101,7 +101,7 @@ Verify with `gh auth status`.
 
 > **Note**: If you are using Docker, you do not need to install Ollama manually — add the `ollama` profile to run it containerized: `docker-compose --profile ollama up -d` (see [DOCKER_DEV.md](DOCKER_DEV.md)). If Ollama is already installed on your host, skip that: the AI modules auto-detect it and the `ollama` container is opt-in.
 
-> **No-Ollama alternative**: if you plan to use the `openrouter` backend for `aiEnrich` (`AI_ENRICH_LLM_BACKEND=openrouter` in `.env`, see [apps/aiEnrich/README.md](../apps/aiEnrich/README.md)), you can skip Ollama entirely for that module — you only need an OpenRouter API key in `.env.secrets`. Ollama is still required by `aiEnrichSkill` (default backend `ollama`) unless it is also switched off.
+> **No-Ollama alternative**: both enrichment workers can use a free-tier cloud provider instead of Ollama (`AI_ENRICH_LLM_BACKEND` / `AI_ENRICHSKILL_BACKEND` in `.env`); keys go in `.env.secrets` and the available providers are listed in [LLM_PROVIDERS.md](LLM_PROVIDERS.md). Ollama remains the default and is still needed by `aiFormFiller` when its provider is `local`.
 
 Download and install from [ollama.com/download](https://ollama.com/download).
 

@@ -28,7 +28,7 @@ def get_openrouter_api_key() -> str | None:
 
 
 def get_openrouter_model() -> str:
-    return getEnv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+    return getEnv("OPENROUTER_MODEL", "openrouter/free")
 
 
 def get_cv_path() -> str:

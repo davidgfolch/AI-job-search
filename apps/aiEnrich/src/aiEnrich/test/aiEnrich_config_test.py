@@ -8,6 +8,7 @@ from aiEnrich.aiEnrich_config import (
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
     get_max_validation_retries, get_backend, get_llm_backend, LLM_BACKEND_ENV,
     get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model, get_backend_url,
+    get_provider_model, is_cloud_backend,
 )
 
 CONFIG_ENV_VARS = [
@@ -79,6 +80,22 @@ def test_get_openrouter_model(env_val, expected):
 def test_get_openrouter_fallback_model(env_val, expected):
     _set_or_unset("AI_ENRICH_OPENROUTER_FALLBACK_MODEL", env_val)
     assert get_openrouter_fallback_model() == expected
+
+
+@pytest.mark.parametrize("backend,expected", [
+    ("openrouter", "openrouter/free"),
+    ("gemini", "gemini-2.5-flash-lite"),
+    ("groq", "openai/gpt-oss-20b"),
+])
+def test_get_provider_model_uses_provider_default(backend, expected, monkeypatch):
+    monkeypatch.setattr(aiEnrich_config, "getEnvFile", lambda key, default: default)
+    assert get_provider_model(backend) == expected
+
+
+@pytest.mark.parametrize("backend,expected", [("ollama", False), ("openrouter", True), ("groq", True)])
+def test_is_cloud_backend(backend, expected, monkeypatch):
+    monkeypatch.setattr(aiEnrich_config, "get_llm_backend", lambda: backend)
+    assert is_cloud_backend() is expected
 
 
 def _set_or_unset(key: str, value):

@@ -1,4 +1,7 @@
+from commonlib.cloud_llm import get_api_key as get_cloud_api_key, get_model as get_cloud_model, is_cloud
+
 from ..models.base import AIProvider, AnswerResult
+from ..models.cloud_provider import CloudProvider
 from ..models.local_hf import LocalHFProvider
 from ..models.openai_provider import OpenAIProvider
 from ..models.openrouter import OpenRouterProvider
@@ -45,6 +48,8 @@ class QuestionAnsweringService:
             if not key:
                 raise ValueError("OPENROUTER_API_KEY not configured")
             return OpenRouterProvider(key, cfg.get_openrouter_model())
+        elif is_cloud(provider_name):
+            return CloudProvider(provider_name, get_cloud_api_key(provider_name), get_cloud_model(provider_name))
         else:
             raise ValueError(f"Unknown provider: {provider_name}")
 

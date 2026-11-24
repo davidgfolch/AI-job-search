@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 
 class TestCheckBackendAvailable:
     def test_waits_instead_of_exiting_when_no_server_was_ever_resolved(self, monkeypatch):
@@ -75,3 +77,25 @@ class TestPingBackend:
             assert ollama_backend.ping_backend() is True
         mock_ping_or.assert_called_once()
         mock_resolve.assert_not_called()
+
+    @pytest.mark.parametrize("provider", ["gemini", "groq", "cerebras", "hf-inference"])
+    def test_routes_to_cloud_provider(self, monkeypatch, provider):
+        from aiEnrich import ollama_backend
+        monkeypatch.setattr(ollama_backend, "get_backend", lambda: provider)
+        with patch.object(ollama_backend, "ping_cloud", return_value=True) as mock_ping, \
+             patch.object(ollama_backend, "probe_resolve_ollama_url") as mock_resolve:
+            assert ollama_backend.ping_backend() is True
+        mock_ping.assert_called_once_with(provider)
+        mock_resolve.assert_not_called()
+
+    @pytest.mark.parametrize("provider", ["gemini", "groq", "cerebras", "hf-inference"])
+    def test_query_job_uses_shared_cloud_client(self, monkeypatch, provider):
+        from aiEnrich import ollama_backend
+        monkeypatch.setattr(ollama_backend, "get_timeout_job", lambda: 42)
+        with patch.object(ollama_backend, "query_cloud", return_value="{}") as mock_query, \
+             patch.object(ollama_backend, "query_ollama") as mock_ollama:
+            assert ollama_backend._query_job("prompt", provider, "model") == "{}"
+        assert mock_query.call_args.args[0] == provider
+        assert mock_query.call_args.kwargs["timeout"] == 42
+        mock_ollama.assert_not_called()
+

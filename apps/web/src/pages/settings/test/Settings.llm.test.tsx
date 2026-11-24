@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Settings from '../Settings';
 import { settingsApi } from '../api/SettingsApi';
 import { renderWithClient, setupSettingsMocks } from './Settings.mocks';
+import { CLOUD_OPTIONS } from '../llmProviders';
 
 vi.mock('../api/SettingsApi');
 vi.mock('../utils/SettingsUtils');
@@ -28,9 +29,10 @@ describe('Settings LLM provider selectors', () => {
         expect(enrich.value).toBe('ollama');
         expect(skill.value).toBe('ollama');
         expect(formFiller.value).toBe('local');
-        expect([...enrich.options].map(o => o.value)).toEqual(['ollama', 'openrouter']);
-        expect([...skill.options].map(o => o.value)).toEqual(['ollama', 'huggingface']);
-        expect([...formFiller.options].map(o => o.value)).toEqual(['local', 'openrouter', 'openai']);
+        const cloud = CLOUD_OPTIONS.map(o => o.value);
+        expect([...enrich.options].map(o => o.value)).toEqual(['ollama', ...cloud]);
+        expect([...skill.options].map(o => o.value)).toEqual(['ollama', 'huggingface', ...cloud]);
+        expect([...formFiller.options].map(o => o.value)).toEqual(['local', ...cloud, 'openai']);
     });
 
     it('keeps API keys beside the selectors and the form-filler fields with aiFormFiller', async () => {
@@ -48,6 +50,11 @@ describe('Settings LLM provider selectors', () => {
         expect(document.querySelectorAll('#env-OPENROUTER_MODEL')).toHaveLength(1);
         expect(document.getElementById('env-OPENAI_API_KEY')).toHaveAttribute('type', 'password');
         expect(document.getElementById('env-OPENROUTER_API_KEY')).toHaveAttribute('type', 'password');
+        for (const key of ['GEMINI_API_KEY', 'GROQ_API_KEY', 'CEREBRAS_API_KEY', 'HF_TOKEN']) {
+            expect(section).toContainElement(document.getElementById(`env-${key}`)!);
+            expect(document.getElementById(`env-${key}`)).toHaveAttribute('type', 'password');
+            expect(document.querySelectorAll(`#env-${key}`)).toHaveLength(1);
+        }
     });
 
     it('saves aiEnrich immediately without saving the whole env or the other selector', async () => {

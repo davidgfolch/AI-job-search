@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from commonlib.environmentUtil import getEnv
+from commonlib.envFileUtil import getEnvFile
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.systemUtil import isDocker
@@ -22,7 +22,15 @@ MODULE_METRIC_KEYS = {
     "aicvmatcher": "aiCvMatcher",
 }
 OLLAMA_MODULES = {"aienrich", "aienrichskill"}
-LLM_BACKEND = getEnv("AI_ENRICH_LLM_BACKEND", "ollama").strip().lower()
+LLM_BACKEND_ENVS = {"aienrich": "AI_ENRICH_LLM_BACKEND", "aienrichskill": "AI_ENRICHSKILL_BACKEND"}
+LLM_BACKEND = getEnvFile("AI_ENRICH_LLM_BACKEND", "ollama").strip().lower()
+
+
+def _uses_ollama(module: str) -> bool:
+    if module not in OLLAMA_MODULES:
+        return False
+    backend = getEnvFile(LLM_BACKEND_ENVS[module], "ollama").strip().lower()
+    return backend == "ollama"
 
 
 def get_services_status() -> dict:
@@ -45,7 +53,7 @@ def get_services_status() -> dict:
             "displayName": _display_name(module),
             "status": status,
             "lastActivity": last_processed,
-            "usesOllama": module in OLLAMA_MODULES,
+            "usesOllama": _uses_ollama(module),
             "deployment": m.get("deployment") or ("docker" if isDocker() else "host"),
             "metrics": {
                 "pendingJobs": m.get("pending_jobs", 0),

@@ -1,3 +1,4 @@
+from commonlib.cloud_llm import chat as query_cloud, is_cloud, ping as ping_cloud
 from commonlib.ollama_client import query_ollama
 from commonlib.ollama_probe import forget_server
 from commonlib.ollama_probe import resolve_ollama_url as probe_resolve_ollama_url
@@ -7,7 +8,7 @@ from .aiEnrich_config import (
     get_max_ollama_failures, get_openrouter_base_url, get_openrouter_fallback_model,
 )
 from .extraction_contract import COMPANY_SCHEMA, EXTRACTION_SCHEMA
-from .openrouter_client import ping_openrouter, query_openrouter
+from .openrouter_client import SYSTEM_PROMPT, ping_openrouter, query_openrouter
 
 logger = get_logger("aiEnrich.ollama_backend")
 
@@ -24,6 +25,12 @@ def _query_job(prompt: str, backend: str, model: str, response_schema: dict | No
         return query_openrouter(
             prompt=prompt, model=model, base_url=get_openrouter_base_url(), timeout=get_timeout_job(), json_mode=False,
             fallback_model=get_openrouter_fallback_model(),
+        )
+    if is_cloud(backend):
+        return query_cloud(
+            backend,
+            messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
+            timeout=get_timeout_job(), json_mode=False,
         )
     return query_ollama(
         prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True,
@@ -42,8 +49,11 @@ def _query_company(prompt: str, backend: str, model: str):
 
 def ping_backend() -> bool:
     global _resolved_ollama_url
-    if get_backend() == "openrouter":
+    backend = get_backend()
+    if backend == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
+    if is_cloud(backend):
+        return ping_cloud(backend)
     # Liveness checks reuse the cached server while it answers. When it stops
     # answering, drop it and resolve again: the LAN host may have gone to sleep
     # and come back on another DHCP address, so pinging the cached URL forever

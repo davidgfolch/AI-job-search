@@ -18,7 +18,7 @@ from commonlib.observability import get_logger, job_log_context
 from commonlib.services.metrics_collector import MetricsCollector
 from .aiEnrich_config import (
     get_model, get_max_validation_retries,
-    get_backend, get_openrouter_model,
+    get_backend, get_provider_model,
     get_max_ollama_failures, get_backend_url, get_timeout_job,
 )
 from .ollama_backend import (
@@ -72,7 +72,7 @@ def _process_job_safe(
             title, company, markdown = mapJob(job)
             try:
                 backend = get_backend()
-                model = get_openrouter_model() if backend == "openrouter" else get_model()
+                model = get_provider_model(backend) if backend != "ollama" else get_model()
                 logger.info("job.started", job_id=id, title=title, company=company, input_len=len(markdown), total=live_total, index=idx + 1, backend=backend, model=model, config=repo.config_for_job(id) or "NONE")
                 prompt = build_extraction_prompt(title, markdown)
                 result, response = None, None

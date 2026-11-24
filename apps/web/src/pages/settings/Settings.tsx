@@ -9,29 +9,13 @@ import { groupSettingsByKey, getSubgroupTitle } from './utils/SettingsUtils';
 import MessageContainer from '../common/components/core/MessageContainer';
 import { FormField } from '../common/components/core/FormField';
 import { useEnvSettings } from '../common/hooks/useEnvSettings';
+import { LLM_PROVIDERS, SHARED_PROVIDER_FIELDS } from './llmProviders';
 import './Settings.css';
 
 type SetStateAction<T> = React.Dispatch<React.SetStateAction<T>>;
 type CodeEditorProps = { value: string; onValueChange: (code: string) => void; highlight: (code: string) => ReactNode; padding: number; className: string };
 
 const Editor = ((EditorImport as unknown as { default?: unknown }).default ?? EditorImport) as React.ComponentType<CodeEditorProps>;
-
-const LLM_PROVIDERS: { key: string; label: string; options: { value: string; label: string }[]; fields: string[] }[] = [
-    { key: 'AI_ENRICH_LLM_BACKEND', label: 'aiEnrich', fields: [], options: [
-        { value: 'ollama', label: 'Ollama (local/LAN)' },
-        { value: 'openrouter', label: 'OpenRouter (cloud)' }
-    ] },
-    { key: 'AI_ENRICHSKILL_BACKEND', label: 'aiEnrichSkill', fields: [], options: [
-        { value: 'ollama', label: 'Ollama (local/LAN)' },
-        { value: 'huggingface', label: 'HuggingFace (local)' }
-    ] },
-    { key: 'AI_FORM_PROVIDER', label: 'aiFormFiller', fields: ['OPENAI_API_KEY', 'OPENROUTER_MODEL'], options: [
-        { value: 'local', label: 'Local (HuggingFace)' },
-        { value: 'openrouter', label: 'OpenRouter (cloud)' },
-        { value: 'openai', label: 'OpenAI (cloud)' }
-    ] }
-];
-const SHARED_PROVIDER_FIELDS = ['OPENROUTER_API_KEY'];
 
 export default function Settings() {
     const { data: envSettingsData, isError: isEnvError, updateSettings } = useEnvSettings();
@@ -164,7 +148,7 @@ function sortSubGroups(a: string, b: string, groupName: string) {
 }
 
 function renderInlineItem(key: string, envSettings: Record<string, string>, setEnvSettings: SetStateAction<Record<string, string>>) {
-    const isPassword = key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') || key.includes('API_KEY');
+    const isPassword = key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') || key.includes('API_KEY') || key.endsWith('_TOKEN');
     return (<FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item"><input id={`env-${key}`} name={key} className="env-input compact-input" type={isPassword ? "password" : "text"} value={envSettings[key] || ''} onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })} /></FormField>);
 }
 

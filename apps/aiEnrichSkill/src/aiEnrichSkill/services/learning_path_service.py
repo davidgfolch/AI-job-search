@@ -1,12 +1,14 @@
 import time
+from contextlib import nullcontext
 from typing import List, Optional
 
+from commonlib.cloud_llm import chat, is_cloud
 from commonlib.ollama_activity import LOW_PRIORITY, request_slot
 from commonlib.ollama_client import query_ollama
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
 
-from ..config import get_learning_path_batch, get_ollama_base_url, get_ollama_model, get_timeout
+from ..config import get_backend, get_learning_path_batch, get_ollama_base_url, get_ollama_model, get_timeout
 from ..domain.mappers import build_learning_path_prompt_messages
 from ..domain.parsers import parse_learning_path_result
 from ..repositories.skill_repository import SkillRepository
@@ -40,6 +42,40 @@ def generate_learning_path_ollama(skill_name: str, context: str = "", ollama_bas
     return parse_learning_path_result(raw)
 
 
+def generate_learning_path_cloud(skill_name: str, context: str = "") -> List[str]:
+    provider = get_backend()
+    raw = chat(provider, messages=build_learning_path_prompt_messages(skill_name, context), timeout=int(get_timeout()))
+    if raw is None:
+        logger.error("skill.learning_path.failed", skill=skill_name, provider=provider)
+        return []
+    return parse_learning_path_result(raw)
+
+
+def generate_learning_path_huggingface(skill_name: str, context: str = "") -> List[str]:
+    from ..llm_client import get_pipeline
+    from ..llm_utils import process_batch
+
+    outputs = []
+
+    def apply_template(tokenizer, messages):
+        return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+    def build_messages(item):
+        return build_learning_path_prompt_messages(item["name"], item["context"])
+
+    def on_success(_item, generated_text):
+        outputs.append(generated_text)
+
+    def on_error(item, exc):
+        logger.warning("skill.learning_path.failed", skill=item["name"], error=str(exc))
+
+    process_batch(
+        get_pipeline(), [{"name": skill_name, "context": context}],
+        apply_template, build_messages, on_success, on_error, get_timeout(), "learning paths",
+    )
+    return parse_learning_path_result(outputs[0]) if outputs else []
+
+
 def enrich_learning_paths(repository: SkillRepository, ollama_base_url: Optional[str] = None, scheduler: Optional[LearningPathScheduler] = None) -> int:
     """Low-priority backfill: starts only while the model is free and yields as soon as priority work appears."""
     scheduler = scheduler or LearningPathScheduler()
@@ -50,6 +86,9 @@ def enrich_learning_paths(repository: SkillRepository, ollama_base_url: Optional
         scheduler.note_stopped()
         return 0
     updated = 0
+    provider = get_backend()
+    cloud = is_cloud(provider)
+    local_hf = provider == "huggingface"
     for name in candidates:
         if updated >= batch:
             break
@@ -58,13 +97,20 @@ def enrich_learning_paths(repository: SkillRepository, ollama_base_url: Optional
             scheduler.note_stopped()
             break
         start = time.time()
+        slot = nullcontext(True) if cloud or local_hf else request_slot(priority=LOW_PRIORITY)
         try:
-            with request_slot(priority=LOW_PRIORITY) as acquired:
+            with slot as acquired:
                 if not acquired:
                     scheduler.note_deferred("model_busy")
                     return updated
                 scheduler.note_started()
-                urls = generate_learning_path_ollama(name, fetch_skill_context_safe(repository, name), ollama_base_url)
+                context = fetch_skill_context_safe(repository, name)
+                if cloud:
+                    urls = generate_learning_path_cloud(name, context)
+                elif local_hf:
+                    urls = generate_learning_path_huggingface(name, context)
+                else:
+                    urls = generate_learning_path_ollama(name, context, ollama_base_url)
             learning_path = validate_learning_paths(name, urls)
             if not learning_path:
                 raise UnverifiableLearningPath()

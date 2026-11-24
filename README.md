@@ -139,6 +139,7 @@ Cross-cutting developer concerns are documented once, in the reference guides un
 - **Development**: [README_DEVELOPMENT.md](READMEs/README_DEVELOPMENT.md)
 - **Contributing**: [README_CONTRIBUTE.md](READMEs/README_CONTRIBUTE.md)
 - **Docker**: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md)
+- **LLM providers & free tiers**: [LLM_PROVIDERS.md](READMEs/LLM_PROVIDERS.md)
 - **GitHub Automation (CI & Dependabot)**: [README_GITHUB.md](READMEs/README_GITHUB.md)
 - **Metrics & Grafana**: [README_METRICS.md](READMEs/README_METRICS.md)
 - **Agentic SDLC** (agents, CodeGraph, guardrails): [AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md)

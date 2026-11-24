@@ -41,6 +41,15 @@ class TestQuestionAnsweringService(unittest.TestCase):
         result = self.service.answer("Question?", "openrouter")
         self.assertEqual(result.text, "OR Answer")
 
+    def test_answer_uses_cloud_provider(self):
+        with patch("aiFormFiller.services.question_answering_service.CloudProvider") as mock_cloud, \
+             patch("aiFormFiller.services.question_answering_service.get_cloud_api_key", return_value="key"), \
+             patch("aiFormFiller.services.question_answering_service.get_cloud_model", return_value="model"):
+            mock_cloud.return_value = make_mock_provider(text="Cloud Answer", provider="groq")
+            result = self.service.answer("Question?", "groq")
+        self.assertEqual(result.text, "Cloud Answer")
+        mock_cloud.assert_called_once_with("groq", "key", "model")
+
     @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
     @patch("aiFormFiller.services.question_answering_service.cfg")
     def test_answer_builds_prompt_with_context(self, mock_cfg, mock_hf):

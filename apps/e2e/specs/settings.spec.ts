@@ -39,6 +39,11 @@ test.describe('Settings E2E', () => {
         await expect(page.locator('#llm-provider-AI_ENRICH_LLM_BACKEND')).toHaveValue('ollama');
         await expect(page.locator('#llm-provider-AI_ENRICHSKILL_BACKEND')).toHaveValue('ollama');
         await expect(page.locator('#llm-provider-AI_FORM_PROVIDER')).toHaveValue('local');
+        for (const provider of ['openrouter', 'gemini', 'groq', 'cerebras', 'hf-inference']) {
+            await expect(page.locator(`#llm-provider-AI_ENRICH_LLM_BACKEND option[value="${provider}"]`)).toHaveCount(1);
+            await expect(page.locator(`#llm-provider-AI_ENRICHSKILL_BACKEND option[value="${provider}"]`)).toHaveCount(1);
+            await expect(page.locator(`#llm-provider-AI_FORM_PROVIDER option[value="${provider}"]`)).toHaveCount(1);
+        }
 
         const firstPost = page.waitForRequest(ENV_SINGLE_POST);
         await page.locator('#llm-provider-AI_ENRICH_LLM_BACKEND').selectOption('openrouter');
@@ -68,6 +73,10 @@ test.describe('Settings E2E', () => {
         await expect(page.locator('.env-variables-section #env-OPENAI_API_KEY')).toHaveCount(0);
         await expect(page.locator('.env-variables-section #env-OPENROUTER_API_KEY')).toHaveCount(0);
         await expect(page.locator('.env-variables-section #env-OPENROUTER_MODEL')).toHaveCount(0);
+        for (const key of ['GEMINI_API_KEY', 'GROQ_API_KEY', 'CEREBRAS_API_KEY', 'HF_TOKEN']) {
+            await expect(page.locator(`.llm-providers-section #env-${key}`)).toHaveCount(1);
+            await expect(page.locator(`.env-variables-section #env-${key}`)).toHaveCount(0);
+        }
     });
 
     test('should save the OpenAI API key from the provider section', async ({ page }) => {

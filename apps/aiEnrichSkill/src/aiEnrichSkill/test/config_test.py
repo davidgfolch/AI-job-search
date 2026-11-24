@@ -32,6 +32,8 @@ from ..config import (
     get_learning_domains,
     get_learning_path_system_prompt,
     DEFAULT_LEARNING_DOMAINS,
+    get_provider_model,
+    is_cloud_backend,
 )
 
 
@@ -54,6 +56,19 @@ def test_get_backend_default_ollama(_mock_env):
 @patch("aiEnrichSkill.config.getEnvFile", return_value="huggingface")
 def test_get_backend_huggingface(_mock_env):
     assert get_backend() == "huggingface"
+
+
+@pytest.mark.parametrize("backend,expected", [("ollama", "ollama/qwen2.5:3b"), ("groq", "openai/gpt-oss-20b")])
+def test_get_provider_model_follows_selected_backend(backend, expected):
+    with patch("aiEnrichSkill.config.get_backend", return_value=backend), \
+         patch("aiEnrichSkill.config.get_cloud_model", return_value="openai/gpt-oss-20b"):
+        assert get_provider_model() == expected
+
+
+@pytest.mark.parametrize("backend,expected", [("ollama", False), ("huggingface", False), ("gemini", True)])
+def test_is_cloud_backend(backend, expected):
+    with patch("aiEnrichSkill.config.get_backend", return_value=backend):
+        assert is_cloud_backend() is expected
 
 
 @pytest.mark.parametrize("getter, raw, expected", [

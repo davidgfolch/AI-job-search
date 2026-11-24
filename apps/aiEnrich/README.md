@@ -1,13 +1,13 @@
 # AI Job Enrichment
 
-Job data enrichment service using Ollama LLMs (local) or OpenRouter (cloud).
+Job data enrichment service using Ollama LLMs (local) or a free-tier cloud provider.
 
 ## Overview
 
-This application enriches job data (e.g., extracting salary, technologies); a job may have several modalities at once (REMOTE/HYBRID/ON_SITE) and the LLM extracts the full set (overwriting the deterministic scrape-time value when valid, otherwise the scrape-time value is kept). Two LLM providers are supported, selected with the `AI_ENRICH_LLM_BACKEND` environment variable:
+This application enriches job data (e.g., extracting salary, technologies); a job may have several modalities at once (REMOTE/HYBRID/ON_SITE) and the LLM extracts the full set (overwriting the deterministic scrape-time value when valid, otherwise the scrape-time value is kept). The provider is selected with the `AI_ENRICH_LLM_BACKEND` environment variable:
 
 - **Ollama** (`ollama`, default): local models, free, no API key required. Communicates over Ollama's `/api/generate` HTTP API.
-- **OpenRouter** (`openrouter`): cloud models via the OpenAI-compatible API at openrouter.ai. Requires an API key, no local model/server needed.
+- **Cloud** (`openrouter`, `gemini`, `groq`, `cerebras`, `hf-inference`): OpenAI-compatible APIs with free tiers. Requires a key; see [LLM providers](../../READMEs/LLM_PROVIDERS.md).
 
 ## Job selection
 
