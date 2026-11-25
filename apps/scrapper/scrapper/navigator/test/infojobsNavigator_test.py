@@ -167,6 +167,21 @@ class TestInfojobsNavigator:
             navigator.scroll_jobs_list(0)
             mock_selenium.scrollIntoView.assert_called()
 
+    @pytest.mark.parametrize('style, expected', [
+        (None, 'border: 5px solid red;'),
+        ('color: blue;', 'color: blue;border: 5px solid red;'),
+    ])
+    def test_scroll_jobs_list_marks_new_cards_without_requiring_style(self, navigator, mock_selenium, style, expected):
+        """InfoJobs cards have no style attribute; reading it through getAttr used to exhaust all retries."""
+        li = MagicMock()
+        li.get_attribute.return_value = style
+        mock_selenium.getElms.side_effect = [[], [li], [MagicMock()]]
+        with patch('scrapper.navigator.infojobsNavigator.sleep'):
+            navigator.scroll_jobs_list(0)
+        mock_selenium.getAttr.assert_not_called()
+        mock_selenium.setAttr.assert_any_call(li, 'style', expected)
+        mock_selenium.setAttr.assert_any_call(li, 'style', '')
+
     def test_get_job_data(self, navigator, mock_selenium):
         mock_selenium.getText.side_effect = ["Title", "Company", "Location"]
         mock_selenium.getUrl.return_value = "http://job.url"

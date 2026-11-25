@@ -154,7 +154,9 @@ class InfojobsNavigator(BaseNavigator):
         links = self.selenium.getElms(CSS_SEL_JOB_LINK)
         if idx >= len(links):
             for li in self.selenium.getElms(CSS_SEL_JOB_LI)[len(links)-1:]:
-                self.selenium.setAttr(li, 'style', (self.selenium.getAttr(li, 'style') or '')+'border: 5px solid red;')
+                # InfoJobs omits style on fresh cards; getAttr() raises on a missing/empty value, so read it tolerantly.
+                style = li.get_attribute('style') or ''
+                self.selenium.setAttr(li, 'style', style+'border: 5px solid red;')
                 self.selenium.scrollIntoView(li)
                 sleep(0.5, 1)
                 self.selenium.setAttr(li, 'style', '')
