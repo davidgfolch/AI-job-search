@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from scrapper.core.baseScrapper import htmlToMarkdown
 from scrapper.navigator.components.linkedinDetailReader import (
     LinkedinDetailReader, CSS_SEL_JOB_DETAIL, CSS_SEL_JOB_TITLE_LINK, CSS_SEL_DETAIL_COMPANY, CSS_SEL_JOB_EASY_APPLY, CSS_SEL_JOB_FIT_PREFERENCES,
-    CSS_SEL_JOB_DESCRIPTION_LEGACY, CSS_SEL_JOB_DESCRIPTION_BOX, JS_FIND_ABOUT_THE_JOB_SECTION, JS_READ_FIRST_TEXT_BOX,
+    CSS_SEL_JOB_DESCRIPTION_LEGACY, CSS_SEL_JOB_DESCRIPTION_BOX, JS_FIND_ABOUT_THE_JOB_SECTION, JS_READ_FIRST_TEXT_BOX, CSS_SEL_DETAIL_COMPANY_FALLBACKS as COMPANY_FALLBACKS,
 )
 from selenium.common.exceptions import NoSuchElementException
 
@@ -28,9 +28,14 @@ class TestLinkedinDetailReader:
         mock_selenium.getText.assert_any_call(CSS_SEL_DETAIL_COMPANY)
 
     def test_read_missing_field_raises(self, reader, mock_selenium):
-        mock_selenium.getText.side_effect = ['Title', '', 'Location']
+        mock_selenium.getText.side_effect = ['Title', '', '', '', '', '', '']
         with pytest.raises(NoSuchElementException, match='Missing job detail fields'):
             reader.read()
+
+    @pytest.mark.parametrize("first_result", [NoSuchElementException('pane p link'), ''])
+    def test_company_falls_back_to_pane_and_public_selectors(self, reader, mock_selenium, first_result):
+        mock_selenium.configure_mock(**{'getText.side_effect': ['Title', first_result, NoSuchElementException('pane link'), 'Public Co', 'Loc'], 'getAttr.return_value': 'u', 'getHtml.return_value': 'h'})
+        assert reader.read()[1] == 'Public Co' and COMPANY_FALLBACKS[0].startswith(CSS_SEL_JOB_DETAIL) and any('topcard__org-name-link' in s for s in COMPANY_FALLBACKS)
 
     def test_read_location_falls_back_to_wide_p(self, reader, mock_selenium):
         """The compact span carries city/country only, the parent p adds the posting age"""
