@@ -8,7 +8,7 @@ from commonlib.ollama_client import query_ollama
 from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
 
-from ..config import get_backend, get_learning_path_batch, get_ollama_base_url, get_ollama_model, get_timeout
+from ..config import get_backend, get_learning_path_batch, get_ollama_base_url, get_ollama_model, get_provider_model, get_timeout
 from ..domain.mappers import build_learning_path_prompt_messages
 from ..domain.parsers import parse_learning_path_result
 from ..repositories.skill_repository import SkillRepository
@@ -44,7 +44,7 @@ def generate_learning_path_ollama(skill_name: str, context: str = "", ollama_bas
 
 def generate_learning_path_cloud(skill_name: str, context: str = "") -> List[str]:
     provider = get_backend()
-    raw = chat(provider, messages=build_learning_path_prompt_messages(skill_name, context), timeout=int(get_timeout()))
+    raw = chat(provider, messages=build_learning_path_prompt_messages(skill_name, context), timeout=int(get_timeout()), model=get_provider_model())
     if raw is None:
         logger.error("skill.learning_path.failed", skill=skill_name, provider=provider)
         return []

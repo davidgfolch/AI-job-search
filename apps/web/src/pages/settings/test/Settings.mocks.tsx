@@ -20,6 +20,7 @@ export const setupSettingsMocks = () => {
         return key;
     });
     vi.mocked(settingsApi.getEnvSettings).mockResolvedValue(mockEnvSettings);
+    vi.mocked(settingsApi.getProviderModels).mockImplementation(async (provider) => ({ provider, models: [], source: 'fallback', cached: false, fetched_at: null }));
     vi.mocked(settingsApi.getScrapperState).mockResolvedValue(mockScrapperState);
     vi.mocked(settingsApi.updateEnvSetting).mockImplementation(async (key, value) => ({ [key]: value }));
     vi.mocked(settingsApi.updateEnvSettingsBulk).mockImplementation(async (settings) => settings);

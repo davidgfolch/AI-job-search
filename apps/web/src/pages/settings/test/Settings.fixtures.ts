@@ -8,9 +8,11 @@ export const mockEnvSettings = {
     'AI_ENRICH_LLM_BACKEND': 'ollama',
     'AI_ENRICHSKILL_BACKEND': 'ollama',
     'AI_FORM_PROVIDER': 'local',
+    'AI_ENRICH_OLLAMA_MODEL': 'ollama/qwen2.5:3b',
+    'AI_ENRICHSKILL_OLLAMA_MODEL': 'ollama/qwen2.5:3b',
+    'AI_FORM_HF_MODEL': 'Qwen/Qwen2.5-1.5B-Instruct',
     'OPENAI_API_KEY': 'sk-openai-test',
-    'OPENROUTER_API_KEY': 'sk-or-test',
-    'OPENROUTER_MODEL': 'openai/gpt-4o-mini'
+    'OPENROUTER_API_KEY': 'sk-or-test'
 };
 
 export const mockGroupedSettings = {

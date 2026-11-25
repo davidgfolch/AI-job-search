@@ -1,3 +1,4 @@
+from commonlib.cloud_llm import get_module_model as get_cloud_module_model
 from commonlib.envFileUtil import getEnvFile
 from commonlib.environmentUtil import getEnv
 
@@ -29,6 +30,16 @@ def get_openrouter_api_key() -> str | None:
 
 def get_openrouter_model() -> str:
     return getEnv("OPENROUTER_MODEL", "openrouter/free")
+
+
+def get_module_model(provider: str) -> str:
+    if provider == "local":
+        return get_hf_model()
+    if provider == "openai":
+        return getEnv("AI_FORM_OPENAI_MODEL", "gpt-4o-mini")
+    if provider == "openrouter":
+        return getEnv("AI_FORM_OPENROUTER_MODEL", "openrouter/free")
+    return get_cloud_module_model("AI_FORM", provider)
 
 
 def get_cv_path() -> str:

@@ -4,7 +4,7 @@ import pytest
 
 from commonlib.cloud_llm import (
     CEREBRAS, GEMINI, GROQ, HF_INFERENCE, OPENROUTER, PROVIDERS,
-    chat, get_api_key, get_base_url, get_model, is_cloud, ping,
+    chat, get_api_key, get_base_url, get_model, get_module_model, is_cloud, list_models, ping,
 )
 
 
@@ -104,3 +104,56 @@ def test_chat_returns_none_when_every_attempt_fails():
          patch("commonlib.cloud_llm.requests.post", side_effect=OSError("offline")), \
          patch("commonlib.cloud_llm.time.sleep"):
         assert chat(GEMINI, [{"role": "user", "content": "hi"}]) is None
+
+
+def test_chat_honors_explicit_model():
+    with patch("commonlib.cloud_llm.get_api_key", return_value="key"), \
+         patch("commonlib.cloud_llm.requests.post", return_value=_response("ok")) as post:
+        chat(GROQ, [{"role": "user", "content": "hi"}], model="custom/groq-model")
+    assert post.call_args.kwargs["json"]["model"] == "custom/groq-model"
+
+
+@pytest.mark.parametrize("module,provider,key", [
+    ("AI_ENRICH", GROQ, "AI_ENRICH_GROQ_MODEL"),
+    ("AI_ENRICHSKILL", GEMINI, "AI_ENRICHSKILL_GEMINI_MODEL"),
+    ("AI_FORM", "openrouter", "AI_FORM_OPENROUTER_MODEL"),
+])
+def test_get_module_model_reads_worker_scoped_key(module, provider, key):
+    with patch("commonlib.cloud_llm.getEnvFile", side_effect=lambda name, default: "chosen" if name == key else default):
+        assert get_module_model(module, provider) == "chosen"
+
+
+def _models_response(data):
+    response = MagicMock()
+    response.json.return_value = {"data": data}
+    return response
+
+
+def test_list_models_sorts_free_first():
+    data = [
+        {"id": "paid/model", "pricing": {"prompt": "0.001", "completion": "0.002"}},
+        {"id": "free/model:free", "pricing": {"prompt": "0", "completion": "0"}},
+        {"name": "named-free", "pricing": {"prompt": 0, "completion": 0}},
+    ]
+    with patch("commonlib.cloud_llm.get_api_key", return_value="key"), \
+         patch("commonlib.cloud_llm.requests.get", return_value=_models_response(data)) as get:
+        models = list_models(OPENROUTER)
+    assert get.call_args.args[0].endswith("/models")
+    assert [m["id"] for m in models] == ["free/model:free", "named-free", "paid/model"]
+    assert [m["free"] for m in models] == [True, True, False]
+
+
+def test_list_models_ollama_reads_api_tags():
+    response = MagicMock()
+    response.json.return_value = {"models": [{"name": "qwen"}, {"name": "llama"}]}
+    with patch("commonlib.cloud_llm.get_configured_ollama_url", return_value=None), \
+         patch("commonlib.cloud_llm.ollama_probe_urls", return_value=("http://localhost:11434",)), \
+         patch("commonlib.cloud_llm.requests.get", return_value=response) as get:
+        models = list_models("ollama")
+    assert get.call_args.args[0] == "http://localhost:11434/api/tags"
+    assert [m["id"] for m in models] == ["llama", "qwen"]
+
+
+@pytest.mark.parametrize("provider", ["huggingface", "local"])
+def test_list_models_ignores_non_http_providers(provider):
+    assert list_models(provider) == []

@@ -22,9 +22,11 @@ Local values are `ollama` (aiEnrich/aiEnrichSkill), `huggingface` (aiEnrichSkill
 - [Cerebras models and rate limits](https://inference-docs.cerebras.ai/).
 - [HuggingFace Inference Providers](https://huggingface.co/docs/inference-providers/index) — free credits are account-limited.
 
-## Model overrides
+## Model selection
 
-Each provider supports an optional `<PROVIDER>_MODEL` and `<PROVIDER>_BASE_URL` in `.env` (for example `GEMINI_MODEL`, `GROQ_MODEL`, `CEREBRAS_MODEL`, `HF_INFERENCE_MODEL`, `OPENROUTER_MODEL`). The worker reads them on every cycle, so Settings edits apply without a restart. aiEnrich additionally honors `AI_ENRICH_OPENROUTER_MODEL`, `AI_ENRICH_OPENROUTER_BASE_URL` and `AI_ENRICH_OPENROUTER_FALLBACK_MODEL`.
+**Settings → LLM Providers** has one provider selector and one model selector per worker. The model lists are fetched live from each provider's `/models` endpoint (Ollama uses its local `/api/tags`); free models are listed first and a search box filters the options. Lists are cached for `LLM_MODELS_CACHE_TTL_SECONDS` (default 7 days) and the ↻ button forces a reload. When the provider cannot be reached, a small suggested list is shown instead. Each API key field links to where the key can be created.
+
+Cloud model overrides are **per worker** (`AI_ENRICH_<PROVIDER>_MODEL`, `AI_ENRICHSKILL_<PROVIDER>_MODEL`, `AI_FORM_<PROVIDER>_MODEL`), so the same provider can use a different model in each module. Workers read them every cycle, so Settings edits apply without a restart. Provider `<PROVIDER>_BASE_URL` overrides still apply to cloud endpoints. Local models keep their existing keys (`AI_ENRICH_OLLAMA_MODEL`, `AI_ENRICHSKILL_OLLAMA_MODEL`, `AI_ENRICHSKILL_HF_MODEL_ID`, `AI_FORM_HF_MODEL`); aiEnrich also honors `AI_ENRICH_OPENROUTER_BASE_URL` and `AI_ENRICH_OPENROUTER_FALLBACK_MODEL`.
 
 Keep a fallback model for JSON-producing jobs (aiEnrich): free routers rotate models, and a model that ignores `response_format` makes the job fail validation. OpenRouter has a configured fallback; other providers simply retry with the same model, so pick a model with structured-output support when possible.
 

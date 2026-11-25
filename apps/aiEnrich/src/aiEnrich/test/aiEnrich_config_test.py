@@ -88,7 +88,7 @@ def test_get_openrouter_fallback_model(env_val, expected):
     ("groq", "openai/gpt-oss-20b"),
 ])
 def test_get_provider_model_uses_provider_default(backend, expected, monkeypatch):
-    monkeypatch.setattr(aiEnrich_config, "getEnvFile", lambda key, default: default)
+    monkeypatch.setattr(aiEnrich_config, "get_module_model", lambda module, provider: expected)
     assert get_provider_model(backend) == expected
 
 

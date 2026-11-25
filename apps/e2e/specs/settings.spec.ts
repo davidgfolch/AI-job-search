@@ -63,20 +63,38 @@ test.describe('Settings E2E', () => {
         await expect(page.locator('.message')).toContainText('AI_FORM_PROVIDER switched to openai');
     });
 
-    test('should group provider fields with the selectors', async ({ page }) => {
+    test('should show model selectors per module and API keys in one block', async ({ page }) => {
         await page.goto(`${BASE_URL}/settings`);
-        await expect(page.locator('.llm-providers-section #env-OPENAI_API_KEY')).toHaveValue('sk-openai-test');
-        await expect(page.locator('.llm-providers-section #env-OPENROUTER_API_KEY')).toHaveValue('sk-or-test');
-        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_FORM_PROVIDER) #env-OPENAI_API_KEY')).toHaveValue('sk-openai-test');
-        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_FORM_PROVIDER) #env-OPENROUTER_MODEL')).toHaveValue('openai/gpt-4o-mini');
-        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_ENRICH_LLM_BACKEND) #env-OPENAI_API_KEY')).toHaveCount(0);
-        await expect(page.locator('.env-variables-section #env-OPENAI_API_KEY')).toHaveCount(0);
-        await expect(page.locator('.env-variables-section #env-OPENROUTER_API_KEY')).toHaveCount(0);
-        await expect(page.locator('.env-variables-section #env-OPENROUTER_MODEL')).toHaveCount(0);
-        for (const key of ['GEMINI_API_KEY', 'GROQ_API_KEY', 'CEREBRAS_API_KEY', 'HF_TOKEN']) {
+        await expect(page.locator('#llm-model-AI_ENRICH_LLM_BACKEND')).toHaveValue('ollama/qwen2.5:3b');
+        await expect(page.locator('#llm-model-AI_FORM_PROVIDER')).toHaveValue('Qwen/Qwen2.5-1.5B-Instruct');
+        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_FORM_PROVIDER)')).toContainText('AI_FORM_HF_MODEL');
+        for (const key of ['OPENROUTER_API_KEY', 'GEMINI_API_KEY', 'GROQ_API_KEY', 'CEREBRAS_API_KEY', 'HF_TOKEN', 'OPENAI_API_KEY']) {
             await expect(page.locator(`.llm-providers-section #env-${key}`)).toHaveCount(1);
             await expect(page.locator(`.env-variables-section #env-${key}`)).toHaveCount(0);
         }
+        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_FORM_PROVIDER) #env-OPENAI_API_KEY')).toHaveCount(0);
+        await expect(page.locator('.llm-provider-group:has(#llm-provider-AI_ENRICH_LLM_BACKEND) #env-GEMINI_API_KEY')).toHaveCount(0);
+        await expect(page.locator('.llm-providers-section a[href="https://aistudio.google.com/apikey"]')).toBeVisible();
+    });
+
+    test('should list live models free first, filter them and force a refresh', async ({ page }) => {
+        await page.route(/.*\/api\/settings\/provider-models.*/, async (route) => {
+            await route.fulfill({ contentType: 'application/json', json: {
+                provider: 'gemini', source: 'live', cached: false, fetched_at: 1,
+                models: [
+                    { id: 'paid/model', label: 'paid/model', free: false },
+                    { id: 'gemini-2.5-flash-lite', label: 'gemini-2.5-flash-lite', free: true },
+                ],
+            } });
+        });
+        await page.goto(`${BASE_URL}/settings`);
+        await page.locator('#llm-provider-AI_ENRICH_LLM_BACKEND').selectOption('gemini');
+        await expect(page.locator('#llm-model-AI_ENRICH_LLM_BACKEND optgroup[label="Free models"] option')).toHaveCount(1);
+        await page.locator('.llm-provider-group:has(#llm-provider-AI_ENRICH_LLM_BACKEND) input[placeholder="Search models…"]').fill('paid');
+        await expect(page.locator('#llm-model-AI_ENRICH_LLM_BACKEND option')).toHaveCount(1);
+        const refresh = page.waitForRequest(req => /\/api\/settings\/provider-models.*refresh=true/.test(req.url()));
+        await page.locator('.llm-provider-group:has(#llm-provider-AI_ENRICH_LLM_BACKEND) .llm-refresh-btn').click();
+        await refresh;
     });
 
     test('should save the OpenAI API key from the provider section', async ({ page }) => {

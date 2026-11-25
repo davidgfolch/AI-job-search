@@ -30,7 +30,7 @@ def _query_job(prompt: str, backend: str, model: str, response_schema: dict | No
         return query_cloud(
             backend,
             messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
-            timeout=get_timeout_job(), json_mode=False,
+            timeout=get_timeout_job(), json_mode=False, model=model,
         )
     return query_ollama(
         prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True,

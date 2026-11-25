@@ -41,10 +41,11 @@ class TestQuestionAnsweringService(unittest.TestCase):
         result = self.service.answer("Question?", "openrouter")
         self.assertEqual(result.text, "OR Answer")
 
-    def test_answer_uses_cloud_provider(self):
-        with patch("aiFormFiller.services.question_answering_service.CloudProvider") as mock_cloud, \
-             patch("aiFormFiller.services.question_answering_service.get_cloud_api_key", return_value="key"), \
-             patch("aiFormFiller.services.question_answering_service.get_cloud_model", return_value="model"):
+    @patch("aiFormFiller.services.question_answering_service.cfg")
+    @patch("aiFormFiller.services.question_answering_service.CloudProvider")
+    def test_answer_uses_cloud_provider(self, mock_cloud, mock_cfg):
+        make_mock_cfg(mock_cfg, provider="groq")
+        with patch("aiFormFiller.services.question_answering_service.get_cloud_api_key", return_value="key"):
             mock_cloud.return_value = make_mock_provider(text="Cloud Answer", provider="groq")
             result = self.service.answer("Question?", "groq")
         self.assertEqual(result.text, "Cloud Answer")

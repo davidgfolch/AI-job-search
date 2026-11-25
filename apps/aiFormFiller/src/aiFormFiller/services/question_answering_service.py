@@ -1,4 +1,4 @@
-from commonlib.cloud_llm import get_api_key as get_cloud_api_key, get_model as get_cloud_model, is_cloud
+from commonlib.cloud_llm import get_api_key as get_cloud_api_key, is_cloud
 
 from ..models.base import AIProvider, AnswerResult
 from ..models.cloud_provider import CloudProvider
@@ -36,20 +36,21 @@ class QuestionAnsweringService:
         return self._providers[provider_name]
 
     def _create_provider(self, provider_name: str) -> AIProvider:
+        model = cfg.get_module_model(provider_name)
         if provider_name == "local":
-            return LocalHFProvider(cfg.get_hf_model())
+            return LocalHFProvider(model)
         elif provider_name == "openai":
             key = cfg.get_openai_api_key()
             if not key:
                 raise ValueError("OPENAI_API_KEY not configured")
-            return OpenAIProvider(key, cfg.get_openai_model())
+            return OpenAIProvider(key, model)
         elif provider_name == "openrouter":
             key = cfg.get_openrouter_api_key()
             if not key:
                 raise ValueError("OPENROUTER_API_KEY not configured")
-            return OpenRouterProvider(key, cfg.get_openrouter_model())
+            return OpenRouterProvider(key, model)
         elif is_cloud(provider_name):
-            return CloudProvider(provider_name, get_cloud_api_key(provider_name), get_cloud_model(provider_name))
+            return CloudProvider(provider_name, get_cloud_api_key(provider_name), model)
         else:
             raise ValueError(f"Unknown provider: {provider_name}")
 

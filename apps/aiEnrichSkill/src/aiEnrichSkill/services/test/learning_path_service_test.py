@@ -7,7 +7,8 @@ from ..learning_path_service import MODULE, enrich_learning_paths, generate_lear
 
 @pytest.fixture(autouse=True)
 def inference_slot():
-    with patch("aiEnrichSkill.services.learning_path_service.request_slot") as slot:
+    with patch("aiEnrichSkill.services.learning_path_service.get_backend", return_value="ollama"), \
+         patch("aiEnrichSkill.services.learning_path_service.request_slot") as slot:
         slot.return_value.__enter__.return_value = True
         yield slot
 

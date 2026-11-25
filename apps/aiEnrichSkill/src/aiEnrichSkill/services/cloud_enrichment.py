@@ -5,7 +5,7 @@ from commonlib.observability import get_logger
 from commonlib.services.metrics_collector import MetricsCollector
 from commonlib.services.skill_enricher_service import process_skill_enrichment
 
-from ..config import get_backend, get_enrich_limit, get_timeout
+from ..config import get_backend, get_enrich_limit, get_provider_model, get_timeout
 from ..domain.mappers import build_skill_prompt_messages
 from ..domain.parsers import parse_skill_enrichment_result
 from ..repositories.skill_repository import SkillRepository
@@ -18,7 +18,7 @@ collector = MetricsCollector()
 def generate_skill_description_cloud(skill_name, context="") -> tuple[str, str, list]:
     provider = get_backend()
     logger.info("skill.started", skill=skill_name, provider=provider, has_context=bool(context))
-    raw = chat(provider, messages=build_skill_prompt_messages(skill_name, context), timeout=int(get_timeout()))
+    raw = chat(provider, messages=build_skill_prompt_messages(skill_name, context), timeout=int(get_timeout()), model=get_provider_model())
     if raw is None:
         logger.error("skill.failed", skill=skill_name, provider=provider)
         return ("", "Other", [])

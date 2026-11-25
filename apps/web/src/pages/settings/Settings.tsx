@@ -9,7 +9,8 @@ import { groupSettingsByKey, getSubgroupTitle } from './utils/SettingsUtils';
 import MessageContainer from '../common/components/core/MessageContainer';
 import { FormField } from '../common/components/core/FormField';
 import { useEnvSettings } from '../common/hooks/useEnvSettings';
-import { LLM_PROVIDERS, SHARED_PROVIDER_FIELDS } from './llmProviders';
+import { LLM_CONFIG_KEYS } from './llmProviders';
+import LlmProviders from './LlmProviders';
 import './Settings.css';
 
 type SetStateAction<T> = React.Dispatch<React.SetStateAction<T>>;
@@ -72,8 +73,7 @@ export default function Settings() {
     if (isLoading) return <div className="settings-loading">Loading settings...</div>;
 
     const rawGroups = groupSettingsByKey(envSettings);
-    const providerKeys = LLM_PROVIDERS.flatMap(p => [p.key, ...p.fields]).concat(SHARED_PROVIDER_FIELDS);
-    const groupedSettings = Object.fromEntries(Object.entries(rawGroups).map(([group, keys]) => [group, keys.filter(key => !providerKeys.includes(key))]));
+    const groupedSettings = Object.fromEntries(Object.entries(rawGroups).map(([group, keys]) => [group, keys.filter(key => !LLM_CONFIG_KEYS.includes(key))]));
     const sortedGroupNames = Object.keys(groupedSettings).sort((a, b) => {
         const order = ['System & Base', 'UI Frontend', 'Scrapper', 'AI Enrichment', 'Other'];
         const getIdx = (k: string) => (i => i === -1 ? order.length : i)(order.indexOf(k));
@@ -89,25 +89,7 @@ export default function Settings() {
             <main className="settings-main">
                 <MessageContainer message={message} error={null} onDismissMessage={() => setMessage(null)} />
                 <div className="settings-container">
-                    <div className="settings-section llm-providers-section">
-                        <h2>LLM Providers</h2>
-                        <div className="llm-providers-flex">
-                            {LLM_PROVIDERS.map(provider => (
-                                <div key={provider.key} className="llm-provider-group">
-                                    <FormField id={`llm-provider-${provider.key}`} label={<span className="env-key-label">{provider.label}</span>} className="env-item inline-item">
-                                        <select id={`llm-provider-${provider.key}`} name={provider.key} className="env-input compact-input" value={envSettings[provider.key] || 'ollama'} onChange={e => handleProviderChange(provider.key, e.target.value)}>
-                                            {provider.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                                        </select>
-                                    </FormField>
-                                    {provider.fields.map(field => renderInlineItem(field, envSettings, setEnvSettings))}
-                                </div>
-                            ))}
-                        </div>
-                        <div className="llm-provider-related">
-                            {SHARED_PROVIDER_FIELDS.map(field => renderInlineItem(field, envSettings, setEnvSettings))}
-                        </div>
-                        <p className="llm-providers-hint">Selectors apply on the next worker cycle — no Save click needed.</p>
-                    </div>
+                    <LlmProviders envSettings={envSettings} setEnvSettings={setEnvSettings} onSave={handleProviderChange} />
                     <div className="settings-section env-variables-section">
                         <div className="env-section-header"><h2>Environment Variables (.env)</h2><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
                         <div className="env-groups-container">

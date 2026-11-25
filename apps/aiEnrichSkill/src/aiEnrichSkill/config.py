@@ -1,4 +1,4 @@
-from commonlib.cloud_llm import get_model as get_cloud_model, is_cloud
+from commonlib.cloud_llm import get_module_model, is_cloud
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.envFileUtil import getEnvFile
 from commonlib.ollama_config import OLLAMA_HOST_BASE_URL
@@ -22,7 +22,7 @@ def is_cloud_backend() -> bool:
 
 
 def get_provider_model() -> str:
-    return get_cloud_model(get_backend()) if is_cloud_backend() else get_ollama_model()
+    return get_module_model("AI_ENRICHSKILL", get_backend()) if is_cloud_backend() else get_ollama_model()
 
 
 def get_ollama_base_url() -> str:

@@ -1,6 +1,6 @@
 import requests
 
-from commonlib.cloud_llm import get_model as get_cloud_model, is_cloud
+from commonlib.cloud_llm import get_module_model, is_cloud
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.envFileUtil import getEnvFile
 from commonlib.ollama_config import (
@@ -103,4 +103,4 @@ def is_cloud_backend() -> bool:
 
 
 def get_provider_model(backend: str) -> str:
-    return get_openrouter_model() if backend == "openrouter" else get_cloud_model(backend)
+    return get_module_model("AI_ENRICH", backend) if is_cloud(backend) else get_model()
