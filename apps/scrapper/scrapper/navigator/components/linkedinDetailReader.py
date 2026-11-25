@@ -14,6 +14,12 @@ JOB_URL_RE = r'/jobs/view/(\d+)'
 CSS_SEL_JOB_DETAIL = '[data-testid="lazy-column"][componentkey]:has(a[href*="/jobs/view/"])'
 CSS_SEL_JOB_TITLE_LINK = f'{CSS_SEL_JOB_DETAIL} a[href*="/jobs/view/"]'
 CSS_SEL_DETAIL_COMPANY = f'{CSS_SEL_JOB_DETAIL} p a[href*="/company/"]'
+# The company link is not always wrapped in a p inside the pane, and guest job pages use the old topcard instead of the pane.
+CSS_SEL_DETAIL_COMPANY_FALLBACKS = (
+    f'{CSS_SEL_JOB_DETAIL} a[href*="/company/"]',
+    '.topcard__org-name-link',
+    'a.sub-nav-cta__optional-url',
+)
 CSS_SEL_DETAIL_LOCATION = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p > span:first-child'
 CSS_SEL_DETAIL_LOCATION_WIDE = f'{CSS_SEL_JOB_DETAIL} div:has(> div a[href*="/jobs/view/"]) > p'
 # LinkedIn dropped the JobDetails_AboutTheJob_ id and the section carries no stable class/id, so it is anchored on
@@ -71,7 +77,7 @@ class LinkedinDetailReader:
     def read(self) -> Tuple[str, str, str, str, str]:
         self.selenium.waitUntilClickable(CSS_SEL_JOB_TITLE_LINK)
         title = self.selenium.getText(CSS_SEL_JOB_TITLE_LINK)
-        company = self.selenium.getText(CSS_SEL_DETAIL_COMPANY)
+        company = self._first_text(CSS_SEL_DETAIL_COMPANY, *CSS_SEL_DETAIL_COMPANY_FALLBACKS)
         location = self._first_text(CSS_SEL_DETAIL_LOCATION, CSS_SEL_DETAIL_LOCATION_WIDE)
         if not (title and company and location):
             raise NoSuchElementException(f'Missing job detail fields: title={bool(title)} company={bool(company)} location={bool(location)}')
