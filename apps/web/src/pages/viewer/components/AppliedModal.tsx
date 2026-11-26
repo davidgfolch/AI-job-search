@@ -19,7 +19,7 @@ export default function AppliedModal({
     const [comment, setComment] = useState<string>('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    useAutoResizeTextArea(textareaRef, comment, [isOpen]);
+    useAutoResizeTextArea(textareaRef, [isOpen]);
 
     useEffect(() => {
         if (isOpen) {

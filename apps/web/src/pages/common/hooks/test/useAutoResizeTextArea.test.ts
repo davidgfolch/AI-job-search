@@ -34,13 +34,13 @@ describe('useAutoResizeTextArea', () => {
   });
 
   it('sets textarea height based on scrollHeight', () => {
-    renderHook(() => useAutoResizeTextArea(ref, 'test value'));
+    renderHook(() => useAutoResizeTextArea(ref));
     expect(mockElement.style.height).toBe('105px');
   });
 
   it('updates height when value changes', () => {
     const { rerender } = renderHook(
-      ({ value }) => useAutoResizeTextArea(ref, value),
+      ({ value }) => useAutoResizeTextArea(ref, [value]),
       { initialProps: { value: 'initial' } }
     );
     const initialHeight = mockElement.style.height;
@@ -55,13 +55,13 @@ describe('useAutoResizeTextArea', () => {
   it('handles null ref gracefully', () => {
     const nullRef = createRef<HTMLTextAreaElement>();
     expect(() => {
-      renderHook(() => useAutoResizeTextArea(nullRef, 'test'));
+      renderHook(() => useAutoResizeTextArea(nullRef));
     }).not.toThrow();
   });
 
   it('cleans up event listeners on unmount', () => {
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
-    const { unmount } = renderHook(() => useAutoResizeTextArea(ref, 'test'));
+    const { unmount } = renderHook(() => useAutoResizeTextArea(ref));
     unmount();
     expect(removeEventListenerSpy).toHaveBeenCalledWith('resize', expect.any(Function));
   });

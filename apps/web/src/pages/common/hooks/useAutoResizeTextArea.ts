@@ -12,7 +12,7 @@ export function useAutoResizeTextArea(
     dependencies: unknown[] = []
 ) {
     // Use a ref to store the resize function so it's stable across renders
-    const resizeRef = useRef<() => void>();
+    const resizeRef = useRef<(() => void) | undefined>(undefined);
 
     useEffect(() => {
         const element = ref.current;
