@@ -42,3 +42,6 @@ storage/
 # Dependabot sandbox (scripts/test-sandbox.*)
 .docker-sandbox/
 *.bak
+
+# agentmods state (generated on install)
+.agentmods.json

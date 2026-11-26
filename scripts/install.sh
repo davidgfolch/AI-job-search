@@ -198,6 +198,29 @@ echo "Installing Ruff (static analysis)..."
 # `uvx ruff` when it is not on the PATH, so a failure here is not fatal.
 uv tool install ruff || echo "WARNING: ruff install failed; continuing. Install manually with: uv tool install ruff"
 
+echo ""
+echo "Installing Ponytail (lazy senior dev mode for AI agents)..."
+# Install for OpenCode - add to plugins array in opencode.json
+if [ -f ".opencode/opencode.json" ]; then
+    # Use jq to add the plugin if not already present
+    if command -v jq >/dev/null 2>&1; then
+        jq '.plugin |= (. + ["@dietrichgebert/ponytail"] | unique)' .opencode/opencode.json > .opencode/opencode.json.tmp && mv .opencode/opencode.json.tmp .opencode/opencode.json
+        echo "Added @dietrichgebert/ponytail to opencode.json"
+    else
+        echo "WARNING: jq not installed; skipping opencode.json update. Add '@dietrichgebert/ponytail' to plugins array manually."
+    fi
+else
+    echo "WARNING: .opencode/opencode.json not found; skipping OpenCode plugin setup."
+fi
+
+# Install for Claude Code via agentmods (non-interactive)
+if command -v npx >/dev/null 2>&1; then
+    echo "Installing ponytail for Claude Code via agentmods..."
+    npx -y agentmods add commands/dietrichgebert/ponytail/ponytail || echo "WARNING: agentmods install failed; continuing. Install manually with: npx agentmods add commands/dietrichgebert/ponytail/ponytail"
+else
+    echo "WARNING: npx not available; skipping Claude Code ponytail install. Install manually with: npx agentmods add commands/dietrichgebert/ponytail/ponytail"
+fi
+
 for dir in apps/*; do
     name="$(basename "$dir")"
     if [ -d "$dir" ] && [ "$name" != "commonlib" ]; then

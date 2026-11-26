@@ -53,6 +53,34 @@ rem Single zero-dependency binary for the whole repo; scripts\lint.bat falls bac
 rem `uvx ruff` when it is not on the PATH, so a failure here is not fatal.
 uv tool install ruff || echo WARNING: ruff install failed; continuing. Install manually with: uv tool install ruff
 
+echo.
+echo Installing Ponytail (lazy senior dev mode for AI agents)...
+rem Install for OpenCode - add to plugins array in opencode.json
+if exist ".opencode\opencode.json" (
+    rem PowerShell to modify JSON (more reliable than batch)
+    powershell -Command "
+        $json = Get-Content '.opencode/opencode.json' -Raw | ConvertFrom-Json
+        if ($json.plugin -notcontains '@dietrichgebert/ponytail') {
+            $json.plugin += '@dietrichgebert/ponytail'
+            $json | ConvertTo-Json -Depth 5 | Set-Content '.opencode/opencode.json'
+            Write-Host 'Added @dietrichgebert/ponytail to opencode.json'
+        } else {
+            Write-Host 'ponytail already in opencode.json'
+        }
+    " || echo WARNING: Failed to update opencode.json; add '@dietrichgebert/ponytail' to plugins array manually.
+) else (
+    echo WARNING: .opencode\opencode.json not found; skipping OpenCode plugin setup.
+)
+
+rem Install for Claude Code via agentmods (non-interactive)
+where npx >nul 2>&1
+if not errorlevel 1 (
+    echo Installing ponytail for Claude Code via agentmods...
+    npx -y agentmods add commands/dietrichgebert/ponytail/ponytail || echo WARNING: agentmods install failed; continuing. Install manually with: npx agentmods add commands/dietrichgebert/ponytail/ponytail
+) else (
+    echo WARNING: npx not available; skipping Claude Code ponytail install. Install manually with: npx agentmods add commands/dietrichgebert/ponytail/ponytail
+)
+
 if not exist ".env.local" type nul > ".env.local"
 
 for /d %%a in (apps\*) do (
