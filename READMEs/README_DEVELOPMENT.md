@@ -303,7 +303,7 @@ Two rules follow from the split:
 
 ### Configuration
 
-All apps share these variables. They can be set in `.env` (bind-mounted into every container, so a restart is enough — no rebuild) or per service in `docker-compose.yml`.
+All apps share these variables. Set shared defaults in `.env`, machine-local overrides in `.env.local` (gitignored; Settings saves non-secret overrides there), and credentials in `.env.secrets`. In Docker these files are bind-mounted, so edits hot-reload where supported and otherwise need a restart, not a rebuild.
 
 | Variable | Default | Meaning |
 |---|---|---|

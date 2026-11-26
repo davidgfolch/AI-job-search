@@ -233,6 +233,11 @@ for dir in apps/*/data; do
     [ -d "$dir" ] && mkdir -p "$dir/logs" "$dir/metrics"
 done
 owner="$(id -u):$(id -g)"
+
+if [ ! -f ".env.local" ]; then
+  : > .env.local
+  echo "Created empty .env.local"
+fi
 if find data apps/*/data -not -user "$(id -un)" -print -quit 2>/dev/null | grep -q .; then
     # Containers run as root and create root-owned logs/metrics in these bind mounts,
     # which locks the host user out of its own data/ folders.

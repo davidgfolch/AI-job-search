@@ -7,8 +7,10 @@ services:
     image: mysql:9 # MySQL 9 to match existing data version
     container_name: ai-job-search-mysql
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - /var/lib/mysql:/var/lib/mysql # Original bind mount to preserve existing data
       - ./scripts/mysql:/docker-entrypoint-initdb.d
@@ -40,13 +42,16 @@ services:
       dockerfile: apps/backend/Dockerfile
     container_name: ai-job-search-backend
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./apps/backend:/app/apps/backend
       - ./apps/commonlib:/app/apps/commonlib
       - ./scripts:/app/scripts
       - ./.env:/app/.env
+      - ./.env.local:/app/.env.local
       - ./.env.secrets:/app/.env.secrets
       - ./data/metrics:/app/data/metrics
       - ./data/discovery:/app/data/discovery
@@ -99,12 +104,15 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: ai-job-search-web
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./apps/web:/app
       - web_node_modules:/app/node_modules # Named: survives recreates (entrypoint re-syncs on lock change)
       - ./.env:/workspace/.env # Mount .env at workspace level
+      - ./.env.local:/workspace/.env.local
       - ./.env.secrets:/workspace/.env.secrets
     ports:
       - "5173:5173"
@@ -144,8 +152,10 @@ services:
     ports:
       - "11434:11434"
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ${OLLAMA_MODELS_PATH:-~/.ollama}:/root/.ollama # Ollama models from host (set OLLAMA_MODELS_PATH in .env for Windows)
     healthcheck:
@@ -166,12 +176,15 @@ services:
     profiles:
       - aienrich
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./apps/aiEnrich:/app/apps/aiEnrich
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.local:/app/.env.local
       - ./.env.secrets:/app/.env.secrets
       - ./data/metrics:/app/data/metrics
       - ./data/discovery:/app/data/discovery
@@ -214,12 +227,15 @@ services:
     profiles:
       - aiEnrichSkill
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./apps/aiEnrichSkill:/app/apps/aiEnrichSkill
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.local:/app/.env.local
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
       - ./data/metrics:/app/data/metrics
@@ -257,12 +273,15 @@ services:
       dockerfile: apps/aiCvMatcher/Dockerfile
     container_name: ai-job-search-aicvmatcher
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./apps/aiCvMatcher:/app/apps/aiCvMatcher
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.local:/app/.env.local
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface # Persist HF models
       - ./data/discovery:/app/data/discovery
@@ -296,12 +315,15 @@ services:
       dockerfile: apps/aiFormFiller/Dockerfile
     container_name: ai-job-search-aiformfiller
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./apps/aiFormFiller:/app/apps/aiFormFiller
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.local:/app/.env.local
       - ./.env.secrets:/app/.env.secrets
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
     environment:
@@ -333,8 +355,10 @@ services:
     ports:
       - "27017:27017"
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - mongo_data:/data/db
       - ./scripts/mongo:/docker-entrypoint-initdb.d
@@ -354,12 +378,15 @@ services:
       dockerfile: apps/cron/Dockerfile
     container_name: ai-job-search-cron
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./apps/cron:/app/apps/cron
       - ./apps/commonlib:/app/apps/commonlib
       - ./.env:/app/.env
+      - ./.env.local:/app/.env.local
       - ./.env.secrets:/app/.env.secrets
       - ./data/discovery:/app/data/discovery
     environment:
@@ -393,8 +420,10 @@ services:
     image: prom/prometheus:latest
     container_name: ai-job-search-prometheus
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -412,8 +441,10 @@ services:
     image: grafana/grafana:latest
     container_name: ai-job-search-grafana
     env_file:
-      - ./.env
-      - ./.env.secrets
+      - path: ./.env
+      - path: ./.env.local
+        required: false
+      - path: ./.env.secrets
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources

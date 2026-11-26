@@ -44,7 +44,7 @@ This is a monorepo containing several applications and packages:
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
 - **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes `data/logs/<app>.jsonl`, scraped by Prometheus (`:9090`) → Grafana (`:3000`, admin/admin); Prometheus text endpoint at `GET /api/metrics` (see [Metrics & Observability](READMEs/README_METRICS.md))
-- **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
+- **Settings UI** to manage environment variables and scrapper state from the browser; machine-local overrides are saved to `.env.local` (gitignored) while secrets stay in `.env.secrets`
 - **Hot LLM provider switching**: change the aiEnrich, aiEnrichSkill and aiFormFiller providers and API keys in **Settings → LLM Providers**; workers apply them on their next job or request without a restart ([aiEnrich](apps/aiEnrich/README.md#llm-backend-selection), [aiEnrichSkill](apps/aiEnrichSkill/README.md#backends), [aiFormFiller](apps/aiFormFiller/README.md#ai-providers))
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
 - **Distributed execution & LAN service auto-discovery**: run the stack on one machine with Docker Compose (the default, no IPs to set), split services across machines, or keep the AI workers in Docker against an Ollama on the host or another LAN machine — MySQL/MongoDB, the backend, Ollama and the health probes are resolved automatically (see [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md))
@@ -94,6 +94,8 @@ A separate `static-analysis` job is a **required check**: it lints every Python 
 ![UIStatsFilterConfigurations](READMEs/assets/UIStatsFilterConfigurations.png)
 
 ### Settings — Environment Variables
+
+The Settings page edits environment configuration. Non-secret values are saved to `.env.local` (per-machine, gitignored), secret keys go to `.env.secrets`, and `.env` keeps shared defaults.
 
 ![UISettings](READMEs/assets/UISettings.png)
 

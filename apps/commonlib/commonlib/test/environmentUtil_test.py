@@ -11,25 +11,32 @@ import commonlib.environmentUtil as envUtil
 class TestEnvironmentUtil:
     def test_getEnvModified_exists(self):
         with patch('commonlib.environmentUtil.ENV_PATH') as mock_path, \
+             patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path, \
              patch('commonlib.environmentUtil.ENV_SECRETS_PATH') as mock_sec_path:
             mock_path.exists.return_value = True
             mock_path.stat.return_value.st_mtime = 12345.0
+            mock_local_path.exists.return_value = False
             mock_sec_path.exists.return_value = False
             assert getEnvModified() == 12345.0
 
     def test_getEnvModified_both_exist(self):
         with patch('commonlib.environmentUtil.ENV_PATH') as mock_path, \
+             patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path, \
              patch('commonlib.environmentUtil.ENV_SECRETS_PATH') as mock_sec_path:
             mock_path.exists.return_value = True
             mock_path.stat.return_value.st_mtime = 100.0
+            mock_local_path.exists.return_value = True
+            mock_local_path.stat.return_value.st_mtime = 150.0
             mock_sec_path.exists.return_value = True
             mock_sec_path.stat.return_value.st_mtime = 200.0
             assert getEnvModified() == 200.0
 
     def test_getEnvModified_none_exist(self):
         with patch('commonlib.environmentUtil.ENV_PATH') as mock_path, \
+             patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path, \
              patch('commonlib.environmentUtil.ENV_SECRETS_PATH') as mock_sec_path:
             mock_path.exists.return_value = False
+            mock_local_path.exists.return_value = False
             mock_sec_path.exists.return_value = False
             assert getEnvModified() is None
 
@@ -39,7 +46,8 @@ class TestEnvironmentUtil:
         envUtil.envLastModified = 100
         mock_get_mod.return_value = 200
         checkEnvReload()
-        assert mock_load.call_count == 2
+        assert mock_load.call_count == 3
+        assert [c.kwargs['dotenv_path'] for c in mock_load.call_args_list] == [envUtil.ENV_PATH, envUtil.ENV_LOCAL_PATH, envUtil.ENV_SECRETS_PATH]
         assert envUtil.envLastModified == 200
 
     @patch('commonlib.environmentUtil.load_dotenv')
@@ -108,77 +116,86 @@ class TestEnvironmentUtil:
                 return {'SECRET_KEY1': 'secret_default1', 'SHARED_KEY': 'default'}
             if str(path).endswith('.env.secrets'):
                 return {'SECRET_KEY1': 'secret_actual1', 'SHARED_KEY': 'secret_value'}
+            if str(path).endswith('.env.local'):
+                return {'KEY1': 'local1', 'SHARED_KEY': 'local_value', 'LOCAL_ONLY': 'yes'}
             if str(path).endswith('.env'):
                 return {'KEY1': 'actual1', 'KEY3': '', 'SHARED_KEY': 'env_value'}
             return {}
         mock_dotenv_values.side_effect = mock_dotenv
         with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path, \
+             patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path, \
              patch('commonlib.environmentUtil.ENV_SECRETS_EXAMPLE_PATH') as mock_seg_path, \
              patch('commonlib.environmentUtil.ENV_SECRETS_PATH') as mock_senv_path:
             mock_env_path.exists.return_value = True
             mock_env_path.__str__.return_value = '/fake/.env'
+            mock_local_path.exists.return_value = True
+            mock_local_path.__str__.return_value = '/fake/.env.local'
             mock_seg_path.exists.return_value = True
             mock_seg_path.__str__.return_value = '/fake/.env.secrets.example'
             mock_senv_path.exists.return_value = True
             mock_senv_path.__str__.return_value = '/fake/.env.secrets'
             result = getEnvAll()
-            assert result['KEY1'] == 'actual1'
+            assert result['KEY1'] == 'local1'
             assert result['SECRET_KEY1'] == 'secret_actual1'
             assert result['SHARED_KEY'] == 'secret_value'
+            assert result['LOCAL_ONLY'] == 'yes'
 
     @patch('commonlib.envWriteUtil.set_key')
     @patch('commonlib.environmentUtil.load_dotenv')
     @patch('commonlib.environmentUtil.getEnvModified')
     def test_setEnv_existing_file(self, mock_get_mod, mock_load, mock_set_key):
-        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path:
-            mock_env_path.exists.return_value = True
-            mock_env_path.__str__.return_value = '/fake/.env'
+        with patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path:
+            mock_local_path.exists.return_value = True
+            mock_local_path.__str__.return_value = '/fake/.env.local'
             mock_get_mod.return_value = 300
             setEnv('NEW_KEY', 'NEW_VALUE')
             mock_set_key.assert_called_once()
-            assert mock_load.call_count == 2
+            assert mock_set_key.call_args.args[0] == str(mock_local_path)
+            assert mock_load.call_count == 3
 
     @patch('commonlib.envWriteUtil.set_key')
     @patch('commonlib.environmentUtil.load_dotenv')
     @patch('commonlib.environmentUtil.getEnvModified')
     def test_setEnv_new_file(self, mock_get_mod, mock_load, mock_set_key):
-        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path:
-            mock_env_path.exists.return_value = False
+        with patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path:
+            mock_local_path.exists.return_value = False
             mock_get_mod.return_value = 400
             m_open = mock_open()
             with patch('builtins.open', m_open):
                 setEnv('NEW_KEY', 'NEW_VALUE')
-            m_open.assert_called_once()
+            m_open.assert_called_once_with(mock_local_path, 'w', encoding='utf-8')
 
     @patch('commonlib.envWriteUtil.set_key')
     @patch('commonlib.environmentUtil.load_dotenv')
     @patch('commonlib.environmentUtil.getEnvModified')
     def test_setEnvBulk_existing_file(self, mock_get_mod, mock_load, mock_set_key):
-        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path:
-            mock_env_path.exists.return_value = True
+        with patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path:
+            mock_local_path.exists.return_value = True
+            mock_local_path.__str__.return_value = '/fake/.env.local'
             mock_get_mod.return_value = 500
             setEnvBulk({'K1': 'V1', 'K2': 'V2'})
             assert mock_set_key.call_count == 2
+            assert all(c.args[0] == str(mock_local_path) for c in mock_set_key.call_args_list)
 
     @patch('commonlib.envWriteUtil.set_key')
     @patch('commonlib.environmentUtil.load_dotenv')
     @patch('commonlib.environmentUtil.getEnvModified')
     def test_setEnvBulk_new_file(self, mock_get_mod, mock_load, mock_set_key):
-        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path:
-            mock_env_path.exists.return_value = False
+        with patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path:
+            mock_local_path.exists.return_value = False
             mock_get_mod.return_value = 600
             m_open = mock_open()
             with patch('builtins.open', m_open):
                 setEnvBulk({'K1': 'V1', 'K2': 'V2'})
-            m_open.assert_called_once()
+            m_open.assert_called_once_with(mock_local_path, 'w', encoding='utf-8')
 
     @patch('commonlib.envWriteUtil.set_key')
     @patch('commonlib.environmentUtil.load_dotenv')
     @patch('commonlib.environmentUtil.getEnvModified')
     def test_setEnv_keeps_injected_value(self, mock_get_mod, mock_load, mock_set_key):
         mock_load.side_effect = lambda *a, **k: os.environ.update(COMMONLIB_DB_HOST='127.0.0.1')
-        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path, patch.object(envUtil, '_processEnvSnapshot', {'COMMONLIB_DB_HOST': 'mysql_db'}):
-            mock_env_path.exists.return_value, mock_get_mod.return_value = True, 300
+        with patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path, patch.object(envUtil, '_processEnvSnapshot', {'COMMONLIB_DB_HOST': 'mysql_db'}):
+            mock_local_path.exists.return_value, mock_get_mod.return_value = True, 300
             setEnv('COMMONLIB_DB_HOST', '127.0.0.1')
         assert os.environ['COMMONLIB_DB_HOST'] == 'mysql_db'
 
@@ -187,8 +204,8 @@ class TestEnvironmentUtil:
     @patch('commonlib.environmentUtil.getEnvModified')
     def test_setEnvBulk_keeps_injected_value(self, mock_get_mod, mock_load, mock_set_key):
         mock_load.side_effect = lambda *a, **k: os.environ.update(MONGO_URI='mongodb://localhost:27017/')
-        with patch('commonlib.environmentUtil.ENV_PATH') as mock_env_path, patch.object(envUtil, '_processEnvSnapshot', {'MONGO_URI': 'mongodb://mongo_db:27017/'}):
-            mock_env_path.exists.return_value, mock_get_mod.return_value = True, 500
+        with patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as mock_local_path, patch.object(envUtil, '_processEnvSnapshot', {'MONGO_URI': 'mongodb://mongo_db:27017/'}):
+            mock_local_path.exists.return_value, mock_get_mod.return_value = True, 500
             setEnvBulk({'MONGO_URI': 'mongodb://localhost:27017/'})
         assert os.environ['MONGO_URI'] == 'mongodb://mongo_db:27017/'
 
@@ -198,10 +215,11 @@ class TestEnvironmentUtil:
 @patch('commonlib.environmentUtil.getEnvModified', return_value=700)
 def test_env_updates_route_secret_keys_to_secrets_file(mock_get_mod, mock_load, mock_set_keys):
     with patch.object(envUtil, '_secret_env_keys', return_value={'OPENAI_API_KEY'}), \
-         patch('commonlib.environmentUtil.ENV_PATH') as env_path, \
+         patch('commonlib.environmentUtil.ENV_LOCAL_PATH') as local_path, \
          patch('commonlib.environmentUtil.ENV_SECRETS_PATH') as secrets_path:
-        env_path.exists.return_value = secrets_path.exists.return_value = True
+        local_path.exists.return_value = secrets_path.exists.return_value = True
         setEnvBulk({'AI_FORM_PROVIDER': 'openai', 'OPENAI_API_KEY': 'sk-test'})
-        assert [call.args[0] for call in mock_set_keys.call_args_list] == [env_path, secrets_path]
+        assert [call.args[0] for call in mock_set_keys.call_args_list] == [local_path, secrets_path]
+        assert mock_set_keys.call_args_list[0].args[1] == {'AI_FORM_PROVIDER': 'openai'}
         assert mock_set_keys.call_args_list[1].args[1] == {'OPENAI_API_KEY': 'sk-test'}
 

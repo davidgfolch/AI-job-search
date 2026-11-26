@@ -59,6 +59,8 @@ if exist "!CLONE!" (
 )
 rem .env is tracked, so the clone already has it.
 if exist "%ROOT%\.env.secrets" if not exist "!CLONE!\.env.secrets" copy /Y "%ROOT%\.env.secrets" "!CLONE!\.env.secrets" >nul
+if exist "%ROOT%\.env.local" if not exist "!CLONE!\.env.local" copy /Y "%ROOT%\.env.local" "!CLONE!\.env.local" >nul
+if not exist "!CLONE!\.env.local" type nul > "!CLONE!\.env.local"
 for /d %%m in ("%ROOT%\apps\*") do (
     for %%f in (uv.lock poetry.lock package-lock.json) do (
         if exist "%%~fm\%%f" if not exist "!CLONE!\apps\%%~nxm\%%f" (

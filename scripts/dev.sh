@@ -89,6 +89,14 @@ copy_runtime() {
         cp "$ROOT/.env.secrets" "$dest/.env.secrets"
         echo "Copied .env.secrets"
     fi
+    if [ -f "$ROOT/.env.local" ] && [ ! -f "$dest/.env.local" ]; then
+        cp "$ROOT/.env.local" "$dest/.env.local"
+        echo "Copied .env.local"
+    fi
+    if [ ! -f "$dest/.env.local" ]; then
+        : > "$dest/.env.local"
+        echo "Created empty .env.local"
+    fi
     for f in "$ROOT"/apps/*/uv.lock "$ROOT"/apps/*/poetry.lock "$ROOT"/apps/*/package-lock.json; do
         [ -f "$f" ] || continue
         mod="$(basename "$(dirname "$f")")"

@@ -51,7 +51,7 @@ describe('Settings', () => {
         expect(settingsApi.getEnvSettings).toHaveBeenCalled();
         expect(settingsApi.getScrapperState).toHaveBeenCalled();
 
-        expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
+        expect(screen.getByText('Environment Variables (.env.local overrides)')).toBeInTheDocument();
         expect(screen.getByText('Scrapper State')).toBeInTheDocument();
         expect(screen.getByText('System & Base')).toBeInTheDocument();
         expect(screen.getByText('AI Enrichment')).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe('Settings', () => {
         renderWithClient(<Settings />);
 
         await waitFor(() => {
-            expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
+            expect(screen.getByText('Environment Variables (.env.local overrides)')).toBeInTheDocument();
         });
 
         const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });
@@ -93,7 +93,7 @@ describe('Settings', () => {
         renderWithClient(<Settings />);
 
         await waitFor(() => {
-            expect(screen.getByText('Environment Variables (.env)')).toBeInTheDocument();
+            expect(screen.getByText('Environment Variables (.env.local overrides)')).toBeInTheDocument();
         });
 
         const saveBtns = screen.getAllByText('Save', { selector: '.env-save-btn' });

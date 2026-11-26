@@ -91,7 +91,7 @@ export default function Settings() {
                 <div className="settings-container">
                     <LlmProviders envSettings={envSettings} setEnvSettings={setEnvSettings} onSave={handleProviderChange} />
                     <div className="settings-section env-variables-section">
-                        <div className="env-section-header"><h2>Environment Variables (.env)</h2><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
+                        <div className="env-section-header"><h2>Environment Variables (.env.local overrides)</h2><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
                         <div className="env-groups-container">
                             <div className="env-groups-column">{leftGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings))}{renderScrapperEditor(scrapperState, setScrapperState, handleScrapperStateRefresh, handleScrapperStateSave)}</div>
                             <div className="env-groups-column">{middleGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings))}</div>

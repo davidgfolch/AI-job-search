@@ -262,7 +262,12 @@ Ollama models are **not** removed: they live inside the Ollama server, not the p
    ```bash
    cp scripts/.env.secrets.example .env.secrets
    ```
-2. Edit `.env.secrets` with your credentials and `.env` with your configuration (create `.env` if needed).
+2. Create a machine-local override file if needed:
+   ```bash
+   touch .env.local
+   ```
+   `scripts/install.*` and `scripts/dev.*` create it automatically when missing.
+3. Edit `.env` for shared defaults, `.env.local` for machine-local overrides, and `.env.secrets` for credentials. The Settings UI writes non-secret overrides to `.env.local` and secret keys to `.env.secrets`; process-injected values (Docker Compose `environment:`, shell exports) still take precedence.
 
 > **Service discovery:** MySQL, MongoDB and Ollama are resolved at runtime, so the same `.env` works in Docker, on the host or against another LAN machine; no host needs to be pinned in `docker-compose.yml`. See [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md) and [apps/commonlib/README.md](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
 

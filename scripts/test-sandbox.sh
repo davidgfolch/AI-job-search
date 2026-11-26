@@ -35,6 +35,8 @@ if [ -z "$TARGET" ]; then
     exit 1
 fi
 
+[ -f "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env.local" ] || : > "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env.local"
+
 # Modules disabled in .env (all their *_JOB/*_SKILL/*_ENABLED flags false) get a build-only check.
 env_file() { echo "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.env"; }
 module_disabled() {

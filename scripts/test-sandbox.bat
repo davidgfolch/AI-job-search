@@ -35,6 +35,7 @@ if "%TARGET%"=="" (
     echo Usage: %~nx0 ^<service^|project^> [--profile ^<name^>] [--no-db-clone] [--keep]
     exit /b 1
 )
+if not exist ".env.local" type nul > ".env.local"
 
 rem Modules disabled in .env (all their *_JOB/*_SKILL/*_ENABLED flags false) get a build-only check.
 set "CHECK_KEYS="
