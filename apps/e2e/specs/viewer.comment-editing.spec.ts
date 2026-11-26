@@ -3,11 +3,7 @@ import {
     BASE_URL,
     setupPageLogging,
     setupSystemMocks,
-    setupDefaultJobsRoute,
-    setupStateChangeJobsRoute,
-    setupJobUpdateRoute,
-    waitForFilterConfigurations,
-    toggleFiltersIfNeeded
+    setupDefaultJobsRoute
 } from './viewer.helpers';
 import { MOCK_JOB_1 } from './viewer.mocks';
 
