@@ -10,6 +10,7 @@ from ..core.utils import debug
 from ..core.baseScrapper import getAndCheckEnvVars
 from ..services.selenium.browser_service import sleep
 from ..navigator.linkedinNavigator import LinkedinNavigator
+from ..navigator.components.linkedinDetailReader import MissingJobDetailFields
 from ..services.LinkedinService import LinkedinService
 from .BaseExecutor import BaseExecutor
 
@@ -147,6 +148,9 @@ class LinkedinExecutor(BaseExecutor):
             title, company, location, url, html = self.navigator.get_job_data()
             easyApply = self.navigator.check_easy_apply()
             self.service.process_job(title, company, location, url, html, isDirectUrlScrapping, easyApply)
+        except MissingJobDetailFields:
+            logger.warning("linkedin.detail_skipped", idx=idx, action="ignored", console=yellow(f'Job detail fields missing, skipping row {idx}'))
+            return False
         except (ValueError, KeyboardInterrupt) as e:
             raise e
         except Exception:

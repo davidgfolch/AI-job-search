@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.executor.LinkedinExecutor import LinkedinExecutor
+from scrapper.navigator.components.linkedinDetailReader import MissingJobDetailFields
 from scrapper.services.selenium.seleniumService import SeleniumService
 from scrapper.util.persistence_manager import PersistenceManager
 from commonlib.sql.mysqlUtil import MysqlUtil
@@ -143,6 +144,13 @@ class TestLinkedinExecutor:
         
         executor._process_row(idx)
         mocks['svc'].process_job.assert_called_with("T", "C", "L", "U", "H", is_direct, easy_apply)
+
+    def test_process_row_skips_missing_detail_without_retry(self, mocks, mock_selenium, mock_pm):
+        executor = LinkedinExecutor(mock_selenium, mock_pm, False)
+        executor.service = mocks['svc']
+        mocks['nav'].get_job_data.side_effect = MissingJobDetailFields('missing')
+        assert executor._process_row(1) is False
+        mocks['svc'].process_job.assert_not_called()
 
     def test_process_specific_url(self, mocks):
         with patch.object(LinkedinExecutor, '_process_row') as pr:
