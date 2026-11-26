@@ -16,6 +16,8 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 | `.claude/settings.local.json` | Local Claude Code permissions (not committed) |
 | `.opencode/` | opencode-specific config only: `plugins/docker-build.js`, `plugins/docs-sync.js`, `plugins/db-mutation.js`, `plugins/test-enforce.js`, the shared plugin logic in `lib/`, `opencode.json`, and `plans/`. opencode plugins must live here (`issue #8158`) |
 
+> Hook commands in `.claude/settings.json` use `${CLAUDE_PROJECT_DIR}` and resolve their repo root from the hook script's location, so a module-level `cd` during a session cannot break them.
+
 > **Note:** `.agent/` is retired. Skills and rules that previously lived in `.agent/` and the now-consolidated `.opencode/skills/` all live under `.claude/skills/` / `.claude/rules/` today.
 
 ## Skills
