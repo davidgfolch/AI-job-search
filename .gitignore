@@ -45,3 +45,5 @@ storage/
 
 # agentmods state (generated on install)
 .agentmods.json
+.claude/commands/ponytail.md
+.codex/prompts/ponytail.md
