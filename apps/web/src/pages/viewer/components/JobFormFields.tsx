@@ -22,10 +22,10 @@ export default function JobFormFields({
     const requiredTechnologiesRef = useRef<HTMLTextAreaElement>(null);
     const optionalTechnologiesRef = useRef<HTMLTextAreaElement>(null);
     // Auto-resize hooks
-    useAutoResizeTextArea(commentsRef, comments, [showAllFields, jobId]);
-    useAutoResizeTextArea(markdownRef, markdown, [showAllFields, jobId]);
-    useAutoResizeTextArea(requiredTechnologiesRef, requiredTechnologies, [showAllFields, jobId]);
-    useAutoResizeTextArea(optionalTechnologiesRef, optionalTechnologies, [showAllFields, jobId]);
+    useAutoResizeTextArea(commentsRef, [showAllFields, jobId]);
+    useAutoResizeTextArea(markdownRef, [showAllFields, jobId]);
+    useAutoResizeTextArea(requiredTechnologiesRef, [showAllFields, jobId]);
+    useAutoResizeTextArea(optionalTechnologiesRef, [showAllFields, jobId]);
     const formIdPrefix = jobId ? `job-${jobId}` : 'job-new';
     return (
         <div className="form-fields">
