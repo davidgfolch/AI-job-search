@@ -6,6 +6,9 @@ from ...services.selenium.browser_service import sleep
 
 logger = get_logger("scrapper.linkedinDetailReader")
 
+class MissingJobDetailFields(NoSuchElementException):
+    """The pane loaded but a required field has no text; retrying the same DOM cannot help."""
+
 JOB_URL_RE = r'/jobs/view/(\d+)'
 
 # JOB DETAIL: right pane, same layout for list clicks and direct currentJobId urls.
@@ -14,9 +17,11 @@ JOB_URL_RE = r'/jobs/view/(\d+)'
 CSS_SEL_JOB_DETAIL = '[data-testid="lazy-column"][componentkey]:has(a[href*="/jobs/view/"])'
 CSS_SEL_JOB_TITLE_LINK = f'{CSS_SEL_JOB_DETAIL} a[href*="/jobs/view/"]'
 CSS_SEL_DETAIL_COMPANY = f'{CSS_SEL_JOB_DETAIL} p a[href*="/company/"]'
-# The company link is not always wrapped in a p inside the pane, and guest job pages use the old topcard instead of the pane.
+# The company link moves between layouts: pane link, plain legacy text, and guest-page topcard.
 CSS_SEL_DETAIL_COMPANY_FALLBACKS = (
     f'{CSS_SEL_JOB_DETAIL} a[href*="/company/"]',
+    f'{CSS_SEL_JOB_DETAIL} .jobs-unified-top-card__company-name',
+    f'{CSS_SEL_JOB_DETAIL} div.artdeco-entity-lockup__subtitle',
     '.topcard__org-name-link',
     'a.sub-nav-cta__optional-url',
 )
@@ -80,7 +85,8 @@ class LinkedinDetailReader:
         company = self._first_text(CSS_SEL_DETAIL_COMPANY, *CSS_SEL_DETAIL_COMPANY_FALLBACKS)
         location = self._first_text(CSS_SEL_DETAIL_LOCATION, CSS_SEL_DETAIL_LOCATION_WIDE)
         if not (title and company and location):
-            raise NoSuchElementException(f'Missing job detail fields: title={bool(title)} company={bool(company)} location={bool(location)}')
+            logger.warning("linkedin.detail_missing", title=bool(title), company=bool(company), location=bool(location))
+            raise MissingJobDetailFields(f'Missing job detail fields: title={bool(title)} company={bool(company)} location={bool(location)}')
         url = self.selenium.getAttr(CSS_SEL_JOB_TITLE_LINK, 'href')
         html = self._fit_preferences_html() + self._description_html()
         return title, company, location, url, html
@@ -177,10 +183,15 @@ class LinkedinDetailReader:
         raise NoSuchElementException('Job description not found')
 
     def _first_text(self, *cssSels) -> str:
+        # Selenium .text is empty for off-screen nodes; textContent and the label attributes still carry the name.
         for cssSel in cssSels:
             try:
-                if text := self.selenium.getText(cssSel):
+                if text := (self.selenium.getText(cssSel) or '').strip():
                     return text
+                for element in self.selenium.getElms(cssSel) or []:
+                    for attr in ('textContent', 'aria-label', 'title'):
+                        if text := (element.get_attribute(attr) or '').strip():
+                            return text
             except Exception:
                 continue
         return ''
