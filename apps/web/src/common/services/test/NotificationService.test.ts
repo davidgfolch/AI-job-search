@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { notificationService } from '../NotificationService';
 
 describe('NotificationService', () => {
-    const MockNotification = vi.fn() as any;
+    type MockNotification = ReturnType<typeof vi.fn> & { requestPermission: ReturnType<typeof vi.fn>; permission: NotificationPermission };
+    const MockNotification = vi.fn() as unknown as MockNotification;
     MockNotification.requestPermission = vi.fn();
 
     beforeEach(() => {
@@ -26,7 +27,7 @@ it.each([
         ['granted', true],
         ['denied', false],
         ['default', false]
-    ])('should check permission correctly for %s', (permission, expected) => {
+    ] as const)('should check permission correctly for %s', (permission, expected) => {
         MockNotification.permission = permission;
         expect(notificationService.hasPermission()).toBe(expected);
     });
