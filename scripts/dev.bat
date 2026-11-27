@@ -2,11 +2,11 @@
 setlocal EnableDelayedExpansion
 rem ===== AI Job Search parallel development workflow (Windows) =====
 rem Usage: scripts\dev.bat <command> [args]  - same commands as scripts/dev.sh
-rem   new <name>              - clone ..\ai_job_search-<name>, branch feat/<name> from master, copy runtime state + sync deps
-rem   dep <pr>                - clone ..\ai_job_search-dependabot-<pr>, check out PR, refresh deps for its base
+rem   new <name> [modules...] - clone ..\ai_job_search-<name>, branch feat/<name> from master, prepare only those modules (default: all)
+rem   dep <pr> [modules...]   - clone ..\ai_job_search-dependabot-<pr>, check out PR, prepare only those modules (default: all)
 rem   list                    - show sibling clones
 rem   checkout <branch>       - switch branch in the current clone
-rem   test [modules]          - run scripts\test.bat here (no args = everything)
+rem   test [modules]          - run scripts\test.bat here (no args = the clone's selected modules, or everything)
 rem   sandbox <service> [...] - run scripts\test-sandbox.bat here
 rem   commit "msg"            - git add -A && git commit
 rem   push                    - push the current branch (never staging/master)
@@ -20,6 +20,8 @@ for %%i in ("%~dp0..") do set "ROOT=%%~fi"
 pushd "%ROOT%\.."
 set "PARENT=%CD%"
 popd
+if not defined DEV_UV_CACHE_DIR set "DEV_UV_CACHE_DIR=%PARENT%\.uv-cache"
+set "UV_CACHE_DIR=%DEV_UV_CACHE_DIR%"
 set "PREFIX=ai_job_search-"
 if not defined DEV_GATE_BRANCH set "DEV_GATE_BRANCH=staging"
 if not defined DEV_MAIN_BRANCH set "DEV_MAIN_BRANCH=master"
@@ -47,6 +49,46 @@ set "BR="
 for /f "delims=" %%i in ('git rev-parse --abbrev-ref HEAD') do set "BR=%%i"
 exit /b 0
 
+:add_module
+set "M=%~1"
+for %%a in (!MODULES!) do if /i "%%a"=="!M!" exit /b 0
+set "MODULES=!MODULES! !M!"
+exit /b 0
+
+:parse_modules
+set "MODULES="
+if "%~1"=="" exit /b 0
+:parse_modules_loop
+if "%~1"=="" goto parse_modules_done
+for %%i in ("%~1") do set "M=%%~nxi"
+if not exist "%ROOT%\apps\!M!\" (
+    echo Error: unknown module '!M!'
+    exit /b 1
+)
+call :add_module "!M!"
+shift
+goto parse_modules_loop
+:parse_modules_done
+call :add_module commonlib
+for %%a in (!MODULES!) do if /i "%%a"=="web" call :add_module e2e
+exit /b 0
+
+:is_selected
+set "SEL=%~1"
+if not defined MODULES exit /b 0
+for %%a in (!MODULES!) do if /i "%%a"=="!SEL!" exit /b 0
+exit /b 1
+
+:save_modules
+if not defined MODULES (
+    if exist "!DST!\.git\dev-modules" del /q "!DST!\.git\dev-modules"
+) else (
+    > "!DST!\.git\dev-modules" (
+        for %%a in (!MODULES!) do echo %%a
+    )
+)
+exit /b 0
+
 :create_clone
 set "CLONE=%PARENT%\%PREFIX%%~1"
 if exist "!CLONE!" (
@@ -62,17 +104,20 @@ if exist "%ROOT%\.env.secrets" if not exist "!CLONE!\.env.secrets" copy /Y "%ROO
 if exist "%ROOT%\.env.local" if not exist "!CLONE!\.env.local" copy /Y "%ROOT%\.env.local" "!CLONE!\.env.local" >nul
 if not exist "!CLONE!\.env.local" type nul > "!CLONE!\.env.local"
 for /d %%m in ("%ROOT%\apps\*") do (
-    for %%f in (uv.lock poetry.lock package-lock.json) do (
-        if exist "%%~fm\%%f" if not exist "!CLONE!\apps\%%~nxm\%%f" (
-            if not exist "!CLONE!\apps\%%~nxm\" mkdir "!CLONE!\apps\%%~nxm\"
-            copy /Y "%%~fm\%%f" "!CLONE!\apps\%%~nxm\%%f" >nul
+    call :is_selected %%~nxm
+    if not errorlevel 1 (
+        for %%f in (uv.lock poetry.lock package-lock.json) do (
+            if exist "%%~fm\%%f" if not exist "!CLONE!\apps\%%~nxm\%%f" (
+                if not exist "!CLONE!\apps\%%~nxm\" mkdir "!CLONE!\apps\%%~nxm\"
+                copy /Y "%%~fm\%%f" "!CLONE!\apps\%%~nxm\%%f" >nul
+            )
         )
-    )
-    if exist "%%~fm\node_modules" if not exist "!CLONE!\apps\%%~nxm\node_modules" (
-        if not exist "!CLONE!\apps\%%~nxm\" mkdir "!CLONE!\apps\%%~nxm\"
-        robocopy "%%~fm\node_modules" "!CLONE!\apps\%%~nxm\node_modules" /E /COPY:DAT /R:0 /W:0 /NFL /NDL /NJH /NJS /NP >nul
-        if errorlevel 8 (echo Error: could not copy node_modules for %%~nxm. & exit /b 1)
-        echo Copied apps\%%~nxm\node_modules
+        if exist "%%~fm\node_modules" if not exist "!CLONE!\apps\%%~nxm\node_modules" (
+            if not exist "!CLONE!\apps\%%~nxm\" mkdir "!CLONE!\apps\%%~nxm\"
+            robocopy "%%~fm\node_modules" "!CLONE!\apps\%%~nxm\node_modules" /E /COPY:DAT /R:0 /W:0 /NFL /NDL /NJH /NJS /NP >nul
+            if errorlevel 8 (echo Error: could not copy node_modules for %%~nxm. & exit /b 1)
+            echo Copied apps\%%~nxm\node_modules
+        )
     )
 )
 if exist "%ROOT%\.codegraph\codegraph.db" (
@@ -86,18 +131,22 @@ exit /b 0
 set "DST=%~1"
 set "MODE=%~2"
 for /d %%d in ("!DST!\apps\*") do (
-    if exist "%%~fd\uv.lock" (
-        echo Preparing %%~nxd dependencies (uv, offline)...
-        pushd "%%~fd"
-        uv sync --offline
-        if errorlevel 1 (
-            echo Offline sync failed for %%~nxd; retrying with network.
-            uv sync
+    call :is_selected %%~nxd
+    if not errorlevel 1 (
+        if exist "%%~fd\uv.lock" (
+            echo Preparing %%~nxd dependencies (uv, offline)...
+            pushd "%%~fd"
+            uv sync --offline
+            if errorlevel 1 (
+                echo Offline sync failed for %%~nxd; retrying with network.
+                uv sync
+            )
+            popd
         )
-        popd
     )
 )
-if exist "!DST!\apps\scrapper\poetry.lock" (
+call :is_selected scrapper
+if not errorlevel 1 if exist "!DST!\apps\scrapper\poetry.lock" (
     echo Preparing scrapper dependencies (poetry)...
     pushd "!DST!\apps\scrapper"
     poetry install --no-interaction
@@ -106,7 +155,8 @@ if exist "!DST!\apps\scrapper\poetry.lock" (
 )
 if /i "!MODE!"=="dep" (
     for %%m in (web e2e) do (
-        if exist "!DST!\apps\%%m\package.json" (
+        call :is_selected %%m
+        if not errorlevel 1 if exist "!DST!\apps\%%m\package.json" (
             echo Preparing %%m dependencies (npm, prefer offline)...
             pushd "!DST!\apps\%%m"
             npm ci --prefer-offline
@@ -130,7 +180,13 @@ set "NAME=%~2"
 if "%NAME%"=="" goto usage
 for %%i in ("%NAME%") do set "NAME=%%~nxi"
 if /i "!NAME:~0,14!"=="%PREFIX%" set "NAME=!NAME:%PREFIX%=!"
+set "REST="
+for /f "tokens=2*" %%a in ("%*") do set "REST=%%b"
+call :parse_modules %REST%
+if errorlevel 1 exit /b 1
 call :create_clone "!NAME!"
+set "DST=!CLONE!"
+call :save_modules
 cd /d "!CLONE!" || exit /b 1
 git fetch origin >nul 2>&1
 set "BRANCH=feat/!NAME!"
@@ -149,7 +205,13 @@ set "PR=%~2"
 if "%PR%"=="" goto usage
 set "PR=!PR:#=!"
 where gh >nul 2>&1 || (echo Error: 'gh' CLI is required. Install GitHub CLI and authenticate. & exit /b 1)
+set "REST="
+for /f "tokens=2*" %%a in ("%*") do set "REST=%%b"
+call :parse_modules %REST%
+if errorlevel 1 exit /b 1
 call :create_clone "dependabot-!PR!"
+set "DST=!CLONE!"
+call :save_modules
 cd /d "!CLONE!" || exit /b 1
 gh pr checkout !PR!
 if errorlevel 1 exit /b 1
@@ -174,7 +236,16 @@ exit /b 0
 
 :cmd_test
 shift
-if "%~1"=="" (cd /d "%ROOT%" && call scripts\test.bat) else (cd /d "%ROOT%" && call scripts\test.bat %*)
+if "%~1"=="" goto cmd_test_saved
+cd /d "%ROOT%" && call scripts\test.bat %*
+exit /b %errorlevel%
+
+:cmd_test_saved
+set "TEST_ARGS="
+if exist "%ROOT%\.git\dev-modules" (
+    for /f "usebackq delims=" %%a in ("%ROOT%\.git\dev-modules") do set "TEST_ARGS=!TEST_ARGS! %%a"
+)
+cd /d "%ROOT%" && call scripts\test.bat !TEST_ARGS!
 exit /b %errorlevel%
 
 :cmd_sandbox

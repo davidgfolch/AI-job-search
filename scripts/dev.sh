@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ===== AI Job Search parallel development workflow (Linux/Mac) =====
 # Usage: ./scripts/dev.sh <command> [args]
-#   new <name>              - clone ../ai_job_search-<name>, branch feat/<name> from master, copy runtime state + sync deps
-#   dep <pr>                - clone ../ai_job_search-dependabot-<pr>, check out PR, refresh deps for its base
+#   new <name> [modules...] - clone ../ai_job_search-<name>, branch feat/<name> from master, prepare only those modules (default: all)
+#   dep <pr> [modules...]   - clone ../ai_job_search-dependabot-<pr>, check out PR, prepare only those modules (default: all)
 #   list                    - show sibling clones
 #   checkout <branch>       - switch branch in the current clone
-#   test [modules]          - run scripts/test.sh here (no args = everything)
+#   test [modules]          - run scripts/test.sh here (no args = the clone's selected modules, or everything)
 #   sandbox <service> [...] - run scripts/test-sandbox.sh here
 #   commit "msg"            - git add -A && git commit
 #   push                    - push the current branch (never staging/master)
@@ -18,6 +18,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PARENT="$(cd "$ROOT/.." && pwd -P)"
+export UV_CACHE_DIR="${DEV_UV_CACHE_DIR:-$PARENT/.uv-cache}"
 PREFIX="ai_job_search-"
 GATE="${DEV_GATE_BRANCH:-staging}"
 MAIN="${DEV_MAIN_BRANCH:-master}"
@@ -29,6 +30,35 @@ usage() {
 }
 
 curbranch() { git rev-parse --abbrev-ref HEAD; }
+
+MODULES=()
+add_module() {
+    local m="$1"
+    [[ " ${MODULES[*]-} " == *" $m "* ]] || MODULES+=("$m")
+}
+parse_modules() {
+    MODULES=()
+    [ $# -gt 0 ] || return 0
+    local m
+    for m in "$@"; do
+        m="$(basename "$m")"
+        [ -d "$ROOT/apps/$m" ] || { echo "Error: unknown module '$m'"; usage; }
+        add_module "$m"
+    done
+    add_module commonlib
+    if [[ " ${MODULES[*]} " == *" web "* ]]; then add_module e2e; fi
+}
+is_selected() {
+    [ ${#MODULES[@]} -eq 0 ] || [[ " ${MODULES[*]} " == *" $1 "* ]]
+}
+save_modules() {
+    local dest="$1"
+    if [ ${#MODULES[@]} -gt 0 ]; then
+        printf '%s\n' "${MODULES[@]}" > "$dest/.git/dev-modules"
+    else
+        rm -f "$dest/.git/dev-modules"
+    fi
+}
 
 validate_clone() {
     local target="$1" base
@@ -100,6 +130,7 @@ copy_runtime() {
     for f in "$ROOT"/apps/*/uv.lock "$ROOT"/apps/*/poetry.lock "$ROOT"/apps/*/package-lock.json; do
         [ -f "$f" ] || continue
         mod="$(basename "$(dirname "$f")")"
+        is_selected "$mod" || continue
         if [ ! -f "$dest/apps/$mod/$(basename "$f")" ]; then
             mkdir -p "$dest/apps/$mod"
             cp "$f" "$dest/apps/$mod/"
@@ -109,6 +140,7 @@ copy_runtime() {
     for d in "$ROOT"/apps/*/node_modules; do
         [ -d "$d" ] || continue
         mod="$(basename "$(dirname "$d")")"
+        is_selected "$mod" || continue
         if [ -d "$dest/apps/$mod/node_modules" ]; then continue; fi
         mkdir -p "$dest/apps/$mod"
         if ! cp -a --reflink=auto "$d" "$dest/apps/$mod/node_modules" 2>/dev/null; then
@@ -141,13 +173,14 @@ prepare_runtime() {
     for dir in "$dest"/apps/*; do
         [ -f "$dir/uv.lock" ] || continue
         mod="$(basename "$dir")"
+        is_selected "$mod" || continue
         echo "Preparing $mod dependencies (uv, offline)..."
         if ! (cd "$dir" && uv sync --offline); then
             echo "Offline sync failed for $mod; retrying with network."
             (cd "$dir" && uv sync)
         fi
     done
-    if [ -f "$dest/apps/scrapper/poetry.lock" ]; then
+    if is_selected scrapper && [ -f "$dest/apps/scrapper/poetry.lock" ]; then
         echo "Preparing scrapper dependencies (poetry)..."
         if ! (cd "$dest/apps/scrapper" && poetry install --no-interaction); then
             (cd "$dest/apps/scrapper" && poetry lock && poetry install --no-interaction)
@@ -155,6 +188,7 @@ prepare_runtime() {
     fi
     if [ "$mode" = "dep" ]; then
         for mod in web e2e; do
+            is_selected "$mod" || continue
             [ -f "$dest/apps/$mod/package.json" ] || continue
             echo "Preparing $mod dependencies (npm, prefer offline)..."
             if ! (cd "$dest/apps/$mod" && npm ci --prefer-offline); then
@@ -178,6 +212,7 @@ create_clone() {
         git clone "$(git remote get-url origin)" "$CLONE" || { echo "Error: clone failed."; return 1; }
     fi
     copy_runtime "$CLONE"
+    save_modules "$CLONE"
     cd "$CLONE"
 }
 
@@ -228,6 +263,7 @@ case "$CMD" in
         [ -n "$NAME" ] || usage
         NAME="$(basename "$NAME")"
         NAME="${NAME#$PREFIX}"
+        parse_modules "${@:3}"
         create_clone "$NAME"
         git fetch origin >/dev/null 2>&1 || true
         BRANCH="feat/$NAME"
@@ -244,6 +280,7 @@ case "$CMD" in
         [ -n "$PR" ] || usage
         PR="${PR#\#}"
         require_gh
+        parse_modules "${@:3}"
         create_clone "dependabot-$PR"
         gh pr checkout "$PR"
         prepare_runtime "$CLONE" dep
@@ -260,6 +297,11 @@ case "$CMD" in
         ;;
     test)
         shift
+        if [ $# -eq 0 ] && [ -f "$ROOT/.git/dev-modules" ]; then
+            mods=()
+            while IFS= read -r m; do [ -n "$m" ] && mods+=("$m"); done < "$ROOT/.git/dev-modules"
+            set -- "${mods[@]}"
+        fi
         (cd "$ROOT" && bash scripts/test.sh "$@")
         ;;
     sandbox)
