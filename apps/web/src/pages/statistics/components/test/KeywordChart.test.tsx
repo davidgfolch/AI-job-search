@@ -16,7 +16,7 @@ vi.mock('recharts', () => ({
 
 const rows = [
     { date: '2026-11-19', site: 'Indeed', keyword: 'python', reported_total: 40, processed: 20, new: 18, duplicates: 2, duplicate_ids: '91,92' },
-] as any;
+];
 
 describe('KeywordChart', () => {
     it('renders one line per keyword with no duplicate or reported series', () => {

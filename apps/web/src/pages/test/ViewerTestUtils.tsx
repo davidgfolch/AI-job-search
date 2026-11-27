@@ -84,8 +84,8 @@ export const createWrapper = () => {
 
 export const createDefaultJobMutationsProps = () => ({
     filters: {},
-    allJobs: [] as any[],
-    selectedJob: { id: 1, title: 'Job 1', ignored: false } as any,
+    allJobs: [] as Job[],
+    selectedJob: { id: 1, title: 'Job 1', ignored: false } as unknown as Job,
     setSelectedJob: vi.fn(),
     activeTab: 'list' as const,
     autoSelectNext: { current: { shouldSelect: false, previousJobId: null } },

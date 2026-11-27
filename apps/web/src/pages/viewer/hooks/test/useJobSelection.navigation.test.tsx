@@ -2,10 +2,11 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useJobSelection } from '../useJobSelection';
 import { MemoryRouter } from 'react-router-dom';
+import type { Job } from '../../api/ViewerApi';
 
 describe('useJobSelection - navigation', () => {
     const defaultProps = {
-        allJobs: [] as any[],
+        allJobs: [] as unknown as Job[],
         filters: { page: 1 },
         setFilters: vi.fn(),
     };
@@ -27,7 +28,7 @@ describe('useJobSelection - navigation', () => {
             { id: 1, title: 'Job A' },
             { id: 2, title: 'Job B' },
             { id: 3, title: 'Job C' }
-        ] as any[];
+        ] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -51,7 +52,7 @@ describe('useJobSelection - navigation', () => {
             { id: 10, title: 'Job A' },
             { id: 20, title: 'Job B' },
             { id: 30, title: 'Job C' }
-        ] as any[];
+        ] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -75,7 +76,7 @@ describe('useJobSelection - navigation', () => {
             { id: 1, title: 'Job A' },
             { id: 2, title: 'Job B' },
             { id: 3, title: 'Job C' }
-        ] as any[];
+        ] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -94,7 +95,7 @@ describe('useJobSelection - navigation', () => {
     });
 
     it('does not navigate past the end of the list', () => {
-        const jobs = [{ id: 1, title: 'Job A' }] as any[];
+        const jobs = [{ id: 1, title: 'Job A' }] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -113,7 +114,7 @@ describe('useJobSelection - navigation', () => {
     });
 
     it('does not navigate before the start of the list', () => {
-        const jobs = [{ id: 1, title: 'Job A' }] as any[];
+        const jobs = [{ id: 1, title: 'Job A' }] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -132,7 +133,7 @@ describe('useJobSelection - navigation', () => {
     });
 
     it('loads more when navigating past last job with more pages', () => {
-        const jobs = [{ id: 1, title: 'Job A' }] as any[];
+        const jobs = [{ id: 1, title: 'Job A' }] as unknown as Job[];
         const onLoadMore = vi.fn();
         const props = { ...defaultProps, allJobs: jobs, hasMorePages: true, onLoadMore };
         

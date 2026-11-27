@@ -30,7 +30,7 @@ describe('useFilterWatcher - Polling Logic', () => {
 
     it('should poll periodically', async () => {
         vi.useFakeTimers();
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 5, new_items: 5, removed_items: 0 } });
         
         const { wrapper, queryClient } = createWrapper();
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper });
@@ -46,7 +46,7 @@ describe('useFilterWatcher - Polling Logic', () => {
         expect(Object.values(result.current.results)[0].newItems).toBe(5);
 
         // Catch up check: server reports 0 for the current cutoff
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 5, new_items: 0, removed_items: 0 } });
         await act(async () => {
              await vi.advanceTimersByTimeAsync(1000); // Trigger another debounced check if we can, or just wait for next poll
              // Wait, query update is the easiest way to trigger in this test environment
@@ -58,7 +58,7 @@ describe('useFilterWatcher - Polling Logic', () => {
         vi.clearAllMocks();
 
         // Periodic poll: now server reports 5 new items since the catch-up
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 5 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 10, new_items: 5, removed_items: 0 } });
         await act(async () => {
             await vi.advanceTimersByTimeAsync(POLLING_INTERVAL);
         });
@@ -68,7 +68,7 @@ describe('useFilterWatcher - Polling Logic', () => {
     });
     
     it('should pass created_after parameter when checking new items', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 } });
+         vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 5, new_items: 5, removed_items: 0 } });
          const { wrapper } = createWrapper();
          renderHook(() => useFilterWatcher({ savedConfigs: [mockSavedConfigs[0]] }), { wrapper });
          
@@ -76,7 +76,7 @@ describe('useFilterWatcher - Polling Logic', () => {
              expect(jobsApi.getWatcherStats).toHaveBeenCalled();
          });
          
-         const calls = (jobsApi.getWatcherStats as any).mock.calls;
+         const calls = vi.mocked(jobsApi.getWatcherStats).mock.calls;
          const cutoffMapArg = calls[calls.length - 1][0];
          expect(cutoffMapArg).toBeDefined();
          expect(typeof cutoffMapArg).toBe('object');
@@ -85,7 +85,7 @@ describe('useFilterWatcher - Polling Logic', () => {
     });
 
     it('should reset watcher for a config without triggering immediate check', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 10 }, 2: { total: 10, new_items: 10 } });
+         vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 10, new_items: 10, removed_items: 0 }, 2: { total: 10, new_items: 10, removed_items: 0 } });
           const { wrapper } = createWrapper();
           const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
@@ -93,7 +93,7 @@ describe('useFilterWatcher - Polling Logic', () => {
              expect(jobsApi.getWatcherStats).toHaveBeenCalled();
          });
 
-         (jobsApi.getWatcherStats as any).mockClear();
+         vi.mocked(jobsApi.getWatcherStats).mockClear();
 
          act(() => {
              result.current.resetWatcher('Config 1');

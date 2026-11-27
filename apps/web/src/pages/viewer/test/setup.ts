@@ -10,12 +10,12 @@ if (typeof global.ResizeObserver === 'undefined') {
         }
         observe(target: Element) {
             // Trigger callback immediately for testing
-            this.callback([{ target, contentRect: { height: target.scrollHeight, width: target.clientWidth } }] as any, this);
+            this.callback([{ target, contentRect: { height: target.scrollHeight, width: target.clientWidth } }] as unknown as ResizeObserverEntry[], this);
         }
         unobserve() {}
         disconnect() {}
     }
-    global.ResizeObserver = ResizeObserver as any;
+    global.ResizeObserver = ResizeObserver as unknown as typeof globalThis.ResizeObserver;
 }
 
 // Polyfill IntersectionObserver for jsdom
@@ -29,7 +29,7 @@ if (typeof global.IntersectionObserver === 'undefined') {
         unobserve() {}
         disconnect() {}
     }
-    global.IntersectionObserver = IntersectionObserver as any;
+    global.IntersectionObserver = IntersectionObserver as unknown as typeof globalThis.IntersectionObserver;
 }
 
 const localStorageMock = (() => {

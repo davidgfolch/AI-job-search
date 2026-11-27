@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useJobsData } from '../useJobsData';
-import { jobsApi, type Job } from '../../api/ViewerApi';
+import { jobsApi, type JobListResponse } from '../../api/ViewerApi';
+import { createMockJob } from '../../test/test-utils';
 
 // Mock react-router-dom
 const mockSearchParams = new URLSearchParams();
@@ -59,8 +60,8 @@ describe('useJobsData', () => {
   });
 
   it('fetches jobs data', async () => {
-    const mockData = { items: [{ id: 1, title: 'Test' }], total: 1, page: 1, size: 20 };
-    vi.mocked(jobsApi.getJobs).mockResolvedValue(mockData as any);
+    const mockData: JobListResponse = { items: [createMockJob({ id: 1, title: 'Test' })], total: 1, page: 1, size: 20 };
+    vi.mocked(jobsApi.getJobs).mockResolvedValue(mockData);
     const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.data).toEqual(mockData));
   });
@@ -86,11 +87,11 @@ describe('useJobsData', () => {
   });
 
   it('keeps previous data while fetching new page', async () => {
-    const page1Data = { items: [{ id: 1, title: 'Job 1' }], total: 10, page: 1, size: 20 };
-    const page2Data = { items: [{ id: 2, title: 'Job 2' }], total: 10, page: 2, size: 20 };
-    
+    const page1Data: JobListResponse = { items: [createMockJob({ id: 1, title: 'Job 1' })], total: 10, page: 1, size: 20 };
+    const page2Data: JobListResponse = { items: [createMockJob({ id: 2, title: 'Job 2' })], total: 10, page: 2, size: 20 };
+
     // First call resolves immediately
-    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce(page1Data as any);
+    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce(page1Data);
     
     const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
     
@@ -98,11 +99,10 @@ describe('useJobsData', () => {
     await waitFor(() => expect(result.current.data).toEqual(page1Data));
     
     // Second call will resolve delayed
-    let resolvePage2: (value: any) => void;
-    const page2Promise = new Promise(resolve => { resolvePage2 = resolve; });
+    let resolvePage2: (value: JobListResponse) => void;
+    const page2Promise = new Promise<JobListResponse>(resolve => { resolvePage2 = resolve; });
     vi.mocked(jobsApi.getJobs).mockImplementationOnce(async () => {
-        const val = await page2Promise;
-        return val as any; 
+        return await page2Promise;
     });
 
     // Trigger page change
@@ -122,15 +122,15 @@ describe('useJobsData', () => {
   });
 
   it('blocks load-more while showing placeholder data (config transition)', async () => {
-    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce({ items: [{ id: 1 } as Job], total: 100, page: 1, size: 20 });
+    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce({ items: [createMockJob({ id: 1 })], total: 100, page: 1, size: 20 });
     const { result } = renderHook(() => useJobsData(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.data?.total).toBe(100));
     expect(result.current.isPlaceholderData).toBe(false);
 
     // New config fetch: keep previous data as placeholder while it is in flight
-    let resolveNewConfig!: (value: any) => void;
-    vi.mocked(jobsApi.getJobs).mockImplementationOnce(() => new Promise(resolve => { resolveNewConfig = resolve; }));
+    let resolveNewConfig!: (value: JobListResponse) => void;
+    vi.mocked(jobsApi.getJobs).mockImplementationOnce(() => new Promise<JobListResponse>(resolve => { resolveNewConfig = resolve; }));
 
     act(() => {
         result.current.setFilters(prev => ({ ...prev, sql_filter: 'jvm', page: 1 }));
@@ -146,7 +146,7 @@ describe('useJobsData', () => {
     expect(result.current.filters.page).toBe(1);
 
     await act(async () => {
-        resolveNewConfig({ items: [{ id: 2 }], total: 100, page: 1, size: 20 });
+        resolveNewConfig({ items: [createMockJob({ id: 2 })], total: 100, page: 1, size: 20 });
     });
     await waitFor(() => expect(result.current.isPlaceholderData).toBe(false));
   });

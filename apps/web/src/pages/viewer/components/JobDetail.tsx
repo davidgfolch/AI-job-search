@@ -42,14 +42,17 @@ interface JobDetailProps {
     }, [detailScrollRef]);
     const savedCalcParams = useMemo(() => parseSalaryCalculationFromComments(job.comments), [job.comments]);
     const allSavedCalcParams = useMemo(() => parseAllSalaryCalculationsFromComments(job.comments), [job.comments]);
-    const [showCalculator, setShowCalculator] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(!!savedCalcParams);
+    const [calcSource, setCalcSource] = useState({ id: job.id, params: savedCalcParams });
+    if (calcSource.id !== job.id || calcSource.params !== savedCalcParams) {
+        setCalcSource({ id: job.id, params: savedCalcParams });
+        setShowCalculator(!!savedCalcParams);
+    }
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleScroll = useCallback(() => {
         if (contentRef.current) setIsScrolled(contentRef.current.scrollTop > 50);
     }, []);
-
-    useEffect(() => setShowCalculator(!!savedCalcParams), [job.id, savedCalcParams]);
 
     useEffect(() => { if (contentRef.current) contentRef.current.scrollTop = 0; }, [job]);
 

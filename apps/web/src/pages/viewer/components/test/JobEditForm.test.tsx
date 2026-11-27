@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import JobEditForm from "../JobEditForm";
+import type { Job } from '../../api/ViewerApi';
 import { createMockJob, setupFakeTimers, cleanupFakeTimers } from '../../test/test-utils';
 
 vi.mock('../../../common/hooks/useModalityValues', () => ({
@@ -10,7 +11,7 @@ vi.mock('../../../common/hooks/useModalityValues', () => ({
 const mockJob = createMockJob();
 
 describe('JobEditForm', () => {
-    let onUpdateMock: any;
+    let onUpdateMock: Mock<(data: Partial<Job>) => void>;
 
     beforeEach(() => {
         const MockObserver = class {
@@ -18,8 +19,8 @@ describe('JobEditForm', () => {
             unobserve = vi.fn();
             disconnect = vi.fn();
         };
-        window.IntersectionObserver = MockObserver as any;
-        globalThis.IntersectionObserver = MockObserver as any;
+        window.IntersectionObserver = MockObserver as unknown as typeof IntersectionObserver;
+        globalThis.IntersectionObserver = MockObserver as unknown as typeof IntersectionObserver;
         
         onUpdateMock = vi.fn();
         setupFakeTimers();

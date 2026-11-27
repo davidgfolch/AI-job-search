@@ -26,7 +26,7 @@ describe('useFilterWatcher - Persistence', () => {
 
     it('should initialize startTime and lastCheckTime from localStorage', async () => {
         const persistedTime = '2026-02-08T08:00:00.000Z';
-        (persistenceApi.getValue as any).mockResolvedValue(persistedTime);
+        vi.mocked(persistenceApi.getValue).mockResolvedValue(persistedTime);
         const { wrapper } = createWrapper();
 
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
@@ -39,8 +39,8 @@ describe('useFilterWatcher - Persistence', () => {
 
     it('should update localStorage after a successful checkItems', async () => {
         vi.useFakeTimers();
-        (persistenceApi.getValue as any).mockResolvedValue(null);
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 0 } });
+        vi.mocked(persistenceApi.getValue).mockResolvedValue(null);
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 10, new_items: 0, removed_items: 0 } });
         const { wrapper } = createWrapper();
 
         renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
@@ -56,8 +56,8 @@ describe('useFilterWatcher - Persistence', () => {
             expect.any(String)
         );
         
-        const lastCall = (persistenceApi.setValue as any).mock.calls[0];
-        expect(new Date(lastCall[1]).getTime()).toBeGreaterThan(0);
+        const lastCall = vi.mocked(persistenceApi.setValue).mock.calls[0];
+        expect(new Date(lastCall[1] as string).getTime()).toBeGreaterThan(0);
 
         vi.useRealTimers();
     });

@@ -24,7 +24,7 @@ export const setupServiceMocks = () => {
   vi.mock('@/common/services/NotificationService', () => notificationServiceMock);
   
   if (typeof globalThis.BroadcastChannel === 'undefined') {
-    globalThis.BroadcastChannel = broadcastChannelMock.BroadcastChannel as any;
+    globalThis.BroadcastChannel = broadcastChannelMock.BroadcastChannel as unknown as typeof BroadcastChannel;
   }
   
   return {

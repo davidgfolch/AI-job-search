@@ -23,6 +23,7 @@ import { usePanelResize } from './hooks/usePanelResize';
 
 export default function Viewer() {
     const { state, status, actions } = useViewer();
+    const { setFilters, setMessage } = actions;
     const { comment: defaultComment } = useDefaultComment();
     const isBulk = state.selectionMode === 'all' || state.selectedIds.size > 1;
     const jobListRef = useRef<HTMLDivElement>(null);
@@ -59,13 +60,13 @@ export default function Viewer() {
         if (jobListRef.current) {
             jobListRef.current.scrollTop = 0;
         }
-        actions.setFilters({ ...state.filters, ...newFilters, page: newPage });
-    }, [actions.setFilters, state.filters]);
+        setFilters({ ...state.filters, ...newFilters, page: newPage });
+    }, [setFilters, state.filters]);
     const detailVisibleMobile = state.activeTab === 'list' && !!state.selectedJob;
 
 const handleMessage = useCallback((text: string, type: 'success' | 'error') => {
-        actions.setMessage({ text, type });
-    }, [actions.setMessage]);
+        setMessage({ text, type });
+    }, [setMessage]);
 
     return (
         <ShortcutsContext.Provider value={{ shortcuts, modifierPressed }}>

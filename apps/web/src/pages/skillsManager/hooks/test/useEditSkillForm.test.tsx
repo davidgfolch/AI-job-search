@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useEditSkillForm } from '../useEditSkillForm';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { skillsApi } from '../../api/SkillsManagerApi';
+import type { KeyboardEvent } from 'react';
 
 vi.mock('../../api/SkillsManagerApi', () => ({
     skillsApi: {
@@ -108,7 +109,7 @@ describe('useEditSkillForm', () => {
         expect(result.current.description).toBe('Reloaded');
 
         act(() => { result.current.setNewLinkInput('k-link'); });
-        act(() => { result.current.handleLinkInputKeyDown({ key: 'Enter' } as any); });
+        act(() => { result.current.handleLinkInputKeyDown({ key: 'Enter' } as unknown as KeyboardEvent); });
         expect(result.current.learningPath).toContainEqual({ url: 'k-link', source: 'manual' });
     });
 });

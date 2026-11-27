@@ -62,11 +62,11 @@ export function useFilterConfigurations({
         retry: 1,
     });
 
-    useEffect(() => {
-        if (loadedConfigs) {
-            setSavedConfigs(loadedConfigs);
-        }
-    }, [loadedConfigs]);
+    const [lastLoadedConfigs, setLastLoadedConfigs] = useState<FilterConfig[] | undefined>(undefined);
+    if (loadedConfigs && lastLoadedConfigs !== loadedConfigs) {
+        setLastLoadedConfigs(loadedConfigs);
+        setSavedConfigs(loadedConfigs);
+    }
 
     useEffect(() => {
         if (loadError) {
@@ -107,13 +107,13 @@ export function useFilterConfigurations({
     });
 
     // Intercept loadConfiguration to reset watcher
-    // Intercept loadConfiguration to reset watcher
+    const { loadConfiguration } = operations;
     const handleLoadConfiguration = useCallback((config: FilterConfig) => {
         if (isWatching) {
             resetWatcher(config.name);
         }
-        operations.loadConfiguration(config);
-    }, [operations.loadConfiguration, isWatching, resetWatcher]);
+        loadConfiguration(config);
+    }, [loadConfiguration, isWatching, resetWatcher]);
 
     const pinnedConfigs = useMemo(() => savedConfigs.filter(c => c.pinned), [savedConfigs]);
 
@@ -144,9 +144,10 @@ export function useFilterConfigurations({
         results: watcherResults
     });
 
+    const { setHighlightIndex } = dropdown;
     useEffect(() => {
-        if (!isOpen) dropdown.setHighlightIndex(-1);
-    }, [isOpen, dropdown.setHighlightIndex]);
+        if (!isOpen) setHighlightIndex(-1);
+    }, [isOpen, setHighlightIndex]);
 
     const handleInputBlur = useCallback((e: React.FocusEvent) => {
         if (dropdown.wrapperRef.current && 

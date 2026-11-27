@@ -58,7 +58,8 @@ commit — it aborts when `staging` and `master` have diverged.
 
 ## Static Analysis
 
-Static analysis is a blocking CI gate (`static-analysis` job). Run the same checks
+Static analysis is a blocking CI gate (`static-analysis` job): ESLint warnings fail the
+gate just like errors, so it must finish with zero warnings. Run the same checks
 locally before pushing:
 
 - **Linux**: `./scripts/lint.sh` (runs everything) or `./scripts/lint.sh python|web|e2e`

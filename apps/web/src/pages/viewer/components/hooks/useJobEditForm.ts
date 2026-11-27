@@ -29,33 +29,15 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
     const [showAllFields, setShowAllFields] = useState(mode === 'create');
     
     // Ref to track debounce timers for auto-save
-    const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-    
-    // Track previous job ID to detect job switches vs updates
-    const previousJobId = useRef<number | null>(null);
+    const debounceTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-    // Sync local state with job prop when it changes
-    useEffect(() => {
-        if (mode === 'create') {
-            setShowAllFields(true);
-            resetForm();
-            setStatusState({});
-            previousJobId.current = null;
-        } else if (mode === 'edit' && job) {
-            if (previousJobId.current !== job.id) {
-                setShowAllFields(false);
-                previousJobId.current = job.id;
-            }
-            populateForm(job);
-            
-            // Update status state from job
-            const newStatusState: Record<string, boolean> = {};
-            BOOLEAN_FILTER_KEYS.forEach(key => {
-                newStatusState[key] = job[key as keyof Job] as boolean;
-            });
-            setStatusState(newStatusState);
-        }
-    }, [job, mode]);
+    const buildStatusState = (source: Job): Record<string, boolean> => {
+        const result: Record<string, boolean> = {};
+        BOOLEAN_FILTER_KEYS.forEach(key => {
+            result[key] = source[key as keyof Job] as boolean;
+        });
+        return result;
+    };
 
     const resetForm = () => {
         setTitle('');
@@ -89,6 +71,22 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
         setHybridInfo(job.hybrid_info || '');
     };
 
+    // Sync local state with job prop when it changes
+    const [synced, setSynced] = useState<{ job: Job | null; mode: 'edit' | 'create' } | null>(null);
+    if (synced?.job !== job || synced?.mode !== mode) {
+        const previous = synced;
+        setSynced({ job, mode });
+        if (mode === 'create') {
+            setShowAllFields(true);
+            resetForm();
+            setStatusState({});
+        } else if (job) {
+            if (previous?.job?.id !== job.id || previous?.mode !== 'edit') setShowAllFields(false);
+            populateForm(job);
+            setStatusState(buildStatusState(job));
+        }
+    }
+
     const handleStatusToggle = (field: string) => {
         if (mode === 'edit' && job) {
             const newValue = !statusState[field];
@@ -109,10 +107,10 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
 
     const handleAutoSave = (field: string, value: string) => {
         if (mode === 'create') return;
-        if (debounceTimers.current[field]) {
-            clearTimeout(debounceTimers.current[field]);
+        if (debounceTimersRef.current[field]) {
+            clearTimeout(debounceTimersRef.current[field]);
         }
-        debounceTimers.current[field] = setTimeout(() => {
+        debounceTimersRef.current[field] = setTimeout(() => {
             onUpdate({ [field]: value });
         }, 1000);
     };
@@ -126,7 +124,8 @@ export function useJobEditForm({ job, onUpdate, onCreate, mode }: UseJobEditForm
     };
 
     useEffect(() => {
-        return () => { Object.values(debounceTimers.current).forEach(timer => clearTimeout(timer)); };
+        const timers = debounceTimersRef.current;
+        return () => { Object.values(timers).forEach(timer => clearTimeout(timer)); };
     }, []);
 
     const handleCreate = () => {
