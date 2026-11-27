@@ -1,4 +1,3 @@
-
 import React from 'react';
 import './ViewTabs.css';
 
@@ -13,49 +12,33 @@ interface ViewTabsProps {
     hasSelection?: boolean;
 }
 
-const ViewTabs: React.FC<ViewTabsProps> = ({ 
-    activeTab, 
-    onTabChange, 
-    hasNewJobs, 
-    newJobsCount, 
-    onReload,
-    onDelete,
-    selectedCount = 0,
-    hasSelection
-}) => {
+const ViewTabs: React.FC<ViewTabsProps> = ({ activeTab, onTabChange, hasNewJobs, newJobsCount, onReload, onDelete, selectedCount = 0, hasSelection }) => {
+    const newJobsLabel = newJobsCount && newJobsCount > 0 ? `${newJobsCount} new` : 'New jobs';
+    const deleteLabel = selectedCount > 1 ? `Delete (${selectedCount})` : 'Delete';
     return (
         <>
-            <button 
-                className={`tab-button ${activeTab === 'list' ? 'active' : ''}`} 
-                onClick={() => onTabChange('list')}
-                title="List view"
-            >
-                List
+            <button id="tab-button-list" className={`tab-button ${activeTab === 'list' ? 'active' : ''}`} onClick={() => onTabChange('list')} title="List view" aria-label="List view">
+                <span className="tab-icon" aria-hidden="true">📋</span>
+                <span className="tab-label">List</span>
             </button>
             {hasNewJobs && (
-                <button 
-                    className="tab-button has-new-jobs"
-                    onClick={onReload}
-                    title="Click to reload list"
-                >
-                     <span className="reload-icon">↻</span>
-                     {newJobsCount && newJobsCount > 0 ? `${newJobsCount} new` : 'New jobs'}
+                <button id="tab-button-new" className="tab-button has-new-jobs" onClick={onReload} title="Click to reload list" aria-label="Click to reload list">
+                    <span className="tab-icon reload-icon" aria-hidden="true">↻</span>
+                    <span className="tab-label">{newJobsLabel}</span>
                 </button>
             )}
-            <button className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`} onClick={() => onTabChange('edit')}>
-                Edit
+            <button id="tab-button-edit" className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`} onClick={() => onTabChange('edit')} title="Edit view" aria-label="Edit view">
+                <span className="tab-icon" aria-hidden="true">✏️</span>
+                <span className="tab-label">Edit</span>
             </button>
-            <button className={`tab-button ${activeTab === 'create' ? 'active' : ''}`} onClick={() => onTabChange('create')}>
-                Create
+            <button id="tab-button-create" className={`tab-button ${activeTab === 'create' ? 'active' : ''}`} onClick={() => onTabChange('create')} title="Create view" aria-label="Create view">
+                <span className="tab-icon" aria-hidden="true">➕</span>
+                <span className="tab-label">Create</span>
             </button>
             {hasSelection && onDelete && (
-                <button 
-                    className="tab-button delete-button"
-                    onClick={() => onDelete(selectedCount)}
-                    title="Delete selected jobs"
-                    style={{ backgroundColor: '#dc3545', color: 'white', marginLeft: 'auto' }}
-                >
-                    🗑️ Delete {selectedCount > 1 ? `(${selectedCount})` : ''}
+                <button id="tab-button-delete" className="tab-button delete-button" onClick={() => onDelete(selectedCount)} title="Delete selected jobs" aria-label="Delete selected jobs">
+                    <span className="tab-icon" aria-hidden="true">🗑️</span>
+                    <span className="tab-label">{deleteLabel}</span>
                 </button>
             )}
         </>

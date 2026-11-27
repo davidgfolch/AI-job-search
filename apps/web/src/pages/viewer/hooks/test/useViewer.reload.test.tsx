@@ -5,6 +5,7 @@ import { useJobsData } from '../useJobsData';
 import { useJobSelection } from '../useJobSelection';
 import { useJobMutations } from '../useJobMutations';
 import { mockJobsData, mockJobSelection, mockJobMutations } from './useViewer.mocks';
+import type { Job } from '../../api/ViewerApi';
 
 vi.mock('../useJobsData', () => ({
     useJobsData: vi.fn(),
@@ -21,6 +22,11 @@ vi.mock('../../../common/hooks/useModalityValues', () => ({
 
 import { useModalityValues } from '../../../common/hooks/useModalityValues';
 
+const setJobsData = (value: object) => vi.mocked(useJobsData).mockReturnValue(value as unknown as ReturnType<typeof useJobsData>);
+const setJobSelection = (value: object) => vi.mocked(useJobSelection).mockReturnValue(value as unknown as ReturnType<typeof useJobSelection>);
+const setJobMutations = (value: object) => vi.mocked(useJobMutations).mockReturnValue(value as unknown as ReturnType<typeof useJobMutations>);
+const setModalityValues = (value: object) => vi.mocked(useModalityValues).mockReturnValue(value as unknown as ReturnType<typeof useModalityValues>);
+
 /** Re-applying the configuration already in effect leaves the query key untouched, so the list must be reloaded
  * from the current page instead. */
 describe('useViewer reloadJobList', () => {
@@ -28,9 +34,9 @@ describe('useViewer reloadJobList', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (useJobSelection as any).mockReturnValue(mockJobSelection);
-        (useJobMutations as any).mockReturnValue(mockJobMutations);
-        (useModalityValues as any).mockReturnValue({ data: [] });
+        setJobSelection(mockJobSelection);
+        setJobMutations(mockJobMutations);
+        setModalityValues({ data: [] });
     });
 
     const renderViewer = (overrides = {}) => {
@@ -43,7 +49,7 @@ describe('useViewer reloadJobList', () => {
             reloadCurrentPage,
             ...overrides,
         };
-        (useJobsData as any).mockReturnValue(jobsData);
+        setJobsData(jobsData);
         return { jobsData, reloadCurrentPage, ...renderHook(() => useViewer()) };
     };
 
@@ -67,7 +73,7 @@ describe('useViewer reloadJobList', () => {
 
         // The refetched page 1 arrives; it is not placeholder data, so it replaces the list
         const reloaded = { items: [{ id: 1 }, { id: 2 }, { id: 3 }], page: 1, total: 3 };
-        (useJobsData as any).mockReturnValue({
+        setJobsData({
             ...mockJobsData,
             data: reloaded,
             isPlaceholderData: false,
@@ -78,9 +84,9 @@ describe('useViewer reloadJobList', () => {
         });
         rerender();
 
-        const updater = setAllJobs.mock.calls.map(call => call[0]).find(arg => typeof arg === 'function');
+        const updater = setAllJobs.mock.calls.map(call => call[0]).find((arg): arg is (jobs: Job[]) => Job[] => typeof arg === 'function')!;
         expect(updater).toBeDefined();
-        expect((updater as any)(page1.items)).toEqual(reloaded.items);
+        expect(updater(page1.items as unknown as Job[])).toEqual(reloaded.items);
         expect(mockJobSelection.handleJobSelect).not.toHaveBeenCalled();
     });
 });

@@ -3,6 +3,7 @@ import os
 import time
 
 from openai import OpenAI
+from commonlib.envFileUtil import getEnvFile
 from commonlib.json_helpers import strip_code_fence
 from commonlib.observability import get_logger
 
@@ -22,9 +23,9 @@ def _get_max_tokens() -> int:
 
 
 def _get_api_key() -> str:
-    key = os.getenv("AI_ENRICH_OPENROUTER_API_KEY") or os.getenv("OPENROUTER_API_KEY", "")
+    key = getEnvFile("OPENROUTER_API_KEY", "")
     if not key:
-        raise ValueError("AI_ENRICH_OPENROUTER_API_KEY (or OPENROUTER_API_KEY) is not set")
+        raise ValueError("OPENROUTER_API_KEY is not set")
     return key
 
 

@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
 import HeaderMenu from './HeaderMenu';
+import type { ShortcutsMenuData } from './core/ShortcutsPopup';
 import './PageHeader.css';
 interface PageHeaderProps {
   title: string;
   children?: React.ReactNode;
+  shortcuts?: ShortcutsMenuData;
 }
-const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title, children, shortcuts }) => {
   const fullTitle = `AI Job Search - ${title}`;
   useEffect(() => {
     document.title = fullTitle;
@@ -16,7 +18,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, children }) => {
         <h1>{fullTitle}</h1>
         <div className="header-actions">
           {children}
-          <HeaderMenu />
+          <HeaderMenu shortcuts={shortcuts} />
         </div>
       </div>
     </header>

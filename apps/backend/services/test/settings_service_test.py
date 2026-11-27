@@ -2,6 +2,8 @@ import pytest
 from unittest.mock import patch
 import services.settings_service as settings_service
 
+MODELS = [{"id": "free/model:free", "label": "free/model:free", "free": True}]
+
 ENV_DATA = {"KEY_A": "val_a", "KEY_B": "val_b"}
 STATE_DATA = {"last_execution": "2024-01-01T00:00:00", "running": False}
 
@@ -39,6 +41,44 @@ def test_update_env_settings_bulk(mock_get_all, log_records):
     records = log_records(event="settings.updated")
     assert [record["count"] for record in records] == [2]
     assert all(update not in record.values() for record in records for update in updates.values())
+
+
+@patch("services.settings_service.list_models", return_value=MODELS)
+@patch("services.settings_service.getEnv", return_value="604800")
+def test_get_provider_models_caches_for_ttl(_env, mock_list):
+    settings_service._models_cache.clear()
+    first = settings_service.get_provider_models("groq")
+    second = settings_service.get_provider_models("groq")
+    assert first["source"] == "live" and second["cached"] is True
+    assert second["models"] == MODELS
+    mock_list.assert_called_once_with("groq")
+
+
+@patch("services.settings_service.list_models", return_value=MODELS)
+@patch("services.settings_service.getEnv", return_value="604800")
+def test_get_provider_models_refresh_bypasses_cache(_env, mock_list):
+    settings_service._models_cache.clear()
+    settings_service.get_provider_models("groq")
+    refreshed = settings_service.get_provider_models("groq", refresh=True)
+    assert refreshed["cached"] is False
+    assert mock_list.call_count == 2
+
+
+@patch("services.settings_service.list_models", side_effect=OSError("offline"))
+def test_get_provider_models_falls_back_on_error(mock_list, log_records):
+    settings_service._models_cache.clear()
+    result = settings_service.get_provider_models("gemini")
+    assert result == {"provider": "gemini", "models": [], "source": "fallback", "cached": False, "fetched_at": None}
+    assert log_records(event="provider.models_fetch_failed")[0]["error"] == "offline"
+
+
+@pytest.mark.parametrize("provider", ["bogus", "huggingface", "local"])
+def test_get_provider_models_rejects_non_http_providers(provider):
+    settings_service._models_cache.clear()
+    with patch("services.settings_service.list_models") as mock_list:
+        result = settings_service.get_provider_models(provider)
+    assert result["source"] == "fallback"
+    mock_list.assert_not_called()
 
 
 @patch("services.settings_service._repo")

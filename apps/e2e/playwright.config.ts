@@ -58,11 +58,15 @@ export default defineConfig({
      is never reused: its Vite runs on a slow WSL bind-mount and drops clicks.
      The e2e specs mock the API, so the dev server must not wait for a backend:
      BACKEND_WAIT_TIMEOUT_SECONDS=0 serves immediately and BACKEND_DISCOVERY=False
-     skips the LAN scan that would otherwise delay the boot by ~30s. */
+     skips the LAN scan that would otherwise delay the boot by ~30s.
+     BACKEND_URL pins the proxy to an unreachable port: backendUrlCandidates()
+     returns only the configured URL, so an unmocked request can never reach the
+     live backend (and its database) even if a route mock leaks. The server is
+     never reused, because a reused one could point at the live backend. */
   webServer: {
     command: 'npm run dev --prefix ../web -- --port 5174 --strictPort',
     url: 'http://127.0.0.1:5174',
-    reuseExistingServer: !process.env.CI,
-    env: { BACKEND_WAIT_TIMEOUT_SECONDS: '0', BACKEND_DISCOVERY: 'False' },
+    reuseExistingServer: false,
+    env: { BACKEND_WAIT_TIMEOUT_SECONDS: '0', BACKEND_DISCOVERY: 'False', BACKEND_URL: 'http://127.0.0.1:1' },
   },
 });

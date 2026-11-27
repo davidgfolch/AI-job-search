@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useJobSelection } from '../useJobSelection';
 import { MemoryRouter } from 'react-router-dom';
+import type { Job } from '../../api/ViewerApi';
 
 describe('useJobSelection', () => {
     const defaultProps = {
@@ -62,7 +63,7 @@ describe('useJobSelection', () => {
             wrapper: createWrapper() 
         });
 
-        const mockJob = { id: 123, title: 'Test Job' } as any;
+        const mockJob = { id: 123, title: 'Test Job' } as unknown as Job;
 
         // Act
         act(() => {
@@ -74,7 +75,7 @@ describe('useJobSelection', () => {
     });
 
     it('should prevent double load (state revert) when URL is stale after selection', () => {
-        const jobs = [{ id: 1, title: 'Job A' }, { id: 2, title: 'Job B' }] as any[];
+        const jobs = [{ id: 1, title: 'Job A' }, { id: 2, title: 'Job B' }] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         // Initial render with Job A selected via URL

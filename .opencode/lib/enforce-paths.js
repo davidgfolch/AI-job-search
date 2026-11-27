@@ -53,7 +53,11 @@ export function classify(relPath) {
   const suffix = dot >= 0 ? base.slice(dot) : "";
   if (DOC_SUFFIXES.includes(suffix) || ASSET_SUFFIXES.includes(suffix)) return null;
   const moduleMatch = rel.match(/^apps\/([^/]+)\//i);
-  if (moduleMatch) return { modules: [moduleMatch[1]], global: false };
+  if (moduleMatch) {
+    const module = moduleMatch[1];
+    // A web change can alter the UI flows the e2e suite exercises, so it always runs both suites.
+    return { modules: module.toLowerCase() === "web" ? [module, "e2e"] : [module], global: false };
+  }
   if (base.startsWith(".env")) return { modules: [], global: true };
   if (/^test[.][a-z]+$/.test(base)) return { modules: [], global: true };
   if (GLOBAL_MANIFESTS.has(base)) return { modules: [], global: true };

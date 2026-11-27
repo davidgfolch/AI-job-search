@@ -10,6 +10,7 @@ import {
     mockSaveSkill,
     MockEditSkillModal 
 } from './SkillsManager.test.utils';
+import type { ComponentProps } from 'react';
 
 // Mock the hook
 vi.mock('../skillsManager/hooks/useLearnList', () => ({
@@ -18,7 +19,7 @@ vi.mock('../skillsManager/hooks/useLearnList', () => ({
 
 // Mock the Modal
 vi.mock('../skillsManager/components/EditSkillModal', () => ({
-  EditSkillModal: (props: any) => MockEditSkillModal(props)
+  EditSkillModal: (props: ComponentProps<typeof MockEditSkillModal>) => MockEditSkillModal(props)
 }));
 
 describe('SkillsManager', () => {

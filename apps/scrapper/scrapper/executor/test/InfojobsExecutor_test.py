@@ -120,10 +120,14 @@ class TestLoadRow:
         assert infojobs_executor._load_row(5) == 'https://infojobs/job/3'
         infojobs_navigator.scroll_jobs_list.assert_called_once_with(5)
 
-    def test_returns_none_when_the_scroll_fails(self, infojobs_executor, infojobs_navigator):
-        infojobs_navigator.scroll_jobs_list.side_effect = RuntimeError('stale element')
+    @pytest.mark.parametrize("stale_step", ['scroll', 'link'])
+    def test_returns_none_when_a_row_is_stale(self, infojobs_executor, infojobs_navigator, stale_step):
+        failure = RuntimeError('scroll gone') if stale_step == 'scroll' else IndexError('link gone')
+        infojobs_navigator.scroll_jobs_list.side_effect = failure if stale_step == 'scroll' else None
+        infojobs_navigator.get_job_link_element.side_effect = failure if stale_step == 'link' else None
         assert infojobs_executor._load_row(9) is None
-        infojobs_navigator.get_job_link_element.assert_not_called()
+        if stale_step == 'scroll':
+            infojobs_navigator.get_job_link_element.assert_not_called()
 
     def test_returns_true_without_clicking_when_the_job_is_already_stored(self, infojobs_executor, infojobs_navigator):
         infojobs_executor.service.job_exists_in_db.return_value = (7, True)

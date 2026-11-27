@@ -3,30 +3,33 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useViewer } from '../useViewer';
 import { useJobsData } from '../useJobsData';
 import { useModalityValues } from '../../../common/hooks/useModalityValues';
+import type { useJobSelection } from '../useJobSelection';
+import type { useJobMutations } from '../useJobMutations';
+import type { useAppliedModal } from '../useAppliedModal';
 
+type AutoSelectState = Partial<Parameters<typeof useJobMutations>[0]['autoSelectNext']['current']>;
 /**
  * Every hook mock returns the *same* vi.fn() instances on each render. A factory
  * returning fresh fns per call would make the closures captured by `actions`
  * and the assertions read different instances, so effects would look uncalled.
  */
 const mocks = vi.hoisted(() => ({
-    selectionConfig: null as { onLoadMore: () => void } | null,
-    mutationsConfig: null as any,
-    appliedModalConfig: null as any,
+    selectionConfig: null! as Parameters<typeof useJobSelection>[0],
+    mutationsConfig: null! as Parameters<typeof useJobMutations>[0],
+    appliedModalConfig: null! as Parameters<typeof useAppliedModal>[0],
     getJob: vi.fn(),
     selectedIds: new Set<number>(),
     selectionMode: 'manual' as string,
     setSelectedJob: vi.fn(), setSelectedIds: vi.fn(), setSelectionMode: vi.fn(),
     handleJobSelect: vi.fn(), navigateJob: vi.fn(),
-    autoSelectNext: { current: {} as any },
+    autoSelectNext: { current: {} as AutoSelectState },
     setMessage: vi.fn(), confirmClose: vi.fn(), handleJobUpdate: vi.fn(),
     ignoreSelected: vi.fn(), deleteSelected: vi.fn(), deleteSingleJob: vi.fn(),
     mutateAsync: vi.fn(), mutate: vi.fn(),
 }));
-
 vi.mock('../useJobsData', () => ({ useJobsData: vi.fn() }));
 vi.mock('../useJobSelection', () => ({
-    useJobSelection: vi.fn((config) => {
+    useJobSelection: vi.fn((config: Parameters<typeof useJobSelection>[0]) => {
         mocks.selectionConfig = config;
         return {
             selectedJob: { id: 1 }, setSelectedJob: mocks.setSelectedJob,
@@ -38,7 +41,7 @@ vi.mock('../useJobSelection', () => ({
     }),
 }));
 vi.mock('../useJobMutations', () => ({
-    useJobMutations: vi.fn((config) => {
+    useJobMutations: vi.fn((config: Parameters<typeof useJobMutations>[0]) => {
         mocks.mutationsConfig = config;
         return {
             message: null, setMessage: mocks.setMessage, confirmModal: { isOpen: false, close: mocks.confirmClose },
@@ -49,7 +52,7 @@ vi.mock('../useJobMutations', () => ({
     }),
 }));
 vi.mock('../useAppliedModal', () => ({
-    useAppliedModal: vi.fn((config) => {
+    useAppliedModal: vi.fn((config: Parameters<typeof useAppliedModal>[0]) => {
         mocks.appliedModalConfig = config;
         return { isModalOpen: false, openModal: vi.fn(), handleConfirm: vi.fn(), handleCancel: vi.fn() };
     }),
@@ -70,12 +73,12 @@ describe('useViewer actions and side effects', () => {
         vi.clearAllMocks();
         mocks.selectedIds = new Set<number>();
         mocks.selectionMode = 'manual';
-        mocks.autoSelectNext.current = {};
-        (useModalityValues as any).mockReturnValue({ data: [] });
+        mocks.autoSelectNext.current = {} as AutoSelectState;
+        vi.mocked(useModalityValues).mockReturnValue({ data: [] } as unknown as ReturnType<typeof useModalityValues>);
     });
 
     const renderViewer = (jobsData: ReturnType<typeof base> = base()) => {
-        (useJobsData as any).mockReturnValue(jobsData);
+        vi.mocked(useJobsData).mockReturnValue(jobsData as unknown as ReturnType<typeof useJobsData>);
         return { jobsData, ...renderHook(() => useViewer()) };
     };
 
@@ -137,7 +140,7 @@ describe('useViewer actions and side effects', () => {
 
     it('exposes an apiError until it is dismissed, then clears it', () => {
         const jobsData = base();
-        jobsData.data = { ...jobsData.data, error: 'DB offline' } as any;
+        jobsData.data = { ...jobsData.data, error: 'DB offline' } as unknown as typeof jobsData.data;
         const { result } = renderViewer(jobsData);
         expect(result.current.status.apiError).toBe('DB offline');
         act(() => result.current.actions.dismissMessage());

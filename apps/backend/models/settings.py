@@ -10,3 +10,15 @@ class SettingsEnvBulkUpdateDto(BaseModel):
 
 class ScrapperStateUpdateDto(BaseModel):
     state: Dict[str, Any]
+
+class ProviderModel(BaseModel):
+    id: str
+    label: str
+    free: bool
+
+class ProviderModelsResponse(BaseModel):
+    provider: str
+    models: list[ProviderModel]
+    source: str
+    cached: bool
+    fetched_at: float | None = None

@@ -6,6 +6,7 @@ import { SkillLearningPathField } from './SkillLearningPathField';
 import { FormField } from '../../common/components/core/FormField';
 import { Modal } from '../../common/components/core/Modal';
 import '../../common/components/core/Modal.css';
+import './SkillDetailModal.css';
 
 declare const __AI_ENRICH_SKILL_ENABLED__: boolean;
 
@@ -31,6 +32,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
     isNewSkill,
     handleAddLink,
     handleRemoveLink,
+    handleClearAllLinks,
     handleSave,
     handleAutoFill,
     handleReload,
@@ -120,7 +122,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
       isOpen={true}
       onClose={onClose}
       header={header}
-      className={isExpanded ? 'expanded' : ''}
+      className={`skill-detail-modal ${isExpanded ? 'expanded' : ''}`}
       closeOnEscape
       closeOnOverlayClick
     >
@@ -169,6 +171,7 @@ export const EditSkillModal = ({ skill, onSave, onUpdate, onClose, onNext, onPre
         setNewLinkInput={setNewLinkInput}
         handleAddLink={handleAddLink}
         handleRemoveLink={handleRemoveLink}
+        handleClearAllLinks={handleClearAllLinks}
         handleLinkInputKeyDown={handleLinkInputKeyDown}
       />
       {!isViewMode && (

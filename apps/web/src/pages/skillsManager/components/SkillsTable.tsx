@@ -7,6 +7,7 @@ interface SkillsTableProps {
   onReorder: (skills: Skill[]) => void;
   onEdit: (skill: Skill) => void;
   onRemove: (skillName: string) => void;
+  onRemoveLearningPathLink: (skillName: string, linkIndex: number) => void;
 }
 
 const SkillDescriptionCell = ({ description }: { description: string }) => {
@@ -23,7 +24,7 @@ const SkillDescriptionCell = ({ description }: { description: string }) => {
   );
 };
 
-export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTableProps) => {
+export const SkillsTable = ({ skills, onReorder, onEdit, onRemove, onRemoveLearningPathLink }: SkillsTableProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
@@ -89,10 +90,23 @@ export const SkillsTable = ({ skills, onReorder, onEdit, onRemove }: SkillsTable
               </td>
               <td>
                 <div className="links-list read-only">
-                  {skill.learningPath &&skill.learningPath.map((link, i) => (
-                    <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="link-url text-no-wrap">
-                      {link}
-                    </a>
+                  {skill.learningPath && skill.learningPath.map((link, i) => (
+                    <div key={i} className="link-item">
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="link-url text-no-wrap">
+                        {link.url}
+                      </a>
+                      <span className="link-source" title={`Source: ${link.source}`}>{link.source}</span>
+                      <button
+                        className="btn-icon delete link-remove"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveLearningPathLink(skill.name, i);
+                        }}
+                        title="Remove link"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
                 </div>
               </td>

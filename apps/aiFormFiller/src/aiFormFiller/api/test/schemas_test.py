@@ -11,6 +11,8 @@ from ...api.schemas import (
     (AnswerRequest, {"question": "Q?", "provider": "openai"}, "provider", "openai"),
     (FollowUpRequest, {"original_question": "Q?", "clarification_answer": "Sí"}, "original_question", "Q?"),
     (FollowUpRequest, {"original_question": "Q?", "clarification_answer": "Sí"}, "context_key", None),
+    (FollowUpRequest, {"original_question": "Q?", "clarification_answer": "Sí"}, "provider", "auto"),
+    (FollowUpRequest, {"original_question": "Q?", "clarification_answer": "Sí", "provider": "openrouter"}, "provider", "openrouter"),
     (BatchAnswerRequest, {"questions": ["Q1?", "Q2?"]}, "provider", "auto"),
 ])
 def test_request_defaults(cls, kwargs, attr, expected):

@@ -17,14 +17,14 @@ describe('useFilterDropdown Sorting', () => {
 
     it('sorts by new items, then watched, then statistics, then name', () => {
         const { result } = renderHook(() => useFilterDropdown({
-            configs: mockConfigs as any,
+            configs: mockConfigs,
             configName: '',
             onLoad: vi.fn(),
             onSave: vi.fn(),
             onDelete: vi.fn(),
             setIsOpen: vi.fn(),
             isOpen: true,
-            results: mockResults as any
+            results: mockResults
         }));
 
         const sortedNames = result.current.filteredConfigs.map(c => c.name);

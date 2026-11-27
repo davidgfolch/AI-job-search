@@ -48,8 +48,8 @@ describe('Viewer - multi-select ignore via shortcut', () => {
     });
 
     const renderAndSelect = async () => {
-        (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
-        (jobsApi.bulkUpdateJobs as any).mockResolvedValue({ updated: 2 });
+        vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
+        vi.mocked(jobsApi.bulkUpdateJobs).mockResolvedValue({ updated: 2 });
         renderViewer();
         await runTimers();
         fireEvent.click(screen.getByLabelText('Select Job 1'));

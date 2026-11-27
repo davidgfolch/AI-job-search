@@ -2,10 +2,11 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useJobSelection } from '../useJobSelection';
 import { MemoryRouter } from 'react-router-dom';
+import type { Job } from '../../api/ViewerApi';
 
 describe('useJobSelection - selection', () => {
     const defaultProps = {
-        allJobs: [] as any[],
+        allJobs: [] as unknown as Job[],
         filters: { page: 1 },
         setFilters: vi.fn(),
     };
@@ -33,7 +34,7 @@ describe('useJobSelection - selection', () => {
     });
 
     it('selects a job and updates selection state', () => {
-        const jobs = [{ id: 1, title: 'Job A' }, { id: 2, title: 'Job B' }] as any[];
+        const jobs = [{ id: 1, title: 'Job A' }, { id: 2, title: 'Job B' }] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -54,7 +55,7 @@ describe('useJobSelection - selection', () => {
             { id: 1, title: 'Job A' },
             { id: 2, title: 'Job B' },
             { id: 3, title: 'Job C' }
-        ] as any[];
+        ] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -70,7 +71,7 @@ describe('useJobSelection - selection', () => {
     });
 
     it('selects job via URL jobId parameter and syncs selectedIds', async () => {
-        const jobs = [{ id: 5, title: 'Job A' }] as any[];
+        const jobs = [{ id: 5, title: 'Job A' }] as unknown as Job[];
         const props = { ...defaultProps, allJobs: jobs };
         
         const { result } = renderHook(() => useJobSelection(props), { 
@@ -107,7 +108,7 @@ describe('useJobSelection - selection', () => {
     });
 
     it('sets selected job directly', () => {
-        const job = { id: 1, title: 'Test Job' } as any;
+        const job = { id: 1, title: 'Test Job' } as unknown as Job;
         const { result } = renderHook(() => useJobSelection(defaultProps), { 
             wrapper: createWrapper() 
         });

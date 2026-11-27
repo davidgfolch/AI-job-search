@@ -15,6 +15,7 @@ vi.mock('recharts', () => ({
     Legend: () => null,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => children,
     BarChart: () => null,
+    ComposedChart: () => null,
     Bar: () => null,
 }));
 
@@ -37,6 +38,7 @@ describe('Statistics - Extended', () => {
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getKeywordStats).mockResolvedValue([]);
     });
 
     it('renders with all default values', () => {
@@ -46,7 +48,8 @@ describe('Statistics - Extended', () => {
 
     it('renders date range selector with all options', () => {
         render(<Statistics />, { wrapper: wrapper });
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(2);
+        expect(screen.getByLabelText('Site')).toBeInTheDocument();
         
         expect(screen.getByText('Last year')).toBeInTheDocument();
         expect(screen.getByText('Last 6 months')).toBeInTheDocument();

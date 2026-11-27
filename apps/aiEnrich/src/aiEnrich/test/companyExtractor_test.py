@@ -98,7 +98,7 @@ class TestCompanyRequestWiring:
 
     @pytest.mark.parametrize("company", [None, UNSPECIFIED_COMPANY])
     def test_resolves_unspecified_company(self, company):
-        os.environ["AI_ENRICH_BACKEND"] = "ollama"
+        os.environ["AI_ENRICH_LLM_BACKEND"] = "ollama"
         repo = MagicMock()
         repo.count_pending_enrichment.return_value = 0
         with patch("aiEnrich.companyExtractor.query_company", return_value=("Acme", None)) as mock_query:
@@ -108,7 +108,7 @@ class TestCompanyRequestWiring:
         repo.refresh_duplicated_of.assert_called_once_with(1, "Job", "Acme")
 
     def test_does_not_resolve_known_company(self):
-        os.environ["AI_ENRICH_BACKEND"] = "ollama"
+        os.environ["AI_ENRICH_LLM_BACKEND"] = "ollama"
         repo = MagicMock()
         repo.count_pending_enrichment.return_value = 0
         with patch("aiEnrich.companyExtractor.query_company") as mock_query:
@@ -124,7 +124,7 @@ class TestCompanyRequestWiring:
         every reply was rejected with "missing fields: company", leaving every tecnoempleo offer
         published without a company stuck on the `unspecified` sentinel.
         """
-        os.environ["AI_ENRICH_BACKEND"] = "ollama"
+        os.environ["AI_ENRICH_LLM_BACKEND"] = "ollama"
         from aiEnrich.dataExtractor import _process_job_safe
         repo = MagicMock()
         repo.count_pending_enrichment.return_value = 0
@@ -148,7 +148,7 @@ class TestCompanyRequestWiring:
         repo.refresh_duplicated_of.assert_called_once_with(1, "Job", "Acme")
 
     def test_company_request_routes_to_openrouter(self):
-        os.environ["AI_ENRICH_BACKEND"] = "openrouter"
+        os.environ["AI_ENRICH_LLM_BACKEND"] = "openrouter"
         from aiEnrich.ollama_backend import _query_company
         with patch("aiEnrich.ollama_backend.query_openrouter", return_value='{"company": "Acme"}') as mock_or:
             _query_company("prompt", "openrouter", "openrouter/free")

@@ -65,5 +65,6 @@ yarn-error.log*
 
 # Project specific
 .env
+.env.local
 .env.secrets
 .codegraph/

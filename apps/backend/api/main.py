@@ -8,6 +8,8 @@ from api import salary
 from api import ddl
 from api import statistics
 from api import statistics_archived
+from api import keyword_stats
+from api import scrapper_logs
 from api import skills
 from api import filter_configurations
 from api import settings
@@ -42,6 +44,8 @@ app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 app.include_router(salary.router, prefix="/api/salary", tags=["salary"])
 app.include_router(ddl.router, prefix="/api/ddl", tags=["ddl"])
 app.include_router(statistics.router, prefix="/api/statistics", tags=["statistics"])
+app.include_router(keyword_stats.router, prefix="/api/statistics", tags=["statistics"])
+app.include_router(scrapper_logs.router, prefix="/api/scrapper", tags=["scrapper"])
 app.include_router(
     statistics_archived.router,
     prefix="/api/statistics-archived",
@@ -68,13 +72,16 @@ def start_watcher_matcher():
     logger.info("watcher.background_matcher_started_on_startup")
 
 
+# Both are dependency-free on purpose: as `async def` they never wait for an AnyIO
+# worker, so a burst of blocking DB requests cannot stall the Docker healthcheck or
+# the frontend's backend watchdog (#threadpool starvation).
 @app.get("/health")
-def health_check():
+async def health_check():
     return {"status": "ok"}
 
 
 @app.get("/api/system/timezone", tags=["system"])
-def get_timezone():
+async def get_timezone():
     """
     Returns the server's UTC offset in minutes.
     Example: UTC+1 returns 60.

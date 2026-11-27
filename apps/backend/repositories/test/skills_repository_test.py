@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from repositories.skills_repository import SkillsRepository
-from models.skill import Skill
+from models.skill import LearningPathLink, Skill
 from commonlib.test.db_mock_util import create_mock_db
 
 @patch('repositories.skills_repository.MysqlUtil')
@@ -16,6 +16,18 @@ def test_list_skills(mock_get_connection, mock_mysql_util):
     assert len(skills) == 2
     assert skills[0].name == 'Python'
     assert len(skills[0].learning_path) == 2
+
+@patch('repositories.skills_repository.MysqlUtil')
+@patch('repositories.skills_repository.getConnection')
+def test_list_skills_reads_source_tagged_links(mock_get_connection, mock_mysql_util):
+    mock_db = create_mock_db(fetchAll=[
+        ('Python', 'Language', '[{"url": "https://docs.python.org/3/", "source": "llm"}]', 0, 0, 'Language'),
+    ])
+    mock_mysql_util.return_value = mock_db
+    repo = SkillsRepository()
+    skills = repo.list_skills()
+    assert skills[0].learning_path == [LearningPathLink(url='https://docs.python.org/3/', source='llm')]
+
 
 @patch('repositories.skills_repository.MysqlUtil')
 @patch('repositories.skills_repository.getConnection')
@@ -95,7 +107,7 @@ def test_find_by_name_case_insensitive_found(mock_get_connection, mock_mysql_uti
     repo = SkillsRepository()
     result = repo.find_by_name_case_insensitive('python')
     assert result['name'] == 'Python'
-    assert result['learning_path'] == ['a']
+    assert result['learning_path'] == [{'url': 'a', 'source': 'unknown'}]
     assert result['ai_enriched'] is True
 
 

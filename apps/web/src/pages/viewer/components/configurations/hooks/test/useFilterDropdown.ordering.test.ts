@@ -11,7 +11,7 @@ describe('useFilterDropdown Ordering', () => {
         ];
 
         const { result } = renderHook(() => useFilterDropdown({
-            configs: mockConfigs as any,
+            configs: mockConfigs,
             configName: '',
             onLoad: vi.fn(),
             onSave: vi.fn(),
@@ -37,7 +37,7 @@ describe('useFilterDropdown Ordering', () => {
         ];
 
         const { result } = renderHook(() => useFilterDropdown({
-            configs: mockConfigs as any,
+            configs: mockConfigs,
             configName: '',
             onLoad: vi.fn(),
             onSave: vi.fn(),
@@ -64,7 +64,7 @@ describe('useFilterDropdown Ordering', () => {
         ];
 
         const { result } = renderHook(() => useFilterDropdown({
-            configs: mockConfigs as any,
+            configs: mockConfigs,
             configName: '',
             onLoad: vi.fn(),
             onSave: vi.fn(),

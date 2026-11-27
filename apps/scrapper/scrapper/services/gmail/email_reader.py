@@ -7,6 +7,7 @@ from typing import List
 from commonlib.observability import get_logger
 from commonlib.terminalColor import yellow
 from .email_exceptions import GmailConnectionError, VerificationCodeExtractionError
+from .email_deleter import delete_email
 
 logger = get_logger("scrapper.email_reader")
 
@@ -162,6 +163,7 @@ class EmailReader:
                                 code = self.extract_verification_code_from_subject(email_subject)
                                 logger.info("gmail.code_extracted", elapsed=elapsed, code_length=len(code),
                                             console=f"[{elapsed}s] Successfully extracted verification code")
+                                delete_email(self.imap, latest_email_id)
                                 return code
                             except VerificationCodeExtractionError:
                                 logger.info("gmail.message_without_code", elapsed=elapsed,

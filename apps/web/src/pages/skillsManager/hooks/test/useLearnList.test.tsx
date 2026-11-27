@@ -10,7 +10,7 @@ vi.mock('axios', () => ({ default: { create: vi.fn(() => mockClient) } }));
 
 const mockSkills: Skill[] = [
     { name: 'React', description: 'Frontend lib', learningPath: [], disabled: false },
-    { name: 'Node', description: 'Backend runtime', learningPath: ['Basics'], disabled: true },
+    { name: 'Node', description: 'Backend runtime', learningPath: [{ url: 'Basics', source: 'llm' }], disabled: true },
     { name: 'EmptySkill', description: '', learningPath: [], disabled: false },
 ];
 

@@ -2,8 +2,9 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useFilterConfigurations } from '../useFilterConfigurations';
 import { persistenceApi as commonPersistenceApi } from "../../../../../common/api/CommonPersistenceApi";
-import { filterConfigsApi } from '../../../../api/FilterConfigurationsApi';
+import { filterConfigsApi, type FilterConfiguration } from '../../../../api/FilterConfigurationsApi';
 import { createWrapper } from './testHelpers';
+import type { JobListParams } from '../../../../api/ViewerApi';
 
 vi.mock('../../../../../common/api/CommonPersistenceApi', () => ({
     persistenceApi: {
@@ -27,8 +28,12 @@ vi.mock('../../../../../../resources/defaultFilterConfigurations.json', () => ({
 
 describe('useFilterConfigurations', () => {
     const mockFilters = { search: 'test', employment_type: [], remote: null, posted_at: null };
+    const makeConfig = (over: Partial<FilterConfiguration> = {}): FilterConfiguration => ({
+        id: 1, name: 'test', filters: mockFilters as unknown as JobListParams, watched: false,
+        statistics: false, pinned: false, ordering: 0, created: new Date().toISOString(), modified: null, ...over
+    });
     const defaultProps = {
-        currentFilters: mockFilters as any,
+        currentFilters: mockFilters as unknown as JobListParams,
         onLoadConfig: vi.fn(),
         onMessage: vi.fn(),
         additionalDefaults: []
@@ -36,24 +41,17 @@ describe('useFilterConfigurations', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (commonPersistenceApi.getValue as any).mockResolvedValue([]);
-        (commonPersistenceApi.setValue as any).mockResolvedValue(true);
-        (filterConfigsApi.getAll as any).mockResolvedValue([]);
-        (filterConfigsApi.create as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, watched: false, created: new Date().toISOString(), modified: null });
-        (filterConfigsApi.update as any).mockResolvedValue({ id: 1, name: 'test', filters: mockFilters, watched: false, created: new Date().toISOString(), modified: null });
-        (filterConfigsApi.delete as any).mockResolvedValue(undefined);
+        vi.mocked(commonPersistenceApi.getValue).mockResolvedValue([]);
+        vi.mocked(commonPersistenceApi.setValue).mockResolvedValue(undefined);
+        vi.mocked(filterConfigsApi.getAll).mockResolvedValue([]);
+        vi.mocked(filterConfigsApi.create).mockResolvedValue(makeConfig());
+        vi.mocked(filterConfigsApi.update).mockResolvedValue(makeConfig());
+        vi.mocked(filterConfigsApi.delete).mockResolvedValue(undefined);
     });
 
     it('should load saved configs on mount', async () => {
-        const backendConfigs = [{
-            id: 1,
-            name: 'Saved 1',
-            filters: mockFilters,
-            watched: false,
-            created: new Date().toISOString(),
-            modified: null
-        }];
-        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
+        const backendConfigs = [makeConfig({ name: 'Saved 1' })];
+        vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
 
         const { wrapper } = createWrapper();
         const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
@@ -71,7 +69,7 @@ describe('useFilterConfigurations', () => {
         await waitFor(() => expect(filterConfigsApi.getAll).toHaveBeenCalled());
 
         act(() => {
-            result.current.handleChange({ target: { value: 'New Config' } } as any);
+            result.current.handleChange({ target: { value: 'New Config' } } as React.ChangeEvent<HTMLInputElement>);
         });
 
         await act(async () => {
@@ -92,15 +90,8 @@ describe('useFilterConfigurations', () => {
     });
 
     it('should delete a configuration', async () => {
-        const backendConfigs = [{
-            id: 1,
-            name: 'To Delete',
-            filters: mockFilters,
-            watched: false,
-            created: new Date().toISOString(),
-            modified: null
-        }];
-        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
+        const backendConfigs = [makeConfig({ name: 'To Delete' })];
+        vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
 
         const { wrapper } = createWrapper();
         const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
@@ -112,7 +103,7 @@ describe('useFilterConfigurations', () => {
         const stopPropagation = vi.fn();
         
         act(() => {
-            result.current.deleteConfiguration('To Delete', { stopPropagation } as any);
+            result.current.deleteConfiguration('To Delete', { stopPropagation } as unknown as React.SyntheticEvent);
         });
 
         expect(result.current.confirmModal.isOpen).toBe(true);
@@ -128,15 +119,8 @@ describe('useFilterConfigurations', () => {
 
     it('should reset missing filters when loading configuration', async () => {
         const savedFilters = { search: 'saved' };
-        const backendConfigs = [{
-            id: 1,
-            name: 'Saved 1',
-            filters: savedFilters,
-            watched: false,
-            created: new Date().toISOString(),
-            modified: null
-        }];
-        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
+        const backendConfigs = [makeConfig({ name: 'Saved 1', filters: savedFilters })];
+        vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
 
         const { wrapper } = createWrapper();
         const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });
@@ -164,16 +148,8 @@ describe('useFilterConfigurations', () => {
     });
     
     it('should update statistics setting using single API call', async () => {
-        const backendConfigs = [{
-            id: 123,
-            name: 'Stats Config',
-            filters: mockFilters,
-            watched: false,
-            statistics: true,
-            created: new Date().toISOString(),
-            modified: null
-        }];
-        (filterConfigsApi.getAll as any).mockResolvedValue(backendConfigs);
+        const backendConfigs = [makeConfig({ id: 123, name: 'Stats Config', statistics: true })];
+        vi.mocked(filterConfigsApi.getAll).mockResolvedValue(backendConfigs);
 
         const { wrapper } = createWrapper();
         const { result } = renderHook(() => useFilterConfigurations(defaultProps), { wrapper });

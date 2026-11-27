@@ -38,7 +38,8 @@ CSS_SEL_LOCATION = ['div[data-testid="inlineHeader-companyLocation"]', "[data-te
 CSS_SEL_JOB_REQUIREMENTS = ".simple-job-description-html"
 CSS_SEL_JOB_DESCRIPTION = [".simple-job-description-html", ".react-native-html-content", "#jobDescriptionText"]
 CSS_SEL_JOB_EASY_APPLY = ["[data-testid='viewjob-indeed-apply']", "#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button"]
-CSS_SEL_JOB_SALARY = ["[data-testid='salary-snippet-container']", "div[aria-label=Salario] span"]
+# Pay now lives in an aria-labelled node inside the structured summary (no currency literal); legacy selectors stay as fallbacks.
+CSS_SEL_JOB_SALARY = ["[data-testid='structured-job-summary'] div[aria-label]", "[data-testid='salary-snippet-container']", "div[aria-label=Salario] span"]
 CSS_SEL_JOB_CLOSED = ""
 
 class IndeedNavigator(BaseNavigator):

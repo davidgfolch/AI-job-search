@@ -4,6 +4,7 @@ from cron import config
 from commonlib.mongodb_provider import get_mongo_provider
 from commonlib.observability import get_logger
 from commonlib.repositories.cron_state_repository import CronStateRepository
+from commonlib.repositories.job_salary_repository import JobSalaryRepository
 from commonlib.repositories.salary_history_repository import SalaryHistoryRepository
 from cron.jobs.company_salary_history.scanner import CompanySalaryHistoryScanner
 
@@ -18,7 +19,7 @@ class CompanySalaryHistoryJob(CronJob):
     def run(self, cron_state: CronStateRepository):
         provider = get_mongo_provider(config.MONGO_READ_URI, config.MONGO_WRITE_URI, config.MONGO_DATABASE)
         salary_repo = SalaryHistoryRepository(provider)
-        scanner = CompanySalaryHistoryScanner(salary_repo)
+        scanner = CompanySalaryHistoryScanner(salary_repo, JobSalaryRepository())
 
         state = cron_state.get_state(self.name) or {}
         last_id = state.get("last_job_id", 0)

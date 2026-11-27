@@ -10,12 +10,12 @@ dependencies = [
     "pillow>=13.0.0",
     "certifi>=2026.10.23",
     "selenium>=4.37.0,<5.0.0",
-    "markdownify==1.2.3",
+    "markdownify==1.2.4",
     "undetected-chromedriver==3.5.5",
     "tabulate>=0.9.0",
     "scrapling[fetchers] (>=0.5.1,<0.6.0)",
     "curl-cffi (>=0.17.0,<0.18.0)",
-    "playwright (>=1.65.1,<2.0.0)",
+    "playwright (>=1.65.2,<2.0.0)",
     "patchright (>=1.64.4,<2.0.0)",
     "msgspec (>=0.22.0,<0.23.0)",
 ]
@@ -23,8 +23,8 @@ dependencies = [
 [tool.poetry.dependencies]
 python = ">=3.11,<3.14"
 commonlib = { path = "../../apps/commonlib/", develop = true }
-selenium = ">=4.52.0,<5.0.0"
-markdownify = "1.2.3"
+selenium = ">=4.53.0,<5.0.0"
+markdownify = "1.2.4"
 undetected-chromedriver = "3.5.5"
 tabulate = ">=0.9.0"
 

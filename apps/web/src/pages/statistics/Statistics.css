@@ -97,7 +97,9 @@
     border: none;
     cursor: pointer;
     color: var(--text-secondary);
-    padding: 4px;
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
     border-radius: 4px;
     transition: all 0.2s;
     display: flex;
@@ -149,4 +151,21 @@
     color: var(--text-secondary);
     display: flex;
     align-items: center;
+}
+
+.keyword-chart {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.keyword-chart-canvas {
+    flex: 1;
+    min-height: 240px;
+}
+
+.keyword-empty {
+    color: var(--text-secondary);
+    padding: 12px;
 }

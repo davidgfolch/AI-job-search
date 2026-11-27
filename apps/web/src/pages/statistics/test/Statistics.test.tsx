@@ -15,6 +15,7 @@ vi.mock('recharts', () => ({
     Legend: () => null,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => children,
     BarChart: () => null,
+    ComposedChart: () => null,
     Bar: () => null,
 }));
 
@@ -37,6 +38,7 @@ describe('Statistics', () => {
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getKeywordStats).mockResolvedValue([]);
     });
 
   it('renders statistics page title', () => {
@@ -50,5 +52,6 @@ describe('Statistics', () => {
     expect(screen.getByText('Job Postings by Source & Created Date')).toBeInTheDocument();
     expect(screen.getByText('Job Postings by Source & Day Time')).toBeInTheDocument();
     expect(screen.getByText('Job Postings by Source & Day of Week')).toBeInTheDocument();
+    expect(screen.getByText('Keyword totals & duplicates by date')).toBeInTheDocument();
   });
 });
