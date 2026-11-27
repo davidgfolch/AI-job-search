@@ -3,7 +3,7 @@ name = "commonlib"
 version = "0.1.0"
 description = "Ai-job-search Common library"
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.11,<3.14"
 packages = [{include = "commonlib"}]
 
 include = "commonlib"
@@ -13,8 +13,8 @@ dependencies = [
     "mysql-connector-python==26.10.0",
     "requests>=2.34.2",
     "python-dotenv>=1.2.4",
-    "mathparse>=0.2.9,<0.3.0",
-    "pdfplumber>=0.11.10",
+    "mathparse>=0.2.10,<0.3.0",
+    "pdfplumber>=0.11.11",
     "pandas>=2.3.3",
     "pymongo>=4.18.3",
     "structlog>=26.1.0",
