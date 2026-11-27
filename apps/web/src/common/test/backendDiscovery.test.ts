@@ -1,24 +1,28 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { backendSettings, backendUrlCandidates, isDockerEnvironment, lanScanEnabled, probeBackend, scanLanForBackend } from '../backendDiscovery';
 import { EventEmitter } from 'events';
+import type { ClientRequest, IncomingMessage } from 'http';
 
 vi.mock('fs', () => ({ default: { existsSync: vi.fn() } }));
 vi.mock('http', () => ({ default: { get: vi.fn() } }));
 
 function createMockSocket(overrides?: { connectError?: boolean; timeoutError?: boolean }) {
-  const socket = new EventEmitter() as any;
-  socket.setTimeout = vi.fn();
-  socket.connect = vi.fn(() => {
+  const socket = Object.assign(new EventEmitter(), {
+    setTimeout: vi.fn(),
+    connect: vi.fn(),
+    destroy: vi.fn(),
+    localAddress: '192.168.1.50',
+  });
+  socket.connect.mockImplementation(() => {
     if (overrides?.connectError) setTimeout(() => socket.emit('error', new Error('refused')), 0);
     else if (overrides?.timeoutError) setTimeout(() => socket.emit('timeout'), 0);
     else setTimeout(() => socket.emit('connect'), 0);
   });
-  socket.destroy = vi.fn();
-  socket.localAddress = '192.168.1.50';
   return socket;
 }
 
-let socketFactory: () => any = () => createMockSocket();
+type MockSocket = ReturnType<typeof createMockSocket>;
+let socketFactory: () => MockSocket = () => createMockSocket();
 
 vi.mock('net', () => ({
   default: {
@@ -28,15 +32,12 @@ vi.mock('net', () => ({
 }));
 
 function mockHttpGet(statusCode: number, shouldError = false) {
-  const req = new EventEmitter() as any;
-  req.destroy = vi.fn();
-  const res = new EventEmitter() as any;
-  res.statusCode = statusCode;
-  res.resume = vi.fn();
-  (http.get as any).mockImplementation((_url: string, _opts: any, cb: any) => {
+  const req = Object.assign(new EventEmitter(), { destroy: vi.fn() });
+  const res = Object.assign(new EventEmitter(), { statusCode, resume: vi.fn() });
+  (vi.mocked(http.get) as Mock).mockImplementation((_url: string, _opts: unknown, cb: (res: IncomingMessage) => void) => {
     if (shouldError) setTimeout(() => req.emit('error', new Error('fail')), 0);
-    else setTimeout(() => cb(res), 0);
-    return req;
+    else setTimeout(() => cb(res as unknown as IncomingMessage), 0);
+    return req as unknown as ClientRequest;
   });
 }
 
@@ -94,12 +95,12 @@ describe('lanScanEnabled', () => {
 
 describe('isDockerEnvironment', () => {
   it('detects the docker workspace mount', () => {
-    (fs.existsSync as any).mockReturnValue(true);
+    vi.mocked(fs.existsSync).mockReturnValue(true);
     expect(isDockerEnvironment()).toBe(true);
   });
 
   it('reports false outside docker', () => {
-    (fs.existsSync as any).mockReturnValue(false);
+    vi.mocked(fs.existsSync).mockReturnValue(false);
     expect(isDockerEnvironment()).toBe(false);
   });
 });
@@ -125,11 +126,10 @@ describe('probeBackend', () => {
   });
 
   it('resolves false when the request times out', async () => {
-    const req = new EventEmitter() as any;
-    req.destroy = vi.fn();
-    (http.get as any).mockImplementation(() => {
+    const req = Object.assign(new EventEmitter(), { destroy: vi.fn() });
+    (vi.mocked(http.get) as Mock).mockImplementation(() => {
       setTimeout(() => req.emit('timeout'), 0);
-      return req;
+      return req as unknown as ClientRequest;
     });
     expect(await probeBackend('http://backend:8000/health')).toBe(false);
     expect(req.destroy).toHaveBeenCalled();
@@ -140,7 +140,7 @@ describe('scanLanForBackend', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     socketFactory = () => createMockSocket();
-    (net.createConnection as any).mockReturnValue(createMockSocket());
+    (vi.mocked(net.createConnection) as Mock).mockReturnValue(createMockSocket());
   });
 
   afterEach(() => {

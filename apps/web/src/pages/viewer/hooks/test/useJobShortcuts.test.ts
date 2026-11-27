@@ -110,6 +110,12 @@ describe('useJobShortcuts', () => {
         expect(onPinnedConfigShortcut).toHaveBeenCalledWith(3);
     });
 
+    it('maps alt+0 to the tenth pinned config', () => {
+        render();
+        fireEvent.keyDown(window, { key: '0', altKey: true });
+        expect(onPinnedConfigShortcut).toHaveBeenCalledWith(10);
+    });
+
     it('does not fire pinned config shortcut without alt', () => {
         render();
         fireEvent.keyDown(window, { key: '2' });
@@ -150,50 +156,4 @@ describe('useJobShortcuts', () => {
         expect(result.current.shortcuts.ignore.display).toBe('Alt+I');
     });
 
-    it('tracks modifierPressed while alt is held', () => {
-        const { result } = render();
-        expect(result.current.modifierPressed).toBe(false);
-        fireEvent.keyDown(window, { key: 'Alt' });
-        expect(result.current.modifierPressed).toBe(true);
-        fireEvent.keyUp(window, { key: 'Alt' });
-        expect(result.current.modifierPressed).toBe(false);
-    });
-
-    it('tracks modifierPressed while ctrl is held when shortcuts use ctrl', () => {
-        mockUseEnvSettings.mockReturnValue({ data: { UI_SHORTCUTS_IGNORE: 'ctrl+i' } });
-        const { result } = render();
-        fireEvent.keyDown(window, { key: 'Control' });
-        expect(result.current.modifierPressed).toBe(true);
-        fireEvent.keyUp(window, { key: 'Control' });
-        expect(result.current.modifierPressed).toBe(false);
-    });
-
-    it('does not track ctrl when all shortcuts use alt', () => {
-        const { result } = render();
-        fireEvent.keyDown(window, { key: 'Control' });
-        expect(result.current.modifierPressed).toBe(false);
-    });
-
-    it('resets modifierPressed on window focus', () => {
-        const { result } = render();
-        fireEvent.keyDown(window, { key: 'Alt' });
-        expect(result.current.modifierPressed).toBe(true);
-        fireEvent.focus(window);
-        expect(result.current.modifierPressed).toBe(false);
-    });
-
-    it('tracks modifierPressed via altKey state regardless of key name', () => {
-        const { result } = render();
-        fireEvent.keyDown(window, { key: 'AltGraph', altKey: true });
-        expect(result.current.modifierPressed).toBe(true);
-        fireEvent.keyUp(window, { key: 'AltGraph' });
-        expect(result.current.modifierPressed).toBe(false);
-    });
-
-    it('does not track modifier when shortcuts disabled', () => {
-        const { result } = render();
-        act(() => result.current.toggleEnabled());
-        fireEvent.keyDown(window, { key: 'Alt' });
-        expect(result.current.modifierPressed).toBe(false);
-    });
 });

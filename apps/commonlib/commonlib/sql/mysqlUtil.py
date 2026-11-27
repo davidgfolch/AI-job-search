@@ -12,7 +12,7 @@ from typing import Any, Callable
 from mysql.connector import MySQLConnection
 
 from ..observability import get_logger
-from .connection_manager import get_connection, getConnection  # noqa: F401 - getConnection is re-exported for legacy importers
+from .connection_manager import get_connection, get_read_connection, getConnection, getReadConnection  # noqa: F401 - camelCase wrappers are re-exported for legacy importers
 from .transaction_manager import TransactionManager
 from .query_executor import QueryExecutor
 from .job_repository import JobRepository
@@ -135,6 +135,10 @@ class MysqlUtil:
     def fetchAll(self, query: str, params: tuple = None) -> list:
         """Fetch all matching rows."""
         return self._query_executor.fetch_all(query, params)
+
+    def fetchAllWithColumns(self, query: str, params: tuple = None) -> tuple[list[str], list]:
+        """Fetch all rows plus the SELECT's column names in a single round trip."""
+        return self._query_executor.fetch_all_with_columns(query, params)
 
     def updateFromAI(self, query: str, params: tuple) -> None:
         """Execute update with retry logic."""

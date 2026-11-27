@@ -16,10 +16,13 @@ services:
       - "13306:3306"
     healthcheck:
       test: [ "CMD-SHELL", "mysql -h 127.0.0.1 -uroot -prootPass -e 'SELECT 1' >/dev/null 2>&1" ]
+      # A cold datadir has to run InnoDB init plus ddl.sql and skills_data.sql before it
+      # answers; on a loaded machine that exceeds the old 10s+24x5s budget and every
+      # sandbox run failed as "mysql_db is unhealthy" before the service even started.
       interval: 5s
       timeout: 5s
-      retries: 24
-      start_period: 10s
+      retries: 36
+      start_period: 30s
 
   mongo_db:
     container_name: ai-job-search-test-mongo

@@ -31,12 +31,8 @@ class JobDeleteRepository:
         with self.get_db() as db:
             where_str = " AND ".join(where_clauses)
             get_query = f"SELECT * FROM jobs WHERE {where_str}"
-            rows = db.fetchAll(get_query, params)
-            columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
-            items = []
-            for row in rows:
-                item_dict = {col: val for col, val in zip(columns, row, strict=True)}
-                items.append(item_dict)
+            columns, rows = db.fetchAllWithColumns(get_query, params)
+            items = [{col: val for col, val in zip(columns, row, strict=True)} for row in rows or []]
 
             queries = []
             for snapshot_query, snapshot_params in snapshot_queries:
@@ -54,13 +50,10 @@ class JobDeleteRepository:
         with self.get_db() as db:
             where_str = " AND ".join(where_clauses)
             query = f"SELECT * FROM jobs WHERE {where_str}"
-            rows = db.fetchAll(query, params)
-            columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
-            items = []
-            for row in rows:
-                item_dict = {col: val for col, val in zip(columns, row, strict=True)}
-                items.append(item_dict)
-            return items
+            columns, rows = db.fetchAllWithColumns(query, params)
+            if not rows or not columns:
+                return []
+            return [{col: val for col, val in zip(columns, row, strict=True)} for row in rows]
 
     def update_jobs_by_ids(
         self, job_ids: List[int], update_data: Dict[str, Any]

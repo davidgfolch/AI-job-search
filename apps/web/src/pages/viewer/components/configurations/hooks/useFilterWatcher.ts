@@ -31,6 +31,9 @@ export function useFilterWatcher({ savedConfigs }: UseFilterWatcherProps) {
 
     useEffect(() => {
         if (isWatching) notificationService.requestPermission();
+    }, [isWatching]);
+
+    useEffect(() => {
         jobsApi.getSystemTimezone().then(data => setServerOffset(data.offset_minutes))
             .catch(() => setServerOffset(-new Date().getTimezoneOffset()));
         const loadPersistedTime = async () => {

@@ -4,9 +4,12 @@ import warnings
 from commonlib.test.architecture.architecture_util import get_project_root
 from commonlib.test.architecture.architecture_metrics import getLongFiles
 from commonlib.test.architecture.architecture_layers import check_layer
+from commonlib.test.architecture.architecture_layer_rules import LAYER_RULES, discover_layer_keys
 from commonlib.test.architecture.architecture_structure import get_files_without_sibling_test, get_test_location_violations
 from commonlib.test.architecture.architecture_naming import get_test_naming_violations
 from commonlib.test.architecture.architecture_logging import get_console_violations, get_print_violations
+from commonlib.test.architecture.architecture_scripts import get_non_executable_scripts
+from commonlib.test.architecture.architecture_services import get_misplaced_layer_symbols
 from commonlib.terminalColor import YELLOW, RED, ORANGE, RESET
 
 def test_files_exceed_200_lines():
@@ -26,33 +29,38 @@ def test_files_exceed_200_lines():
         message = "\nFound files with more than 200 lines:\n" + "\n".join(format_line(f) for f in files)
         warnings.warn(UserWarning(message), stacklevel=2)
 
-@pytest.mark.parametrize("layer_name, required_deps, forbidden_deps, ignore_files", [
-    ('api',
-        [('services', "Missing Service layer import.")],
-        [('repositories', "Direct Repository layer import (skip Service layer).")],
-        {'__init__.py', 'main.py'}),
-    ('services',
-        [],
-        [('api', "Imports API layer (circular dependency risk)."),
-         ('commonlib.sql.mysqlUtil', "Direct Database Access (should use Repository).")],
-        None),
-    ('repositories',
-        [],
-        [('services', "Imports Service layer (circular dependency risk)."),
-        ('api', "Imports API layer (circular dependency risk).")],
-        None),
-])
-def test_backend_layered_architecture(layer_name, required_deps, forbidden_deps, ignore_files):
+def test_shell_scripts_are_executable():
+    violations = get_non_executable_scripts()
+    if violations:
+        message = f"{YELLOW}Shell scripts stored without the executable bit (fresh clones cannot run them):{RESET}\n"
+        for path in violations:
+            message += f"{RED}{path}{RESET}\n"
+        message += f"{YELLOW}Fix with: git update-index --chmod=+x <path>{RESET}"
+        pytest.fail(message)
+
+@pytest.mark.parametrize("rule", LAYER_RULES, ids=lambda rule: f"{rule.module}:{rule.layer}")
+def test_layered_architecture(rule):
     root_dir = get_project_root()
-    backend_dir = root_dir / 'apps' / 'backend'
-    if not backend_dir.exists():
-        return # Skip if backend directory doesn't exist
-    error_msg = check_layer(backend_dir / layer_name, root_dir,
-        required_deps=required_deps,
-        forbidden_deps=forbidden_deps,
-        ignore_files=ignore_files)
+    error_msg = check_layer(rule.path(root_dir), root_dir, package=rule.package,
+        required_deps=rule.required, forbidden_deps=rule.forbidden, ignore_files=rule.ignore_files,
+        extra_files=rule.extra_files(root_dir))
     if error_msg:
         pytest.fail(error_msg)
+
+def test_layer_rules_cover_all_modules():
+    root_dir = get_project_root()
+    discovered = discover_layer_keys(root_dir)
+    defined = {rule.key for rule in LAYER_RULES}
+    assert discovered <= defined, f"Layers without architecture rules: {sorted(discovered - defined)}"
+    assert defined <= discovered, f"Rules for non-existent layers: {sorted(defined - discovered)}"
+
+def test_service_and_repository_symbols_live_in_their_layers():
+    violations = get_misplaced_layer_symbols()
+    if violations:
+        message = f"\n{YELLOW}Found service/repository symbols outside their layer directories:{RESET}\n"
+        for path, symbol, layer in violations:
+            message += f"{RED}{path.relative_to(get_project_root())}: {symbol} belongs in {layer}/{RESET}\n"
+        pytest.fail(message)
 
 def test_sibling_test_folder_exists():
     violations = get_files_without_sibling_test()

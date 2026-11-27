@@ -2,13 +2,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SkillsList from '../SkillsList';
 import * as useLearnListHook from '../../../../skillsManager/hooks/useLearnList';
+import type { ComponentProps } from 'react';
+import type { EditSkillModal } from '../../../../skillsManager/components/EditSkillModal';
 
 // Mock the EditSkillModal to avoid rendering the complex modal and simplify testing
 vi.mock('../../../../skillsManager/components/EditSkillModal', () => ({
-    EditSkillModal: ({ skill, onSave, onClose, onNext, onPrevious, hasNext, hasPrevious }: any) => (
+    EditSkillModal: ({ skill, onSave, onClose, onNext, onPrevious, hasNext, hasPrevious }: ComponentProps<typeof EditSkillModal>) => (
         <div data-testid="edit-skill-modal">
             <span data-testid="modal-skill-name">{skill.name}</span>
-            <button onClick={() => onSave({ description: 'New Desc', learningPath: ['link1'] })}>Save</button>
+            <button onClick={() => onSave({ ...skill, description: 'New Desc', learningPath: [{ url: 'link1', source: 'manual' }] })}>Save</button>
             <button onClick={onClose}>Close</button>
             <button onClick={onNext} disabled={!hasNext} data-testid="next-btn">Next</button>
             <button onClick={onPrevious} disabled={!hasPrevious} data-testid="prev-btn">Previous</button>
@@ -100,7 +102,7 @@ describe('SkillsList', () => {
         expect(mockSaveSkill).toHaveBeenCalledWith(expect.objectContaining({
             name: 'React',
             description: 'New Desc',
-            learningPath: ['link1']
+            learningPath: [{ url: 'link1', source: 'manual' }]
         }));
         
         // Modal should close (or at least state update, checking if it renders null might require rerender or waitFor if it was async, but here it's sync state update)

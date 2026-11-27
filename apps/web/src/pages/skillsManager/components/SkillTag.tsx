@@ -1,17 +1,21 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
+import type { LearningPathLink } from '../api/SkillsManagerApi';
 import './SkillTag.css';
 
 interface SkillTagProps {
   skill: string;
   description?: string;
+  learningPath?: LearningPathLink[];
   isInLearnList: boolean;
   onToggle: (skill: string) => void;
   onViewDetail?: (skill: string) => void;
 }
 
-export default function SkillTag({ skill, description, isInLearnList, onToggle, onViewDetail }: SkillTagProps) {
+export default function SkillTag({ skill, description, learningPath, isInLearnList, onToggle, onViewDetail }: SkillTagProps) {
+  const links = learningPath ?? [];
+  const hasLearningPath = links.length > 0;
   const [showDescription, setShowDescription] = useState(false);
   const [descriptionStyle, setDescriptionStyle] = useState<React.CSSProperties>({});
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -98,7 +102,7 @@ export default function SkillTag({ skill, description, isInLearnList, onToggle, 
           >
             👁
           </button>
-          {showDescription && description && createPortal(
+          {showDescription && (description || hasLearningPath) && createPortal(
             <div 
                 ref={cardRef}
                 className="skill-description-card"
@@ -107,7 +111,17 @@ export default function SkillTag({ skill, description, isInLearnList, onToggle, 
                 onMouseLeave={handleMouseLeave}
                 onClick={(e) => e.stopPropagation()}
             >
-              <ReactMarkdown>{description}</ReactMarkdown>
+              {description && <ReactMarkdown>{description}</ReactMarkdown>}
+              {hasLearningPath && (
+                <div className="skill-card-learning-path">
+                  <div className="skill-card-learning-path-label">Learning Path</div>
+                  {links.map((link, i) => (
+                    <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" title={`Source: ${link.source}`}>
+                      {link.url}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>,
             document.body
           )}

@@ -11,6 +11,8 @@ LOG_SOURCES = {
     "aienrich": "/logs/aienrich/aiEnrich.jsonl",
     "aienrichskill": "/logs/aienrichskill/aiEnrichSkill.jsonl",
     "aicvmatcher": "/logs/aicvmatcher/aiCvMatcher.jsonl",
+    "cron": "/logs/cron/cron.jsonl",
+    "scrapper": "/logs/scrapper/scrapper.jsonl",
 }
 
 ERROR_LEVELS = {"error", "warning", "critical"}

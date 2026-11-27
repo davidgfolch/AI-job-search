@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ===== AI Job Search parallel development workflow (Linux/Mac) =====
 # Usage: ./scripts/dev.sh <command> [args]
-#   new <name>              - clone ../ai_job_search-<name>, branch feat/<name> from master, copy env + lockfiles
-#   dep <pr>                - clone ../ai_job_search-dependabot-<pr> and check out that PR (used by dependabot-agent)
+#   new <name> [modules...] - clone ../ai_job_search-<name>, branch feat/<name> from master, prepare only those modules (default: all)
+#   dep <pr> [modules...]   - clone ../ai_job_search-dependabot-<pr>, check out PR, prepare only those modules (default: all)
 #   list                    - show sibling clones
 #   checkout <branch>       - switch branch in the current clone
-#   test [modules]          - run scripts/test.sh here (no args = everything)
+#   test [modules]          - run scripts/test.sh here (no args = the clone's selected modules, or everything)
 #   sandbox <service> [...] - run scripts/test-sandbox.sh here
 #   commit "msg"            - git add -A && git commit
 #   push                    - push the current branch (never staging/master)
@@ -18,6 +18,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PARENT="$(cd "$ROOT/.." && pwd -P)"
+export UV_CACHE_DIR="${DEV_UV_CACHE_DIR:-$PARENT/.uv-cache}"
 PREFIX="ai_job_search-"
 GATE="${DEV_GATE_BRANCH:-staging}"
 MAIN="${DEV_MAIN_BRANCH:-master}"
@@ -29,6 +30,35 @@ usage() {
 }
 
 curbranch() { git rev-parse --abbrev-ref HEAD; }
+
+MODULES=()
+add_module() {
+    local m="$1"
+    [[ " ${MODULES[*]-} " == *" $m "* ]] || MODULES+=("$m")
+}
+parse_modules() {
+    MODULES=()
+    [ $# -gt 0 ] || return 0
+    local m
+    for m in "$@"; do
+        m="$(basename "$m")"
+        [ -d "$ROOT/apps/$m" ] || { echo "Error: unknown module '$m'"; usage; }
+        add_module "$m"
+    done
+    add_module commonlib
+    if [[ " ${MODULES[*]} " == *" web "* ]]; then add_module e2e; fi
+}
+is_selected() {
+    [ ${#MODULES[@]} -eq 0 ] || [[ " ${MODULES[*]} " == *" $1 "* ]]
+}
+save_modules() {
+    local dest="$1"
+    if [ ${#MODULES[@]} -gt 0 ]; then
+        printf '%s\n' "${MODULES[@]}" > "$dest/.git/dev-modules"
+    else
+        rm -f "$dest/.git/dev-modules"
+    fi
+}
 
 validate_clone() {
     local target="$1" base
@@ -83,22 +113,93 @@ list_clones() {
 }
 
 copy_runtime() {
-    local dest="$1" f mod
-    for f in .env .env.secrets; do
-        if [ -f "$ROOT/$f" ] && [ ! -f "$dest/$f" ]; then
-            cp "$ROOT/$f" "$dest/$f"
-            echo "Copied $f"
-        fi
-    done
+    local dest="$1" f mod d
+    # .env is tracked, so the clone already has it.
+    if [ -f "$ROOT/.env.secrets" ] && [ ! -f "$dest/.env.secrets" ]; then
+        cp "$ROOT/.env.secrets" "$dest/.env.secrets"
+        echo "Copied .env.secrets"
+    fi
+    if [ -f "$ROOT/.env.local" ] && [ ! -f "$dest/.env.local" ]; then
+        cp "$ROOT/.env.local" "$dest/.env.local"
+        echo "Copied .env.local"
+    fi
+    if [ ! -f "$dest/.env.local" ]; then
+        : > "$dest/.env.local"
+        echo "Created empty .env.local"
+    fi
     for f in "$ROOT"/apps/*/uv.lock "$ROOT"/apps/*/poetry.lock "$ROOT"/apps/*/package-lock.json; do
         [ -f "$f" ] || continue
         mod="$(basename "$(dirname "$f")")"
-        mkdir -p "$dest/apps/$mod"
+        is_selected "$mod" || continue
         if [ ! -f "$dest/apps/$mod/$(basename "$f")" ]; then
+            mkdir -p "$dest/apps/$mod"
             cp "$f" "$dest/apps/$mod/"
             echo "Copied apps/$mod/$(basename "$f")"
         fi
     done
+    for d in "$ROOT"/apps/*/node_modules; do
+        [ -d "$d" ] || continue
+        mod="$(basename "$(dirname "$d")")"
+        is_selected "$mod" || continue
+        if [ -d "$dest/apps/$mod/node_modules" ]; then continue; fi
+        mkdir -p "$dest/apps/$mod"
+        if ! cp -a --reflink=auto "$d" "$dest/apps/$mod/node_modules" 2>/dev/null; then
+            rm -rf "$dest/apps/$mod/node_modules"
+            cp -a "$d" "$dest/apps/$mod/node_modules"
+        fi
+        echo "Copied apps/$mod/node_modules"
+    done
+    if [ -f "$ROOT/.codegraph/codegraph.db" ]; then
+        mkdir -p "$dest/.codegraph"
+        if python3 - "$ROOT/.codegraph/codegraph.db" "$dest/.codegraph/codegraph.db" <<'PY'
+import sqlite3
+import sys
+src = sqlite3.connect("file:" + sys.argv[1] + "?mode=ro", uri=True)
+dst = sqlite3.connect(sys.argv[2])
+src.backup(dst)
+dst.close()
+src.close()
+PY
+        then
+            echo "Copied CodeGraph index snapshot"
+        else
+            echo "Warning: could not snapshot CodeGraph index"
+        fi
+    fi
+}
+
+prepare_runtime() {
+    local dest="$1" mode="$2" dir mod
+    for dir in "$dest"/apps/*; do
+        [ -f "$dir/uv.lock" ] || continue
+        mod="$(basename "$dir")"
+        is_selected "$mod" || continue
+        echo "Preparing $mod dependencies (uv, offline)..."
+        if ! (cd "$dir" && uv sync --offline); then
+            echo "Offline sync failed for $mod; retrying with network."
+            (cd "$dir" && uv sync)
+        fi
+    done
+    if is_selected scrapper && [ -f "$dest/apps/scrapper/poetry.lock" ]; then
+        echo "Preparing scrapper dependencies (poetry)..."
+        if ! (cd "$dest/apps/scrapper" && poetry install --no-interaction); then
+            (cd "$dest/apps/scrapper" && poetry lock && poetry install --no-interaction)
+        fi
+    fi
+    if [ "$mode" = "dep" ]; then
+        for mod in web e2e; do
+            is_selected "$mod" || continue
+            [ -f "$dest/apps/$mod/package.json" ] || continue
+            echo "Preparing $mod dependencies (npm, prefer offline)..."
+            if ! (cd "$dest/apps/$mod" && npm ci --prefer-offline); then
+                (cd "$dest/apps/$mod" && npm install --prefer-offline)
+            fi
+        done
+    fi
+    if [ -f "$dest/.codegraph/codegraph.db" ] && command -v codegraph >/dev/null 2>&1; then
+        echo "Refreshing CodeGraph index in $dest..."
+        codegraph sync "$dest" || echo "Warning: could not refresh CodeGraph index in $dest"
+    fi
 }
 
 create_clone() {
@@ -111,6 +212,7 @@ create_clone() {
         git clone "$(git remote get-url origin)" "$CLONE" || { echo "Error: clone failed."; return 1; }
     fi
     copy_runtime "$CLONE"
+    save_modules "$CLONE"
     cd "$CLONE"
 }
 
@@ -125,6 +227,16 @@ stop_codegraph_daemon() {
     fi
 }
 
+# Containers leave root-owned files inside a clone (sandbox datadir, container logs,
+# __pycache__), which a plain `rm -rf` as the invoking user cannot delete. Clear the tree
+# as root through the mysql image (already pulled for the sandbox), then drop the dir.
+clear_clone_as_root() {
+    local target="$1"
+    command -v docker >/dev/null 2>&1 || return 1
+    docker run --rm --entrypoint sh -v "$target:/c" mysql:9 -c 'rm -rf /c/* /c/.[!.]*' >/dev/null 2>&1 || return 1
+    rmdir "$target" 2>/dev/null
+}
+
 delete_clone() {
     local target="$1"
     stop_codegraph_daemon "$target/.codegraph/daemon.pid"
@@ -132,7 +244,10 @@ delete_clone() {
     echo "Deleting clone $target..."
     rm -rf "$target" 2>/dev/null || true
     if [ -e "$target" ]; then
-        echo "Error: could not delete $target (is a terminal or CodeGraph daemon holding it?)."
+        clear_clone_as_root "$target" || true
+    fi
+    if [ -e "$target" ]; then
+        echo "Error: could not delete $target (is a terminal or CodeGraph daemon holding it, or root-owned files left by the sandbox?)."
         return 1
     fi
     echo "Clone deleted."
@@ -148,12 +263,14 @@ case "$CMD" in
         [ -n "$NAME" ] || usage
         NAME="$(basename "$NAME")"
         NAME="${NAME#$PREFIX}"
+        parse_modules "${@:3}"
         create_clone "$NAME"
         git fetch origin >/dev/null 2>&1 || true
         BRANCH="feat/$NAME"
         BASE_REF="origin/$MAIN"
         git rev-parse --verify -q "$BASE_REF" >/dev/null || BASE_REF="origin/HEAD"
         git checkout -b "$BRANCH" "$BASE_REF" 2>/dev/null || git checkout "$BRANCH" 2>/dev/null || { echo "Error: could not set branch $BRANCH."; exit 1; }
+        prepare_runtime "$CLONE" new
         echo
         echo "Clone ready: $CLONE"
         echo "Branch: $BRANCH (from $BASE_REF)"
@@ -163,8 +280,10 @@ case "$CMD" in
         [ -n "$PR" ] || usage
         PR="${PR#\#}"
         require_gh
+        parse_modules "${@:3}"
         create_clone "dependabot-$PR"
         gh pr checkout "$PR"
+        prepare_runtime "$CLONE" dep
         echo
         echo "Clone ready: $CLONE (PR #$PR checked out)"
         ;;
@@ -178,6 +297,11 @@ case "$CMD" in
         ;;
     test)
         shift
+        if [ $# -eq 0 ] && [ -f "$ROOT/.git/dev-modules" ]; then
+            mods=()
+            while IFS= read -r m; do [ -n "$m" ] && mods+=("$m"); done < "$ROOT/.git/dev-modules"
+            set -- "${mods[@]}"
+        fi
         (cd "$ROOT" && bash scripts/test.sh "$@")
         ;;
     sandbox)

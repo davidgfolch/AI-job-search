@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from services.job_delete_service import JobDeleteService
 from repositories.jobDeleteRepository import JobDeleteRepository
-from commonlib.jobSnapshotRepository import JobSnapshotRepository
+from commonlib.repositories.jobSnapshotRepository import JobSnapshotRepository
 
 
 @pytest.fixture

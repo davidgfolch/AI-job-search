@@ -82,7 +82,7 @@ def main() -> int:
         payload = json.load(sys.stdin)
     except (json.JSONDecodeError, OSError):
         return 0
-    root = os.getcwd()
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     tool_name = payload.get("tool_name", "")
     if tool_name in EDIT_TOOLS:
         return handle_edit(payload, root)

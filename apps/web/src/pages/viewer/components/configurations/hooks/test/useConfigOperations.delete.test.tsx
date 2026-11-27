@@ -43,7 +43,7 @@ describe('useConfigOperations - deleteConfiguration', () => {
         const props = createProps();
         const { result } = renderHook(() => useConfigOperations(props));
 
-        result.current.deleteConfiguration('Test Config', { stopPropagation: vi.fn() } as any);
+        result.current.deleteConfiguration('Test Config', { stopPropagation: vi.fn() } as unknown as React.SyntheticEvent);
 
         expect(mockConfirmModal.confirm).toHaveBeenCalledWith(
             'Delete configuration "Test Config"?',
@@ -59,7 +59,7 @@ describe('useConfigOperations - deleteConfiguration', () => {
         const props = createProps({}, { savedConfigs: existingConfigs });
         const { result } = renderHook(() => useConfigOperations(props));
 
-        result.current.deleteConfiguration('Test Config', { stopPropagation: vi.fn() } as any);
+        result.current.deleteConfiguration('Test Config', { stopPropagation: vi.fn() } as unknown as React.SyntheticEvent);
         
         const confirmCallback = mockConfirmModal.confirm.mock.calls[0][1];
         await act(async () => {
@@ -81,7 +81,7 @@ describe('useConfigOperations - deleteConfiguration', () => {
         const props = createProps({}, { savedConfigs: existingConfigs, configName: 'Current Config' });
         const { result } = renderHook(() => useConfigOperations(props));
 
-        result.current.deleteConfiguration('Current Config', { stopPropagation: vi.fn() } as any);
+        result.current.deleteConfiguration('Current Config', { stopPropagation: vi.fn() } as unknown as React.SyntheticEvent);
         
         const confirmCallback = mockConfirmModal.confirm.mock.calls[0][1];
         await act(async () => {
@@ -97,7 +97,7 @@ describe('useConfigOperations - deleteConfiguration', () => {
         const props = createProps({ save: mockSave });
         const { result } = renderHook(() => useConfigOperations(props));
 
-        result.current.deleteConfiguration('Test Config', { stopPropagation: vi.fn() } as any);
+        result.current.deleteConfiguration('Test Config', { stopPropagation: vi.fn() } as unknown as React.SyntheticEvent);
         
         const confirmCallback = mockConfirmModal.confirm.mock.calls[0][1];
         await act(async () => {

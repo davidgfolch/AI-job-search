@@ -46,6 +46,15 @@ export const SHORTCUT_ENV_KEYS: Record<ShortcutAction, string> = {
 export const UI_SHORTCUTS_ENABLED_KEY = 'UI_SHORTCUTS_ENABLED';
 export const UI_SHORTCUTS_STORAGE_KEY = 'ui_shortcuts_enabled';
 
+const PINNED_SHORTCUT_TENTH_KEY = '0';
+
+export const pinnedShortcutDisplay = (position: number): string => `Alt+${position === 10 ? PINNED_SHORTCUT_TENTH_KEY : position}`;
+
+export function pinnedShortcutPosition(key: string): number | null {
+    if (key === PINNED_SHORTCUT_TENTH_KEY) return 10;
+    return /^[1-9]$/.test(key) ? Number(key) : null;
+}
+
 export function parseShortcut(value: string | undefined): ShortcutCombo | null {
     if (!value) return null;
     const parts = value.trim().toLowerCase().split('+');

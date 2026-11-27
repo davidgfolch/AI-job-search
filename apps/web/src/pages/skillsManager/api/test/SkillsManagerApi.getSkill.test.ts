@@ -30,7 +30,7 @@ describe('skillsApi - getSkill', () => {
         const backendResponse = {
             name: 'Python',
             description: 'A programming language',
-            learning_path: ['Learn variables'],
+            learning_path: [{ url: 'Learn variables', source: 'llm' }],
             ai_enriched: true,
             category: 'Programming',
         };
@@ -40,7 +40,7 @@ describe('skillsApi - getSkill', () => {
         
         expect(skill).not.toBeNull();
         expect(skill?.name).toBe('Python');
-        expect(skill?.learningPath).toEqual(['Learn variables']);
+        expect(skill?.learningPath).toEqual([{ url: 'Learn variables', source: 'llm' }]);
     });
 
     it('should return null on error', async () => {

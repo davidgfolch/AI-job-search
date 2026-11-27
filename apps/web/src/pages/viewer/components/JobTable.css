@@ -3,6 +3,8 @@
   overflow-y: auto;
   border-radius: 8px;
   border: 1px solid var(--border-color-light);
+  container-type: inline-size;
+  container-name: job-list;
 }
 
 .job-table-sentinel {
@@ -29,6 +31,12 @@
   color: var(--primary-color);
   font-weight: 600;
   border-bottom: 2px solid var(--primary-color);
+}
+
+.job-table th > :not(input[type="checkbox"]),
+.job-table td > :not(input[type="checkbox"]) {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .job-table tbody tr {
@@ -61,27 +69,64 @@
 
 .checkbox-column {
   width: 3rem;
+  min-width: 3rem;
 }
 
 .salary-column {
-  width: 20%;
+  width: 11%;
+  min-width: 6rem;
 }
 
 .title-column {
-  width: 50%;
+  width: auto;
+  min-width: 10rem;
 }
 
 .company-column {
-  width: 20%;
+  width: 14%;
+  min-width: 7rem;
+}
+
+.location-column {
+  width: 14%;
+  min-width: 7rem;
+}
+
+.modality-column {
+  width: 5rem;
+  min-width: 5rem;
 }
 
 .status-column {
-  width: 10%;
+  width: 6.5rem;
+  min-width: 6.5rem;
   padding: 0.75rem 0.5rem !important;
 }
 
 .created-column {
-  width: 10%;
+  width: 7rem;
+  min-width: 6rem;
+}
+
+.modality-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.modality-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary, #4b5563);
+  border: 1px solid var(--border-color);
+  cursor: help;
 }
 
 .status-badges {
@@ -138,6 +183,20 @@
   background-color: var(--status-comments-bg);
 }
 
+@container job-list (max-width: 900px) {
+  .location-column,
+  .modality-column {
+    display: none;
+  }
+}
+
+@container job-list (max-width: 640px) {
+  .salary-column,
+  .created-column {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .checkbox-column {
     display: none;
@@ -147,10 +206,6 @@
     padding: 0.4rem 0.5rem;
   }
   .status-column {
-    width: 6%;
-    padding: 0.4rem 0.25rem !important;
-  }
-  .created-column {
-    width: 12%;
+    display: none;
   }
 }

@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from scrapper.navigator.linkedinNavigator import CSS_SEL_LOGIN_USER, CSS_SEL_LOGIN_PWD, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_CARD, CSS_SEL_NEXT_PAGE_BUTTON
 from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException
-from scrapper.navigator.test.linkedinNavigator_data import CHECK_RESULTS_CASES, EASY_APPLY_CASES, LOGIN_SUBMIT_CASES
+from scrapper.navigator.test.linkedinNavigator_data import CHECK_RESULTS_CASES, EASY_APPLY_CASES, GET_TOTAL_RESULTS_CASES, LOGIN_SUBMIT_CASES
 
 TEST_URL = "http://url"
 
@@ -41,7 +41,12 @@ class TestLinkedinNavigator:
         if checkbox_raises_error:
             mock_selenium.checkboxUnselect.side_effect = Exception("error")
         user_elm, pwd_elm, remember_elm, submit_elm = MagicMock(), MagicMock(), MagicMock(), MagicMock()
-        mock_selenium.getElms.side_effect = [[user_elm], [pwd_elm], [remember_elm] if remember_me else [], [], [submit_elm]]
+        # getElms: user, pwd, remember selector, [label fallback only when selector empty], loginSubmit legacy, loginSubmit button
+        side_effect = [[user_elm], [pwd_elm], [remember_elm] if remember_me else []]
+        if not remember_me:
+            side_effect.append([])  # label fallback
+        side_effect += [[], [submit_elm]]
+        mock_selenium.getElms.side_effect = side_effect
         navigator.login("user", "pass")
         mock_selenium.waitUntil_presenceLocatedElement.assert_any_call(CSS_SEL_LOGIN_USER)
         mock_selenium.waitUntil_presenceLocatedElement.assert_any_call(CSS_SEL_LOGIN_PWD)
@@ -69,6 +74,28 @@ class TestLinkedinNavigator:
             navigator.loginSubmit()
         mock_selenium.waitAndClick.assert_not_called()
 
+    @pytest.mark.parametrize("label, expected", [
+        ('Mantener sesión iniciada', True),
+        ('Remember me', True),
+        ('Keep me signed in', True),
+        ('Something else', False),
+    ])
+    def test_uncheck_remember_me_label_fallback(self, navigator, mock_selenium, label, expected):
+        checkbox = MagicMock()
+        mock_selenium.getElms.side_effect = [[], [checkbox]]  # selector miss, then checkbox scan
+        mock_selenium.getAttr.side_effect = lambda elm, attr: label if attr == 'aria-label' else ''
+        navigator.uncheck_remember_me()
+        if expected:
+            mock_selenium.checkboxUnselect.assert_called_once_with(checkbox)
+        else:
+            mock_selenium.checkboxUnselect.assert_not_called()
+
+    def test_uncheck_remember_me_native_checked(self, navigator, mock_selenium):
+        checkbox = MagicMock()
+        mock_selenium.getElms.return_value = [checkbox]
+        navigator.uncheck_remember_me()
+        mock_selenium.checkboxUnselect.assert_called_once_with(checkbox)
+
     @pytest.mark.parametrize("header_text, header_absent, expected", CHECK_RESULTS_CASES)
     def test_check_results(self, navigator, mock_selenium, header_text, header_absent, expected):
         if header_absent:
@@ -78,11 +105,11 @@ class TestLinkedinNavigator:
         result = navigator.check_results("key", "url", "loc", "tpr", "keywords")
         assert result is expected
 
-    def test_get_total_results(self, navigator, mock_selenium):
-        mock_selenium.getText.return_value = "100+ results"
-        result = navigator.get_total_results("key", "loc", "tpr", "keywords")
-        assert result == 100
-        mock_selenium.getText.assert_called_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND)
+    @patch('commonlib.decorator.retry.sleep')
+    @pytest.mark.parametrize("header_text, expected", GET_TOTAL_RESULTS_CASES)
+    def test_get_total_results(self, mock_retry_sleep, navigator, mock_selenium, header_text, expected):
+        mock_selenium.getText.return_value = header_text
+        assert navigator.get_total_results("key", "loc", "tpr", "keywords") == expected
 
     @patch('commonlib.decorator.retry.sleep')
     def test_get_total_results_missing_header_returns_false(self, mock_retry_sleep, navigator, mock_selenium):

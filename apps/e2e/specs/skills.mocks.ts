@@ -2,7 +2,7 @@ export const MOCK_SKILLS = [
     {
         name: 'React',
         description: 'A JavaScript library for building user interfaces',
-        learning_path: ['https://react.dev'],
+        learning_path: [{ url: 'https://react.dev', source: 'llm' }],
         category: 'Frontend',
         disabled: false,
         ai_enriched: true,

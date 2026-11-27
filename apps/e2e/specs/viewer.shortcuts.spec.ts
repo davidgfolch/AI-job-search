@@ -1,4 +1,4 @@
-import { test, expect } from './coverage.fixtures';
+import { test, expect, type Page } from './coverage.fixtures';
 import {
     BASE_URL,
     setupPageLogging,
@@ -12,6 +12,11 @@ test.use({
 });
 
 const PATCH_JOB = (req: { method(): string; url(): string }) => req.method() === 'PATCH' && /\/api\/jobs\/\d+$/.test(req.url());
+
+const openShortcutsPopup = async (page: Page) => {
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.getByRole('button', { name: 'Shortcuts', exact: true }).click();
+};
 
 test.describe('Viewer Keyboard Shortcuts E2E', () => {
     test.beforeEach(async ({ page }) => {
@@ -89,7 +94,9 @@ test.describe('Viewer Keyboard Shortcuts E2E', () => {
         });
         await page.goto(BASE_URL);
         await page.locator('#job-row-1').click();
+        await openShortcutsPopup(page);
         await page.getByTitle('Keyboard shortcuts enabled').click();
+        await page.keyboard.press('Escape');
         await page.keyboard.press('Alt+i');
         await page.waitForTimeout(500);
         expect(patched).toBe(false);
@@ -131,6 +138,20 @@ test.describe('Viewer Shortcut Hints E2E', () => {
         await page.keyboard.up('Alt');
         await expect(page.locator('.shortcut-badge')).toHaveCount(0);
     });
+
+    test('should keep shortcut hints visible when the window regains focus with Alt held', async ({ page }) => {
+        await page.goto(BASE_URL);
+        await page.locator('#job-row-1').click();
+
+        await page.keyboard.down('Alt');
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+I' })).toBeVisible();
+        await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+I' })).toBeVisible();
+        await page.mouse.move(300, 300);
+        await expect(page.locator('.shortcut-badge').filter({ hasText: 'Alt+I' })).toBeVisible();
+        await page.keyboard.up('Alt');
+        await expect(page.locator('.shortcut-badge')).toHaveCount(0);
+    });
 });
 
 test.describe('Viewer Pinned Filter Keyboard Shortcuts E2E', () => {
@@ -151,7 +172,7 @@ test.describe('Viewer Pinned Filter Keyboard Shortcuts E2E', () => {
 
     test('should list pinned filters in the shortcuts help modal', async ({ page }) => {
         await page.goto(BASE_URL);
-        await page.getByTitle('Show keyboard shortcuts').click();
+        await openShortcutsPopup(page);
         await expect(page.getByText('Load pinned filters:')).toBeVisible();
         await expect(page.locator('.shortcuts-table')).toContainText('Backend Filter');
         await expect(page.locator('.shortcuts-table')).toContainText('Alt+1');

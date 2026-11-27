@@ -122,6 +122,8 @@ class TestEmailReader:
         email_reader.imap.fetch.return_value = ("OK", [(b"1", msg.as_bytes())]) 
         mock_time.time.side_effect = range(100, 120)
         assert email_reader.get_latest_verification_code("s", 10) == "999999"
+        email_reader.imap.store.assert_called_once_with("123", "+FLAGS", "\\Deleted")
+        email_reader.imap.expunge.assert_called_once()
 
     @patch("scrapper.services.gmail.email_reader.time")
     def test_get_latest_verification_code_timeout(self, mock_time, email_reader):

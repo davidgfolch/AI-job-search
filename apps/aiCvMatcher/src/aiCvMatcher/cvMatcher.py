@@ -6,7 +6,7 @@ from commonlib.stopWatch import StopWatch
 from commonlib.environmentUtil import getEnv, getEnvBool
 from commonlib.stringUtil import removeExtraEmptyLines
 from commonlib.cv_loader import CVLoader
-from commonlib.aiEnrichRepository import AiEnrichRepository
+from commonlib.repositories.aiEnrichRepository import AiEnrichRepository
 from commonlib.observability import get_logger, job_log_context
 
 CV_LOCATION = './cv/cv.txt'

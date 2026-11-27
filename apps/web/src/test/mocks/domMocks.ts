@@ -11,7 +11,7 @@ export const setupIntersectionObserverMock = () => {
       thresholds: [],
       takeRecords: () => [],
     };
-  }) as any;
+  }) as unknown as typeof IntersectionObserver;
 
   globalThis.IntersectionObserver = mockIntersectionObserver;
   return mockIntersectionObserver;
@@ -24,7 +24,7 @@ export const setupResizeObserverMock = () => {
       unobserve: vi.fn(),
       disconnect: vi.fn(),
     };
-  }) as any;
+  }) as unknown as typeof ResizeObserver;
 
   globalThis.ResizeObserver = mockResizeObserver;
   return mockResizeObserver;

@@ -5,15 +5,45 @@ const errorSection = document.getElementById("error-section");
 const errorText = document.getElementById("error-text");
 const statusDot = document.getElementById("status");
 const providerInfo = document.getElementById("provider-info");
+const providerSelect = document.getElementById("provider-select");
 
 let fields = [];
+const stateByTab = new Map();
+let activeTabId = null;
+let renderVersion = 0;
+let selectedProvider = "auto";
+let backendProvider = "unknown";
+let cvLoaded = false;
+let lookingForLoaded = false;
+
+function renderProviderInfo() {
+  const suffix = selectedProvider === "auto" ? ` (${backendProvider})` : "";
+  providerInfo.textContent = `Provider: ${selectedProvider}${suffix} | CV: ${cvLoaded ? "✓" : "✗"} Looking: ${lookingForLoaded ? "✓" : "✗"}`;
+}
+
+async function initProvider() {
+  const data = await chrome.storage.local.get("provider");
+  const valid = [...providerSelect.options].some(option => option.value === data.provider);
+  selectedProvider = valid ? data.provider : "auto";
+  providerSelect.value = selectedProvider;
+  renderProviderInfo();
+}
+
+providerSelect.addEventListener("change", () => {
+  selectedProvider = providerSelect.value;
+  chrome.storage.local.set({ provider: selectedProvider });
+  renderProviderInfo();
+});
 
 async function checkHealth() {
   const resp = await chrome.runtime.sendMessage({ action: "health" });
   if (resp && resp.status === "ok") {
     statusDot.className = "status-dot connected";
     statusDot.title = "Connected";
-    providerInfo.textContent = `Provider: ${resp.provider} | CV: ${resp.cv_loaded ? "✓" : "✗"} Looking: ${resp.looking_for_loaded ? "✓" : "✗"}`;
+    backendProvider = resp.provider;
+    cvLoaded = resp.cv_loaded;
+    lookingForLoaded = resp.looking_for_loaded;
+    renderProviderInfo();
     answerAllBtn.disabled = fields.length === 0;
   } else {
     statusDot.className = "status-dot disconnected";
@@ -24,13 +54,35 @@ async function checkHealth() {
   }
 }
 
-async function detectAllFields() {
-  fields = await chrome.runtime.sendMessage({ action: "detect-all-questions" });
-  fields = fields || [];
-  fields.forEach(f => f.answer = null);
+async function fieldsForTab(tabId, force = false) {
+  const cached = stateByTab.get(tabId);
+  if (!force && cached) return cached;
+  const detected = (await chrome.runtime.sendMessage({ action: "detect-all-questions", tabId })) || [];
+  const previous = new Map((cached || []).map(f => [f.selector, f.answer]));
+  detected.forEach(f => f.answer = previous.get(f.selector) || null);
+  stateByTab.set(tabId, detected);
+  return detected;
+}
+
+async function showTab(tabId, force = false) {
+  if (tabId == null) return;
+  const version = ++renderVersion;
+  const nextFields = await fieldsForTab(tabId, force);
+  if (version !== renderVersion) return;
+  activeTabId = tabId;
+  fields = nextFields;
   renderFields();
   answerAllBtn.disabled = fields.length === 0;
-  fillAllBtn.disabled = true;
+  fillAllBtn.disabled = !fields.some(f => f.answer && f.answer.type === "answer");
+}
+
+async function initActiveTab() {
+  const tabId = await chrome.runtime.sendMessage({ action: "active-tab" });
+  await showTab(tabId);
+}
+
+function fieldTypeLabel(field) {
+  return field.type || "text";
 }
 
 function renderFields() {
@@ -46,13 +98,21 @@ function renderFields() {
 
     const label = document.createElement("div");
     label.className = "q-label";
-    label.textContent = `${fields.indexOf(f) + 1} of ${fields.length}`;
+    const type = fieldTypeLabel(f);
+    label.textContent = `${fields.indexOf(f) + 1} of ${fields.length}${type && type !== "text" ? ` · ${type}` : ""}`;
     item.appendChild(label);
 
     const qText = document.createElement("div");
     qText.className = "q-text";
     qText.textContent = f.question;
     item.appendChild(qText);
+
+    if (Array.isArray(f.options) && f.options.length > 0) {
+      const opts = document.createElement("div");
+      opts.className = "q-options";
+      opts.textContent = `Options: ${f.options.map(o => o.label || o.value).filter(Boolean).join(" | ")}`;
+      item.appendChild(opts);
+    }
 
     const aText = document.createElement("div");
     aText.className = "a-text pending";
@@ -83,8 +143,8 @@ async function answerAll() {
   answerAllBtn.textContent = "Pensando...";
   hideError();
 
-  const questions = fields.map(f => f.question);
-  const resp = await chrome.runtime.sendMessage({ action: "answer-batch", questions, provider: "auto" });
+  const payload = fields.map(f => ({ question: f.question, type: f.type || "text", options: (f.options || []).map(o => o.label || o.value).filter(Boolean) }));
+  const resp = await chrome.runtime.sendMessage({ action: "answer-batch", questions: payload, provider: selectedProvider });
 
   answerAllBtn.disabled = false;
   answerAllBtn.textContent = "Answer All";
@@ -101,12 +161,18 @@ async function answerAll() {
   fillAllBtn.disabled = !hasAnswers;
 }
 
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.action === "refresh-fields") showTab(msg.tabId, true);
+});
+
+chrome.tabs.onActivated.addListener(({ tabId }) => showTab(tabId));
+
 answerAllBtn.addEventListener("click", answerAll);
 
 fillAllBtn.addEventListener("click", () => {
   const fillable = fields.filter(f => f.answer && f.answer.type === "answer")
     .map(f => ({ selector: f.selector, text: f.answer.text }));
-  chrome.runtime.sendMessage({ action: "fill-all-fields", fields: fillable });
+  chrome.runtime.sendMessage({ action: "fill-all-fields", fields: fillable, tabId: activeTabId });
   fillAllBtn.textContent = "Rellenado!";
   setTimeout(() => { fillAllBtn.textContent = "Fill All"; }, 2000);
 });
@@ -120,6 +186,7 @@ function showError(text) {
   errorSection.classList.remove("hidden");
 }
 
+initProvider();
 checkHealth();
-detectAllFields();
+initActiveTab();
 setInterval(checkHealth, 30000);

@@ -50,8 +50,27 @@ export async function setupAppBootstrapMocks(page: Page) {
     });
 }
 
-export async function setupApiSafetyNet(page: Page) {
+const MUTATING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+export function isBlockedApiWrite(method: string, url: string): boolean {
+    return MUTATING_METHODS.includes(method.toUpperCase()) && /^https?:\/\/[^/]+\/api\//.test(url);
+}
+
+export type BlockedWrite = { method: string; url: string };
+
+export async function setupApiSafetyNet(page: Page, onBlocked?: (write: BlockedWrite) => void) {
     await page.route(/^https?:\/\/[^/]+\/api\//, async (route) => {
+        const request = route.request();
+        const method = request.method();
+        const url = request.url();
+        if (isBlockedApiWrite(method, url)) {
+            if (!onBlocked) {
+                throw new Error(`Blocked unmocked E2E write: ${method} ${url}. Add an explicit route mock in the spec.`);
+            }
+            onBlocked({ method, url });
+            await route.abort();
+            return;
+        }
         await route.fulfill({ status: 404, contentType: 'application/json', json: {} });
     });
 }

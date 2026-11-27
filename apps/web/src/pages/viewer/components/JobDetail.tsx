@@ -12,7 +12,6 @@ import JobDetailHeader from './job-detail/JobDetailHeader';
 import JobDetailInfo from './job-detail/JobDetailInfo';
 import JobDetailCompactHeader from './job-detail/JobDetailCompactHeader';
 import type { AppliedCompanyJob } from '../api/ViewerApi';
-import JobActions from './JobActions';
 
 interface JobDetailProps {
     job: Job;
@@ -20,21 +19,10 @@ interface JobDetailProps {
     onOpenDuplicated?: (id: number) => void;
     onClose?: () => void;
     hideDuplicatedButton?: boolean;
-    onCloseMobile?: () => void;
-    onNext?: () => void;
-    onPrevious?: () => void;
-    hasNext?: boolean;
-    hasPrevious?: boolean;
-    filters?: import('../api/ViewerApi').JobListParams;
-    onSeen?: () => void;
-    onApplied?: () => void;
-    onDiscarded?: () => void;
-    onClosed?: () => void;
-    onIgnore?: () => void;
     detailScrollRef?: RefObject<HTMLDivElement | null>;
 }
 
-    export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hideDuplicatedButton, onCloseMobile, onNext, onPrevious, hasNext, hasPrevious, filters, onSeen, onApplied, onDiscarded, onClosed, onIgnore, detailScrollRef }: JobDetailProps) {
+    export default function JobDetail({ job, onUpdate, onOpenDuplicated, onClose, hideDuplicatedButton, detailScrollRef }: JobDetailProps) {
     const { data: appliedCompanyJobs, isLoading: loadingApplied } = useQuery<AppliedCompanyJob[]>({
         queryKey: ['appliedCompanyJobs', job.company, job.client],
         queryFn: async () => {
@@ -54,14 +42,17 @@ interface JobDetailProps {
     }, [detailScrollRef]);
     const savedCalcParams = useMemo(() => parseSalaryCalculationFromComments(job.comments), [job.comments]);
     const allSavedCalcParams = useMemo(() => parseAllSalaryCalculationsFromComments(job.comments), [job.comments]);
-    const [showCalculator, setShowCalculator] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(!!savedCalcParams);
+    const [calcSource, setCalcSource] = useState({ id: job.id, params: savedCalcParams });
+    if (calcSource.id !== job.id || calcSource.params !== savedCalcParams) {
+        setCalcSource({ id: job.id, params: savedCalcParams });
+        setShowCalculator(!!savedCalcParams);
+    }
     const [isScrolled, setIsScrolled] = useState(false);
 
     const handleScroll = useCallback(() => {
         if (contentRef.current) setIsScrolled(contentRef.current.scrollTop > 50);
     }, []);
-
-    useEffect(() => setShowCalculator(!!savedCalcParams), [job.id, savedCalcParams]);
 
     useEffect(() => { if (contentRef.current) contentRef.current.scrollTop = 0; }, [job]);
 
@@ -75,28 +66,6 @@ interface JobDetailProps {
     return (
         <div className="job-detail">
             <JobDetailHeader job={job} onCloseDuplicated={onClose} onOpenDuplicated={hideDuplicatedButton ? undefined : onOpenDuplicated} />
-            {(onSeen || onApplied || onIgnore) && (
-                <div className="mobile-job-actions">
-                    <JobActions
-                        job={job}
-                        filters={filters || {}}
-                        onSeen={onSeen || (() => {})}
-                        onApplied={onApplied || (() => {})}
-                        onDiscarded={onDiscarded || (() => {})}
-                        onClosed={onClosed || (() => {})}
-                        onIgnore={onIgnore || (() => {})}
-                        onNext={onNext || (() => {})}
-                        onPrevious={onPrevious || (() => {})}
-                        hasNext={hasNext || false}
-                        hasPrevious={hasPrevious || false}
-                    />
-                    {onCloseMobile && (
-                        <button className="mobile-back-btn create-job-btn" onClick={onCloseMobile} title="Close detail">
-                            ✕
-                        </button>
-                    )}
-                </div>
-            )}
             <div className="job-detail-scroll-wrapper">
                 <div className="job-status-floating">
                     {STATE_FIELDS.filter(field => job[field as keyof Job] === true).map(status => (

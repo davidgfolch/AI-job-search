@@ -59,6 +59,15 @@ def test_parse_job_order(order_input, expected_col, expected_dir):
     assert parse_job_order(order_input) == (expected_col, expected_dir)
 
 
+def test_days_old_compares_the_column_without_date():
+    where, params = build_jobs_where_clause(
+        search=None, status=None, not_status=None, days_old=7,
+        salary=None, sql_filter=None, boolean_filters={},
+    )
+    assert where == ["created >= DATE_SUB(CURDATE(), INTERVAL %s DAY)"]
+    assert params == [7]
+
+
 def test_base_pending_condition_excludes_enriched_error_ignored_discarded_closed():
     assert "ai_enriched" in BASE_PENDING_CONDITION
     assert "ai_enrich_error" in BASE_PENDING_CONDITION

@@ -56,6 +56,15 @@ class TestReadEntry:
         monkeypatch.setattr(cache, "POSITIVE_TTL", -1)
         assert cache.read_entry("mysql") is None
 
+    def test_ignore_ttl_reads_expired_positive_entry(self, monkeypatch):
+        cache.write_entry("mysql", "10.0.0.1")
+        monkeypatch.setattr(cache, "POSITIVE_TTL", -1)
+        assert cache.read_entry("mysql", ignore_ttl=True)["host"] == "10.0.0.1"
+
+    def test_ignore_ttl_still_rejects_a_malformed_entry(self):
+        _write_raw({"version": 1, "entries": {"mysql": "10.0.0.1"}})
+        assert cache.read_entry("mysql", ignore_ttl=True) is None
+
     def test_fresh_negative_entry(self):
         cache.write_entry("mysql", None)
         assert cache.read_entry("mysql")["host"] is None

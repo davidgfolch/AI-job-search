@@ -34,6 +34,12 @@ describe('PinnedConfigurations', () => {
         expect(screen.queryByText('Alt+2')).not.toBeInTheDocument();
     });
 
+    it('shows Alt+0 for the tenth pinned config', () => {
+        const manyConfigs: FilterConfig[] = Array.from({ length: 10 }, (_, i) => ({ name: `Config ${i + 1}`, filters: {} }));
+        render(<PinnedConfigurations pinnedConfigs={manyConfigs} onLoad={vi.fn()} onUnpin={vi.fn()} />);
+        expect(screen.getByTitle('Load: Config 10 — Alt+0')).toBeInTheDocument();
+    });
+
     it('calls onLoad when a pinned config is clicked', () => {
         const onLoad = vi.fn();
         render(

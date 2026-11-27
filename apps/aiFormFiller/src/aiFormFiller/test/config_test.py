@@ -23,6 +23,23 @@ from ..config import (
     (get_max_tokens, "512", 512),
 ])
 def test_config_values(func, mock_val, expected):
-    with patch("aiFormFiller.config.getEnv") as mock_get_env:
+    with patch("aiFormFiller.config.getEnv") as mock_get_env, patch("aiFormFiller.config.getEnvFile") as mock_get_env_file:
         mock_get_env.return_value = mock_val
+        mock_get_env_file.return_value = mock_val
         assert func() == expected
+
+
+def test_get_provider_reads_env_file_over_process_env():
+    with patch("aiFormFiller.config.getEnv", return_value="local"), patch("aiFormFiller.config.getEnvFile", return_value="openai") as mock_get_env_file:
+        assert get_provider() == "openai"
+        mock_get_env_file.assert_called_once_with("AI_FORM_PROVIDER", "local")
+
+
+@pytest.mark.parametrize("func, key", [
+    (get_openai_api_key, "OPENAI_API_KEY"),
+    (get_openrouter_api_key, "OPENROUTER_API_KEY"),
+])
+def test_api_keys_read_env_file_for_live_settings_edits(func, key):
+    with patch("aiFormFiller.config.getEnv", return_value="from-startup"), patch("aiFormFiller.config.getEnvFile", return_value="from-settings") as mock_get_env_file:
+        assert func() == "from-settings"
+        mock_get_env_file.assert_called_once_with(key)

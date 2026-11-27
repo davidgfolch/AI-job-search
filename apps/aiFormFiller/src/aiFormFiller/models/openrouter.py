@@ -11,6 +11,7 @@ class OpenRouterProvider(AIProvider):
         self.model = model
 
     def generate(self, system_prompt: str, user_message: str, timeout: float, max_tokens: int, temperature: float) -> AnswerResult:
+        options = {"extra_body": {"reasoning": {"enabled": False}}} if self.model.endswith(":free") else {}
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
@@ -20,7 +21,9 @@ class OpenRouterProvider(AIProvider):
             max_tokens=max_tokens,
             temperature=temperature,
             timeout=timeout,
+            **options,
         )
-        text = response.choices[0].message.content.strip()
+        message = response.choices[0].message
+        text = (message.content or message.reasoning or "").strip()
         is_clarification = text.upper().startswith("CLARIFICACIÓN:") or text.upper().startswith("CLARIFICATION:")
         return AnswerResult(text=text, is_clarification=is_clarification, provider="openrouter")
