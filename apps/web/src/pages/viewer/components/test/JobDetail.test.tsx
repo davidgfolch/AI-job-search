@@ -37,8 +37,8 @@ const mockJob = createMockJob({
 describe('JobDetail', () => {
     beforeEach(() => {
         vi.resetAllMocks();
-        (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
-        (skillsApi.getSkills as any).mockResolvedValue([]);
+        vi.mocked(jobsApi.getAppliedJobsByCompany).mockResolvedValue([]);
+        vi.mocked(skillsApi.getSkills).mockResolvedValue([]);
     });
 
     it('renders basic job details, link, and CV match', async () => {

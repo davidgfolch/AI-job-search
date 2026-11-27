@@ -9,7 +9,7 @@ describe('SkillsTable', () => {
         const skillsWithMarkdown = [
             { name: 'React', description: '**desc**', learningPath: [] 
         }];
-        render(<SkillsTable skills={skillsWithMarkdown} onReorder={vi.fn()} onEdit={vi.fn()} onRemove={vi.fn()} />);
+        render(<SkillsTable skills={skillsWithMarkdown} onReorder={vi.fn()} onEdit={vi.fn()} onRemove={vi.fn()} onRemoveLearningPathLink={vi.fn()} />);
         expect(screen.getByText('React')).toBeInTheDocument();
         // Check for strong tag which indicates markdown rendering
         expect(screen.getByText('desc').tagName).toBe('STRONG');
@@ -17,7 +17,7 @@ describe('SkillsTable', () => {
 
     it('toggles description expansion on click', () => {
         const skills = [{ name: 'Test Skill', description: 'Long description', learningPath: [] }];
-        render(<SkillsTable skills={skills} onReorder={vi.fn()} onEdit={vi.fn()} onRemove={vi.fn()} />);
+        render(<SkillsTable skills={skills} onReorder={vi.fn()} onEdit={vi.fn()} onRemove={vi.fn()} onRemoveLearningPathLink={vi.fn()} />);
         
         const descriptionText = screen.getByText('Long description');
         // The click handler is on the parent div with class read-only-text

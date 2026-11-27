@@ -15,6 +15,7 @@ vi.mock('recharts', () => ({
     Legend: () => null,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => children,
     BarChart: () => null,
+    ComposedChart: () => null,
     Bar: () => null,
 }));
 
@@ -37,12 +38,14 @@ describe('Statistics', () => {
         vi.mocked(StatisticsApi.getSourcesByHour).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getSourcesByWeekday).mockResolvedValue([]);
         vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue([]);
+        vi.mocked(StatisticsApi.getKeywordStats).mockResolvedValue([]);
     });
 
   it('renders time range selector', () => {
     render(<Statistics />, { wrapper: wrapper });
     expect(screen.getByText('Date Range:')).toBeInTheDocument();
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByLabelText('Site')).toBeInTheDocument();
   });
 
   it('renders layout buttons', () => {
@@ -54,9 +57,10 @@ describe('Statistics', () => {
 
   it('changes time range', () => {
     render(<Statistics />, { wrapper: wrapper });
-    const select = screen.getByRole('combobox');
+    const selects = screen.getAllByRole('combobox');
+    const select = selects[0];
     fireEvent.change(select, { target: { value: 'Last week' } });
-    expect(screen.getByRole('combobox')).toHaveValue('Last week');
+    expect(selects[0]).toHaveValue('Last week');
   });
 
   it('changes layout to single column', () => {

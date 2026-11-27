@@ -1,11 +1,10 @@
 import { Page } from '@playwright/test';
 import { MOCK_JOB_1, MOCK_JOB_2, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND, PAGINATED_JOBS, paginatedJobsResponse } from './viewer.mocks';
-import { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks, setupApiSafetyNet, setupAppBootstrapMocks } from './common.helpers';
+import { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks, setupAppBootstrapMocks } from './common.helpers';
 
-export { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks, setupApiSafetyNet };
+export { BASE_URL, setupPageLogging, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks };
 
 export async function setupSystemMocks(page: Page) {
-    await setupApiSafetyNet(page);
     await setupAppBootstrapMocks(page);
     await setupTimezoneMock(page);
     await setupModalityMock(page);

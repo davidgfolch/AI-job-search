@@ -13,7 +13,8 @@ CSS_SEL_JOB_TITLE = ["[data-testid='vj-job-title']", "[data-testid='company-info
 CSS_SEL_COMPANY = ["[data-testid='vj-company-name']", '[data-testid="company-info-metadata"] a[href*="/cmp/"]', 'div[data-testid="inlineHeader-companyName"]', "[data-testid='jobsearch-JobInfoHeader-companyName']", ".jobsearch-InlineCompanyRating div", ".jobsearch-CompanyReview--inline-rating div", ".jobsearch-InlineCompanyRating-companyName", "div.jobsearch-JobInfoHeader-subtitle > div > div > div:first-child"]
 DELISTED_TITLE = "No podemos encontrar esta página"
 CSS_SEL_LOCATION = ['div[data-testid="inlineHeader-companyLocation"]', "[data-testid='jobsearch-JobInfoHeader-companyLocation']", ".jobsearch-JobInfoHeader-subtitle div:last-child", ".jobsearch-JobInfoHeader-subtitle > div > div", ".jobsearch-JobInfoHeader-subtitle > div"]
-CSS_SEL_JOB_SALARY = ["[data-testid='salary-snippet-container']", "div[aria-label=Salario] span", "#salaryInfoAndJobType"]
+# Pay now lives in an aria-labelled node inside the structured summary (no currency literal); legacy selectors stay as fallbacks.
+CSS_SEL_JOB_SALARY = ["[data-testid='structured-job-summary'] div[aria-label]", "[data-testid='salary-snippet-container']", "div[aria-label=Salario] span", "#salaryInfoAndJobType"]
 CSS_SEL_JOB_DESCRIPTION = [".simple-job-description-html", ".react-native-html-content", "#jobDescriptionText", ".jobsearch-jobDescriptionText", ".jobsearch-JobComponent-description", ".jobsearch-ViewJobLayout-jobDescription"]
 CSS_SEL_JOB_EASY_APPLY = ["[data-testid='viewjob-indeed-apply']", "#jobsearch-ViewJobButtons-container span.indeed-apply-status-not-applied button", "button.indeed-apply-button", ".indeed-apply-button", "[data-testid='jobsearch-ViewJobButtons-container'] button"]
 

@@ -14,7 +14,7 @@ PRINT_ALLOWLIST = {
     # Presentational UI helpers: progress lines, tables, banners, countdown
     # spinners, interactive browser prompts. Every other print() must become a
     # structured event via commonlib.observability (see READMEs/README_DEVELOPMENT.md).
-    "apps/aiEnrichSkill/src/aiEnrichSkill/services/enrichment_service.py",
+    "apps/aiEnrichSkill/src/aiEnrichSkill/services/hf_enrichment.py",
     "apps/commonlib/commonlib/ai_helpers.py",
     "apps/commonlib/commonlib/decorator/retry.py",
     "apps/commonlib/commonlib/sqlUtil.py",
@@ -23,7 +23,7 @@ PRINT_ALLOWLIST = {
     "apps/commonlib/commonlib/terminalColor.py",
     "apps/commonlib/commonlib/terminalUtil.py",
     "apps/scrapper/scrapper/core/baseScrapper.py",
-    "apps/scrapper/scrapper/core/scrapper_scheduler.py",
+    "apps/scrapper/scrapper/orchestration/scrapper_scheduler.py",
     "apps/scrapper/scrapper/executor/GlassdoorExecutor.py",
     "apps/scrapper/scrapper/executor/IndeedExecutor.py",
     "apps/scrapper/scrapper/executor/IndeedScraplingExecutor.py",

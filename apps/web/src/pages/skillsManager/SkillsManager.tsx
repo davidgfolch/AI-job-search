@@ -19,6 +19,13 @@ const SkillsManager = () => {
     }
   };
 
+  const handleRemoveLearningPathLink = (skillName: string, linkIndex: number) => {
+    const skill = learnList.find(s => s.name === skillName);
+    if (!skill) return;
+    const newLearningPath = skill.learningPath.filter((_, i) => i !== linkIndex);
+    updateSkill(skillName, { learningPath: newLearningPath });
+  };
+
   const saveEdit = (skill: Skill) => {
       saveSkill(skill);
       setEditingSkill(null);
@@ -77,6 +84,7 @@ const SkillsManager = () => {
             onReorder={reorderSkills}
             onEdit={setEditingSkill}
             onRemove={handleRemove}
+            onRemoveLearningPathLink={handleRemoveLearningPathLink}
           />
         ) : (
           <div className="markdown-view">

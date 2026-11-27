@@ -1,5 +1,4 @@
-import sys
-
+from commonlib.cloud_llm import chat as query_cloud, is_cloud, ping as ping_cloud
 from commonlib.ollama_client import query_ollama
 from commonlib.ollama_probe import forget_server
 from commonlib.ollama_probe import resolve_ollama_url as probe_resolve_ollama_url
@@ -9,12 +8,11 @@ from .aiEnrich_config import (
     get_max_ollama_failures, get_openrouter_base_url, get_openrouter_fallback_model,
 )
 from .extraction_contract import COMPANY_SCHEMA, EXTRACTION_SCHEMA
-from .openrouter_client import ping_openrouter, query_openrouter
+from .openrouter_client import SYSTEM_PROMPT, ping_openrouter, query_openrouter
 
 logger = get_logger("aiEnrich.ollama_backend")
 
 _resolved_ollama_url: str | None = None
-_ollama_server_known = False
 ollama_consecutive_failures = 0
 
 
@@ -27,6 +25,12 @@ def _query_job(prompt: str, backend: str, model: str, response_schema: dict | No
         return query_openrouter(
             prompt=prompt, model=model, base_url=get_openrouter_base_url(), timeout=get_timeout_job(), json_mode=False,
             fallback_model=get_openrouter_fallback_model(),
+        )
+    if is_cloud(backend):
+        return query_cloud(
+            backend,
+            messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
+            timeout=get_timeout_job(), json_mode=False, model=model,
         )
     return query_ollama(
         prompt=prompt, model=model, primary_url=_get_ollama_base_url(), timeout=get_timeout_job(), json_mode=True,
@@ -44,9 +48,12 @@ def _query_company(prompt: str, backend: str, model: str):
 
 
 def ping_backend() -> bool:
-    global _resolved_ollama_url, _ollama_server_known
-    if get_backend() == "openrouter":
+    global _resolved_ollama_url
+    backend = get_backend()
+    if backend == "openrouter":
         return ping_openrouter(base_url=get_openrouter_base_url())
+    if is_cloud(backend):
+        return ping_cloud(backend)
     # Liveness checks reuse the cached server while it answers. When it stops
     # answering, drop it and resolve again: the LAN host may have gone to sleep
     # and come back on another DHCP address, so pinging the cached URL forever
@@ -56,8 +63,6 @@ def ping_backend() -> bool:
         logger.warning("ollama.resolved_unreachable", base_url=_resolved_ollama_url)
         forget_server(_resolved_ollama_url)
     _resolved_ollama_url = url
-    if _resolved_ollama_url is not None:
-        _ollama_server_known = True
     return _resolved_ollama_url is not None
 
 
@@ -70,12 +75,8 @@ def _check_backend_available() -> bool:
     backend = get_backend()
     max_failures = get_max_ollama_failures()
     logger.error("ai.unreachable", backend=backend, consecutive_failures=ollama_consecutive_failures, max_failures=max_failures)
-    # A server this process already reached may just be asleep (e.g. a LAN host that
-    # suspends), and Docker restarts cannot help there: keep waiting for it instead
-    # of exiting. Only abort while no server has ever been resolved, so a genuinely
-    # unreachable startup still self-heals through the container restart policy.
-    known_server = backend == "ollama" and _ollama_server_known
-    if ollama_consecutive_failures >= max_failures and not known_server:
-        logger.critical("ai.exit_threshold_reached", consecutive_failures=ollama_consecutive_failures)
-        sys.exit(1)
+    if ollama_consecutive_failures == max_failures:
+        # Keep waiting: exiting here turned a sleeping Ollama server into a restart
+        # storm that starved the database on resume. Discovery needs another chance.
+        logger.critical("ollama.waiting_after_failures", consecutive_failures=ollama_consecutive_failures)
     return False

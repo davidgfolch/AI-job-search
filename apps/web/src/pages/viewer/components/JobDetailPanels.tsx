@@ -1,35 +1,24 @@
 import type { RefObject } from 'react';
-import type { Job, JobListParams } from '../api/ViewerApi';
+import type { Job } from '../api/ViewerApi';
 import JobDetail from './JobDetail';
 
 interface JobDetailPanelsProps {
+    mobileHidden?: boolean;
     selectedJob: Job | null;
     duplicatedJob: Job | null;
     collapsedPanel: 'none' | 'left' | 'right';
-    filters?: JobListParams;
     detailScrollRef?: RefObject<HTMLDivElement | null>;
     onUpdate: (data: Partial<Job>) => void;
     onOpenDuplicated: (id: number) => void;
-    onCloseMobile: () => void;
     onCloseDuplicated: () => void;
-    onNext: () => void;
-    onPrevious: () => void;
-    hasNext: boolean;
-    hasPrevious: boolean;
-    onSeen: () => void;
-    onApplied: () => void;
-    onDiscarded: () => void;
-    onClosed: () => void;
-    onIgnore: () => void;
 }
 
 export default function JobDetailPanels({
-    selectedJob, duplicatedJob, collapsedPanel, filters, detailScrollRef,
-    onUpdate, onOpenDuplicated, onCloseMobile, onCloseDuplicated, onNext, onPrevious,
-    hasNext, hasPrevious, onSeen, onApplied, onDiscarded, onClosed, onIgnore,
+    mobileHidden, selectedJob, duplicatedJob, collapsedPanel, detailScrollRef,
+    onUpdate, onOpenDuplicated, onCloseDuplicated,
 }: JobDetailPanelsProps) {
     return (
-        <div className={`viewer-right ${!selectedJob ? 'mobile-hidden' : ''}`}
+        <div id="viewer-right" className={`viewer-right ${!selectedJob || mobileHidden ? 'mobile-hidden' : ''}`}
             style={duplicatedJob ? { display: 'flex', gap: '1rem', flexDirection: 'row' } : collapsedPanel === 'right' ? { display: 'none' } : undefined}>
             {selectedJob ? (
                 <>
@@ -40,17 +29,6 @@ export default function JobDetailPanels({
                             onUpdate={onUpdate}
                             onOpenDuplicated={onOpenDuplicated}
                             hideDuplicatedButton={!!duplicatedJob}
-                            onCloseMobile={onCloseMobile}
-                            onNext={onNext}
-                            onPrevious={onPrevious}
-                            hasNext={hasNext}
-                            hasPrevious={hasPrevious}
-                            filters={filters}
-                            onSeen={onSeen}
-                            onApplied={onApplied}
-                            onDiscarded={onDiscarded}
-                            onClosed={onClosed}
-                            onIgnore={onIgnore}
                             detailScrollRef={detailScrollRef} />
                     </div>
                     {duplicatedJob && (

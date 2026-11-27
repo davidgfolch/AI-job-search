@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { jobsApi } from '../ViewerApi';
 const mocks = vi.hoisted(() => ({
-    axiosCreateConfig: { value: null as any },
+    axiosCreateConfig: { value: null as unknown as { paramsSerializer: (params: Record<string, unknown>) => string } },
     axiosInstance: { get: vi.fn(), patch: vi.fn(), post: vi.fn(), delete: vi.fn() }
 }));
 vi.mock('axios', () => ({ default: { create: vi.fn((config) => { mocks.axiosCreateConfig.value = config; return mocks.axiosInstance; }) } }));

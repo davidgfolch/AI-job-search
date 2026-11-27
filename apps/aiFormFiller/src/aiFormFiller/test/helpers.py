@@ -22,11 +22,11 @@ class TempFiles:
         os.rmdir(self.temp_dir)
 
 
-_BASE_CFG = dict(get_provider="local", get_hf_model="model", get_timeout=30, get_max_tokens=512, get_temperature=0.1)
+_BASE_CFG = dict(get_provider="local", get_hf_model="model", get_module_model="model", get_timeout=30, get_max_tokens=512, get_temperature=0.1)
 _PROVIDER_CFG = {
-    "local": dict(get_hf_model="Qwen/Qwen2.5-1.5B-Instruct"),
-    "openai": dict(get_openai_api_key="sk-test", get_openai_model="gpt-4o-mini"),
-    "openrouter": dict(get_openrouter_api_key="sk-or-test", get_openrouter_model="openai/gpt-4o-mini"),
+    "local": dict(get_hf_model="Qwen/Qwen2.5-1.5B-Instruct", get_module_model="Qwen/Qwen2.5-1.5B-Instruct"),
+    "openai": dict(get_openai_api_key="sk-test", get_openai_model="gpt-4o-mini", get_module_model="gpt-4o-mini"),
+    "openrouter": dict(get_openrouter_api_key="sk-or-test", get_openrouter_model="openai/gpt-4o-mini", get_module_model="openai/gpt-4o-mini"),
 }
 
 

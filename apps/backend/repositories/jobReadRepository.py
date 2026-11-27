@@ -1,5 +1,5 @@
 from typing import Optional
-from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection, getReadConnection
 from repositories.queries.jobs_query_builder import (
     build_jobs_where_clause,
     parse_job_order,
@@ -7,8 +7,8 @@ from repositories.queries.jobs_query_builder import (
 
 
 class JobReadRepository:
-    def get_db(self):
-        return MysqlUtil(getConnection())
+    def get_db(self, read_only: bool = False):
+        return MysqlUtil(getReadConnection() if read_only else getConnection())
 
     def list_jobs(
         self,
@@ -44,7 +44,7 @@ class JobReadRepository:
             modality,
         )
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             total = self._count_jobs(db, where_str, params)
             items = self._fetch_jobs(db, where_str, params, order, size, offset)
         return {"items": items, "total": total, "page": page, "size": size}
@@ -79,7 +79,7 @@ class JobReadRepository:
             modality,
         )
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             return self._count_jobs(db, where_str, params)
 
     def _count_jobs(self, db: MysqlUtil, where: str, params: list) -> int:
@@ -96,12 +96,14 @@ class JobReadRepository:
     ) -> list:
         sort_col, sort_dir = parse_job_order(order)
         query = f"SELECT * FROM jobs WHERE {where} ORDER BY {sort_col} {sort_dir}, id DESC LIMIT %s OFFSET %s"
-        rows = db.fetchAll(query, params + [size, offset])
-        columns = [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
+        columns, rows = db.fetchAllWithColumns(query, params + [size, offset])
+        if not rows or not columns:
+            return []
         return [dict(zip(columns, row, strict=True)) for row in rows]
 
-    def fetch_job_row(self, db: MysqlUtil, job_id: int) -> Optional[tuple]:
-        return db.fetchOne("SELECT * FROM jobs WHERE id = %s", job_id)
-
-    def fetch_columns(self, db: MysqlUtil) -> list:
-        return [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
+    def fetch_job_with_columns(self, db: MysqlUtil, job_id: int) -> tuple[list, Optional[tuple]]:
+        """Fetch one job plus its column names in a single round trip."""
+        columns, rows = db.fetchAllWithColumns("SELECT * FROM jobs WHERE id = %s", [job_id])
+        if not rows or not columns:
+            return [], None
+        return list(columns), rows[0]

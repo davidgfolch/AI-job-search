@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
+import type { FilterConfig } from '../../pages/viewer/components/configurations/hooks/useFilterConfigurations';
 
-export const createFilterConfigServiceMock = (defaults: any[] = []) => {
+export const createFilterConfigServiceMock = (defaults: FilterConfig[] = []) => {
     let mockValues = JSON.parse(JSON.stringify(defaults));
     
     return {

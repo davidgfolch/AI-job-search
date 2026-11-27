@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     getHistoryStats, getSourcesByDate, getSourcesByHour,
-    getSourcesByWeekday, getFilterConfigStats
+    getSourcesByWeekday, getFilterConfigStats, getKeywordStats
 } from '../StatisticsApi';
 
 const mockApiClient = vi.hoisted(() => ({ get: vi.fn() }));
@@ -20,6 +20,7 @@ describe('StatisticsApi', () => {
         { fn: getSourcesByHour,     endpoint: '/statistics/sources-hour',    name: 'getSourcesByHour' },
         { fn: getSourcesByWeekday,  endpoint: '/statistics/sources-weekday', name: 'getSourcesByWeekday' },
         { fn: getFilterConfigStats, endpoint: '/statistics/filter-configs',  name: 'getFilterConfigStats' },
+        { fn: getKeywordStats,      endpoint: '/statistics/keywords',       name: 'getKeywordStats' },
     ] as const;
 
     it.each(call_cases)('$name calls correct endpoint without date params', async ({ fn, endpoint }) => {
@@ -39,5 +40,12 @@ describe('StatisticsApi', () => {
     it.each(call_cases)('$name propagates errors', async ({ fn }) => {
         mockApiClient.get.mockRejectedValue(new Error('API error'));
         await expect(fn()).rejects.toThrow('API error');
+    });
+
+    it('getKeywordStats unwraps items from the response envelope', async () => {
+        const items = [{ date: '2026-11-19', site: 'Indeed', keyword: 'python', duplicates: 2, duplicate_ids: '1,2' }];
+        mockApiClient.get.mockResolvedValue({ data: { items, truncated: true } });
+        await expect(getKeywordStats(START, END)).resolves.toEqual(items);
+        expect(mockApiClient.get).toHaveBeenCalledWith('/statistics/keywords', { params: { start_date: START, end_date: END } });
     });
 });

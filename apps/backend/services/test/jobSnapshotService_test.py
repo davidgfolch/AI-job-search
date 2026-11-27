@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from services.jobSnapshotService import JobSnapshotService
-from commonlib.jobSnapshotRepository import JobSnapshotRepository
+from commonlib.repositories.jobSnapshotRepository import JobSnapshotRepository
 
 
 @pytest.fixture

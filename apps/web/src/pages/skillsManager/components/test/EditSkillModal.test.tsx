@@ -26,6 +26,11 @@ describe('EditSkillModal', () => {
         expect(screen.queryByText('Save Changes')).not.toBeInTheDocument();
     });
 
+    it('carries the shared skill detail styling wherever the modal is rendered', () => {
+        renderWithClient(<EditSkillModal skill={mockSkill} onSave={vi.fn()} onClose={vi.fn()} />);
+        expect(screen.getByRole('dialog')).toHaveClass('skill-detail-modal');
+    });
+
     it('opens new skill in Edit mode by default', () => {
         renderWithClient(<EditSkillModal skill={{ ...mockSkill, name: '' }} onSave={vi.fn()} onClose={vi.fn()} />);
         expect(screen.getByText('Add New Skill')).toBeInTheDocument();

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from commonlib.ollama_client import query_ollama
 from commonlib.ollama_config import OLLAMA_HOST_FROM_DOCKER_BASE_URL
-from commonlib.ollama_probe import INFERENCE_PROBE_TIMEOUT, _host_ip, _probe_inference, healthy_urls, ping_ollama, resolve_ollama_url
+from commonlib.ollama_probe import INFERENCE_PROBE_TIMEOUT, _probe_inference, healthy_urls, ping_ollama, resolve_ollama_url
 from commonlib.test.ollama_constants import OLLAMA_DOCKER_TEST_URL, OLLAMA_TEST_URL
 from commonlib.test.ollama_fixtures import (  # noqa: F401 - the autouse fixtures register by being imported here
     AUTO_DISCOVER, CANDIDATES, DISCOVERY_ENABLED, DISCOVERED_HOST, DISCOVERED_URL, FALLBACK_LOG, LOCAL_URL, POST,
@@ -111,7 +111,7 @@ class TestHealthyUrlsOrder:
 
     def _urls(self, monkeypatch, candidates, last_url, ready):
         monkeypatch.setattr(CANDIDATES, lambda *a, **k: candidates)
-        monkeypatch.setattr("commonlib.ollama_probe._LAST_OLLAMA_SERVER", {"url": last_url, "ip": None, "is_lan": False})
+        monkeypatch.setattr("commonlib.ollama_server_registry._LAST_OLLAMA_SERVER", {"url": last_url, "ip": None, "is_lan": False})
         monkeypatch.setattr("commonlib.ollama_probe._server_ready", MagicMock(side_effect=ready))
         return list(healthy_urls(candidates[0], {}, MagicMock()))
 
@@ -161,16 +161,6 @@ class TestFallbackLoggedOnce:
         log = MagicMock()
         resolve_ollama_url(primary_url=OLLAMA_TEST_URL, log=log)
         assert sum(1 for c in log.info.call_args_list if c.args[0] == FALLBACK_LOG) == 0
-
-
-class TestHostIp:
-
-    @pytest.mark.parametrize("url, expected", [
-        ("http://localhost:11434", "127.0.0.1"),
-        ("http://no-such-host.invalid:11434", "no-such-host.invalid"),
-    ], ids=["resolvable", "unresolvable"])
-    def test_host_identity(self, url, expected):
-        assert _host_ip(url) == expected
 
 
 class TestResolveLanDiscovery:

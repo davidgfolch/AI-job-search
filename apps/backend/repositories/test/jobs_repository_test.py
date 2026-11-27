@@ -46,7 +46,7 @@ def test_list_jobs_with_filters(repo, mock_db):
 def test_list_jobs_error_path(repo, mock_db):
     from mysql.connector.errors import DatabaseError
 
-    mock_db.fetchAll.side_effect = DatabaseError("syntax error")
+    mock_db.fetchAllWithColumns.side_effect = DatabaseError("syntax error")
     with patch.object(repo, "get_db", return_value=mock_db):
         result = repo.list_jobs(page=1, size=10, sql_filter="salary > 1000")
 
@@ -80,22 +80,19 @@ def test_build_where(repo):
 
 
 def test_fetch_jobs_without_columns(repo, mock_db):
-    mock_db.fetchAll.side_effect = lambda query, params=None: None
+    mock_db.fetchAllWithColumns.side_effect = lambda *args, **kwargs: ([], [])
     with patch.object(repo, "get_db", return_value=mock_db):
         result = repo.list_jobs(page=1, size=10)
 
     assert result["items"] == []
 
 
-def test_fetch_jobs_empty_columns(repo, mock_db):
-    mock_db.fetchAll.side_effect = [
-        [(1, "job")],
-        [],
-    ]
+def test_fetch_jobs_uses_select_columns_without_show_columns(repo, mock_db):
     with patch.object(repo, "get_db", return_value=mock_db):
         result = repo.list_jobs(page=1, size=10)
 
-    assert result["items"] == []
+    assert result["items"][0]["id"] == 1
+    assert mock_db.fetchAll.call_count == 0
 
 
 def test_update_job_found(mock_db):
@@ -163,12 +160,17 @@ def test_create_job(repo, mock_db):
     assert result == mock_db.insertJob.return_value
 
 
-def test_fetch_job_row_and_columns():
-    default_db = create_mock_db(fetchOne=(1, "Job 1"))
-    repo = JobsRepository()
-    with patch.object(repo, "get_db", return_value=default_db):
-        row = repo.fetch_job_row(default_db, 1)
-        columns = repo.fetch_columns(default_db)
+def test_fetch_job_with_columns_avoids_show_columns(repo, mock_db):
+    mock_db.fetchAllWithColumns.side_effect = lambda *args, **kwargs: (["id", "title"], [(1, "Job 1")])
 
+    columns, row = repo.fetch_job_with_columns(mock_db, 1)
+
+    assert columns == ["id", "title"]
     assert row == (1, "Job 1")
-    assert columns == ["id", "title", "company"]
+    mock_db.fetchAll.assert_not_called()
+
+
+def test_fetch_job_with_columns_missing_job(repo, mock_db):
+    mock_db.fetchAllWithColumns.side_effect = lambda *args, **kwargs: (["id", "title"], [])
+
+    assert repo.fetch_job_with_columns(mock_db, 99) == ([], None)

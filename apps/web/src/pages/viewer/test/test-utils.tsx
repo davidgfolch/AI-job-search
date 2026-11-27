@@ -67,7 +67,7 @@ export function createMockFilters(overrides?: Partial<JobListParams>): JobListPa
     if (overrides) {
         BOOLEAN_FILTERS
                     .filter(entry => !(entry.key in overrides))
-                    .forEach(entry => (params as any)[entry.key] = null);
+                    .forEach(entry => (params as Record<string, unknown>)[entry.key] = null);
     }
     return {
         page: 1,
@@ -173,5 +173,5 @@ export function setupIntersectionObserver() {
         observe: vi.fn(),
         unobserve: vi.fn(),
         disconnect: vi.fn(),
-    })) as any;
+    })) as unknown as typeof IntersectionObserver;
 }

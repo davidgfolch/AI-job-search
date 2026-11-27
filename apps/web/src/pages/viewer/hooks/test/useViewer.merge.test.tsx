@@ -3,18 +3,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useViewer } from '../useViewer';
 import { useJobsData } from '../useJobsData';
 import { useModalityValues } from '../../../common/hooks/useModalityValues';
+import type { Job } from '../../api/ViewerApi';
+import type { useJobSelection } from '../useJobSelection';
+import type { useJobMutations } from '../useJobMutations';
+import type { useAppliedModal } from '../useAppliedModal';
+
+type AutoSelectState = Partial<Parameters<typeof useJobMutations>[0]['autoSelectNext']['current']>;
+
+const setJobsData = (value: object) => vi.mocked(useJobsData).mockReturnValue(value as unknown as ReturnType<typeof useJobsData>);
+const setModalityValues = (value: object) => vi.mocked(useModalityValues).mockReturnValue(value as unknown as ReturnType<typeof useModalityValues>);
 
 /** Stable instances: the closures captured by the hook must be the ones asserted on. */
 const mocks = vi.hoisted(() => ({
-    selectionConfig: null as any, mutationsConfig: null as any, appliedModalConfig: null as any,
+    selectionConfig: null! as Parameters<typeof useJobSelection>[0],
+    mutationsConfig: null! as Parameters<typeof useJobMutations>[0],
+    appliedModalConfig: null! as Parameters<typeof useAppliedModal>[0],
     setSelectedJob: vi.fn(), setSelectedIds: vi.fn(), setSelectionMode: vi.fn(),
-    handleJobSelect: vi.fn(), navigateJob: vi.fn(), autoSelectNext: { current: {} as any },
+    handleJobSelect: vi.fn(), navigateJob: vi.fn(), autoSelectNext: { current: {} as AutoSelectState },
     setMessage: vi.fn(), handleJobUpdate: vi.fn(), mutate: vi.fn(), mutateAsync: vi.fn(),
 }));
 
 vi.mock('../useJobsData', () => ({ useJobsData: vi.fn() }));
 vi.mock('../useJobSelection', () => ({
-    useJobSelection: vi.fn((config) => {
+    useJobSelection: vi.fn((config: Parameters<typeof useJobSelection>[0]) => {
         mocks.selectionConfig = config;
         return {
             selectedJob: { id: 1 }, setSelectedJob: mocks.setSelectedJob,
@@ -26,7 +37,7 @@ vi.mock('../useJobSelection', () => ({
     }),
 }));
 vi.mock('../useJobMutations', () => ({
-    useJobMutations: vi.fn((config) => {
+    useJobMutations: vi.fn((config: Parameters<typeof useJobMutations>[0]) => {
         mocks.mutationsConfig = config;
         return {
             message: null, setMessage: mocks.setMessage, confirmModal: { isOpen: false, close: vi.fn() },
@@ -36,34 +47,36 @@ vi.mock('../useJobMutations', () => ({
     }),
 }));
 vi.mock('../useAppliedModal', () => ({
-    useAppliedModal: vi.fn((config) => {
+    useAppliedModal: vi.fn((config: Parameters<typeof useAppliedModal>[0]) => {
         mocks.appliedModalConfig = config;
         return { isModalOpen: false, openModal: vi.fn(), handleConfirm: vi.fn(), handleCancel: vi.fn() };
     }),
 }));
 vi.mock('../../../common/hooks/useModalityValues', () => ({ useModalityValues: vi.fn() }));
 
-const job = (id: number, over: Record<string, unknown> = {}) => ({ id, company: `C${id}`, ignored: false, seen: false, applied: false, discarded: false, closed: false, ...over });
+const job = (id: number, over: Record<string, unknown> = {}) => ({ id, company: `C${id}`, ignored: false, seen: false, applied: false, discarded: false, closed: false, ...over } as unknown as Job);
 
 const base = (over: Record<string, unknown> = {}) => ({
     filters: { page: 1, seen: false, ignored: false, applied: false, discarded: false, closed: false, ...over },
     setFilters: vi.fn(), allJobs: [job(1), job(2)], setAllJobs: vi.fn(), isLoadingMore: false,
-    data: { total: 2, items: [job(1)], page: 1 }, isLoading: false, isPlaceholderData: false,
+    data: { total: 2, items: [job(1)], page: 1, size: 20 }, isLoading: false, isPlaceholderData: false,
     error: null, handleLoadMore: vi.fn(), setIsLoadingMore: vi.fn(), hardRefresh: vi.fn(),
 });
 
+type FiltersUpdater = (filters: { page: number }) => { page: number };
+
 /** setAllJobs is mocked, so its updater never runs on its own: invoke it explicitly. */
-const lastUpdater = (setAllJobs: any, from = 0) => {
-    const calls = setAllJobs.mock.calls.slice(from).map((c: any[]) => c[0]).filter((a: unknown) => typeof a === 'function');
+const lastUpdater = (setAllJobs: ReturnType<typeof vi.fn>, from = 0) => {
+    const calls = setAllJobs.mock.calls.slice(from).map(c => c[0]).filter((a): a is (jobs: Job[]) => Job[] => typeof a === 'function');
     expect(calls.length).toBeGreaterThan(0);
-    return calls.at(-1);
+    return calls.at(-1)!;
 };
 
 describe('useViewer data merging and callbacks', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.autoSelectNext.current = {};
-        (useModalityValues as any).mockReturnValue({ data: [] });
+        mocks.autoSelectNext.current = {} as AutoSelectState;
+        setModalityValues({ data: [] });
     });
 
     afterEach(() => {
@@ -71,14 +84,14 @@ describe('useViewer data merging and callbacks', () => {
     });
 
     const renderViewer = (jobsData: ReturnType<typeof base> = base()) => {
-        (useJobsData as any).mockReturnValue(jobsData);
+        setJobsData(jobsData);
         return renderHook(() => useViewer());
     };
 
     it('wires load-more to a variant that auto-selects the first new job', () => {
         const jobsData = base();
         renderViewer(jobsData);
-        act(() => mocks.selectionConfig.onLoadMore());
+        act(() => mocks.selectionConfig.onLoadMore!());
         expect(jobsData.handleLoadMore).toHaveBeenCalled();
         expect(mocks.selectionConfig.hasMorePages).toBe(false);
     });
@@ -86,10 +99,10 @@ describe('useViewer data merging and callbacks', () => {
     it('appends page 2 items, ignoring duplicates, and auto-selects the first new one', () => {
         vi.useFakeTimers();
         const page2 = base({ page: 2 });
-        page2.filters = { ...page2.filters, page: 2 } as any;
-        page2.data = { total: 4, items: [job(2), job(3)], page: 2 } as any;
+        page2.filters = { ...page2.filters, page: 2 };
+        page2.data = { total: 4, items: [job(2), job(3)], page: 2, size: 20 };
         renderViewer(page2);
-        act(() => mocks.selectionConfig.onLoadMore());
+        act(() => mocks.selectionConfig.onLoadMore!());
         const merged = lastUpdater(page2.setAllJobs)([job(1), job(2)]);
         expect(merged).toEqual([job(1), job(2), job(3)]);
         act(() => { vi.runAllTimers(); });
@@ -98,8 +111,8 @@ describe('useViewer data merging and callbacks', () => {
 
     it('keeps the accumulated jobs when the incoming page adds nothing new', () => {
         const page2 = base({ page: 2 });
-        page2.filters = { ...page2.filters, page: 2 } as any;
-        page2.data = { total: 2, items: [job(1), job(2)], page: 2 } as any;
+        page2.filters = { ...page2.filters, page: 2 };
+        page2.data = { total: 2, items: [job(1), job(2)], page: 2, size: 20 };
         renderViewer(page2);
         expect(lastUpdater(page2.setAllJobs)([job(1), job(2)])).toEqual([job(1), job(2)]);
     });
@@ -107,30 +120,30 @@ describe('useViewer data merging and callbacks', () => {
     it('drops a job from the list when the update flips a filter state field', () => {
         const jobsData = base();
         renderViewer(jobsData);
-        act(() => mocks.mutationsConfig.onJobUpdated(job(2, { seen: true })));
+        act(() => mocks.mutationsConfig.onJobUpdated!(job(2, { seen: true })));
         expect(lastUpdater(jobsData.setAllJobs)([job(1), job(2)])).toEqual([job(1)]);
     });
 
     it('replaces the job in place when no filter state field changed', () => {
         const jobsData = base();
         renderViewer(jobsData);
-        act(() => mocks.mutationsConfig.onJobUpdated(job(2, { company: 'Renamed' })));
+        act(() => mocks.mutationsConfig.onJobUpdated!(job(2, { company: 'Renamed' })));
         expect(lastUpdater(jobsData.setAllJobs)([job(1), job(2)])).toEqual([job(1), job(2, { company: 'Renamed' })]);
     });
 
     it('clears everything when all jobs are deleted', () => {
         const jobsData = base();
         renderViewer(jobsData);
-        act(() => mocks.mutationsConfig.onJobsDeleted('all'));
+        act(() => mocks.mutationsConfig.onJobsDeleted!('all'));
         expect(jobsData.setAllJobs).toHaveBeenCalledWith([]);
-        const filtersUpdater = jobsData.setFilters.mock.calls.map((c: any[]) => c[0]).find(a => typeof a === 'function');
-        expect(filtersUpdater({ page: 7 })).toEqual({ page: 1 });
+        const filtersUpdater = jobsData.setFilters.mock.calls.map(call => call[0] as FiltersUpdater).find(a => typeof a === 'function');
+        expect(filtersUpdater!({ page: 7 })).toEqual({ page: 1 });
     });
 
     it('removes only the deleted ids', () => {
         const jobsData = base();
         renderViewer(jobsData);
-        act(() => mocks.mutationsConfig.onJobsDeleted([1]));
+        act(() => mocks.mutationsConfig.onJobsDeleted!([1]));
         expect(lastUpdater(jobsData.setAllJobs)([job(1), job(2)])).toEqual([job(2)]);
     });
 

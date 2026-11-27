@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import SkillTag from '../../../skillsManager/components/SkillTag';
-import { useLearnList, type Skill } from '../../../skillsManager/hooks/useLearnList';
+import { useLearnList, type Skill, type LearningPathLink } from '../../../skillsManager/hooks/useLearnList';
 import { EditSkillModal } from '../../../skillsManager/components/EditSkillModal';
 import { normalizeName } from '../../../skillsManager/utils/skillUtils';
 
@@ -50,7 +50,7 @@ export default function SkillsList({ skills, allJobSkills }: SkillsListProps) {
         }
     };
 
-    const handleSaveSkill = (updates: { description: string; learningPath: string[] }) => {
+    const handleSaveSkill = (updates: { description: string; learningPath: LearningPathLink[] }) => {
         if (editingSkill) {
             saveSkill({
                 ...editingSkill,
@@ -85,6 +85,7 @@ export default function SkillsList({ skills, allJobSkills }: SkillsListProps) {
                         key={skill}
                         skill={skill}
                         description={skillObj?.description}
+                        learningPath={skillObj?.learningPath}
                         isInLearnList={isInLearnList(skill)}
                         onToggle={toggleSkill}
                         onViewDetail={handleViewDetail}

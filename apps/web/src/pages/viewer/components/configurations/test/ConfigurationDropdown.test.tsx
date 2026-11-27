@@ -5,7 +5,7 @@ import { ConfigurationDropdown } from '../ConfigurationDropdown';
 describe('ConfigurationDropdown', () => {
     const defaultProps = {
         isOpen: true,
-        filteredConfigs: [{ name: 'Test Config', filters: {} as any }],
+        filteredConfigs: [{ name: 'Test Config', filters: {} }],
         highlightIndex: -1,
         onLoad: vi.fn(),
         onDelete: vi.fn(),

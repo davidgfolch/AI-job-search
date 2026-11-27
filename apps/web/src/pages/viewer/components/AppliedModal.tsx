@@ -16,18 +16,23 @@ export default function AppliedModal({
     onConfirm, 
     onCancel 
 }: AppliedModalProps) {
-    const [comment, setComment] = useState<string>('');
+    const [comment, setComment] = useState<string>(isOpen ? defaultComment : '');
+    const [syncedOpen, setSyncedOpen] = useState({ isOpen, defaultComment });
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    useAutoResizeTextArea(textareaRef, comment, [isOpen]);
+    if (syncedOpen.isOpen !== isOpen || syncedOpen.defaultComment !== defaultComment) {
+        setSyncedOpen({ isOpen, defaultComment });
+        if (isOpen) setComment(defaultComment);
+    }
+
+    useAutoResizeTextArea(textareaRef, [isOpen]);
 
     useEffect(() => {
-        if (isOpen) {
-            setComment(defaultComment);
-            setTimeout(() => {
-                textareaRef.current?.focus();
-            }, 50);
-        }
+        if (!isOpen) return;
+        const timer = setTimeout(() => {
+            textareaRef.current?.focus();
+        }, 50);
+        return () => clearTimeout(timer);
     }, [isOpen, defaultComment]);
 
     useEffect(() => {

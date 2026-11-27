@@ -1,8 +1,12 @@
 from fastapi import APIRouter
 from services import settings_service as service
-from models.settings import SettingsEnvUpdateDto, ScrapperStateUpdateDto
+from models.settings import SettingsEnvUpdateDto, ScrapperStateUpdateDto, ProviderModelsResponse
 
 router = APIRouter()
+
+@router.get("/provider-models", response_model=ProviderModelsResponse)
+def get_provider_models(provider: str, refresh: bool = False):
+    return service.get_provider_models(provider, refresh)
 
 @router.get("/env")
 def get_env_settings():

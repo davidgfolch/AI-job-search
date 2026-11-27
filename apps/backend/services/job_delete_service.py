@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List, Callable
 from repositories.jobDeleteRepository import JobDeleteRepository
 from repositories.queries.jobs_query_builder import build_jobs_where_clause
-from commonlib.jobSnapshotRepository import JobSnapshotRepository
+from commonlib.repositories.jobSnapshotRepository import JobSnapshotRepository
 from services.watcher_matcher import get_watcher_matcher
 from utils.filter_parser import extract_filter_params
 

@@ -1,48 +1,7 @@
-import { useRef, type Dispatch, type SetStateAction } from 'react';
+import { useRef } from 'react';
 import { useAutoResizeTextArea } from '../../common/hooks/useAutoResizeTextArea';
 import { FormField } from '../../common/components/core/FormField';
-
-// Define explicit types for formState and setters extracted from useJobEditForm output structure
-// This assumes formState and setters structure from useJobEditForm.ts
-interface JobFormFieldsProps {
-    mode: 'edit' | 'create';
-    jobId?: number;
-    showAllFields: boolean;
-    formState: {
-        title: string;
-        location: string;
-        url: string;
-        webPage: string;
-        markdown: string;
-        comments: string;
-        salary: string;
-        company: string;
-        client: string;
-        requiredTechnologies: string;
-        optionalTechnologies: string;
-        modality: string[];
-        hybridInfo: string;
-    };
-    setters: {
-        setTitle: Dispatch<SetStateAction<string>>;
-        setLocation: Dispatch<SetStateAction<string>>;
-        setUrl: Dispatch<SetStateAction<string>>;
-        setWebPage: Dispatch<SetStateAction<string>>;
-        setMarkdown: Dispatch<SetStateAction<string>>;
-        setComments: Dispatch<SetStateAction<string>>;
-        setSalary: Dispatch<SetStateAction<string>>;
-        setCompany: Dispatch<SetStateAction<string>>;
-        setClient: Dispatch<SetStateAction<string>>;
-        setRequiredTechnologies: Dispatch<SetStateAction<string>>;
-        setOptionalTechnologies: Dispatch<SetStateAction<string>>;
-        setModality: Dispatch<SetStateAction<string[]>>;
-        setHybridInfo: Dispatch<SetStateAction<string>>;
-    };
-    handleChange: (setter: Dispatch<SetStateAction<string>>, field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    handleCreate: () => void;
-    handleModalityChange: (value: string) => void;
-    modalityValues?: string[];
-}
+import type { JobFormFieldsProps } from './JobFormFields.types';
 
 export default function JobFormFields({
     mode, jobId, showAllFields,
@@ -63,10 +22,10 @@ export default function JobFormFields({
     const requiredTechnologiesRef = useRef<HTMLTextAreaElement>(null);
     const optionalTechnologiesRef = useRef<HTMLTextAreaElement>(null);
     // Auto-resize hooks
-    useAutoResizeTextArea(commentsRef, comments, [showAllFields, jobId]);
-    useAutoResizeTextArea(markdownRef, markdown, [showAllFields, jobId]);
-    useAutoResizeTextArea(requiredTechnologiesRef, requiredTechnologies, [showAllFields, jobId]);
-    useAutoResizeTextArea(optionalTechnologiesRef, optionalTechnologies, [showAllFields, jobId]);
+    useAutoResizeTextArea(commentsRef, [showAllFields, jobId]);
+    useAutoResizeTextArea(markdownRef, [showAllFields, jobId]);
+    useAutoResizeTextArea(requiredTechnologiesRef, [showAllFields, jobId]);
+    useAutoResizeTextArea(optionalTechnologiesRef, [showAllFields, jobId]);
     const formIdPrefix = jobId ? `job-${jobId}` : 'job-new';
     return (
         <div className="form-fields">

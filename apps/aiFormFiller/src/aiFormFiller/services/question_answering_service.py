@@ -1,4 +1,7 @@
+from commonlib.cloud_llm import get_api_key as get_cloud_api_key, is_cloud
+
 from ..models.base import AIProvider, AnswerResult
+from ..models.cloud_provider import CloudProvider
 from ..models.local_hf import LocalHFProvider
 from ..models.openai_provider import OpenAIProvider
 from ..models.openrouter import OpenRouterProvider
@@ -13,10 +16,11 @@ Contexto del candidato:
 Reglas:
 1. Responde siempre en PRIMERA PERSONA. Directamente, sin explicar que inferiste la información.
 2. Puedes INFERIR años de experiencia desde la sección "Professional experience" del CV: si una tecnología aparece mencionada en un rango de fechas (ej. "2021-2023 Apiumhub: Java11"), calcula los años desde la primera aparición hasta la fecha actual. Si el CV menciona una versión específica (ej. "Java 17" en 2023), puedes asumir experiencia con versiones anteriores compatibles (Java 11+) desde esa misma fecha. Aplica el mismo criterio para Spring Boot y otras tecnologías con versiones.
-3. Responde en el MISMO IDIOMA de la pregunta.
+3. Responde en el MISMO IDIOMA de la pregunta, limitado a español o inglés. Si la pregunta contiene texto en otros idiomas o parece una lista de opciones o etiquetas, responde en español.
 4. Si UNA TECNOLOGÍA NO APARECE EN ABSOLUTO en el CV, responde comenzando con: CLARIFICACIÓN: [explica qué falta y pregunta por ello].
 5. Sé conciso. Responde directamente sin justificarte ni añadir contexto no solicitado.
-6. Usa las preferencias de LOOKING_FOR para preguntas de salario, rol, disponibilidad, etc."""
+6. Usa las preferencias de LOOKING_FOR para preguntas de salario, rol, disponibilidad, etc.
+7. Para campos de selección (select/radio/checkbox), devuelve exactamente el valor de la opción que mejor encaje. Para checkbox o selección múltiple, devuelve varias opciones separadas por coma."""
 
 
 class QuestionAnsweringService:
@@ -32,18 +36,21 @@ class QuestionAnsweringService:
         return self._providers[provider_name]
 
     def _create_provider(self, provider_name: str) -> AIProvider:
+        model = cfg.get_module_model(provider_name)
         if provider_name == "local":
-            return LocalHFProvider(cfg.get_hf_model())
+            return LocalHFProvider(model)
         elif provider_name == "openai":
             key = cfg.get_openai_api_key()
             if not key:
                 raise ValueError("OPENAI_API_KEY not configured")
-            return OpenAIProvider(key, cfg.get_openai_model())
+            return OpenAIProvider(key, model)
         elif provider_name == "openrouter":
             key = cfg.get_openrouter_api_key()
             if not key:
                 raise ValueError("OPENROUTER_API_KEY not configured")
-            return OpenRouterProvider(key, cfg.get_openrouter_model())
+            return OpenRouterProvider(key, model)
+        elif is_cloud(provider_name):
+            return CloudProvider(provider_name, get_cloud_api_key(provider_name), model)
         else:
             raise ValueError(f"Unknown provider: {provider_name}")
 
@@ -52,27 +59,41 @@ class QuestionAnsweringService:
         context = self.context_loader.get_context_text()
         return self._answer_single(question, context, provider_name)
 
-    def answer_batch(self, questions: list[str], provider_name: str = "auto") -> list[AnswerResult]:
+    def answer_batch(self, questions: list[str | dict], provider_name: str = "auto") -> list[AnswerResult]:
         self.context_loader.reload_if_changed()
         context = self.context_loader.get_context_text()
         return [self._answer_single(q, context, provider_name) for q in questions]
 
-    def _answer_single(self, question: str, context: str, provider_name: str) -> AnswerResult:
+    def _format_user_message(self, question: str | dict) -> str:
+        if isinstance(question, str):
+            return question
+        text = str(question.get("question", ""))
+        field_type = str(question.get("type", "text"))
+        options = question.get("options") or []
+        if not options:
+            return text
+        labels = [str(o).strip() for o in options if str(o).strip()]
+        if not labels:
+            return text
+        options_text = "\n".join(f"- {label}" for label in labels)
+        return f"{text}\n\nTipo de campo: {field_type}\nOpciones válidas:\n{options_text}\n\nResponde solo con la opción/opciones válidas."
+
+    def _answer_single(self, question: str | dict, context: str, provider_name: str) -> AnswerResult:
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context)
         provider = self._get_provider(provider_name)
         return provider.generate(
             system_prompt=system_prompt,
-            user_message=question,
+            user_message=self._format_user_message(question),
             timeout=cfg.get_timeout(),
             max_tokens=cfg.get_max_tokens(),
             temperature=cfg.get_temperature(),
         )
 
-    def follow_up(self, original_question: str, clarification_answer: str) -> AnswerResult:
+    def follow_up(self, original_question: str, clarification_answer: str, provider_name: str = "auto") -> AnswerResult:
         self.context_loader.reload_if_changed()
         context = self.context_loader.get_context_text()
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context)
-        provider = self._get_provider("auto")
+        provider = self._get_provider(provider_name)
         user_message = f"""Pregunta original: {original_question}
 
 Información adicional proporcionada por el candidato: {clarification_answer}
