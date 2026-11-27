@@ -20,11 +20,11 @@ jobs:
       modules: ${{ steps.build-matrix.outputs.modules }}
       e2e: ${{ steps.build-matrix.outputs.e2e }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -72,7 +72,7 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -128,7 +128,7 @@ jobs:
       matrix:
         module: ${{ fromJson(needs.changes.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Set up Python 3.11
         uses: actions/setup-python@v7
@@ -206,7 +206,7 @@ jobs:
     env:
       TZ: Europe/Madrid
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -251,7 +251,7 @@ jobs:
     env:
       TZ: Europe/Madrid
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -305,7 +305,7 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging') && needs.test.result != 'failure' && needs.e2e.result != 'failure' && needs.frontend-coverage.result != 'failure'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
