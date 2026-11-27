@@ -2,7 +2,7 @@
 name = "aiEnrichSkill"
 version = "0.1.0"
 description = "AI Skill Enrichment module supporting Ollama and HuggingFace backends"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "commonlib==0.1.0",
     "requests>=2.31.0",
