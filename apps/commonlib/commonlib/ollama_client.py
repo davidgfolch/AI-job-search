@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import requests
 
 from commonlib.observability import get_logger
+from commonlib.ollama_activity import request_slot
 from commonlib.ollama_config import get_num_predict, get_num_ctx, get_repeat_penalty, strip_provider_prefix
 from commonlib.ollama_probe import (  # re-exports: existing importers treat this module as the entry point
     INFERENCE_PROBE_TIMEOUT, PROBE_TIMEOUT, _ping_url, forget_server, healthy_urls, ping_ollama, resolve_ollama_url,  # noqa: F401
@@ -133,7 +134,8 @@ def query_ollama(
         payload["format"] = response_schema or "json"
     log.info("ollama.request", model=model, prompt_length=len(prompt), num_predict=num_predict, num_ctx=num_ctx, schema=response_schema is not None)
 
-    result = _generate_first_reachable(primary_url, payload, timeout, log)
+    with request_slot():
+        result = _generate_first_reachable(primary_url, payload, timeout, log)
     if result is None:
         log.error("ollama.failed", model=model)
         return None

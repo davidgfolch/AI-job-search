@@ -36,7 +36,7 @@ def ollama_response(payload=ENRICHMENT_JSON):
 @contextmanager
 def selector_patches(fake_selector):
     """Patch the DB, the selector factory and the clock used by dataExtractor/retry_failed_jobs."""
-    with patch("aiEnrich.dataExtractor.MysqlUtil") as mysql_util, \
+    with patch("aiEnrich.enrichRunner.MysqlUtil") as mysql_util, \
          patch("commonlib.sql.filter_config_selector.FilterConfigSelector", return_value=fake_selector), \
          patch("aiEnrich.dataExtractor.stopWatch"), \
          patch("aiEnrich.dataExtractor._batch_start", 0):

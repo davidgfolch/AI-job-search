@@ -51,7 +51,7 @@ export default function JobTable({
 
     return (
         <div className="job-table-container" ref={containerRef} tabIndex={-1}>
-            <table className="job-table" ref={contentRef}>
+            <table id="job-table" className="job-table" ref={contentRef}>
                 <thead>
                     <tr>
                         <th className="checkbox-column">
@@ -67,6 +67,8 @@ export default function JobTable({
                         <th className="salary-column text-no-wrap">Salary</th>
                         <th className="title-column text-no-wrap">Title</th>
                         <th className="company-column text-no-wrap">Company</th>
+                        <th id="job-table-location-header" className="location-column text-no-wrap">Location</th>
+                        <th id="job-table-modality-header" className="modality-column text-no-wrap">Modality</th>
                         <th className="status-column text-no-wrap">Status</th>
                         <th className="created-column text-no-wrap">Created</th>
                     </tr>
@@ -94,6 +96,14 @@ export default function JobTable({
                             <td className="salary-column text-no-wrap">{job.salary || '-'}</td>
                             <td className="title-column text-no-wrap">{job.title || '-'}</td>
                             <td className="company-column text-no-wrap">{job.company || '-'}</td>
+                            <td id={`job-location-${job.id}`} className="location-column text-no-wrap" title={job.location || undefined}>{job.location || '-'}</td>
+                            <td id={`job-modality-${job.id}`} className="modality-column text-no-wrap">
+                                <div className="modality-badges">
+                                    {job.modality?.length ? job.modality.map(value => (
+                                        <span key={value} className="modality-badge" title={value}>{value.charAt(0).toUpperCase()}</span>
+                                    )) : '-'}
+                                </div>
+                            </td>
                             <td className="status-column text-no-wrap">
                                 <div className="status-badges">
                                     {job.comments && (

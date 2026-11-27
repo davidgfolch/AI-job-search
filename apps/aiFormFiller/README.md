@@ -45,12 +45,7 @@ Edit `cv/looking-for.txt` with your preferences:
 
 ### 2. Start the backend
 
-```bash
-cd apps/aiFormFiller
-uv run uvicorn aiFormFiller.main:app --host 127.0.0.1 --port 8080
-```
-
-Or use the run script:
+From the repository root:
 
 ```bash
 # Windows
@@ -68,38 +63,60 @@ The backend starts on `http://127.0.0.1:8080`. API docs at `/docs`.
 
 ### 3. Install the browser extension
 
-**Chrome:**
-1. Go to `chrome://extensions/`
-2. Enable "Developer mode" (top right)
-3. Click "Load unpacked" → select `apps/aiFormFiller/extension/`
+Run the installer from the repository root. It packs the extension into a signed CRX (Chrome) and an XPI (Firefox) and registers it for all existing profiles, so a browser restart is all that is needed:
 
-**Firefox:**
-1. Go to `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Select `apps/aiFormFiller/extension/manifest.json`
+```bash
+# Windows
+.\apps\aiFormFiller\install-extension.bat
+
+# Linux/macOS
+./apps/aiFormFiller/install-extension.sh
+```
+
+Use `--browser chrome|firefox` to install only one browser, and `--dry-run` to preview the changes. The generated packages and signing key live in `~/.ai-form-filler` (`%LOCALAPPDATA%\ai-form-filler` on Windows); keep them so reinstalls keep the same extension ID.
+
+| Browser | Platform | Mechanism | Rights |
+|---|---|---|---|
+| Chrome | Linux | [External extensions](https://developer.chrome.com/extensions/external_extensions) (user-removable) | `sudo` |
+| Chrome | Windows/macOS | `ExtensionInstallForcelist` policy (must be removed with the uninstall script) | admin / `sudo` |
+| Firefox | all | `policies.json` → `Extensions.Install` | admin / `sudo` |
+
+To remove the registration and the generated packages:
+
+```bash
+# Windows
+.\apps\aiFormFiller\uninstall-extension.bat
+
+# Linux/macOS
+./apps/aiFormFiller/uninstall-extension.sh
+```
+
+Manual development install is still available: load `apps/aiFormFiller/extension/` unpacked in Chrome under `chrome://extensions` with Developer mode enabled. The Firefox package built by the script adds the gecko manifest keys and a small API shim that the shared source manifest does not contain, so use the script for Firefox.
 
 ## Usage
 
 1. Navigate to any job application form
-2. Click on a text field (input or textarea)
-3. Right-click → **"Answer with AI"**
-4. The side panel opens with the detected question
-5. Click **"Responder"** to get an AI-generated answer
-6. If the AI needs more info, a clarification box appears — type the missing info and click **"Enviar y responder"**
-7. Click **"Rellenar campo"** to fill the original form field, or **"Copiar"** to copy manually
+2. Right-click a form field → **"Answer with AI"**
+3. The side panel opens with the questions detected in that form
+4. Choose a **Provider** if needed, then click **"Answer All"**
+5. Click **"Fill All"** to write the answers back into the form
+
+The panel is tab-specific: it opens only on tabs where you used "Answer with AI", hides when you switch to other tabs, and shows each form tab's own questions and answers when you return to it.
 
 ## AI Providers
 
-Configure via `.env`:
+Configure via `.env` or the web **Settings → LLM Providers → aiFormFiller** selector, which writes `AI_FORM_PROVIDER` immediately and applies to the next request. API keys are editable in that section too: `OPENAI_API_KEY` and `OPENROUTER_MODEL` sit with aiFormFiller, while the shared cloud keys sit beside all three selectors. Changes apply to the next request without a restart. Besides `local`, `openai` and `openrouter`, the selector supports `gemini`, `groq`, `cerebras` and `hf-inference`; see [LLM providers](../../READMEs/LLM_PROVIDERS.md).
+
+The side panel **Provider** dropdown overrides the backend default for that browser profile; **Auto (backend)** follows `AI_FORM_PROVIDER`. The selection is stored locally in the browser and applies to answer, batch and follow-up requests.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AI_FORM_PROVIDER` | `local` | `local`, `openai`, `openrouter`, or `auto` |
+| `AI_FORM_PROVIDER` | `local` | `local`, `openai`, `openrouter`, `gemini`, `groq`, `cerebras`, `hf-inference` |
 | `AI_FORM_HF_MODEL` | `Qwen/Qwen2.5-1.5B-Instruct` | Local HuggingFace model |
 | `OPENAI_API_KEY` | — | OpenAI API key |
 | `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model name |
 | `OPENROUTER_API_KEY` | — | OpenRouter API key |
-| `OPENROUTER_MODEL` | `openai/gpt-4o-mini` | OpenRouter model (e.g. `anthropic/claude-3-haiku`) |
+| `OPENROUTER_MODEL` | `openrouter/free` | OpenRouter model (e.g. `nvidia/nemotron-3.5-lightning:free`) |
 | `AI_FORM_PORT` | `8080` | Backend port |
 | `AI_FORM_TIMEOUT` | `30` | API timeout in seconds |
 | `AI_FORM_TEMPERATURE` | `0.1` | LLM temperature (lower = more deterministic) |
@@ -112,66 +129,23 @@ Configure via `.env`:
 - `local` — Uses HuggingFace transformers with the model from `AI_FORM_HF_MODEL`. Works offline, no API key needed.
 - `openai` — Uses OpenAI API. Requires `OPENAI_API_KEY`.
 - `openrouter` — Uses OpenRouter API. Requires `OPENROUTER_API_KEY`. Supports many models (Claude, Gemini, GPT, etc.).
-- `auto` — Tries local first, falls back to configured provider.
+- `gemini`, `groq`, `cerebras`, `hf-inference` — OpenAI-compatible cloud providers; each needs its own key and optional `<PROVIDER>_MODEL` from [LLM providers](../../READMEs/LLM_PROVIDERS.md).
+- `auto` — Side-panel option that follows the backend default; no fallback chain.
+
+For low-latency inference without a local model, set `AI_FORM_PROVIDER=openrouter` and `OPENROUTER_MODEL=<model>:free` (e.g. `nvidia/nemotron-3.5-lightning:free`); reasoning is disabled automatically for `:free` models so the response is a plain answer. Free providers may rate-limit requests.
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/health` | Health check + provider/context status |
-| `POST` | `/api/answer` | Ask a question, get an answer or clarification |
-| `POST` | `/api/answer/follow-up` | Provide additional info after a clarification |
-
-### POST /api/answer
-
-```json
-// Request
-{ "question": "¿Cuántos años de Java tienes?", "provider": "auto" }
-
-// Response (direct answer)
-{ "type": "answer", "text": "Tengo 5 años de experiencia con Java...", "provider": "local", "confidence": "high" }
-
-// Response (clarification needed)
-{ "type": "clarification", "text": "CLARIFICACIÓN: Tu CV no menciona Spring Boot 3.x...", "provider": "local", "confidence": "low" }
-```
-
-### POST /api/answer/follow-up
-
-```json
-// Request
-{ "original_question": "¿Cuántos años de Spring Boot 3?", "clarification_answer": "Sí, desde 2023" }
-
-// Response
-{ "type": "answer", "text": "Tengo 2 años de experiencia con Spring Boot 3.x...", "provider": "local", "confidence": "high" }
-```
+The backend exposes health, answer, follow-up and batch endpoints; see [routes.py](src/aiFormFiller/api/routes.py) and [schemas.py](src/aiFormFiller/api/schemas.py) for the routes and payload shapes.
 
 ## Structured logging
 
-Telemetry goes through `commonlib.observability` instead of `print()`. Because `main.py` builds the app at module level (`app = create_app()`), `configure_logging("aiFormFiller")` runs at module level right after the imports, so the import-time events from `create_app()` land in `aiFormFiller.jsonl` too; every module then binds a logger at module level:
-
-```python
-logger = get_logger("aiFormFiller.routes")
-logger.exception("provider.failed", endpoint="answer", provider=req.provider)
-```
-
-Console output goes to stdout and every record is mirrored to a JSONL file, one JSON object per line, at `data/logs/aiFormFiller.jsonl` relative to the working directory - `apps/aiFormFiller/data/logs/aiFormFiller.jsonl` on the host, since the container mounts the app directory.
-
-| Module | Events |
-|---|---|
-| `main` | `app.created` (info); `app.context_loaded` (info, booleans for the CV and looking-for documents); `app.started` (info, version, host and port) |
-| `api/routes` | `form.answered` (debug, one per request, with the endpoint, provider, clarification flag and the question/answer lengths); `provider.rejected` (warning, a `ValueError` such as a missing API key, becomes HTTP 400); `provider.failed` (exception - records the traceback, becomes HTTP 500) |
-| `context_loader` | `context.cv_loaded`, `context.looking_for_loaded` (info); `context.cv_reloaded`, `context.looking_for_reloaded` (info, the documents are re-read on every request when their mtime changes); `context.file_not_found`, `context.file_empty` (warning) |
-| `models/local_hf` | `model.loading`, `model.loaded` (info, provider and model id; the pipeline is built once and cached) |
-
-The service handles the CV and the LLM conversation, so **nothing from the documents, the prompts, the questions or the model answers is ever logged** - only lengths, counts, flags, provider names and paths. The `provider.failed` record is what makes provider failures visible, because the 500 response body alone does not say which provider broke. Event names, levels, and the shared `LOG_*` variables are documented in [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging); set `LOG_LEVEL=10` for the per-request `form.answered` records.
+Telemetry goes through `commonlib.observability`; see [Structured Logging](../../READMEs/README_DEVELOPMENT.md#structured-logging) for event conventions, output layout and shared `LOG_*` variables.
+The service handles the CV and the LLM conversation, so **nothing from the documents, the prompts, the questions or the model answers is ever logged**.
 
 ## Development
 
-```bash
-# Install dependencies (inside apps/aiFormFiller)
-cd apps/aiFormFiller
-uv sync
-```
+Dependencies are installed from the repository root with `./scripts/install.sh` (Linux/Mac) or `.\scripts\install.bat` (Windows).
 
 ```bash
 # From the repo root: tests through the centralized runner

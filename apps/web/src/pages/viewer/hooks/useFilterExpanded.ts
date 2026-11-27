@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 
 interface UseFilterExpandedProps {
     configCount?: number;
@@ -7,18 +7,13 @@ interface UseFilterExpandedProps {
 export function useFilterExpanded({ configCount }: UseFilterExpandedProps = {}) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isInitialized, setIsInitialized] = useState(true);
-    const isMounted = useRef(true);
+    const [lastConfigCount, setLastConfigCount] = useState<number | undefined>(undefined);
 
-    useEffect(() => {
-        isMounted.current = true;
-        
-        if (configCount !== undefined) {
-            setIsExpanded(configCount === 0);
-            setIsInitialized(true);
-        }
-        
-        return () => { isMounted.current = false; };
-    }, [configCount]);
-    
+    if (configCount !== undefined && lastConfigCount !== configCount) {
+        setLastConfigCount(configCount);
+        setIsExpanded(configCount === 0);
+        setIsInitialized(true);
+    }
+
     return { isExpanded: isInitialized && isExpanded, setIsExpanded, isInitialized };
 }

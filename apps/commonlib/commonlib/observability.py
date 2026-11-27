@@ -58,14 +58,15 @@ once per unit of work with `job_log_context`, so records emitted by shared helpe
 """
 import os
 import sys
-from contextlib import contextmanager
 
 import structlog
 
 from commonlib.console_render import CONSOLE_MESSAGE, color_enabled  # noqa: F401 - re-exported: apps/scrapper/scrapper/main.py and the observability tests import them from here
 from commonlib.console_render import render_console, set_console_mode, split_console_text
 from commonlib.environmentUtil import getEnv
+from commonlib.log_context import job_log_context, keyword_log_context  # noqa: F401 - re-exported: call sites take the entry point as this module
 from commonlib.log_writer import get_log_dir, make_jsonl_writer
+from commonlib.remote_log_writer import remote_log_processor
 
 DEFAULT_LOG_LEVEL = 20
 DEFAULT_APP_NAME = "app"
@@ -127,28 +128,6 @@ def stamp_caller_module(logger, method_name, event_dict: dict) -> dict:  # noqa:
     return event_dict
 
 
-@contextmanager
-def job_log_context(job_id: int):
-    """Stamp `job_id` on every record logged inside the block.
-
-    `merge_contextvars` runs first in the chain, so binding once per unit of work covers
-    the records the call sites emit and the ones shared helpers emit on their behalf
-    (`commonlib.sql.query_executor`, `commonlib.ollama_client`), with no change at either
-    end. An explicit `job_id=` at a call site still wins over the bound value.
-
-    The id is unbound on exit so it cannot leak into the batch-level records that follow
-    the loop, which describe many jobs rather than one.
-    """
-    if job_id is None:
-        yield
-        return
-    structlog.contextvars.bind_contextvars(job_id=job_id)
-    try:
-        yield
-    finally:
-        structlog.contextvars.unbind_contextvars("job_id")
-
-
 def configure_logging(app_name: str | None = None, console: str | None = None) -> str:
     """Configure structlog once and name the JSONL output after `app_name`.
 
@@ -178,6 +157,7 @@ def configure_logging(app_name: str | None = None, console: str | None = None) -
             structlog.processors.dict_tracebacks,
             split_console_text,
             make_jsonl_writer(log_file_path, _stamp_app_name),
+            remote_log_processor,
             render_console,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),

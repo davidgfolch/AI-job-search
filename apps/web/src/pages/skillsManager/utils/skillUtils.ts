@@ -68,8 +68,8 @@ export const generateSkillsMarkdown = (skills: Skill[]): string => {
 
     if (skill.learningPath && skill.learningPath.length > 0) {
       markdown += '### Learning Path\n\n';
-      skill.learningPath.forEach((url) => {
-        markdown += `- <${url}>\n`;
+      skill.learningPath.forEach((link) => {
+        markdown += `- <${link.url}>\n`;
       });
       markdown += '\n';
     }

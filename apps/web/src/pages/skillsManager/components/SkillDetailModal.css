@@ -1,0 +1,255 @@
+/* Mirrors the skill-specific styles of SkillsManager.css for the shared skill detail
+   modal: the job viewer loads this component without the /skills-manager stylesheet. */
+:where(.skill-detail-modal).modal-content {
+  background-color: var(--bg-secondary);
+}
+
+:where(.skill-detail-modal) .modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+:where(.skill-detail-modal) .modal-body {
+  gap: 1.5rem;
+}
+
+:where(.skill-detail-modal) .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+:where(.skill-detail-modal) .form-group.flex-grow {
+  flex: 1;
+  min-height: 0;
+}
+
+:where(.skill-detail-modal) .form-group label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+:where(.skill-detail-modal) .skill-input,
+:where(.skill-detail-modal) .skill-textarea {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+:where(.skill-detail-modal) .skill-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+:where(.skill-detail-modal) .skill-input:hover,
+:where(.skill-detail-modal) .skill-textarea:hover {
+  border-color: var(--border-color);
+  background-color: var(--bg-primary);
+}
+
+:where(.skill-detail-modal) .skill-input:focus,
+:where(.skill-detail-modal) .skill-textarea:focus {
+  border-color: var(--primary-color);
+  background-color: var(--bg-primary);
+  outline: none;
+}
+
+:where(.skill-detail-modal) .description-editor-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  height: 100%;
+}
+
+:where(.skill-detail-modal) .description-preview {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  background-color: var(--bg-primary);
+  overflow-y: auto;
+  height: 100%;
+  max-height: none;
+}
+
+:where(.skill-detail-modal) .form-group.flex-grow .skill-textarea {
+  height: 100%;
+  max-height: none;
+  resize: none;
+}
+
+:where(.skill-detail-modal) .description-preview p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+:where(.skill-detail-modal) .description-preview ul,
+:where(.skill-detail-modal) .description-preview ol {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+}
+
+:where(.skill-detail-modal) .links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 30rem;
+  width: 100%;
+}
+
+:where(.skill-detail-modal) .link-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+:where(.skill-detail-modal) .link-url {
+  color: var(--primary-color);
+  text-decoration: none;
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:where(.skill-detail-modal) .link-url:hover {
+  text-decoration: underline;
+}
+
+/* First column of every learning path row: fixed width keeps the rows aligned. */
+:where(.skill-detail-modal) .link-source {
+  flex: 0 0 6.5rem;
+  text-align: center;
+  font-size: 0.75em;
+  color: var(--text-secondary);
+  border: 1px solid var(--text-secondary);
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+  white-space: nowrap;
+}
+
+:where(.skill-detail-modal) .link-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+:where(.skill-detail-modal) .links-list-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+:where(.skill-detail-modal) .links-list-header .clear-all {
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  opacity: 0.6;
+  text-decoration: underline;
+}
+
+:where(.skill-detail-modal) .links-list-header .clear-all:hover {
+  opacity: 1;
+}
+
+:where(.skill-detail-modal) .link-remove {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  padding: 2px 4px;
+  opacity: 0.4;
+}
+
+:where(.skill-detail-modal) .link-remove:hover {
+  opacity: 1;
+}
+
+:where(.skill-detail-modal) .btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+:where(.skill-detail-modal) .btn-icon:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+:where(.skill-detail-modal) .btn-icon.delete {
+  color: var(--error-color);
+}
+
+:where(.skill-detail-modal) .btn-icon.delete:hover {
+  background-color: rgba(var(--error-color-rgb), 0.1);
+}
+
+:where(.skill-detail-modal) .btn-icon.add {
+  color: var(--primary-color);
+}
+
+:where(.skill-detail-modal) .btn-icon.add:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+:where(.skill-detail-modal) .modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+:where(.skill-detail-modal) .btn-primary,
+:where(.skill-detail-modal) .btn-secondary {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  border: none;
+}
+
+:where(.skill-detail-modal) .btn-primary {
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+}
+
+:where(.skill-detail-modal) .btn-primary:hover {
+  background-color: var(--primary-color-dark);
+  opacity: 0.9;
+}
+
+:where(.skill-detail-modal) .btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+:where(.skill-detail-modal) .btn-secondary:hover:not(:disabled) {
+  background-color: var(--btn-secondary-hover);
+}
+
+:where(.skill-detail-modal) .btn-secondary:hover {
+  background-color: var(--bg-hover);
+}
+
+:where(.skill-detail-modal) .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

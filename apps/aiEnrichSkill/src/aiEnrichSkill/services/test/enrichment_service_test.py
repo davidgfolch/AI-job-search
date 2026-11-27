@@ -1,9 +1,16 @@
 import pytest
-from structlog.testing import capture_logs
 from unittest.mock import patch, MagicMock
 
-from ..enrichment_service import enrich_skills, generate_skill_description_ollama, _fetch_pending_skills
-from .enrichment_service_fixtures import assert_failure_metric, make_ollama_mocks, run_enrich_ollama, run_process_skill_batch
+from commonlib.services.skill_enricher_service import BackendUnavailable
+from ..enrichment_service import _enrich_ollama, enrich_skills, generate_skill_description_ollama
+from .enrichment_service_fixtures import assert_failure_metric, make_ollama_mocks, run_enrich_ollama
+
+
+@pytest.fixture(autouse=True)
+def ollama_answers():
+    """No test may probe a real Ollama server; individual tests override this with their own patch."""
+    with patch("aiEnrichSkill.services.enrichment_service.ping_ollama", return_value=True):
+        yield
 
 
 @pytest.mark.parametrize("backend, expected, called_mock", [
@@ -18,28 +25,52 @@ def test_enrich_skills(mock_hf, mock_ollama, mock_backend, backend, expected, ca
     mock_backend.return_value = backend
     mock_ollama.return_value = 5
     mock_hf.return_value = 3
-    mysql = MagicMock()
-    result = enrich_skills(mysql)
+    repository = MagicMock()
+    result = enrich_skills(repository)
     assert result == expected
     if called_mock == "_enrich_ollama":
-        mock_ollama.assert_called_once_with(mysql, None)
+        mock_ollama.assert_called_once_with(repository, None)
         mock_hf.assert_not_called()
     elif called_mock == "_enrich_huggingface":
-        mock_hf.assert_called_once_with(mysql)
+        mock_hf.assert_called_once_with(repository)
         mock_ollama.assert_not_called()
     else:
         mock_ollama.assert_not_called()
         mock_hf.assert_not_called()
 
 
+def test_enrich_skills_routes_cloud_provider():
+    repository = MagicMock()
+    with patch("aiEnrichSkill.services.enrichment_service.get_backend", return_value="groq"), \
+         patch("aiEnrichSkill.services.enrichment_service.is_cloud_backend", return_value=True), \
+         patch("aiEnrichSkill.services.enrichment_service._enrich_cloud", return_value=7) as mock_cloud:
+        assert enrich_skills(repository) == 7
+    mock_cloud.assert_called_once_with(repository)
+
+
+@patch("aiEnrichSkill.services.enrichment_service.validate_learning_paths")
 @patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
 @patch("aiEnrichSkill.services.enrichment_service.query_ollama")
 @patch("aiEnrichSkill.services.enrichment_service.parse_skill_enrichment_result")
-def test_generate_skill_description_ollama_success(mock_parse, mock_query, mock_build):
-    make_ollama_mocks(mock_build, mock_query, mock_parse, "**Summary**: Python is a language. **Category**: Language", ("Python is a language", "Language"))
+def test_generate_skill_description_ollama_success(mock_parse, mock_query, mock_build, mock_validate):
+    make_ollama_mocks(mock_build, mock_query, mock_parse, "**Summary**: Python is a language. **Category**: Language", ("Python is a language", "Language", []))
+    mock_validate.return_value = []
     result = generate_skill_description_ollama("Python", "Django")
-    assert result == ("Python is a language", "Language")
+    assert result == ("Python is a language", "Language", [])
     mock_query.assert_called_once()
+    mock_validate.assert_called_once_with("Python", [])
+
+
+@patch("aiEnrichSkill.services.enrichment_service.validate_learning_paths")
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama")
+@patch("aiEnrichSkill.services.enrichment_service.parse_skill_enrichment_result")
+def test_generate_skill_description_ollama_validates_proposed_links(mock_parse, mock_query, mock_build, mock_validate):
+    make_ollama_mocks(mock_build, mock_query, mock_parse, "raw", ("Python", "Language", ["https://python.org"]))
+    mock_validate.return_value = ["https://python.org"]
+    result = generate_skill_description_ollama("Python", "")
+    assert result == ("Python", "Language", ["https://python.org"])
+    mock_validate.assert_called_once_with("Python", ["https://python.org"])
 
 
 @patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
@@ -51,129 +82,93 @@ def test_generate_skill_description_ollama_failure(mock_query, mock_build):
     ]
     mock_query.return_value = None
     result = generate_skill_description_ollama("Python", "")
-    assert result == ("", "Other")
+    assert result == ("", "Other", [])
 
 
-@patch("aiEnrichSkill.services.enrichment_service.get_backend")
-@patch("aiEnrichSkill.services.enrichment_service.MysqlUtil")
-@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
-def test_enrich_ollama_delegates_to_commonlib(mock_process, mock_mysql_cls, mock_backend):
-    mock_backend.return_value = "ollama"
-    mysql = MagicMock()
-    mock_mysql_cls.return_value.__enter__.return_value = mysql
-    mock_process.return_value = 5
-    result = enrich_skills(mysql)
-    assert result == 5
-
-
-@patch("aiEnrichSkill.services.enrichment_service.get_backend")
-@patch("aiEnrichSkill.services.enrichment_service._fetch_pending_skills")
-@patch("aiEnrichSkill.llm_client.get_pipeline")
-@patch("aiEnrichSkill.services.enrichment_service._process_skill_batch")
-def test_enrich_huggingface(mock_process_batch, mock_pipeline, mock_fetch, mock_backend):
-    mock_backend.return_value = "huggingface"
-    mysql = MagicMock()
-    mock_fetch.return_value = [{"name": "Python"}, {"name": "Docker"}]
-    mock_pipeline.return_value = MagicMock()
-    mock_process_batch.return_value = 2
-    result = enrich_skills(mysql)
-    assert result == 2
-
-
-@patch("aiEnrichSkill.services.enrichment_service.get_backend")
-@patch("aiEnrichSkill.services.enrichment_service._fetch_pending_skills")
-def test_enrich_huggingface_no_skills(mock_fetch, mock_backend):
-    mock_backend.return_value = "huggingface"
-    mysql = MagicMock()
-    mock_fetch.return_value = []
-    with capture_logs() as records:
-        result = enrich_skills(mysql)
-    assert result == 0
-    skipped = [r for r in records if r["event"] == "jobs.skipped"]
-    assert len(skipped) == 1
-    assert skipped[0]["message"] == "No skills pending."
-    assert skipped[0]["reason"] == "no_pending_skills"
-    assert skipped[0]["limit"]
-
-
-def test_fetch_pending_skills_treats_null_ai_enriched_as_pending():
-    mysql = MagicMock()
-    mysql.fetchAll.return_value = [("Fix Protocol",)]
-    skills = _fetch_pending_skills(mysql, 10)
-    assert skills == [{"name": "Fix Protocol"}]
-    query = mysql.fetchAll.call_args[0][0]
-    # NULL ai_enriched never matches `ai_enriched = 0`, so COALESCE is required
-    assert "COALESCE(ai_enriched, 0) = 0" in query
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment", return_value=5)
+@patch("aiEnrichSkill.services.enrichment_service.get_backend", return_value="ollama")
+def test_enrich_ollama_delegates_to_shared_service(_mock_backend, mock_process):
+    repository = MagicMock()
+    assert enrich_skills(repository) == 5
+    mock_process.assert_called_once()
+    assert mock_process.call_args[0][0] is repository
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.validate_learning_paths")
 @patch("aiEnrichSkill.services.enrichment_service.parse_skill_enrichment_result")
 @patch("aiEnrichSkill.services.enrichment_service.query_ollama")
 @patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
-@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
-def test_enrich_ollama_records_metric_on_success(mock_process, mock_build, mock_query, mock_parse, mock_collector):
-    make_ollama_mocks(mock_build, mock_query, mock_parse, "**Summary**: Python is a language. **Category**: Language", ("Python is a language", "Language"))
-    result, generator_called = run_enrich_ollama(mock_process)
+def test_enrich_ollama_records_metric_on_success(mock_build, mock_query, mock_parse, mock_validate, mock_collector):
+    make_ollama_mocks(mock_build, mock_query, mock_parse, "**Summary**: Python is a language. **Category**: Language", ("Python is a language", "Language", []))
+    mock_validate.return_value = []
+    result, generator_called = run_enrich_ollama()
     assert result == 1
-    assert generator_called == [("Python is a language", "Language")]
+    assert generator_called == [("Python is a language", "Language", [])]
     mock_collector.record_job.assert_called_once_with("aiEnrichSkill", mock_collector.record_job.call_args[0][1], True)
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")
 @patch("aiEnrichSkill.services.enrichment_service.query_ollama")
 @patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
-@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
-def test_enrich_ollama_records_metric_on_failure(mock_process, mock_build, mock_query, mock_collector):
+def test_enrich_ollama_records_metric_on_failure(mock_build, mock_query, mock_collector):
     make_ollama_mocks(mock_build, mock_query, query_result=None)
-    run_enrich_ollama(mock_process, name="Unknown", context="")
+    run_enrich_ollama(name="Unknown", context="")
     assert_failure_metric(mock_collector)
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
+@patch("aiEnrichSkill.services.enrichment_service.ping_ollama", return_value=False)
+def test_enrich_ollama_defers_the_cycle_when_ollama_is_down(mock_ping, mock_process, mock_collector):
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = True
+    assert _enrich_ollama(repository) == 0
+    mock_process.assert_not_called()
+    mock_collector.record_backend_unreachable.assert_called_once_with("aiEnrichSkill")
+
+
+@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
+@pytest.mark.parametrize("pending", [True, False])
+def test_enrich_ollama_does_not_probe_when_there_is_no_work(_mock_process, pending):
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = pending
+    with patch("aiEnrichSkill.services.enrichment_service.ping_ollama", return_value=True) as ping:
+        _enrich_ollama(repository)
+    assert ping.called is pending
+
+
+@patch("aiEnrichSkill.services.enrichment_service.collector")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama", return_value=None)
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+def test_unanswerable_skill_leaves_the_queue_when_ollama_is_up(mock_build, mock_query, _mock_collector):
+    """Ollama answers but produced no description: retrying the same skill every cycle would block the queue."""
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = True
+    make_ollama_mocks(mock_build, mock_query, query_result=None)
+    run_enrich_ollama(repository=repository)
+    repository.skip_skill.assert_called_once_with("Python")
+
+
+@patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
+@patch("aiEnrichSkill.services.enrichment_service.query_ollama", return_value=None)
+@patch("aiEnrichSkill.services.enrichment_service.ping_ollama", side_effect=[True, False])
+def test_backend_going_down_mid_batch_leaves_the_skill_pending(_mock_ping, mock_query, mock_build):
+    """A server that died between the cycle probe and the request is waited for, never marked."""
+    repository = MagicMock()
+    repository.has_pending_enrichment.return_value = True
+    make_ollama_mocks(mock_build, mock_query, query_result=None)
+    with pytest.raises(BackendUnavailable):
+        run_enrich_ollama(repository=repository)
+    repository.skip_skill.assert_not_called()
 
 
 @patch("aiEnrichSkill.services.enrichment_service.collector")
 @patch("aiEnrichSkill.services.enrichment_service.query_ollama")
 @patch("aiEnrichSkill.services.enrichment_service.build_skill_prompt_messages")
-@patch("aiEnrichSkill.services.enrichment_service.process_skill_enrichment")
-def test_enrich_ollama_records_metric_on_exception(mock_process, mock_build, mock_query, mock_collector):
+def test_enrich_ollama_records_metric_on_exception(mock_build, mock_query, mock_collector):
     make_ollama_mocks(mock_build, mock_query)
     mock_query.side_effect = RuntimeError("connection refused")
-    run_enrich_ollama(mock_process)
+    run_enrich_ollama()
     assert_failure_metric(mock_collector)
     mock_collector.record_error.assert_called_once_with("aiEnrichSkill", "connection refused")
-
-
-@patch("aiEnrichSkill.services.enrichment_service.collector")
-@patch("aiEnrichSkill.services.enrichment_service.get_backend")
-@patch("aiEnrichSkill.services.enrichment_service._fetch_pending_skills")
-@patch("aiEnrichSkill.services.enrichment_service._process_skill_batch")
-def test_enrich_huggingface_sets_pending(mock_process_batch, mock_fetch, mock_backend, mock_collector):
-    mock_backend.return_value = "huggingface"
-    mysql = MagicMock()
-    mock_fetch.return_value = [{"name": "Python"}, {"name": "Docker"}]
-    mock_process_batch.return_value = 2
-    enrich_skills(mysql)
-    mock_collector.set_pending.assert_called_once_with("aiEnrichSkill", 2)
-
-
-@patch("aiEnrichSkill.services.enrichment_service.collector")
-@patch("aiEnrichSkill.llm_utils.process_batch")
-def test_process_skill_batch_on_success_records_metric_failure(mock_process_batch, mock_collector):
-    captured = run_process_skill_batch(mock_process_batch)
-    captured["on_success"]({"name": "Python"}, "")
-    assert_failure_metric(mock_collector, check_duration=True)
-
-
-@patch("aiEnrichSkill.services.enrichment_service.collector")
-@patch("aiEnrichSkill.llm_utils.process_batch")
-def test_process_skill_batch_on_success_with_valid_result(mock_process_batch, mock_collector):
-    captured = run_process_skill_batch(mock_process_batch)
-    captured["on_success"]({"name": "Python"}, "**Summary**: Language. **Category**: Programming")
-    assert mock_collector.record_job.call_args[0][2] is True
-
-
-@patch("aiEnrichSkill.services.enrichment_service.collector")
-@patch("aiEnrichSkill.llm_utils.process_batch")
-def test_process_skill_batch_on_error_records_metric(mock_process_batch, mock_collector):
-    captured = run_process_skill_batch(mock_process_batch)
-    captured["on_error"]({"name": "Python"}, Exception("timeout"))
-    assert_failure_metric(mock_collector, check_duration=True)
-    mock_collector.record_error.assert_called_once_with("aiEnrichSkill", "timeout")

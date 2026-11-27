@@ -45,17 +45,35 @@ Follow these steps when a scrapper broke because the source page changed its DOM
           asyncio.run(main())
       ```
 
+    - **Cloudflare / Turnstile fallback**: if `PlaywrightCrawler` gets HTTP 401/403 or a `Just a moment...` title, Crawlee's fingerprint is flagged. Do **not** ask the user to click the challenge box or keep retrying headless. Fetch the DOM with the project's Scrapling stealth session instead — its built-in Turnstile solver runs unattended and its Parsel CSS API matches the scrapper's selectors:
+      ```bash
+      cd apps/scrapper && poetry run python - <<'PY'
+      from scrapling.fetchers import StealthySession
+      s = StealthySession(solve_cloudflare=True, block_webrtc=True, hide_canvas=True,
+                          google_search=False, real_chrome=True, impersonate='chrome',
+                          wait=8000, timeout=60000, headless=False, max_pages=1)
+      s.start()
+      try:
+          page = s.fetch('https://es.indeed.com/viewjob?jk=...')
+          print(page.status, page.css('title::text').get())
+      finally:
+          s.close()
+      PY
+      ```
+      Reuse one session for all URLs. Installed Scrapling 0.5.1 rejects `new_context=False`, so never pass it. If the solver still fails, report the blocker instead of looping on the challenge.
+
 4.  **Produce Requirements**: Report the analysis before implementing. The requirements must state:
     - Which fields (title, company, location, description, salary, flags) still extract correctly and which broke.
     - The new selectors/URL patterns to adopt, plus fallback selectors when the site is mid-migration (keep legacy selectors as fallback, as done for the Indeed viewjob rewrite).
     - Whether the change affects the Selenium path, the Scrapling path, or both, and whether a new feature flag or env var is needed.
+    - Prefer semantic selectors (`data-testid`, `aria-label`) over currency/locale literals so a fix covers every value format (e.g. Indeed pay is `[data-testid='structured-job-summary'] div[aria-label]`, not `[aria-label*='€']`).
     - Any anti-bot or rendering change (e.g. page moved to client-side rendering) that forces a different crawler class.
 
 5.  **Implement & Test**:
     - Apply the agreed requirements in `apps/scrapper` following the existing architecture (navigator/service split, feature flags, `.env` config).
     - Keep implementations isolated per fetching technology (Selenium vs Scrapling vs Crawlee); do not share execution paths that assume a specific driver.
     - Update or add parameterized unit tests with mocked HTTP/browser responses (no live servers in CI) and run them via the centralized script: `./scripts/test.sh commonlib scrapper` (Linux/Mac) or `.\scripts\test.bat commonlib scrapper` (Windows).
-    - Update `apps/scrapper/README.md` if selectors, fallbacks, or flags changed.
+    - Keep selectors, fallbacks and their rationale in code and tests. Update `apps/scrapper/README.md` only for a user-visible flag or behaviour change (see `.claude/rules/documentation-update.md`).
 
 ## Usage
 Use this skill when the user reports that "the site changed", "the scraper broke after a redesign", "selectors stopped matching", or asks to "analyze the page changes before fixing the scrapper".

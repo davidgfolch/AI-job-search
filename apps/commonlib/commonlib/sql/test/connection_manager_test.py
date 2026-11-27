@@ -126,6 +126,46 @@ class TestGetConnection:
         assert mock_mysql_connect.call_args_list[0][1].get('database') is None
 
 
+class TestGetReadConnection:
+    def test_read_connection_uses_the_read_pool(self, mock_mysql_connect):
+        connection_manager.get_connection()
+        connection_manager.get_read_connection()
+        assert mock_mysql_connect.call_args_list[-1][1] == {'pool_name': 'jobsReadPool'}
+
+    def test_read_pool_defaults_to_the_write_host(self, mock_mysql_connect):
+        connection_manager.get_read_connection()
+        created = [c[1] for c in mock_mysql_connect.call_args_list if c[1].get('pool_name') == 'jobsReadPool']
+        assert created[0]['host'] == '127.0.0.1'
+
+    def test_read_pool_uses_the_configured_read_host(self, mock_mysql_connect):
+        with patch.dict(os.environ, {'COMMONLIB_DB_READ_HOST': '10.9.9.9'}):
+            connection_manager.get_read_connection()
+        created = [c[1] for c in mock_mysql_connect.call_args_list if c[1].get('pool_name') == 'jobsReadPool']
+        assert created[0]['host'] == '10.9.9.9'
+
+    def test_read_pool_initialized_once(self, mock_mysql_connect):
+        connection_manager.get_read_connection()
+        connection_manager.get_read_connection()
+        created = [c[1] for c in mock_mysql_connect.call_args_list if c[1].get('pool_name') == 'jobsReadPool']
+        assert len([c for c in created if 'host' in c]) == 1
+
+    def test_read_connection_retries_when_exhausted(self, mock_mysql_connect):
+        call_count = [0]
+        def side_effect(**kwargs):
+            call_count[0] += 1
+            if call_count[0] <= 2:
+                raise PoolError("Pool exhausted")
+            return MagicMock()
+        mock_mysql_connect.side_effect = side_effect
+        connection_manager._pool_initialized = True
+        connection_manager._read_pool_initialized = True
+        assert connection_manager.get_read_connection() is not None
+
+    def test_read_connection_legacy_delegates(self, mock_mysql_connect):
+        connection_manager.getReadConnection()
+        assert mock_mysql_connect.call_args_list[-1][1] == {'pool_name': 'jobsReadPool'}
+
+
 class TestGetConnectionPoolError:
     def test_get_connection_retry_on_pool_exhausted(self, mock_mysql_connect):
         call_count = [0]

@@ -102,6 +102,25 @@
   text-decoration: underline;
 }
 
+.skill-card-learning-path {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #374151;
+}
+
+.skill-card-learning-path-label {
+  font-size: 0.8em;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.skill-card-learning-path a {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 @media (max-width: 768px) {
   .skill-tag {

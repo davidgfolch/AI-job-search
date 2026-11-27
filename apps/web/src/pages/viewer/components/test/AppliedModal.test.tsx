@@ -3,9 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AppliedModal from '../AppliedModal';
 
 // Mock IntersectionObserver for useAutoResizeTextArea
-globalThis.IntersectionObserver = vi.fn(function(this: any) {
+globalThis.IntersectionObserver = vi.fn(function(this: object) {
     return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() };
-}) as any;
+}) as unknown as typeof IntersectionObserver;
 
 describe('AppliedModal', () => {
     const defaultProps = {

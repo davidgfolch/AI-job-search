@@ -76,14 +76,14 @@ describe('sqlEditorUtils', () => {
              
              // Simple mock of createElement to return functional mocks
              vi.spyOn(document, 'createElement').mockImplementation((tag) => {
-                 if (tag === 'div') return mockDiv as any;
-                 if (tag === 'span') return mockSpan as any;
+                 if (tag === 'div') return mockDiv as unknown as HTMLDivElement;
+                 if (tag === 'span') return mockSpan as unknown as HTMLSpanElement;
                  return document.createElement(tag);
              });
              
              // Mock document.body.appendChild/removeChild
-             vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockDiv as any);
-             vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockDiv as any);
+             vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockDiv as unknown as HTMLDivElement);
+             vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockDiv as unknown as HTMLDivElement);
 
              const mockTextarea = {
                  value: 'SELECT',

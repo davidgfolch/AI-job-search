@@ -38,7 +38,7 @@ describe('skillUtils', () => {
         name: 'JavaScript',
         category: 'Programming',
         description: 'A scripting language',
-        learningPath: ['https://example.com'],
+        learningPath: [{ url: 'https://example.com', source: 'llm' }],
       }];
       const result = generateSkillsMarkdown(skills);
       expect(result).toContain('# My Skills');

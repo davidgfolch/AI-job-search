@@ -1,4 +1,6 @@
+from commonlib.cloud_llm import get_module_model, is_cloud
 from commonlib.environmentUtil import getEnv, getEnvBool
+from commonlib.envFileUtil import getEnvFile
 from commonlib.ollama_config import OLLAMA_HOST_BASE_URL
 
 
@@ -7,11 +9,20 @@ def get_enabled() -> bool:
 
 
 def get_backend() -> str:
-    return getEnv("AI_ENRICHSKILL_BACKEND", "ollama")
+    """Read the provider from .env so Settings switches apply on the next cycle."""
+    return getEnvFile("AI_ENRICHSKILL_BACKEND", "ollama")
 
 
 def get_ollama_model() -> str:
     return getEnv("AI_ENRICHSKILL_OLLAMA_MODEL", "ollama/qwen2.5:3b")
+
+
+def is_cloud_backend() -> bool:
+    return is_cloud(get_backend())
+
+
+def get_provider_model() -> str:
+    return get_module_model("AI_ENRICHSKILL", get_backend()) if is_cloud_backend() else get_ollama_model()
 
 
 def get_ollama_base_url() -> str:
@@ -66,8 +77,63 @@ def get_max_ollama_failures() -> int:
     return int(getEnv("AI_ENRICHSKILL_MAX_OLLAMA_FAILURES", "3"))
 
 
+def get_learning_paths_enabled() -> bool:
+    return getEnvBool("AI_ENRICHSKILL_LEARNING_PATHS", True)
+
+
+def get_learning_path_max() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_MAX", "3"))
+
+
+def get_learning_path_batch() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_BATCH", "1"))
+
+
+def get_learning_path_timeout() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_TIMEOUT", "5"))
+
+
+def get_learning_path_search_enabled() -> bool:
+    return getEnvBool("AI_ENRICHSKILL_LEARNING_PATH_SEARCH", True)
+
+
+def get_learning_path_search_results() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_SEARCH_RESULTS", "10"))
+
+
+def get_learning_path_max_failures() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_MAX_FAILURES", "3"))
+
+
+def get_learning_path_retry_seconds() -> int:
+    return int(getEnv("AI_ENRICHSKILL_LEARNING_PATH_RETRY_SECONDS", "900"))
+
+
+DEFAULT_LEARNING_DOMAINS = (
+    "developer.mozilla.org", "docs.python.org", "python.org", "dev.java", "docs.oracle.com",
+    "go.dev", "golang.org", "rust-lang.org", "doc.rust-lang.org", "typescriptlang.org",
+    "react.dev", "vuejs.org", "angular.dev", "nodejs.org", "nextjs.org", "svelte.dev",
+    "djangoproject.com", "flask.palletsprojects.com", "fastapi.tiangolo.com", "spring.io",
+    "kubernetes.io", "docker.com", "docs.docker.com", "terraform.io", "developer.hashicorp.com",
+    "aws.amazon.com", "cloud.google.com", "learn.microsoft.com", "azure.microsoft.com",
+    "postgresql.org", "mysql.com", "dev.mysql.com", "mongodb.com", "redis.io", "elastic.co",
+    "grafana.com", "prometheus.io", "jenkins.io", "git-scm.com", "kernel.org", "linux.org",
+    "coursera.org", "udemy.com", "edx.org", "freecodecamp.org", "roadmap.sh", "youtube.com",
+    "youtu.be", "w3schools.com", "baeldung.com", "digitalocean.com", "martinfowler.com",
+    "refactoring.guru", "devdocs.io", "readthedocs.io",
+)
+
+
+def get_learning_domains() -> tuple[str, ...]:
+    configured = getEnv("AI_ENRICHSKILL_LEARNING_DOMAINS", "")
+    if not configured.strip():
+        return DEFAULT_LEARNING_DOMAINS
+    return tuple(d.strip().lower().removeprefix("www.") for d in configured.split(",") if d.strip())
+
+
 def get_skill_system_prompt() -> str:
     categories = get_skill_categories()
+    learning_path = _learning_path_instructions() if get_learning_paths_enabled() else ""
     return f"""You are an expert technical recruiter and software engineer.
 Your task is to provide a structured description for a given technical skill.
 The structure MUST be:
@@ -78,4 +144,36 @@ The structure MUST be:
    - Key Modules/Components
    - Integration with co-occurring technologies
 3. **Category**: One or more of [{categories}] (comma separated).
-Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
+{learning_path}Output ONLY the structured text. Do not include any conversational text. Use 'Category: ' prefix for the category line."""
+
+
+def _learning_path_instructions() -> str:
+    max_links = get_learning_path_max()
+    return f"""4. **Learning Path**: exactly {max_links} URLs, one per line, each prefixed with "- ":
+   - first: a deep link to the official documentation or reference page for this exact skill
+   - second: a hands-on tutorial or guided course about this exact skill
+   - third: a single video watch URL about this exact skill (secondary alternative), not a playlist or channel
+Every URL must be a real, existing deep link whose path or query names the skill.
+A bare homepage like https://www.youtube.com/ is invalid; a video or social link is always secondary to documentation.
+No placeholders, no generic landing pages, no search-result links. Use the context line to disambiguate similar names.
+Start this section with a 'Learning Path:' header line.
+"""
+
+
+def get_learning_path_system_prompt() -> str:
+    max_links = get_learning_path_max()
+    return f"""You are an expert technical recruiter and software engineer.
+List {max_links} learning resources for a given technical skill, in this priority order.
+The structure MUST be:
+Learning Path:
+- <official documentation or reference deep link for this exact skill>
+- <hands-on tutorial or guided course about this exact skill>
+- <single video watch URL about this exact skill, as a secondary alternative; no playlists or channels>
+Rules:
+- Output ONLY the 'Learning Path:' header line and the URLs, one per line, prefixed with "- ".
+- No explanations, no titles, no conversational text.
+- Every URL must be a real, existing deep link whose path or query names the skill. A bare homepage like https://www.youtube.com/ is invalid.
+- Authentic documentation comes first; video/social links are secondary alternatives, never the only resource.
+- Use the context line when present to pick resources for the right technology with a similar name.
+- No placeholders, no generic landing pages, no search-result links."""
+

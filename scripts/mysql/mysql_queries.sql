@@ -10,7 +10,7 @@ select count(*) from jobs;
 
 select * from jobs WHERE
  -- not ai_enriched and not ignored AND
-  id in (506547)
+  id in (601249)
 
 select title, company, location, url, markdown , salary, required_technologies, optional_technologies from jobs
 -- update jobs set ai_enriched=1, flagged=1, comments='AI enrichment hangs on this job'
@@ -35,7 +35,7 @@ WHERE trim(lower(j.title)) != trim(lower(d.title)) OR trim(lower(j.company)) != 
 select url, markdown from jobs WHERE trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 delete from jobs where trim(REGEXP_REPLACE(CONVERT(markdown USING utf8mb3),'\n','')) = '';
 
-select * from jobs where jobs.company='Michael Page' and applied order by created DESC;
+select title, company, markdown, url from jobs where jobs.web_page rlike 'linkedin' and jobs.title rlike 'forward';
 
 select * from jobs where jobs.web_page='Indeed' order by created DESC;
 
@@ -287,8 +287,16 @@ order by snapshot_at desc
 
 --- SKILL MANAGER
 
+select * from job_skills;
 select * from job_skills where ai_enriched = 1 and category is null or category = '' limit 10;
 select * from job_skills where job_skills.name like '%Fix protocol%';
+select * from job_skills where job_skills.name = '4Gl';
+select no_learning_path, total_skills from (select count(*) as no_learning_path from job_skills WHERE learning_path IS NULL OR JSON_LENGTH(learning_path) = 0) as a
+cross join (select count(*) as total_skills from job_skills) as b;
+select count(*)  from job_skills WHERE learning_path IS NULL OR JSON_LENGTH(learning_path) = 0
+union all select count(*) as total_skills from job_skills;
+select distinct learning_path, GROUP_CONCAT(name,',') from job_skills GROUP BY learning_path,name;
+update job_skills set learning_path = null;
 update job_skills set ai_enriched = null, category = null, description = null, learning_path=null
 where name = 'Fix protocol';
 where name like '%idempotency%' limit 1;

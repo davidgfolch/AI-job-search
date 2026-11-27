@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { skillsApi, type Skill } from '../api/SkillsManagerApi';
 import { normalizeName } from '../utils/skillUtils';
 
-export type { Skill };
+export type { Skill, LearningPathLink, LearningPathSource } from '../api/SkillsManagerApi';
 
 /**
  * Custom hook to manage the skills learn list

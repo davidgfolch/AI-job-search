@@ -1,8 +1,9 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from commonlib.sql.mysqlUtil import MysqlUtil
 from scrapper.util.persistence_manager import PersistenceManager
 from scrapper.services.BaseService import BaseService
+from scrapper.test.log_capture import assert_logged
 
 class ConcreteService(BaseService):
     def get_job_id(self, url: str) -> str:
@@ -35,9 +36,14 @@ class TestBaseService:
     ])
     def test_job_exists_in_db(self, service, mock_mysql, url, job_exists, expected_job_id):
         mock_mysql.fetchOne.return_value = {"id": 1} if job_exists else None
-        job_id, exists = service.job_exists_in_db(url)
+        with patch('scrapper.services.BaseService.logger') as log:
+            job_id, exists = service.job_exists_in_db(url)
         assert job_id == expected_job_id
         assert exists == job_exists
+        if job_exists:
+            assert_logged(log, 'info', 'scraper.job.already_exists', job_id=expected_job_id)
+        else:
+            log.info.assert_not_called()
     
     def test_prepare_resume(self, service, mock_persistence_manager):
         service.prepare_resume()

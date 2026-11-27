@@ -46,7 +46,6 @@ class ScraplingService:
             "timeout": 60000,
             "headless": False,
             "max_pages": 1,
-            "new_context": False,
             "page_setup": self._window_setup
         }
         if self.proxies:

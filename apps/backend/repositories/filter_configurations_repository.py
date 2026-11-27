@@ -1,19 +1,19 @@
 import json
 from typing import List, Optional, Dict, Any
 from commonlib.observability import get_logger
-from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection, getReadConnection
 from repositories.queries.view_generator import drop_config_view_sql
 
 logger = get_logger("backend.repositories.filter_configurations_repository")
 
 class FilterConfigurationsRepository:
 
-    def get_db(self):
-        return MysqlUtil(getConnection())
+    def get_db(self, read_only: bool = False):
+        return MysqlUtil(getReadConnection() if read_only else getConnection())
     
     def find_all(self) -> List[Dict[str, Any]]:
         query = "SELECT id, name, filters, watched, statistics, pinned, ordering, created, modified FROM filter_configurations ORDER BY pinned DESC, ordering ASC, created ASC"
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             rows = db.fetchAll(query)
             if not rows:
                 return []
@@ -32,7 +32,7 @@ class FilterConfigurationsRepository:
     
     def find_by_id(self, config_id: int) -> Optional[Dict[str, Any]]:
         query = "SELECT id, name, filters, watched, statistics, pinned, ordering, created, modified FROM filter_configurations WHERE id = %s"
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             row = db.fetchOne(query, config_id)
             if not row:
                 return None
@@ -48,7 +48,7 @@ class FilterConfigurationsRepository:
     
     def find_by_name(self, name: str) -> Optional[Dict[str, Any]]:
         query = "SELECT id, name, filters, watched, statistics, pinned, ordering, created, modified FROM filter_configurations WHERE name = %s"
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             row = db.fetchOne(query, name)
             if not row:
                 return None
@@ -115,5 +115,5 @@ class FilterConfigurationsRepository:
     
     def count(self) -> int:
         query = "SELECT COUNT(*) FROM filter_configurations"
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             return db.count(query)

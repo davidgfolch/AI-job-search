@@ -28,7 +28,7 @@ describe('SqlEditor', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (useSqlEditorHook.useSqlEditor as any).mockReturnValue(defaultHookValues);
+        vi.mocked(useSqlEditorHook.useSqlEditor).mockReturnValue(defaultHookValues);
     });
 
     it('should not render when isOpen is false', () => {
@@ -120,7 +120,7 @@ describe('SqlEditor', () => {
     });
 
     it('should render suggestions when showSuggestions is true', () => {
-        (useSqlEditorHook.useSqlEditor as any).mockReturnValue({
+        vi.mocked(useSqlEditorHook.useSqlEditor).mockReturnValue({
             ...defaultHookValues,
             showSuggestions: true,
             suggestions: [
@@ -152,7 +152,7 @@ describe('SqlEditor', () => {
         const applySuggestionMock = vi.fn();
         const suggestions = [{ text: 'users', type: 'table' as const }];
         
-        (useSqlEditorHook.useSqlEditor as any).mockReturnValue({
+        vi.mocked(useSqlEditorHook.useSqlEditor).mockReturnValue({
             ...defaultHookValues,
             showSuggestions: true,
             suggestions,
@@ -179,7 +179,7 @@ describe('SqlEditor', () => {
 
     it('should trigger handleChange when typing', () => {
         const handleChangeMock = vi.fn();
-        (useSqlEditorHook.useSqlEditor as any).mockReturnValue({
+        vi.mocked(useSqlEditorHook.useSqlEditor).mockReturnValue({
             ...defaultHookValues,
             handleChange: handleChangeMock
         });

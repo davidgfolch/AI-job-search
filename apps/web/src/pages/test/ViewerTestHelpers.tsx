@@ -4,8 +4,8 @@ import { jobsApi } from '../viewer/api/ViewerApi';
 import { mockJobs } from './ViewerTestUtils';
 
 export const mockJobsApiDefault = () => {
-  (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
-  (jobsApi.getJob as any).mockResolvedValue(mockJobs[0]);
+  vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 });
+  vi.mocked(jobsApi.getJob).mockResolvedValue(mockJobs[0]);
 };
 
 export const waitForJobList = async () => {
@@ -37,8 +37,8 @@ export const verifySummary = (text: RegExp) => {
   expect(summary).toBeInTheDocument();
 };
 
-export const triggerInfiniteScroll = async (callback: any) => {
+export const triggerInfiniteScroll = async (callback: (entries: IntersectionObserverEntry[]) => void) => {
   await act(async () => {
-    callback([{ isIntersecting: true }]);
+    callback([{ isIntersecting: true } as unknown as IntersectionObserverEntry]);
   });
 };

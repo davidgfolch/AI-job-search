@@ -42,7 +42,7 @@ async def follow_up(req: FollowUpRequest):
     if not _service:
         raise HTTPException(status_code=503, detail="Service not initialized")
     try:
-        result = _service.follow_up(req.original_question, req.clarification_answer)
+        result = _service.follow_up(req.original_question, req.clarification_answer, req.provider)
         logger.debug("form.answered", endpoint="follow_up", provider=result.provider, is_clarification=result.is_clarification, question_length=len(req.original_question), answer_length=len(result.text))
         return AnswerResponse(
             type="answer",
@@ -60,7 +60,8 @@ async def answer_batch(req: BatchAnswerRequest):
     if not _service:
         raise HTTPException(status_code=503, detail="Service not initialized")
     try:
-        results = _service.answer_batch(req.questions, req.provider)
+        fields = [f.model_dump() for f in req.fields] if req.fields else req.questions
+        results = _service.answer_batch(fields, req.provider)
         items = [
             BatchAnswerItem(
                 index=i,
@@ -72,7 +73,7 @@ async def answer_batch(req: BatchAnswerRequest):
             for i, r in enumerate(results)
         ]
         clarifications = sum(1 for r in results if r.is_clarification)
-        question_length = sum(len(q) for q in req.questions)
+        question_length = sum(len(f.question) for f in req.fields) if req.fields else sum(len(q) for q in req.questions)
         logger.debug("form.answered", endpoint="answer_batch", count=len(items), clarifications=clarifications, question_length=question_length)
         return BatchAnswerResponse(answers=items)
     except ValueError as e:

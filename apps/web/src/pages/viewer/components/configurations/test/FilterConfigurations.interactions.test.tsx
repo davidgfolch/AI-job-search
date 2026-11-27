@@ -95,7 +95,7 @@ describe('FilterConfigurations Interactions', () => {
         fireEvent.click(screen.getByText(confirm ? 'Confirm' : 'Cancel', { selector: 'button.modal-button' }));
         await waitFor(() => {
             const stored = JSON.parse(localStorage.getItem('filter_configurations') || '[]');
-            if (confirm) expect(stored.some((c: any) => c.name === 'Del')).toBe(false);
+            if (confirm) expect(stored.some((c: { name: string }) => c.name === 'Del')).toBe(false);
             else expect(stored[0].name).toBe('Del');
         });
     });

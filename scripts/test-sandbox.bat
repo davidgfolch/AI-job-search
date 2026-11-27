@@ -35,6 +35,7 @@ if "%TARGET%"=="" (
     echo Usage: %~nx0 ^<service^|project^> [--profile ^<name^>] [--no-db-clone] [--keep]
     exit /b 1
 )
+if not exist ".env.local" type nul > ".env.local"
 
 rem Modules disabled in .env (all their *_JOB/*_SKILL/*_ENABLED flags false) get a build-only check.
 set "CHECK_KEYS="
@@ -122,7 +123,7 @@ if "%KEEP%"=="1" (
 )
 echo Tearing down sandbox project '%PROJECT%'...
 docker compose %FILES% %PROFILE_ARGS% -p %PROJECT% rm -sfv
-docker volume rm %PROJECT%_mongo_data_sandbox >nul 2>&1
+docker volume rm %PROJECT%_mongo_data_sandbox %PROJECT%_web_node_modules >nul 2>&1
 rmdir /s /q "%SANDBOX_DIR%" >nul 2>&1
 if "%FAILED%"=="1" (
     echo Sandbox verification FAILED.

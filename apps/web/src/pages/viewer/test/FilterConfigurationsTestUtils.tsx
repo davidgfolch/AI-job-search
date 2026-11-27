@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
+import type { ComponentProps } from 'react';
 import type { JobListParams } from '../api/ViewerApi.ts';
+import type { FilterConfig } from '../components/configurations/hooks/useFilterConfigurations';
 
 // Mocks first
 // Default mocks
@@ -44,7 +46,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 export async function setup(
     configs: { name: string, filters: JobListParams }[] = [], 
-    props: any = {},
+    props: Partial<ComponentProps<typeof FilterConfigurations>> = {},
     isLoadedRef: { value: boolean }
 ) {
     if (configs.length > 0) {
@@ -93,15 +95,15 @@ export const configureMockServiceBehavior = (isLoadedRef: { value: boolean }) =>
      mockLocalStorage();
      vi.clearAllMocks();
      
-     const load = mockService.load as any;
-     load.mockImplementation(async (defaults: any) => {
+     const load = vi.mocked(mockService.load);
+     load.mockImplementation(async (defaults: FilterConfig[]) => {
          const stored = JSON.parse(localStorage.getItem('filter_configurations') || '[]');
          isLoadedRef.value = true;
          return stored.length ? stored : defaults;
      });
      
-     const save = mockService.save as any;
-     save.mockImplementation(async (configs: any) => {
+     const save = vi.mocked(mockService.save);
+     save.mockImplementation(async (configs: FilterConfig[]) => {
          const limited = configs.slice(0, 30);
          localStorage.setItem('filter_configurations', JSON.stringify(limited));
      });

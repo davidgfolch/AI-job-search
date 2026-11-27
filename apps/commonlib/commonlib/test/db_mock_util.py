@@ -24,8 +24,12 @@ def create_mock_db(**kwargs):
             return [(c,) for c in columns]
         return data_rows
 
+    def fetch_all_with_columns_side_effect(query, params=None):
+        return columns, data_rows
+
     mock_db.count.return_value = kwargs.get('count', 0)
     mock_db.fetchAll.side_effect = fetch_all_side_effect
+    mock_db.fetchAllWithColumns.side_effect = fetch_all_with_columns_side_effect
     mock_db.fetchOne.return_value = kwargs.get('fetchOne', None)
     mock_db.getTableDdlColumnNames.return_value = columns
     mock_db.executeAndCommit.return_value = kwargs.get('executeAndCommit', 1)
@@ -45,6 +49,7 @@ def test_create_mock_db_structure():
         
     # Check default methods exist
     assert hasattr(mock_db, 'fetchAll')
+    assert hasattr(mock_db, 'fetchAllWithColumns')
     assert hasattr(mock_db, 'fetchOne')
     assert hasattr(mock_db, 'executeAndCommit')
     

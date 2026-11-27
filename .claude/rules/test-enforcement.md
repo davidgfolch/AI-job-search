@@ -4,7 +4,7 @@ trigger: always_on
 
 ## The centralized test suite must run after every code or test change
 
-`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), backend layering, test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script**.
+`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), layered architecture across Python modules, test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script**.
 
 Therefore, after any change to production code or test code, the agent must run the centralized suite through `scripts/test.sh` (Linux/Mac) or `scripts/test.bat` (Windows) — never `poetry run pytest`, `uv run pytest`, or `npm test` directly — and it must always include `commonlib`:
 
@@ -17,12 +17,14 @@ Therefore, after any change to production code or test code, the agent must run 
 
 A runner invocation with **no** targets already executes commonlib first, then every other module, then the e2e suite.
 
+Changes under `apps/web/src/**` must also include `e2e` — the guardrail adds it automatically. When a web change affects a user-visible flow, add or update an E2E spec for it (see the `e2e-implementer` skill) before finishing.
+
 ### Which changes require the suites
 
 | Change | Requires the suite |
 |--------|--------------------|
 | Python source or tests under `apps/**/*.py` | yes |
-| Frontend source under `apps/web/src/**` | yes |
+| Frontend source under `apps/web/src/**` | yes, plus `e2e` |
 | E2E specs under `apps/e2e/**` | yes |
 | The test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`) | yes |
 | Environment files (`.env`, `.env.secrets`, `.env.*`) | yes — they change test behavior |
@@ -40,7 +42,7 @@ The requirement is enforced in the tool call, so it does not depend on the agent
 | Mechanism | Harness | What it does |
 |-----------|---------|--------------|
 | `.claude/rules/test-enforcement.md` | all | Canonical policy: which changes require the suite, and how it must be invoked |
-| `.claude/hooks/test-enforce.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit` and on `Bash`) | Tracks the changed files, adds `commonlib` and the pending modules to a `scripts/test.sh` / `scripts/test.bat` invocation, and injects a reminder with the exact command to run |
+| `.claude/hooks/test-enforce.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit` and on `Bash`) | Tracks the changed files, adds `commonlib` and the pending modules (plus `e2e` for web changes) to a `scripts/test.sh` / `scripts/test.bat` invocation, and injects a reminder with the exact command to run |
 | `.opencode/plugins/test-enforce.js` | opencode | Same behavior: injects the missing targets into a test-runner call and prints the reminder once on the next shell call |
 
 Both are registered automatically: the hook in `.claude/settings.json`, the plugin in `.opencode/opencode.json`. They mirror each other.

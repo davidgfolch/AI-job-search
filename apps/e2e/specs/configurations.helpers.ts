@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { MOCK_JOB_1, MOCK_JOBS_LIST, MOCK_SEARCH_BACKEND } from './viewer.mocks';
-import { setupApiSafetyNet, setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks } from './common.helpers';
+import { setupAppBootstrapMocks, setupTimezoneMock, setupModalityMock, setupSalaryHistoryMocks } from './common.helpers';
 
 export const MOCK_FILTER_CONFIGS = [
     {
@@ -50,7 +50,6 @@ export const MOCK_FILTER_CONFIGS = [
 ];
 
 export async function setupConfigurationsMocks(page: Page): Promise<JobListRequests> {
-    await setupApiSafetyNet(page);
     await setupAppBootstrapMocks(page);
     await setupTimezoneMock(page);
     await setupModalityMock(page);

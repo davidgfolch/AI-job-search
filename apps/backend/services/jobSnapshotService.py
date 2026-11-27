@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from commonlib.jobSnapshotRepository import JobSnapshotRepository
+from commonlib.repositories.jobSnapshotRepository import JobSnapshotRepository
 
 
 class JobSnapshotService:

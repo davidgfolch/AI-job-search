@@ -31,7 +31,7 @@ describe('skillsApi - getSkills', () => {
             {
                 name: 'Python',
                 description: 'A programming language',
-                learning_path: ['Learn variables'],
+                learning_path: [{ url: 'Learn variables', source: 'llm' }],
                 ai_enriched: true,
                 category: 'Programming',
             }
@@ -42,7 +42,7 @@ describe('skillsApi - getSkills', () => {
         
         expect(skills).toHaveLength(1);
         expect(skills[0].name).toBe('Python');
-        expect(skills[0].learningPath).toEqual(['Learn variables']);
+        expect(skills[0].learningPath).toEqual([{ url: 'Learn variables', source: 'llm' }]);
         expect(skills[0].ai_enriched).toBe(true);
         expect(skills[0].category).toBe('Programming');
     });
@@ -60,12 +60,12 @@ describe('skillsApi - getSkills', () => {
 
     it('should handle learningPath in camelCase', async () => {
         const backendResponse = [
-            { name: 'Python', description: 'A programming language', learningPath: ['Test'] }
+            { name: 'Python', description: 'A programming language', learningPath: [{ url: 'Test', source: 'manual' }] }
         ];
         mocks.get.mockResolvedValueOnce({ data: backendResponse });
         
         const skills = await skillsApi.getSkills();
         
-        expect(skills[0].learningPath).toEqual(['Test']);
+        expect(skills[0].learningPath).toEqual([{ url: 'Test', source: 'manual' }]);
     });
 });

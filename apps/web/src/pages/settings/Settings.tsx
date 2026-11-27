@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import EditorImport from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
@@ -9,6 +9,8 @@ import { groupSettingsByKey, getSubgroupTitle } from './utils/SettingsUtils';
 import MessageContainer from '../common/components/core/MessageContainer';
 import { FormField } from '../common/components/core/FormField';
 import { useEnvSettings } from '../common/hooks/useEnvSettings';
+import { LLM_CONFIG_KEYS } from './llmProviders';
+import LlmProviders from './LlmProviders';
 import './Settings.css';
 
 type SetStateAction<T> = React.Dispatch<React.SetStateAction<T>>;
@@ -17,37 +19,52 @@ type CodeEditorProps = { value: string; onValueChange: (code: string) => void; h
 const Editor = ((EditorImport as unknown as { default?: unknown }).default ?? EditorImport) as React.ComponentType<CodeEditorProps>;
 
 export default function Settings() {
-    const { data: envSettingsData, isError: isEnvError } = useEnvSettings();
+    const { data: envSettingsData, isError: isEnvError, updateSettings } = useEnvSettings();
     const [envSettings, setEnvSettings] = useState<Record<string, string>>({});
     const [scrapperState, setScrapperState] = useState<string>('');
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const effectRan = useRef(false);
+    const [hasInitialized, setHasInitialized] = useState(false);
+    const [dismissedEnvError, setDismissedEnvError] = useState(false);
+    const [lastEnvError, setLastEnvError] = useState(isEnvError);
+    const loadStartedRef = useRef(false);
 
-    useEffect(() => {
-        if (isEnvError) {
-            setMessage({ text: 'Failed to load settings', type: 'error' });
-            setIsLoading(false);
-        } else if (envSettingsData && !effectRan.current) {
-            setEnvSettings(envSettingsData);
-            loadData();
-            effectRan.current = true;
-        }
-    }, [envSettingsData, isEnvError]);
+    if (lastEnvError !== isEnvError) { setLastEnvError(isEnvError); setDismissedEnvError(false); }
+    if (!isEnvError && envSettingsData && !hasInitialized) {
+        setHasInitialized(true);
+        setEnvSettings(envSettingsData);
+    }
 
-    const loadScrapperState = async () => setScrapperState(JSON.stringify(await settingsApi.getScrapperState(), null, 2));
+    const loadScrapperState = useCallback(async () => setScrapperState(JSON.stringify(await settingsApi.getScrapperState(), null, 2)), []);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setIsLoading(true);
             await loadScrapperState();
         } catch { setMessage({ text: 'Failed to load settings', type: 'error' }); }
         finally { setIsLoading(false); }
-    };
+    }, [loadScrapperState]);
+
+    useEffect(() => {
+        if (isEnvError || !envSettingsData || loadStartedRef.current) return;
+        loadStartedRef.current = true;
+        loadData();
+    }, [envSettingsData, isEnvError, loadData]);
+
+    const displayedMessage = isEnvError && !dismissedEnvError ? { text: 'Failed to load settings', type: 'error' as const } : message;
+    const showLoading = isEnvError ? false : isLoading;
 
     const handleScrapperStateRefresh = async () => {
         try { await loadScrapperState(); setMessage({ text: 'Scrapper state refreshed', type: 'success' }); setTimeout(() => setMessage(null), 3000); }
         catch { setMessage({ text: 'Failed to refresh scrapper state', type: 'error' }); }
+    };
+
+    const handleProviderChange = async (key: string, value: string) => {
+        const previous = envSettings[key];
+        setEnvSettings({ ...envSettings, [key]: value });
+        try { await updateSettings(key, value); setMessage({ text: `${key} switched to ${value}`, type: 'success' }); }
+        catch { setEnvSettings({ ...envSettings, [key]: previous }); setMessage({ text: `Failed to switch ${key}`, type: 'error' }); }
+        setTimeout(() => setMessage(null), 3000);
     };
 
     const handleEnvUpdateAll = async () => {
@@ -60,9 +77,10 @@ export default function Settings() {
         catch { setMessage({ text: 'Invalid JSON format for scrapper state', type: 'error' }); }
     };
 
-    if (isLoading) return <div className="settings-loading">Loading settings...</div>;
+    if (showLoading) return <div className="settings-loading">Loading settings...</div>;
 
-    const groupedSettings = groupSettingsByKey(envSettings);
+    const rawGroups = groupSettingsByKey(envSettings);
+    const groupedSettings = Object.fromEntries(Object.entries(rawGroups).map(([group, keys]) => [group, keys.filter(key => !LLM_CONFIG_KEYS.includes(key))]));
     const sortedGroupNames = Object.keys(groupedSettings).sort((a, b) => {
         const order = ['System & Base', 'UI Frontend', 'Scrapper', 'AI Enrichment', 'Other'];
         const getIdx = (k: string) => (i => i === -1 ? order.length : i)(order.indexOf(k));
@@ -76,10 +94,11 @@ export default function Settings() {
         <>
             <PageHeader title="Settings" />
             <main className="settings-main">
-                <MessageContainer message={message} error={null} onDismissMessage={() => setMessage(null)} />
+                <MessageContainer message={displayedMessage} error={null} onDismissMessage={() => { setDismissedEnvError(true); setMessage(null); }} />
                 <div className="settings-container">
+                    <LlmProviders envSettings={envSettings} setEnvSettings={setEnvSettings} onSave={handleProviderChange} />
                     <div className="settings-section env-variables-section">
-                        <div className="env-section-header"><h2>Environment Variables (.env)</h2><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
+                        <div className="env-section-header"><h2>Environment Variables (.env.local overrides)</h2><button className="env-save-btn" onClick={handleEnvUpdateAll}>Save</button></div>
                         <div className="env-groups-container">
                             <div className="env-groups-column">{leftGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings))}{renderScrapperEditor(scrapperState, setScrapperState, handleScrapperStateRefresh, handleScrapperStateSave)}</div>
                             <div className="env-groups-column">{middleGroups.map(g => renderGroup(g, groupedSettings, envSettings, setEnvSettings))}</div>
@@ -118,7 +137,7 @@ function sortSubGroups(a: string, b: string, groupName: string) {
 }
 
 function renderInlineItem(key: string, envSettings: Record<string, string>, setEnvSettings: SetStateAction<Record<string, string>>) {
-    const isPassword = key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL');
+    const isPassword = key.includes('PWD') || key.includes('PASSWORD') || key.includes('EMAIL') || key.includes('API_KEY') || key.endsWith('_TOKEN');
     return (<FormField key={key} id={`env-${key}`} label={<span className="env-key-label">{key}</span>} className="env-item inline-item"><input id={`env-${key}`} name={key} className="env-input compact-input" type={isPassword ? "password" : "text"} value={envSettings[key] || ''} onChange={(e) => setEnvSettings({ ...envSettings, [key]: e.target.value })} /></FormField>);
 }
 

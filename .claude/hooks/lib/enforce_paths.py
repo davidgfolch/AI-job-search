@@ -58,7 +58,10 @@ def classify(rel_path: str):
         return None
     module_match = MODULE_PATH.match(rel)
     if module_match:
-        return ([module_match.group(1)], False)
+        module = module_match.group(1)
+        # A web change can alter the UI flows the e2e suite exercises, so it always runs both suites.
+        modules = [module, "e2e"] if module.lower() == "web" else [module]
+        return (modules, False)
     if base.startswith(".env"):
         return ([], True)
     if TEST_BASENAME.match(base):

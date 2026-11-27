@@ -17,25 +17,6 @@
     flex-shrink: 0;
 }
 
-.mobile-job-actions {
-    display: none;
-    padding-bottom: 0.5rem;
-    
-}
-
-@media (max-width: 768px) {
-    .mobile-job-actions {
-        display: flex;
-    }
-}
-
-.mobile-back-btn {
-    display: none;
-    flex-shrink: 0;
-    font-size: 0.85rem;
-    padding: 4px 10px;
-}
-
 .mobile-nav-row {
     display: none;
     align-items: center;
@@ -63,10 +44,6 @@
     .mobile-nav-row {
         display: flex;
     }
-    .mobile-back-btn {
-        display: inline-flex;
-        align-items: center;
-    }
     .job-detail-compact-header {
         display: none !important;
     }
@@ -84,19 +61,6 @@
     }
     .job-detail {
         padding: 0.25rem;
-    }
-    /* Compact action buttons on mobile */
-    .mobile-job-actions .header-actions {
-        gap: 0.2rem;
-        margin-left: 0;
-    }
-    .mobile-job-actions .header-button {
-        width: 28px;
-        height: 28px;
-        font-size: 0.9rem;
-    }
-    .mobile-job-actions .button-separator {
-        margin: 0 0.1rem;
     }
     .open-duplicated-btn {
         display: none !important;
@@ -714,7 +678,6 @@
     }
 
     .header-actions,
-    .mobile-job-actions,
     .mobile-nav-row,
     .job-status-floating,
     .job-detail-compact-header,

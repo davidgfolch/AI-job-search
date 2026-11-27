@@ -2,6 +2,7 @@ import type { FilterConfig } from './hooks/useFilterConfigurations';
 import type { WatcherResult } from './hooks/useFilterWatcher';
 import { useState } from 'react';
 import { useShortcuts } from '../../shortcutsContext';
+import { pinnedShortcutDisplay } from '../../shortcutsConfig';
 import ShortcutBadge from '../ShortcutBadge';
 
 interface PinnedConfigurationsProps {
@@ -34,7 +35,7 @@ export function PinnedConfigurations({ pinnedConfigs, onLoad, onUnpin, results =
                 const hasNew = result && result.newItems > 0;
                 const hasRemoved = result && result.removedItems > 0;
                 const isSelected = config.name === selectedConfigName;
-                const shortcutDisplay = `Alt+${index + 1}`;
+                const shortcutDisplay = pinnedShortcutDisplay(index + 1);
                 return (
                     <div key={config.name} className={`pinned-config-item ${isSelected ? 'selected' : ''} ${config.watched ? 'is-watched' : ''}`}>
                         <button

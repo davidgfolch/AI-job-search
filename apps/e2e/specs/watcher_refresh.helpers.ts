@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, Route } from '@playwright/test';
 import { MOCK_JOB_1, MOCK_JOB_2, MOCK_JOBS_LIST } from './viewer.mocks';
 import { BASE_URL, setupPageLogging, setupTimezoneMock } from './common.helpers';
 
@@ -22,7 +22,7 @@ export async function setupFilterConfigurationMock(page: Page) {
 }
 
 export function createJobsListRoute(counters: { listRequestCount: number }) {
-    return async (route: any) => {
+    return async (route: Route) => {
         counters.listRequestCount++;
         await route.fulfill({ json: MOCK_JOBS_LIST });
     };

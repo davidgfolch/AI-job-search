@@ -34,6 +34,17 @@ export type FilterConfigStat = {
     count: number;
 };
 
+export type KeywordStat = {
+    date: string;
+    site: string;
+    keyword: string;
+    reported_total: number;
+    processed: number;
+    new: number;
+    duplicates: number;
+    duplicate_ids: string;
+};
+
 const buildDateParams = (startDate?: string, endDate?: string, includeOldJobs?: boolean) => ({
     ...(startDate && { start_date: startDate }),
     ...(endDate && { end_date: endDate }),
@@ -63,4 +74,9 @@ export const getSourcesByWeekday = async (startDate?: string, endDate?: string, 
 export const getFilterConfigStats = async (startDate?: string, endDate?: string): Promise<FilterConfigStat[]> => {
     const response = await apiClient.get(`${API_Base}/filter-configs`, { params: buildDateParams(startDate, endDate) });
     return response.data;
+};
+
+export const getKeywordStats = async (startDate?: string, endDate?: string): Promise<KeywordStat[]> => {
+    const response = await apiClient.get(`${API_Base}/keywords`, { params: buildDateParams(startDate, endDate) });
+    return response.data?.items ?? [];
 };

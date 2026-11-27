@@ -1,0 +1,41 @@
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+
+.toggle-switch-track {
+    position: relative;
+    display: inline-block;
+    width: 2.25rem;
+    height: 1.25rem;
+    border-radius: 999px;
+    background: #6b7280;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-switch[aria-checked="true"] .toggle-switch-track {
+    background: var(--primary-color);
+}
+
+.toggle-switch-knob {
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s ease;
+}
+
+.toggle-switch[aria-checked="true"] .toggle-switch-knob {
+    transform: translateX(1rem);
+}

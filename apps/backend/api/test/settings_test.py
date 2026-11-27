@@ -33,6 +33,16 @@ def test_update_env_settings_bulk(client):
     mock_svc.assert_called_once_with(updates)
 
 
+@pytest.mark.parametrize("refresh,expected", [(False, False), (True, True)])
+def test_get_provider_models(client, refresh, expected):
+    payload = {"provider": "gemini", "models": [], "source": "live", "cached": False, "fetched_at": None}
+    with patch(f"{SERVICE}.get_provider_models", return_value=payload) as mock_svc:
+        response = client.get("/api/settings/provider-models", params={"provider": "gemini", "refresh": refresh})
+    assert response.status_code == 200
+    assert response.json() == payload
+    mock_svc.assert_called_once_with("gemini", expected)
+
+
 def test_get_scrapper_state(client):
     with patch(f"{SERVICE}.get_scrapper_state", return_value=STATE_DATA):
         response = client.get("/api/settings/scrapper-state")

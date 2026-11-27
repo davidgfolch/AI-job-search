@@ -1,23 +1,24 @@
 import time
-from typing import List, Dict, Any
 
-from commonlib.sql.mysqlUtil import MysqlUtil
-from commonlib.skill_context import get_skill_context
-from commonlib.skill_enricher_service import process_skill_enrichment, log_no_pending_skills
-from commonlib.stopWatch import StopWatch
 from commonlib.observability import get_logger
+from commonlib.skill_learning_path import LearningPathLink
 from commonlib.services.metrics_collector import MetricsCollector
+from commonlib.services.skill_enricher_service import BackendUnavailable, process_skill_enrichment
 
-from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_batch_size, get_enrich_limit
-from commonlib.ollama_client import query_ollama
+from ..config import get_backend, get_ollama_model, get_ollama_base_url, get_timeout, get_enrich_limit, is_cloud_backend
+from ..repositories.skill_repository import SkillRepository
+from commonlib.ollama_client import ping_ollama, query_ollama
 from ..domain.mappers import build_skill_prompt_messages
 from ..domain.parsers import parse_skill_enrichment_result
+from .cloud_enrichment import _enrich_cloud
+from .hf_enrichment import _enrich_huggingface
+from .link_validator import validate_learning_paths
 
 logger = get_logger("aiEnrichSkill.enrichment")
 collector = MetricsCollector()
 
 
-def generate_skill_description_ollama(skill_name, context="", ollama_base_url=None) -> tuple[str, str]:
+def generate_skill_description_ollama(skill_name, context="", ollama_base_url=None) -> tuple[str, str, list[LearningPathLink]]:
     logger.info("skill.started", skill=skill_name, has_context=bool(context))
     messages = build_skill_prompt_messages(skill_name, context)
     system = messages[0]["content"]
@@ -34,162 +35,72 @@ def generate_skill_description_ollama(skill_name, context="", ollama_base_url=No
     )
     if raw is None:
         logger.error("skill.failed", skill=skill_name)
-        return ("", "Other")
+        return ("", "Other", [])
 
     result = raw.strip().strip('"').strip("'")
     parsed = parse_skill_enrichment_result(result)
-    logger.info("skill.completed", skill=skill_name, has_description=bool(parsed[0]))
-    return parsed
+    description, category, *rest = parsed
+    learning_path = validate_learning_paths(skill_name, rest[0] if rest else [])
+    logger.info("skill.completed", skill=skill_name, has_description=bool(description), links=len(learning_path))
+    return description, category, learning_path
 
 
-def _enrich_ollama(mysql: MysqlUtil, ollama_base_url=None) -> int:
+def _backend_is_up(ollama_base_url=None) -> bool:
+    """Liveness ping: the only signal that separates "the server is gone" from "it cannot do this skill"."""
+    return ping_ollama(primary_url=ollama_base_url or get_ollama_base_url(), log=logger)
+
+
+def _handle_failed_skill(repository: SkillRepository, name: str, ollama_base_url=None) -> None:
+    """Ollama up: the skill leaves the pending queue, or retrying it every cycle would keep the head of
+    the queue occupied forever. Ollama down: nothing is marked, the batch stops (BackendUnavailable)
+    and the worker retries the skill once the server answers again."""
+    if not _backend_is_up(ollama_base_url):
+        logger.error("ai.unreachable", backend="ollama", skill=name)
+        raise BackendUnavailable(name)
+    repository.skip_skill(name)
+    logger.error("skill.enrich_error", skill=name, reason="no description from the model")
+
+
+def _enrich_ollama(repository: SkillRepository, ollama_base_url=None) -> int:
+    if repository.has_pending_enrichment() and not _backend_is_up(ollama_base_url):
+        # Deferred, never marked: the pending skills are retried when Ollama is back.
+        logger.error("ai.unreachable", backend="ollama", base_url=ollama_base_url or get_ollama_base_url())
+        collector.record_backend_unreachable("aiEnrichSkill")
+        return 0
+
     def timed_generate(name, context):
         start = time.time()
         try:
             result = generate_skill_description_ollama(name, context, ollama_base_url)
-            duration = time.time() - start
-            description = result[0] if isinstance(result, tuple) and len(result) == 2 else (result if isinstance(result, str) else "")
-            success = bool(description) and "Error" not in description
-            collector.record_job("aiEnrichSkill", duration, success)
-            logger.info("skill.result", duration=duration, skill=name, success=success)
-            return result
         except Exception as e:
-            duration = time.time() - start
-            collector.record_job("aiEnrichSkill", duration, False)
+            collector.record_job("aiEnrichSkill", time.time() - start, False)
             collector.record_error("aiEnrichSkill", str(e))
-            return ("", "Other")
+            _handle_failed_skill(repository, name, ollama_base_url)
+            return ("", "Other", [])
+        duration = time.time() - start
+        description = result[0] if isinstance(result, tuple) and len(result) >= 2 else (result if isinstance(result, str) else "")
+        success = bool(description) and "Error" not in description
+        collector.record_job("aiEnrichSkill", duration, success)
+        logger.info("skill.result", duration=duration, skill=name, success=success)
+        if not success:
+            _handle_failed_skill(repository, name, ollama_base_url)
+        return result
     return process_skill_enrichment(
-        mysql,
+        repository,
         timed_generate,
         limit=get_enrich_limit(),
         check_empty_description_only=True,
     )
 
 
-def _fetch_pending_skills(mysql: MysqlUtil, limit: int) -> List[Dict[str, str]]:
-    where_clause = "COALESCE(ai_enriched, 0) = 0"
-    query_find = f"SELECT name FROM job_skills WHERE {where_clause} LIMIT {limit}"
-    rows = mysql.fetchAll(query_find)
-    return [{'name': row[0]} for row in rows]
-
-
-def _fetch_skill_context_safe(mysql: MysqlUtil, skill_name: str) -> str:
-    try:
-        return get_skill_context(mysql, skill_name)
-    except Exception:
-        return ""
-
-
-def _save_skill_result(mysql: MysqlUtil, name: str, description: str, category: str):
-    update_query = "UPDATE job_skills SET description = %s, category = %s, ai_enriched = 1 WHERE name = %s"
-    mysql.executeAndCommit(update_query, [description, category, name])
-
-
-def _enrich_huggingface(mysql: MysqlUtil) -> int:
-    from ..llm_client import get_pipeline
-
-    batch_size = get_batch_size()
-    limit = get_enrich_limit()
-
-    skills = _fetch_pending_skills(mysql, limit)
-    if not skills:
-        log_no_pending_skills(limit)
-        return 0
-
-    collector.set_pending("aiEnrichSkill", len(skills))
-    logger.info("skills.found", total=len(skills), batch_size=batch_size)
-
-    pipe = get_pipeline()
-    count = 0
-    overall_start_time = time.time()
-
-    for i in range(0, len(skills), batch_size):
-        batch_items = skills[i:i + batch_size]
-        processed_count = _process_skill_batch(
-            mysql, pipe, batch_items, i, len(skills), count, overall_start_time
-        )
-        count += processed_count
-
-    print("-" * 50)
-    return count
-
-
-def _process_skill_batch(
-    mysql: MysqlUtil,
-    pipeline: Any,
-    batch_items: List[Dict[str, str]],
-    start_idx: int,
-    total: int,
-    _current_global_count: int,
-    _start_time: float
-) -> int:
-    from ..llm_utils import process_batch
-
-    stop_watch_batch = StopWatch()
-    stop_watch_batch.start()
-
-    success_count = 0
-
-    def apply_template(tokenizer, messages):
-        return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-    def build_messages_with_context(item: Dict[str, str]) -> List[dict]:
-        name = item['name']
-        idx = batch_items.index(item)
-        current_idx = start_idx + idx + 1
-        context = _fetch_skill_context_safe(mysql, name)
-        logger.info("skill.started", skill=name, index=current_idx, total=total)
-        return build_skill_prompt_messages(name, context)
-
-    _timing = {"last": time.time()}
-
-    def on_success(item: Dict[str, str], generated_text: str):
-        nonlocal success_count
-        name = item['name']
-        now = time.time()
-        duration = now - _timing["last"]
-        _timing["last"] = now
-        description, category = parse_skill_enrichment_result(generated_text)
-        success = bool(description) and "Error" not in description
-        collector.record_job("aiEnrichSkill", duration, success)
-        logger.info("skill.result", duration=duration, skill=name, success=success)
-        if success:
-            _save_skill_result(mysql, name, description, category)
-            success_count += 1
-        else:
-            logger.warning("skill.failed_to_generate", skill=name)
-
-    def on_error(item: Dict[str, str], ex: Exception):
-        name = item['name']
-        now = time.time()
-        duration = now - _timing["last"]
-        _timing["last"] = now
-        collector.record_job("aiEnrichSkill", duration, False)
-        collector.record_error("aiEnrichSkill", str(ex))
-        logger.info("skill.result", duration=duration, skill=name, success=False)
-        logger.exception("skill.failed", skill=name, error=str(ex))
-
-    process_batch(
-        pipeline,
-        batch_items,
-        apply_template,
-        build_messages_with_context,
-        on_success,
-        on_error,
-        get_timeout(),
-        "skills"
-    )
-
-    stop_watch_batch.end()
-    return success_count
-
-
-def enrich_skills(mysql: MysqlUtil, ollama_base_url=None) -> int:
+def enrich_skills(repository: SkillRepository, ollama_base_url=None) -> int:
     backend = get_backend()
     if backend == "ollama":
-        return _enrich_ollama(mysql, ollama_base_url)
+        return _enrich_ollama(repository, ollama_base_url)
     elif backend == "huggingface":
-        return _enrich_huggingface(mysql)
+        return _enrich_huggingface(repository)
+    elif is_cloud_backend():
+        return _enrich_cloud(repository)
     else:
         logger.error("unknown_backend", backend=backend)
         return 0
