@@ -1,3 +1,5 @@
+import pytest
+
 from scrapper.navigator.indeedScrapling_elements import (
     _extract_text, _extract_location, _modality_badge, _extract_total_from_title,
     CSS_SEL_JOB_TITLE, CSS_SEL_COMPANY, CSS_SEL_LOCATION, CSS_SEL_JOB_SALARY,
@@ -41,6 +43,28 @@ def test_extract_text_empty_when_no_match():
     page = MockSelector(text="")
     result = _extract_text(page, [CSS_SEL_JOB_TITLE[0]])
     assert result == ""
+
+
+@pytest.mark.parametrize("pay", [
+    pytest.param("De 25.000 € a 40.000 € al año", id="euro-range"),
+    pytest.param("Hasta 35.000 € al año", id="up-to-euros"),
+    pytest.param("46,000", id="bare-number"),
+])
+def test_extract_salary_from_structured_summary(pay):
+    page = MockSelector()
+    page.css = lambda sel: MockSelector(text=pay) if "structured-job-summary" in sel else MockSelector("")
+    assert _extract_text(page, CSS_SEL_JOB_SALARY) == pay
+
+
+def test_extract_salary_falls_back_to_legacy_selector():
+    page = MockSelector()
+    page.css = lambda sel: MockSelector(text="60k - 70k") if "salary-snippet-container" in sel else MockSelector("")
+    assert _extract_text(page, CSS_SEL_JOB_SALARY) == "60k - 70k"
+
+
+def test_extract_salary_empty_when_no_pay_info():
+    page = MockSelector()
+    assert _extract_text(page, CSS_SEL_JOB_SALARY) == ""
 
 
 def test_extract_location():

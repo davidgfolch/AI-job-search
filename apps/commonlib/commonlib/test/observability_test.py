@@ -1,11 +1,24 @@
 import json
 import os
+import subprocess
+import sys
 
 import pytest
 
 from commonlib import observability
-from commonlib.observability import configure_logging, get_app_name, get_logger, job_log_context, log_file_path
+from commonlib.observability import configure_logging, get_app_name, get_logger, log_file_path
 from commonlib.test.observability_fixtures import APP_NAME_ENV, LEGACY_APP_NAME_ENV, _events, _read, fake_app, log_dir  # noqa: F401 - the fixtures register by being imported here
+
+
+def test_observability_imports_without_cycle():
+    """A fresh interpreter must load both modules; environmentUtil logs lazily to avoid a cycle."""
+    code = (
+        "from commonlib.observability import configure_logging, get_logger; "
+        "from commonlib.environmentUtil import getEnv; "
+        "getEnv('PATH')"
+    )
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 class TestConfiguration:
@@ -131,46 +144,3 @@ class TestStampCallerModule:
         """`__main__` above an app frame must not become the module."""
         assert observability.STACK_STOP_MODULES == frozenset({"__main__"})
         assert fake_app.emit({"module": "commonlib.ai_helpers"})["module"] != "__main__"
-
-
-class TestJobLogContext:
-    def test_binds_job_id_only_inside_the_block(self, log_dir):
-        configure_logging("ctx_bind")
-        logger = get_logger("ctx_bind.case")
-        with job_log_context(582714):
-            logger.info("job.result", duration=1.0)
-        logger.info("jobs.skipped", wait_seconds=10)
-        records = _events(log_file_path("ctx_bind"))
-        assert records[0]["job_id"] == 582714
-        assert "job_id" not in records[1]
-
-    def test_explicit_job_id_wins(self, log_dir):
-        configure_logging("ctx_explicit")
-        logger = get_logger("ctx_explicit.case")
-        with job_log_context(582714):
-            logger.info("job.retry", job_id=42)
-        assert _events(log_file_path("ctx_explicit"))[0]["job_id"] == 42
-
-    def test_none_job_id_does_not_bind(self, log_dir):
-        configure_logging("ctx_none")
-        logger = get_logger("ctx_none.case")
-        with job_log_context(None):
-            logger.info("job.not_found")
-        assert "job_id" not in _events(log_file_path("ctx_none"))[0]
-
-    def test_job_id_is_unbound_after_an_error(self, log_dir):
-        configure_logging("ctx_error")
-        logger = get_logger("ctx_error.case")
-        with pytest.raises(ValueError):
-            with job_log_context(7):
-                raise ValueError("boom")
-        logger.info("job.critical_error")
-        assert "job_id" not in _events(log_file_path("ctx_error"))[0]
-
-    def test_nested_blocks_inherit_the_inner_id(self, log_dir):
-        configure_logging("ctx_nested")
-        logger = get_logger("ctx_nested.case")
-        with job_log_context(1):
-            with job_log_context(2):
-                logger.info("job.result")
-        assert _events(log_file_path("ctx_nested"))[0]["job_id"] == 2

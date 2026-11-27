@@ -9,6 +9,7 @@ test.use({
 
 const CONFIG_PUT = (req: { method(): string; url(): string }) => req.method() === 'PUT' && /\/api\/filter-configurations\/\d+/.test(req.url());
 const CONFIG_POST = (req: { method(): string; url(): string }) => req.method() === 'POST' && /\/api\/filter-configurations$/.test(req.url());
+const waitForMockedConfigSave = (page: Page) => page.waitForResponse(res => CONFIG_POST(res.request()));
 
 const clickConfig = (page: Page, name: string) =>
     openConfigDropdown(page).then(() => page.locator('.config-suggestion-item').filter({ hasText: name }).locator('.config-name').click());
@@ -115,10 +116,11 @@ test.describe('Filter Configurations E2E', () => {
         await configInput.click();
         await configInput.pressSequentially('New Config');
         await expect(configInput).toHaveValue('New Config');
-        const postRequest = page.waitForRequest(CONFIG_POST);
+        const postResponse = waitForMockedConfigSave(page);
         await page.getByTitle('Save current filters with the name above').click();
-        const request = await postRequest;
-        expect(request.postDataJSON().name).toBe('New Config');
+        const response = await postResponse;
+        expect(response.status()).toBe(201);
+        expect(response.request().postDataJSON().name).toBe('New Config');
     });
 
     test('should select all jobs when loading a configuration with auto select all', async ({ page }) => {
@@ -154,11 +156,12 @@ test.describe('Filter Configurations E2E', () => {
         const configInput = page.locator('#filter-config-input');
         await configInput.click();
         await configInput.pressSequentially('Auto Select Config');
-        const postRequest = page.waitForRequest(CONFIG_POST);
+        const postResponse = waitForMockedConfigSave(page);
         await page.getByTitle('Save current filters with the name above').click();
-        const request = await postRequest;
-        expect(request.postDataJSON().name).toBe('Auto Select Config');
-        expect(request.postDataJSON().filters.auto_select_all).toBe(true);
+        const response = await postResponse;
+        expect(response.status()).toBe(201);
+        expect(response.request().postDataJSON().name).toBe('Auto Select Config');
+        expect(response.request().postDataJSON().filters.auto_select_all).toBe(true);
     });
 
     test('should save the filter expanded pill with the configuration', async ({ page }) => {
@@ -170,10 +173,11 @@ test.describe('Filter Configurations E2E', () => {
         const configInput = page.locator('#filter-config-input');
         await configInput.click();
         await configInput.pressSequentially('Expanded Config');
-        const postRequest = page.waitForRequest(CONFIG_POST);
+        const postResponse = waitForMockedConfigSave(page);
         await page.getByTitle('Save current filters with the name above').click();
-        const request = await postRequest;
-        expect(request.postDataJSON().name).toBe('Expanded Config');
-        expect(request.postDataJSON().filters.filter_expanded).toBe(true);
+        const response = await postResponse;
+        expect(response.status()).toBe(201);
+        expect(response.request().postDataJSON().name).toBe('Expanded Config');
+        expect(response.request().postDataJSON().filters.filter_expanded).toBe(true);
     });
 });

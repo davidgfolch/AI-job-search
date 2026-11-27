@@ -4,6 +4,7 @@ import { useJobSelection } from './useJobSelection';
 import { useJobMutations, type TabType } from './useJobMutations';
 import { useAppliedModal } from './useAppliedModal';
 import { useModalityValues } from '../../common/hooks/useModalityValues';
+import { toggleJobSelection } from './selectionToggle';
 import { type Job, jobsApi } from '../api/ViewerApi';
 import { STATE_FIELDS } from '../constants';
 
@@ -17,6 +18,11 @@ export const useViewer = () => {
     } = useJobsData();
     const apiError = data?.error; // Error returned from API (e.g., database errors)
     const [dismissedApiErrors, setDismissedApiErrors] = useState<Set<string>>(new Set());
+    const [dismissedFilters, setDismissedFilters] = useState(filters);
+    if (dismissedFilters !== filters) {
+        setDismissedFilters(filters);
+        setDismissedApiErrors(new Set());
+    }
     const displayedApiError = apiError && !dismissedApiErrors.has(apiError) ? apiError : null;
     const hasMorePages = allJobs.length < (data?.total || 0);
     const shouldAutoSelectNextPage = useRef(false);
@@ -26,7 +32,7 @@ export const useViewer = () => {
     };
     const {
         selectedJob, setSelectedJob, selectedIds, setSelectedIds,
-        selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext
+        selectionMode, setSelectionMode, handleJobSelect, navigateJob, autoSelectNext: autoSelectNextRef
     } = useJobSelection({ allJobs, filters, setFilters, onLoadMore: handleLoadMoreWithAutoSelect, hasMorePages });
     const [activeConfigName, setActiveConfigName] = useState<string>('');
 
@@ -38,7 +44,7 @@ export const useViewer = () => {
     const {
         message, setMessage, confirmModal, handleJobUpdate, ignoreSelected, deleteSelected, deleteSingleJob, createMutation, bulkUpdateMutation
     } = useJobMutations({
-        filters, allJobs, selectedJob, setSelectedJob, activeTab, autoSelectNext,
+        filters, allJobs, selectedJob, setSelectedJob, activeTab, autoSelectNext: autoSelectNextRef,
         selectedIds, setSelectedIds, selectionMode, setSelectionMode,
         onJobUpdated: (updatedJob) => {
             setAllJobs(jobs => {
@@ -70,11 +76,6 @@ export const useViewer = () => {
         }
     };
 
-    // Clear dismissed API errors when filters change
-    useEffect(() => {
-        setDismissedApiErrors(new Set());
-    }, [filters]);
-
     const { isModalOpen: isAppliedModalOpen, openModal: openAppliedModal, handleConfirm: handleAppliedConfirm, handleCancel: handleAppliedCancel } = useAppliedModal({
         selectedJob, allJobs, onJobUpdate: handleJobUpdate,
         onBulkUpdate: (ids: number[], update: Partial<Job>) => {
@@ -83,7 +84,7 @@ export const useViewer = () => {
                 const hasStateChange = STATE_FIELDS.some((field) => field in update);
                 if (hasStateChange) {
                     const index = allJobs.findIndex(j => j.id === ids[0]);
-                    autoSelectNext.current = {
+                    autoSelectNextRef.current = {
                         shouldSelect: true,
                         previousJobId: ids[0],
                         previousJobIndex: index !== -1 ? index : undefined
@@ -95,7 +96,12 @@ export const useViewer = () => {
         selectedIds, selectionMode,
     });
 
-    const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
+    const shouldSelectFirstRef = useRef(false);
+    const [selectFirstTick, setSelectFirstTick] = useState(0);
+    const armSelectFirst = () => {
+        shouldSelectFirstRef.current = true;
+        setSelectFirstTick(tick => tick + 1);
+    };
     const [creationSessionId, setCreationSessionId] = useState(0);
     const [duplicatedJob, setDuplicatedJob] = useState<Job | null>(null);
     const autoSelectAllAfterLoad = useRef(false);
@@ -145,11 +151,11 @@ export const useViewer = () => {
     }, [data, filters.page, filters.auto_select_all, isPlaceholderData, configKey, selectionMode, setSelectionMode]);
 
     useEffect(() => {
-        if (shouldSelectFirst && data?.items?.length) {
+        if (shouldSelectFirstRef.current && data?.items?.length) {
+            shouldSelectFirstRef.current = false;
             handleJobSelectRef.current(data.items[0]);
-            setShouldSelectFirst(false);
         }
-    }, [shouldSelectFirst, data]);
+    }, [selectFirstTick, data]);
 
     const selectedIndex = allJobs.findIndex(j => j.id === selectedJob?.id) ?? -1;
     const hasNext = (selectedIndex >= 0 && selectedIndex < allJobs.length - 1) || hasMorePages;
@@ -164,40 +170,14 @@ export const useViewer = () => {
             ignoreJob: () => handleJobUpdate({ ignored: true }), seenJob: () => handleJobUpdate({ seen: true }),
             appliedJob: openAppliedModal, discardedJob: () => handleJobUpdate({ discarded: true }), closedJob: () => handleJobUpdate({ closed: true }),
             deleteJob: deleteSingleJob, nextJob: () => navigateJob('next'), previousJob: () => navigateJob('previous'), loadMore: handleLoadMore,
-            toggleSelectJob: (id: number) => {
-                if (selectionMode === 'all') {
-                    // Deselecting one row while all are selected: switch to manual with every loaded job except this one
-                    const newSelected = new Set<number>();
-                    for (const job of allJobs) {
-                        if (job.id !== id) newSelected.add(job.id);
-                    }
-                    setSelectionMode('manual');
-                    setSelectedIds(newSelected);
-                    const job = allJobs.find(j => j.id === id);
-                    if (job) setSelectedJob(job);
-                    return;
-                }
-                const newSelected = new Set(selectedIds);
-                if (newSelected.has(id)) {
-                    newSelected.delete(id);
-                    if (newSelected.size === 0) {
-                        setSelectionMode('none');
-                    }
-                } else {
-                    newSelected.add(id);
-                    setSelectionMode('manual');
-                    const job = allJobs.find(j => j.id === id);
-                    if (job) setSelectedJob(job);
-                }
-                setSelectedIds(newSelected);
-            },
+            toggleSelectJob: (id: number) => toggleJobSelection({ id, selectionMode, selectedIds, allJobs, setSelectionMode, setSelectedIds, setSelectedJob }),
             toggleSelectAll: () => selectionMode === 'all' ? (setSelectionMode('none'), setSelectedIds(new Set())) : setSelectionMode('all'),
             ignoreSelected, deleteSelected, setActiveConfigName, closeConfirmModal: () => confirmModal.close(), dismissMessage: handleDismissMessage,
             createJob: async (data: Partial<Job>) => {
                 await createMutation.mutateAsync(data);
                 setActiveTab('list'); setFilters(f => ({ ...f, page: 1 })); setCreationSessionId(p => p + 1);
             },
-            refreshJobs: async () => filters.page !== 1 ? (setShouldSelectFirst(true), setFilters(f => ({ ...f, page: 1 }))) : (setShouldSelectFirst(true), await hardRefresh()),
+            refreshJobs: async () => filters.page !== 1 ? (armSelectFirst(), setFilters(f => ({ ...f, page: 1 }))) : (armSelectFirst(), await hardRefresh()),
             // Re-applying the filter configuration that is already active leaves the query key untouched, so the
             // list would keep the jobs it already has. Refetch the page in place instead, keeping the selection.
             reloadJobList: reloadCurrentPage,

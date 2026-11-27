@@ -16,13 +16,7 @@ docker-compose up -d
 ```
 
 ### Ollama: host vs container
-The `ollama` service is opt-in (`--profile ollama`), so the stack works with Ollama installed on the host or containerized. No module hard-depends on the `ollama` container, so it never starts implicitly. The Ollama-backed modules (`aienrich`, `aienrichskill`) resolve the server at startup via the shared fallback chain in `commonlib/ollama_config.py`: configured URL, then `host.docker.internal`, `localhost`, then `ollama:11434`, then a LAN scan for port 11434 (`COMMONLIB_OLLAMA_DISCOVERY`, default on; `AI_ENRICH_OLLAMA_BASE_URL=auto` goes straight to the scan) — first reachable wins, reused for the whole batch. Each job is only sent after a one-token generation probe on that server (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s, reusing the job's own `num_ctx` so Ollama does not reload the model twice), so a wedged runner is skipped instead of blocking the whole job timeout; the verdict is cached per server for `COMMONLIB_OLLAMA_PROBE_CACHE_SECONDS` (default 300) and dropped again on a failed probe or a job timeout. The workers take the URL from `.env` (`docker-compose.yml` only defaults to the containerized `ollama:11434` when it is unset), and because a container's LAN scan only covers the Docker subnets, an Ollama on the physical LAN must be pinned with `AI_ENRICH_OLLAMA_BASE_URL` rather than discovered.
-```bash
-# Ollama on the host (nothing extra to start)
-docker-compose --profile aienrich up -d aienrich
-# Ollama containerized as well
-docker-compose --profile ollama --profile aienrich up -d
-```
+The `ollama` service is opt-in (`--profile ollama`) and no module hard-depends on it, so it never starts implicitly. The workers can stay in Docker with Ollama on the host, in a container or on another LAN machine: they resolve the server at startup (configured URL → Docker/host fallbacks → LAN scan) and probe it before sending a batch. Setup, `.env` pins, subnets and probe knobs are documented once in [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md#ollama-host-container-or-another-lan-machine).
 Containers reach the host through `extra_hosts: host.docker.internal=host-gateway` (`backend`, `aienrich`, `aienrichskill`). Without it that name does not resolve and the workers crash-loop on `ollama.unreachable`.
 
 ### Sandboxed Docker Verification (dependabot-agent)
@@ -45,24 +39,25 @@ Brings a service up in an isolated `dependabot-test` project so the live `ai-job
 ### Parallel Development (sibling clones)
 `scripts/dev.sh` (Linux/Mac) and `scripts/dev.bat` (Windows) run feature work in a throwaway sibling clone, so the main workspace, its branches, its lockfiles and its running stack stay untouched:
 ```bash
-./scripts/dev.sh new <name>        # ../ai_job_search-<name>, branch feat/<name> from master, env + lockfiles copied
-./scripts/dev.sh dep <pr>          # ../ai_job_search-dependabot-<pr> with that Dependabot PR checked out
+./scripts/dev.sh new <name>        # ../ai_job_search-<name>, branch feat/<name> from master, runtime state copied + deps synced
+./scripts/dev.sh dep <pr>          # ../ai_job_search-dependabot-<pr>, PR checked out, deps refreshed for its base
 ./scripts/dev.sh list | status | sync | cleanup <name>
 ./scripts/dev.sh test [modules] | sandbox <service> | commit "msg" | push | pr [title] [--base br] | merge [-k]
 ```
 - Clones are named `ai_job_search-*`, live beside the repo, and `cleanup`/`merge` refuse to delete anything else.
+- Git state comes from a clean `git clone`; the clone then inherits `.env.secrets`, gitignored lockfiles, `node_modules` and a CodeGraph DB snapshot from the caller. A sibling uv cache on the same filesystem hardlinks packages into each clone's venv instead of copying them. Pass modules to `new`/`dep` to prepare only those (default: all); `dev test` reuses the selection. See [Dependabot PR workflow](READMEs/AGENTIC_SDLC.md#dependabot-pr-workflow).
 - `test` and `sandbox` delegate to the existing `scripts/test.sh` / `scripts/test-sandbox.sh` inside the clone they are called from.
 - `sync` fast-forwards `staging` from `master` and pushes it; run it before Dependabot work so PRs are built on a current base. It stops instead of creating a merge commit when the branches diverged.
 - `new` branches from `master` and `pr` targets `master` (pass `--base staging` only for the Dependabot gate); `merge` waits for green checks, squash-merges, deletes the branch and then the clone (keep it with `-k`).
 - Only one sandbox at a time: `dependabot-test` is a fixed compose project with fixed ports.
 
 ### Dependencies
-[README_INSTALL.md](READMEs/README_INSTALL.md) covers the dependency install, automated by the setup script or per app. Package managers: Poetry (`commonlib`, `scrapper`), uv (`backend`, `aiEnrich`, `aiEnrichSkill`, `aiCvMatcher`, `aiFormFiller`, `cron`) and npm (`web`, `e2e`).
+[README_INSTALL.md](READMEs/README_INSTALL.md) covers the dependency install, automated by the setup script or per app. Package managers: Poetry (`scrapper`), uv (`commonlib`, `backend`, `aiEnrich`, `aiEnrichSkill`, `aiCvMatcher`, `aiFormFiller`, `cron`) and npm (`web`, `e2e`).
 
 ### Web Frontend (apps/web)
 ```bash
 # Dev server
-npm run dev
+./apps/web/run.sh   # Windows: .\apps\web\run.bat
 
 # Lint (from the repo root)
 ./scripts/lint.sh web
@@ -75,6 +70,8 @@ The dev server resolves the backend API at startup (`apps/web/src/common/backend
 ```bash
 # Run Playwright tests through the centralized runner
 ./scripts/test.sh e2e
+
+E2E never touches the live backend/DB: the runner pins its dev server to an unreachable backend and a shared guard fails unmocked writes. See [E2E isolation](READMEs/README_DEVELOPMENT.md#e2e-isolation-from-the-live-stack).
 
 # Interactive UI mode (inside apps/e2e)
 npm run test:ui
@@ -127,27 +124,20 @@ Static analysis is a blocking CI gate (`static-analysis` job). Run it locally wi
 ./scripts/lint.sh web      # eslint + tsc -b over apps/web
 ./scripts/lint.sh e2e      # eslint over apps/e2e
 ```
-Ruff is installed once for the whole repo (`uv tool install ruff`); no app needs it in its own environment. Rule set (Ruff selectors, bugbear rules), the unused-argument conventions, pre-commit hooks and VS Code wiring are documented once in [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
+Ruff is installed once for the whole repo by `scripts/install.*`; no app needs it in its own environment. Rule set (Ruff selectors, bugbear rules), the unused-argument conventions, pre-commit hooks and VS Code wiring are documented once in [READMEs/README_DEVELOPMENT.md#static-analysis](READMEs/README_DEVELOPMENT.md#static-analysis).
 
 ### Running Individual Apps
+Each app has a runner in its own directory (`run.sh` on Linux/Mac, `run.bat` on Windows):
 ```bash
-# Backend API
-uv run uvicorn main:app --reload --port 8000  # from apps/backend
-
-# Web UI
-npm run dev  # from apps/web, runs on localhost:5173
-
-# Scrapper (loop mode)
-.\apps\scrapper\run.bat  # or run.sh
-
-# Scrapper (single platform)
-.\apps\scrapper\run.bat linkedin
-
-# AI Enrichment
-.\apps\aiEnrich\run.bat  # or run.sh
-.\apps\aiEnrichSkill\run.bat  # or run.sh
-.\apps\aiCvMatcher\run.bat  # or run.sh
+./apps/backend/run.sh          # FastAPI + reload, port 8000
+./apps/web/run.sh              # Vite dev server, port 5173
+./apps/scrapper/run.sh         # scrapper loop; pass a platform (e.g. linkedin) to run only that site
+./apps/aiEnrich/run.sh
+./apps/aiEnrichSkill/run.sh
+./apps/aiFormFiller/run.sh
+./apps/cron/run.sh
 ```
+`apps/aiCvMatcher` has no runner: start it with Docker (`docker-compose up -d aicvmatcher`) or `uv run aicvmatcher` from `apps/aiCvMatcher`. Module-specific flags and configuration: each `apps/<module>/README.md`.
 
 ## Architecture
 
@@ -158,6 +148,8 @@ commonlib ← scrapper
 commonlib ← aiEnrich
 commonlib ← aiEnrichSkill
 commonlib ← aiCvMatcher
+commonlib ← aiFormFiller
+commonlib ← cron
 backend ← web (via REST API)
 ```
 
@@ -236,7 +228,11 @@ Environment variables are split across two files:
 
 ## Documentation Policy (fix if wrong, high-level only)
 
-Documentation is not a changelog: fix docs the change made wrong, and update the user-facing READMEs only for user-visible features, API/UI contracts and setup/run steps. The policy is defined once in `.claude/rules/documentation-update.md` and described in [READMEs/AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md#documentation-policy-fix-if-wrong-high-level-only) — link to it instead of duplicating mechanics. State in the final summary which docs you updated, or that none needed changes.
+Documentation is not a changelog: fix docs the change made wrong, and update the user-facing READMEs only for user-visible features, UI flows and setup/run steps.
+SQL DDL, API endpoints and JSON payloads are code-owned (`scripts/mysql/ddl.sql`, route handlers, CodeGraph) — link to the source rather than copying them.
+The policy is defined once in `.claude/rules/documentation-update.md` and described in
+[READMEs/AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md#documentation-policy-fix-if-wrong-high-level-only) — link to it instead of duplicating mechanics.
+State in the final summary which docs you updated, or that none needed changes.
 
 ## Database Safety (ask before any write)
 
@@ -252,6 +248,7 @@ Enforced by `.claude/rules/db-mutation-permission.md` + `.claude/hooks/db-mutati
 
 Agent skills are located in `.claude/skills/`:
 - `skill-builder`: Create new agent skills
+- `docs-writer`: Write/update docs (short root README, one canonical source + links, `scripts/*` entry points)
 - `e2e-implementer`: Create Playwright E2E tests
 - `test-implementer`: Implement unit tests
 - `codegraph`: Query the CodeGraph code-intelligence index (explore/node/impact/affected); the default for codebase questions

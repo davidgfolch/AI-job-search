@@ -6,12 +6,13 @@ from aiEnrich import aiEnrich_config
 from aiEnrich.aiEnrich_config import (
     OPENROUTER_DEFAULT_BASE_URL, OPENROUTER_DEFAULT_MODEL, OPENROUTER_DEFAULT_FALLBACK_MODEL,
     get_job_enabled, get_ollama_base_url, get_timeout_job, get_model, get_max_ollama_failures,
-    get_max_validation_retries, get_backend, get_openrouter_base_url, get_openrouter_model,
-    get_openrouter_fallback_model, get_backend_url,
+    get_max_validation_retries, get_backend, get_llm_backend, LLM_BACKEND_ENV,
+    get_openrouter_base_url, get_openrouter_model, get_openrouter_fallback_model, get_backend_url,
+    get_provider_model, is_cloud_backend,
 )
 
 CONFIG_ENV_VARS = [
-    "AI_ENRICH_BACKEND", "AI_ENRICH_OPENROUTER_BASE_URL", "AI_ENRICH_OPENROUTER_MODEL",
+    LLM_BACKEND_ENV, "AI_ENRICH_OPENROUTER_BASE_URL", "AI_ENRICH_OPENROUTER_MODEL",
     "AI_ENRICH_OPENROUTER_FALLBACK_MODEL", "AI_ENRICH_OLLAMA_BASE_URL", "AI_ENRICH_OLLAMA_MODEL",
     "AI_ENRICH_MAX_OLLAMA_FAILURES", "AI_ENRICH_MAX_VALIDATION_RETRIES", "AI_ENRICH_TIMEOUT_JOB", "AI_ENRICH_JOB",
     "AI_ENRICH_BACKEND_URL",
@@ -37,14 +38,21 @@ def test_openrouter_default_constants():
     assert OPENROUTER_DEFAULT_FALLBACK_MODEL == "nex-agi/nex-n2.5-pro:free"
 
 
-@pytest.mark.parametrize("env_val, expected", [
+@pytest.mark.parametrize("file_val, expected", [
     pytest.param(None, "ollama", id="default_ollama"),
     pytest.param("openrouter", "openrouter", id="explicit_openrouter"),
     pytest.param("ollama", "ollama", id="explicit_ollama"),
 ])
-def test_get_backend(env_val, expected):
-    _set_or_unset("AI_ENRICH_BACKEND", env_val)
+def test_get_llm_backend(monkeypatch, file_val, expected):
+    monkeypatch.setattr(aiEnrich_config, "getEnvFile", lambda key, default: file_val or default)
+    assert get_llm_backend() == expected
     assert get_backend() == expected
+
+
+def test_get_llm_backend_reads_file_not_process_env(monkeypatch):
+    monkeypatch.setenv(LLM_BACKEND_ENV, "ollama")
+    monkeypatch.setattr(aiEnrich_config, "getEnvFile", lambda key, default: "openrouter")
+    assert get_llm_backend() == "openrouter"
 
 
 @pytest.mark.parametrize("env_val, expected", [
@@ -72,6 +80,22 @@ def test_get_openrouter_model(env_val, expected):
 def test_get_openrouter_fallback_model(env_val, expected):
     _set_or_unset("AI_ENRICH_OPENROUTER_FALLBACK_MODEL", env_val)
     assert get_openrouter_fallback_model() == expected
+
+
+@pytest.mark.parametrize("backend,expected", [
+    ("openrouter", "openrouter/free"),
+    ("gemini", "gemini-2.5-flash-lite"),
+    ("groq", "openai/gpt-oss-20b"),
+])
+def test_get_provider_model_uses_provider_default(backend, expected, monkeypatch):
+    monkeypatch.setattr(aiEnrich_config, "get_module_model", lambda module, provider: expected)
+    assert get_provider_model(backend) == expected
+
+
+@pytest.mark.parametrize("backend,expected", [("ollama", False), ("openrouter", True), ("groq", True)])
+def test_is_cloud_backend(backend, expected, monkeypatch):
+    monkeypatch.setattr(aiEnrich_config, "get_llm_backend", lambda: backend)
+    assert is_cloud_backend() is expected
 
 
 def _set_or_unset(key: str, value):

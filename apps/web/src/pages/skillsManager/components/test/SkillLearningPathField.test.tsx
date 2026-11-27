@@ -4,19 +4,21 @@ import { SkillLearningPathField } from '../SkillLearningPathField';
 
 describe('SkillLearningPathField', () => {
     const defaultProps = {
-        learningPath: ['https://example.com'],
-        skillLearningPath: ['https://example.com'],
+        learningPath: [{ url: 'https://example.com', source: 'llm' as const }],
+        skillLearningPath: [{ url: 'https://example.com', source: 'llm' as const }],
         isViewMode: true,
         newLinkInput: '',
         setNewLinkInput: vi.fn(),
         handleAddLink: vi.fn(),
         handleRemoveLink: vi.fn(),
+        handleClearAllLinks: vi.fn(),
         handleLinkInputKeyDown: vi.fn(),
     };
 
     it('renders links in view mode', () => {
         render(<SkillLearningPathField {...defaultProps} />);
         expect(screen.getByRole('link', { name: 'https://example.com' })).toBeInTheDocument();
+        expect(screen.getByTitle('Source: llm')).toBeInTheDocument();
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     });
 

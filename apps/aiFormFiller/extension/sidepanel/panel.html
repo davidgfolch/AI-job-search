@@ -13,6 +13,16 @@
       <span id="status" class="status-dot disconnected"></span>
     </header>
 
+    <div class="provider-row">
+      <label for="provider-select">Provider</label>
+      <select id="provider-select" aria-label="AI provider">
+        <option value="auto">Auto (backend)</option>
+        <option value="local">Local (HuggingFace)</option>
+        <option value="openrouter">OpenRouter</option>
+        <option value="openai">OpenAI</option>
+      </select>
+    </div>
+
     <div class="toolbar">
       <button id="answer-all-btn" disabled>Answer All</button>
       <button id="fill-all-btn" disabled>Fill All</button>

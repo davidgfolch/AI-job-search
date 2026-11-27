@@ -107,17 +107,21 @@ class TestIndeedNavigator:
             return []
         return get_elms
 
-    def test_get_job_data(self, navigator, mock_selenium):
+    @pytest.mark.parametrize("salary_key,expected_salary", [
+        pytest.param("structured-job-summary", "De 25.000 € a 40.000 € al año", id="structured-summary"),
+        pytest.param("salary-snippet-container", "60k - 70k", id="legacy-salary-snippet"),
+    ])
+    def test_get_job_data(self, salary_key, expected_salary, navigator, mock_selenium):
         mock_selenium.getElms.side_effect = self._detail_elms({
             "vj-job-title": "Title\n- job post", 'a[href*="/cmp/"]': "Company",
-            "inlineHeader-companyLocation": "Location", "salary-snippet-container": "60k - 70k",
+            "inlineHeader-companyLocation": "Location", salary_key: expected_salary,
             "simple-job-description-html": "<html>Description</html>"})
         mock_selenium.getUrl.return_value = "http://job-url"
         t, c, l, s, u, h = navigator.get_job_data()
         assert t == "Title"
         assert c == "Company"
         assert l == "Location"
-        assert s == "60k - 70k"
+        assert s == expected_salary
         assert u == "http://job-url"
         assert h == "<html>Description</html>"
 

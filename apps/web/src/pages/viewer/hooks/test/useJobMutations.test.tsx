@@ -1,8 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useJobMutations } from '../useJobMutations';
-import { jobsApi } from '../../api/ViewerApi';
+import { jobsApi, type Job } from '../../api/ViewerApi';
 import { createWrapper, createDefaultJobMutationsProps } from '../../../test/ViewerTestUtils';
+import { createMockJob } from '../../test/test-utils';
 
 vi.mock('../../api/ViewerApi', () => ({
     jobsApi: {
@@ -55,7 +56,7 @@ describe('useJobMutations', () => {
     });
 
     it('should handle single job update success', async () => {
-        (jobsApi.updateJob as any).mockResolvedValue({ id: 1, title: 'Job 1 Updated', ignored: false });
+        vi.mocked(jobsApi.updateJob).mockResolvedValue(createMockJob({ id: 1, title: 'Job 1 Updated', ignored: false }));
         const { result } = renderHook(() => useJobMutations(defaultProps), { wrapper: createWrapper() });
         await act(async () => {
             result.current.updateMutation.mutate({ id: 1, data: { title: 'New Title' } });
@@ -68,10 +69,10 @@ describe('useJobMutations', () => {
         { field: { ignored: true }, shouldSelect: true, desc: 'state field updated' },
         { field: { title: 'Updated' }, shouldSelect: false, desc: 'non-state field updated' }
     ])('autoSelectNext behavior when $desc', async ({ field, shouldSelect }) => {
-        (jobsApi.updateJob as any).mockResolvedValue({ id: 1, ...field });
+        vi.mocked(jobsApi.updateJob).mockResolvedValue(createMockJob({ id: 1, ...field }));
         const { result } = renderHook(() => useJobMutations(defaultProps), { wrapper: createWrapper() });
         await act(async () => {
-            result.current.handleJobUpdate(field as any);
+            result.current.handleJobUpdate(field as unknown as Partial<Job>);
         });
         expect(defaultProps.autoSelectNext.current.shouldSelect).toBe(shouldSelect);
     });
@@ -80,13 +81,14 @@ describe('useJobMutations', () => {
         { ids: [1, 2], mode: 'manual', method: 'ignoreSelected', api: 'bulkUpdateJobs', check: { update: { ignored: true } } },
         { ids: [1, 2, 3], mode: 'manual', method: 'deleteSelected', api: 'deleteJobs', count: 3, check: {} }, // delete uses ids directly in bulkDeleteMutation logic if mocked simply
     ])('should handle $method with confirmation ($mode)', async ({ ids, mode, method, api, count, check }) => {
-        (jobsApi.bulkUpdateJobs as any).mockResolvedValue({ updated: ids.length });
-        (jobsApi.deleteJobs as any).mockResolvedValue({ deleted: ids.length });
-        const props = { ...defaultProps, selectedIds: new Set(ids), selectionMode: mode as any };
+        vi.mocked(jobsApi.bulkUpdateJobs).mockResolvedValue({ updated: ids.length });
+        vi.mocked(jobsApi.deleteJobs).mockResolvedValue({ deleted: ids.length });
+        const props = { ...defaultProps, selectedIds: new Set(ids), selectionMode: mode as 'none' | 'manual' | 'all' };
         const { result } = renderHook(() => useJobMutations(props), { wrapper: createWrapper() });
         
+        const actions = result.current as unknown as Record<string, (count?: number) => void>;
         await act(async () => {
-             (result.current as any)[method](count);
+             actions[method](count);
         });
 
         // With auto-confirm mock and useBulkJobMutations mock:
@@ -112,7 +114,7 @@ describe('useJobMutations', () => {
     });
 
     it('should handle create job success', async () => {
-        (jobsApi.createJob as any).mockResolvedValue({ id: 2, title: 'New Job' });
+        vi.mocked(jobsApi.createJob).mockResolvedValue(createMockJob({ id: 2, title: 'New Job' }));
         const { result } = renderHook(() => useJobMutations(defaultProps), { wrapper: createWrapper() });
         await act(async () => {
             await result.current.createMutation.mutateAsync({ title: 'New Job' });

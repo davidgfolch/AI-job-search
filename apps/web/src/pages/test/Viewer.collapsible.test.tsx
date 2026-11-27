@@ -53,24 +53,44 @@ describe('Viewer - Collapsible Panels', () => {
         expect(screen.queryByTitle('Show both panels')).not.toBeInTheDocument();
     });
 
-    it('collapses left panel and shows restore + right collapse button', async () => {
+    it('collapses left panel while keeping both toggle buttons available', async () => {
         mockJobsApiDefault();
         renderViewer();
         await runTimers();
         fireEvent.click(screen.getByTitle('Collapse list'));
-        expect(screen.queryByTitle('Collapse list')).not.toBeInTheDocument();
+        expect(screen.getByTitle('Restore list')).toBeInTheDocument();
         expect(screen.getByTitle('Show both panels')).toBeInTheDocument();
         expect(screen.getByTitle('Collapse detail')).toBeInTheDocument();
     });
 
-    it('collapses right panel and shows restore + left collapse button', async () => {
+    it('collapses right panel while keeping both toggle buttons available', async () => {
         mockJobsApiDefault();
         renderViewer();
         await runTimers();
         fireEvent.click(screen.getByTitle('Collapse detail'));
-        expect(screen.queryByTitle('Collapse detail')).not.toBeInTheDocument();
+        expect(screen.getByTitle('Restore detail')).toBeInTheDocument();
         expect(screen.getByTitle('Show both panels')).toBeInTheDocument();
         expect(screen.getByTitle('Collapse list')).toBeInTheDocument();
+    });
+
+    it('restores the left panel by clicking its toggle again', async () => {
+        mockJobsApiDefault();
+        renderViewer();
+        await runTimers();
+        fireEvent.click(screen.getByTitle('Collapse list'));
+        fireEvent.click(screen.getByTitle('Restore list'));
+        expect(screen.getByTitle('Collapse list')).toBeInTheDocument();
+        expect(screen.queryByTitle('Show both panels')).not.toBeInTheDocument();
+    });
+
+    it('restores the right panel by clicking its toggle again', async () => {
+        mockJobsApiDefault();
+        renderViewer();
+        await runTimers();
+        fireEvent.click(screen.getByTitle('Collapse detail'));
+        fireEvent.click(screen.getByTitle('Restore detail'));
+        expect(screen.getByTitle('Collapse detail')).toBeInTheDocument();
+        expect(screen.queryByTitle('Show both panels')).not.toBeInTheDocument();
     });
 
     it('restores both panels from left-collapsed state', async () => {

@@ -1,24 +1,41 @@
 import pytest
 from unittest.mock import patch
 import services.dashboard_service as dashboard_service
-from .conftest import SNAPSHOT, _iso
+from .conftest import SNAPSHOT, _iso, infrastructure
 
 
-@patch("services.dashboard_service.MetricsCollector")
-@patch("services.dashboard_service._repo")
-@patch("services.dashboard_service._probe_ollama")
-def test_get_services_status_running(mock_probe, mock_repo, mock_collector):
-    mock_probe.return_value = {"reachable": False, "serverUrl": None, "serverIp": None, "isLan": False}
-    mock_repo.read_recent_errors.return_value = []
+def _setup(mock_repo, mock_collector, mock_infra, infra=None, errors=None):
+    mock_infra.return_value = infra or infrastructure()
+    mock_repo.read_recent_errors.return_value = errors or []
     mock_repo.read_last_activity.return_value = None
     mock_repo.check_ollama_errors.return_value = []
     mock_collector.return_value.reload.return_value = None
     mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
 
+
+@pytest.mark.parametrize("module,backend,expected", [
+    ("aienrich", "ollama", True),
+    ("aienrich", "groq", False),
+    ("aienrichskill", "huggingface", False),
+    ("aicvmatcher", "ollama", False),
+])
+@patch("services.dashboard_service.getEnvFile")
+def test_uses_ollama_follows_live_provider(mock_env, module, backend, expected):
+    mock_env.return_value = backend
+    assert dashboard_service._uses_ollama(module) is expected
+
+
+@patch("services.dashboard_service.get_infrastructure_status")
+@patch("services.dashboard_service.MetricsCollector")
+@patch("services.dashboard_service._repo")
+def test_get_services_status_running(mock_repo, mock_collector, mock_infra):
+    _setup(mock_repo, mock_collector, mock_infra)
+
     result = dashboard_service.get_services_status()
 
     assert "services" in result
-    assert "ollama" in result
+    assert "infrastructure" in result
+    assert result["llmBackend"] == dashboard_service.LLM_BACKEND
     services = result["services"]
     assert len(services) == 3
     names = [s["name"] for s in services]
@@ -30,16 +47,28 @@ def test_get_services_status_running(mock_probe, mock_repo, mock_collector):
     assert aienrich["metrics"]["failed"] == 2
 
 
+@patch("services.dashboard_service.get_infrastructure_status")
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
-@patch("services.dashboard_service._probe_ollama")
-def test_get_services_status_ollama_reachable(mock_probe, mock_repo, mock_collector):
-    mock_probe.return_value = {"reachable": True, "serverUrl": "http://192.168.1.45:11434", "serverIp": "192.168.1.45", "isLan": True}
-    mock_repo.read_recent_errors.return_value = []
-    mock_repo.read_last_activity.return_value = None
-    mock_repo.check_ollama_errors.return_value = []
-    mock_collector.return_value.reload.return_value = None
-    mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
+def test_get_services_status_exposes_all_infrastructure(mock_repo, mock_collector, mock_infra):
+    _setup(mock_repo, mock_collector, mock_infra)
+
+    result = dashboard_service.get_services_status()
+
+    assert [e["name"] for e in result["infrastructure"]] == [
+        "ollama", "backend", "web", "mysql", "mongo", "aiformfiller", "cron", "scrapper", "prometheus", "grafana"
+    ]
+    assert result["prometheus"] == {"reachable": True, "url": "http://localhost:9090"}
+    assert result["grafana"] == {"reachable": True, "url": "http://localhost:3000"}
+
+
+@patch("services.dashboard_service.get_infrastructure_status")
+@patch("services.dashboard_service.MetricsCollector")
+@patch("services.dashboard_service._repo")
+def test_get_services_status_ollama_reachable(mock_repo, mock_collector, mock_infra):
+    _setup(mock_repo, mock_collector, mock_infra, infrastructure(
+        reachable=True, serverUrl="http://192.168.1.45:11434", serverIp="192.168.1.45", isLan=True
+    ))
 
     result = dashboard_service.get_services_status()
 
@@ -48,18 +77,15 @@ def test_get_services_status_ollama_reachable(mock_probe, mock_repo, mock_collec
     assert result["ollama"]["isLan"] is True
 
 
+@patch("services.dashboard_service.get_infrastructure_status")
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
-@patch("services.dashboard_service._probe_ollama")
-def test_get_services_status_ollama_unreachable(mock_probe, mock_repo, mock_collector):
-    mock_probe.return_value = {"reachable": False, "serverUrl": "http://192.168.1.45:11434", "serverIp": "192.168.1.45", "isLan": True}
-    mock_repo.read_recent_errors.return_value = []
-    mock_repo.read_last_activity.return_value = None
-    mock_repo.check_ollama_errors.return_value = [
-        {"event": "ollama.ping_failed", "module": "aienrich", "message": "connection refused"}
-    ]
-    mock_collector.return_value.reload.return_value = None
-    mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
+def test_get_services_status_ollama_unreachable(mock_repo, mock_collector, mock_infra):
+    ollama_errors = [{"event": "ollama.ping_failed", "module": "aienrich", "message": "connection refused"}]
+    _setup(mock_repo, mock_collector, mock_infra, infrastructure(
+        reachable=False, serverUrl="http://192.168.1.45:11434", serverIp="192.168.1.45", isLan=True,
+        recentErrors=ollama_errors
+    ))
 
     result = dashboard_service.get_services_status()
 
@@ -68,16 +94,12 @@ def test_get_services_status_ollama_unreachable(mock_probe, mock_repo, mock_coll
     assert len(result["ollama"]["recentErrors"]) == 1
 
 
+@patch("services.dashboard_service.get_infrastructure_status")
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
-def test_get_services_status_reads_errors(mock_repo, mock_collector):
-    mock_repo.read_recent_errors.return_value = [
-        {"timestamp": "2026-09-03T10:00:00", "event": "job.failed", "level": "error", "message": "boom"}
-    ]
-    mock_repo.read_last_activity.return_value = None
-    mock_repo.check_ollama_errors.return_value = []
-    mock_collector.return_value.reload.return_value = None
-    mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
+def test_get_services_status_reads_errors(mock_repo, mock_collector, mock_infra):
+    errors = [{"timestamp": "2026-09-03T10:00:00", "event": "job.failed", "level": "error", "message": "boom"}]
+    _setup(mock_repo, mock_collector, mock_infra, errors=errors)
 
     result = dashboard_service.get_services_status()
 
@@ -86,16 +108,13 @@ def test_get_services_status_reads_errors(mock_repo, mock_collector):
     assert aienrich["recentErrors"][0]["event"] == "job.failed"
 
 
+@patch("services.dashboard_service.get_infrastructure_status")
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
-def test_get_services_status_log_fallback(mock_repo, mock_collector):
-    from .conftest import _iso
+def test_get_services_status_log_fallback(mock_repo, mock_collector, mock_infra):
     activity = _iso()
-    mock_repo.read_recent_errors.return_value = []
+    _setup(mock_repo, mock_collector, mock_infra)
     mock_repo.read_last_activity.return_value = activity
-    mock_repo.check_ollama_errors.return_value = []
-    mock_collector.return_value.reload.return_value = None
-    mock_collector.return_value.get_snapshot.return_value = SNAPSHOT
 
     result = dashboard_service.get_services_status()
 
@@ -108,16 +127,15 @@ def test_get_services_status_log_fallback(mock_repo, mock_collector):
     ("aiEnrich", {"last_processed_at": _iso(-40)}, _iso(), "aienrich"),
     ("aiEnrichSkill", {"last_processed_at": None, "last_heartbeat_at": _iso()}, None, "aienrichskill"),
 ])
+@patch("services.dashboard_service.get_infrastructure_status")
 @patch("services.dashboard_service.MetricsCollector")
 @patch("services.dashboard_service._repo")
-def test_get_services_status_recent_activity_running(mock_repo, mock_collector, module, module_metrics, log, expected_name):
-    mock_repo.read_recent_errors.return_value = []
+def test_get_services_status_recent_activity_running(mock_repo, mock_collector, mock_infra, module, module_metrics, log, expected_name):
+    _setup(mock_repo, mock_collector, mock_infra)
     mock_repo.read_last_activity.return_value = log
-    mock_repo.check_ollama_errors.return_value = []
     snapshot = dict(SNAPSHOT)
     snapshot["modules"] = dict(SNAPSHOT["modules"])
     snapshot["modules"][module] = module_metrics
-    mock_collector.return_value.reload.return_value = None
     mock_collector.return_value.get_snapshot.return_value = snapshot
 
     result = dashboard_service.get_services_status()

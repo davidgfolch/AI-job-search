@@ -6,15 +6,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/docker-build.py"
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/docker-build.py"]
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/db-mutation.py"
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/db-mutation.py"]
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/test-enforce.py"
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/test-enforce.py"]
           }
         ]
       },
@@ -23,11 +26,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/docs-sync.py"
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/docs-sync.py"]
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/test-enforce.py"
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/test-enforce.py"]
           }
         ]
       }

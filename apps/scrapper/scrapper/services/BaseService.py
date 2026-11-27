@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Tuple
 from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, MysqlUtil
+from commonlib.observability import get_logger
 from ..util.persistence_manager import PersistenceManager
+
+logger = get_logger("scrapper.BaseService")
 
 class BaseService(ABC):
     def __init__(self, mysql: MysqlUtil, persistence_manager: PersistenceManager, web_page: str, debug: bool):
@@ -17,7 +20,10 @@ class BaseService(ABC):
 
     def job_exists_in_db(self, url: str) -> Tuple[str, bool]:
         job_id = self.get_job_id(url)
-        return (job_id, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None)
+        exists = self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, job_id) is not None
+        if exists:
+            logger.info("scraper.job.already_exists", job_id=job_id)
+        return (job_id, exists)
 
     def prepare_resume(self):
         self.persistence_manager.prepare_resume(self.web_page)

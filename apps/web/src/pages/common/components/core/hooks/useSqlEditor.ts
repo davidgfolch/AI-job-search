@@ -17,16 +17,21 @@ export const useSqlEditor = ({ isOpen, initialValue, textareaRef }: UseSqlEditor
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestionIndex, setSuggestionIndex] = useState(0);
     const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
+    const [lastOpenValue, setLastOpenValue] = useState({ isOpen, initialValue });
+
+    if (lastOpenValue.isOpen !== isOpen || lastOpenValue.initialValue !== initialValue) {
+        setLastOpenValue({ isOpen, initialValue });
+        if (isOpen) setValue(initialValue);
+    }
 
     useEffect(() => {
         if (isOpen) {
-            setValue(initialValue);
             fetchDdlSchema().then(data => {
                 setSchema(data.tables);
                 setKeywords(data.keywords);
             }).catch(console.error);
         }
-    }, [isOpen, initialValue]);
+    }, [isOpen]);
 
     const updateSuggestions = useCallback((text: string, cursorIndex: number) => {
         // Find the word being typed

@@ -1,5 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import type { ChangeEvent, KeyboardEvent } from 'react';
 import { useSqlEditor } from '../useSqlEditor';
 import * as ddlApi from '../../../../api/DdlApi';
 
@@ -18,7 +19,7 @@ describe('useSqlEditor', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (ddlApi.fetchDdlSchema as any).mockResolvedValue(mockSchema);
+        vi.mocked(ddlApi.fetchDdlSchema).mockResolvedValue(mockSchema);
     });
 
     const setupHook = (initialValue: string = '') => renderHook(() => useSqlEditor({ isOpen: true, initialValue, textareaRef }));
@@ -38,7 +39,7 @@ describe('useSqlEditor', () => {
         await waitFor(() => expect(result.current.keywords).toEqual(mockSchema.keywords));
         // Update ref before specific operations if needed, though handleChange passes selectionStart from event
         // But for applySuggestion later we will need it on ref.
-        act(() => result.current.handleChange({ target: { value: input, selectionStart: cursor } } as any));
+        act(() => result.current.handleChange({ target: { value: input, selectionStart: cursor } } as unknown as ChangeEvent<HTMLTextAreaElement>));
         expect(result.current.showSuggestions).toBe(true);
         expect(result.current.suggestions).toEqual([{ text: expectedText, type: expectedType }]);
     });
@@ -51,14 +52,14 @@ describe('useSqlEditor', () => {
         textareaRef.current.value = 'SEL';
         textareaRef.current.selectionStart = 3;
         
-        act(() => result.current.handleChange({ target: { value: 'SEL', selectionStart: 3 } } as any));
+        act(() => result.current.handleChange({ target: { value: 'SEL', selectionStart: 3 } } as unknown as ChangeEvent<HTMLTextAreaElement>));
         act(() => result.current.applySuggestion({ text: 'SELECT', type: 'keyword' }));
         expect(result.current.value).toBe('SELECT');
         expect(result.current.showSuggestions).toBe(false);
     });
 
     it('should navigate suggestions with keyboard', async () => {
-        (ddlApi.fetchDdlSchema as any).mockResolvedValue({ ...mockSchema, keywords: ['SELECT', 'SET'] });
+        vi.mocked(ddlApi.fetchDdlSchema).mockResolvedValue({ ...mockSchema, keywords: ['SELECT', 'SET'] });
         const { result } = setupHook();
         await waitFor(() => expect(result.current.keywords).toHaveLength(2));
         
@@ -66,9 +67,9 @@ describe('useSqlEditor', () => {
         textareaRef.current.value = 'S';
         textareaRef.current.selectionStart = 1;
         
-        act(() => result.current.handleChange({ target: { value: 'S', selectionStart: 1 } } as any));
+        act(() => result.current.handleChange({ target: { value: 'S', selectionStart: 1 } } as unknown as ChangeEvent<HTMLTextAreaElement>));
         
-        const pressKey = (key: string) => act(() => result.current.handleKeyDown({ key, preventDefault: vi.fn() } as any));
+        const pressKey = (key: string) => act(() => result.current.handleKeyDown({ key, preventDefault: vi.fn() } as unknown as KeyboardEvent));
         
         expect(result.current.suggestions.length).toBeGreaterThan(1);
         pressKey('ArrowDown');
@@ -84,9 +85,9 @@ describe('useSqlEditor', () => {
     it('should close suggestions on Escape', async () => {
         const { result } = setupHook();
         await waitFor(() => expect(result.current.keywords).toHaveLength(2));
-        act(() => result.current.handleChange({ target: { value: 'SEL', selectionStart: 3 } } as any));
+        act(() => result.current.handleChange({ target: { value: 'SEL', selectionStart: 3 } } as unknown as ChangeEvent<HTMLTextAreaElement>));
         expect(result.current.showSuggestions).toBe(true);
-        act(() => result.current.handleKeyDown({ key: 'Escape', preventDefault: vi.fn() } as any));
+        act(() => result.current.handleKeyDown({ key: 'Escape', preventDefault: vi.fn() } as unknown as KeyboardEvent));
         expect(result.current.showSuggestions).toBe(false);
     });
 });

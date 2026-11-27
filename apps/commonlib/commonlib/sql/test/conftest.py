@@ -12,5 +12,9 @@ def mock_mysql_connect():
          patch.dict(os.environ, {'COMMONLIB_DB_HOST': '127.0.0.1'}, clear=False):
         mock_connect.return_value = MagicMock()
         connection_manager._pool_initialized = False
+        connection_manager._read_pool_initialized = False
+        connection_manager._resolved_host = None
         yield mock_connect
         connection_manager._pool_initialized = False
+        connection_manager._read_pool_initialized = False
+        connection_manager._resolved_host = None

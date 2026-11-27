@@ -1,16 +1,19 @@
 import StatisticsFilters from './StatisticsFilters';
+import { SITE_OPTIONS } from '../sites';
 
 interface StatisticsControlsProps {
     timeRange: string;
     setTimeRange: (value: string) => void;
     includeOldJobs: boolean;
     setIncludeOldJobs: (value: boolean) => void;
+    site: string;
+    setSite: (value: string) => void;
     columns: number;
     setColumns: (value: number) => void;
 }
 
 const StatisticsControls: React.FC<StatisticsControlsProps> = ({
-    timeRange, setTimeRange, includeOldJobs, setIncludeOldJobs, columns, setColumns
+    timeRange, setTimeRange, includeOldJobs, setIncludeOldJobs, site, setSite, columns, setColumns
 }) => (
     <div className="statistics-controls">
         <div className="layout-controls">
@@ -20,32 +23,31 @@ const StatisticsControls: React.FC<StatisticsControlsProps> = ({
                 includeOldJobs={includeOldJobs}
                 onIncludeOldJobsChange={setIncludeOldJobs}
             />
+            <label>
+                Site:
+                <select
+                    aria-label="Site"
+                    value={site}
+                    onChange={(e) => setSite(e.target.value)}
+                    style={{ marginLeft: '8px', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
+                >
+                    {SITE_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                </select>
+            </label>
             <span className="layout-label">Layout:</span>
             <div className="layout-buttons">
-                <button 
-                    className={`layout-btn ${columns === 1 ? 'active' : ''}`}
-                    onClick={() => setColumns(1)}
-                    title="Single Column"
-                >
+                <button className={`layout-btn ${columns === 1 ? 'active' : ''}`} onClick={() => setColumns(1)} title="Single Column">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     </svg>
                 </button>
-                <button 
-                    className={`layout-btn ${columns === 2 ? 'active' : ''}`}
-                    onClick={() => setColumns(2)}
-                    title="Two Columns"
-                >
+                <button className={`layout-btn ${columns === 2 ? 'active' : ''}`} onClick={() => setColumns(2)} title="Two Columns">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="12" y1="3" x2="12" y2="21"></line>
                     </svg>
                 </button>
-                <button 
-                    className={`layout-btn ${columns === 3 ? 'active' : ''}`}
-                    onClick={() => setColumns(3)}
-                    title="Three Columns"
-                >
+                <button className={`layout-btn ${columns === 3 ? 'active' : ''}`} onClick={() => setColumns(3)} title="Three Columns">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="9" y1="3" x2="9" y2="21"></line>

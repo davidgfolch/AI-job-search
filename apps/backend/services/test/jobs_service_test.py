@@ -115,8 +115,7 @@ def test_count_jobs(service):
 def test_get_job_found(service, mock_db):
     with (
         patch.object(service.repo, "get_db", return_value=mock_db),
-        patch.object(service.repo, "fetch_job_row", return_value=(1, "Job", "Acme")),
-        patch.object(service.repo, "fetch_columns", return_value=["id", "title", "company"]),
+        patch.object(service.repo, "fetch_job_with_columns", return_value=(["id", "title", "company"], (1, "Job", "Acme"))),
         patch("services.jobs_service.CompanySynonymService") as mock_synonym_cls,
     ):
         mock_synonym_cls.return_value.get_synonyms.return_value = ["Acme Corp"]
@@ -128,7 +127,7 @@ def test_get_job_found(service, mock_db):
 def test_get_job_not_found(service, mock_db):
     with (
         patch.object(service.repo, "get_db", return_value=mock_db),
-        patch.object(service.repo, "fetch_job_row", return_value=None),
+        patch.object(service.repo, "fetch_job_with_columns", return_value=([], None)),
     ):
         result = service.get_job(1)
     assert result is None
@@ -137,8 +136,7 @@ def test_get_job_not_found(service, mock_db):
 def test_get_job_no_company(service, mock_db):
     with (
         patch.object(service.repo, "get_db", return_value=mock_db),
-        patch.object(service.repo, "fetch_job_row", return_value=(1, "Job", None)),
-        patch.object(service.repo, "fetch_columns", return_value=["id", "title", "company"]),
+        patch.object(service.repo, "fetch_job_with_columns", return_value=(["id", "title", "company"], (1, "Job", None))),
     ):
         result = service.get_job(1)
     assert result["company"] is None

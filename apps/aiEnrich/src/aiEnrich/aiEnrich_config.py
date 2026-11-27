@@ -1,6 +1,8 @@
 import requests
 
+from commonlib.cloud_llm import get_module_model, is_cloud
 from commonlib.environmentUtil import getEnv, getEnvBool
+from commonlib.envFileUtil import getEnvFile
 from commonlib.ollama_config import (
     BACKEND_HOST_BASE_URL,
     OLLAMA_HOST_BASE_URL,
@@ -10,6 +12,7 @@ from commonlib.ollama_config import (
 OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_DEFAULT_MODEL = "openrouter/free"
 OPENROUTER_DEFAULT_FALLBACK_MODEL = "nex-agi/nex-n2.5-pro:free"
+LLM_BACKEND_ENV = "AI_ENRICH_LLM_BACKEND"
 
 _BACKEND_URL_CACHE: str | None = None
 
@@ -46,8 +49,18 @@ def get_max_validation_retries() -> int:
     return int(getEnv("AI_ENRICH_MAX_VALIDATION_RETRIES", "1"))
 
 
+def get_llm_backend() -> str:
+    """LLM provider for enrichment (`ollama` or `openrouter`), not the FastAPI backend.
+
+    Reads the .env file so a provider changed in Settings applies to the next job
+    even though Compose injected the startup value into the container environment.
+    """
+    return getEnvFile(LLM_BACKEND_ENV, "ollama")
+
+
 def get_backend() -> str:
-    return getEnv("AI_ENRICH_BACKEND", "ollama")
+    """Deprecated alias of `get_llm_backend`; kept for existing callers."""
+    return get_llm_backend()
 
 
 def get_backend_url() -> str:
@@ -83,3 +96,11 @@ def get_openrouter_model() -> str:
 
 def get_openrouter_fallback_model() -> str:
     return getEnv("AI_ENRICH_OPENROUTER_FALLBACK_MODEL", OPENROUTER_DEFAULT_FALLBACK_MODEL)
+
+
+def is_cloud_backend() -> bool:
+    return is_cloud(get_llm_backend())
+
+
+def get_provider_model(backend: str) -> str:
+    return get_module_model("AI_ENRICH", backend) if is_cloud(backend) else get_model()

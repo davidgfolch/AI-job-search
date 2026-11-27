@@ -1,6 +1,7 @@
 test/__pycache__
 test_export_output/**
 .env.secrets
+.env.local
 .venv*
 .history
 .letta
@@ -41,3 +42,8 @@ storage/
 # Dependabot sandbox (scripts/test-sandbox.*)
 .docker-sandbox/
 *.bak
+
+# agentmods state (generated on install)
+.agentmods.json
+.claude/commands/ponytail.md
+.codex/prompts/ponytail.md

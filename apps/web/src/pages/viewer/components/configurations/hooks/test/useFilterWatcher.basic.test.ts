@@ -39,7 +39,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
 
     it('should start watching and trigger immediate check', async () => {
         vi.useFakeTimers();
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 10 }, 2: { total: 10, new_items: 10 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 10, new_items: 10, removed_items: 0 }, 2: { total: 10, new_items: 10, removed_items: 0 } });
         const { wrapper, queryClient } = createWrapper();
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
@@ -65,7 +65,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
         expect(result.current.results['Config 1'].newItems).toBe(10);
 
         // Third check: server finally reports 0 (catches up)
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 10, new_items: 0 }, 2: { total: 10, new_items: 0 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 10, new_items: 0, removed_items: 0 }, 2: { total: 10, new_items: 0, removed_items: 0 } });
         act(() => {
             queryClient.setQueryData(['jobs'], []);
         });
@@ -76,7 +76,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
         expect(result.current.results['Config 1'].newItems).toBe(0);
 
         // Fourth check: new items arrive AFTER server caught up
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 11, new_items: 1 }, 2: { total: 11, new_items: 1 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 11, new_items: 1, removed_items: 0 }, 2: { total: 11, new_items: 1, removed_items: 0 } });
         act(() => {
             queryClient.setQueryData(['jobs'], []);
         });
@@ -89,14 +89,14 @@ describe('useFilterWatcher - Basic Functionality', () => {
 
     it('should send an independent cutoff per configuration after a reset', async () => {
         vi.useFakeTimers();
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 }, 2: { total: 5, new_items: 0 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 5, new_items: 0, removed_items: 0 }, 2: { total: 5, new_items: 0, removed_items: 0 } });
         const { wrapper, queryClient } = createWrapper();
         const { result } = renderHook(() => useFilterWatcher({ savedConfigs: mockSavedConfigs }), { wrapper });
 
         await act(async () => {
             await vi.advanceTimersByTimeAsync(200);
         });
-        const calls = (jobsApi.getWatcherStats as any).mock.calls;
+        const calls = vi.mocked(jobsApi.getWatcherStats).mock.calls;
         const firstCutoffMap = calls[0][0];
         expect(firstCutoffMap[1]).toEqual(firstCutoffMap[2]);
 
@@ -111,7 +111,7 @@ describe('useFilterWatcher - Basic Functionality', () => {
             await vi.advanceTimersByTimeAsync(200);
         });
 
-        const allCalls = (jobsApi.getWatcherStats as any).mock.calls;
+        const allCalls = vi.mocked(jobsApi.getWatcherStats).mock.calls;
         const lastCutoffMap = allCalls[allCalls.length - 1][0];
         expect(lastCutoffMap[1]).not.toEqual(lastCutoffMap[2]);
     });

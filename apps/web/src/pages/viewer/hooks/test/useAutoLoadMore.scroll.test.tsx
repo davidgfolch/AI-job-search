@@ -86,8 +86,8 @@ describe('useAutoLoadMore scroll and observer signals', () => {
     it('observes the list against the viewport so any scrolling element triggers a load', () => {
         renderOffScreen({ onLoadMore: vi.fn() });
 
-        const options = (globalThis.IntersectionObserver as any).mock.calls[0][1];
-        expect(options.root).toBeUndefined();
+        const options = vi.mocked(globalThis.IntersectionObserver).mock.calls[0]?.[1];
+        expect(options?.root).toBeUndefined();
     });
 
     it('observes a stable marker below the rows, never a row that gets replaced', () => {
@@ -96,8 +96,8 @@ describe('useAutoLoadMore scroll and observer signals', () => {
 
         rerender(<Harness itemCount={21} />);
 
-        const observer = (globalThis.IntersectionObserver as any).mock.results[0].value;
-        const targets = observer.observe.mock.calls.map((call: any[]) => call[0]);
+        const observer = vi.mocked(globalThis.IntersectionObserver).mock.results[0]!.value as IntersectionObserver;
+        const targets = vi.mocked(observer.observe).mock.calls.map(([target]) => target);
         expect(targets).toEqual([sentinel]);
         expect(targets.every((target: Element) => target.tagName !== 'TR')).toBe(true);
     });

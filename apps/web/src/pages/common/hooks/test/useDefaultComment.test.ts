@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useDefaultComment } from '../useDefaultComment';
 import { settingsApi } from '../../../settings/api/SettingsApi';
@@ -17,7 +17,7 @@ vi.mock('../useEnvSettings', () => ({
 import { useEnvSettings } from '../useEnvSettings';
 
 describe('useDefaultComment', () => {
-    let consoleSpy: any;
+    let consoleSpy: MockInstance;
     
     beforeEach(() => {
         vi.clearAllMocks();
@@ -30,10 +30,10 @@ describe('useDefaultComment', () => {
 
     it('should load default comment from settingsApi on mount', async () => {
         const mockStoredComment = '- custom applied text';
-        (useEnvSettings as any).mockReturnValue({
+        vi.mocked(useEnvSettings).mockReturnValue({
             data: { UI_APPLY_MODAL_DEFAULT_TEXT: mockStoredComment },
             isLoading: false,
-        });
+        } as unknown as ReturnType<typeof useEnvSettings>);
 
         const { result } = renderHook(() => useDefaultComment());
 
@@ -42,11 +42,11 @@ describe('useDefaultComment', () => {
     });
 
     it('should save comment to settingsApi', async () => {
-        (useEnvSettings as any).mockReturnValue({
+        vi.mocked(useEnvSettings).mockReturnValue({
             data: { UI_APPLY_MODAL_DEFAULT_TEXT: '' },
             isLoading: false,
-        });
-        (settingsApi.updateEnvSetting as any).mockResolvedValue(undefined);
+        } as unknown as ReturnType<typeof useEnvSettings>);
+        vi.mocked(settingsApi.updateEnvSetting).mockResolvedValue(undefined as unknown as Record<string, string>);
 
         const { result } = renderHook(() => useDefaultComment());
 
@@ -62,10 +62,10 @@ describe('useDefaultComment', () => {
     });
 
     it('should not save empty comment', async () => {
-        (useEnvSettings as any).mockReturnValue({
+        vi.mocked(useEnvSettings).mockReturnValue({
             data: { UI_APPLY_MODAL_DEFAULT_TEXT: '' },
             isLoading: false,
-        });
+        } as unknown as ReturnType<typeof useEnvSettings>);
 
         const { result } = renderHook(() => useDefaultComment());
 

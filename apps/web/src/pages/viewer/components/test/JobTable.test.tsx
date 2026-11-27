@@ -26,7 +26,7 @@ const installIntersectionObserverMock = () => {
             thresholds: [],
             takeRecords: () => [],
         };
-    }) as any;
+    }) as unknown as typeof IntersectionObserver;
 };
 
 const scrollToBottom = () => act(() => {
@@ -178,5 +178,22 @@ describe('JobTable', () => {
         // scrollIntoView does, leaves it 10px short of the frame, and an upward step would park it under the
         // sticky header.
         expect(list.scrollTop).toBe(30);
+    });
+
+    it('renders location and modality columns right after company', () => {
+        const { container } = render(<JobTable {...defaultProps} />);
+        expect([...container.querySelectorAll('thead th')].map(th => th.textContent)).toEqual(['', 'Salary', 'Title', 'Company', 'Location', 'Modality', 'Status', 'Created']);
+        const cell = container.querySelector('tbody td.location-column') as HTMLTableCellElement;
+        expect([cell.textContent, cell.title]).toEqual(['Remote', 'Remote']);
+    });
+
+    it.each([[['REMOTE', 'HYBRID', 'ON_SITE'], ['R', 'H', 'O']], [null, ['-']]])('renders modality %s as badges %s', (modality, badges) => {
+        const jobs = createMockJobs(1, { location: null, modality });
+        const { container } = render(<JobTable {...defaultProps} jobs={jobs} />);
+        const rendered = [...container.querySelectorAll('.modality-badge')];
+        expect(container.querySelector('tbody td.location-column')?.textContent).toBe('-');
+        expect(rendered.map(badge => badge.textContent)).toEqual(modality ? badges : []);
+        expect(rendered.map(badge => badge.getAttribute('title'))).toEqual(modality ?? []);
+        expect(container.querySelector('tbody td.modality-column')?.textContent).toBe(modality ? badges.join('') : '-');
     });
 });

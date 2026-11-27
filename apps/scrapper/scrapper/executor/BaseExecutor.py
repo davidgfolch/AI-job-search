@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from commonlib.observability import get_logger
+from commonlib.observability import get_logger, keyword_log_context
 from commonlib.terminalColor import yellow
 from commonlib.sql.mysqlUtil import MysqlUtil
 from commonlib.keep_system_awake import KeepSystemAwake
@@ -136,7 +136,8 @@ class BaseExecutor(ABC):
                                 console=yellow(f"Skipping keyword '{keyword}' (already processed)"))
                     continue
                 try:
-                    self._process_keyword(keyword, start_page)
+                    with keyword_log_context(self.site_name_key, keyword):
+                        self._process_keyword(keyword, start_page)
                     self.persistence_manager.remove_failed_keyword(self.site_name_key, keyword)
                 except Exception as e:
                     debug(self.debug)

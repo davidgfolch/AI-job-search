@@ -5,9 +5,9 @@ import type { FilterConfig } from '../useFilterConfigurations';
 
 describe('useFilterDropdown', () => {
     const mockConfigs: FilterConfig[] = [
-        { name: 'Alpha', filters: {} as any },
-        { name: 'Beta', filters: {} as any },
-        { name: 'Gamma', filters: {} as any },
+        { name: 'Alpha', filters: {} },
+        { name: 'Beta', filters: {} },
+        { name: 'Gamma', filters: {} },
     ];
 
     const defaultProps = {
@@ -28,8 +28,8 @@ describe('useFilterDropdown', () => {
 
     it('should sort configs alphabetically', () => {
         const unsortedConfigs = [
-            { name: 'Zebra', filters: {} as any },
-            { name: 'Alpha', filters: {} as any },
+            { name: 'Zebra', filters: {} },
+            { name: 'Alpha', filters: {} },
         ];
         const { result } = renderHook(() => useFilterDropdown({ ...defaultProps, configs: unsortedConfigs }));
         expect(result.current.filteredConfigs[0].name).toBe('Alpha');
@@ -42,14 +42,14 @@ describe('useFilterDropdown', () => {
 
         // Not open -> should open
         act(() => {
-            result.current.handleKeyDown({ key: 'ArrowDown', preventDefault: vi.fn() } as any);
+            result.current.handleKeyDown({ key: 'ArrowDown', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLInputElement>);
         });
         expect(setIsOpenMock).toHaveBeenCalledWith(true);
 
         // Open -> should highlight
         const { result: openResult } = renderHook(() => useFilterDropdown({ ...defaultProps, isOpen: true }));
         act(() => {
-            openResult.current.handleKeyDown({ key: 'ArrowDown', preventDefault: vi.fn() } as any);
+            openResult.current.handleKeyDown({ key: 'ArrowDown', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLInputElement>);
         });
         expect(openResult.current.highlightIndex).toBe(0); // -1 -> 0
     });
@@ -72,7 +72,7 @@ describe('useFilterDropdown', () => {
         });
 
         act(() => {
-            result.current.handleKeyDown({ key: 'Enter', preventDefault: vi.fn() } as any);
+            result.current.handleKeyDown({ key: 'Enter', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLInputElement>);
         });
         expect(onLoadMock).toHaveBeenCalledWith(mockConfigs[0]);
         expect(onSaveMock).not.toHaveBeenCalled();
@@ -86,7 +86,7 @@ describe('useFilterDropdown', () => {
         }));
         
         act(() => {
-            resultSave.current.handleKeyDown({ key: 'Enter', preventDefault: vi.fn() } as any);
+            resultSave.current.handleKeyDown({ key: 'Enter', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLInputElement>);
         });
         expect(onSaveMock).toHaveBeenCalled();
     });
@@ -96,7 +96,7 @@ describe('useFilterDropdown', () => {
         const { result } = renderHook(() => useFilterDropdown({ ...defaultProps, setIsOpen: setIsOpenMock, isOpen: true }));
 
         act(() => {
-            result.current.handleKeyDown({ key: 'Escape', preventDefault: vi.fn() } as any);
+            result.current.handleKeyDown({ key: 'Escape', preventDefault: vi.fn() } as unknown as React.KeyboardEvent<HTMLInputElement>);
         });
         expect(setIsOpenMock).toHaveBeenCalledWith(false);
         expect(result.current.highlightIndex).toBe(-1);

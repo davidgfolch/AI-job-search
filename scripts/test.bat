@@ -125,11 +125,16 @@ rem coverage branch under cmd, so --coverage ran plain pytest and no gate ran.
 set "target_dir=%~1"
 for %%a in ("!target_dir!") do set "target_name=%%~nxa"
 set "test_code=0"
+set "node_code=0"
 echo.
 echo Testing !target_name!...
 pushd "!target_dir!" || exit /b 1
 if exist "package.json" goto :run_js
 if not exist "pyproject.toml" goto :run_unknown
+if exist "test\*.test.mjs" (
+    call node --test test/*.test.mjs
+    set "node_code=!errorlevel!"
+)
 if exist "uv.lock" goto :run_uv
 if !coverage!==1 goto :run_poetry_coverage
 poetry run pytest
@@ -178,5 +183,6 @@ echo No known project type found in !target_name!
 set "test_code=1"
 
 :run_finish
+if !node_code! neq 0 if !test_code! equ 0 set "test_code=!node_code!"
 popd
 exit /b !test_code!

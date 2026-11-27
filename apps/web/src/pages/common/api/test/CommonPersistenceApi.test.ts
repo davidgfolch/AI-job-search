@@ -59,7 +59,7 @@ describe('persistenceApi', () => {
           throw new Error('Storage full');
       });
       
-      (window.localStorage.setItem as any).mockImplementation(() => {
+      vi.mocked(window.localStorage.setItem).mockImplementation(() => {
            throw new Error('Storage full');
       });
 
