@@ -115,4 +115,10 @@ describe('SkillTag description card', () => {
         showCard();
         expect(document.querySelector('.skill-description-card')).toBeNull();
     });
+
+    it('shows learning path links in the card, even without a description', () => {
+        render(<SkillTag skill="Rust" learningPath={[{ url: 'https://example.com/rust', source: 'llm' }]} isInLearnList onToggle={vi.fn()} onViewDetail={vi.fn()} />);
+        showCard();
+        expect(screen.getByRole('link', { name: 'https://example.com/rust' })).toHaveAttribute('href', 'https://example.com/rust');
+    });
 });

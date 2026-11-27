@@ -89,9 +89,9 @@ def main() -> int:
     if not isinstance(target, str):
         return 0
 
-    cwd = os.getcwd()
-    rel_path = os.path.relpath(target, cwd) if os.path.isabs(target) else target
-    if not needs_reminder(rel_path) or already_reminded(remind_path(cwd)):
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    rel_path = os.path.relpath(target, root) if os.path.isabs(target) else target
+    if not needs_reminder(rel_path) or already_reminded(remind_path(root)):
         return 0
 
     json.dump(

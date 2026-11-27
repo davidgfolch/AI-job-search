@@ -12,6 +12,9 @@ export interface ScrapperStateUpdateDto {
     state: ScrapperState;
 }
 
+export type ProviderModel = { id: string; label: string; free: boolean };
+export type ProviderModels = { provider: string; models: ProviderModel[]; source: string; cached: boolean; fetched_at: number | null };
+
 export const settingsApi = {
     getEnvSettings: async (): Promise<Record<string, string>> => {
         const response = await apiClient.get<Record<string, string>>('/settings/env');
@@ -25,6 +28,11 @@ export const settingsApi = {
 
     updateEnvSettingsBulk: async (updates: Record<string, string>): Promise<Record<string, string>> => {
         const response = await apiClient.post<Record<string, string>>('/settings/env-bulk', { updates });
+        return response.data;
+    },
+
+    getProviderModels: async (provider: string, refresh = false): Promise<ProviderModels> => {
+        const response = await apiClient.get<ProviderModels>('/settings/provider-models', { params: { provider, ...(refresh && { refresh: true }) } });
         return response.data;
     },
 

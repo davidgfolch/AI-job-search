@@ -24,7 +24,7 @@ describe('useFilterWatcher - Notifications', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         // Default mock implementation to prevent undefined errors
-        (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 0, new_items: 0 }, 2: { total: 0, new_items: 0 } });
+        vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 0, new_items: 0, removed_items: 0 }, 2: { total: 0, new_items: 0, removed_items: 0 } });
     });
 
     afterEach(() => {
@@ -41,7 +41,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should trigger aggregated notification for enabled configs', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 5 }, 2: { total: 5, new_items: 5 } });
+         vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 5, new_items: 5, removed_items: 0 }, 2: { total: 5, new_items: 5, removed_items: 0 } });
          
          const config1 = { ...mockSavedConfigs[0], watched: true };
          const config2 = { ...mockSavedConfigs[1], watched: true };
@@ -72,7 +72,7 @@ describe('useFilterWatcher - Notifications', () => {
     it('should notify a loaded configuration when new matches arrive', async () => {
          // The configuration was loaded: its cutoff is now, so the backend reports
          // no new match yet.
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 5, new_items: 0 }, 2: { total: 5, new_items: 0 } });
+         vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 5, new_items: 0, removed_items: 0 }, 2: { total: 5, new_items: 0, removed_items: 0 } });
 
          const config1 = { ...mockSavedConfigs[0], watched: true };
          const config2 = { ...mockSavedConfigs[1], watched: true };
@@ -90,7 +90,7 @@ describe('useFilterWatcher - Notifications', () => {
          });
 
          // A new match arrives for the loaded configuration.
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 6, new_items: 1 }, 2: { total: 5, new_items: 0 } });
+         vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 6, new_items: 1, removed_items: 0 }, 2: { total: 5, new_items: 0, removed_items: 0 } });
          act(() => {
              queryClient.setQueryData(['jobs'], []);
          });
@@ -123,7 +123,7 @@ describe('useFilterWatcher - Notifications', () => {
     });
 
     it('should NOT trigger notification if no new items found', async () => {
-         (jobsApi.getWatcherStats as any).mockResolvedValue({ 1: { total: 0, new_items: 0 } });
+         vi.mocked(jobsApi.getWatcherStats).mockResolvedValue({ 1: { total: 0, new_items: 0, removed_items: 0 } });
          
          const { wrapper, queryClient } = createWrapper();
          renderHook(() => useFilterWatcher({ savedConfigs: [{...mockSavedConfigs[0], watched: true}] }), { wrapper });

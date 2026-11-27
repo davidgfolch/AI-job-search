@@ -1,13 +1,18 @@
 name: Auto-merge Dependabot PRs
 
+# pull_request_target, not pull_request: runs triggered by Dependabot get a read-only
+# GITHUB_TOKEN and no repository secrets, so `gh pr merge --auto` could never succeed
+# (that is why every merge used to be manual). pull_request_target runs in the base
+# repository context with a write-capable token. Nothing untrusted is checked out here,
+# and the token is only used for the single merge call below.
 on:
-  pull_request:
-    types: [opened, labeled, synchronize, reopened]
+  pull_request_target:
+    types: [opened, labeled, synchronize, reopened, ready_for_review]
     branches: ["staging"]
 
 permissions:
   pull-requests: write
-  contents: write
+  contents: read
 
 concurrency:
   group: automerge-${{ github.event.pull_request.number }}
@@ -16,7 +21,7 @@ concurrency:
 jobs:
   auto-merge:
     if: |
-      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
       contains(github.event.pull_request.labels.*.name, 'dependencies') &&
       (contains(github.event.pull_request.head.ref, 'minor-patch') ||
        contains(github.event.pull_request.head.ref, 'github-actions'))
@@ -34,6 +39,8 @@ jobs:
 
       - name: Enable auto-merge
         if: steps.check-major.outputs.skipping == ''
-        run: gh pr merge --squash --auto "${{ github.event.pull_request.number }}"
         env:
-          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr merge "$PR_NUMBER" --squash --auto

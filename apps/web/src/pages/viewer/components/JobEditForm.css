@@ -57,6 +57,30 @@
     font-weight: 500;
 }
 
+@media (max-width: 768px) {
+    .job-edit-form {
+        padding: 0.75rem;
+    }
+
+    .job-edit-form h2 {
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .status-form {
+        margin-bottom: 0.75rem;
+    }
+
+    .status-pills {
+        gap: 0.35rem;
+    }
+
+    .status-pill {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.85rem;
+    }
+}
+
 .form-fields {
     display: flex;
     flex-direction: column;

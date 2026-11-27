@@ -2,12 +2,10 @@
 
 ## System Requirements
 
-- **Python**: 3.10 or newer is required (3.11 recommended).
-  - Python 3.12 has incompatibilities with some libraries used.
-  - **Install Python 3.11** — `backend` and `scrapper` require `>=3.11` because the security-fixed Pillow 13 ships no 3.10 wheels; every other module declares `requires-python >=3.10,<3.13`, or `<3.14` for `commonlib`/`cron`.
-- **Node.js**: LTS version (for `apps/web`).
+- **Python**: 3.11 recommended (every module accepts it). `backend` and `scrapper` require `>=3.11` because the security-fixed Pillow 13 ships no 3.10 wheels; `aiCvMatcher`, `aiEnrich`, `aiEnrichSkill` and `aiFormFiller` declare `>=3.10,<3.13`; `commonlib` and `cron` declare `>=3.10,<3.14`. The containers run 3.11 (`backend`) and 3.12 (the AI workers, `cron` and `aiFormFiller`).
+- **Node.js**: 22.12 or newer for the `apps/web` test suite; CI and the web image use Node 24.
 - **Docker**: For running services in containers.
-- **Ruff**: Optional locally, required by CI. Installed once for the whole repo with `uv tool install ruff` (step 7.3).
+- **Ruff**: Optional locally, required by CI. Installed once for the whole repo by `scripts/install.*` (manual command in step 7.3).
 - **pre-commit**: Optional locally. Installs the commit hooks that run the same ruff and ESLint rules (step 7.4).
 
 `scripts/install.sh` (Linux) / `scripts/install.bat` (Windows) automate the app dependencies, the shared host tools (Crawlee, Ruff, CodeGraph) and the default Ollama model pull. They need Python, Poetry, uv and npm on `PATH`, so install those first (steps 1–4) and run the script from a **new** terminal. The steps below remain the manual path for the pieces you prefer to do yourself.
@@ -26,7 +24,7 @@ This project uses different package managers for different components:
 
 ### 1. Install Python 3.11
 
-Install **3.11** first (see System Requirements for why 3.11 and not 3.12).
+Install **3.11**: it is the version `backend` and `scrapper` require and it is accepted by every other module (see System Requirements).
 
 **Windows 11:**
 
@@ -65,7 +63,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 
 ### 3. Install uv (Python)
 
-Required for `apps/backend`, `apps/aiEnrich`, `apps/aiEnrichSkill`, and `apps/aiCvMatcher`.
+Required for `apps/backend`, `apps/aiEnrich`, `apps/aiEnrichSkill`, `apps/aiCvMatcher`, `apps/cron` and `apps/aiFormFiller`.
 
 ```bash
 # Windows
@@ -77,7 +75,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### 4. Install Node.js & npm
 
-Download and install from [nodejs.org](https://nodejs.org/).
+Download and install from [nodejs.org](https://nodejs.org/). Use 22.12 or newer (Node 24 recommended) — the web test suite needs it.
 
 ### 5. Install GitHub CLI (recommended)
 
@@ -103,7 +101,7 @@ Verify with `gh auth status`.
 
 > **Note**: If you are using Docker, you do not need to install Ollama manually — add the `ollama` profile to run it containerized: `docker-compose --profile ollama up -d` (see [DOCKER_DEV.md](DOCKER_DEV.md)). If Ollama is already installed on your host, skip that: the AI modules auto-detect it and the `ollama` container is opt-in.
 
-> **No-Ollama alternative**: if you plan to use the `openrouter` backend for `aiEnrich` (`AI_ENRICH_BACKEND=openrouter` in `.env`, see [apps/aiEnrich/README.md](../apps/aiEnrich/README.md)), you can skip Ollama entirely for that module — you only need an OpenRouter API key in `.env.secrets`. Ollama is still required by `aiEnrichSkill` (default backend `ollama`) unless it is also switched off.
+> **No-Ollama alternative**: both enrichment workers can use a free-tier cloud provider instead of Ollama (`AI_ENRICH_LLM_BACKEND` / `AI_ENRICHSKILL_BACKEND` in `.env`); keys go in `.env.secrets` and the available providers are listed in [LLM_PROVIDERS.md](LLM_PROVIDERS.md). Ollama remains the default and is still needed by `aiFormFiller` when its provider is `local`.
 
 Download and install from [ollama.com/download](https://ollama.com/download).
 
@@ -143,6 +141,8 @@ For the Dockerized server, prefix each command with `docker exec ai-job-search-o
 The helper install script picks this path automatically when `r2.cloudflarestorage.com` is unreachable; set `OLLAMA_PULL_SOURCE=hf` to force it.
 
 ### 7. Install Crawlee (source-page analysis)
+
+`scripts/install.sh` / `scripts/install.bat` install Crawlee, CodeGraph and Ruff; the commands in sections 7, 7.2, 7.3 and 7.4 are the manual equivalents (7.1 installs Chrome, a separate host prerequisite).
 
 Required by the `crawlee-page-analyst` agent skill to analyze a source page after a site/DOM redesign and produce scrapper-change requirements before selectors are edited (see [AGENTIC_SDLC.md](AGENTIC_SDLC.md)).
 
@@ -227,8 +227,8 @@ pip install pre-commit
 pre-commit install
 ```
 
-Optional: the `static-analysis` CI gate enforces the same rules either way. Details,
-including the `npm install` prerequisite of the `apps/web` and `apps/e2e` ESLint hooks:
+This host tool is not covered by `scripts/install.*`; the install is a one-off per machine. Optional: the `static-analysis` CI gate enforces the same rules either way. Details,
+including the workspace-install prerequisite (`./scripts/install.sh` / `.\scripts\install.bat`) of the `apps/web` and `apps/e2e` ESLint hooks:
 [README_DEVELOPMENT.md#pre-commit-hooks](README_DEVELOPMENT.md#pre-commit-hooks).
 
 ### 8. Install Project Dependencies
@@ -241,25 +241,7 @@ You can use the helper script in the project root:
 
 > **Note**: If you run the web app via Docker, its image auto-detects changed `package-lock.json` and reinstalls `node_modules` on start (see `apps/web/docker-entrypoint.sh`), so `docker-compose up -d --build web` after a dependency change is enough. See [DOCKER_DEV.md](DOCKER_DEV.md).
 
-Or install manually:
-
-**Commonlib, Backend & Scrapper:**
-
-```bash
-cd apps/commonlib && poetry install && cd ../..
-cd apps/scrapper && poetry install && cd ../..
-cd apps/backend && uv sync && cd ../..
-```
-
-**Web Frontend:**
-
-```bash
-cd apps/web && npm install && cd ../..
-```
-
-**AI Enrich and AI CV Matcher:**
-
-Follow instructions in [apps/aiEnrich/README.md](../apps/aiEnrich/README.md), [apps/aiEnrichSkill/README.md](../apps/aiEnrichSkill/README.md), or [apps/aiCvMatcher/README.md](../apps/aiCvMatcher/README.md).
+> **Note**: Sibling development clones created by `scripts/dev.sh` / `scripts/dev.bat` do not need a separate install — they inherit `node_modules` and a CodeGraph snapshot from the caller and rebuild the Python envs offline in place. See [Parallel Development](../AGENTS.md#parallel-development-sibling-clones).
 
 ### 8.1 Uninstall Project Dependencies
 
@@ -280,9 +262,14 @@ Ollama models are **not** removed: they live inside the Ollama server, not the p
    ```bash
    cp scripts/.env.secrets.example .env.secrets
    ```
-2. Edit `.env.secrets` with your credentials and `.env` with your configuration (create `.env` if needed).
+2. Create a machine-local override file if needed:
+   ```bash
+   touch .env.local
+   ```
+   `scripts/install.*` and `scripts/dev.*` create it automatically when missing.
+3. Edit `.env` for shared defaults, `.env.local` for machine-local overrides, and `.env.secrets` for credentials. The Settings UI writes non-secret overrides to `.env.local` and secret keys to `.env.secrets`; process-injected values (Docker Compose `environment:`, shell exports) still take precedence.
 
-> **Service discovery:** MySQL, MongoDB and Ollama are resolved at runtime — the host in `.env` first, then the container chain (`mysql_db`/`mongo_db` service name, `host.docker.internal`, `127.0.0.1`), then a cached LAN scan (`data/discovery/cache.json`). The same `.env` therefore works in Docker, on the host or against another LAN machine; no host needs to be pinned in `docker-compose.yml`. See [DOCKER_DEV.md](DOCKER_DEV.md) and [apps/commonlib/README.md](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
+> **Service discovery:** MySQL, MongoDB and Ollama are resolved at runtime, so the same `.env` works in Docker, on the host or against another LAN machine; no host needs to be pinned in `docker-compose.yml`. See [Distributed execution & LAN service auto-discovery](DISTRIBUTED_EXECUTION.md) and [apps/commonlib/README.md](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
 
 ## Database Setup
 

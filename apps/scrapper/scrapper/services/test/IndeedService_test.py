@@ -184,5 +184,5 @@ class TestIndeedService:
         with patch('scrapper.services.IndeedService.logger') as log:
             result = service.process_job("Title", "Company", "Loc", "60k", "http://url?jk=1", "html", False)
         assert result is True
-        assert_logged(log, 'info', 'indeed.job.already_exists', job_id='1')
-        assert_console_text(log, 'info', 'indeed.job.already_exists', 'already exists in DB (late check)', end='')
+        assert_logged(log, 'info', 'scraper.job.already_exists', job_id='1')
+        assert_console_text(log, 'info', 'scraper.job.already_exists', 'already exists in DB (late check)', end='')

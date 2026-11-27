@@ -6,10 +6,12 @@ trigger: always_on
 
 Keep documentation accurate and useful. Prefer fixing only what's wrong over documenting every change.
 
+Workflow: use the `docs-writer` skill (`.claude/skills/docs-writer/SKILL.md`) — short root README, one canonical source per fact linked instead of copied, and operations documented through the centralized `scripts/*` entry points.
+
 ### When to update docs
 
 - **Fix if wrong**: If your change makes existing documentation factually incorrect, fix it in the same session.
-- **User-visible/setup changes**: Update `README.md` and/or `apps/<module>/README.md` only for user-visible features, API contracts, UI flows, setup/install steps, or breaking configuration changes.
+- **User-visible/setup changes**: Update `README.md` and/or `apps/<module>/README.md` only for user-visible features, UI flows, setup/install steps, or breaking configuration changes.
 - **Agent/SDLC systems**: Changes to hooks, rules, plugins, skills, guards, or workflows → update `READMEs/AGENTIC_SDLC.md` and the relevant file in `.claude/rules/`. Don't require updating root `README.md`, `AGENTS.md`, or `.claude/CLAUDE.md` for every mechanical change.
 - **Internal changes**: Refactors, tests, internal implementation details → no doc updates required. Use [CodeGraph](https://github.com/colbymchenry/codegraph) to locate code/behavior.
 - **Plans/TODO**: Only update plan files or `READMEs/TODO.md` if the status/outcome actually changes or an item is closed.
@@ -20,6 +22,11 @@ Keep documentation accurate and useful. Prefer fixing only what's wrong over doc
 - **App READMEs** (`apps/*/README.md`): Purpose, quick start/run instructions, minimal configuration. Link to `READMEs/AGENTIC_SDLC.md` or code for internals.
 - **Single source of truth**: Don't duplicate rule/hook/guard details across `README.md`, `AGENTS.md`, `.claude/CLAUDE.md`. Link to `READMEs/AGENTIC_SDLC.md` and `.claude/rules/`.
 - **Be concise**: Prefer short notes with links over long explanations. Docs should explain setup/usage and high-level architecture, not duplicate implementation details.
+- **Don't document what the code already says**: module READMEs cover purpose, user-visible behaviour, configuration knobs, defaults and setup/run steps.
+  Selectors, internal call chains, retry counts, fallback ordering, log event tables and implementation rationale belong in code, comments and tests — never in a README.
+  Link to the source or a cross-cutting doc instead of restating it.
+- **Code owns contracts**: `scripts/mysql/ddl.sql` owns SQL DDL; route handlers and tests own API endpoints and JSON request/response shapes.
+  A README may name the capability and link to the source (or use CodeGraph), but must not copy DDL, endpoint tables or payload examples.
 - **Fix only what's necessary**: Preserve untouched wording/structure. Don't restyle or rewrite unrelated sections.
 - **Use CodeGraph first**: For locating code/behavior, use CodeGraph before grepping/reading files. Documentation is not a code index.
 - **Generated files**: `.codegraph/` is machine-local generated output — never hand-edit, never commit, never count as documentation.

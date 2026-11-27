@@ -34,6 +34,15 @@
   color: var(--text-primary);
 }
 
+button.menu-item {
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
 
 @media (max-width: 768px) {
     .menu-button {

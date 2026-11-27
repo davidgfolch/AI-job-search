@@ -1,3 +1,4 @@
+import { Page } from '@playwright/test';
 import { test, expect } from './coverage.fixtures';
 import {
     BASE_URL,
@@ -33,7 +34,7 @@ test.describe('Salary Calculator E2E', () => {
         });
     });
 
-    const openCalculator = async (page: any) => {
+    const openCalculator = async (page: Page) => {
         await page.goto(BASE_URL);
         await page.locator('#job-row-1').click();
         await expect(page.locator('#job-detail-title')).toContainText('Frontend Engineer');

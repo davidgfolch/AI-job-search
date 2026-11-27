@@ -1,8 +1,9 @@
+import { Page } from '@playwright/test';
 import { test, expect } from './coverage.fixtures';
 import { BASE_URL, setupPageLogging, setupSystemMocks, setupPaginatedJobsRoute } from './viewer.helpers';
 import { PAGINATED_JOB_COUNT, PAGE_SIZE } from './viewer.mocks';
 
-const jobRows = (page: any) => page.locator('tr[id^="job-row-"]');
+const jobRows = (page: Page) => page.locator('tr[id^="job-row-"]');
 
 test.use({ bypassCSP: true });
 
@@ -58,14 +59,14 @@ test.describe('Viewer pagination with a list taller than the screen', () => {
 
     /* Pin the list to a fixed height so it becomes its own scroll container regardless of how the
        surrounding flex chain resolves, and the pages can only be reached by scrolling it. */
-    const pinListHeight = async (page: any) => {
+    const pinListHeight = async (page: Page) => {
         await page.addStyleTag({ content: '.job-table-container { flex: none; height: 400px; }' });
         await page.locator('.job-table-container').waitFor();
     };
 
     /** Guards the premise of these tests: the end of the list must be past the trigger line, otherwise the
         prefetch margin would load the next page without any scrolling. */
-    const expectEndOfListOutOfReach = async (page: any) => {
+    const expectEndOfListOutOfReach = async (page: Page) => {
         const bottom = await page.evaluate(() => (document.querySelector('.job-table-sentinel') as HTMLElement).getBoundingClientRect().bottom);
         expect(bottom, 'end of the list must be below the 200px trigger margin to be out of reach').toBeGreaterThan(700 + 200);
     };

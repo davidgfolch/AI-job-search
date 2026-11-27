@@ -36,6 +36,11 @@ run_test() {
             ret=$?
         fi
     elif [ -f "pyproject.toml" ]; then
+        local node_ret=0
+        if compgen -G "test/*.test.mjs" > /dev/null; then
+            node --test test/*.test.mjs
+            node_ret=$?
+        fi
         if [ -f "uv.lock" ]; then
             if [ $coverage -eq 1 ]; then
                 uv run -m coverage run -m pytest
@@ -62,6 +67,7 @@ run_test() {
                 ret=$?
             fi
         fi
+        if [ $node_ret -ne 0 ] && [ $ret -eq 0 ]; then ret=$node_ret; fi
     else
         echo "No known project type found in $(basename "$dir")"
         ret=1

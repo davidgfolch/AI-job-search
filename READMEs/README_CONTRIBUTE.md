@@ -6,7 +6,7 @@ Please contact me on Github for any comments or questions I'll be happy to answe
 
 ## Development guide-lines
 
-Keep the documentation accurate: a pull request that changes user-visible behavior, setup/run steps or configuration must update the matching docs in the same change (module change → `apps/<module>/README.md`, new env var → root `README.md`, compose change → [DOCKER_DEV.md](DOCKER_DEV.md), new host requirement → [README_INSTALL.md](README_INSTALL.md)). Internal refactors and tests need no doc update. The policy is in `.claude/rules/documentation-update.md`.
+Keep the documentation accurate: a pull request that changes user-visible behavior, setup/run steps or configuration must update the matching docs in the same change (module change → `apps/<module>/README.md`, new env var → the owning module README or the setup doc that already lists it, compose change → [DOCKER_DEV.md](DOCKER_DEV.md), new host requirement → [README_INSTALL.md](README_INSTALL.md)). Internal refactors and tests need no doc update. The policy and the `docs-writer` workflow are in `.claude/rules/documentation-update.md`.
 
 ## Tests & coverage
 

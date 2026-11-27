@@ -69,7 +69,11 @@ class InfojobsExecutor(BaseExecutor):
             except Exception:
                 logger.warning("infojobs.scroll_failed", idx=idx + 1, action="ignored", console=yellow(f'Could not scroll to link {idx+1}, IGNORING.'), end='')
                 return None
-        job_link_elm = self.navigator.get_job_link_element(idx)
+        try:
+            job_link_elm = self.navigator.get_job_link_element(idx)
+        except IndexError:
+            logger.warning("infojobs.link_missing", idx=idx + 1, action="ignored", console=yellow(f'Job link {idx+1} no longer present, IGNORING.'), end='')
+            return None
         url = self.navigator.get_job_url(job_link_elm)
         job_id, job_exists = self.service.job_exists_in_db(url)
         if job_exists:

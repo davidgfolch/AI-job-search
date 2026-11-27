@@ -1,31 +1,45 @@
 import apiClient from '../../common/api/ApiClient';
 
+export type LearningPathSource = 'llm' | 'duckduckgo' | 'manual' | 'unknown';
+
+export interface LearningPathLink {
+  url: string;
+  source: LearningPathSource;
+}
+
 export interface Skill {
   name: string;
   description: string;
-  learningPath: string[];
+  learningPath: LearningPathLink[];
   disabled?: boolean;
   ai_enriched?: boolean;
   category?: string;
 }
 
-/** Shape returned by the backend, which names the learning path in snake case. */
+/** The backend names the field in snake case and may still return legacy plain-string links. */
+type LearningPathResponse = Array<LearningPathLink | string>;
+
 interface SkillResponse {
   name: string;
   description: string;
-  learning_path?: string[];
-  learningPath?: string[];
+  learning_path?: LearningPathResponse;
+  learningPath?: LearningPathResponse;
   disabled?: boolean;
   ai_enriched?: boolean;
   category?: string;
 }
+
+const normalizeLink = (link: LearningPathLink | string): LearningPathLink =>
+  typeof link === 'string' ? { url: link, source: 'unknown' } : { url: link.url, source: link.source || 'unknown' };
+
+const normalizeLearningPath = (links?: LearningPathResponse): LearningPathLink[] => (links || []).map(normalizeLink);
 
 export const skillsApi = {
   getSkills: async (): Promise<Skill[]> => {
     const response = await apiClient.get<SkillResponse[]>('/skills');
     return response.data.map((s) => ({
       ...s,
-      learningPath: s.learning_path || s.learningPath || [],
+      learningPath: normalizeLearningPath(s.learning_path || s.learningPath),
       ai_enriched: s.ai_enriched,
       category: s.category,
     }));
@@ -36,7 +50,7 @@ export const skillsApi = {
       const response = await apiClient.get<SkillResponse>(`/skills/${encodeURIComponent(name)}`);
       return {
           ...response.data,
-          learningPath: response.data.learning_path || response.data.learningPath || [],
+          learningPath: normalizeLearningPath(response.data.learning_path || response.data.learningPath),
           ai_enriched: response.data.ai_enriched,
           category: response.data.category,
       };

@@ -25,8 +25,14 @@ POOL_GET_DELAY = float(os.getenv('COMMONLIB_DB_POOL_RETRY_DELAY', '0.1'))
 DB_DISCOVERY_ENABLED = os.getenv('COMMONLIB_DB_DISCOVERY', 'True').strip().lower() not in ('false', '0', 'no')
 
 
+WRITE_POOL_NAME = 'jobsPool'
+READ_POOL_NAME = 'jobsReadPool'
+
 _pool_initialized = False
+_read_pool_initialized = False
 _pool_lock = threading.Lock()
+_read_pool_lock = threading.Lock()
+_resolved_host: str | None = None
 
 
 def get_db_name() -> str:
@@ -87,32 +93,78 @@ def _resolve_db_host(e2e_tests: bool = False) -> str:
     raise ConnectionError(reason)
 
 
+def _pool_size(env_key: str) -> int:
+    """Pool size from `env_key`, defaulting to the write pool's configured size."""
+    return int(os.getenv(env_key) or os.getenv('COMMONLIB_DB_POOL_SIZE', '5'))
+
+
+def _create_pool(name: str, host: str, pool_size: int, e2e_tests: bool = False):
+    conn = mysqlConnector.connect(
+        host=host,
+        user='root',
+        password='rootPass',
+        database=None if e2e_tests else get_db_name(),
+        pool_name=name,
+        pool_size=pool_size,
+        pool_reset_session=True,
+    )
+    conn.close()
+
+
 def _init_pool(e2e_tests: bool = False):
-    """Initialize the connection pool once (thread-safe)."""
-    global _pool_initialized
+    """Initialize the write pool once (thread-safe) and remember the resolved host."""
+    global _pool_initialized, _resolved_host
     if _pool_initialized:
         return
     with _pool_lock:
         if _pool_initialized:
             return
-        pool_size = int(os.getenv('COMMONLIB_DB_POOL_SIZE', '5'))
-        db_host = _resolve_db_host(e2e_tests)
-        conn = mysqlConnector.connect(
-            host=db_host,
-            user='root',
-            password='rootPass',
-            database=None if e2e_tests else get_db_name(),
-            pool_name='jobsPool',
-            pool_size=pool_size,
-            pool_reset_session=True,
-        )
-        conn.close()
+        _resolved_host = _resolve_db_host(e2e_tests)
+        _create_pool(WRITE_POOL_NAME, _resolved_host, _pool_size('COMMONLIB_DB_POOL_SIZE'), e2e_tests)
         _pool_initialized = True
+
+
+def _init_read_pool(e2e_tests: bool = False):
+    """Initialize the read pool once (thread-safe).
+
+    Reads default to the host the write pool resolved, so a burst of list queries
+    cannot starve the writes of connections. Point `COMMONLIB_DB_READ_HOST` at a
+    replica to move read load off the primary entirely.
+    """
+    global _read_pool_initialized
+    if _read_pool_initialized:
+        return
+    with _read_pool_lock:
+        if _read_pool_initialized:
+            return
+        _init_pool(e2e_tests)
+        host = os.getenv('COMMONLIB_DB_READ_HOST', '').strip() or _resolved_host
+        _create_pool(READ_POOL_NAME, host, _pool_size('COMMONLIB_DB_READ_POOL_SIZE'), e2e_tests)
+        _read_pool_initialized = True
+        logger.info("db.read_pool_ready", host=host, pool=READ_POOL_NAME)
+
+
+def _get_from_pool(pool_name: str) -> MySQLConnection:
+    """Take a connection from `pool_name`, retrying with backoff while it is exhausted."""
+    for attempt in range(POOL_GET_RETRIES):
+        try:
+            conn = mysqlConnector.connect(pool_name=pool_name)
+            if DEBUG:
+                logger.debug("db.connection_opened", conn=repr(conn))
+            return conn
+        except (queue.Empty, mysqlConnector.errors.PoolError):
+            if attempt < POOL_GET_RETRIES - 1:
+                delay = POOL_GET_DELAY * (attempt + 1)
+                if DEBUG:
+                    logger.debug("db.pool_retry", delay_secs=round(delay, 1), attempt=attempt + 1, retries=POOL_GET_RETRIES)
+                time.sleep(delay)
+    logger.error("db.pool_exhausted", attempts=POOL_GET_RETRIES, pool_name=pool_name)
+    raise queue.Empty("All pool connections are in use")
 
 
 def get_connection(e2e_tests: bool = False) -> MySQLConnection:
     """
-    Get a MySQL connection from the pool.
+    Get a MySQL connection from the write pool.
     Caller MUST close the connection to return it to the pool.
 
     Retries with backoff when the pool is temporarily exhausted.
@@ -124,22 +176,24 @@ def get_connection(e2e_tests: bool = False) -> MySQLConnection:
         MySQL connection instance from pool
     """
     _init_pool(e2e_tests)
-    for attempt in range(POOL_GET_RETRIES):
-        try:
-            conn = mysqlConnector.connect(pool_name='jobsPool')
-            if DEBUG:
-                logger.debug("db.connection_opened", conn=repr(conn))
-            return conn
-        except (queue.Empty, mysqlConnector.errors.PoolError):
-            if attempt < POOL_GET_RETRIES - 1:
-                delay = POOL_GET_DELAY * (attempt + 1)
-                if DEBUG:
-                    logger.debug("db.pool_retry", delay_secs=round(delay, 1), attempt=attempt + 1, retries=POOL_GET_RETRIES)
-                time.sleep(delay)
-    logger.error("db.pool_exhausted", attempts=POOL_GET_RETRIES, pool_name='jobsPool')
-    raise queue.Empty("All pool connections are in use")
+    return _get_from_pool(WRITE_POOL_NAME)
+
+
+def get_read_connection(e2e_tests: bool = False) -> MySQLConnection:
+    """Get a connection from the read-only pool.
+
+    Meant for SELECT-only code paths; the write pool keeps its connections for
+    inserts, updates and deletes. Caller MUST close the connection.
+    """
+    _init_read_pool(e2e_tests)
+    return _get_from_pool(READ_POOL_NAME)
 
 
 def getConnection(e2eTests: bool = False) -> MySQLConnection:
     """Backward compatible wrapper for get_connection."""
     return get_connection(e2e_tests=e2eTests)
+
+
+def getReadConnection(e2eTests: bool = False) -> MySQLConnection:
+    """Backward compatible wrapper for get_read_connection."""
+    return get_read_connection(e2e_tests=e2eTests)

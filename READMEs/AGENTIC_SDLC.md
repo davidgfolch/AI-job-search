@@ -16,6 +16,8 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 | `.claude/settings.local.json` | Local Claude Code permissions (not committed) |
 | `.opencode/` | opencode-specific config only: `plugins/docker-build.js`, `plugins/docs-sync.js`, `plugins/db-mutation.js`, `plugins/test-enforce.js`, the shared plugin logic in `lib/`, `opencode.json`, and `plans/`. opencode plugins must live here (`issue #8158`) |
 
+> Hook commands in `.claude/settings.json` use `${CLAUDE_PROJECT_DIR}` and resolve their repo root from the hook script's location, so a module-level `cd` during a session cannot break them.
+
 > **Note:** `.agent/` is retired. Skills and rules that previously lived in `.agent/` and the now-consolidated `.opencode/skills/` all live under `.claude/skills/` / `.claude/rules/` today.
 
 ## Skills
@@ -23,6 +25,8 @@ Agentic configuration and rules are consolidated under `.claude/` as the canonic
 All agent skills live in `.claude/skills/`. Core ones:
 
 - **`skill-builder`** — Creates new agent skills. Ask the agent to "create a new skill named [skill-name]".
+- **`docs-writer`** — Writes/updates documentation under four rules: short root `README.md`, one canonical source per fact (DRY, links instead of copies),
+  operations documented through the centralized `scripts/*` entry points and never documenting what the code already says.
 - **`e2e-implementer`** — Creates/reruns Playwright E2E tests in `apps/e2e`.
 - **`test-implementer`** — Implements unit tests following valid architecture and best practices.
 - **`codegraph`** — Queries and maintains the CodeGraph code-intelligence index (`explore`, `node`, `impact`, `affected`); the default for codebase questions.
@@ -47,7 +51,7 @@ Agents should query CodeGraph before grepping or reading source files: use `code
 
 ## Crawlee (source-page change analysis)
 
-When an `apps/scrapper` change is required because a source page changed (DOM redesign, new URL pattern, moved to client-side rendering), the `crawlee-page-analyst` skill is the mandatory first step: fetch the live page with Crawlee, diff the DOM against the selectors the scrapper uses, and produce selector-level requirements **before** editing any scrapper code. The analysis decides which fields broke, which crawler class fits (static vs JS-rendered), and whether the fix affects the Selenium path, the Scrapling path, or both. Crawlee is installed as a host tool (`uv tool install "crawlee[all]"`, run automatically by `scripts/install.sh` / `scripts/install.bat`); see [README_INSTALL.md](README_INSTALL.md) and the skill at `.claude/skills/crawlee-page-analyst/SKILL.md`.
+When an `apps/scrapper` change is required because a source page changed (DOM redesign, new URL pattern, moved to client-side rendering), the `crawlee-page-analyst` skill is the mandatory first step: fetch the live page with Crawlee, diff the DOM against the selectors the scrapper uses, and produce selector-level requirements **before** editing any scrapper code. The analysis decides which fields broke, which crawler class fits (static vs JS-rendered), and whether the fix affects the Selenium path, the Scrapling path, or both. Crawlee is installed as a host tool (`uv tool install "crawlee[all]"`, run automatically by `scripts/install.sh` / `scripts/install.bat`); see [README_INSTALL.md](README_INSTALL.md) and the skill at `.claude/skills/crawlee-page-analyst/SKILL.md`. When Crawlee itself is challenged (HTTP 401/403 or `Just a moment...`), the skill uses the Scrapling stealth session from `apps/scrapper` (unattended Turnstile solver) instead of manual checkbox clicks.
 
 ## Documentation Policy (fix if wrong, high-level only)
 
@@ -55,11 +59,15 @@ Documentation must stay accurate and useful — it is not a changelog. The polic
 
 | Mechanism | Harness | What it does |
 |-----------|---------|--------------|
-| `.claude/rules/documentation-update.md` | all | Canonical policy: fix what is wrong, user-visible/setup changes, high-level scope |
+| `.claude/rules/documentation-update.md` | all | Canonical policy: fix what is wrong, user-visible/setup changes, high-level scope, no implementation detail |
 | `.claude/hooks/docs-sync.py` | Claude Code (`PreToolUse` on `Edit`/`MultiEdit`/`Write`/`NotebookEdit`) | Reminds once per session when a compose/env/manifest/apps/scripts path is edited |
 | `.opencode/plugins/docs-sync.js` | opencode | Same reminder, printed once on the next bash call |
 
-In practice: fix docs the change made factually wrong; update root `README.md` or `apps/<module>/README.md` only for user-visible features, API/UI contracts and setup/run steps; update this file plus the affected rule for hooks, guards, skills and workflows; skip refactors, tests and internals (use CodeGraph to explore the code). Keep the user-facing READMEs high-level and link here for mechanics.
+In practice: fix docs the change made factually wrong; update root `README.md` or `apps/<module>/README.md` only for user-visible features, UI flows and setup/run steps;
+update this file plus the affected rule for hooks, guards, skills and workflows; skip refactors, tests and internals (use CodeGraph to explore the code).
+Never restate in a README what the code already says — selectors, internal call chains, retry counts and fix history belong in code and tests.
+DDL, API endpoints and JSON payloads are code-owned too: `scripts/mysql/ddl.sql` owns the schema and CodeGraph owns the contracts.
+Keep the user-facing READMEs high-level and link here for mechanics.
 
 `.codegraph/` is generated, machine-local output: refresh it with `codegraph sync`/`codegraph index`, never hand-edit it, and never count it as documentation.
 
@@ -95,7 +103,7 @@ Honest limits: the guardrail matches clients, SQL keywords, and destructive volu
 
 ## The test suite must run after code changes (enforced guardrail)
 
-`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), backend layering, test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script** — a runner call that omits `commonlib` silently skips every architecture check.
+`apps/commonlib/commonlib/test/architecture_test.py` is the **only** place the repository's architecture rules are enforced: file length (200-line soft limit), layered architecture across Python modules (services must reach the database through a repository), test-file naming, sibling-test correspondence, bare `print()`, and the `console=` logging contract. It lives in commonlib, so it executes **only when commonlib is one of the modules passed to the centralized test script** — a runner call that omits `commonlib` silently skips every architecture check.
 
 The requirement is therefore enforced in the tool call, so it does not depend on the agent remembering it:
 
@@ -108,12 +116,12 @@ The requirement is therefore enforced in the tool call, so it does not depend on
 Both are registered automatically: the hook in `.claude/settings.json`, the plugin in `.opencode/opencode.json`. They mirror each other, and both work the same way:
 
 1. An edit to a file that requires the suite is recorded, together with the module it belongs to.
-2. The next `scripts/test.sh` / `scripts/test.bat` invocation gets `commonlib` plus every recorded module added to its target list (`./scripts/test.sh web` → `./scripts/test.sh commonlib web`), so the architecture tests always execute.
+2. The next `scripts/test.sh` / `scripts/test.bat` invocation gets `commonlib` plus every recorded module added to its target list (`./scripts/test.sh web` → `./scripts/test.sh commonlib web e2e`), so the architecture tests always execute. Web changes also pull in `e2e`; user-visible web changes must come with an added or updated E2E spec (`e2e-implementer` skill).
 3. If the agent runs any other shell command first, the reminder is prepended once, naming the exact command to run.
 
 A runner invocation with **no** targets is left alone — the script already runs commonlib first, then every other module, then the e2e suite. Only real invocations are rewritten: a runner path that is a quoted string or an argument of another command (`echo "./scripts/test.sh web"`, `cat scripts/test.sh`) is left untouched, and every invocation of a compound command (`a && ./scripts/test.sh web && ./scripts/test.sh e2e`) is fixed.
 
-Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`, the test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`), `.env*`, dependency manifests (`pyproject.toml`, `package.json`, `package-lock.json`, `uv.lock`, `poetry.lock`) and other `scripts/**` files. Changes that do **not** require it: documentation, CI workflows, coverage gates, install/sandbox helpers, agent rules and skills, and generated paths — state that reason in the summary when skipping.
+Changes that require the suite: `apps/**/*.py`, `apps/web/src/**` (also runs `e2e`), `apps/e2e/**`, the test runners themselves (`scripts/test.sh`, `scripts/test.bat`, any `test.*`), `.env*`, dependency manifests (`pyproject.toml`, `package.json`, `package-lock.json`, `uv.lock`, `poetry.lock`) and other `scripts/**` files. Changes that do **not** require it: documentation, CI workflows, coverage gates, install/sandbox helpers, agent rules and skills, and generated paths — state that reason in the summary when skipping.
 
 ## Branch workflow (master vs staging)
 
@@ -125,13 +133,13 @@ Changes that require the suite: `apps/**/*.py`, `apps/web/src/**`, `apps/e2e/**`
 
 ## Dependabot PR workflow
 
-The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR), and it is the **only** session that works on `staging` — every other change is done on `master` (see [branch workflow](#branch-workflow-master-vs-staging)). It runs entirely in throwaway sibling clones — a `../ai_job_search-dependabot-session` clone for the `staging` sync and the promotion, and one `../ai_job_search-dependabot-<pr>` clone per PR — so the main workspace, its branches and its running stack are never touched; the PR clones are deleted after their merge and the session clone after the promotion. This is the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`new dependabot-session`, `sync` for the `staging` refresh, `dep <pr>` to create a PR clone, `cleanup dependabot-<pr>` / `cleanup dependabot-session` to delete them). The agent:
+The `dependabot-agent` skill processes open Dependabot PRs (they target `staging`; validated batches reach `master` only through the persistent `staging → master` promotion PR), and it is the **only** session that works on `staging` — every other change is done on `master` (see [branch workflow](#branch-workflow-master-vs-staging)). It runs entirely in throwaway sibling clones — a `../ai_job_search-dependabot-session` clone for the `staging` sync and the promotion, and one `../ai_job_search-dependabot-<pr>` clone per PR — so the main workspace, its branches and its running stack are never touched; the PR clones are deleted after their merge and the session clone after the promotion. This is the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*`, available here as `scripts/dev.sh` / `scripts/dev.bat` (`new dependabot-session`, `sync` for the `staging` refresh, `dep <pr>` to create a PR clone, `cleanup dependabot-<pr>` / `cleanup dependabot-session` to delete them). Clones start from a clean `git clone`, then inherit `.env.secrets`, gitignored lockfiles, `node_modules` and a CodeGraph snapshot from the caller; a sibling uv cache on the same filesystem hardlinks packages into each venv instead of copying them, and `new`/`dep` prepare only the modules passed to them (default: all), with `dev test` reusing that selection. The agent:
 
 1. Syncs `master` into `staging` inside the session clone before anything else, so every PR is built on a current base; the main workspace is never checked out, pulled or pushed.
 2. Runs the TDD pipeline for the affected module (installing it first, as `ci.yml` does).
 3. **Builds and runs** the affected Docker services in an isolated sandbox (`scripts/test-sandbox.*`, project `dependabot-test`) that renames containers, remaps ports, disables autodiscovery, clones the live `jobs` DB, and checks logs for errors.
 4. Aborts the whole process on any build/start/log error.
-5. Fixes failures and pushes, then merges each PR explicitly (auto-merge cannot run for Dependabot-triggered workflows: no repository secrets and a read-only token).
+5. Fixes failures and pushes, then confirms the merge (grouped minor/patch PRs squash-merge automatically once `ci-gate` is green via `dependabot-auto-merge.yml`; everything else is merged explicitly).
 6. When the batch is green, promotes `staging` into `master` through the promotion PR from the session clone, syncs both branches to the same commit, and deletes the session clone.
 
 Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL.md)).
@@ -140,12 +148,14 @@ Requires Docker and the GitHub CLI (`gh`, see [README_INSTALL.md](README_INSTALL
 
 ## Network Discovery
 
-- **Scrapper MySQL**: `COMMONLIB_DB_HOST` supports single IPs, CIDR, ranges, and comma-separated combinations; the configured host is tried first, then the container chain (`mysql_db` → `host.docker.internal` → `127.0.0.1`), then an automatic LAN fallback. See [commonlib docs](../apps/commonlib/README.md#mysql-connection).
-- **MongoDB**: `MONGO_URI` resolves the same way (`mongo_db` → `host.docker.internal` → `127.0.0.1`, then LAN on 27017; `auto` scans first). See [commonlib docs](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
-- **Web Backend API**: The web app resolves the backend at startup and watches it (`http://backend:8000` → `http://host.docker.internal:8000` → `http://localhost:8000` in Docker; reverse order on host). It waits for readiness (`BACKEND_WAIT_TIMEOUT_SECONDS`, default 120) and retries via watchdog (`BACKEND_CHECK_INTERVAL_SECONDS`, default 10, `BACKEND_MAX_RETRIES`, default 3). Pin with `BACKEND_URL`, allow LAN scan with `BACKEND_DISCOVERY=True`. See [web docs](../apps/web/README.md#backend-discovery).
-- **Ollama**: Modules probe the configured URL (`AI_ENRICH_OLLAMA_BASE_URL`), then `host.docker.internal`, `localhost`, `ollama:11434`, then LAN scan on 11434 (disable with `COMMONLIB_OLLAMA_DISCOVERY=False`). Set `AI_ENRICH_OLLAMA_BASE_URL=auto` to scan directly. A one-token probe gates job submission (`COMMONLIB_OLLAMA_PROBE_TIMEOUT`, default 30s). Add subnets with `COMMONLIB_OLLAMA_DISCOVERY_SUBNETS` (e.g. `10.0.0.0/24`). See [commonlib docs](../apps/commonlib/README.md).
-- **Watcher notifications**: After enrichment, `aiEnrich` POSTs enriched job IDs to the backend via `commonlib.watcher_notify` (auto-discovered like Ollama; pin with `AI_ENRICH_BACKEND_URL`). Best-effort (failures logged, enrichment continues). See [aiEnrich docs](../apps/aiEnrich/README.md#watcher-notification).
-- **Dashboard health**: Backend probes Prometheus/Grafana on refresh (`GET /-/healthy`, `GET /api/health`). Configure `PROMETHEUS_URL` (default `http://host.docker.internal:9090`) and `GRAFANA_URL` (default `http://host.docker.internal:3000`).
+Fallback chains, `.env` pins and LAN-scan knobs are documented once in [Distributed Execution & LAN Service Auto-Discovery](DISTRIBUTED_EXECUTION.md). Entry points per concern:
+
+- **MySQL**: `COMMONLIB_DB_HOST` — [commonlib docs](../apps/commonlib/README.md#mysql-connection).
+- **MongoDB**: `MONGO_URI` — [commonlib docs](../apps/commonlib/README.md#service-discovery-mysql--mongodb--ollama).
+- **Web Backend API**: `BACKEND_URL` / `BACKEND_DISCOVERY`, readiness wait and watchdog — [web docs](../apps/web/README.md#backend-discovery).
+- **Ollama**: `AI_ENRICH_OLLAMA_BASE_URL`, `COMMONLIB_OLLAMA_*` knobs — [commonlib docs](../apps/commonlib/README.md).
+- **Watcher notifications**: `AI_ENRICH_BACKEND_URL`, best-effort delivery — [aiEnrich docs](../apps/aiEnrich/README.md#watcher-notification).
+- **Dashboard health**: `PROMETHEUS_URL` / `GRAFANA_URL` — [DOCKER_DEV.md](DOCKER_DEV.md).
 
 ## Related Documentation
 

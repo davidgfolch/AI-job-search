@@ -47,12 +47,27 @@ export interface OllamaStatus {
     recentErrors: OllamaError[];
 }
 
+export interface InfrastructureService {
+    name: string;
+    displayName: string;
+    kind: 'ollama' | 'http' | 'database' | 'activity';
+    reachable: boolean;
+    url: string;
+    detail: string | null;
+    lastActivity: string | null;
+    serverUrl?: string | null;
+    serverIp?: string | null;
+    isLan?: boolean;
+    recentErrors?: OllamaError[];
+}
+
 export interface DashboardData {
     services: ServiceStatus[];
-    ollama: OllamaStatus;
-    aiBackend: string;
-    prometheus: ServiceHealth;
-    grafana: ServiceHealth;
+    infrastructure: InfrastructureService[];
+    ollama?: OllamaStatus;
+    llmBackend: string;
+    prometheus?: ServiceHealth;
+    grafana?: ServiceHealth;
     deployment: 'docker' | 'host';
     timestamp: string;
 }

@@ -1,4 +1,4 @@
-from .dataExtractor import dataExtractor, retry_failed_jobs
+from .enrichRunner import dataExtractor, retry_failed_jobs
 from commonlib.terminalColor import cyan
 from commonlib.ai_helpers import logIdleWait
 from commonlib.observability import get_logger

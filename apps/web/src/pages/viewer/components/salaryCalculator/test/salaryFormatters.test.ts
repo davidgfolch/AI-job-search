@@ -93,7 +93,7 @@ describe('parseAllSalaryCalculationsFromComments', () => {
         ['undefined', undefined, 0],
         ['no salary data', 'Some random notes', 0],
     ])('should return empty array for %s', (_, comments, expected) => {
-        expect(parseAllSalaryCalculationsFromComments(comments as any)).toHaveLength(expected);
+        expect(parseAllSalaryCalculationsFromComments(comments)).toHaveLength(expected);
     });
 
     it('should parse single salary data', () => {

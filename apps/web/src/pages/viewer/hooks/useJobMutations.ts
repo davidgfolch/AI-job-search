@@ -38,7 +38,7 @@ export const useJobMutations = ({
   selectedJob,
   setSelectedJob,
   activeTab,
-  autoSelectNext,
+  autoSelectNext: autoSelectNextRef,
   selectedIds,
   setSelectedIds,
   selectionMode,
@@ -95,7 +95,7 @@ export const useJobMutations = ({
         const hasStateChange = STATE_FIELDS.some((field) => field in data);
         if (hasStateChange && activeTab === "list") {
           const index = allJobs.findIndex(j => j.id === selectedJob.id);
-          autoSelectNext.current = {
+          autoSelectNextRef.current = {
             shouldSelect: true,
             previousJobId: selectedJob.id,
             previousJobIndex: index !== -1 ? index : undefined
@@ -104,7 +104,7 @@ export const useJobMutations = ({
         updateMutation.mutate({ id: selectedJob.id, data });
       }
     },
-    [selectedJob, updateMutation, activeTab, autoSelectNext, allJobs]
+    [selectedJob, updateMutation, activeTab, autoSelectNextRef, allJobs]
   );
 
   const ignoreSelected = useCallback(() => {
@@ -153,7 +153,7 @@ export const useJobMutations = ({
     confirmModal.confirm(msg, () => {
       if (activeTab === "list") {
         const index = allJobs.findIndex(j => j.id === selectedJob.id);
-        autoSelectNext.current = {
+        autoSelectNextRef.current = {
           shouldSelect: true,
           previousJobId: selectedJob.id,
           previousJobIndex: index !== -1 ? index : undefined
@@ -163,7 +163,7 @@ export const useJobMutations = ({
         ids: [selectedJob.id],
       });
     });
-  }, [selectedJob, activeTab, autoSelectNext, bulkDeleteMutation, confirmModal]);
+  }, [selectedJob, activeTab, autoSelectNextRef, allJobs, bulkDeleteMutation, confirmModal]);
 
   return {
     message,

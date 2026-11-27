@@ -44,12 +44,12 @@ export const installObserverMocks = () => {
     globalThis.IntersectionObserver = vi.fn(function(this: IntersectionObserver, callback: IntersectionObserverCallback) {
         intersectionCallbacks.push(callback);
         return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn(), root: null, rootMargin: '', thresholds: [], takeRecords: () => [] };
-    }) as any;
+    }) as unknown as typeof IntersectionObserver;
     resizeCallbacks = [];
     globalThis.ResizeObserver = vi.fn(function(this: ResizeObserver, callback: ResizeObserverCallback) {
         resizeCallbacks.push(callback);
         return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() };
-    }) as any;
+    }) as unknown as typeof ResizeObserver;
 };
 
 export const flushFrames = async () => {

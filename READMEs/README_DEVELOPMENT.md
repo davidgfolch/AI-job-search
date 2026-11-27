@@ -30,6 +30,10 @@ workflows, coverage gates, install/sandbox/dev-workflow helpers, agent rules and
 not exercised by the unit or e2e suites, so a run proves nothing; say so in the summary
 instead.
 
+### E2E isolation from the live stack
+
+E2E specs mock every API call. The runner starts its own Vite server on port 5174 pinned to an unreachable backend (`BACKEND_URL=http://127.0.0.1:1`) and never reuses an existing server, so a leaked request cannot reach the live backend or its database. In addition, a shared auto-fixture returns 404 for unmocked reads and **fails the test** on any unmocked `POST`/`PUT`/`PATCH`/`DELETE` to `/api/`; add an explicit `page.route` mock in the spec instead. The Docker sandbox (`scripts/test-sandbox.sh` / `dev.sh sandbox`) is for Dependabot verification, not E2E.
+
 ## Parallel Development (sibling clones)
 
 `scripts/dev.sh` (Linux/Mac) and `scripts/dev.bat` (Windows) keep feature and Dependabot work
@@ -54,7 +58,8 @@ commit — it aborts when `staging` and `master` have diverged.
 
 ## Static Analysis
 
-Static analysis is a blocking CI gate (`static-analysis` job). Run the same checks
+Static analysis is a blocking CI gate (`static-analysis` job): ESLint warnings fail the
+gate just like errors, so it must finish with zero warnings. Run the same checks
 locally before pushing:
 
 - **Linux**: `./scripts/lint.sh` (runs everything) or `./scripts/lint.sh python|web|e2e`
@@ -159,7 +164,8 @@ The same rules run before the commit, on the changed files only, through
 | `eslint-e2e` | `eslint` over `apps/e2e` with the app's own config |
 
 The two ESLint hooks are *local* hooks: they call the `eslint` already installed
-in `apps/web` and `apps/e2e`, so `npm install` must have been run in both before
+in `apps/web` and `apps/e2e`, so the workspace dependencies must be installed
+(`./scripts/install.sh` / `.\scripts\install.bat`) before
 the first commit. The hooks never reformat — ruff only applies safe fixes and
 eslint runs without `--fix` — so a finding fails the commit instead of rewriting
 the code behind the author's back.
@@ -298,7 +304,7 @@ Two rules follow from the split:
 
 ### Configuration
 
-All apps share these variables. They can be set in `.env` (bind-mounted into every container, so a restart is enough — no rebuild) or per service in `docker-compose.yml`.
+All apps share these variables. Set shared defaults in `.env`, machine-local overrides in `.env.local` (gitignored; Settings saves non-secret overrides there), and credentials in `.env.secrets`. In Docker these files are bind-mounted, so edits hot-reload where supported and otherwise need a restart, not a rebuild.
 
 | Variable | Default | Meaning |
 |---|---|---|

@@ -4,7 +4,15 @@ export const mockEnvSettings = {
     'OTHER_KEY': 'value3',
     'PASSWORD_KEY': 'secret',
     'SCRAPPER_TEST_KEY': 'scrapper_value',
-    'AI_SKILL_ENABLED': 'true'
+    'AI_SKILL_ENABLED': 'true',
+    'AI_ENRICH_LLM_BACKEND': 'ollama',
+    'AI_ENRICHSKILL_BACKEND': 'ollama',
+    'AI_FORM_PROVIDER': 'local',
+    'AI_ENRICH_OLLAMA_MODEL': 'ollama/qwen2.5:3b',
+    'AI_ENRICHSKILL_OLLAMA_MODEL': 'ollama/qwen2.5:3b',
+    'AI_FORM_HF_MODEL': 'Qwen/Qwen2.5-1.5B-Instruct',
+    'OPENAI_API_KEY': 'sk-openai-test',
+    'OPENROUTER_API_KEY': 'sk-or-test'
 };
 
 export const mockGroupedSettings = {

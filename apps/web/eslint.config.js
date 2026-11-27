@@ -42,16 +42,16 @@ export default defineConfig([
         caughtErrorsIgnorePattern: '^_',
       }],
       '@typescript-eslint/no-explicit-any': 'error',
-      // React Compiler oriented rules: reported, but not blocking until the components are migrated.
-      'react-hooks/exhaustive-deps': 'warn',
-      'react-hooks/immutability': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
+      // React Compiler oriented rules: all warnings are blocking too.
+      'react-hooks/exhaustive-deps': 'error',
+      'react-hooks/immutability': 'error',
+      'react-hooks/set-state-in-effect': 'error',
     },
   },
   {
     files: testGlobs,
     rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
       'react-refresh/only-export-components': 'off',
     },
   },

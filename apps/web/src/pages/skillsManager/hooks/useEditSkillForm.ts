@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Skill } from './useLearnList';
-import { skillsApi } from "../api/SkillsManagerApi";
+import { skillsApi, type LearningPathLink } from "../api/SkillsManagerApi";
 
 interface UseEditSkillFormProps {
   skill: Skill;
@@ -14,21 +14,22 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
   const [name, setName] = useState(skill.name || '');
   const [category, setCategory] = useState(skill.category || '');
   const [description, setDescription] = useState(skill.description || '');
-  const [learningPath, setLearningPath] = useState<string[]>(skill.learningPath || []);
+  const [learningPath, setLearningPath] = useState<LearningPathLink[]>(skill.learningPath || []);
   const [newLinkInput, setNewLinkInput] = useState('');
   const [isPolling, setIsPolling] = useState(false);
   
   const isNewSkill = !skill.name;
-
-  useEffect(() => {
+  const [syncedSkill, setSyncedSkill] = useState(skill);
+  if (syncedSkill !== skill) {
+    setSyncedSkill(skill);
     setName(skill.name || '');
     setCategory(skill.category || '');
     setDescription(skill.description || '');
     setLearningPath(skill.learningPath || []);
     setNewLinkInput('');
-  }, [skill]);
+  }
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!name.trim()) {
         alert("Skill name is required");
         return;
@@ -41,7 +42,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
       disabled: skill.disabled,
       ai_enriched: skill.ai_enriched
     });
-  };
+  }, [name, category, description, learningPath, skill, onSave]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -52,11 +53,11 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [name, category, description, learningPath, skill]); // Dependencies for handleSave closure
+  }, [handleSave]);
 
   const handleAddLink = () => {
     if (newLinkInput.trim()) {
-      setLearningPath([...learningPath, newLinkInput.trim()]);
+      setLearningPath([...learningPath, { url: newLinkInput.trim(), source: 'manual' }]);
       setNewLinkInput('');
     }
   };
@@ -65,6 +66,10 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     const newPath = [...learningPath];
     newPath.splice(index, 1);
     setLearningPath(newPath);
+  };
+
+  const handleClearAllLinks = () => {
+    setLearningPath([]);
   };
 
   useEffect(() => {
@@ -133,6 +138,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     isNewSkill,
     handleAddLink,
     handleRemoveLink,
+    handleClearAllLinks,
     handleSave,
     handleAutoFill,
     handleReload,

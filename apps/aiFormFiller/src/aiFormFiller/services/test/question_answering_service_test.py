@@ -41,6 +41,16 @@ class TestQuestionAnsweringService(unittest.TestCase):
         result = self.service.answer("Question?", "openrouter")
         self.assertEqual(result.text, "OR Answer")
 
+    @patch("aiFormFiller.services.question_answering_service.cfg")
+    @patch("aiFormFiller.services.question_answering_service.CloudProvider")
+    def test_answer_uses_cloud_provider(self, mock_cloud, mock_cfg):
+        make_mock_cfg(mock_cfg, provider="groq")
+        with patch("aiFormFiller.services.question_answering_service.get_cloud_api_key", return_value="key"):
+            mock_cloud.return_value = make_mock_provider(text="Cloud Answer", provider="groq")
+            result = self.service.answer("Question?", "groq")
+        self.assertEqual(result.text, "Cloud Answer")
+        mock_cloud.assert_called_once_with("groq", "key", "model")
+
     @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
     @patch("aiFormFiller.services.question_answering_service.cfg")
     def test_answer_builds_prompt_with_context(self, mock_cfg, mock_hf):
@@ -61,6 +71,7 @@ class TestQuestionAnsweringService(unittest.TestCase):
         sp = kwargs["system_prompt"]
         self.assertIn("INFERIR", sp)
         self.assertIn("PRIMERA PERSONA", sp)
+        self.assertIn("limitado a español o inglés", sp)
 
     @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
     @patch("aiFormFiller.services.question_answering_service.cfg")
@@ -69,6 +80,11 @@ class TestQuestionAnsweringService(unittest.TestCase):
         mock_hf.return_value = make_mock_provider(text="Updated answer")
         result = self.service.follow_up("¿Años de Java?", "Tengo 2 años con Spring Boot 3")
         self.assertEqual(result.text, "Updated answer")
+
+    def test_follow_up_uses_selected_provider(self):
+        self.service._get_provider = MagicMock(return_value=make_mock_provider())
+        self.service.follow_up("question", "info", "openrouter")
+        self.service._get_provider.assert_called_once_with("openrouter")
 
     @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
     @patch("aiFormFiller.services.question_answering_service.cfg")
@@ -122,3 +138,15 @@ class TestQuestionAnsweringService(unittest.TestCase):
         self.assertFalse(results[0].is_clarification)
         self.assertEqual(results[0].text, "5 años")
         self.assertTrue(results[1].is_clarification)
+
+    @patch("aiFormFiller.services.question_answering_service.LocalHFProvider")
+    @patch("aiFormFiller.services.question_answering_service.cfg")
+    def test_answer_batch_formats_field_options(self, mock_cfg, mock_hf):
+        make_mock_cfg(mock_cfg)
+        mock_hf.return_value = make_mock_provider(text="Yes")
+        self.service.answer_batch([{"question": "Authorized?", "type": "radio", "options": ["Yes", "No"]}])
+        _, kwargs = mock_hf.return_value.generate.call_args
+        self.assertIn("Tipo de campo: radio", kwargs["user_message"])
+        self.assertIn("- Yes", kwargs["user_message"])
+        self.assertIn("- No", kwargs["user_message"])
+        self.assertIn("Responde solo con la opción/opciones válidas.", kwargs["user_message"])

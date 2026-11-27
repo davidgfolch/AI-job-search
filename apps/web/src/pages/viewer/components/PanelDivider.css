@@ -1,11 +1,18 @@
 .viewer-divider {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  position: relative;
   padding: 0 0.25rem;
   min-width: 2rem;
+}
+
+.divider-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .collapse-btn,
@@ -26,10 +33,31 @@
 }
 
 .collapse-btn:hover,
-.reset-btn:hover {
+.reset-btn:hover,
+.collapse-btn.active {
   background: var(--bg-tertiary);
   border-color: var(--primary-color);
   color: var(--primary-color);
+}
+
+.divider-drag-handle {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.divider-drag-handle:hover:not([aria-disabled="true"]),
+.divider-drag-handle:focus-visible:not([aria-disabled="true"]),
+.viewer-divider.dragging .divider-drag-handle {
+  background: var(--primary-color);
+  opacity: 0.4;
+}
+
+.divider-drag-handle[aria-disabled="true"] {
+  cursor: default;
 }
 
 @media (max-width: 768px) {

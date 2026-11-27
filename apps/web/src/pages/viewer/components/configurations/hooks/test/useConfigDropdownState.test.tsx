@@ -12,7 +12,7 @@ describe('useConfigDropdownState', () => {
   it('should open dropdown and update configName on handleChange', () => {
     const { result } = renderHook(() => useConfigDropdownState(''));
     act(() => {
-      result.current.handleChange({ target: { value: 'test' } } as any);
+      result.current.handleChange({ target: { value: 'test' } } as React.ChangeEvent<HTMLInputElement>);
     });
     expect(result.current.configName).toBe('test');
     expect(result.current.isOpen).toBe(true);

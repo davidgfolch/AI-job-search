@@ -1,0 +1,55 @@
+.dashboard-infrastructure {
+    margin-bottom: 20px;
+}
+
+.infrastructure-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin: 0 0 10px 0;
+}
+
+.infrastructure-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.infra-card {
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.infra-card .status-dot {
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.infra-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.infra-card-body .service-pill-label {
+    font-weight: 600;
+}
+
+.infra-card-body .service-pill-value {
+    margin-left: 0;
+}
+
+.infra-card .service-pill-address,
+.infra-card-detail {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+    .infrastructure-grid {
+        grid-template-columns: 1fr;
+    }
+}

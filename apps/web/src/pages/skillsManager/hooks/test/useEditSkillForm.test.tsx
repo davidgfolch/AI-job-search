@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useEditSkillForm } from '../useEditSkillForm';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { skillsApi } from '../../api/SkillsManagerApi';
+import type { KeyboardEvent } from 'react';
 
 vi.mock('../../api/SkillsManagerApi', () => ({
     skillsApi: {
@@ -22,7 +23,7 @@ describe('useEditSkillForm', () => {
     const mockSkill = {
         name: 'React',
         description: 'Lib',
-        learningPath: ['link1'],
+        learningPath: [{ url: 'link1', source: 'llm' as const }],
         category: 'Frontend',
     };
 
@@ -35,7 +36,7 @@ describe('useEditSkillForm', () => {
         const { result } = renderHook(() => useEditSkillForm({ skill: mockSkill, onSave: vi.fn() }), { wrapper });
         expect(result.current.name).toBe('React');
         expect(result.current.description).toBe('Lib');
-        expect(result.current.learningPath).toEqual(['link1']);
+        expect(result.current.learningPath).toEqual([{ url: 'link1', source: 'llm' }]);
         expect(result.current.category).toBe('Frontend');
     });
 
@@ -55,9 +56,9 @@ describe('useEditSkillForm', () => {
         const { result } = renderHook(() => useEditSkillForm({ skill: mockSkill, onSave: vi.fn() }), { wrapper });
         act(() => { result.current.setNewLinkInput('link2'); });
         act(() => { result.current.handleAddLink(); });
-        expect(result.current.learningPath).toEqual(['link1', 'link2']);
+        expect(result.current.learningPath).toEqual([{ url: 'link1', source: 'llm' }, { url: 'link2', source: 'manual' }]);
         act(() => { result.current.handleRemoveLink(0); });
-        expect(result.current.learningPath).toEqual(['link2']);
+        expect(result.current.learningPath).toEqual([{ url: 'link2', source: 'manual' }]);
     });
 
     it('should call onSave with mapped data and handle validation', () => {
@@ -108,7 +109,7 @@ describe('useEditSkillForm', () => {
         expect(result.current.description).toBe('Reloaded');
 
         act(() => { result.current.setNewLinkInput('k-link'); });
-        act(() => { result.current.handleLinkInputKeyDown({ key: 'Enter' } as any); });
-        expect(result.current.learningPath).toContain('k-link');
+        act(() => { result.current.handleLinkInputKeyDown({ key: 'Enter' } as unknown as KeyboardEvent); });
+        expect(result.current.learningPath).toContainEqual({ url: 'k-link', source: 'manual' });
     });
 });

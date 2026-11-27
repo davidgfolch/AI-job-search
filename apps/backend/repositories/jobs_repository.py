@@ -3,6 +3,7 @@ from typing import List, Optional, Dict, Any
 from commonlib.sql.mysqlUtil import (
     MysqlUtil,
     getConnection,
+    getReadConnection,
 )
 from repositories.queries.jobs_query_builder import (
     build_jobs_where_clause,
@@ -16,8 +17,8 @@ def _execute_with_error_handler(where_str: str, params: list, callback, include_
 
 
 class JobsRepository:
-    def get_db(self):
-        return MysqlUtil(getConnection())
+    def get_db(self, read_only: bool = False):
+        return MysqlUtil(getReadConnection() if read_only else getConnection())
 
     def list_jobs(self, page: int, size: int,
         search: Optional[str] = None,
@@ -38,7 +39,7 @@ class JobsRepository:
         where_clauses, params = build_jobs_where_clause(search, status, not_status, days_old,
             salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date, modality)
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             result = _execute_with_error_handler(
                 where_str, params,
                 lambda: {"items": self._fetch_jobs(db, where_str, params, order, size, offset),
@@ -67,7 +68,7 @@ class JobsRepository:
         where_clauses, params = build_jobs_where_clause(search, status, not_status, days_old,
             salary, sql_filter, boolean_filters, ids, created_after, start_date, end_date, modality)
         where_str = " AND ".join(where_clauses)
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             result = _execute_with_error_handler(
                 where_str, params,
                 lambda: self._count_jobs(db, where_str, params),
@@ -109,21 +110,17 @@ class JobsRepository:
     ):
         sort_col, sort_dir = parse_job_order(order)
         query = f"SELECT * FROM jobs WHERE {where} ORDER BY {sort_col} {sort_dir}, id DESC LIMIT %s OFFSET %s"
-        rows = db.fetchAll(query, params + [size, offset])
-        if rows is None:
+        columns, rows = db.fetchAllWithColumns(query, params + [size, offset])
+        if not rows or not columns:
             return []
-
-        columns_data = db.fetchAll("SHOW COLUMNS FROM jobs")
-        if not columns_data:
-            return []
-        columns = [col[0] for col in columns_data]
         return [dict(zip(columns, row, strict=True)) for row in rows]
 
-    def fetch_job_row(self, db: MysqlUtil, job_id: int) -> Optional[tuple]:
-        return db.fetchOne("SELECT * FROM jobs WHERE id = %s", job_id)
-
-    def fetch_columns(self, db: MysqlUtil) -> List[str]:
-        return [col[0] for col in db.fetchAll("SHOW COLUMNS FROM jobs")]
+    def fetch_job_with_columns(self, db: MysqlUtil, job_id: int) -> tuple[List[str], Optional[tuple]]:
+        """Fetch one job plus its column names in a single round trip."""
+        columns, rows = db.fetchAllWithColumns("SELECT * FROM jobs WHERE id = %s", [job_id])
+        if not rows or not columns:
+            return [], None
+        return list(columns), rows[0]
 
     def update_job(self, job_id: int, update_data: Dict[str, Any]) -> Optional[int]:
         from commonlib.modality_extractor import modalities_to_db

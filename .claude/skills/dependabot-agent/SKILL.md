@@ -5,7 +5,7 @@ description: Run only in a Dependabot session on `staging` (every other change b
 
 # Dependabot Agent Instructions
 
-This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search-dependabot-<pr>`) created with the shared dev workflow (`scripts/dev.sh`, or `scripts/dev.bat` on Windows) — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). The main workspace is **never touched at all — not even by a branch move**: the `staging` sync (step 0) and the `staging → master` promotion (step 8) run in a dedicated session clone (`../ai_job_search-dependabot-session`) next to it. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) is meant to auto-merge grouped `minor-patch`/`github-actions` PRs once CI is green, but as written it only runs on Dependabot-triggered `pull_request` events, which receive **no repository secrets and a read-only token** (`GH_TOKEN` resolves empty, `/repos/.../dependabot/secrets` is empty), so its `gh pr merge --auto` step fails with exit 4 whenever it fires. Treat auto-merge as unavailable and merge every PR explicitly. This agent acts where automation cannot: it does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, and pushes to the PR branch.
+This skill automates the handling of Dependabot PRs in this monorepo. Every PR is handled in its own throwaway sibling clone (`../ai_job_search-dependabot-<pr>`) created with the shared dev workflow (`scripts/dev.sh`, or `scripts/dev.bat` on Windows) — the same per-feature clone flow `../rag-systems` uses with `scripts/dev.*` (`new` → work → `merge` → delete the clone). The main workspace is **never touched at all — not even by a branch move**: the `staging` sync (step 0) and the `staging → master` promotion (step 8) run in a dedicated session clone (`../ai_job_search-dependabot-session`) next to it. Dependabot opens PRs against the `staging` branch (see `.github/dependabot.yml`), grouping minor/patch updates per ecosystem. A workflow (`.github/workflows/dependabot-auto-merge.yml`) enables squash auto-merge for grouped `minor-patch`/`github-actions` PRs once `ci-gate` is green; it runs on `pull_request_target` because Dependabot-triggered `pull_request` runs get a read-only token and no secrets. Verify the merge actually happened instead of assuming it: this agent does the changelog sanity check, runs the module tests locally, builds the affected docker-compose services, verifies the logs, fixes failures, pushes to the PR branch, and merges explicitly when auto-merge did not fire.
 
 `staging` is **only** for this session. Features, fixes, docs and any other non-Dependabot work are done on `master` (see `.claude/rules/branch-workflow.md`). Each session syncs `master` into `staging` at the start (step 0) and promotes `staging` back into `master` at the end when everything is green (step 8) — **both inside sibling clones, never in the main workspace**.
 
@@ -28,15 +28,16 @@ Every clone is a sibling of the project root, always prefixed `ai_job_search-`:
 
 ```bash
 # Session clone for the staging sync and the promotion. Run from the main workspace or any
-# workspace copy: it only creates the sibling clone (branch feat/dependabot-session from master)
-# and copies .env, .env.secrets and the gitignored lockfiles. The main workspace is not modified.
+# workspace copy: it only creates the sibling clone (branch feat/dependabot-session from master),
+# copies gitignored runtime state (.env.secrets, lockfiles, node_modules, CodeGraph snapshot)
+# and rebuilds Python envs offline. The main workspace is not modified.
 ./scripts/dev.sh new dependabot-session
 cd "$(dirname "$(git rev-parse --show-toplevel)")/ai_job_search-dependabot-session"
 
 # Per-PR clone: creates ../ai_job_search-dependabot-<n>, runs `gh pr checkout <n>`
-# (branch + upstream tracking) and copies the same gitignored runtime state.
-# scripts/test.sh picks uv vs poetry by lockfile presence, so the lockfiles matter.
-# It can be launched from any clone; it never edits the caller's working tree.
+# (branch + upstream tracking), copies the same runtime state and then refreshes npm deps
+# and CodeGraph for the PR's manifest changes. It can be launched from any clone; it never
+# edits the caller's working tree.
 ./scripts/dev.sh dep <n>
 cd "$(dirname "$(git rev-parse --show-toplevel)")/ai_job_search-dependabot-<n>"
 
@@ -100,7 +101,7 @@ For each open staging PR:
    ```bash
    ./scripts/dev.sh dep <n>        # Windows: .\scripts\dev.bat dep <n>
    ```
-   That creates/repopulates `../ai_job_search-dependabot-<n>`, copies the gitignored env + lockfiles, and leaves the PR branch checked out with its upstream set. From here on, every command runs inside that clone.
+   That creates/repopulates `../ai_job_search-dependabot-<n>`, copies gitignored runtime state, refreshes deps for the PR's manifest changes and leaves the PR branch checked out with its upstream set. From here on, every command runs inside that clone.
 
 4. **Rebase the PR onto the fresh `staging` before validating it** (step 0 moved the base, so the branch is behind):
    ```bash
@@ -130,7 +131,7 @@ git push
 
 ### 4. Run the TDD pipeline for the module
 
-`scripts/test.sh` only **runs** the suites; it does not install. Install the module first exactly as `ci.yml` does, from the clone root:
+`scripts/dev.sh dep` already synced every app's deps from the local cache (`uv sync --offline`, `poetry install`, `npm ci --prefer-offline`, with online fallback for bumped versions) when it created the clone, so no full install is needed. `scripts/test.sh` only **runs** the suites; it does not install. If a bump still leaves a lockfile stale, regenerate it exactly as `ci.yml` does, from the clone root:
 
 ```bash
 # Poetry modules (commonlib, scrapper)
@@ -141,7 +142,7 @@ git push
 (cd apps/<module> && npm install)
 ```
 
-The clone inherits gitignored lockfiles from the caller, and a dependency bump makes `poetry install` refuse until `poetry lock` regenerates them (that is the expected lockfile churn, committed in step 6).
+That lockfile churn is expected and committed in step 6.
 
 Then run the suite. This regenerates lockfiles/badges like CI does (`ci.yml` runs this matrix):
 ```bash
@@ -203,11 +204,12 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
   gh pr checks <n> --watch
   ```
   Only treat the PR as green when the run is complete and `ci-gate` succeeded (and docker/log checks above passed).
-- **Auto-merge is not available for Dependabot PRs** (the workflow's `gh pr merge --auto` fails: no secrets, read-only token). Do not wait for it and do not rely on `gh pr view --json mergeStateStatus` becoming `CLEAN` on its own; merge explicitly:
+- **Merge** — grouped `minor-patch`/`github-actions` PRs have squash auto-merge enabled by `dependabot-auto-merge.yml`, which merges as soon as `ci-gate` passes. Re-check the state instead of assuming it fired, and merge explicitly when it did not (semver-major and ungrouped PRs always need it):
   ```bash
-  gh pr merge <n> --squash
+  gh pr view <n> --json state --jq .state          # MERGED?
+  gh pr merge <n> --squash                         # only if still OPEN and everything is green
   ```
-  Do this for every PR (grouped minor/patch, semver-major or ungrouped) only once tests, sandbox and `ci-gate` are green. Report the broken auto-merge workflow in the session summary; fixing it is a CI change on `master`, not part of this batch.
+  Merge a PR only once tests, sandbox and `ci-gate` are green.
 - Post a short summary comment on the PR documenting what changed and that docker/log/pipeline checks passed.
 
 ### 7. Red result
@@ -269,7 +271,7 @@ The sandbox always runs under the fixed compose project `dependabot-test` with r
 
 - Never start a non-Dependabot change on `staging`: features, fixes, docs and lockfile work belong on `master`.
 - Never push to `master` directly **within this session** and never force-push; the promotion PR handles `staging → master`.
-- **Never run git commands that move a branch in the main workspace** (`checkout`, `pull`, `merge`, `reset`, `commit`, `push`). The staging sync and the promotion both happen in the session clone; the main workspace is only read to copy `.env`, `.env.secrets` and lockfiles into a clone.
+- **Never run git commands that move a branch in the main workspace** (`checkout`, `pull`, `merge`, `reset`, `commit`, `push`). The staging sync and the promotion both happen in the session clone; the main workspace is only read to copy gitignored runtime state (`.env.secrets`, lockfiles, `node_modules`, CodeGraph snapshot) into a clone.
 - Only ever delete sibling directories named `ai_job_search-*` that are git clones sitting next to the main workspace (that is what `./scripts/dev.sh cleanup` enforces).
 - Never commit `.env.secrets` or any credentials.
 - Only change code required to make the dependency update pass; preserve existing style and structure.

@@ -47,6 +47,67 @@
     margin-bottom: 0.5rem;
 }
 
+.llm-providers-section {
+    flex-basis: 100%;
+}
+
+.llm-providers-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.llm-provider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 260px;
+}
+
+.llm-refresh-btn {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: var(--accent-color, #4da3ff);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0;
+}
+
+.llm-refresh-btn:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.llm-fallback-note {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.llm-provider-related {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.llm-subtitle {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.llm-key-link {
+    color: var(--accent-color, #4da3ff);
+    font-size: 0.75rem;
+    margin-left: 6px;
+}
+
+.llm-providers-hint {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
 .env-section-header h2 {
     margin: 0;
     font-size: 1.25rem;

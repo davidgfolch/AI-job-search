@@ -1,13 +1,13 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import JobActions from '../JobActions';
-import type { JobListParams } from '../../api/ViewerApi';
+import type { Job, JobListParams } from '../../api/ViewerApi';
 import { ShortcutsContext, type ShortcutsContextValue } from '../../shortcutsContext';
 import { defaultValue } from '../../shortcutsContext';
 
 describe('JobActions', () => {
     const mockProps = {
-        job: { id: 123 } as any,
+        job: { id: 123 } as unknown as Job,
         filters: {} as JobListParams,
         onSeen: vi.fn(),
         onApplied: vi.fn(),
@@ -92,7 +92,7 @@ describe('JobActions', () => {
         fireEvent.click(screen.getByTitle('Copy permalink to clipboard'));
         
         expect(navigator.clipboard.writeText).toHaveBeenCalled();
-        const calledUrl = (navigator.clipboard.writeText as any).mock.calls[0][0];
+        const calledUrl = vi.mocked(navigator.clipboard.writeText).mock.calls[0][0];
         // Expect jobId to be present
         expect(calledUrl).toContain('jobId=123');
         // Expect other filters to be ABSENT, confirming simple permalink

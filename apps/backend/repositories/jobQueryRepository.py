@@ -1,5 +1,5 @@
 from typing import List, Union
-from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
+from commonlib.sql.mysqlUtil import MysqlUtil, getConnection, getReadConnection
 from commonlib.sqlUtil import scapeRegexChars, avoidInjection
 from commonlib.sql.mysqlUtil import (
     SELECT_APPLIED_JOB_IDS_BY_COMPANY_CLIENT,
@@ -11,10 +11,10 @@ class JobQueryRepository:
     def __init__(self, mysql: MysqlUtil = None):
         self._mysql = mysql
 
-    def get_db(self) -> MysqlUtil:
+    def get_db(self, read_only: bool = False) -> MysqlUtil:
         if self._mysql:
             return self._mysql
-        return MysqlUtil(getConnection())
+        return MysqlUtil(getReadConnection() if read_only else getConnection())
 
     def find_applied_by_company(self, company: str, client: str = None) -> List[tuple]:
         avoidInjection(company, "company")
@@ -42,7 +42,7 @@ class JobQueryRepository:
             )
         else:
             patterns = f"(^|[^a-z0-9]){regex_lookup}($|[^a-z0-9])"
-        with self.get_db() as db:
+        with self.get_db(read_only=True) as db:
             if client_filter:
                 qry = f"""select id, created from jobs
  where applied and lower(company) rlike '{patterns}' and id != 0 """

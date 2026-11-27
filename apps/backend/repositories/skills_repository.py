@@ -1,10 +1,20 @@
 import json
 from typing import List, Optional, Dict, Any
 from commonlib.observability import get_logger
+from commonlib.skill_learning_path import learning_path_as_dicts, serialize_learning_path
 from commonlib.sql.mysqlUtil import MysqlUtil, getConnection
 from models.skill import Skill
 
 logger = get_logger("backend.repositories.skills_repository")
+
+def _parse_learning_path(raw, skill: str, source: str) -> List[dict]:
+    if raw:
+        try:
+            json.loads(raw) if isinstance(raw, str) else raw
+        except (ValueError, TypeError) as exc:
+            logger.warning("skills.parse_failed", error=str(exc), skill=skill, field="learning_path", source=source)
+    return learning_path_as_dicts(raw)
+
 
 class SkillsRepository:
     def get_db(self):
@@ -16,18 +26,10 @@ class SkillsRepository:
             rows = db.fetchAll(query)
             skills = []
             for row in rows:
-                learning_path = []
-                if row[2]:
-                    try:
-                        learning_path = json.loads(row[2])
-                    except Exception as e:
-                        logger.warning("skills.parse_failed", error=str(e), skill=row[0], field="learning_path", source="list_skills")
-                        learning_path = []
-                        
                 skills.append(Skill(
                     name=row[0],
                     description=row[1] or "",
-                    learning_path=learning_path,
+                    learning_path=_parse_learning_path(row[2], row[0], "list_skills"),
                     disabled=bool(row[3]),
                     ai_enriched=bool(row[4]) if row[4] is not None else False,
                     category=row[5]
@@ -40,17 +42,10 @@ class SkillsRepository:
             row = db.fetchOne(query, name)
             if not row:
                 return None
-            learning_path = []
-            if row[2]:
-                try:
-                    learning_path = json.loads(row[2])
-                except Exception as e:
-                    logger.warning("skills.parse_failed", error=str(e), skill=row[0], field="learning_path", source="find_by_name")
-                    learning_path = []
             return {
                 'name': row[0],
                 'description': row[1] or "",
-                'learning_path': learning_path,
+                'learning_path': _parse_learning_path(row[2], row[0], "find_by_name"),
                 'disabled': bool(row[3]),
                 'ai_enriched': bool(row[4]) if row[4] is not None else False,
                 'category': row[5]
@@ -62,7 +57,7 @@ class SkillsRepository:
             params = [
                 skill.name,
                 skill.description,
-                json.dumps(skill.learning_path) if skill.learning_path else None,
+                serialize_learning_path(skill.learning_path),
                 skill.disabled,
                 skill.ai_enriched,
                 skill.category
@@ -84,8 +79,7 @@ class SkillsRepository:
                 params.append(update_data['description'])
             if 'learning_path' in update_data:
                 set_clauses.append("learning_path = %s")
-                lp = update_data['learning_path']
-                params.append(json.dumps(lp) if lp is not None else None)
+                params.append(serialize_learning_path(update_data['learning_path']))
             
             if 'disabled' in update_data:
                 set_clauses.append("disabled = %s")

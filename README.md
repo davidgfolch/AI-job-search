@@ -25,9 +25,9 @@ This is a monorepo containing several applications and packages:
 | ---------------- | ---------------------------------------------------- | --------------------------------------------------------- | ---------------------------- |
 | **Common Lib**   | [`apps/commonlib`](apps/commonlib/README.md)         | Shared Python utilities and database logic.               | Python, Poetry               |
 | **Web UI**       | [`apps/web`](apps/web/README.md)                     | Modern React frontend for job management.                 | React, TypeScript, Vite, npm |
-| **Backend API**  | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.                       | Python, FastAPI, Poetry      |
+| **Backend API**  | [`apps/backend`](apps/backend/README.md)             | FastAPI backend serving the Web UI.                       | Python, FastAPI, uv          |
 | **Cron**         | [`apps/cron`](apps/cron/README.md)                   | Background scheduler for periodic cron jobs.              | Python, uv, MongoDB          |
-| **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium-based job scrapers.                              | Python, Selenium, Poetry     |
+| **Scrapper**     | [`apps/scrapper`](apps/scrapper/README.md)           | Selenium + Scrapling job scrapers.                        | Python, Selenium, Poetry     |
 | **AI Enrich**    | [`apps/aiEnrich`](apps/aiEnrich/README.md)           | AI enrichment using Ollama or OpenRouter                  | Python, Ollama/OpenRouter, uv |
 | **AI Enrich Skill**| [`apps/aiEnrichSkill`](apps/aiEnrichSkill/README.md) | Local AI skill enrichment (Ollama & HuggingFace).        | Python, Transformers, uv     |
 | **AI CV Matcher**| [`apps/aiCvMatcher`](apps/aiCvMatcher/README.md)     | Local fast CV matching.                                   | Python, SentenceTransformers |
@@ -43,33 +43,17 @@ This is a monorepo containing several applications and packages:
 - AI enrichment of the company when a job board publishes the offer without one (stored as `unspecified` until inferred)
 - AI CV matching
 - AI Form Filler (browser extension + backend) to answer job application questions using your CV
-- **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes `data/logs/<app>.jsonl`, scraped by Prometheus (`:9090`) → Grafana (`:3000`, admin/admin); JSON API at `GET /api/enrichment/metrics` (see [Structured Logging](READMEs/README_DEVELOPMENT.md#structured-logging))
-- **Settings UI** to manage `.env` / `.env.secrets` variables and scrapper state directly from the browser
+- **Observability**: Structured logging + Prometheus metrics via `commonlib`; each app writes `data/logs/<app>.jsonl`, scraped by Prometheus (`:9090`) → Grafana (`:3000`, admin/admin); Prometheus text endpoint at `GET /api/metrics` (see [Metrics & Observability](READMEs/README_METRICS.md))
+- **Settings UI** to manage environment variables and scrapper state from the browser; machine-local overrides are saved to `.env.local` (gitignored) while secrets stay in `.env.secrets`
+- **Hot LLM provider switching**: change the aiEnrich, aiEnrichSkill and aiFormFiller providers and API keys in **Settings → LLM Providers**; workers apply them on their next job or request without a restart ([aiEnrich](apps/aiEnrich/README.md#llm-backend-selection), [aiEnrichSkill](apps/aiEnrichSkill/README.md#backends), [aiFormFiller](apps/aiFormFiller/README.md#ai-providers))
 - **Seamless API Routing**: Frontend automatically routes API requests seamlessly depending on environment (Docker bridge vs native localhost) and supports access from remote devices natively.
+- **Distributed execution & LAN service auto-discovery**: run the stack on one machine with Docker Compose (the default, no IPs to set), split services across machines, or keep the AI workers in Docker against an Ollama on the host or another LAN machine — MySQL/MongoDB, the backend, Ollama and the health probes are resolved automatically (see [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md))
 
 ## CI / GitHub Automation
 
 The CI pipeline, Dependabot version updates, and automatic merging of dependency PRs are documented in [GitHub Automation](READMEs/README_GITHUB.md). In short: CI only tests the modules affected by a change, Dependabot groups non-breaking updates per app, and green minor/patch Dependabot PRs auto-merge (majors stay manual; failing PRs never merge).
 
 A separate `static-analysis` job is a **required check**: it lints every Python app with [Ruff](https://docs.astral.sh/ruff/), lints the frontend and the e2e suite with ESLint, and type-checks `apps/web` with `tsc`. Run the same checks locally with `./scripts/lint.sh` (see [Static Analysis](READMEs/README_DEVELOPMENT.md#static-analysis)).
-
-## Distributed execution
-
-You can set a specific MySQL host in `.env` via `COMMONLIB_DB_HOST` and run the scrapper on a separate machine connected to it (Linux recommended). Run only the web UI on a client machine:
-
-```bash
-docker-compose up -d --no-deps web
-```
-
-To run Ollama-backed workers on another machine in the same LAN (outside Docker):
-
-```bash
-./apps/aiEnrich/run.sh & ./apps/aiEnrichSkill/run.sh
-```
-
-### Network discovery
-
-The MySQL host (`COMMONLIB_DB_HOST`), the web backend API, the Ollama server, the watcher notifications and the dashboard health probes are all auto-discovered on the LAN. Each concern, with its variables and fallback order, is documented once in [Network Discovery](READMEs/AGENTIC_SDLC.md#network-discovery) and in the module READMEs it points to.
 
 ## Screenshots
 
@@ -111,6 +95,8 @@ The MySQL host (`COMMONLIB_DB_HOST`), the web backend API, the Ollama server, th
 
 ### Settings — Environment Variables
 
+The Settings page edits environment configuration. Non-secret values are saved to `.env.local` (per-machine, gitignored), secret keys go to `.env.secrets`, and `.env` keeps shared defaults.
+
 ![UISettings](READMEs/assets/UISettings.png)
 
 ### Settings — Scrapper State
@@ -121,21 +107,9 @@ The MySQL host (`COMMONLIB_DB_HOST`), the web backend API, the Ollama server, th
 
 ### Docker Compose Profiles
 
-The `docker-compose.yml` groups services into profiles: the core services start by default, and the AI services (`aienrich`, `aiEnrichSkill`) plus the opt-in `ollama` server are selected with `--profile`. The profile table, the exact commands and the service URLs live in [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
+The `docker-compose.yml` groups services into profiles: the core services start by default, and the AI services (`aienrich`, `aiEnrichSkill`) plus the opt-in `ollama` server are selected with `--profile`. The profile table, the exact commands and the service URLs live in [DOCKER_DEV.md](READMEs/DOCKER_DEV.md). Ollama can run on the host, in Docker or on another LAN machine, and the stack auto-discovers it; hosts are only pinned in `.env` when discovery cannot reach them — see [Distributed execution & LAN service auto-discovery](READMEs/DISTRIBUTED_EXECUTION.md).
 
 The `web` service waits for the backend to answer before it serves, and reconnects to it when it moves, so it works with the backend containerized or running on the host (see [web backend discovery](apps/web/README.md#backend-discovery)).
-
-#### Ollama: host vs container
-
-The `ollama` service is **opt-in** (`--profile ollama`), so the stack works whether Ollama runs on your host or in Docker. The Ollama-backed modules (`aienrich`, `aienrichskill`) auto-detect the server at startup: they probe the configured URL, then `host.docker.internal`, `localhost`, the containerized `ollama:11434` (`apps/commonlib/commonlib/ollama_config.py`), and finally the LAN on port 11434 (see [Ollama server resolution](READMEs/AGENTIC_SDLC.md#network-discovery)). No module hard-depends on the `ollama` container, so it is never started implicitly.
-
-```bash
-# Ollama already installed on the host (nothing extra to start)
-docker-compose --profile aienrich up -d aienrich
-
-# Ollama containerized as well
-docker-compose --profile ollama --profile aienrich up -d
-```
 
 ### Install & run
 
@@ -149,55 +123,7 @@ docker-compose logs -f
 ./apps/scrapper/run.sh    # or .\apps\scrapper\run.bat
 ```
 
-Open the UI at [http://localhost:5173](http://localhost:5173). AI service profiles, the scrapper and Docker troubleshooting: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md).
-
-## Run Manually (Using Helper Scripts)
-
-Each application includes convenience scripts (`run.sh` / `run.bat`) to start them easily.
-
-### Linux / macOS (`.sh`)
-
-```bash
-# 1. Database
-./scripts/runMysql.sh
-
-# 2. Scrappers
-./apps/scrapper/run.sh
-
-# 3. AI Enrichment
-# (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
-./apps/aiEnrich/run.sh
-# (Local Fast CV Matcher)
-./apps/aiCvMatcher/run.sh
-# (AI Form Filler backend)
-./apps/aiFormFiller/run.sh
-
-# 4. New UI (Backend + Web)
-./apps/backend/run.sh
-./apps/web/run.sh
-```
-
-### Windows (`.bat`)
-
-```cmd
-:: 1. Database
-docker compose up -d
-
-:: 2. Scrappers
-.\apps\scrapper\run.bat
-
-:: 3. AI Enrichment
-:: (Using Ollama, default, or OpenRouter with AI_ENRICH_BACKEND=openrouter)
-.\apps\aiEnrich\run.bat
-:: (Local Fast CV Matcher)
-.\apps\aiCvMatcher\run.bat
-:: (AI Form Filler backend)
-.\apps\aiFormFiller\run.bat
-
-:: 4. New UI (Backend + Web)
-.\apps\backend\run.bat
-.\apps\web\run.bat
-```
+Open the UI at [http://localhost:5173](http://localhost:5173). AI service profiles, the host-native runners and Docker troubleshooting: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md#host-native-apps).
 
 ## Developer tooling
 
@@ -215,6 +141,7 @@ Cross-cutting developer concerns are documented once, in the reference guides un
 - **Development**: [README_DEVELOPMENT.md](READMEs/README_DEVELOPMENT.md)
 - **Contributing**: [README_CONTRIBUTE.md](READMEs/README_CONTRIBUTE.md)
 - **Docker**: [DOCKER_DEV.md](READMEs/DOCKER_DEV.md)
+- **LLM providers & free tiers**: [LLM_PROVIDERS.md](READMEs/LLM_PROVIDERS.md)
 - **GitHub Automation (CI & Dependabot)**: [README_GITHUB.md](READMEs/README_GITHUB.md)
 - **Metrics & Grafana**: [README_METRICS.md](READMEs/README_METRICS.md)
 - **Agentic SDLC** (agents, CodeGraph, guardrails): [AGENTIC_SDLC.md](READMEs/AGENTIC_SDLC.md)

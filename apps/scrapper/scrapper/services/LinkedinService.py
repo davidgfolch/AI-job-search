@@ -1,6 +1,5 @@
 import re
-from typing import Tuple
-from commonlib.sql.mysqlUtil import QRY_FIND_JOB_BY_JOB_ID, QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
+from commonlib.sql.mysqlUtil import QRY_UPDATE_JOB_DIRECT_URL, MysqlUtil
 from commonlib.findLastDuplicated import find_last_duplicated
 from commonlib.observability import get_logger
 from commonlib.terminalColor import green, magenta, yellow, cyan
@@ -32,12 +31,6 @@ class LinkedinService(BaseService):
 
     def get_job_url_short(self, url: str):
         return re.sub(r'(.*/jobs/view/([^/]+)/).*', r'\1', url)
-
-    def job_exists_in_db(self, url: str) -> Tuple[int, bool]:
-        # Overriding to return job_id as int if needed, or stick to base?
-        # Base returns str. Here explicit int.
-        jobId = self.get_job_id(url)
-        return (jobId, self.mysql.fetchOne(QRY_FIND_JOB_BY_JOB_ID, jobId) is not None)
 
     def process_job(self, title, company, location, url, html, is_direct_url_scrapping: bool, easy_apply: bool):
         try:
@@ -81,7 +74,7 @@ class LinkedinService(BaseService):
         return md[:min(cuts)] if cuts else md
 
     def print_job(self, title, company, location, url, jobId, html, md):
-        logger.debug("linkedin.job.already_exists", job_id=jobId, title=title, company=company, location=location, url=url, html_length=len(html or ''), markdown_length=len(md or ''),
+        logger.info("scraper.job.already_exists", job_id=jobId, title=title, company=company, location=location, url=url, html_length=len(html or ''), markdown_length=len(md or ''),
                      console='\n'.join([yellow(f'Job id={jobId} already exists in DB, IGNORED.'), yellow(f'TITLE={title}'),
                                          yellow('COMPANY=') + cyan(company), yellow(f'LOCATION={location}'), yellow(f'URL={url}'),
                                          magenta(f'HTML_LENGTH={len(html or "")}'), magenta(f'MARKDOWN_LENGTH={len(md or "")}')]))
