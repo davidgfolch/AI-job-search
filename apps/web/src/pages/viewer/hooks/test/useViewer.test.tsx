@@ -5,6 +5,7 @@ import { useJobsData } from '../useJobsData';
 import { useJobSelection } from '../useJobSelection';
 import { useJobMutations } from '../useJobMutations';
 import { mockJobsData, mockJobSelection, mockJobMutations } from './useViewer.mocks';
+import type { Job, JobListParams } from '../../api/ViewerApi';
 
 // Mock dependencies
 vi.mock('../useJobsData', () => ({
@@ -22,13 +23,18 @@ vi.mock('../../../common/hooks/useModalityValues', () => ({
 
 import { useModalityValues } from '../../../common/hooks/useModalityValues';
 
+const setJobsData = (value: object) => vi.mocked(useJobsData).mockReturnValue(value as unknown as ReturnType<typeof useJobsData>);
+const setJobSelection = (value: object) => vi.mocked(useJobSelection).mockReturnValue(value as unknown as ReturnType<typeof useJobSelection>);
+const setJobMutations = (value: object) => vi.mocked(useJobMutations).mockReturnValue(value as unknown as ReturnType<typeof useJobMutations>);
+const setModalityValues = (value: object) => vi.mocked(useModalityValues).mockReturnValue(value as unknown as ReturnType<typeof useModalityValues>);
+
 describe('useViewer', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (useJobsData as any).mockReturnValue(mockJobsData);
-        (useJobSelection as any).mockReturnValue(mockJobSelection);
-        (useJobMutations as any).mockReturnValue(mockJobMutations);
-        (useModalityValues as any).mockReturnValue({ data: [] });
+        setJobsData(mockJobsData);
+        setJobSelection(mockJobSelection);
+        setJobMutations(mockJobMutations);
+        setModalityValues({ data: [] });
     });
 
     it('should aggregate state correctly', () => {
@@ -44,7 +50,7 @@ describe('useViewer', () => {
         expect(result.current.status.hasNext).toBe(true);
         expect(result.current.status.hasPrevious).toBe(false);
         
-        (useJobSelection as any).mockReturnValue({
+        setJobSelection({
             ...mockJobSelection,
             selectedJob: { id: 2 },
         });
@@ -55,7 +61,7 @@ describe('useViewer', () => {
 
     it('should expose actions that delegate to sub-hooks', () => {
         const { result } = renderHook(() => useViewer());
-        result.current.actions.setFilters({ page: 2 } as any);
+        result.current.actions.setFilters({ page: 2 });
         expect(mockJobsData.setFilters).toHaveBeenCalledWith({ page: 2 });
         result.current.actions.nextJob();
         expect(mockJobSelection.navigateJob).toHaveBeenCalledWith('next');
@@ -75,9 +81,9 @@ describe('useViewer', () => {
         const jobs = [
             { id: 1, title: 'Job A' },
             { id: 2, title: 'Job B' },
-        ] as any[];
+        ] as unknown as Job[];
         
-        (useJobsData as any).mockReturnValue({
+        setJobsData({
             ...mockJobsData,
             allJobs: jobs,
         });
@@ -90,28 +96,27 @@ describe('useViewer', () => {
 
     it('should handle onJobsDeleted("all") correctly', () => {
         renderHook(() => useViewer());
-        const useJobMutationsMock = useJobMutations as any;
-        const onJobsDeleted = useJobMutationsMock.mock.calls[0][0].onJobsDeleted;
+        const onJobsDeleted = vi.mocked(useJobMutations).mock.calls[0][0].onJobsDeleted!;
         expect(onJobsDeleted).toBeDefined();
         
         act(() => { onJobsDeleted('all'); });
         
         expect(mockJobsData.setAllJobs).toHaveBeenCalledWith([]); 
         expect(mockJobsData.setFilters).toHaveBeenCalled();
-        const setFiltersUpdate = mockJobsData.setFilters.mock.calls[0][0];
+        const setFiltersUpdate = mockJobsData.setFilters.mock.calls[0][0] as (filters: JobListParams) => JobListParams;
         expect(setFiltersUpdate({}).page).toBe(1);
     });
 
     it('should handle toggleSelectAll correctly', () => {
         // Case 1: selectionMode is 'all' -> toggle off
-        (useJobSelection as any).mockReturnValue({ ...mockJobSelection, selectionMode: 'all' });
+        setJobSelection({ ...mockJobSelection, selectionMode: 'all' });
         const { result } = renderHook(() => useViewer());
         act(() => { result.current.actions.toggleSelectAll(); });
         expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('none');
         expect(mockJobSelection.setSelectedIds).toHaveBeenCalledWith(new Set());
         
          // Case 2: selectionMode is 'none' -> toggle on
-        (useJobSelection as any).mockReturnValue({ ...mockJobSelection, selectionMode: 'none' });
+        setJobSelection({ ...mockJobSelection, selectionMode: 'none' });
         const { result: result2 } = renderHook(() => useViewer());
          act(() => { result2.current.actions.toggleSelectAll(); });
         expect(mockJobSelection.setSelectionMode).toHaveBeenCalledWith('all');
@@ -122,7 +127,7 @@ describe('useViewer', () => {
         mockJobsData.setFilters.mockClear();
         const refetch = vi.fn().mockResolvedValue({ data: { items: [{ id: 99 }] } });
         const hardRefresh = vi.fn();
-        (useJobsData as any).mockReturnValue({ ...mockJobsData, refetch, hardRefresh });
+        setJobsData({ ...mockJobsData, refetch, hardRefresh });
         
         const { result: result2 } = renderHook(() => useViewer());
         
@@ -142,7 +147,7 @@ describe('useViewer', () => {
         const mockSetAllJobs = vi.fn();
         const mockSetIsLoadingMore = vi.fn();
 
-        (useJobsData as any).mockReturnValue({
+        setJobsData({
             ...mockJobsData,
             filters: { page: 2 },
             data: { items: [{ id: 100 }], page: 1 }, 
@@ -161,7 +166,7 @@ describe('useViewer', () => {
         const mockSetAllJobs = vi.fn();
         const mockSetIsLoadingMore = vi.fn();
 
-        (useJobsData as any).mockReturnValue({
+        setJobsData({
             ...mockJobsData,
             filters: { page: 2 },
             data: { items: [{ id: 200 }], page: 2 },

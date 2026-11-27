@@ -26,7 +26,7 @@ const installIntersectionObserverMock = () => {
             thresholds: [],
             takeRecords: () => [],
         };
-    }) as any;
+    }) as unknown as typeof IntersectionObserver;
 };
 
 const scrollToBottom = () => act(() => {

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import SalaryCalculator from '../SalaryCalculator';
 import { salaryApi } from '../../../api/ViewerSalaryApi';
 import type { SalaryCalculatorParams } from '../salaryFormatters';
+import type { Job } from '../../../api/ViewerApi';
 import { mockSalaryResponse, waitForDebounce, skipInitialCalculation, mockJob } from './SalaryCalculatorTestHelpers';
 
 vi.mock('../../../api/ViewerSalaryApi', () => ({
@@ -30,7 +31,7 @@ describe('SalaryCalculator', () => {
     });
 
     it('should call calculate API after debounce when inputs change', async () => {
-        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse({ gross_year: '1000' }));
+        vi.mocked(salaryApi.calculate).mockResolvedValue(mockSalaryResponse({ gross_year: '1000' }));
         render(<SalaryCalculator />);
 
         const rateInput = screen.getByRole('spinbutton');
@@ -45,11 +46,11 @@ describe('SalaryCalculator', () => {
 
     it('should handle API errors gracefully', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        (salaryApi.calculate as any).mockRejectedValue(new Error('API Error'));
+        vi.mocked(salaryApi.calculate).mockRejectedValue(new Error('API Error'));
 
         render(<SalaryCalculator />);
         skipInitialCalculation();
-        (salaryApi.calculate as any).mockClear();
+        vi.mocked(salaryApi.calculate).mockClear();
 
         fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '60' } });
         await waitForDebounce();
@@ -60,11 +61,11 @@ describe('SalaryCalculator', () => {
     });
 
     it('should update other inputs correctly', async () => {
-        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse({ gross_year: '9999' }));
+        vi.mocked(salaryApi.calculate).mockResolvedValue(mockSalaryResponse({ gross_year: '9999' }));
         render(<SalaryCalculator />);
         
         skipInitialCalculation();
-        (salaryApi.calculate as any).mockClear();
+        vi.mocked(salaryApi.calculate).mockClear();
 
         const selects = screen.getAllByRole('combobox');
         fireEvent.change(selects[1], { target: { value: 'Daily' } });
@@ -84,11 +85,11 @@ describe('SalaryCalculator', () => {
         ['daysPerMonth', 'Days/Month', 'Daily Rate:', 'Days/Month:', 1, '10', { rate_type: 'Daily', rate: expect.closeTo(42.92, 0.1) }],
     ])('Calculation mode: %s', (mode, modeLabel, label1, label2, inputIndex, inputValue, expectedCall) => {
         it(`should calculate correctly in ${modeLabel} mode`, async () => {
-            (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse());
+            vi.mocked(salaryApi.calculate).mockResolvedValue(mockSalaryResponse());
             render(<SalaryCalculator />);
             
             skipInitialCalculation();
-            (salaryApi.calculate as any).mockClear();
+            vi.mocked(salaryApi.calculate).mockClear();
 
             fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: mode } });
 
@@ -113,7 +114,7 @@ describe('SalaryCalculator', () => {
     });
 
     it('should show Saved combo and load params when selecting a saved entry', async () => {
-        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse());
+        vi.mocked(salaryApi.calculate).mockResolvedValue(mockSalaryResponse());
         const saved: SalaryCalculatorParams[] = [
             { calcMode: 'classic', calcRate: 50, calcRateType: 'Hourly', calcFreelanceRate: 80, calcHoursPerWeek: 40, calcDaysPerMonth: 20 },
             { calcMode: 'classic', calcRate: 100, calcRateType: 'Daily', calcFreelanceRate: 300, calcHoursPerWeek: 40, calcDaysPerMonth: 20 },
@@ -130,9 +131,9 @@ describe('SalaryCalculator', () => {
 
     it('should save calculation params to job comments when Save button is clicked', async () => {
         const mockOnUpdate = vi.fn();
-        (salaryApi.calculate as any).mockResolvedValue(mockSalaryResponse());
+        vi.mocked(salaryApi.calculate).mockResolvedValue(mockSalaryResponse());
 
-        render(<SalaryCalculator job={mockJob as any} onUpdate={mockOnUpdate} />);
+        render(<SalaryCalculator job={mockJob as unknown as Job} onUpdate={mockOnUpdate} />);
         await waitForDebounce();
 
         expect(mockOnUpdate).not.toHaveBeenCalled();

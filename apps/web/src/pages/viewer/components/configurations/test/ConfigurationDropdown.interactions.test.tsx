@@ -2,11 +2,12 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConfigurationDropdown } from '../ConfigurationDropdown';
 import type { FilterConfig } from '../hooks/useFilterConfigurations';
+import type { ComponentProps } from 'react';
 
-const config = (name: string, over: Partial<FilterConfig> = {}): FilterConfig => ({ name, filters: {} as any, ...over });
+const config = (name: string, over: Partial<FilterConfig> = {}): FilterConfig => ({ name, filters: {}, ...over });
 
 describe('ConfigurationDropdown interactions', () => {
-    let props: any;
+    let props: ComponentProps<typeof ConfigurationDropdown>;
 
     beforeEach(() => {
         props = {
@@ -47,7 +48,7 @@ describe('ConfigurationDropdown interactions', () => {
     ])('toggles %s for the row without loading it', (_label, title, handler) => {
         render(<ConfigurationDropdown {...props} />);
         fireEvent.click(screen.getAllByTitle(title)[0]);
-        expect(props[handler]).toHaveBeenCalledWith('JVM Spring');
+        expect(props[handler as 'onTogglePin' | 'onToggleStats' | 'onToggleWatch']).toHaveBeenCalledWith('JVM Spring');
         expect(props.onLoad).not.toHaveBeenCalled();
     });
 
@@ -84,7 +85,7 @@ describe('ConfigurationDropdown interactions', () => {
     it('shows the watcher badge and tooltip only when a watcher result exists', () => {
         const { container, rerender } = render(<ConfigurationDropdown {...props} />);
         expect(screen.queryByText('+3')).not.toBeInTheDocument();
-        rerender(<ConfigurationDropdown {...props} results={{ 'JVM Spring': { total: 10, newItems: 3 } as any }} lastCheckTime={new Date('2026-01-01T10:00:00')} />);
+        rerender(<ConfigurationDropdown {...props} results={{ 'JVM Spring': { total: 10, newItems: 3, removedItems: 0 } }} lastCheckTime={new Date('2026-01-01T10:00:00')} />);
         expect(screen.getByText('+3')).toBeInTheDocument();
         expect(container.querySelectorAll('li')[0]).toHaveAttribute('title', expect.stringContaining('Total: 10 | New: 3'));
     });

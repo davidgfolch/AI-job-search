@@ -109,8 +109,8 @@ jobs:
         run: npm install
         working-directory: apps/e2e
 
-      # Blocking gate: ESLint errors (unused code, explicit `any` in production
-      # sources) and any TypeScript type error fail the build.
+      # Blocking gate: ESLint errors (including warning-level rules promoted to
+      # errors) and any TypeScript type error fail the build.
       - name: Web lint and typecheck (eslint + tsc)
         run: bash ./scripts/lint.sh web
 

@@ -48,7 +48,7 @@ describe('Viewer - State Management', () => {
     const stateTestCases = [
         {
             name: 'renders loading state initially',
-            mockSetup: () => (jobsApi.getJobs as any).mockReturnValue(new Promise(() => { })),
+            mockSetup: () => vi.mocked(jobsApi.getJobs).mockReturnValue(new Promise(() => { })),
             assertion: async () => {
                 expect(screen.getByText('Loading jobs...')).toBeInTheDocument();
                 await runTimers();
@@ -56,7 +56,7 @@ describe('Viewer - State Management', () => {
         },
         {
             name: 'renders job list after loading',
-            mockSetup: () => (jobsApi.getJobs as any).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 }),
+            mockSetup: () => vi.mocked(jobsApi.getJobs).mockResolvedValue({ items: mockJobs, total: 2, page: 1, size: 20 }),
             assertion: async () => {
                 await runTimers();
                 expect(screen.getAllByText('Job 1').length).toBeGreaterThan(0);
@@ -65,7 +65,7 @@ describe('Viewer - State Management', () => {
         },
         {
             name: 'handles error state',
-            mockSetup: () => (jobsApi.getJobs as any).mockRejectedValue(new Error('Failed to fetch')),
+            mockSetup: () => vi.mocked(jobsApi.getJobs).mockRejectedValue(new Error('Failed to fetch')),
             assertion: async () => {
                 await runTimers();
                 expect(screen.getAllByText('Failed to fetch').length).toBeGreaterThan(0);

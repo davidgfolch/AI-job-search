@@ -45,18 +45,22 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
         // const newParams = new URLSearchParams(searchParams);
         // newParams.set('jobId', job.id.toString());
         // setSearchParams(newParams);
-    }, [searchParams, setSearchParams, setSelectedIdxs]);
+    }, [setSelectedIdxs]);
 
-    useEffect(() => { // Reset selection when filters change (except page)
-        setSelectionMode('none');
-        setSelectedIds(new Set());
-        setSelectedIdxs(new Set());
-    }, [
+    // Reset selection when filters change (except page)
+    const selectionFiltersKey = JSON.stringify([
         filters.search, filters.status, filters.not_status, filters.days_old, filters.salary, filters.order, filters.sql_filter,
         filters.flagged, filters.like, filters.ignored, filters.seen, filters.applied, filters.discarded, filters.closed,
         filters.interview_rh, filters.interview, filters.interview_tech, filters.interview_technical_test, filters.interview_technical_test_done,
         filters.ai_enriched, filters.easy_apply, filters.duplicated, filters.modality, filters.ids,
     ]);
+    const [lastSelectionFiltersKey, setLastSelectionFiltersKey] = useState(selectionFiltersKey);
+    if (lastSelectionFiltersKey !== selectionFiltersKey) {
+        setLastSelectionFiltersKey(selectionFiltersKey);
+        setSelectionMode('none');
+        setSelectedIds(new Set());
+        setSelectedIdxs(new Set());
+    }
 
     // Auto-select next job after data refetch when a state change occurred
     useEffect(() => {
@@ -126,7 +130,7 @@ export const useJobSelection = ({ allJobs, filters, setFilters, onLoadMore, hasM
                 }
                 // Try to find the job in the current list first
                 const job = allJobs.find(j => j.id === jobId);
-                if (job && selectedJob?.id !== job.id) {
+                if (!isAutoSelecting.current && !isRecentManualSelection && job && selectedJob?.id !== job.id) {
                     setSelectedJob(job);
                     setSelectedIds(new Set([jobId]));
                 }

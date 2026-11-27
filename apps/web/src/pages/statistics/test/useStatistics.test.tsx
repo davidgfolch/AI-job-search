@@ -114,7 +114,7 @@ describe('useStatistics', () => {
 
     it('returns filter config data', async () => {
         const mockFilterConfigData = [{ name: 'Config1', count: 10 }];
-        vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue(mockFilterConfigData as any);
+        vi.mocked(StatisticsApi.getFilterConfigStats).mockResolvedValue(mockFilterConfigData);
 
         const { result } = renderHook(() => useStatistics(), { wrapper: wrapper });
         

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Skill } from './useLearnList';
 import { skillsApi, type LearningPathLink } from "../api/SkillsManagerApi";
@@ -19,16 +19,17 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
   const [isPolling, setIsPolling] = useState(false);
   
   const isNewSkill = !skill.name;
-
-  useEffect(() => {
+  const [syncedSkill, setSyncedSkill] = useState(skill);
+  if (syncedSkill !== skill) {
+    setSyncedSkill(skill);
     setName(skill.name || '');
     setCategory(skill.category || '');
     setDescription(skill.description || '');
     setLearningPath(skill.learningPath || []);
     setNewLinkInput('');
-  }, [skill]);
+  }
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!name.trim()) {
         alert("Skill name is required");
         return;
@@ -41,7 +42,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
       disabled: skill.disabled,
       ai_enriched: skill.ai_enriched
     });
-  };
+  }, [name, category, description, learningPath, skill, onSave]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -52,7 +53,7 @@ export const useEditSkillForm = ({ skill, onSave, onUpdate }: UseEditSkillFormPr
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [name, category, description, learningPath, skill]); // Dependencies for handleSave closure
+  }, [handleSave]);
 
   const handleAddLink = () => {
     if (newLinkInput.trim()) {

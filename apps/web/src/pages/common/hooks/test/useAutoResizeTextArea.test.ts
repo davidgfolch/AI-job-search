@@ -10,11 +10,11 @@ describe('useAutoResizeTextArea', () => {
   beforeEach(() => {
     // Mock IntersectionObserver
     window.IntersectionObserver = class IntersectionObserver {
-      constructor(_callback: any, _options: any) {}
+      constructor(_callback: IntersectionObserverCallback, _options: IntersectionObserverInit) {}
       observe() {}
       unobserve() {}
       disconnect() {}
-    } as any;
+    } as unknown as typeof IntersectionObserver;
 
     mockElement = document.createElement('textarea');
     Object.defineProperty(mockElement, 'scrollHeight', {

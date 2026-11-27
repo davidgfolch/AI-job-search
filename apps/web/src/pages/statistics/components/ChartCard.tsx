@@ -30,6 +30,12 @@ const ChartCard: React.FC<ChartCardProps> = ({
 }) => {
     const [localTimeRange, setLocalTimeRange] = useState(parentTimeRange);
     const [localIncludeOldJobs, setLocalIncludeOldJobs] = useState(parentIncludeOldJobs);
+    const [syncedFilters, setSyncedFilters] = useState({ timeRange: parentTimeRange, includeOldJobs: parentIncludeOldJobs });
+    if (syncedFilters.timeRange !== parentTimeRange || syncedFilters.includeOldJobs !== parentIncludeOldJobs) {
+        setSyncedFilters({ timeRange: parentTimeRange, includeOldJobs: parentIncludeOldJobs });
+        setLocalTimeRange(parentTimeRange);
+        setLocalIncludeOldJobs(parentIncludeOldJobs);
+    }
 
     const isThisChartExpanded = expandedChart === title;
     // We only fetch if the user changes filters in the expanded view
@@ -68,11 +74,6 @@ const ChartCard: React.FC<ChartCardProps> = ({
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isThisChartExpanded, onExpandChange]);
-
-    useEffect(() => {
-        setLocalTimeRange(parentTimeRange);
-        setLocalIncludeOldJobs(parentIncludeOldJobs);
-    }, [parentTimeRange, parentIncludeOldJobs]);
 
     const handleClose = () => {
         onFilterChange(localTimeRange, localIncludeOldJobs);

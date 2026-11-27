@@ -29,12 +29,12 @@ const mockJob = createMockJob({
 describe('JobDetail - Applied Jobs', () => {
     beforeEach(() => {
         vi.resetAllMocks();
-        (jobsApi.getAppliedJobsByCompany as any).mockResolvedValue([]);
-        (skillsApi.getSkills as any).mockResolvedValue([]);
+        vi.mocked(jobsApi.getAppliedJobsByCompany).mockResolvedValue([]);
+        vi.mocked(skillsApi.getSkills).mockResolvedValue([]);
     });
 
     it('displays applied company jobs indicator when jobs exist', async () => {
-        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        const mockGetAppliedJobsByCompany = vi.mocked(jobsApi.getAppliedJobsByCompany);
         mockGetAppliedJobsByCompany.mockResolvedValueOnce([
             { id: 2, created: '2024-01-15T10:00:00' },
             { id: 3, created: '2024-02-20T15:30:00' },
@@ -50,21 +50,21 @@ describe('JobDetail - Applied Jobs', () => {
     });
 
     it('does not display indicator when no applied jobs exist', async () => {
-        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        const mockGetAppliedJobsByCompany = vi.mocked(jobsApi.getAppliedJobsByCompany);
         mockGetAppliedJobsByCompany.mockResolvedValue([]);
         renderWithProviders(<JobDetail job={mockJob} />);
         await waitFor(() => expect(screen.queryByText(/already applied/)).not.toBeInTheDocument());
     });
 
     it('handles API error gracefully', async () => {
-        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        const mockGetAppliedJobsByCompany = vi.mocked(jobsApi.getAppliedJobsByCompany);
         mockGetAppliedJobsByCompany.mockRejectedValueOnce(new Error('API Error'));
         renderWithProviders(<JobDetail job={mockJob} />);
         await waitFor(() => expect(screen.queryByText(/already applied/)).not.toBeInTheDocument());
     });
 
     it('truncates applied jobs list if more than 60', async () => {
-        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        const mockGetAppliedJobsByCompany = vi.mocked(jobsApi.getAppliedJobsByCompany);
         // Generate 65 mock jobs
         const manyJobs = Array.from({ length: 65 }, (_, i) => ({ 
             id: i + 1, 
@@ -83,7 +83,7 @@ describe('JobDetail - Applied Jobs', () => {
     });
 
     it('makes only one API call when re-rendered with the same job', async () => {
-        const mockGetAppliedJobsByCompany = jobsApi.getAppliedJobsByCompany as any;
+        const mockGetAppliedJobsByCompany = vi.mocked(jobsApi.getAppliedJobsByCompany);
         mockGetAppliedJobsByCompany.mockClear();
         mockGetAppliedJobsByCompany.mockResolvedValue([]);
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

@@ -2,8 +2,9 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { useJobSelection } from '../useJobSelection';
+import type { Job, JobListParams } from '../../api/ViewerApi';
 
-const jobs = [{ id: 1, title: 'Job A' }, { id: 2, title: 'Job B' }, { id: 3, title: 'Job C' }] as any[];
+const jobs = [{ id: 1, title: 'Job A' }, { id: 2, title: 'Job B' }, { id: 3, title: 'Job C' }] as unknown as Job[];
 
 const createWrapper = (search = '') => {
     return ({ children }: { children: React.ReactNode }) => (
@@ -21,11 +22,11 @@ const renderWithUrl = (search: string, overrides: Partial<Props> = {}) => {
         wrapper: createWrapper(search),
         initialProps: { allJobs: jobs, filters: { page: 1, size: 20 }, setFilters, ...overrides } as Props,
     });
-    return { ...view, setFilters, baseFilters: (overrides.filters ?? { page: 1, size: 20 }) as any };
+    return { ...view, setFilters, baseFilters: (overrides.filters ?? { page: 1, size: 20 }) as JobListParams };
 };
 
 /** setFilters is always called with an updater, so the caller supplies the previous state. */
-const resolveFilters = (setFilters: ReturnType<typeof vi.fn>, prev: any) => {
+const resolveFilters = (setFilters: ReturnType<typeof vi.fn>, prev: JobListParams) => {
     const arg = setFilters.mock.calls.at(-1)![0];
     return typeof arg === 'function' ? arg(prev) : arg;
 };
@@ -41,7 +42,7 @@ describe('useJobSelection - URL parameters', () => {
 
         it('keeps the previous filters when the URL already matches', () => {
             const prev = { page: 1, size: 20, sql_filter: 'id=2' };
-            const { setFilters } = renderWithUrl('jobId=2', { filters: prev as any });
+            const { setFilters } = renderWithUrl('jobId=2', { filters: prev });
             expect(resolveFilters(setFilters, prev)).toBe(prev);
         });
 
@@ -71,13 +72,13 @@ describe('useJobSelection - URL parameters', () => {
     describe('ids parameter', () => {
         it('builds an IN filter and clears the per-state flags', () => {
             const prev = { page: 4, size: 20, ignored: true, seen: true };
-            const { setFilters } = renderWithUrl('ids=1,3', { filters: prev as any });
+            const { setFilters } = renderWithUrl('ids=1,3', { filters: prev });
             expect(resolveFilters(setFilters, prev)).toMatchObject({ sql_filter: 'id IN (1,3)', page: 1, ignored: undefined, seen: undefined });
         });
 
         it('keeps the filter when it is already applied', () => {
             const prev = { page: 1, size: 20, sql_filter: 'id IN (1,3)' };
-            const { setFilters } = renderWithUrl('ids=1,3', { filters: prev as any });
+            const { setFilters } = renderWithUrl('ids=1,3', { filters: prev });
             expect(resolveFilters(setFilters, prev)).toBe(prev);
         });
 
@@ -109,7 +110,7 @@ describe('useJobSelection - URL parameters', () => {
         it('selects the job that took the place of the filtered-out one', () => {
             const { result, rerender, flag, setFilters } = renderWithFlag();
             flag(2, 1);
-            const refreshed = [{ id: 1, title: 'Job A' }, { id: 3, title: 'Job C' }] as any[];
+            const refreshed = [{ id: 1, title: 'Job A' }, { id: 3, title: 'Job C' }] as unknown as Job[];
             rerender({ allJobs: refreshed, filters: { page: 1, size: 20 }, setFilters } as Props);
             expect(result.current.selectedJob?.id).toBe(1);
             expect([...result.current.selectedIds]).toEqual([1]);
@@ -133,7 +134,7 @@ describe('useJobSelection - URL parameters', () => {
 
         it('does nothing while the auto-selection flag is not set', () => {
             const { result, rerender, setFilters } = renderWithFlag();
-            rerender({ allJobs: [{ id: 9, title: 'New' }] as any[], filters: { page: 1, size: 20 }, setFilters } as Props);
+            rerender({ allJobs: [{ id: 9, title: 'New' }] as unknown as Job[], filters: { page: 1, size: 20 }, setFilters } as Props);
             expect(result.current.selectedJob).toBeNull();
         });
     });

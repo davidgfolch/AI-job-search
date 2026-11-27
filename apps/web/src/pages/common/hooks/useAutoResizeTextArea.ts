@@ -13,6 +13,7 @@ export function useAutoResizeTextArea(
 ) {
     // Use a ref to store the resize function so it's stable across renders
     const resizeRef = useRef<(() => void) | undefined>(undefined);
+    const dependencyKey = JSON.stringify(dependencies);
 
     useEffect(() => {
         const element = ref.current;
@@ -56,5 +57,5 @@ export function useAutoResizeTextArea(
             intersectionObserver.disconnect();
             window.removeEventListener('resize', resize);
         };
-    }, [ref, ...dependencies]);
+    }, [ref, dependencyKey]);
 }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useJobsData } from '../useJobsData';
-import { jobsApi, type Job } from '../../api/ViewerApi';
+import { jobsApi, type Job, type JobListResponse } from '../../api/ViewerApi';
 
 // Mock react-router-dom
 const mockSearchParams = new URLSearchParams();
@@ -38,7 +38,7 @@ describe('useJobsData reload', () => {
 
     vi.mocked(jobsApi.getJobs).mockClear();
     const refreshed = { items: [{ id: 1 }, { id: 2 }], total: 101, page: 1, size: 20 };
-    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce(refreshed as any);
+    vi.mocked(jobsApi.getJobs).mockResolvedValueOnce(refreshed as unknown as JobListResponse);
 
     await act(async () => { await result.current.reloadCurrentPage(); });
 

@@ -20,7 +20,7 @@ vi.mock('../../common/components/PageHeader', () => ({
     default: ({ title }: { title: string }) => <div data-testid="page-header">{title}</div>
 }));
 vi.mock('../../common/components/core/MessageContainer', () => ({
-    default: ({ message, onDismissMessage }: any) => {
+    default: ({ message, onDismissMessage }: { message: { text: string; type: 'success' | 'error' } | null; onDismissMessage: () => void }) => {
         if (!message) return null;
         return (
             <div data-testid="message-container" onClick={onDismissMessage}>

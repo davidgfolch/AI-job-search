@@ -4,6 +4,7 @@ import './ChartCard.mocks'; // Important to load mocks first
 import ChartCard from '../components/ChartCard';
 import '@testing-library/jest-dom';
 import { renderWithQueryClient, defaultProps } from './ChartCard.fixtures';
+import type { ChartDataset } from '../utils/chartUtils';
 
 describe('ChartCard Behavior', () => {
     it('updates local filter state when select changes', () => {
@@ -63,7 +64,7 @@ describe('ChartCard Behavior', () => {
                     expandedChart="Test Chart" 
                     parentTimeRange="All"
                 >
-                    {(data: any) => <div data-testid={`data-${type}`}>{data ? 'Has Data' : 'No Data'}</div>}
+                    {(data: ChartDataset | null) => <div data-testid={`data-${type}`}>{data ? 'Has Data' : 'No Data'}</div>}
                 </ChartCard>
             );
 
