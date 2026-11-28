@@ -171,8 +171,13 @@ class InfojobsNavigator(BaseNavigator):
         
     @retry()
     def click_job_link(self, element: WebElement):
+        """Navigate to the offer URL: physical clicks land on overlays that reappear after going back."""
+        self.load_page(self.get_job_url(element))
+
+    def go_back(self):
+        super().go_back()
+        self.selenium.waitUntilPageIsLoaded()
         self.dismiss_overlays()
-        self.selenium.waitAndClick(element)
 
     def get_job_data(self):
         title = self.selenium.getText(CSS_SEL_JOB_TITLE)

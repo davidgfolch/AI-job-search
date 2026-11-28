@@ -88,11 +88,20 @@ class TestInfojobsNavigator:
                 navigator.security_filter()
         mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
 
-    def test_click_job_link_dismisses_overlays(self, navigator, mock_selenium):
+    @pytest.mark.parametrize('url', ['https://www.infojobs.net/vic/backend/of-i1', 'https://www.infojobs.net/barcelona/java/of-i2?sortBy=RELEVANCE'])
+    def test_click_job_link_navigates_directly(self, navigator, mock_selenium, url):
         link = MagicMock()
+        link.get_attribute.return_value = url
         navigator.click_job_link(link)
+        mock_selenium.loadPage.assert_called_once_with(url)
+        mock_selenium.waitUntilPageIsLoaded.assert_called_once()
+        mock_selenium.waitAndClick.assert_not_called()
+
+    def test_go_back_waits_and_dismisses_overlays(self, navigator, mock_selenium):
+        navigator.go_back()
+        mock_selenium.back.assert_called_once()
+        mock_selenium.waitUntilPageIsLoaded.assert_called_once()
         mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
-        mock_selenium.waitAndClick.assert_called_once_with(link)
 
     def test_wait_for_search_ready_dismisses_overlays(self, navigator):
         with patch.object(navigator, 'dismiss_overlays') as mock_dismiss:
