@@ -3,14 +3,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: var(--bg-primary);
 }
 
 .viewer-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem;
   overflow: hidden;
 }
 
@@ -29,7 +27,7 @@
   flex-direction: column;
   gap: 1rem;
   min-width: 0;
-  padding-right: 1rem;
+  background-color: var(--bg-primary);
 }
 
 .viewer-right {
@@ -164,8 +162,8 @@
   padding: var(--button-gap);
   margin: 0;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  border-radius: 8px 8px 0 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
 }
 
 .tab-button {
@@ -284,10 +282,6 @@
 }
 
 @media (max-width: 768px) {
-  .viewer-container {
-    padding: 0.5rem;
-  }
-  
   .viewer-content {
     flex-direction: column;
   }
@@ -295,7 +289,6 @@
   .viewer-left {
     flex: 1 1 auto;
     min-height: 0;
-    padding-right: 0;
   }
 
   .tab-content {
