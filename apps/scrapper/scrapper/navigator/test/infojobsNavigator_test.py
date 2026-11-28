@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, Mock, patch
 from selenium.common.exceptions import TimeoutException
-from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DETAIL, SEARCH_URL, OVERLAY_REMOVE_SCRIPT
+from scrapper.navigator.infojobsNavigator import InfojobsNavigator, CSS_SEL_NEXT_PAGE_BUTTON, CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, CSS_SEL_JOB_DETAIL, SEARCH_URL, OVERLAY_REMOVE_SCRIPT, build_search_url
 
 class TestInfojobsNavigator:
 
@@ -88,18 +88,6 @@ class TestInfojobsNavigator:
                 navigator.security_filter()
         mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
 
-    def test_click_on_search_jobs_already_there(self, navigator, mock_selenium):
-        mock_selenium.getUrl.return_value = 'https://www.infojobs.net/ofertas-trabajo'
-        navigator.click_on_search_jobs()
-        mock_selenium.waitAndClick.assert_not_called()
-
-    def test_click_on_search_jobs_navigate(self, navigator, mock_selenium):
-        mock_selenium.getUrl.return_value = 'https://www.infojobs.net/'
-        navigator.click_on_search_jobs()
-        mock_selenium.driver.execute_script.assert_called_once_with(OVERLAY_REMOVE_SCRIPT)
-        mock_selenium.waitAndClick.assert_called_with('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
-        mock_selenium.waitUntilPageIsLoaded.assert_called()
-
     def test_click_job_link_dismisses_overlays(self, navigator, mock_selenium):
         link = MagicMock()
         navigator.click_job_link(link)
@@ -118,48 +106,43 @@ class TestInfojobsNavigator:
             navigator.clickOptionalFilter('.ij-SidebarFilter input', name)
         mock_dismiss.assert_called_once()
 
-    @pytest.mark.parametrize('remote_available', [True, False])
-    def test_date_filter_timeout_does_not_restart_keyword_search(self, navigator, mock_selenium, remote_available):
-        mock_selenium.sendKeys.return_value = True
+    @pytest.mark.parametrize('keywords,encoded', [
+        ('python', 'python'),
+        ('senior software engineer', 'senior%20software%20engineer'),
+        ('c# & java', 'c%23%20%26%20java'),
+    ])
+    def test_build_search_url_encodes_keyword(self, keywords, encoded):
+        assert build_search_url(keywords) == f'{SEARCH_URL}?keyword={encoded}'
+
+    @pytest.mark.parametrize('keywords', ['python', 'senior software engineer'])
+    def test_load_filtered_search_results_uses_keyword_url(self, navigator, mock_selenium, keywords):
+        mock_selenium.getElms.return_value = []
+        with patch('scrapper.navigator.infojobsNavigator.sleep'):
+            assert navigator.load_filtered_search_results(keywords) is True
+        mock_selenium.loadPage.assert_called_once_with(build_search_url(keywords))
+        mock_selenium.waitUntilPageIsLoaded.assert_called()
+        mock_selenium.waitUntil_presenceLocatedElement_noError.assert_called_once_with(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, 10)
+        mock_selenium.sendKeys.assert_not_called()
+        mock_selenium.sendEscapeKey.assert_not_called()
+
+    @pytest.mark.parametrize('remote_available,expected_dismiss', [(True, 3), (False, 2)])
+    def test_date_filter_timeout_does_not_restart_keyword_search(self, navigator, mock_selenium, remote_available, expected_dismiss):
         mock_selenium.getElms.side_effect = lambda selector: ['remote'] if 'check-teleworking' in selector and remote_available else []
         def click(cssSel, **kwargs):
             if '_7_DAYS' in cssSel:
                 raise TimeoutException('date filter not clickable')
         mock_selenium.waitAndClick.side_effect = click
-        with patch.object(navigator, 'click_on_search_jobs'):
+        with patch.object(navigator, 'dismiss_overlays') as mock_dismiss:
             with patch('scrapper.navigator.infojobsNavigator.sleep'):
-                result = navigator.load_filtered_search_results('Agentic Coding')
-        assert result is True
-        mock_selenium.sendKeys.assert_called_once()
-
-    @pytest.mark.parametrize('remote_available,expected_calls', [(True, 4), (False, 3)])
-    def test_load_filtered_search_results_dismisses_overlays(self, navigator, mock_selenium, remote_available, expected_calls):
-        mock_selenium.sendKeys.return_value = True
-        mock_selenium.getElms.side_effect = lambda selector: ['remote'] if 'check-teleworking' in selector and remote_available else []
-        with patch.object(navigator, 'click_on_search_jobs'):
-            with patch.object(navigator, 'dismiss_overlays') as mock_dismiss:
-                with patch('scrapper.navigator.infojobsNavigator.sleep'):
-                    navigator.load_filtered_search_results("python")
-        assert mock_dismiss.call_count == expected_calls
-
-    def test_load_filtered_search_results_success(self, navigator, mock_selenium):
-        mock_selenium.sendKeys.return_value = True
-        mock_selenium.getElms.return_value = [] # No "No results" found
-        with patch.object(navigator, 'click_on_search_jobs') as mock_click_search:
-             with patch('scrapper.navigator.infojobsNavigator.sleep'):
-                result = navigator.load_filtered_search_results("python")
-                assert result is True
-                mock_click_search.assert_called()
-                mock_selenium.sendKeys.assert_called()
-                mock_selenium.waitAndClick.assert_called()
+                assert navigator.load_filtered_search_results('Agentic Coding') is True
+        assert mock_dismiss.call_count == expected_dismiss
+        mock_selenium.loadPage.assert_called_once_with(build_search_url('Agentic Coding'))
 
     def test_load_filtered_search_results_no_results(self, navigator, mock_selenium):
-        mock_selenium.sendKeys.return_value = True
-        mock_selenium.getElms.return_value = ['some element'] # "No results" found
-        with patch.object(navigator, 'click_on_search_jobs'):
-             with patch('scrapper.navigator.infojobsNavigator.sleep'):
-                result = navigator.load_filtered_search_results("python")
-                assert result is False
+        mock_selenium.getElms.return_value = ['some element']
+        with patch('scrapper.navigator.infojobsNavigator.sleep'):
+            assert navigator.load_filtered_search_results('python') is False
+        mock_selenium.loadPage.assert_called_once_with(build_search_url('python'))
 
     def test_scroll_jobs_list(self, navigator, mock_selenium):
         mock_selenium.getElms.return_value = [MagicMock(), MagicMock()]
