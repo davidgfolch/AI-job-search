@@ -57,11 +57,14 @@ test.describe('Viewer pagination with a list that fits on screen', () => {
 test.describe('Viewer pagination with a list taller than the screen', () => {
     test.use({ viewport: { width: 1400, height: 700 } });
 
-    /* Pin the list to a fixed height so it becomes its own scroll container regardless of how the
-       surrounding flex chain resolves, and the pages can only be reached by scrolling it. */
+    /* Pin the list to a fixed height before the app renders, so auto-load never sees page 1's end on
+       screen in the unpinned layout and fetches page 2 before the list becomes its own scroll container. */
     const pinListHeight = async (page: Page) => {
-        await page.addStyleTag({ content: '.job-table-container { flex: none; height: 400px; }' });
-        await page.locator('.job-table-container').waitFor();
+        await page.addInitScript(() => {
+            const style = document.createElement('style');
+            style.textContent = '.job-table-container { flex: none; height: 400px; }';
+            (document.head || document.documentElement).appendChild(style);
+        });
     };
 
     /** Guards the premise of these tests: the end of the list must be past the trigger line, otherwise the
@@ -79,8 +82,8 @@ test.describe('Viewer pagination with a list taller than the screen', () => {
     test('stops at the first page while the end of the list is below the fold', async ({ page }) => {
         const { requestedPages } = await setupPaginatedJobsRoute(page);
 
-        await page.goto(BASE_URL);
         await pinListHeight(page);
+        await page.goto(BASE_URL);
         await expect(jobRows(page)).toHaveCount(PAGE_SIZE);
         await expectEndOfListOutOfReach(page);
         await expect(page.locator('.list-summary')).toContainText(`${PAGE_SIZE}/${PAGINATED_JOB_COUNT} loaded`);
@@ -90,8 +93,8 @@ test.describe('Viewer pagination with a list taller than the screen', () => {
     test('loads the next page when the list is scrolled to the bottom', async ({ page }) => {
         const { requestedPages } = await setupPaginatedJobsRoute(page);
 
-        await page.goto(BASE_URL);
         await pinListHeight(page);
+        await page.goto(BASE_URL);
         await expect(jobRows(page)).toHaveCount(PAGE_SIZE);
         await expectEndOfListOutOfReach(page);
 

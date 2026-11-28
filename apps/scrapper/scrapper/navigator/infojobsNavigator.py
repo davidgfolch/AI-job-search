@@ -1,3 +1,4 @@
+from urllib.parse import quote
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 from commonlib.decorator.retry import retry
@@ -38,6 +39,12 @@ CSS_SEL_LOCATION = 'div.ij-OfferDetailHeader-detailsList-column:nth-child(1) > d
 CSS_SEL_JOB_DETAIL = '.ij-OfferDetailPage-mainContent-container'
 # DONT WORK '.ij-OfferDetailPage-mainContent-container > article:not(.ij-OfferDetailFooter)'
 CSS_SEL_JOB_CLOSED = f'{CSS_SEL_JOB_DETAIL} div.jobs-details__main-content div.jobs-details-top-card__apply-error'
+
+
+def build_search_url(keywords: str) -> str:
+    """InfoJobs replaced the sidebar keyword field with a top search bar in Nov 2026; the keyword is now a URL parameter."""
+    return f'{SEARCH_URL}?keyword={quote(keywords, safe="")}'
+
 
 class InfojobsNavigator(BaseNavigator):
     @retry(retries=10, delay=5, exception=NoSuchElementException)
@@ -100,13 +107,14 @@ class InfojobsNavigator(BaseNavigator):
             self.selenium.waitUntilPageIsLoaded()
         self.dismiss_overlays()
 
-    @retry(retries=10, delay=5, exceptionFnc=lambda self, *args, **kwargs: self.security_filter())
-    def click_on_search_jobs(self, forcePageLoad=False):
-        if (not forcePageLoad) and self.selenium.getUrl().find('/ofertas-trabajo') > 0:
-            return
-        self.dismiss_overlays()
-        self.selenium.waitAndClick('header nav ul li a[href="/ofertas-trabajo"]', scrollIntoView=True)
+    def load_search_results(self, keywords: str):
+        """Load the keyword search directly: the removed sidebar field made sendKeys + submit time out."""
+        url = build_search_url(keywords)
+        logger.info("infojobs.search.url_loading", keywords=keywords, url=url, console='Loading keyword search results')
+        self.selenium.loadPage(url)
         self.selenium.waitUntilPageIsLoaded()
+        self.dismiss_overlays()
+        self.selenium.waitUntil_presenceLocatedElement_noError(CSS_SEL_SEARCH_RESULT_ITEMS_FOUND, 10)
 
     def clickOptionalFilter(self, cssSel: str, name: str):
         """A filter click that times out must not restart the whole search and re-enter the keyword."""
@@ -118,17 +126,7 @@ class InfojobsNavigator(BaseNavigator):
 
     @retry(retries=3, delay=2, exceptionFnc=lambda self, *args, **kwargs: self.waitForSearchReady())
     def load_filtered_search_results(self, keywords: str):
-        self.click_on_search_jobs()
-        self.dismiss_overlays()
-        if not self.selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2), clear=True):
-            logger.warning("infojobs.search.keyword_set_failed", keywords=keywords, console=yellow('Could not set search keyword, reloading search page'))
-            self.click_on_search_jobs(forcePageLoad=True)
-            self.selenium.sendKeys('.ij-SidebarFilter #fieldsetKeyword', keywords, keyByKeyTime=(0.1, 0.2))
-        sleep(0.5, 1)
-        self.selenium.sendEscapeKey()
-        sleep(0.5, 1)
-        self.dismiss_overlays()
-        self.selenium.waitAndClick('.ij-SidebarFilter #buttonKeyword', scrollIntoView=True)
+        self.load_search_results(keywords)
         sleep(1, 2)
         self.clickOptionalFilter('.ij-SidebarFilter input[type="radio"][value="_7_DAYS"]', 'last 7 days')
         sleep(1, 2)

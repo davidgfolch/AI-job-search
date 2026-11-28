@@ -4,7 +4,7 @@ This module handles fast CV matching against job descriptions using local Huggin
 
 ## Requirements
 
-- Python >= 3.10
+- Python >= 3.11, <3.13
 - MySQL Database (Shared within monorepo)
 - `uv` package manager
 
