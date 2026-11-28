@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from commonlib.terminalUtil import consoleTimer
-from commonlib.wake_timer import WakeableTimer
+from commonlib.wake_timer import INFINITE, WAIT_TIMEOUT, WakeableTimer
 
 import sys
 
@@ -33,7 +33,35 @@ def test_wakeable_timer_windows(mock_platform, mock_windows_api):
     assert mock_windows_api.CreateWaitableTimerW.called
     assert mock_windows_api.SetWaitableTimer.called
     assert mock_windows_api.WaitForSingleObject.called
+    assert mock_windows_api.WaitForSingleObject.call_args.args[1] != INFINITE
     assert mock_windows_api.CloseHandle.called
+
+@pytest.mark.skipif(sys.platform != 'win32', reason="Windows only")
+@patch('platform.system')
+def test_wakeable_timer_windows_keeps_waiting_after_timeout(mock_platform, mock_windows_api):
+    mock_platform.return_value = 'Windows'
+    mock_windows_api.CreateWaitableTimerW.return_value = 123
+    mock_windows_api.SetWaitableTimer.return_value = 1
+    mock_windows_api.WaitForSingleObject.side_effect = [WAIT_TIMEOUT, 0]
+
+    with patch('commonlib.wake_timer.time.monotonic', side_effect=[0, 0, 0.6]):
+        WakeableTimer().wait(1)
+
+    assert mock_windows_api.WaitForSingleObject.call_count == 2
+    assert [call.args[1] for call in mock_windows_api.WaitForSingleObject.call_args_list] == [500, 400]
+
+@pytest.mark.skipif(sys.platform != 'win32', reason="Windows only")
+@patch('platform.system')
+def test_wakeable_timer_windows_interrupt_closes_handle(mock_platform, mock_windows_api):
+    mock_platform.return_value = 'Windows'
+    mock_windows_api.CreateWaitableTimerW.return_value = 123
+    mock_windows_api.SetWaitableTimer.return_value = 1
+    mock_windows_api.WaitForSingleObject.side_effect = KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        WakeableTimer().wait(60)
+
+    mock_windows_api.CloseHandle.assert_called_once_with(123)
 
 @patch('platform.system')
 def test_wakeable_timer_other_os(mock_platform, mock_sleep):

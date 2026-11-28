@@ -16,6 +16,8 @@ CREATE_WAITABLE_TIMER_MANUAL_RESET = 0x00000001
 TIMER_ALL_ACCESS = 0x1F0003
 INFINITE = 0xFFFFFFFF
 WAIT_OBJECT_0 = 0x00000000
+WAIT_TIMEOUT = 0x00000102
+POLL_SECONDS = 0.5
 
 class WakeableTimer:
     """
@@ -79,10 +81,18 @@ class WakeableTimer:
                     logger.warning("timer.set_failed", error_code=ctypes.GetLastError())
                     time.sleep(seconds)
                     return
-                # Wait for the timer to signal
-                result = kernel32.WaitForSingleObject(hTimer, INFINITE)
-                if result != WAIT_OBJECT_0:
-                    logger.warning("timer.wait_failed", result=result, error_code=ctypes.GetLastError())
+                # Wait in short chunks so Python can handle Ctrl+C between native calls
+                deadline = time.monotonic() + seconds
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    timeout_ms = min(int(POLL_SECONDS * 1000), max(1, int(remaining * 1000)))
+                    result = kernel32.WaitForSingleObject(hTimer, timeout_ms)
+                    if result != WAIT_TIMEOUT:
+                        if result != WAIT_OBJECT_0:
+                            logger.warning("timer.wait_failed", result=result, error_code=ctypes.GetLastError())
+                        break
             finally:
                 kernel32.CloseHandle(hTimer)
         else:
