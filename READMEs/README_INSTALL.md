@@ -2,7 +2,7 @@
 
 ## System Requirements
 
-- **Python**: 3.11 recommended (every module accepts it). `backend` and `scrapper` require `>=3.11` because the security-fixed Pillow 13 ships no 3.10 wheels; `aiCvMatcher`, `aiEnrich`, `aiEnrichSkill` and `aiFormFiller` declare `>=3.10,<3.13`; `commonlib` and `cron` declare `>=3.10,<3.14`. The containers run 3.11 (`backend`) and 3.12 (the AI workers, `cron` and `aiFormFiller`).
+- **Python**: 3.11 or newer is required by every module (`scrapper` needs at least 3.11.5); see each `apps/*/pyproject.toml` for the exact ranges. The containers run 3.11 (`backend`) and 3.12 (the AI workers, `cron` and `aiFormFiller`).
 - **Node.js**: 22.12 or newer for the `apps/web` test suite; CI and the web image use Node 24.
 - **Docker**: For running services in containers.
 - **Ruff**: Optional locally, required by CI. Installed once for the whole repo by `scripts/install.*` (manual command in step 7.3).
@@ -24,7 +24,7 @@ This project uses different package managers for different components:
 
 ### 1. Install Python 3.11
 
-Install **3.11**: it is the version `backend` and `scrapper` require and it is accepted by every other module (see System Requirements).
+Install **3.11** (patch 5 or newer): it is the lowest version accepted by every module (see System Requirements).
 
 **Windows 11:**
 

@@ -6,6 +6,7 @@
     border-style: solid;
     border-color: var(--border-color);
     margin-bottom: 1rem;
+    background-color: var(--bg-primary);
 }
 
 .boolean-filters-header {
