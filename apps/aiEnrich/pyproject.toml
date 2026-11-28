@@ -6,7 +6,7 @@ requires-python = ">=3.11,<3.13"
 dependencies = [
     "commonlib==0.1.0",
     "requests>=2.34.2",
-    "pandas==2.3.3",
+    "pandas==3.1.1",
     "protobuf>=4.0.0",
     "openai>=3.0.0",
 ]
